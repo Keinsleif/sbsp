@@ -221,3 +221,72 @@ impl Executor {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use tokio::sync::mpsc;
+    use uuid::Uuid;
+
+    use crate::{engine::audio_engine::AudioCommand, executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent}, manager::ShowModelManager, model::{self, cue::{AudioCueLevels, Cue}}};
+
+    #[tokio::test]
+    async fn play_command() {
+        let manager = ShowModelManager::new();
+        let cue_id = Uuid::new_v4();
+        manager.write_with(|model| {
+            model.name = "TestShowModel".to_string();
+            model.cues.push(Cue {
+                id: cue_id,
+                number: "1".to_string(),
+                name: "Play IGY".to_string(),
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                post_wait: 0.0,
+                sequence: model::cue::CueSequence::DoNotContinue,
+                param: model::cue::CueParam::Audio {
+                    target: PathBuf::from("./I.G.Y.flac"),
+                    output: None,
+                    start_time: None,
+                    fade_in_param: None,
+                    end_time: None,
+                    fade_out_param: None,
+                    levels: AudioCueLevels { master: 0.0 },
+                    loop_region: None,
+                },
+            });
+            cue_id
+        }).await;
+        let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
+        let (audio_tx, mut audio_rx) = mpsc::channel::<AudioCommand>(32);
+        let (playback_event_tx, _) = mpsc::channel::<PlaybackEvent>(32);
+        let (_, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
+
+        let executor = Executor::new(
+            manager,
+            exec_rx,
+            audio_tx,
+            playback_event_tx,
+            engine_event_rx,
+        );
+
+        tokio::spawn(executor.run());
+
+        let old_id = Uuid::now_v7();
+
+        exec_tx.send(ExecutorCommand::ExecuteCue(cue_id)).await.unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        if let AudioCommand::Play { id, filepath, levels, start_time, end_time } = command {
+            assert!(id > old_id);
+            let now_id = Uuid::now_v7();
+            assert!(id < now_id);
+            assert_eq!(filepath, PathBuf::from("./I.G.Y.flac"));
+            assert_eq!(levels, AudioCueLevels { master: 0.0 });
+            assert_eq!(start_time, None);
+            assert_eq!(end_time, None);
+        }
+    }
+}
