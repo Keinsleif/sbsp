@@ -153,3 +153,74 @@ impl CueController {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use std::path::PathBuf;
+
+    use crate::model::{self, cue::{AudioCueFadeParam, AudioCueLevels, Cue}};
+
+    use super::*;
+
+    use kira::sound::Region;
+    use tokio::sync::mpsc::{self, Sender, Receiver};
+
+    async fn setup_controller(cue_id: Uuid) -> (Sender<ControllerCommand>, Receiver<ExecutorCommand>, Sender<PlaybackEvent>) {
+        let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
+        let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
+        let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+
+        let manager = ShowModelManager::new();
+        manager
+            .write_with(|model| {
+                model.name = "TestShowModel".to_string();
+                model.cues.push(Cue {
+                    id: cue_id,
+                    number: "1".to_string(),
+                    name: "Play IGY".to_string(),
+                    notes: "".to_string(),
+                    pre_wait: 0.0,
+                    post_wait: 0.0,
+                    sequence: model::cue::CueSequence::DoNotContinue,
+                    param: model::cue::CueParam::Audio {
+                        target: PathBuf::from("./I.G.Y.flac"),
+                    start_time: Some(5.0),
+                    fade_in_param: Some(AudioCueFadeParam {
+                        duration: 2.0,
+                        easing: kira::Easing::Linear,
+                    }),
+                    end_time: Some(50.0),
+                    fade_out_param: Some(AudioCueFadeParam {
+                        duration: 5.0,
+                        easing: kira::Easing::InPowi(2),
+                    }),
+                    levels: AudioCueLevels { master: 0.0 },
+                    loop_region: Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }),
+                    },
+                });
+                cue_id
+            })
+            .await;
+
+        let controller = CueController::new(manager.clone(), exec_tx, ctrl_rx, playback_event_rx);
+
+        tokio::spawn(controller.run());
+
+        (ctrl_tx, exec_rx, playback_event_tx)
+    }
+
+    #[tokio::test]
+    async fn go_command() {
+        let cue_id = Uuid::new_v4();
+        let (ctrl_tx, mut exec_rx, _) = setup_controller(cue_id).await;
+
+        ctrl_tx.send(ControllerCommand::Go { cue_id }).await.unwrap();
+
+        if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
+            assert_eq!(id, cue_id);
+        } else {
+            panic!("Unreachable");
+        }
+    }
+}
