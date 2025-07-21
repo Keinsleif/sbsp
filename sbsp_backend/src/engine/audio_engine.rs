@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use kira::{
-    sound::{
+    clock::{ClockSpeed, ClockTime}, sound::{
         static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, Region
     }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween
 };
@@ -148,7 +148,7 @@ impl AudioEngine {
         let manager = self.manager.as_mut().unwrap();
 
         let filepath_clone = data.filepath.clone();
-        let sound_data =
+        let mut sound_data =
             tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
                 .await?
                 .with_context(|| format!("Failed to load sound data from: {}", data.filepath.display()))?
@@ -161,10 +161,31 @@ impl AudioEngine {
                     },
                 })
                 .volume(Decibels::from(data.levels.master as f32))
+                .loop_region(data.loop_region);
+
+        if let Some(fade_in_param) = data.fade_in_param {
+            sound_data = sound_data.fade_in_tween(Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(fade_in_param.duration),
+                easing: fade_in_param.easing,
+            });
+        }
 
         let duration = sound_data.duration().as_secs_f64();
 
-        let handle = manager.play(sound_data)?;
+        let mut clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0))?;
+        let end_time = data.end_time.unwrap_or(sound_data.duration().as_secs_f64());
+
+        let mut handle = manager.play(sound_data)?;
+        clock.start();
+
+        if let Some(fade_out_param) = data.fade_out_param {
+            handle.set_volume(Decibels::SILENCE, Tween {
+                start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, end_time - fade_out_param.duration)),
+                duration: Duration::from_secs_f64(fade_out_param.duration),
+                easing: fade_out_param.easing,
+            });
+        }
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
