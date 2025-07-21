@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     executor::EngineEvent,
-    model::cue::AudioCueLevels,
+    model::cue::{AudioCueFadeParam, AudioCueLevels},
 };
 
 #[derive(Debug, Clone)]
@@ -20,7 +20,10 @@ pub enum AudioCommand {
         filepath: PathBuf,
         levels: AudioCueLevels,
         start_time: Option<f64>,
+        fade_in_param: Option<AudioCueFadeParam>,
         end_time: Option<f64>,
+        fade_out_param: Option<AudioCueFadeParam>,
+        loop_region: Option<Region>
     },
     Pause {
         id: Uuid,
@@ -78,14 +81,7 @@ impl AudioEngine {
 
                     let result = match command {
                         // TODO: output is ignored. AudioEngine should have AudioManager for enabled devices
-                        AudioCommand::Play {
-                            id,
-                            filepath,
-                            levels,
-                            start_time,
-                            end_time,
-                        } => {
-                            self.handle_play(id, filepath, levels, start_time, end_time)
+                        AudioCommand::Play {id, filepath, levels, start_time, fade_in_param, end_time, fade_out_param, loop_region } => {
                                 .await
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,

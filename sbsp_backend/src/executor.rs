@@ -142,7 +142,10 @@ impl Executor {
                     filepath: target.clone(),
                     levels: levels.clone(),
                     start_time: *start_time,
+                    fade_in_param: *fade_in_param,
                     end_time: *end_time,
+                    fade_out_param: *fade_out_param,
+                    loop_region: *loop_region
                 };
                 // AudioEngineにコマンドを送信
                 self.audio_tx.send(audio_command).await?;
@@ -277,14 +280,17 @@ mod tests {
 
         let command = audio_rx.recv().await.unwrap();
 
-        if let AudioCommand::Play { id, filepath, levels, start_time, end_time } = command {
+        if let AudioCommand::Play { id, filepath, levels, start_time, fade_in_param, end_time, fade_out_param, loop_region } = command {
             assert!(id > old_id);
             let now_id = Uuid::now_v7();
             assert!(id < now_id);
             assert_eq!(filepath, PathBuf::from("./I.G.Y.flac"));
             assert_eq!(levels, AudioCueLevels { master: 0.0 });
             assert_eq!(start_time, None);
+            assert_eq!(fade_in_param, None);
             assert_eq!(end_time, None);
+            assert_eq!(fade_out_param, None);
+            assert_eq!(loop_region, None);
         }
     }
 }

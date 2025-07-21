@@ -51,7 +51,7 @@ pub struct AudioCueLevels {
     pub master: f64, // decibels
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueFadeParam {
     pub duration: f64,
