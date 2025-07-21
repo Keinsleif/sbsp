@@ -233,25 +233,24 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use super::*;
+    use std::{path::PathBuf};
 
-    use tokio::sync::mpsc;
+    use kira::sound::Region;
+    use tokio::sync::mpsc::{self, Receiver, Sender};
     use uuid::Uuid;
 
     use crate::{
-        engine::audio_engine::AudioCommand,
-        executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
+        engine::audio_engine::{AudioCommand, AudioEngineEvent},
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueLevels, Cue},
+            cue::{AudioCueFadeParam, AudioCueLevels, Cue},
         },
     };
 
-    #[tokio::test]
-    async fn play_command() {
+    async fn setup_executor(cue_id: Uuid) -> (ShowModelManager, Sender<ExecutorCommand>, Receiver<AudioCommand>, Sender<EngineEvent>, Receiver<PlaybackEvent>) {
         let manager = ShowModelManager::new();
-        let cue_id = Uuid::new_v4();
         manager
             .write_with(|model| {
                 model.name = "TestShowModel".to_string();
@@ -265,24 +264,30 @@ mod tests {
                     sequence: model::cue::CueSequence::DoNotContinue,
                     param: model::cue::CueParam::Audio {
                         target: PathBuf::from("./I.G.Y.flac"),
-                        start_time: None,
-                        fade_in_param: None,
-                        end_time: None,
-                        fade_out_param: None,
+                    start_time: Some(5.0),
+                    fade_in_param: Some(AudioCueFadeParam {
+                        duration: 2.0,
+                        easing: kira::Easing::Linear,
+                    }),
+                    end_time: Some(50.0),
+                    fade_out_param: Some(AudioCueFadeParam {
+                        duration: 5.0,
+                        easing: kira::Easing::InPowi(2),
+                    }),
                         levels: AudioCueLevels { master: 0.0 },
-                        loop_region: None,
+                    loop_region: Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }),
                     },
                 });
                 cue_id
             })
             .await;
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
-        let (audio_tx, mut audio_rx) = mpsc::channel::<AudioCommand>(32);
-        let (playback_event_tx, _) = mpsc::channel::<PlaybackEvent>(32);
-        let (_, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
+        let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
+        let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+        let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
         let executor = Executor::new(
-            manager,
+            manager.clone(),
             exec_rx,
             audio_tx,
             playback_event_tx,
@@ -290,6 +295,16 @@ mod tests {
         );
 
         tokio::spawn(executor.run());
+
+        (manager, exec_tx, audio_rx, engine_event_tx, playback_event_rx)
+    }
+    
+
+    #[tokio::test]
+    async fn play_command() {
+        let cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, _, _) = setup_executor(cue_id).await;
 
         let old_id = Uuid::now_v7();
 
@@ -306,11 +321,13 @@ mod tests {
             assert!(id < now_id);
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
             assert_eq!(data.levels, AudioCueLevels { master: 0.0 });
-            assert_eq!(data.start_time, None);
-            assert_eq!(data.fade_in_param, None);
-            assert_eq!(data.end_time, None);
-            assert_eq!(data.fade_out_param, None);
-            assert_eq!(data.loop_region, None);
+            assert_eq!(data.start_time, Some(5.0));
+            assert_eq!(data.fade_in_param, Some(AudioCueFadeParam { duration: 2.0, easing: kira::Easing::Linear }));
+            assert_eq!(data.end_time, Some(50.0));
+            assert_eq!(data.fade_out_param, Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::InPowi(2) }));
+            assert_eq!(data.loop_region, Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }));
+        }
+    }
         }
     }
 }
