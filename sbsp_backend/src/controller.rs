@@ -166,7 +166,10 @@ mod tests {
 
     use std::path::PathBuf;
 
-    use crate::model::{self, cue::{AudioCueFadeParam, AudioCueLevels, Cue}};
+    use crate::model::{
+        self,
+        cue::{AudioCueFadeParam, AudioCueLevels, Cue},
+    };
 
     use super::*;
 
@@ -215,7 +218,10 @@ mod tests {
                         easing: kira::Easing::InPowi(2),
                     }),
                     levels: AudioCueLevels { master: 0.0 },
-                    loop_region: Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }),
+                        loop_region: Some(Region {
+                            start: kira::sound::PlaybackPosition::Seconds(2.0),
+                            end: kira::sound::EndPosition::EndOfAudio,
+                        }),
                     },
                 });
                 cue_id
@@ -240,10 +246,123 @@ mod tests {
 
         tokio::spawn(controller.run());
 
+        ctrl_tx
+            .send(ControllerCommand::Go { cue_id })
+            .await
+            .unwrap();
+
         if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
         } else {
-            panic!("Unreachable");
+            unreachable!();
         }
+    }
+
+    #[tokio::test]
+    async fn started_event() {
+        let cue_id = Uuid::new_v4();
+        let (controller, _, _, playback_event_tx, mut state_rx) = setup_controller(cue_id).await;
+
+        tokio::spawn(controller.run());
+
+        playback_event_tx
+            .send(PlaybackEvent::Started { cue_id })
+            .await
+            .unwrap();
+
+        state_rx.changed().await.unwrap();
+        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+            assert_eq!(active_cue.cue_id, cue_id);
+            assert_eq!(active_cue.status, PlaybackStatus::Playing);
+            assert_eq!(active_cue.duration, 0.0);
+            assert_eq!(active_cue.position, 0.0);
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[tokio::test]
+    async fn progress_event() {
+        let cue_id = Uuid::new_v4();
+        let (controller, _, _, playback_event_tx, mut state_rx) = setup_controller(cue_id).await;
+
+        tokio::spawn(controller.run());
+
+        playback_event_tx
+            .send(PlaybackEvent::Progress {
+                cue_id,
+                position: 20.0,
+                duration: 50.0,
+            })
+            .await
+            .unwrap();
+
+        state_rx.changed().await.unwrap();
+        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+            assert_eq!(active_cue.cue_id, cue_id);
+            assert_eq!(active_cue.status, PlaybackStatus::Playing);
+            assert_eq!(active_cue.position, 20.0);
+            assert_eq!(active_cue.duration, 50.0);
+        } else {
+            unreachable!();
+    }
+    }
+
+    #[tokio::test]
+    async fn pause_n_resume_event() {
+        let cue_id = Uuid::new_v4();
+        let (controller, _, _, playback_event_tx, mut state_rx) = setup_controller(cue_id).await;
+
+        tokio::spawn(controller.run());
+
+        playback_event_tx
+            .send(PlaybackEvent::Paused {
+                cue_id,
+                position: 21.0,
+                duration: 50.0,
+            })
+            .await
+            .unwrap();
+
+        state_rx.changed().await.unwrap();
+        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+            assert_eq!(active_cue.cue_id, cue_id);
+            assert_eq!(active_cue.status, PlaybackStatus::Paused);
+            assert_eq!(active_cue.position, 21.0);
+            assert_eq!(active_cue.duration, 50.0);
+        } else {
+            unreachable!();
+        }
+
+        playback_event_tx
+            .send(PlaybackEvent::Resumed { cue_id })
+            .await
+            .unwrap();
+
+        state_rx.changed().await.unwrap();
+        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+            assert_eq!(active_cue.cue_id, cue_id);
+            assert_eq!(active_cue.status, PlaybackStatus::Playing);
+            assert_eq!(active_cue.position, 21.0);
+            assert_eq!(active_cue.duration, 50.0);
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[tokio::test]
+    async fn completed_event() {
+        let cue_id = Uuid::new_v4();
+        let (controller, _, _, playback_event_tx, mut state_rx) = setup_controller(cue_id).await;
+
+        tokio::spawn(controller.run());
+
+        playback_event_tx
+            .send(PlaybackEvent::Completed { cue_id })
+            .await
+            .unwrap();
+
+        state_rx.changed().await.unwrap();
+        assert!(!state_rx.borrow().contains_key(&cue_id));
     }
 }
