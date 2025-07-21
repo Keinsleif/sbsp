@@ -129,7 +129,6 @@ impl Executor {
         match &cue.param {
             CueParam::Audio {
                 target,
-                output,
                 start_time,
                 fade_in_param,
                 end_time,
@@ -247,7 +246,6 @@ mod tests {
                 sequence: model::cue::CueSequence::DoNotContinue,
                 param: model::cue::CueParam::Audio {
                     target: PathBuf::from("./I.G.Y.flac"),
-                    output: None,
                     start_time: None,
                     fade_in_param: None,
                     end_time: None,

@@ -32,7 +32,6 @@ pub enum CueSequence {
 pub enum CueParam {
     Audio {
         target: PathBuf,
-        output: Option<String>,
         start_time: Option<f64>,
         fade_in_param: Option<AudioCueFadeParam>,
         end_time: Option<f64>,
