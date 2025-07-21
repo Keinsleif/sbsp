@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{RwLock, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
@@ -36,6 +36,7 @@ pub struct CueController {
     command_rx: mpsc::Receiver<ControllerCommand>, // 外部からのトリガー受信用チャネル
 
     event_rx: mpsc::Receiver<PlaybackEvent>,
+    state_tx: watch::Sender<HashMap<Uuid, ActiveCue>>,
     active_cues: Arc<RwLock<HashMap<Uuid, ActiveCue>>>,
 }
 
@@ -45,12 +46,14 @@ impl CueController {
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
         event_rx: mpsc::Receiver<PlaybackEvent>,
+        state_tx: watch::Sender<HashMap<Uuid, ActiveCue>>,
     ) -> Self {
         Self {
             model_manager,
             executor_tx,
             command_rx,
             event_rx,
+            state_tx,
             active_cues: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -62,11 +65,15 @@ impl CueController {
                 Some(command) = self.command_rx.recv() => {
                     if let Err(e) = self.handle_command(command).await {
                         log::error!("Error handling controller command: {:?}", e);
+                    } else if self.state_tx.send(self.active_cues.read().await.clone()).is_err() {
+                        log::trace!("No UI clients are listening to state updates.");
                     }
                 },
                 Some(event) = self.event_rx.recv() => {
                     if let Err(e) = self.handle_playback_event(event).await {
                         log::error!("Error handling playback event: {:?}", e);
+                    } else if self.state_tx.send(self.active_cues.read().await.clone()).is_err() {
+                        log::trace!("No UI clients are listening to state updates.");
                     }
                 },
                 else => break,
@@ -164,12 +171,24 @@ mod tests {
     use super::*;
 
     use kira::sound::Region;
-    use tokio::sync::mpsc::{self, Sender, Receiver};
+    use tokio::sync::{
+        mpsc::{self, Receiver, Sender},
+        watch,
+    };
 
-    async fn setup_controller(cue_id: Uuid) -> (Sender<ControllerCommand>, Receiver<ExecutorCommand>, Sender<PlaybackEvent>) {
+    async fn setup_controller(
+        cue_id: Uuid,
+    ) -> (
+        CueController,
+        Sender<ControllerCommand>,
+        Receiver<ExecutorCommand>,
+        Sender<PlaybackEvent>,
+        watch::Receiver<HashMap<Uuid, ActiveCue>>,
+    ) {
         let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+        let (state_tx, state_rx) = watch::channel::<HashMap<Uuid, ActiveCue>>(HashMap::new());
 
         let manager = ShowModelManager::new();
         manager
@@ -203,19 +222,23 @@ mod tests {
             })
             .await;
 
-        let controller = CueController::new(manager.clone(), exec_tx, ctrl_rx, playback_event_rx);
+        let controller = CueController::new(
+            manager.clone(),
+            exec_tx,
+            ctrl_rx,
+            playback_event_rx,
+            state_tx,
+        );
 
-        tokio::spawn(controller.run());
-
-        (ctrl_tx, exec_rx, playback_event_tx)
+        (controller, ctrl_tx, exec_rx, playback_event_tx, state_rx)
     }
 
     #[tokio::test]
     async fn go_command() {
         let cue_id = Uuid::new_v4();
-        let (ctrl_tx, mut exec_rx, _) = setup_controller(cue_id).await;
+        let (controller, ctrl_tx, mut exec_rx, _, _) = setup_controller(cue_id).await;
 
-        ctrl_tx.send(ControllerCommand::Go { cue_id }).await.unwrap();
+        tokio::spawn(controller.run());
 
         if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
