@@ -86,7 +86,7 @@ async fn main() -> Result<(), anyhow::Error> {
     loop {
         if let Some(target_cue) = state_rx.borrow().get(&cue_id) {
             if target_cue.status.ne(&controller::PlaybackStatus::Completed) {
-        sleep(Duration::from_millis(100)).await;
+                sleep(Duration::from_millis(100)).await;
                 continue;
             } else {
                 break;
