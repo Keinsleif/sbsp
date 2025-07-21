@@ -1,3 +1,4 @@
+mod controller;
 mod engine;
 mod executor;
 mod manager;
