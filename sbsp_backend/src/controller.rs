@@ -125,6 +125,16 @@ impl CueController {
                     active_cue.position = position;
                     active_cue.duration = duration;
                     active_cue.status = PlaybackStatus::Playing
+                } else {
+                    active_cues.insert(
+                        cue_id,
+                        ActiveCue {
+                            cue_id,
+                            position,
+                            duration,
+                            status: PlaybackStatus::Playing,
+                        },
+                    );
                 }
             }
             PlaybackEvent::Paused {
@@ -136,6 +146,16 @@ impl CueController {
                     active_cue.position = position;
                     active_cue.duration = duration;
                     active_cue.status = PlaybackStatus::Paused;
+                } else {
+                    active_cues.insert(
+                        cue_id,
+                        ActiveCue {
+                            cue_id,
+                            position,
+                            duration,
+                            status: PlaybackStatus::Paused,
+                        },
+                    );
                 }
             }
             PlaybackEvent::Resumed { cue_id } => {
@@ -207,17 +227,17 @@ mod tests {
                     sequence: model::cue::CueSequence::DoNotContinue,
                     param: model::cue::CueParam::Audio {
                         target: PathBuf::from("./I.G.Y.flac"),
-                    start_time: Some(5.0),
-                    fade_in_param: Some(AudioCueFadeParam {
-                        duration: 2.0,
-                        easing: kira::Easing::Linear,
-                    }),
-                    end_time: Some(50.0),
-                    fade_out_param: Some(AudioCueFadeParam {
-                        duration: 5.0,
-                        easing: kira::Easing::InPowi(2),
-                    }),
-                    levels: AudioCueLevels { master: 0.0 },
+                        start_time: Some(5.0),
+                        fade_in_param: Some(AudioCueFadeParam {
+                            duration: 2.0,
+                            easing: kira::Easing::Linear,
+                        }),
+                        end_time: Some(50.0),
+                        fade_out_param: Some(AudioCueFadeParam {
+                            duration: 5.0,
+                            easing: kira::Easing::InPowi(2),
+                        }),
+                        levels: AudioCueLevels { master: 0.0 },
                         loop_region: Some(Region {
                             start: kira::sound::PlaybackPosition::Seconds(2.0),
                             end: kira::sound::EndPosition::EndOfAudio,
@@ -305,7 +325,7 @@ mod tests {
             assert_eq!(active_cue.duration, 50.0);
         } else {
             unreachable!();
-    }
+        }
     }
 
     #[tokio::test]
