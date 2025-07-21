@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use kira::{
-    clock::{ClockSpeed, ClockTime}, sound::{
+    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
         static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, Region
     }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween
 };
@@ -51,6 +51,7 @@ pub struct PlayCommandData {
 struct PlayingSound {
     duration: f64,
     handle: StaticSoundHandle,
+    _clock: ClockHandle,
 }
 
 pub struct AudioEngine {
@@ -146,6 +147,7 @@ impl AudioEngine {
 
     async fn handle_play(&mut self, id: Uuid, data: PlayCommandData) -> Result<()> {
         let manager = self.manager.as_mut().unwrap();
+        let mut clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
 
         let filepath_clone = data.filepath.clone();
         let mut sound_data =
@@ -161,6 +163,7 @@ impl AudioEngine {
                     },
                 })
                 .volume(Decibels::from(data.levels.master as f32))
+                .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)))
                 .loop_region(data.loop_region);
 
         if let Some(fade_in_param) = data.fade_in_param {
@@ -174,6 +177,16 @@ impl AudioEngine {
         let duration = sound_data.duration().as_secs_f64();
 
         log::info!("PLAY: id={}, file={}", id, data.filepath.display());
+        let mut handle = manager.play(sound_data)?;
+        clock.start();
+
+        if let Some(fade_out_param) = data.fade_out_param {
+            handle.set_volume(Decibels::SILENCE, Tween {
+                start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, duration - fade_out_param.duration)),
+                duration: Duration::from_secs_f64(fade_out_param.duration),
+                easing: fade_out_param.easing
+            });
+        }
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
@@ -186,6 +199,7 @@ impl AudioEngine {
             PlayingSound {
                 duration,
                 handle,
+                _clock: clock,
             },
         );
         Ok(())
