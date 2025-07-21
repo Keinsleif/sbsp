@@ -4,7 +4,7 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    engine::audio_engine::{AudioCommand, AudioEngineEvent},
+    engine::audio_engine::{AudioCommand, AudioEngineEvent, PlayCommandData},
     manager::ShowModelManager,
     model::cue::{Cue, CueParam},
 };
@@ -139,13 +139,15 @@ impl Executor {
                 // AudioEngineが理解できるAudioCommandに変換
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
-                    filepath: target.clone(),
-                    levels: levels.clone(),
-                    start_time: *start_time,
-                    fade_in_param: *fade_in_param,
-                    end_time: *end_time,
-                    fade_out_param: *fade_out_param,
-                    loop_region: *loop_region
+                    data: PlayCommandData {
+                        filepath: target.clone(),
+                        levels: levels.clone(),
+                        start_time: *start_time,
+                        fade_in_param: *fade_in_param,
+                        end_time: *end_time,
+                        fade_out_param: *fade_out_param,
+                        loop_region: *loop_region
+                    },
                 };
                 // AudioEngineにコマンドを送信
                 self.audio_tx.send(audio_command).await?;
@@ -280,17 +282,17 @@ mod tests {
 
         let command = audio_rx.recv().await.unwrap();
 
-        if let AudioCommand::Play { id, filepath, levels, start_time, fade_in_param, end_time, fade_out_param, loop_region } = command {
+        if let AudioCommand::Play { id, data } = command {
             assert!(id > old_id);
             let now_id = Uuid::now_v7();
             assert!(id < now_id);
-            assert_eq!(filepath, PathBuf::from("./I.G.Y.flac"));
-            assert_eq!(levels, AudioCueLevels { master: 0.0 });
-            assert_eq!(start_time, None);
-            assert_eq!(fade_in_param, None);
-            assert_eq!(end_time, None);
-            assert_eq!(fade_out_param, None);
-            assert_eq!(loop_region, None);
+            assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
+            assert_eq!(data.levels, AudioCueLevels { master: 0.0 });
+            assert_eq!(data.start_time, None);
+            assert_eq!(data.fade_in_param, None);
+            assert_eq!(data.end_time, None);
+            assert_eq!(data.fade_out_param, None);
+            assert_eq!(data.loop_region, None);
         }
     }
 }

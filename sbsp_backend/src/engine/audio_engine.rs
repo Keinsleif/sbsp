@@ -17,13 +17,7 @@ use crate::{
 pub enum AudioCommand {
     Play {
         id: Uuid,
-        filepath: PathBuf,
-        levels: AudioCueLevels,
-        start_time: Option<f64>,
-        fade_in_param: Option<AudioCueFadeParam>,
-        end_time: Option<f64>,
-        fade_out_param: Option<AudioCueFadeParam>,
-        loop_region: Option<Region>
+        data: PlayCommandData,
     },
     Pause {
         id: Uuid,
@@ -41,6 +35,17 @@ pub enum AudioCommand {
         duration: f64,
         easing: Easing,
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct PlayCommandData {
+    pub filepath: PathBuf,
+    pub levels: AudioCueLevels,
+    pub start_time: Option<f64>,
+    pub fade_in_param: Option<AudioCueFadeParam>,
+    pub end_time: Option<f64>,
+    pub fade_out_param: Option<AudioCueFadeParam>,
+    pub loop_region: Option<Region>
 }
 
 struct PlayingSound {
@@ -81,7 +86,8 @@ impl AudioEngine {
 
                     let result = match command {
                         // TODO: output is ignored. AudioEngine should have AudioManager for enabled devices
-                        AudioCommand::Play {id, filepath, levels, start_time, fade_in_param, end_time, fade_out_param, loop_region } => {
+                        AudioCommand::Play {id, data} => {
+                            self.handle_play(id, data)
                                 .await
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
@@ -136,32 +142,25 @@ impl AudioEngine {
         log::info!("AudioEngine run loop finished.");
     }
 
-    async fn handle_play(
-        &mut self,
-        id: Uuid,
-        filepath: PathBuf,
-        levels: AudioCueLevels,
-        start_time_param: Option<f64>,
-        end_time_param: Option<f64>,
-    ) -> Result<()> {
-        log::info!("PLAY: id={}, file={}", id, filepath.display());
+    async fn handle_play(&mut self, id: Uuid, data: PlayCommandData) -> Result<()> {
+        log::info!("PLAY: id={}, file={}", id, data.filepath.display());
 
         let manager = self.manager.as_mut().unwrap();
 
-        let filepath_clone = filepath.clone();
+        let filepath_clone = data.filepath.clone();
         let sound_data =
             tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
                 .await?
-                .with_context(|| format!("Failed to load sound data from: {}", filepath.display()))?
+                .with_context(|| format!("Failed to load sound data from: {}", data.filepath.display()))?
                 .slice(Region {
-                    start: PlaybackPosition::Seconds(start_time_param.unwrap_or(0.0)),
-                    end: if let Some(end_time) = end_time_param {
+                    start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
+                    end: if let Some(end_time) = data.end_time {
                         EndPosition::Custom(PlaybackPosition::Seconds(end_time))
                     } else {
                         EndPosition::EndOfAudio
                     },
                 })
-                .volume(Decibels::from(levels.master as f32));
+                .volume(Decibels::from(data.levels.master as f32))
 
         let duration = sound_data.duration().as_secs_f64();
 
