@@ -145,8 +145,6 @@ impl AudioEngine {
     }
 
     async fn handle_play(&mut self, id: Uuid, data: PlayCommandData) -> Result<()> {
-        log::info!("PLAY: id={}, file={}", id, data.filepath.display());
-
         let manager = self.manager.as_mut().unwrap();
 
         let filepath_clone = data.filepath.clone();
@@ -175,7 +173,7 @@ impl AudioEngine {
 
         let duration = sound_data.duration().as_secs_f64();
 
-        let handle = manager.play(sound_data)?;
+        log::info!("PLAY: id={}, file={}", id, data.filepath.display());
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
