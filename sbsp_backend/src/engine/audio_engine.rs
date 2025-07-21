@@ -173,19 +173,7 @@ impl AudioEngine {
 
         let duration = sound_data.duration().as_secs_f64();
 
-        let mut clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0))?;
-        let end_time = data.end_time.unwrap_or(sound_data.duration().as_secs_f64());
-
-        let mut handle = manager.play(sound_data)?;
-        clock.start();
-
-        if let Some(fade_out_param) = data.fade_out_param {
-            handle.set_volume(Decibels::SILENCE, Tween {
-                start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, end_time - fade_out_param.duration)),
-                duration: Duration::from_secs_f64(fade_out_param.duration),
-                easing: fade_out_param.easing,
-            });
-        }
+        let handle = manager.play(sound_data)?;
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
