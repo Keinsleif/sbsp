@@ -14,7 +14,7 @@ use crate::{
     engine::audio_engine::{self, AudioCommand, AudioEngine},
     executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
     manager::ShowModelManager,
-    model::cue::{AudioCueLevels, Cue},
+    model::cue::{AudioCueFadeParam, AudioCueLevels, Cue},
 };
 
 #[tokio::main]
@@ -40,10 +40,10 @@ async fn main() -> Result<(), anyhow::Error> {
                 sequence: model::cue::CueSequence::DoNotContinue,
                 param: model::cue::CueParam::Audio {
                     target: PathBuf::from("./I.G.Y.flac"),
-                    start_time: None,
-                    fade_in_param: None,
-                    end_time: None,
-                    fade_out_param: None,
+                    start_time: Some(5.0),
+                    fade_in_param: Some(AudioCueFadeParam { duration: 2.0, easing: kira::Easing::Linear }),
+                    end_time: Some(15.0),
+                    fade_out_param: Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::Linear }),
                     levels: AudioCueLevels { master: 0.0 },
                     loop_region: None,
                 },
@@ -75,6 +75,6 @@ async fn main() -> Result<(), anyhow::Error> {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     loop {
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_millis(100)).await;
     }
 }
