@@ -274,7 +274,7 @@ mod tests {
                         duration: 5.0,
                         easing: kira::Easing::InPowi(2),
                     }),
-                        levels: AudioCueLevels { master: 0.0 },
+                    levels: AudioCueLevels { master: 0.0 },
                     loop_region: Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }),
                     },
                 });
@@ -328,6 +328,189 @@ mod tests {
             assert_eq!(data.loop_region, Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }));
         }
     }
+
+    #[tokio::test]
+    async fn started_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Started { instance_id })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Started { cue_id  } = event {
+                assert_eq!(cue_id, orig_cue_id);
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn progress_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Progress { instance_id, position: 20.0, duration: 50.0 })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Progress {cue_id, position, duration } = event {
+                assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(position, 20.0);
+                assert_eq!(duration, 50.0);
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn pause_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Paused { instance_id, position: 24.0, duration: 50.0 })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Paused {cue_id, position, duration } = event {
+                assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(position, 24.0);
+                assert_eq!(duration, 50.0);
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn resume_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Resumed { instance_id })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Resumed {cue_id} = event {
+                assert_eq!(cue_id, orig_cue_id);
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn completed_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Completed { instance_id })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Completed {cue_id } = event {
+                assert_eq!(cue_id, orig_cue_id);
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn error_event() {
+        let orig_cue_id = Uuid::new_v4();
+
+        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
+
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .await
+            .unwrap();
+
+        let command = audio_rx.recv().await.unwrap();
+
+        let instance_id = if let AudioCommand::Play { id, .. } = command {
+            id
+        } else {
+            unreachable!();
+        };
+
+        engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: "Error".to_string() })).await.unwrap();
+
+        if let Some(event) = playback_event_rx.recv().await {
+            if let PlaybackEvent::Error {cue_id, error } = event {
+                assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(error, "Error".to_string());
+            } else {
+                panic!("Wrong Playback Event emitted.");
+            }
         }
     }
 }
