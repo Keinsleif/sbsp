@@ -46,7 +46,7 @@ pub enum CueParam {
     // TODO midi, osc wait, group cue
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueLevels {
     pub master: f64, // decibels
