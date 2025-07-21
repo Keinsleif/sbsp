@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
-use kira::{sound::Region, Easing};
+use kira::{Easing, sound::Region};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -18,7 +17,7 @@ pub struct Cue {
     pub param: CueParam,
 }
 
-#[derive( Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum CueSequence {
     #[default]
@@ -37,12 +36,11 @@ pub enum CueParam {
         end_time: Option<f64>,
         fade_out_param: Option<AudioCueFadeParam>,
         levels: AudioCueLevels,
-        loop_region: Option<Region>
+        loop_region: Option<Region>,
     },
     Wait {
         duration: f64,
-    }
-    // TODO midi, osc wait, group cue
+    }, // TODO midi, osc wait, group cue
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -57,4 +55,3 @@ pub struct AudioCueFadeParam {
     pub duration: f64,
     pub easing: Easing,
 }
-

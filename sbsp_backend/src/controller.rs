@@ -1,9 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
-use crate::{executor::{ExecutorCommand, PlaybackEvent}, manager::ShowModelManager};
+use crate::{
+    executor::{ExecutorCommand, PlaybackEvent},
+    manager::ShowModelManager,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlaybackStatus {
@@ -23,9 +26,7 @@ pub struct ActiveCue {
 
 #[derive(Debug)]
 pub enum ControllerCommand {
-    Go {
-        cue_id: Uuid
-    },
+    Go { cue_id: Uuid },
     StopAll,
 }
 
@@ -83,7 +84,7 @@ impl CueController {
 
     async fn handle_go(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         let model = self.model_manager.read().await;
-        
+
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::ExecuteCue(cue_id);
             self.executor_tx.send(command).await?;
@@ -96,25 +97,34 @@ impl CueController {
     /// Executorからの再生イベントを処理します
     async fn handle_playback_event(&self, event: PlaybackEvent) -> Result<(), anyhow::Error> {
         let mut active_cues = self.active_cues.write().await;
-        
+
         match event {
             PlaybackEvent::Started { cue_id } => {
-                    let active_cue = ActiveCue {
-                        cue_id,
-                        position: 0.0,
-                        duration: 0.0,
-                        status: PlaybackStatus::Playing,
-                    };
-                    active_cues.insert(cue_id, active_cue);
+                let active_cue = ActiveCue {
+                    cue_id,
+                    position: 0.0,
+                    duration: 0.0,
+                    status: PlaybackStatus::Playing,
+                };
+                active_cues.insert(cue_id, active_cue);
             }
-            PlaybackEvent::Progress { cue_id, position, duration, .. } => {
+            PlaybackEvent::Progress {
+                cue_id,
+                position,
+                duration,
+                ..
+            } => {
                 if let Some(active_cue) = active_cues.get_mut(&cue_id) {
                     active_cue.position = position;
                     active_cue.duration = duration;
                     active_cue.status = PlaybackStatus::Playing
                 }
             }
-            PlaybackEvent::Paused { cue_id, position, duration } => {
+            PlaybackEvent::Paused {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if let Some(active_cue) = active_cues.get_mut(&cue_id) {
                     active_cue.position = position;
                     active_cue.duration = duration;
@@ -133,7 +143,7 @@ impl CueController {
                 }
             }
             PlaybackEvent::Error { cue_id, error, .. } => {
-                 if let Some(active_cue) = active_cues.get_mut(&cue_id) {
+                if let Some(active_cue) = active_cues.get_mut(&cue_id) {
                     active_cue.status = PlaybackStatus::Error;
                     log::error!("State: Cue error on '{}': {}", active_cue.cue_id, error);
                 }

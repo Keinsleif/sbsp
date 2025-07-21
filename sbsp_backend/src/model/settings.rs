@@ -9,5 +9,4 @@ pub struct ShowSettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct GeneralSettings {
-}
+pub struct GeneralSettings {}

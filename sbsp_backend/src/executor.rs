@@ -146,7 +146,7 @@ impl Executor {
                         fade_in_param: *fade_in_param,
                         end_time: *end_time,
                         fade_out_param: *fade_out_param,
-                        loop_region: *loop_region
+                        loop_region: *loop_region,
                     },
                 };
                 // AudioEngineにコマンドを送信
@@ -161,9 +161,7 @@ impl Executor {
                 // 待機処理を別の非同期タスクとして実行
                 tokio::spawn(async move {
                     // 1. 開始イベントを送信
-                    if let Err(e) = event_tx.send(PlaybackEvent::Started {
-                        cue_id
-                    }).await {
+                    if let Err(e) = event_tx.send(PlaybackEvent::Started { cue_id }).await {
                         log::error!("Failed to send Started event for Wait cue: {}", e);
                         return; // 送信に失敗したらタスク終了
                     }
@@ -172,16 +170,17 @@ impl Executor {
                     tokio::time::sleep(std::time::Duration::from_secs_f64(wait_duration)).await;
 
                     // 3. 完了イベントを送信
-                    if let Err(e) = event_tx.send(PlaybackEvent::Completed {
-                        cue_id,
-                    }).await {
+                    if let Err(e) = event_tx.send(PlaybackEvent::Completed { cue_id }).await {
                         log::error!("Failed to send Completed event for Wait cue: {}", e);
                     }
                 });
             }
         }
 
-        self.active_instances.write().await.insert(instance_id, cue.id);
+        self.active_instances
+            .write()
+            .await
+            .insert(instance_id, cue.id);
         Ok(())
     }
 
@@ -205,7 +204,13 @@ impl Executor {
                         position,
                         duration,
                     },
-                    AudioEngineEvent::Paused { position, duration, .. } => PlaybackEvent::Paused { cue_id, position, duration },
+                    AudioEngineEvent::Paused {
+                        position, duration, ..
+                    } => PlaybackEvent::Paused {
+                        cue_id,
+                        position,
+                        duration,
+                    },
                     AudioEngineEvent::Resumed { .. } => PlaybackEvent::Resumed { cue_id },
                     AudioEngineEvent::Completed { .. } => {
                         drop(instances);
@@ -233,34 +238,44 @@ mod tests {
     use tokio::sync::mpsc;
     use uuid::Uuid;
 
-    use crate::{engine::audio_engine::AudioCommand, executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent}, manager::ShowModelManager, model::{self, cue::{AudioCueLevels, Cue}}};
+    use crate::{
+        engine::audio_engine::AudioCommand,
+        executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
+        manager::ShowModelManager,
+        model::{
+            self,
+            cue::{AudioCueLevels, Cue},
+        },
+    };
 
     #[tokio::test]
     async fn play_command() {
         let manager = ShowModelManager::new();
         let cue_id = Uuid::new_v4();
-        manager.write_with(|model| {
-            model.name = "TestShowModel".to_string();
-            model.cues.push(Cue {
-                id: cue_id,
-                number: "1".to_string(),
-                name: "Play IGY".to_string(),
-                notes: "".to_string(),
-                pre_wait: 0.0,
-                post_wait: 0.0,
-                sequence: model::cue::CueSequence::DoNotContinue,
-                param: model::cue::CueParam::Audio {
-                    target: PathBuf::from("./I.G.Y.flac"),
-                    start_time: None,
-                    fade_in_param: None,
-                    end_time: None,
-                    fade_out_param: None,
-                    levels: AudioCueLevels { master: 0.0 },
-                    loop_region: None,
-                },
-            });
-            cue_id
-        }).await;
+        manager
+            .write_with(|model| {
+                model.name = "TestShowModel".to_string();
+                model.cues.push(Cue {
+                    id: cue_id,
+                    number: "1".to_string(),
+                    name: "Play IGY".to_string(),
+                    notes: "".to_string(),
+                    pre_wait: 0.0,
+                    post_wait: 0.0,
+                    sequence: model::cue::CueSequence::DoNotContinue,
+                    param: model::cue::CueParam::Audio {
+                        target: PathBuf::from("./I.G.Y.flac"),
+                        start_time: None,
+                        fade_in_param: None,
+                        end_time: None,
+                        fade_out_param: None,
+                        levels: AudioCueLevels { master: 0.0 },
+                        loop_region: None,
+                    },
+                });
+                cue_id
+            })
+            .await;
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (audio_tx, mut audio_rx) = mpsc::channel::<AudioCommand>(32);
         let (playback_event_tx, _) = mpsc::channel::<PlaybackEvent>(32);
@@ -278,7 +293,10 @@ mod tests {
 
         let old_id = Uuid::now_v7();
 
-        exec_tx.send(ExecutorCommand::ExecuteCue(cue_id)).await.unwrap();
+        exec_tx
+            .send(ExecutorCommand::ExecuteCue(cue_id))
+            .await
+            .unwrap();
 
         let command = audio_rx.recv().await.unwrap();
 

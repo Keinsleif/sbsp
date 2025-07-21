@@ -1,8 +1,11 @@
 use anyhow::{Context, Result};
 use kira::{
-    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
-        static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, Region
-    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween,
+    clock::{ClockHandle, ClockSpeed, ClockTime},
+    sound::{
+        EndPosition, PlaybackPosition, Region,
+        static_sound::{StaticSoundData, StaticSoundHandle},
+    },
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -45,7 +48,7 @@ pub struct PlayCommandData {
     pub fade_in_param: Option<AudioCueFadeParam>,
     pub end_time: Option<f64>,
     pub fade_out_param: Option<AudioCueFadeParam>,
-    pub loop_region: Option<Region>
+    pub loop_region: Option<Region>,
 }
 
 struct PlayingSound {
@@ -153,7 +156,12 @@ impl AudioEngine {
         let mut sound_data =
             tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
                 .await?
-                .with_context(|| format!("Failed to load sound data from: {}", data.filepath.display()))?
+                .with_context(|| {
+                    format!(
+                        "Failed to load sound data from: {}",
+                        data.filepath.display()
+                    )
+                })?
                 .slice(Region {
                     start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
                     end: if let Some(end_time) = data.end_time {
@@ -181,11 +189,17 @@ impl AudioEngine {
         clock.start();
 
         if let Some(fade_out_param) = data.fade_out_param {
-            handle.set_volume(Decibels::SILENCE, Tween {
-                start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, duration - fade_out_param.duration)),
-                duration: Duration::from_secs_f64(fade_out_param.duration),
-                easing: fade_out_param.easing
-            });
+            handle.set_volume(
+                Decibels::SILENCE,
+                Tween {
+                    start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(
+                        &clock,
+                        duration - fade_out_param.duration,
+                    )),
+                    duration: Duration::from_secs_f64(fade_out_param.duration),
+                    easing: fade_out_param.easing,
+                },
+            );
         }
 
         self.event_tx
@@ -273,13 +287,14 @@ impl AudioEngine {
     ) -> Result<()> {
         log::info!("SET LEVELS: id={}, levels={:?}", id, levels);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound
-                .handle
-                .set_volume(levels.master as f32, Tween{
+            playing_sound.handle.set_volume(
+                levels.master as f32,
+                Tween {
                     start_time: StartTime::Immediate,
                     duration: Duration::from_secs_f64(duration),
                     easing,
-                });
+                },
+            );
             Ok(())
         } else {
             log::warn!("SetLevels command received for non-existent ID: {}", id);

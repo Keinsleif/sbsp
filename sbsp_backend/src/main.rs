@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     controller::{ControllerCommand, CueController},
-    engine::audio_engine::{self, AudioCommand, AudioEngine},
+    engine::audio_engine::{AudioCommand, AudioEngine},
     executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
     manager::ShowModelManager,
     model::cue::{AudioCueFadeParam, AudioCueLevels, Cue},
@@ -43,9 +43,15 @@ async fn main() -> Result<(), anyhow::Error> {
                 param: model::cue::CueParam::Audio {
                     target: PathBuf::from("./I.G.Y.flac"),
                     start_time: Some(5.0),
-                    fade_in_param: Some(AudioCueFadeParam { duration: 2.0, easing: kira::Easing::Linear }),
+                    fade_in_param: Some(AudioCueFadeParam {
+                        duration: 2.0,
+                        easing: kira::Easing::Linear,
+                    }),
                     end_time: Some(15.0),
-                    fade_out_param: Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::InPowi(2) }),
+                    fade_out_param: Some(AudioCueFadeParam {
+                        duration: 5.0,
+                        easing: kira::Easing::InPowi(2),
+                    }),
                     levels: AudioCueLevels { master: 0.0 },
                     loop_region: None,
                 },
