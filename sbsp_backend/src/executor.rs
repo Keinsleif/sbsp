@@ -326,6 +326,8 @@ mod tests {
             assert_eq!(data.end_time, Some(50.0));
             assert_eq!(data.fade_out_param, Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::InPowi(2) }));
             assert_eq!(data.loop_region, Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }));
+        } else {
+            unreachable!();
         }
     }
 
@@ -356,6 +358,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -388,6 +392,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -420,6 +426,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -450,6 +458,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -480,6 +490,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -511,6 +523,8 @@ mod tests {
             } else {
                 panic!("Wrong Playback Event emitted.");
             }
+        } else {
+            unreachable!();
         }
     }
 }
