@@ -45,7 +45,7 @@ async fn main() -> Result<(), anyhow::Error> {
                     start_time: Some(5.0),
                     fade_in_param: Some(AudioCueFadeParam { duration: 2.0, easing: kira::Easing::Linear }),
                     end_time: Some(15.0),
-                    fade_out_param: Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::Linear }),
+                    fade_out_param: Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::InPowi(2) }),
                     levels: AudioCueLevels { master: 0.0 },
                     loop_region: None,
                 },
