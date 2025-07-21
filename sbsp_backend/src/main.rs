@@ -19,6 +19,8 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    env_logger::init();
+
     let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);

@@ -114,6 +114,7 @@ impl AudioEngine {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
                             kira::sound::PlaybackState::Paused => {
+                                log::info!("PAUSE: id={}", *id);
                                 EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
                             kira::sound::PlaybackState::WaitingToResume => {
@@ -126,6 +127,7 @@ impl AudioEngine {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
                             kira::sound::PlaybackState::Stopped => {
+                                log::info!("STOP: id={}", *id);
                                 EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
                             },
                         };
