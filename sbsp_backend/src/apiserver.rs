@@ -32,20 +32,20 @@ pub async fn create_api_router(
 
 #[derive(Serialize)]
 struct FullShowState {
-    static_data: ShowModel,
-    dynamic_data: ShowState,
+    show_model: ShowModel,
+    show_state: ShowState,
 }
 
 async fn get_full_state_handler(
     State(state): State<ApiState>,
 ) -> axum::Json<FullShowState> {
 
-    let static_data = state.model_manager.read().await.clone();    
-    let dynamic_data = state.state_rx.borrow().clone();
+    let show_model = state.model_manager.read().await.clone();    
+    let show_state = state.state_rx.borrow().clone();
 
     let full_state = FullShowState {
-        static_data,
-        dynamic_data,
+        show_model,
+        show_state,
     };
     
     axum::Json(full_state)
