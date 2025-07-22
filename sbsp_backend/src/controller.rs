@@ -5,7 +5,7 @@ use tokio::sync::{RwLock, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    executor::{ExecutorCommand, PlaybackEvent},
+    executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelManager,
 };
 
@@ -39,7 +39,9 @@ pub struct ShowState {
 
 impl ShowState {
     pub fn new() -> Self {
-        Self { active_cues: HashMap::new() }
+        Self {
+            active_cues: HashMap::new(),
+        }
     }
 }
 
@@ -48,7 +50,7 @@ pub struct CueController {
     executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル
     command_rx: mpsc::Receiver<ControllerCommand>, // 外部からのトリガー受信用チャネル
 
-    event_rx: mpsc::Receiver<PlaybackEvent>,
+    event_rx: mpsc::Receiver<ExecutorEvent>,
     state_tx: watch::Sender<ShowState>,
     active_cues: Arc<RwLock<ShowState>>,
 }
@@ -58,7 +60,7 @@ impl CueController {
         model_manager: ShowModelManager,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
-        event_rx: mpsc::Receiver<PlaybackEvent>,
+        event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
     ) -> Self {
         Self {
@@ -115,11 +117,11 @@ impl CueController {
     }
 
     /// Executorからの再生イベントを処理します
-    async fn handle_playback_event(&self, event: PlaybackEvent) -> Result<(), anyhow::Error> {
+    async fn handle_playback_event(&self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
         let mut show_state = self.active_cues.write().await;
 
         match event {
-            PlaybackEvent::Started { cue_id } => {
+            ExecutorEvent::Started { cue_id } => {
                 let active_cue = ActiveCue {
                     cue_id,
                     position: 0.0,
@@ -128,7 +130,7 @@ impl CueController {
                 };
                 show_state.active_cues.insert(cue_id, active_cue);
             }
-            PlaybackEvent::Progress {
+            ExecutorEvent::Progress {
                 cue_id,
                 position,
                 duration,
@@ -150,7 +152,7 @@ impl CueController {
                     );
                 }
             }
-            PlaybackEvent::Paused {
+            ExecutorEvent::Paused {
                 cue_id,
                 position,
                 duration,
@@ -171,18 +173,18 @@ impl CueController {
                     );
                 }
             }
-            PlaybackEvent::Resumed { cue_id } => {
+            ExecutorEvent::Resumed { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.status = PlaybackStatus::Playing;
                 }
             }
-            PlaybackEvent::Completed { cue_id, .. } => {
+            ExecutorEvent::Completed { cue_id, .. } => {
                 if let Some(mut active_cue) = show_state.active_cues.remove(&cue_id) {
                     active_cue.status = PlaybackStatus::Completed;
                     // TODO: Auto-Followロジックをここでトリガー
                 }
             }
-            PlaybackEvent::Error { cue_id, error, .. } => {
+            ExecutorEvent::Error { cue_id, error, .. } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.status = PlaybackStatus::Error;
                     log::error!("State: Cue error on '{}': {}", active_cue.cue_id, error);
@@ -218,12 +220,12 @@ mod tests {
         CueController,
         Sender<ControllerCommand>,
         Receiver<ExecutorCommand>,
-        Sender<PlaybackEvent>,
+        Sender<ExecutorEvent>,
         watch::Receiver<ShowState>,
     ) {
         let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
-        let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+        let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
 
         let manager = ShowModelManager::new();
@@ -299,7 +301,7 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(PlaybackEvent::Started { cue_id })
+            .send(ExecutorEvent::Started { cue_id })
             .await
             .unwrap();
 
@@ -322,7 +324,7 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(PlaybackEvent::Progress {
+            .send(ExecutorEvent::Progress {
                 cue_id,
                 position: 20.0,
                 duration: 50.0,
@@ -349,7 +351,7 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(PlaybackEvent::Paused {
+            .send(ExecutorEvent::Paused {
                 cue_id,
                 position: 21.0,
                 duration: 50.0,
@@ -368,7 +370,7 @@ mod tests {
         }
 
         playback_event_tx
-            .send(PlaybackEvent::Resumed { cue_id })
+            .send(ExecutorEvent::Resumed { cue_id })
             .await
             .unwrap();
 
@@ -391,7 +393,7 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(PlaybackEvent::Completed { cue_id })
+            .send(ExecutorEvent::Completed { cue_id })
             .await
             .unwrap();
 

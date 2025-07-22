@@ -7,15 +7,13 @@ mod model;
 
 use std::path::PathBuf;
 
-use tokio::
-    sync::{mpsc, watch}
-;
+use tokio::sync::{mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
     controller::{ControllerCommand, CueController, ShowState},
     engine::audio_engine::{AudioCommand, AudioEngine},
-    executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
+    executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent},
     manager::ShowModelManager,
     model::cue::{AudioCueFadeParam, AudioCueLevels, Cue},
 };
@@ -28,7 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+    let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
     let model_manager = ShowModelManager::new();

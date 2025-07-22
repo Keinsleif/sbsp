@@ -15,7 +15,7 @@ pub enum ExecutorCommand {
 }
 
 #[derive(Debug, Clone)]
-pub enum PlaybackEvent {
+pub enum ExecutorEvent {
     Started {
         cue_id: Uuid,
     },
@@ -54,7 +54,7 @@ pub struct Executor {
     audio_tx: mpsc::Sender<AudioCommand>,        // AudioEngineへのコマンド送信用
     // midi_tx: mpsc::Sender<MidiCommand>, // 将来の拡張用
     // osc_tx: mpsc::Sender<OscCommand>,   // 将来の拡張用
-    playback_event_tx: mpsc::Sender<PlaybackEvent>, // CueControllerへのイベント送信用
+    playback_event_tx: mpsc::Sender<ExecutorEvent>, // CueControllerへのイベント送信用
     engine_event_rx: mpsc::Receiver<EngineEvent>,   // 各エンジンからのイベント受信用
 
     active_instances: Arc<RwLock<HashMap<Uuid, Uuid>>>,
@@ -66,7 +66,7 @@ impl Executor {
         model_manager: ShowModelManager,
         command_rx: mpsc::Receiver<ExecutorCommand>,
         audio_tx: mpsc::Sender<AudioCommand>,
-        playback_event_tx: mpsc::Sender<PlaybackEvent>,
+        playback_event_tx: mpsc::Sender<ExecutorEvent>,
         engine_event_rx: mpsc::Receiver<EngineEvent>,
     ) -> Self {
         Self {
@@ -161,7 +161,7 @@ impl Executor {
                 // 待機処理を別の非同期タスクとして実行
                 tokio::spawn(async move {
                     // 1. 開始イベントを送信
-                    if let Err(e) = event_tx.send(PlaybackEvent::Started { cue_id }).await {
+                    if let Err(e) = event_tx.send(ExecutorEvent::Started { cue_id }).await {
                         log::error!("Failed to send Started event for Wait cue: {}", e);
                         return; // 送信に失敗したらタスク終了
                     }
@@ -170,7 +170,7 @@ impl Executor {
                     tokio::time::sleep(std::time::Duration::from_secs_f64(wait_duration)).await;
 
                     // 3. 完了イベントを送信
-                    if let Err(e) = event_tx.send(PlaybackEvent::Completed { cue_id }).await {
+                    if let Err(e) = event_tx.send(ExecutorEvent::Completed { cue_id }).await {
                         log::error!("Failed to send Completed event for Wait cue: {}", e);
                     }
                 });
@@ -196,31 +196,31 @@ impl Executor {
                 };
 
                 let playback_event = match audio_event {
-                    AudioEngineEvent::Started { .. } => PlaybackEvent::Started { cue_id },
+                    AudioEngineEvent::Started { .. } => ExecutorEvent::Started { cue_id },
                     AudioEngineEvent::Progress {
                         position, duration, ..
-                    } => PlaybackEvent::Progress {
+                    } => ExecutorEvent::Progress {
                         cue_id,
                         position,
                         duration,
                     },
                     AudioEngineEvent::Paused {
                         position, duration, ..
-                    } => PlaybackEvent::Paused {
+                    } => ExecutorEvent::Paused {
                         cue_id,
                         position,
                         duration,
                     },
-                    AudioEngineEvent::Resumed { .. } => PlaybackEvent::Resumed { cue_id },
+                    AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
                     AudioEngineEvent::Completed { .. } => {
                         drop(instances);
                         self.active_instances.write().await.remove(&instance_id);
-                        PlaybackEvent::Completed { cue_id }
+                        ExecutorEvent::Completed { cue_id }
                     }
                     AudioEngineEvent::Error { error, .. } => {
                         drop(instances);
                         self.active_instances.write().await.remove(&instance_id);
-                        PlaybackEvent::Error { cue_id, error }
+                        ExecutorEvent::Error { cue_id, error }
                     }
                 };
 
@@ -249,7 +249,7 @@ mod tests {
         },
     };
 
-    async fn setup_executor(cue_id: Uuid) -> (ShowModelManager, Sender<ExecutorCommand>, Receiver<AudioCommand>, Sender<EngineEvent>, Receiver<PlaybackEvent>) {
+    async fn setup_executor(cue_id: Uuid) -> (ShowModelManager, Sender<ExecutorCommand>, Receiver<AudioCommand>, Sender<EngineEvent>, Receiver<ExecutorEvent>) {
         let manager = ShowModelManager::new();
         manager
             .write_with(|model| {
@@ -283,7 +283,7 @@ mod tests {
             .await;
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-        let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
+        let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
         let executor = Executor::new(
@@ -353,7 +353,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Started { instance_id })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Started { cue_id  } = event {
+            if let ExecutorEvent::Started { cue_id  } = event {
                 assert_eq!(cue_id, orig_cue_id);
             } else {
                 panic!("Wrong Playback Event emitted.");
@@ -385,7 +385,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Progress { instance_id, position: 20.0, duration: 50.0 })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Progress {cue_id, position, duration } = event {
+            if let ExecutorEvent::Progress {cue_id, position, duration } = event {
                 assert_eq!(cue_id, orig_cue_id);
                 assert_eq!(position, 20.0);
                 assert_eq!(duration, 50.0);
@@ -419,7 +419,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Paused { instance_id, position: 24.0, duration: 50.0 })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Paused {cue_id, position, duration } = event {
+            if let ExecutorEvent::Paused {cue_id, position, duration } = event {
                 assert_eq!(cue_id, orig_cue_id);
                 assert_eq!(position, 24.0);
                 assert_eq!(duration, 50.0);
@@ -453,7 +453,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Resumed { instance_id })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Resumed {cue_id} = event {
+            if let ExecutorEvent::Resumed {cue_id} = event {
                 assert_eq!(cue_id, orig_cue_id);
             } else {
                 panic!("Wrong Playback Event emitted.");
@@ -485,7 +485,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Completed { instance_id })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Completed {cue_id } = event {
+            if let ExecutorEvent::Completed {cue_id } = event {
                 assert_eq!(cue_id, orig_cue_id);
             } else {
                 panic!("Wrong Playback Event emitted.");
@@ -517,7 +517,7 @@ mod tests {
         engine_event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: "Error".to_string() })).await.unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let PlaybackEvent::Error {cue_id, error } = event {
+            if let ExecutorEvent::Error {cue_id, error } = event {
                 assert_eq!(cue_id, orig_cue_id);
                 assert_eq!(error, "Error".to_string());
             } else {
