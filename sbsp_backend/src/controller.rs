@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, mpsc, watch};
 use uuid::Uuid;
 
@@ -8,7 +9,7 @@ use crate::{
     manager::ShowModelManager,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum PlaybackStatus {
     Playing,
     Paused,
@@ -16,7 +17,7 @@ pub enum PlaybackStatus {
     Error,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ActiveCue {
     pub cue_id: Uuid,
     pub position: f64,
@@ -24,13 +25,14 @@ pub struct ActiveCue {
     pub status: PlaybackStatus,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "command", content = "params", rename_all = "camelCase")]
 pub enum ControllerCommand {
     Go { cue_id: Uuid },
     StopAll,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ShowState {
     pub active_cues: HashMap<Uuid, ActiveCue>,
 }
