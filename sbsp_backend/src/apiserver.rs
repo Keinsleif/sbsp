@@ -83,6 +83,8 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             log::error!("Failed to send Go command to CueController.");
                             break;
                         }
+                    } else {
+                        log::error!("Invalid command received.")
                     }
                 } else if let Message::Close(_) = msg {
                     log::info!("WebSocket client sent close message.");
