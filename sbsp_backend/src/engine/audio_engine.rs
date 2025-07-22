@@ -1,11 +1,8 @@
 use anyhow::{Context, Result};
 use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween,
-    clock::{ClockHandle, ClockSpeed, ClockTime},
-    sound::{
-        EndPosition, PlaybackPosition, Region,
-        static_sound::{StaticSoundData, StaticSoundHandle},
-    },
+    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
+        static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, PlaybackState, Region
+    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -54,6 +51,7 @@ pub struct PlayCommandData {
 struct PlayingSound {
     duration: f64,
     handle: StaticSoundHandle,
+    last_state: PlaybackState,
     _clock: ClockHandle,
 }
 
@@ -110,7 +108,8 @@ impl AudioEngine {
                             log::warn!("Received event for unknown instance_id: {}", id);
                             continue;
                         };
-                        let event = match playing_sound.handle.state() {
+                        let playback_state = playing_sound.handle.state();
+                        let event = match playback_state {
                             kira::sound::PlaybackState::Playing => {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
@@ -118,6 +117,9 @@ impl AudioEngine {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
                             kira::sound::PlaybackState::Paused => {
+                                if playing_sound.last_state.eq(&PlaybackState::Paused) {
+                                    continue;
+                                }
                                 log::info!("PAUSE: id={}", *id);
                                 EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
@@ -131,6 +133,9 @@ impl AudioEngine {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
                             },
                             kira::sound::PlaybackState::Stopped => {
+                                if playing_sound.last_state.eq(&PlaybackState::Stopped) {
+                                    continue;
+                                }
                                 log::info!("STOP: id={}", *id);
                                 EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
                             },
@@ -138,6 +143,9 @@ impl AudioEngine {
                         if let Err(e) = self.event_tx.send(event).await {
                             log::error!("Error polling Sound status: {:?}", e);
                         }
+                    }
+                    for playing_sound in self.playing_sounds.values_mut() {
+                        playing_sound.last_state = playing_sound.handle.state();
                     }
                     // 停止状態のPlayingSoundを削除
                     self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), kira::sound::PlaybackState::Stopped));
@@ -213,6 +221,7 @@ impl AudioEngine {
             PlayingSound {
                 duration,
                 handle,
+                last_state: PlaybackState::Playing,
                 _clock: clock,
             },
         );
