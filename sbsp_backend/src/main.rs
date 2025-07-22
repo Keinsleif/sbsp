@@ -5,13 +5,15 @@ mod executor;
 mod manager;
 mod model;
 
-use std::{collections::HashMap, path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
-use tokio::{sync::{mpsc, watch}, time::sleep};
+use tokio::
+    sync::{mpsc, watch}
+;
 use uuid::Uuid;
 
 use crate::{
-    controller::{ActiveCue, ControllerCommand, CueController, ShowState},
+    controller::{ControllerCommand, CueController, ShowState},
     engine::audio_engine::{AudioCommand, AudioEngine},
     executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
     manager::ShowModelManager,
@@ -25,12 +27,12 @@ async fn main() -> Result<(), anyhow::Error> {
     let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-    let (state_tx, mut state_rx) = watch::channel::<ShowState>(ShowState::new());
+    let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
     let model_manager = ShowModelManager::new();
-    let cue_id = model_manager
+    model_manager
         .write_with(|model| {
             let id = Uuid::new_v4();
             model.name = "TestShowModel".to_string();
@@ -58,11 +60,16 @@ async fn main() -> Result<(), anyhow::Error> {
                     loop_region: None,
                 },
             });
-            id
         })
         .await;
 
-    let controller = CueController::new(model_manager.clone(), exec_tx, ctrl_rx, playback_event_rx, state_tx);
+    let controller = CueController::new(
+        model_manager.clone(),
+        exec_tx,
+        ctrl_rx,
+        playback_event_rx,
+        state_tx,
+    );
 
     let executor = Executor::new(
         model_manager.clone(),
@@ -78,23 +85,11 @@ async fn main() -> Result<(), anyhow::Error> {
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
 
-    if let Err(e) = ctrl_tx.send(ControllerCommand::Go { cue_id }).await {
-        log::error!("Error while sending GO command: {:?}", e);
-    }
+    let app = apiserver::create_api_router(ctrl_tx.clone(), state_rx, model_manager.clone()).await;
 
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8888").await?;
+    log::info!("ApiServer listening on {}", listener.local_addr()?);
+    axum::serve(listener, app).await.unwrap();
 
-    loop {
-        state_rx.changed().await.unwrap();
-        if let Some(target_cue) = state_rx.borrow().active_cues.get(&cue_id) {
-            if target_cue.status.ne(&controller::PlaybackStatus::Completed) {
-                continue;
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
     Ok(())
 }
