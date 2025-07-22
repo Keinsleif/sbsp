@@ -1,3 +1,4 @@
+mod apiserver;
 mod controller;
 mod engine;
 mod executor;
@@ -10,7 +11,7 @@ use tokio::{sync::{mpsc, watch}, time::sleep};
 use uuid::Uuid;
 
 use crate::{
-    controller::{ActiveCue, ControllerCommand, CueController},
+    controller::{ActiveCue, ControllerCommand, CueController, ShowState},
     engine::audio_engine::{AudioCommand, AudioEngine},
     executor::{EngineEvent, Executor, ExecutorCommand, PlaybackEvent},
     manager::ShowModelManager,
@@ -24,7 +25,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-    let (state_tx, state_rx) = watch::channel::<HashMap<Uuid, ActiveCue>>(HashMap::new());
+    let (state_tx, mut state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
@@ -84,13 +85,15 @@ async fn main() -> Result<(), anyhow::Error> {
     tokio::time::sleep(Duration::from_secs(5)).await;
 
     loop {
-        if let Some(target_cue) = state_rx.borrow().get(&cue_id) {
+        state_rx.changed().await.unwrap();
+        if let Some(target_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             if target_cue.status.ne(&controller::PlaybackStatus::Completed) {
-                sleep(Duration::from_millis(100)).await;
                 continue;
             } else {
                 break;
             }
+        } else {
+            break;
         }
     }
     Ok(())

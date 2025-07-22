@@ -30,14 +30,25 @@ pub enum ControllerCommand {
     StopAll,
 }
 
+#[derive(Debug, Clone)]
+pub struct ShowState {
+    pub active_cues: HashMap<Uuid, ActiveCue>,
+}
+
+impl ShowState {
+    pub fn new() -> Self {
+        Self { active_cues: HashMap::new() }
+    }
+}
+
 pub struct CueController {
     model_manager: ShowModelManager,
     executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル
     command_rx: mpsc::Receiver<ControllerCommand>, // 外部からのトリガー受信用チャネル
 
     event_rx: mpsc::Receiver<PlaybackEvent>,
-    state_tx: watch::Sender<HashMap<Uuid, ActiveCue>>,
-    active_cues: Arc<RwLock<HashMap<Uuid, ActiveCue>>>,
+    state_tx: watch::Sender<ShowState>,
+    active_cues: Arc<RwLock<ShowState>>,
 }
 
 impl CueController {
@@ -46,7 +57,7 @@ impl CueController {
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
         event_rx: mpsc::Receiver<PlaybackEvent>,
-        state_tx: watch::Sender<HashMap<Uuid, ActiveCue>>,
+        state_tx: watch::Sender<ShowState>,
     ) -> Self {
         Self {
             model_manager,
@@ -54,7 +65,7 @@ impl CueController {
             command_rx,
             event_rx,
             state_tx,
-            active_cues: Arc::new(RwLock::new(HashMap::new())),
+            active_cues: Arc::new(RwLock::new(ShowState::new())),
         }
     }
 
@@ -103,7 +114,7 @@ impl CueController {
 
     /// Executorからの再生イベントを処理します
     async fn handle_playback_event(&self, event: PlaybackEvent) -> Result<(), anyhow::Error> {
-        let mut active_cues = self.active_cues.write().await;
+        let mut show_state = self.active_cues.write().await;
 
         match event {
             PlaybackEvent::Started { cue_id } => {
@@ -113,7 +124,7 @@ impl CueController {
                     duration: 0.0,
                     status: PlaybackStatus::Playing,
                 };
-                active_cues.insert(cue_id, active_cue);
+                show_state.active_cues.insert(cue_id, active_cue);
             }
             PlaybackEvent::Progress {
                 cue_id,
@@ -121,12 +132,12 @@ impl CueController {
                 duration,
                 ..
             } => {
-                if let Some(active_cue) = active_cues.get_mut(&cue_id) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.position = position;
                     active_cue.duration = duration;
                     active_cue.status = PlaybackStatus::Playing
                 } else {
-                    active_cues.insert(
+                    show_state.active_cues.insert(
                         cue_id,
                         ActiveCue {
                             cue_id,
@@ -142,12 +153,12 @@ impl CueController {
                 position,
                 duration,
             } => {
-                if let Some(active_cue) = active_cues.get_mut(&cue_id) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.position = position;
                     active_cue.duration = duration;
                     active_cue.status = PlaybackStatus::Paused;
                 } else {
-                    active_cues.insert(
+                    show_state.active_cues.insert(
                         cue_id,
                         ActiveCue {
                             cue_id,
@@ -159,18 +170,18 @@ impl CueController {
                 }
             }
             PlaybackEvent::Resumed { cue_id } => {
-                if let Some(active_cue) = active_cues.get_mut(&cue_id) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.status = PlaybackStatus::Playing;
                 }
             }
             PlaybackEvent::Completed { cue_id, .. } => {
-                if let Some(mut active_cue) = active_cues.remove(&cue_id) {
+                if let Some(mut active_cue) = show_state.active_cues.remove(&cue_id) {
                     active_cue.status = PlaybackStatus::Completed;
                     // TODO: Auto-Followロジックをここでトリガー
                 }
             }
             PlaybackEvent::Error { cue_id, error, .. } => {
-                if let Some(active_cue) = active_cues.get_mut(&cue_id) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(&cue_id) {
                     active_cue.status = PlaybackStatus::Error;
                     log::error!("State: Cue error on '{}': {}", active_cue.cue_id, error);
                 }
@@ -206,12 +217,12 @@ mod tests {
         Sender<ControllerCommand>,
         Receiver<ExecutorCommand>,
         Sender<PlaybackEvent>,
-        watch::Receiver<HashMap<Uuid, ActiveCue>>,
+        watch::Receiver<ShowState>,
     ) {
         let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<PlaybackEvent>(32);
-        let (state_tx, state_rx) = watch::channel::<HashMap<Uuid, ActiveCue>>(HashMap::new());
+        let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
 
         let manager = ShowModelManager::new();
         manager
@@ -291,7 +302,7 @@ mod tests {
             .unwrap();
 
         state_rx.changed().await.unwrap();
-        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+        if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
             assert_eq!(active_cue.duration, 0.0);
@@ -318,7 +329,7 @@ mod tests {
             .unwrap();
 
         state_rx.changed().await.unwrap();
-        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+        if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
             assert_eq!(active_cue.position, 20.0);
@@ -345,7 +356,7 @@ mod tests {
             .unwrap();
 
         state_rx.changed().await.unwrap();
-        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+        if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Paused);
             assert_eq!(active_cue.position, 21.0);
@@ -360,7 +371,7 @@ mod tests {
             .unwrap();
 
         state_rx.changed().await.unwrap();
-        if let Some(active_cue) = state_rx.borrow().get(&cue_id) {
+        if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
             assert_eq!(active_cue.position, 21.0);
@@ -383,6 +394,6 @@ mod tests {
             .unwrap();
 
         state_rx.changed().await.unwrap();
-        assert!(!state_rx.borrow().contains_key(&cue_id));
+        assert!(!state_rx.borrow().active_cues.contains_key(&cue_id));
     }
 }
