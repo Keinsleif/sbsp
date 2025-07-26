@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch, RwLock};
 use uuid::Uuid;
@@ -113,13 +112,14 @@ impl CueController {
         match command {
             ControllerCommand::Go => {
                 let state = self.show_state.read().await;
-                if let Some(cue_id) = state.playback_cursor {
-                    self.handle_go(cue_id).await
-                } else {
-                    bail!("Playback cursor is not available.")
-                }
+                let cue_id = state.playback_cursor.expect("Playback Cursor is unavailable.");
+                drop(state);
+                self.handle_go(cue_id).await
             },
             ControllerCommand::GoFromCue { cue_id } => {
+                let mut state = self.show_state.write().await;
+                state.playback_cursor = Some(cue_id);
+                drop(state);
                 self.handle_go(cue_id).await
             }
             ControllerCommand::StopAll => Ok(()), /* TODO */
