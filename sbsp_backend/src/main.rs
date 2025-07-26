@@ -1,4 +1,5 @@
 mod apiserver;
+mod event;
 mod controller;
 mod engine;
 mod executor;
@@ -7,15 +8,11 @@ mod model;
 
 use std::path::PathBuf;
 
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::{ControllerCommand, CueController, ShowState},
-    engine::audio_engine::{AudioCommand, AudioEngine},
-    executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent},
-    manager::ShowModelManager,
-    model::cue::{AudioCueFadeParam, AudioCueLevels, Cue},
+    controller::{ControllerCommand, CueController, ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::ShowModelManager, model::cue::{AudioCueFadeParam, AudioCueLevels, Cue}
 };
 
 #[tokio::main]
@@ -25,9 +22,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-    let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
+    let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
+    let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
+    let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
     let model_manager = ShowModelManager::new();
     model_manager
@@ -65,15 +63,16 @@ async fn main() -> Result<(), anyhow::Error> {
         model_manager.clone(),
         exec_tx,
         ctrl_rx,
-        playback_event_rx,
+        executor_event_rx,
         state_tx,
+        event_tx,
     );
 
     let executor = Executor::new(
         model_manager.clone(),
         exec_rx,
         audio_tx,
-        playback_event_tx,
+        executor_event_tx,
         engine_event_rx,
     );
 
