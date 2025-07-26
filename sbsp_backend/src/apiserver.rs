@@ -1,24 +1,34 @@
 use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, response::IntoResponse, routing::get, Router};
 use serde::Serialize;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, ShowState}, manager::ShowModelManager, model::ShowModel};
+use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::ShowModelManager, model::ShowModel};
+
+#[derive(Serialize)]
+#[serde(tag = "type", content = "data", rename_all = "camelCase")]
+enum WsMessage {
+    Event(UiEvent),
+    State(ShowState),
+}
 
 #[derive(Clone)]
 struct ApiState {
     controller_tx: mpsc::Sender<ControllerCommand>,
     state_rx: watch::Receiver<ShowState>,
+    event_rx_factory: broadcast::Sender<UiEvent>,
     model_manager: ShowModelManager,
 }
 
 pub async fn create_api_router(
     controller_tx: mpsc::Sender<ControllerCommand>,
     state_rx: watch::Receiver<ShowState>,
+    event_rx_factory: broadcast::Sender<UiEvent>,
     model_manager: ShowModelManager,
 ) -> Router {
     let state = ApiState {
         controller_tx,
         state_rx,
+        event_rx_factory,
         model_manager,
     };
 
@@ -60,15 +70,27 @@ async fn websocket_handler(
 
 async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let mut state_rx = state.state_rx.clone();
+    let mut event_rx = state.event_rx_factory.subscribe();
 
     log::info!("New WebSocket client connected.");
 
     loop {
         tokio::select! {
+            Ok(event) = event_rx.recv() => {
+                let ws_message = WsMessage::Event(event);
+
+                if let Ok(payload) = serde_json::to_string(&ws_message) {
+                    if socket.send(Message::Text(payload.into())).await.is_err() {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
+                    }
+                }
+            }
             Ok(_) = state_rx.changed() => {
                 let new_state = state_rx.borrow().clone();
+                let ws_message = WsMessage::State(new_state);
                 
-                if let Ok(payload) = serde_json::to_string(&new_state) {
+                if let Ok(payload) = serde_json::to_string(&ws_message) {
                     if socket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;

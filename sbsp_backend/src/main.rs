@@ -25,7 +25,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
+    let (event_tx, _) = broadcast::channel::<UiEvent>(32);
 
     let model_manager = ShowModelManager::new();
     model_manager
@@ -65,7 +65,7 @@ async fn main() -> Result<(), anyhow::Error> {
         ctrl_rx,
         executor_event_rx,
         state_tx,
-        event_tx,
+        event_tx.clone(),
     );
 
     let executor = Executor::new(
@@ -82,7 +82,7 @@ async fn main() -> Result<(), anyhow::Error> {
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
 
-    let app = apiserver::create_api_router(ctrl_tx.clone(), state_rx, model_manager.clone()).await;
+    let app = apiserver::create_api_router(ctrl_tx.clone(), state_rx, event_tx, model_manager.clone()).await;
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8888").await?;
     log::info!("ApiServer listening on {}", listener.local_addr()?);
