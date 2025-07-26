@@ -66,7 +66,7 @@ async fn main() -> Result<(), anyhow::Error> {
         executor_event_rx,
         state_tx,
         event_tx.clone(),
-    );
+    ).await;
 
     let executor = Executor::new(
         model_manager.clone(),

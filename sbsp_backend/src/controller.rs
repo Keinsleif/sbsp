@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch, RwLock};
 use uuid::Uuid;
@@ -27,18 +28,23 @@ pub struct ActiveCue {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "command", content = "params", rename_all = "camelCase")]
 pub enum ControllerCommand {
-    Go { cue_id: Uuid },
+    Go,
+    GoFromCue {
+        cue_id: Uuid,
+    },
     StopAll,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct ShowState {
+    pub playback_cursor: Option<Uuid>,
     pub active_cues: HashMap<Uuid, ActiveCue>,
 }
 
 impl ShowState {
     pub fn new() -> Self {
         Self {
+            playback_cursor: None,
             active_cues: HashMap::new(),
         }
     }
@@ -57,7 +63,7 @@ pub struct CueController {
 }
 
 impl CueController {
-    pub fn new(
+    pub async fn new(
         model_manager: ShowModelManager,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
@@ -65,6 +71,13 @@ impl CueController {
         state_tx: watch::Sender<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
     ) -> Self {
+        let manager = model_manager.read().await;
+        let show_state = if let Some(first_cue) = manager.cues.first() {
+            Arc::new(RwLock::new(ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }))
+        } else {
+            Arc::new(RwLock::new(ShowState::new()))
+        };
+        drop(manager);
         Self {
             model_manager,
             executor_tx,
@@ -72,7 +85,7 @@ impl CueController {
             executor_event_rx,
             state_tx,
             event_tx,
-            show_state: Arc::new(RwLock::new(ShowState::new())),
+            show_state,
         }
     }
 
@@ -98,7 +111,17 @@ impl CueController {
 
     async fn handle_command(&self, command: ControllerCommand) -> Result<(), anyhow::Error> {
         match command {
-            ControllerCommand::Go { cue_id } => self.handle_go(cue_id).await,
+            ControllerCommand::Go => {
+                let state = self.show_state.read().await;
+                if let Some(cue_id) = state.playback_cursor {
+                    self.handle_go(cue_id).await
+                } else {
+                    bail!("Playback cursor is not available.")
+                }
+            },
+            ControllerCommand::GoFromCue { cue_id } => {
+                self.handle_go(cue_id).await
+            }
             ControllerCommand::StopAll => Ok(()), /* TODO */
         }
     }
@@ -302,7 +325,7 @@ mod tests {
             playback_event_rx,
             state_tx,
             event_tx,
-        );
+        ).await;
 
         (controller, ctrl_tx, exec_rx, playback_event_tx, state_rx, event_rx)
     }
@@ -315,7 +338,26 @@ mod tests {
         tokio::spawn(controller.run());
 
         ctrl_tx
-            .send(ControllerCommand::Go { cue_id })
+            .send(ControllerCommand::Go)
+            .await
+            .unwrap();
+
+        if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
+            assert_eq!(id, cue_id);
+        } else {
+            unreachable!();
+        }
+    }
+
+    #[tokio::test]
+    async fn go_from_cue_command() {
+        let cue_id = Uuid::new_v4();
+        let (controller, ctrl_tx, mut exec_rx, _, _, _) = setup_controller(cue_id).await;
+
+        tokio::spawn(controller.run());
+
+        ctrl_tx
+            .send(ControllerCommand::GoFromCue { cue_id })
             .await
             .unwrap();
 
