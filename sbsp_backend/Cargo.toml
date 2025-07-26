@@ -36,10 +36,10 @@ opt-level = 3
 [profile.dev.package.symphonia-format-caf]
 opt-level = 3
 
-[profile.dev.package.symphonia-codec-isomp4]
+[profile.dev.package.symphonia-format-isomp4]
 opt-level = 3
 
-[profile.dev.package.symphonia-codec-mkv]
+[profile.dev.package.symphonia-format-mkv]
 opt-level = 3
 
 [profile.dev.package.symphonia-format-ogg]
