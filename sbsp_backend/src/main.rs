@@ -6,13 +6,10 @@ mod executor;
 mod manager;
 mod model;
 
-use std::path::PathBuf;
-
 use tokio::sync::{broadcast, mpsc, watch};
-use uuid::Uuid;
 
 use crate::{
-    controller::{ControllerCommand, CueController, ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::ShowModelManager, model::cue::{AudioCueFadeParam, AudioCueLevels, Cue}
+    controller::{ControllerCommand, CueController, ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::ShowModelManager,
 };
 
 #[tokio::main]
