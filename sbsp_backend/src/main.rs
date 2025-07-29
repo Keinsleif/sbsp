@@ -28,36 +28,6 @@ async fn main() -> Result<(), anyhow::Error> {
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
 
     let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
-    model_manager
-        .write_with(|model| {
-            let id = Uuid::new_v4();
-            model.name = "TestShowModel".to_string();
-            model.cues.push(Cue {
-                id,
-                number: "1".to_string(),
-                name: "Play IGY".to_string(),
-                notes: "".to_string(),
-                pre_wait: 0.0,
-                post_wait: 0.0,
-                sequence: model::cue::CueSequence::DoNotContinue,
-                param: model::cue::CueParam::Audio {
-                    target: PathBuf::from("./I.G.Y.flac"),
-                    start_time: Some(5.0),
-                    fade_in_param: Some(AudioCueFadeParam {
-                        duration: 2.0,
-                        easing: kira::Easing::Linear,
-                    }),
-                    end_time: Some(15.0),
-                    fade_out_param: Some(AudioCueFadeParam {
-                        duration: 5.0,
-                        easing: kira::Easing::InPowi(2),
-                    }),
-                    levels: AudioCueLevels { master: 0.0 },
-                    loop_region: None,
-                },
-            });
-        })
-        .await;
 
     let controller = CueController::new(
         model_handle.clone(),
