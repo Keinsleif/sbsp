@@ -1,31 +1,118 @@
-use std::{path::Path, sync::Arc};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
-use tokio::sync::RwLock;
+use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use crate::model::{ShowModel, cue::Cue};
+use crate::{event::UiEvent, model::{cue::Cue, ShowModel}};
 
-#[derive(Clone)]
+pub enum ModelCommand {
+    UpdateCue(Cue),
+    AddCue {
+        cue: Cue,
+        at_index: usize,
+    },
+    RemoveCue {
+        cue_id: Uuid,
+    },
+    MoveCue {
+        cue_id: Uuid,
+        to_index: usize,
+    },
+
+    Save,
+    SaveToFile(PathBuf),
+    LoadFromFile(PathBuf),
+}
+
 pub struct ShowModelManager {
-    state: Arc<RwLock<ShowModel>>,
+    model: Arc<RwLock<ShowModel>>,
+    command_rx: mpsc::Receiver<ModelCommand>,
+    event_tx: broadcast::Sender<UiEvent>,
+
+    show_model_path: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl ShowModelManager {
-    pub fn new() -> Self {
-        Self {
-            state: Arc::new(RwLock::new(ShowModel::default())),
+    pub fn new(event_tx: broadcast::Sender<UiEvent>) -> (Self, ShowModelHandle) {
+        let (command_tx, command_rx) = mpsc::channel(32);
+        let model = Arc::new(RwLock::new(ShowModel::default()));
+        let show_model_path = Arc::new(RwLock::new(None));
+        let manager = Self {
+            model: model.clone(),
+            command_rx,
+            event_tx,
+            show_model_path: show_model_path.clone(),
+        };
+        let handle = ShowModelHandle {
+            model,
+            command_tx,
+            show_model_path,
+        };
+
+        (manager, handle)
+    }
+
+    pub async fn run(mut self) {
+        while let Some(command) = self.command_rx.recv().await {
+            let event = self.process_command(command).await;
+            if let Some(event) = event {
+                self.event_tx.send(event).ok();
+            }
         }
     }
 
+    async fn process_command(&self, command: ModelCommand) -> Option<UiEvent> {
+        match command {
+            ModelCommand::UpdateCue(cue) => {
+                let mut model = self.model.write().await;
+                if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
+                    model.cues[index] = cue.clone();
+                    return Some(UiEvent::CueUpdated { cue });
+                }
+            }
+            ModelCommand::AddCue { cue, at_index } => {
+
+            }
+            ModelCommand::RemoveCue { cue_id } => {
+
+            }
+            ModelCommand::MoveCue { cue_id, to_index } => {
+                
+            }
+            // ★ Saveコマンドのロジック
+            ModelCommand::Save => {
+                if let Some(path) = self.show_model_path.read().await.as_ref() {
+                    self.save_to_file(path.as_path()).await.unwrap();
+                } else {
+                    log::warn!("Save command issued, but no file path is set. Use SaveToFile first.");
+                }
+            }
+            // ★ SaveAsコマンドのロジック
+            ModelCommand::SaveToFile(path) => {
+                self.save_to_file(path.as_path()).await.unwrap();
+                let mut show_model_path = self.show_model_path.write().await;
+                *show_model_path = Some(path);
+            }
+            // ★ LoadFromFileコマンドのロジック
+            ModelCommand::LoadFromFile(path) => {
+                self.load_from_file(path.as_path()).await.unwrap();
+                let mut show_model_path = self.show_model_path.write().await;
+                *show_model_path = Some(path);
+            }
+            // ... 他のコマンド処理
+        }
+        None
+    }
+
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {
-        self.state.read().await
+        self.model.read().await
     }
 
     pub async fn write_with<F, R>(&self, updater: F) -> R
     where
         F: FnOnce(&mut ShowModel) -> R,
     {
-        let mut guard = self.state.write().await;
+        let mut guard = self.model.write().await;
         updater(&mut guard)
     }
 
@@ -58,6 +145,44 @@ impl ShowModelManager {
         log::info!("Show saved to: {}", path.display());
         Ok(())
     }
+}
+
+
+#[derive(Clone)]
+pub struct ShowModelHandle {
+    model: Arc<RwLock<ShowModel>>,
+    command_tx: mpsc::Sender<ModelCommand>,
+    show_model_path: Arc<RwLock<Option<PathBuf>>>,
+}
+
+impl ShowModelHandle {
+    pub async fn update_cue(&self, cue: Cue) {
+        self.command_tx.send(ModelCommand::UpdateCue(cue)).await.ok();
+    }
+    
+    pub async fn add_cue(&self, cue: Cue, at_index: usize) {
+        self.command_tx.send(ModelCommand::AddCue { cue, at_index }).await.ok();
+    }
+
+    pub async fn remove_cue(&self, cue_id: Uuid) {
+        self.command_tx.send(ModelCommand::RemoveCue { cue_id }).await.ok();
+    }
+
+    pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) {
+        self.command_tx.send(ModelCommand::MoveCue { cue_id, to_index }).await.ok();
+    }
+
+    pub async fn save(&self) {
+        self.command_tx.send(ModelCommand::Save).await.ok();
+    }
+
+    pub async fn save_as(&self, path: PathBuf) {
+        self.command_tx.send(ModelCommand::SaveToFile(path)).await.ok();
+    }
+
+    pub async fn load_from_file(&self, path: PathBuf) {
+        self.command_tx.send(ModelCommand::LoadFromFile(path)).await.ok();
+    }
 
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
         self.read()
@@ -66,5 +191,13 @@ impl ShowModelManager {
             .iter()
             .find(|c| c.id.eq(cue_id))
             .cloned()
+    }
+
+    pub async fn get_current_file_path(&self) -> Option<PathBuf> {
+        self.show_model_path.read().await.clone()
+    }
+    
+    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {
+        self.model.read().await
     }
 }
