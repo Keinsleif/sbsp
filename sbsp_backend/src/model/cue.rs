@@ -4,7 +4,7 @@ use kira::{Easing, sound::Region};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
@@ -26,7 +26,7 @@ pub enum CueSequence {
     AutoFollow,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "params", rename_all = "camelCase")]
 pub enum CueParam {
     Audio {
