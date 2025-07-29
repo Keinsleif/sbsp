@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     engine::audio_engine::{AudioCommand, AudioEngineEvent, PlayCommandData},
-    manager::ShowModelManager,
+    manager::ShowModelHandle,
     model::cue::{Cue, CueParam},
 };
 
@@ -49,7 +49,7 @@ pub enum EngineEvent {
 }
 
 pub struct Executor {
-    model_manager: ShowModelManager,
+    model_handle: ShowModelHandle,
     command_rx: mpsc::Receiver<ExecutorCommand>, // CueControllerからの指示受信用
     audio_tx: mpsc::Sender<AudioCommand>,        // AudioEngineへのコマンド送信用
     // midi_tx: mpsc::Sender<MidiCommand>, // 将来の拡張用
@@ -63,14 +63,14 @@ pub struct Executor {
 impl Executor {
     /// 新しいExecutorを生成します。
     pub fn new(
-        model_manager: ShowModelManager,
+        model_handle: ShowModelHandle,
         command_rx: mpsc::Receiver<ExecutorCommand>,
         audio_tx: mpsc::Sender<AudioCommand>,
         playback_event_tx: mpsc::Sender<ExecutorEvent>,
         engine_event_rx: mpsc::Receiver<EngineEvent>,
     ) -> Self {
         Self {
-            model_manager,
+            model_handle,
             command_rx,
             audio_tx,
             playback_event_tx,
@@ -106,7 +106,7 @@ impl Executor {
         match command {
             ExecutorCommand::ExecuteCue(cue_id) => {
                 // ShowModelからIDでキューの詳細データを取得
-                if let Some(cue) = self.model_manager.get_cue_by_id(&cue_id).await {
+                if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     // キューのタイプに応じて処理を振り分け
                     self.dispatch_cue(&cue).await?;
                 } else {
@@ -237,20 +237,24 @@ mod tests {
     use std::{path::PathBuf};
 
     use kira::sound::Region;
-    use tokio::sync::mpsc::{self, Receiver, Sender};
+    use tokio::sync::{broadcast, mpsc::{self, Receiver, Sender}};
     use uuid::Uuid;
 
     use crate::{
-        engine::audio_engine::{AudioCommand, AudioEngineEvent},
-        manager::ShowModelManager,
-        model::{
+        engine::audio_engine::{AudioCommand, AudioEngineEvent}, event::UiEvent, manager::ShowModelManager, model::{
             self,
             cue::{AudioCueFadeParam, AudioCueLevels, Cue},
-        },
+        }
     };
 
     async fn setup_executor(cue_id: Uuid) -> (ShowModelManager, Sender<ExecutorCommand>, Receiver<AudioCommand>, Sender<EngineEvent>, Receiver<ExecutorEvent>) {
-        let manager = ShowModelManager::new();
+        let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
+        let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
+        let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
+        let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
+        let (event_tx, _) = broadcast::channel::<UiEvent>(32);
+
+        let (manager, handle) = ShowModelManager::new(event_tx.clone());
         manager
             .write_with(|model| {
                 model.name = "TestShowModel".to_string();
@@ -281,13 +285,9 @@ mod tests {
                 cue_id
             })
             .await;
-        let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
-        let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-        let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
-        let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
 
         let executor = Executor::new(
-            manager.clone(),
+            handle.clone(),
             exec_rx,
             audio_tx,
             playback_event_tx,

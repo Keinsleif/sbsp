@@ -27,7 +27,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
 
-    let model_manager = ShowModelManager::new();
+    let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
     model_manager
         .write_with(|model| {
             let id = Uuid::new_v4();
@@ -60,7 +60,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .await;
 
     let controller = CueController::new(
-        model_manager.clone(),
+        model_handle.clone(),
         exec_tx,
         ctrl_rx,
         executor_event_rx,
@@ -69,7 +69,7 @@ async fn main() -> Result<(), anyhow::Error> {
     ).await;
 
     let executor = Executor::new(
-        model_manager.clone(),
+        model_handle.clone(),
         exec_rx,
         audio_tx,
         executor_event_tx,
@@ -82,7 +82,7 @@ async fn main() -> Result<(), anyhow::Error> {
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
 
-    let app = apiserver::create_api_router(ctrl_tx.clone(), state_rx, event_tx, model_manager.clone()).await;
+    let app = apiserver::create_api_router(ctrl_tx.clone(), state_rx, event_tx, model_handle.clone()).await;
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8888").await?;
     log::info!("ApiServer listening on {}", listener.local_addr()?);

@@ -2,7 +2,7 @@ use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, respons
 use serde::Serialize;
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::ShowModelManager, model::ShowModel};
+use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::ShowModelHandle, model::ShowModel};
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
@@ -16,20 +16,20 @@ struct ApiState {
     controller_tx: mpsc::Sender<ControllerCommand>,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
-    model_manager: ShowModelManager,
+    model_handle: ShowModelHandle,
 }
 
 pub async fn create_api_router(
     controller_tx: mpsc::Sender<ControllerCommand>,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
-    model_manager: ShowModelManager,
+    model_handle: ShowModelHandle,
 ) -> Router {
     let state = ApiState {
         controller_tx,
         state_rx,
         event_rx_factory,
-        model_manager,
+        model_handle,
     };
 
     Router::new()
@@ -50,7 +50,7 @@ async fn get_full_state_handler(
     State(state): State<ApiState>,
 ) -> axum::Json<FullShowState> {
 
-    let show_model = state.model_manager.read().await.clone();    
+    let show_model = state.model_handle.read().await.clone();    
     let show_state = state.state_rx.borrow().clone();
 
     let full_state = FullShowState {

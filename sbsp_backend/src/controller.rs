@@ -5,7 +5,7 @@ use tokio::sync::{broadcast, mpsc, watch, RwLock};
 use uuid::Uuid;
 
 use crate::{
-    event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelManager
+    event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -50,7 +50,7 @@ impl ShowState {
 }
 
 pub struct CueController {
-    model_manager: ShowModelManager,
+    model_handle: ShowModelHandle,
     executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル
     command_rx: mpsc::Receiver<ControllerCommand>, // 外部からのトリガー受信用チャネル
 
@@ -63,14 +63,14 @@ pub struct CueController {
 
 impl CueController {
     pub async fn new(
-        model_manager: ShowModelManager,
+        model_handle: ShowModelHandle,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
         executor_event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
     ) -> Self {
-        let manager = model_manager.read().await;
+        let manager = model_handle.read().await;
         let show_state = if let Some(first_cue) = manager.cues.first() {
             Arc::new(RwLock::new(ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }))
         } else {
@@ -78,7 +78,7 @@ impl CueController {
         };
         drop(manager);
         Self {
-            model_manager,
+            model_handle,
             executor_tx,
             command_rx,
             executor_event_rx,
@@ -254,10 +254,10 @@ mod tests {
 
     use std::path::PathBuf;
 
-    use crate::model::{
+    use crate::{manager::ShowModelManager, model::{
         self,
         cue::{AudioCueFadeParam, AudioCueLevels, Cue},
-    };
+    }};
 
     use super::*;
 
@@ -283,7 +283,7 @@ mod tests {
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
-        let manager = ShowModelManager::new();
+        let (manager, handle) = ShowModelManager::new(event_tx.clone());
         manager
             .write_with(|model| {
                 model.name = "TestShowModel".to_string();
@@ -319,7 +319,7 @@ mod tests {
             .await;
 
         let controller = CueController::new(
-            manager.clone(),
+            handle.clone(),
             exec_tx,
             ctrl_rx,
             playback_event_rx,
