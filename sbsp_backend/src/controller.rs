@@ -69,7 +69,6 @@ impl CueController {
         event_tx: broadcast::Sender<UiEvent>,
     ) -> Self {
         let manager = model_handle.read().await;
-        println!("{:?}", &manager.cues.first());
         let show_state = if let Some(first_cue) = manager.cues.first() {
             ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }
         } else {
