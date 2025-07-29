@@ -1,14 +1,21 @@
 use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, response::IntoResponse, routing::get, Router};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::ShowModelHandle, model::ShowModel};
+use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel};
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 enum WsMessage {
     Event(UiEvent),
     State(ShowState),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type", content="data", rename_all = "camelCase")]
+enum ApiCommand {
+    Controll(ControllerCommand),
+    Model(ModelCommand)
 }
 
 #[derive(Clone)]
@@ -100,10 +107,21 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
             
             Some(Ok(msg)) = socket.recv() => {
                 if let Message::Text(text) = msg {
-                    if let Ok(command_request) = serde_json::from_str::<ControllerCommand>(&text) {
-                        if state.controller_tx.send(command_request).await.is_err() {
-                            log::error!("Failed to send Go command to CueController.");
-                            break;
+                    if let Ok(command_request) = serde_json::from_str::<ApiCommand>(&text) {
+                        match command_request {
+                            ApiCommand::Controll(controller_command) => {
+                                if state.controller_tx.send(controller_command).await.is_err() {
+                                    log::error!("Failed to send Go command to CueController.");
+                                    break;
+                                }
+                            },
+                            ApiCommand::Model(model_command) => {
+                                log::info!("Model Command received.");
+                                if state.model_handle.send_command(model_command).await.is_err() {
+                                    log::error!("Failed to send Model command to ShowModelManager.");
+                                    break;
+                                }
+                            },
                         }
                     } else {
                         log::error!("Invalid command received.")
