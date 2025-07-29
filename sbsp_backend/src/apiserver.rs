@@ -12,7 +12,7 @@ enum WsMessage {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "type", content="data", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 enum ApiCommand {
     Controll(ControllerCommand),
     Model(ModelCommand)
