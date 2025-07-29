@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::executor::ExecutorEvent;
+use crate::{executor::ExecutorEvent, model::cue::Cue};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "param")]
@@ -26,10 +26,24 @@ pub enum UiEvent {
 
     // System Events
     PlaybackCursorMoved {
-        cursor_index: usize,
+        cue_id: Uuid,
     },
 
     ShowModelLoaded,
+    CueUpdated {
+        cue: Cue,
+    },
+    CueAdded {
+        cue: Cue,
+        at_index: usize,
+    },
+    CueRemoved {
+        cue_id: Uuid,
+    },
+    CueMoved {
+        cue_id: Uuid,
+        to_index: usize,
+    },
 }
 
 impl From<ExecutorEvent> for UiEvent {
