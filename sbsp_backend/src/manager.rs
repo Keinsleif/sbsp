@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use crate::{event::UiEvent, model::{cue::Cue, ShowModel}};
+use crate::{event::{UiError, UiEvent}, model::{cue::Cue, ShowModel}};
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "command", content = "params", rename_all = "camelCase")]
@@ -70,19 +70,27 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
                     model.cues[index] = cue.clone();
-                    return Some(UiEvent::CueUpdated { cue });
+                    Some(UiEvent::CueUpdated { cue })
+                } else {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Cue doesn't exist.".to_string() } })
                 }
             }
             ModelCommand::AddCue { cue, at_index } => {
                 let mut model = self.model.write().await;
-                model.cues.insert(at_index, cue.clone());
-                return Some(UiEvent::CueAdded { cue, at_index });
+                if model.cues.iter().any(|c| c.id == cue.id) {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Cue already exist.".to_string() } })
+                } else {
+                    model.cues.insert(at_index, cue.clone());
+                    Some(UiEvent::CueAdded { cue, at_index })
+                }
             }
             ModelCommand::RemoveCue { cue_id } => {
                 let mut model = self.model.write().await;
                 if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
                     model.cues.remove(index);
-                    return Some(UiEvent::CueRemoved { cue_id });
+                    Some(UiEvent::CueRemoved { cue_id })
+                } else {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Cue doesn't exist.".to_string() } })
                 }
             }
             ModelCommand::MoveCue { cue_id, to_index } => {
@@ -90,38 +98,45 @@ impl ShowModelManager {
                 if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
                     let cue = model.cues.remove(index);
                     model.cues.insert(to_index, cue.clone());
-                    return Some(UiEvent::CueMoved { cue_id, to_index });
+                    Some(UiEvent::CueMoved { cue_id, to_index })
+                } else {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Cue doesn't exist.".to_string() } })
                 }
             }
-            // ★ Saveコマンドのロジック
             ModelCommand::Save => {
                 if let Some(path) = self.show_model_path.read().await.as_ref() {
                     if let Err(error) = self.save_to_file(path.as_path()).await {
                         log::error!("Failed to save model file: {}", error);
+                        Some(UiEvent::OperationFailed { error: UiError::FileSave { path: path.to_path_buf(), message: error.to_string() } })
+                    } else {
+                        Some(UiEvent::ShowModelSaved { path: path.to_path_buf() })
                     }
                 } else {
                     log::warn!("Save command issued, but no file path is set. Use SaveToFile first.");
+                    Some(UiEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } })
                 }
             }
-            // ★ SaveAsコマンドのロジック
             ModelCommand::SaveToFile(path) => {
                 if let Err(error) = self.save_to_file(path.as_path()).await {
                     log::error!("Failed to save model file: {}", error);
+                    Some(UiEvent::OperationFailed {error: UiError::FileSave { path, message: error.to_string() }})
+                } else {
+                    let mut show_model_path = self.show_model_path.write().await;
+                    *show_model_path = Some(path.clone());
+                    Some(UiEvent::ShowModelSaved { path })
                 }
-                let mut show_model_path = self.show_model_path.write().await;
-                *show_model_path = Some(path);
             }
-            // ★ LoadFromFileコマンドのロジック
             ModelCommand::LoadFromFile(path) => {
                 if let Err(error) = self.load_from_file(path.as_path()).await {
                     log::error!("Failed to load model file: {}", error);
+                    Some(UiEvent::OperationFailed {error: UiError::FileLoad { path, message: error.to_string() }})
+                } else {
+                    let mut show_model_path = self.show_model_path.write().await;
+                    *show_model_path = Some(path.clone());
+                    Some(UiEvent::ShowModelLoaded { path })
                 }
-                let mut show_model_path = self.show_model_path.write().await;
-                *show_model_path = Some(path);
             }
-            // ... 他のコマンド処理
         }
-        None
     }
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {

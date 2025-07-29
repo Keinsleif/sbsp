@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -29,7 +31,12 @@ pub enum UiEvent {
         cue_id: Uuid,
     },
 
-    ShowModelLoaded,
+    ShowModelLoaded {
+        path: PathBuf
+    },
+    ShowModelSaved {
+        path: PathBuf,
+    },
     CueUpdated {
         cue: Cue,
     },
@@ -43,6 +50,27 @@ pub enum UiEvent {
     CueMoved {
         cue_id: Uuid,
         to_index: usize,
+    },
+
+    OperationFailed {
+        error: UiError,
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", rename_all="camelCase")]
+pub enum UiError {
+    FileSave {
+        path: PathBuf,
+        message: String,
+    },
+    FileLoad {
+        path: PathBuf,
+        message: String,
+    },
+    CueEdit {
+        cue_id: Uuid,
+        message: String,
     },
 }
 
