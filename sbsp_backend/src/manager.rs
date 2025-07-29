@@ -79,6 +79,8 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 if model.cues.iter().any(|c| c.id == cue.id) {
                     Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Cue already exist.".to_string() } })
+                } else if at_index > model.cues.len() {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Insert index is out of list.".to_string() } })
                 } else {
                     model.cues.insert(at_index, cue.clone());
                     Some(UiEvent::CueAdded { cue, at_index })
@@ -99,6 +101,8 @@ impl ShowModelManager {
                     let cue = model.cues.remove(index);
                     model.cues.insert(to_index, cue.clone());
                     Some(UiEvent::CueMoved { cue_id, to_index })
+                } else if to_index > model.cues.len() {
+                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Insert index is out of list.".to_string() } })
                 } else {
                     Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Cue doesn't exist.".to_string() } })
                 }
