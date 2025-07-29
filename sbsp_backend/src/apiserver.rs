@@ -15,7 +15,7 @@ enum WsMessage {
 #[serde(tag = "type", rename_all = "camelCase")]
 enum ApiCommand {
     Controll(ControllerCommand),
-    Model(ModelCommand)
+    Model(Box<ModelCommand>)
 }
 
 #[derive(Clone)]
@@ -117,7 +117,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             },
                             ApiCommand::Model(model_command) => {
                                 log::info!("Model Command received.");
-                                if state.model_handle.send_command(model_command).await.is_err() {
+                                if state.model_handle.send_command(*model_command).await.is_err() {
                                     log::error!("Failed to send Model command to ShowModelManager.");
                                     break;
                                 }
