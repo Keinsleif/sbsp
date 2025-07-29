@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use crate::{event::UiEvent, model::{cue::Cue, ShowModel}};
+use crate::{event::UiEvent, model::{self, cue::Cue, ShowModel}};
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "command", content = "params", rename_all = "camelCase")]
@@ -74,13 +74,24 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::AddCue { cue, at_index } => {
-
+                let mut model = self.model.write().await;
+                model.cues.insert(at_index, cue.clone());
+                return Some(UiEvent::CueAdded { cue, at_index });
             }
             ModelCommand::RemoveCue { cue_id } => {
-
+                let mut model = self.model.write().await;
+                if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
+                    model.cues.remove(index);
+                    return Some(UiEvent::CueRemoved { cue_id });
+                }
             }
             ModelCommand::MoveCue { cue_id, to_index } => {
-                
+                let mut model = self.model.write().await;
+                if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
+                    let cue = model.cues.remove(index);
+                    model.cues.insert(to_index, cue.clone());
+                    return Some(UiEvent::CueMoved { cue_id, to_index });
+                }
             }
             // ★ Saveコマンドのロジック
             ModelCommand::Save => {
