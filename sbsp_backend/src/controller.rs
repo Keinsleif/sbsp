@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap};
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc, watch, RwLock};
+use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
@@ -28,10 +28,10 @@ pub struct ActiveCue {
 #[serde(tag = "command", content = "params", rename_all = "camelCase")]
 pub enum ControllerCommand {
     Go,
-    GoFromCue {
+    StopAll,
+    SetPlaybackCursor {
         cue_id: Uuid,
     },
-    StopAll,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -57,8 +57,6 @@ pub struct CueController {
     executor_event_rx: mpsc::Receiver<ExecutorEvent>,
     state_tx: watch::Sender<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
-
-    show_state: Arc<RwLock<ShowState>>,
 }
 
 impl CueController {
@@ -71,12 +69,17 @@ impl CueController {
         event_tx: broadcast::Sender<UiEvent>,
     ) -> Self {
         let manager = model_handle.read().await;
+        println!("{:?}", &manager.cues.first());
         let show_state = if let Some(first_cue) = manager.cues.first() {
-            Arc::new(RwLock::new(ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }))
+            ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }
         } else {
-            Arc::new(RwLock::new(ShowState::new()))
+            ShowState::new()
         };
         drop(manager);
+        if state_tx.send(show_state.clone()).is_err() {
+            log::trace!("No UI clients are listening to playback events.");
+        }
+
         Self {
             model_handle,
             executor_tx,
@@ -84,7 +87,6 @@ impl CueController {
             executor_event_rx,
             state_tx,
             event_tx,
-            show_state,
         }
     }
 
@@ -111,23 +113,29 @@ impl CueController {
     async fn handle_command(&self, command: ControllerCommand) -> Result<(), anyhow::Error> {
         match command {
             ControllerCommand::Go => {
-                let state = self.show_state.read().await;
+                let state = self.state_tx.borrow().clone();
                 let cue_id = state.playback_cursor.expect("Playback Cursor is unavailable.");
-                drop(state);
                 self.handle_go(cue_id).await
             },
-            ControllerCommand::GoFromCue { cue_id } => {
-                let mut state = self.show_state.write().await;
-                state.playback_cursor = Some(cue_id);
-                drop(state);
-                self.handle_go(cue_id).await
-            }
             ControllerCommand::StopAll => Ok(()), /* TODO */
+            ControllerCommand::SetPlaybackCursor { cue_id } => {
+                if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
+                    self.state_tx.send_modify(|state| {
+                        if state.playback_cursor.ne(&Some(cue_id)) {
+                            state.playback_cursor = Some(cue_id);
+                            if self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id }).is_err() {
+                                log::trace!("No UI clients are listening to playback events.");
+                            }
+                        }
+                    });
+                }
+                Ok(())
+            }
         }
     }
 
     async fn handle_go(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
-        let model = self.model_manager.read().await;
+        let model = self.model_handle.read().await;
 
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::ExecuteCue(cue_id);
@@ -140,8 +148,7 @@ impl CueController {
 
     /// Executorからの再生イベントを処理します
     async fn handle_executor_event(&self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
-        let mut show_state = self.show_state.write().await;
-
+        let mut show_state = self.state_tx.borrow().clone();
         let mut state_changed = false;
 
         match &event {
@@ -226,9 +233,8 @@ impl CueController {
                 }
             }
         }
-        drop(show_state);
 
-        if state_changed && self.state_tx.send(self.show_state.read().await.clone()).is_err() {
+        if state_changed && self.state_tx.send(show_state).is_err() {
             log::trace!("No UI clients are listening to state updates.");
         }
 
@@ -268,7 +274,7 @@ mod tests {
     };
 
     async fn setup_controller(
-        cue_id: Uuid,
+        cue_ids: &[Uuid],
     ) -> (
         CueController,
         Sender<ControllerCommand>,
@@ -287,34 +293,35 @@ mod tests {
         manager
             .write_with(|model| {
                 model.name = "TestShowModel".to_string();
-                model.cues.push(Cue {
-                    id: cue_id,
-                    number: "1".to_string(),
-                    name: "Play IGY".to_string(),
-                    notes: "".to_string(),
-                    pre_wait: 0.0,
-                    post_wait: 0.0,
-                    sequence: model::cue::CueSequence::DoNotContinue,
-                    param: model::cue::CueParam::Audio {
-                        target: PathBuf::from("./I.G.Y.flac"),
-                        start_time: Some(5.0),
-                        fade_in_param: Some(AudioCueFadeParam {
-                            duration: 2.0,
-                            easing: kira::Easing::Linear,
-                        }),
-                        end_time: Some(50.0),
-                        fade_out_param: Some(AudioCueFadeParam {
-                            duration: 5.0,
-                            easing: kira::Easing::InPowi(2),
-                        }),
-                        levels: AudioCueLevels { master: 0.0 },
-                        loop_region: Some(Region {
-                            start: kira::sound::PlaybackPosition::Seconds(2.0),
-                            end: kira::sound::EndPosition::EndOfAudio,
-                        }),
-                    },
-                });
-                cue_id
+                for cue_id in cue_ids {
+                    model.cues.push(Cue {
+                        id: *cue_id,
+                        number: "1".to_string(),
+                        name: "Play IGY".to_string(),
+                        notes: "".to_string(),
+                        pre_wait: 0.0,
+                        post_wait: 0.0,
+                        sequence: model::cue::CueSequence::DoNotContinue,
+                        param: model::cue::CueParam::Audio {
+                            target: PathBuf::from("./I.G.Y.flac"),
+                            start_time: Some(5.0),
+                            fade_in_param: Some(AudioCueFadeParam {
+                                duration: 2.0,
+                                easing: kira::Easing::Linear,
+                            }),
+                            end_time: Some(50.0),
+                            fade_out_param: Some(AudioCueFadeParam {
+                                duration: 5.0,
+                                easing: kira::Easing::InPowi(2),
+                            }),
+                            levels: AudioCueLevels { master: 0.0 },
+                            loop_region: Some(Region {
+                                start: kira::sound::PlaybackPosition::Seconds(2.0),
+                                end: kira::sound::EndPosition::EndOfAudio,
+                            }),
+                        },
+                    });
+                }
             })
             .await;
 
@@ -333,7 +340,7 @@ mod tests {
     #[tokio::test]
     async fn go_command() {
         let cue_id = Uuid::new_v4();
-        let (controller, ctrl_tx, mut exec_rx, _, _, _) = setup_controller(cue_id).await;
+        let (controller, ctrl_tx, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -350,28 +357,30 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn go_from_cue_command() {
+    async fn set_playback_cursor() {
         let cue_id = Uuid::new_v4();
-        let (controller, ctrl_tx, mut exec_rx, _, _, _) = setup_controller(cue_id).await;
+        println!("{}", cue_id);
+        let cue_id_next = Uuid::new_v4();
+        println!("{}", cue_id_next);
+        let (controller, ctrl_tx, _, _, state_rx, mut event_rx) = setup_controller(&[cue_id, cue_id_next]).await;
 
         tokio::spawn(controller.run());
 
-        ctrl_tx
-            .send(ControllerCommand::GoFromCue { cue_id })
-            .await
-            .unwrap();
+        assert_eq!(state_rx.borrow().playback_cursor, Some(cue_id));
 
-        if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
-            assert_eq!(id, cue_id);
-        } else {
-            unreachable!();
+        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: cue_id_next }).await.unwrap();
+
+        let event = event_rx.recv().await.unwrap();
+        assert_eq!(event, UiEvent::PlaybackCursorMoved { cue_id: cue_id_next });
+        if let Some(playback_cursor) = state_rx.borrow().playback_cursor {
+            assert_eq!(playback_cursor, cue_id_next);
         }
     }
 
     #[tokio::test]
     async fn started_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(cue_id).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -395,7 +404,8 @@ mod tests {
     #[tokio::test]
     async fn progress_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, mut state_rx, event_rx) = setup_controller(cue_id).await;
+        let (controller, _, _, playback_event_tx, mut state_rx, event_rx) = setup_controller(&[cue_id]).await;
+        state_rx.mark_unchanged();
 
         tokio::spawn(controller.run());
 
@@ -423,7 +433,7 @@ mod tests {
     #[tokio::test]
     async fn pause_n_resume_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(cue_id).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -467,7 +477,7 @@ mod tests {
     #[tokio::test]
     async fn completed_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(cue_id).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
