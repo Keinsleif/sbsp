@@ -10,7 +10,6 @@ mod manager;
 mod model;
 
 pub struct BackendHandle {
-    pub model_manager: ShowModelManager,
     pub model_handle: ShowModelHandle,
 
     pub controller_tx: mpsc::Sender<ControllerCommand>,
@@ -47,9 +46,10 @@ pub async fn start_backend() -> BackendHandle {
 
     let audio_engine = AudioEngine::new(audio_rx, engine_event_tx).unwrap();
 
+    tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
 
-    BackendHandle { model_manager, model_handle, controller_tx, state_rx, event_rx }
+    BackendHandle { model_handle, controller_tx, state_rx, event_rx }
 }

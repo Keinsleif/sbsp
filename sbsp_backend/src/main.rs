@@ -78,6 +78,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let audio_engine = AudioEngine::new(audio_rx, engine_event_tx)?;
 
+    tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
