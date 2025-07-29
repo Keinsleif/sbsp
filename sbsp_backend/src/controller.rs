@@ -25,7 +25,7 @@ pub struct ActiveCue {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "command", content = "params", rename_all = "camelCase")]
+#[serde(tag = "command", content = "params", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ControllerCommand {
     Go,
     StopAll,
@@ -35,6 +35,7 @@ pub enum ControllerCommand {
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ShowState {
     pub playback_cursor: Option<Uuid>,
     pub active_cues: HashMap<Uuid, ActiveCue>,

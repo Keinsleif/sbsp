@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::{event::{UiError, UiEvent}, model::{cue::Cue, ShowModel}};
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "command", content = "params", rename_all = "camelCase")]
+#[serde(tag = "command", content = "params", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum ModelCommand {
     UpdateCue(Cue),
     AddCue {

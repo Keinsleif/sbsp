@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{executor::ExecutorEvent, model::cue::Cue};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "param")]
+#[serde(tag = "type", content = "param", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum UiEvent {
     // Cue Status Events
     CueStarted {
@@ -58,7 +58,7 @@ pub enum UiEvent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "type", rename_all="camelCase")]
+#[serde(tag = "type", rename_all="camelCase", rename_all_fields = "camelCase")]
 pub enum UiError {
     FileSave {
         path: PathBuf,
