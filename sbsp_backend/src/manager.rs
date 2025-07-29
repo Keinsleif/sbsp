@@ -1,10 +1,13 @@
 use std::{path::{Path, PathBuf}, sync::Arc};
 
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
 use crate::{event::UiEvent, model::{cue::Cue, ShowModel}};
 
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "command", content = "params", rename_all = "camelCase")]
 pub enum ModelCommand {
     UpdateCue(Cue),
     AddCue {
@@ -156,32 +159,44 @@ pub struct ShowModelHandle {
 }
 
 impl ShowModelHandle {
-    pub async fn update_cue(&self, cue: Cue) {
-        self.command_tx.send(ModelCommand::UpdateCue(cue)).await.ok();
+    pub async fn send_command(&self, command: ModelCommand) -> anyhow::Result<()> {
+        self.command_tx.send(command).await?;
+        Ok(())
+    }
+
+    pub async fn update_cue(&self, cue: Cue) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::UpdateCue(cue)).await?;
+        Ok(())
     }
     
-    pub async fn add_cue(&self, cue: Cue, at_index: usize) {
-        self.command_tx.send(ModelCommand::AddCue { cue, at_index }).await.ok();
+    pub async fn add_cue(&self, cue: Cue, at_index: usize) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::AddCue { cue, at_index }).await?;
+        Ok(())
     }
 
-    pub async fn remove_cue(&self, cue_id: Uuid) {
-        self.command_tx.send(ModelCommand::RemoveCue { cue_id }).await.ok();
+    pub async fn remove_cue(&self, cue_id: Uuid) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::RemoveCue { cue_id }).await?;
+        Ok(())
     }
 
-    pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) {
-        self.command_tx.send(ModelCommand::MoveCue { cue_id, to_index }).await.ok();
+    pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::MoveCue { cue_id, to_index }).await?;
+        Ok(())
     }
 
-    pub async fn save(&self) {
-        self.command_tx.send(ModelCommand::Save).await.ok();
+    pub async fn save(&self) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::Save).await?;
+        Ok(())
     }
 
-    pub async fn save_as(&self, path: PathBuf) {
-        self.command_tx.send(ModelCommand::SaveToFile(path)).await.ok();
+    pub async fn save_as(&self, path: PathBuf) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::SaveToFile(path)).await?;
+        Ok(())
     }
 
-    pub async fn load_from_file(&self, path: PathBuf) {
-        self.command_tx.send(ModelCommand::LoadFromFile(path)).await.ok();
+    pub async fn load_from_file(&self, path: PathBuf) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::LoadFromFile(path)).await?;
+        Ok(())
     }
 
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
