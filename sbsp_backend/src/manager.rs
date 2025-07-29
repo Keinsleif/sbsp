@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use crate::{event::UiEvent, model::{self, cue::Cue, ShowModel}};
+use crate::{event::UiEvent, model::{cue::Cue, ShowModel}};
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "command", content = "params", rename_all = "camelCase")]
@@ -96,20 +96,26 @@ impl ShowModelManager {
             // ★ Saveコマンドのロジック
             ModelCommand::Save => {
                 if let Some(path) = self.show_model_path.read().await.as_ref() {
-                    self.save_to_file(path.as_path()).await.unwrap();
+                    if let Err(error) = self.save_to_file(path.as_path()).await {
+                        log::error!("Failed to save model file: {}", error);
+                    }
                 } else {
                     log::warn!("Save command issued, but no file path is set. Use SaveToFile first.");
                 }
             }
             // ★ SaveAsコマンドのロジック
             ModelCommand::SaveToFile(path) => {
-                self.save_to_file(path.as_path()).await.unwrap();
+                if let Err(error) = self.save_to_file(path.as_path()).await {
+                    log::error!("Failed to save model file: {}", error);
+                }
                 let mut show_model_path = self.show_model_path.write().await;
                 *show_model_path = Some(path);
             }
             // ★ LoadFromFileコマンドのロジック
             ModelCommand::LoadFromFile(path) => {
-                self.load_from_file(path.as_path()).await.unwrap();
+                if let Err(error) = self.load_from_file(path.as_path()).await {
+                    log::error!("Failed to load model file: {}", error);
+                }
                 let mut show_model_path = self.show_model_path.write().await;
                 *show_model_path = Some(path);
             }
