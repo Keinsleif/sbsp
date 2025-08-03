@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "sbsp_backend",
+    "sbsp_tauri",
+]
