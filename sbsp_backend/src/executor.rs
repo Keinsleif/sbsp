@@ -236,14 +236,13 @@ mod tests {
     use super::*;
     use std::{path::PathBuf};
 
-    use kira::sound::Region;
     use tokio::sync::{broadcast, mpsc::{self, Receiver, Sender}};
     use uuid::Uuid;
 
     use crate::{
         engine::audio_engine::{AudioCommand, AudioEngineEvent}, event::UiEvent, manager::ShowModelManager, model::{
             self,
-            cue::{AudioCueFadeParam, AudioCueLevels, Cue},
+            cue::{AudioCueFadeParam, AudioCueLevels, Cue, Easing, LoopRegion},
         }
     };
 
@@ -271,15 +270,15 @@ mod tests {
                     start_time: Some(5.0),
                     fade_in_param: Some(AudioCueFadeParam {
                         duration: 2.0,
-                        easing: kira::Easing::Linear,
+                        easing: Easing::Linear,
                     }),
                     end_time: Some(50.0),
                     fade_out_param: Some(AudioCueFadeParam {
                         duration: 5.0,
-                        easing: kira::Easing::InPowi(2),
+                        easing: Easing::InPowi(2),
                     }),
                     levels: AudioCueLevels { master: 0.0 },
-                    loop_region: Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }),
+                    loop_region: (Some(2.0), None).into(),
                     },
                 });
                 cue_id
@@ -322,10 +321,10 @@ mod tests {
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
             assert_eq!(data.levels, AudioCueLevels { master: 0.0 });
             assert_eq!(data.start_time, Some(5.0));
-            assert_eq!(data.fade_in_param, Some(AudioCueFadeParam { duration: 2.0, easing: kira::Easing::Linear }));
+            assert_eq!(data.fade_in_param, Some(AudioCueFadeParam { duration: 2.0, easing: Easing::Linear }));
             assert_eq!(data.end_time, Some(50.0));
-            assert_eq!(data.fade_out_param, Some(AudioCueFadeParam { duration: 5.0, easing: kira::Easing::InPowi(2) }));
-            assert_eq!(data.loop_region, Some(Region { start: kira::sound::PlaybackPosition::Seconds(2.0), end: kira::sound::EndPosition::EndOfAudio }));
+            assert_eq!(data.fade_out_param, Some(AudioCueFadeParam { duration: 5.0, easing: Easing::InPowi(2) }));
+            assert_eq!(data.loop_region, LoopRegion { start: Some(2.0), end: None });
         } else {
             unreachable!();
         }

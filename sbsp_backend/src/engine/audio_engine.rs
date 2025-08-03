@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     executor::EngineEvent,
-    model::cue::{AudioCueFadeParam, AudioCueLevels},
+    model::cue::{AudioCueFadeParam, AudioCueLevels, LoopRegion},
 };
 
 #[derive(Debug, Clone)]
@@ -45,7 +45,7 @@ pub struct PlayCommandData {
     pub fade_in_param: Option<AudioCueFadeParam>,
     pub end_time: Option<f64>,
     pub fade_out_param: Option<AudioCueFadeParam>,
-    pub loop_region: Option<Region>,
+    pub loop_region: LoopRegion,
 }
 
 struct PlayingSound {
@@ -186,7 +186,7 @@ impl AudioEngine {
             sound_data = sound_data.fade_in_tween(Tween {
                 start_time: StartTime::Immediate,
                 duration: Duration::from_secs_f64(fade_in_param.duration),
-                easing: fade_in_param.easing,
+                easing: fade_in_param.easing.into(),
             });
         }
 
@@ -205,7 +205,7 @@ impl AudioEngine {
                         duration - fade_out_param.duration,
                     )),
                     duration: Duration::from_secs_f64(fade_out_param.duration),
-                    easing: fade_out_param.easing,
+                    easing: fade_out_param.easing.into(),
                 },
             );
         }
