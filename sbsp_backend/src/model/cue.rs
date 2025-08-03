@@ -2,9 +2,10 @@ use std::path::PathBuf;
 
 use kira::sound::{IntoOptionalRegion, Region};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
@@ -17,7 +18,7 @@ pub struct Cue {
     pub param: CueParam,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub enum CueSequence {
     #[default]
@@ -26,7 +27,7 @@ pub enum CueSequence {
     AutoFollow,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(tag = "type", content = "params", rename_all = "camelCase")]
 pub enum CueParam {
     Audio {
@@ -43,20 +44,20 @@ pub enum CueParam {
     }, // TODO midi, osc wait, group cue
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueLevels {
     pub master: f64, // decibels
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueFadeParam {
     pub duration: f64,
     pub easing: Easing,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 pub struct LoopRegion{
     pub start: Option<f64>,
     pub end: Option<f64>,
@@ -88,7 +89,7 @@ impl IntoOptionalRegion for LoopRegion {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 pub enum Easing {
 	Linear,
 	InPowi(i32),
