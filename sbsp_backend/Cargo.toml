@@ -14,6 +14,7 @@ env_logger = "0.11.8"
 log = "0.4.27"
 anyhow = "1.0.98"
 axum = { version = "0.8.4", features = ["ws"] }
+ts-rs = { version = "11.0.1", features = ["uuid-impl"]}
 
 [profile.dev.package.kira]
 opt-level = 3
