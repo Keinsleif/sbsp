@@ -3574,11 +3574,13 @@ dependencies = [
 name = "sbsp_tauri"
 version = "0.1.0"
 dependencies = [
+ "sbsp_backend",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "ts-rs",
 ]
 
 [[package]]
