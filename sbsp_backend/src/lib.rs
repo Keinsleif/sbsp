@@ -2,12 +2,12 @@ use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{controller::{ControllerCommand, CueController, ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}};
 
-mod event;
-mod controller;
+pub mod event;
+pub mod controller;
 mod engine;
 mod executor;
-mod manager;
-mod model;
+pub mod manager;
+pub mod model;
 
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
