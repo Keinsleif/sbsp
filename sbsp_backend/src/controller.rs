@@ -58,10 +58,11 @@ pub struct CueController {
     executor_event_rx: mpsc::Receiver<ExecutorEvent>,
     state_tx: watch::Sender<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
+    event_rx: broadcast::Receiver<UiEvent>,
 }
 
 impl CueController {
-    pub async fn new(
+    pub fn new(
         model_handle: ShowModelHandle,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         command_rx: mpsc::Receiver<ControllerCommand>,
@@ -69,17 +70,7 @@ impl CueController {
         state_tx: watch::Sender<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
     ) -> Self {
-        let manager = model_handle.read().await;
-        let show_state = if let Some(first_cue) = manager.cues.first() {
-            ShowState { playback_cursor: Some(first_cue.id), ..Default::default() }
-        } else {
-            ShowState::new()
-        };
-        drop(manager);
-        if state_tx.send(show_state.clone()).is_err() {
-            log::trace!("No UI clients are listening to playback events.");
-        }
-
+        let event_rx = event_tx.subscribe();
         Self {
             model_handle,
             executor_tx,
@@ -87,6 +78,7 @@ impl CueController {
             executor_event_rx,
             state_tx,
             event_tx,
+            event_rx,
         }
     }
 
@@ -104,6 +96,42 @@ impl CueController {
                         log::error!("Error handling playback event: {:?}", e);
                     }
                 },
+                Ok(event) = self.event_rx.recv() => {
+                    match event {
+                        UiEvent::ShowModelLoaded{..} => {
+                            if self.state_tx.borrow().playback_cursor.is_none() {
+                                let model = self.model_handle.read().await;
+                                if let Some(first_cue) = model.cues.first() {
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = Some(first_cue.id);
+                                    });
+                                }
+                            }
+                        },
+                        UiEvent::CueAdded{cue, ..} => {
+                            if self.state_tx.borrow().playback_cursor.is_none() {
+                                self.state_tx.send_modify(|state| {
+                                    state.playback_cursor = Some(cue.id);
+                                });
+                            }
+                        },
+                        UiEvent::CueRemoved{cue_id} => {
+                            if self.state_tx.borrow().playback_cursor.eq(&Some(cue_id)) {
+                                let model = self.model_handle.read().await;
+                                if let Some(first_cue) = model.cues.first() {
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = Some(first_cue.id);
+                                    });
+                                } else {
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = None;
+                                    });
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 else => break,
             }
         }
@@ -328,7 +356,7 @@ mod tests {
             playback_event_rx,
             state_tx,
             event_tx,
-        ).await;
+        );
 
         (controller, ctrl_tx, exec_rx, playback_event_tx, state_rx, event_rx)
     }

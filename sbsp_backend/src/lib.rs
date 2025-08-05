@@ -11,13 +11,14 @@ pub mod model;
 
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
-
     pub controller_tx: mpsc::Sender<ControllerCommand>,
-    pub state_rx: watch::Receiver<ShowState>,
-    pub event_rx: broadcast::Receiver<UiEvent>
 }
 
-pub async fn start_backend() -> BackendHandle {
+pub fn start_backend() -> (
+    BackendHandle,
+    watch::Receiver<ShowState>,
+    broadcast::Receiver<UiEvent>,
+) {
     let (controller_tx, controller_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
@@ -34,7 +35,7 @@ pub async fn start_backend() -> BackendHandle {
         executor_event_rx,
         state_tx,
         event_tx.clone(),
-    ).await;
+    );
 
     let executor = Executor::new(
         model_handle.clone(),
@@ -51,5 +52,8 @@ pub async fn start_backend() -> BackendHandle {
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
 
-    BackendHandle { model_handle, controller_tx, state_rx, event_rx }
+    (
+        BackendHandle { model_handle, controller_tx },
+        state_rx, event_rx,
+    )
 }
