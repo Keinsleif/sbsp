@@ -14,7 +14,7 @@ async fn forward_backend_state_and_event(
                 app_handle.emit("backend-state-update", state).ok();
             },
             Ok(event) = event_rx.recv() => {
-                app_handle.emit("backend-playback-event", event).ok();
+                app_handle.emit("backend-event", event).ok();
             }
             else => break,
         }
