@@ -1,28 +1,12 @@
-use std::{collections::HashMap};
+pub mod state;
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle
+    controller::state::{ActiveCue, PlaybackStatus, ShowState}, event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle
 };
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub enum PlaybackStatus {
-    Playing,
-    Paused,
-    Completed,
-    Error,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct ActiveCue {
-    pub cue_id: Uuid,
-    pub position: f64,
-    pub duration: f64,
-    pub status: PlaybackStatus,
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "command", content = "params", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -33,23 +17,6 @@ pub enum ControllerCommand {
         cue_id: Uuid,
     },
 }
-
-#[derive(Debug, Clone, Default, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ShowState {
-    pub playback_cursor: Option<Uuid>,
-    pub active_cues: HashMap<Uuid, ActiveCue>,
-}
-
-impl ShowState {
-    pub fn new() -> Self {
-        Self {
-            playback_cursor: None,
-            active_cues: HashMap::new(),
-        }
-    }
-}
-
 pub struct CueController {
     model_handle: ShowModelHandle,
     executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル

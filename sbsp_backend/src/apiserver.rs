@@ -2,7 +2,7 @@ use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, respons
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, ShowState}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel};
+use crate::{controller::{ControllerCommand, state::ShowState}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel};
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]

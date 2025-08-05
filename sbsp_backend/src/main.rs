@@ -9,7 +9,7 @@ mod model;
 use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{
-    controller::{ControllerCommand, CueController, ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::ShowModelManager,
+    controller::{ControllerCommand, CueController, state::ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::ShowModelManager,
 };
 
 #[tokio::main]

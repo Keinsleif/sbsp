@@ -1,4 +1,4 @@
-use sbsp_backend::{controller::{ControllerCommand, ShowState}, event::UiEvent, model::ShowModel, start_backend, BackendHandle};
+use sbsp_backend::{controller::{ControllerCommand, state::ShowState}, event::UiEvent, model::ShowModel, start_backend, BackendHandle};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager as _, Size};
 use tokio::sync::{broadcast, watch};
 
