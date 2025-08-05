@@ -2,9 +2,9 @@
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100">
       <div class="d-flex flex-column ma-0 flex-grow-1">
-        <div class="pa-2 rounded mb-1 border-sm border-current">
-          2・Intro Music (Playing)
-        </div>
+        <v-sheet class="pa-2 rounded mb-1 border-sm border-current" height="40px">
+          {{playbackCue != null ? playbackCue.number + "・" + playbackCue.name : ""}}
+        </v-sheet>
         <v-textarea
           flat
           no-resize
@@ -14,6 +14,7 @@
           variant="outlined"
           placeholder="Notes"
           base-color="current"
+          :model-value="playbackCue != null ? playbackCue.notes : ''"
         ></v-textarea>
       </div>
     </v-sheet>
@@ -53,4 +54,18 @@ import {
   mdiTimerSandEmpty,
   mdiVolumeHigh,
 } from "@mdi/js";
+import { useShowModel } from "../stores/showmodel";
+import { useShowState } from "../stores/showstate";
+import { computed } from "vue";
+
+const showModel = useShowModel();
+const showState = useShowState();
+
+const cueList = showModel.cueList;
+const playbackCursor = showState.playbackCursor;
+
+const playbackCue = computed(() => {
+  return playbackCursor != null ? cueList.find((cue) => cue.id == playbackCursor) : null;
+})
 </script>
+
