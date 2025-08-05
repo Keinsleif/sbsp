@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{executor::ExecutorEvent, model::cue::Cue};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "type", content = "param", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum UiEvent {
     // Cue Status Events
@@ -57,7 +58,7 @@ pub enum UiEvent {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 #[serde(tag = "type", rename_all="camelCase", rename_all_fields = "camelCase")]
 pub enum UiError {
     FileSave {
