@@ -37,9 +37,9 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
 
-            let (backend_handle, state_rx, event_rx) = start_backend();
+            let (backend_handle, state_rx, event_tx) = start_backend();
 
-            tauri::async_runtime::spawn(forward_backend_state_and_event(app.handle().clone(), state_rx, event_rx));
+            tauri::async_runtime::spawn(forward_backend_state_and_event(app.handle().clone(), state_rx, event_tx.subscribe()));
 
             app.manage(backend_handle);
 

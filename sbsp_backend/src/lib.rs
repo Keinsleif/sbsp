@@ -8,6 +8,7 @@ mod engine;
 mod executor;
 pub mod manager;
 pub mod model;
+pub mod apiserver;
 
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
@@ -17,7 +18,7 @@ pub struct BackendHandle {
 pub fn start_backend() -> (
     BackendHandle,
     watch::Receiver<ShowState>,
-    broadcast::Receiver<UiEvent>,
+    broadcast::Sender<UiEvent>,
 ) {
     let (controller_tx, controller_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
@@ -25,7 +26,7 @@ pub fn start_backend() -> (
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
+    let (event_tx, _event_rx) = broadcast::channel::<UiEvent>(32);
 
     let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
     let controller = CueController::new(
@@ -54,6 +55,6 @@ pub fn start_backend() -> (
 
     (
         BackendHandle { model_handle, controller_tx },
-        state_rx, event_rx,
+        state_rx, event_tx,
     )
 }
