@@ -48,7 +48,7 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            05:00.00
+            {{ Duration.fromMillis(cue.preWait * 1000).toFormat("mm:ss.SS")}}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
@@ -80,7 +80,7 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            05:00.00
+            {{ Duration.fromMillis(cue.postWait * 1000).toFormat("mm:ss.SS")}}
           </div>
         </td>
         <td width="24px">
