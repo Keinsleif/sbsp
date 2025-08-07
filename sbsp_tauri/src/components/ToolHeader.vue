@@ -55,17 +55,14 @@ import {
   mdiVolumeHigh,
 } from "@mdi/js";
 import { useShowModel } from "../stores/showmodel";
-import { useShowState } from "../stores/showstate";
 import { computed } from "vue";
+import { useUiState } from "../stores/uistate";
 
 const showModel = useShowModel();
-const showState = useShowState();
-
-const cueList = showModel.cueList;
-const playbackCursor = showState.playbackCursor;
+const uiState = useUiState();
 
 const playbackCue = computed(() => {
-  return playbackCursor != null ? cueList.find((cue) => cue.id == playbackCursor) : null;
+  return uiState.selected != null ? showModel.cues[uiState.selected] : null;
 })
 </script>
 
