@@ -25,7 +25,7 @@
         @click="click($event, i)"
       >
         <td width="24px">
-          <v-icon v-if="i === 1" :icon="mdiArrowRightBold"></v-icon>
+          <v-icon v-if="showState.playbackCursor == cue.id" :icon="mdiArrowRightBold"></v-icon>
         </td>
         <td width="24px">
           <v-icon v-if="cue.param.type == 'audio'" :icon="mdiVolumeHigh" />
@@ -104,8 +104,10 @@ import {
 } from "@mdi/js";
 import { Duration } from "luxon";
 import { useUiState } from "../stores/uistate";
+import { useShowState } from "../stores/showstate";
 
 const showModel = useShowModel();
+const showState = useShowState();
 const uiState = useUiState();
 
 const dragOverIndex = ref();
