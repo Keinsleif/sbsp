@@ -158,12 +158,11 @@ const click = (event: MouseEvent, index: number) => {
             }
         } else {
             uiState.selectedRange = null;
-            uiState.selected = index;
         }
     } else {
         uiState.selectedRange = null;
-        uiState.selected = index;
     }
+    uiState.selected = index;
 }
 </script>
 
