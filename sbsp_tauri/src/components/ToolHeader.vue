@@ -2,20 +2,13 @@
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100">
       <div class="d-flex flex-column ma-0 flex-grow-1">
-        <v-sheet class="pa-2 rounded mb-1 border-sm border-current" height="40px">
+        <v-sheet class="pa-2 rounded mb-1 border-sm border-current" height="42px">
           {{playbackCue != null ? playbackCue.number + "・" + playbackCue.name : ""}}
         </v-sheet>
-        <v-textarea
-          flat
-          no-resize
-          hide-details
-          rows="2"
-          density="compact"
-          variant="outlined"
-          placeholder="Notes"
-          base-color="current"
-          :model-value="playbackCue != null ? playbackCue.notes : ''"
-        ></v-textarea>
+        <v-sheet
+          class="pa-2 rounded border-sm border-current text-pre-wrap overflow-auto"
+          height="66px"
+        >{{playbackCue != null ? playbackCue.notes : ""}}</v-sheet>
       </div>
     </v-sheet>
     <v-sheet class="d-flex flex-columns ga-4">
