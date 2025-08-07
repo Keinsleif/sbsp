@@ -16,7 +16,7 @@
       <tr
         v-for="(cue, i) in showModel.cues"
         :key="cue.id"
-        :class="dragOverIndex == i ? $style['drag-over-row'] : ''"
+        :class="[dragOverIndex == i ? $style['drag-over-row'] : '']"
         draggable="true"
         @dragstart="dragStart($event, cue.id)"
         @dragover="dragOver($event, i)"
@@ -87,6 +87,7 @@
           <v-icon :icon="mdiArrowBottomLeft" />
         </td>
       </tr>
+      <tr></tr>
     </tbody>
   </v-table>
 </template>
@@ -100,6 +101,7 @@ import {
   mdiChevronDoubleDown,
   mdiVolumeHigh,
 } from "@mdi/js";
+import { Duration } from "luxon";
 
 const showModelState = useShowModel();
 
@@ -135,7 +137,7 @@ const drop = (event: DragEvent, index: number) => {
 </script>
 
 <style lang="css" module>
-.drag-over-row {
-  border-top: 4px solid rgb(var(--v-theme-primary)) !important;
+.drag-over-row > td {
+  border-top: 2px solid rgb(var(--v-theme-primary)) !important;
 }
 </style>
