@@ -4,8 +4,8 @@ import { ShowState } from "../types/ShowState";
 export const useShowState = defineStore("showstate", {
     state: () => ({ playbackCursor: null, activeCues: {} }) as ShowState,
     getters: {
-        activeCues: (state) => state.activeCues,
-        playbackCursor: (state) => state.playbackCursor,
+        getActiveCues: (state) => state.activeCues,
+        getPlaybackCursor: (state) => state.playbackCursor,
     },
     actions: {
         update(newState: ShowState) {
