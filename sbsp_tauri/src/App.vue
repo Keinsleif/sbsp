@@ -6,101 +6,7 @@
 
     <v-main>
       <v-sheet height="100%" class="d-flex">
-        <v-table
-          fixed-header
-          density="compact"
-          class="flex-grow-1"
-          height="0"
-        >
-          <thead>
-            <tr>
-              <th></th>
-              <th></th>
-              <th class="text-center">Number</th>
-              <th>Name</th>
-              <th class="text-center">Pre-Wait</th>
-              <th class="text-center">Duration</th>
-              <th class="text-center">Post-Wait</th>
-              <th><v-icon :icon="mdiChevronDoubleDown" /></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="i in 50" :key="i" :value="i">
-              <td width="24px">
-                <v-icon v-if="i === 1" :icon="mdiArrowRightBold"></v-icon>
-              </td>
-              <td width="24px">
-                <v-icon :icon="mdiVolumeHigh" />
-              </td>
-              <td class="text-center" width="50px">
-                <span class="cue-number mr-2">{{ i }}.0</span>
-              </td>
-              <td width="auto">
-                {{
-                  i === 1
-                    ? "Intro Music (Playing)"
-                    : i === 5
-                    ? "My Announcements (Selected)"
-                    : i % 2 === 0
-                    ? `Sound FX
-                ${i / 2}`
-                    : `Light Cue ${i}`
-                }}
-              </td>
-              <td class="text-center pa-1" width="100px">
-                <div
-                  class="border-md border-primary"
-                  :style="{
-                    background:
-                      'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                      2 * i +
-                      '%, transparent ' +
-                      2 * i +
-                      '%)',
-                    backgroundRepeat: 'no-repeat',
-                  }"
-                >
-                  05:00.00
-                </div>
-              </td>
-              <td class="text-center pa-1" width="100px">
-                <div
-                  class="border-md border-primary"
-                  :style="{
-                    background:
-                      'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                      2 * i +
-                      '%, transparent ' +
-                      2 * i +
-                      '%)',
-                    backgroundRepeat: 'no-repeat',
-                  }"
-                >
-                  05:00.00
-                </div>
-              </td>
-              <td class="text-center pa-1" width="100px">
-                <div
-                  class="border-md border-primary"
-                  :style="{
-                    background:
-                      'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                      2 * i +
-                      '%, transparent ' +
-                      2 * i +
-                      '%)',
-                    backgroundRepeat: 'no-repeat',
-                  }"
-                >
-                  05:00.00
-                </div>
-              </td>
-              <td width="24px">
-                <v-icon :icon="mdiArrowBottomLeft" />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+        <CueList />
       </v-sheet>
     </v-main>
 
@@ -273,11 +179,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import {
-  mdiVolumeHigh,
   mdiCog,
-  mdiChevronDoubleDown,
-  mdiArrowRightBold,
-  mdiArrowBottomLeft,
   mdiEye,
   mdiFileEdit,
   mdiDockTop,
@@ -286,6 +188,7 @@ import {
   mdiFile,
 } from "@mdi/js";
 import ToolHeader from "./components/ToolHeader.vue";
+import CueList from "./components/CueList.vue";
 
 const rightSidebarOpen = ref(true);
 const editorOpen = ref(true);
