@@ -11,9 +11,6 @@ export const useShowModel = defineStore("showmodel", {
             this.cues = newModel.cues;
             this.settings = newModel.settings;
         },
-        updateWith(callback: (model: ShowModel) => void) {
-            callback(this);
-        },
         updateCue(newCue: Cue) {
             this.cues.splice(this.cues.findIndex((cue) => cue.id = newCue.id), 1, newCue);
         },
