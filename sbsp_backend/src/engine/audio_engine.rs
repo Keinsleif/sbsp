@@ -182,7 +182,7 @@ impl AudioEngine {
                 .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
         
         if let Some(region) = data.loop_region {
-            sound_data.loop_region(region);
+            sound_data = sound_data.loop_region(region);
         }
 
         if let Some(fade_in_param) = data.fade_in_param {
