@@ -85,7 +85,8 @@
           </div>
         </td>
         <td width="24px">
-          <v-icon :icon="mdiArrowBottomLeft" />
+          <v-icon v-if="cue.sequence == 'autoContinue'" :icon="mdiArrowBottomLeft" />
+          <v-icon v-if="cue.sequence == 'autoFollow'" :icon="mdiArrowDown" />
         </td>
       </tr>
       <tr></tr>
@@ -98,6 +99,7 @@ import { computed, ref } from "vue";
 import { useShowModel } from "../stores/showmodel";
 import {
   mdiArrowBottomLeft,
+  mdiArrowDown,
   mdiArrowRightBold,
   mdiChevronDoubleDown,
   mdiVolumeHigh,
