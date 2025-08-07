@@ -2,12 +2,12 @@
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100">
       <div class="d-flex flex-column ma-0 flex-grow-1">
-        <v-sheet class="pa-2 rounded mb-1 border-sm border-current" height="42px">
+        <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
           {{playbackCue != null ? playbackCue.number + "・" + playbackCue.name : ""}}
         </v-sheet>
         <v-sheet
-          class="pa-2 rounded border-sm border-current text-pre-wrap overflow-auto"
-          height="66px"
+          class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto"
+          height="64px"
         >{{playbackCue != null ? playbackCue.notes : ""}}</v-sheet>
       </div>
     </v-sheet>
