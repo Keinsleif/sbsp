@@ -14,11 +14,11 @@
     </thead>
     <tbody>
       <tr
-        v-for="(cue, i) in showModel.cues"
+        v-for="(cue, i) in showModelState.model.cues"
         :key="cue.id"
         :class="[dragOverIndex == i ? $style['drag-over-row'] : '', isSelected(i) ? $style['selected-row'] : '']"
         draggable="true"
-        @dragstart="dragStart($event, cue.id)"
+        @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
         @drop="drop($event, i)"
@@ -106,15 +106,13 @@ import { Duration } from "luxon";
 
 const showModelState = useShowModel();
 
-const showModel = showModelState.model;
-
 const dragOverIndex = ref();
 
-const dragStart = (event: DragEvent, cue_id: string) => {
+const dragStart = (event: DragEvent, index: number) => {
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.dropEffect = "move";
-    event.dataTransfer.setData("text/plain", cue_id);
+    event.dataTransfer.setData("text/plain", index.toString());
   }
 };
 
@@ -130,9 +128,11 @@ const dragEnd = () => {
 const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    const cue_id = event.dataTransfer.getData("text/plain");
+    const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+    const cue_id = showModelState.model.cues[fromIndex].id;
+    const newIndex = index < fromIndex ? index : index - 1;
     // invoke("move_cue", {cue_id: cue_id, to_index: index});
-    showModelState.moveCue(cue_id, index);
+    showModelState.moveCue(cue_id, newIndex);
   }
 };
 
