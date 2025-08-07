@@ -171,7 +171,7 @@ const click = (event: MouseEvent, index: number) => {
   border-top: 2px solid rgb(var(--v-theme-primary)) !important;
 }
 .selected-row > td {
-    background-color: rgb(var(--v-theme-primary));
-    color: rgb(var(--v-theme-on-primary));
+    background-color: rgb(var(--v-theme-primary), 0.2);
+    color: rgb(var(--v-theme-on-background));
 }
 </style>
