@@ -45,7 +45,7 @@ pub struct PlayCommandData {
     pub fade_in_param: Option<AudioCueFadeParam>,
     pub end_time: Option<f64>,
     pub fade_out_param: Option<AudioCueFadeParam>,
-    pub loop_region: LoopRegion,
+    pub loop_region: Option<LoopRegion>,
 }
 
 struct PlayingSound {
@@ -179,8 +179,11 @@ impl AudioEngine {
                     },
                 })
                 .volume(Decibels::from(data.levels.master as f32))
-                .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)))
-                .loop_region(data.loop_region);
+                .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
+        
+        if let Some(region) = data.loop_region {
+            sound_data.loop_region(region);
+        }
 
         if let Some(fade_in_param) = data.fade_in_param {
             sound_data = sound_data.fade_in_tween(Tween {

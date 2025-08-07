@@ -3,4 +3,4 @@ import type { AudioCueFadeParam } from "./AudioCueFadeParam";
 import type { AudioCueLevels } from "./AudioCueLevels";
 import type { LoopRegion } from "./LoopRegion";
 
-export type CueParam = { "type": "audio", "params": { target: string, start_time: number | null, fade_in_param: AudioCueFadeParam | null, end_time: number | null, fade_out_param: AudioCueFadeParam | null, levels: AudioCueLevels, loop_region: LoopRegion, } } | { "type": "wait", "params": { duration: number, } };
+export type CueParam = { "type": "audio", "params": { target: string, start_time: number | null, fade_in_param: AudioCueFadeParam | null, end_time: number | null, fade_out_param: AudioCueFadeParam | null, levels: AudioCueLevels, loop_region: LoopRegion | null, } } | { "type": "wait", "params": { duration: number, } };

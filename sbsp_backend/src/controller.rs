@@ -309,7 +309,7 @@ mod tests {
                                 easing: Easing::InPowi(2),
                             }),
                             levels: AudioCueLevels { master: 0.0 },
-                            loop_region: (Some(2.0), None).into(),
+                            loop_region: Some((Some(2.0), None).into()),
                         },
                     });
                 }

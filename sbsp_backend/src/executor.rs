@@ -278,7 +278,7 @@ mod tests {
                         easing: Easing::InPowi(2),
                     }),
                     levels: AudioCueLevels { master: 0.0 },
-                    loop_region: (Some(2.0), None).into(),
+                    loop_region: Some((Some(2.0), None).into()),
                     },
                 });
                 cue_id
@@ -324,7 +324,7 @@ mod tests {
             assert_eq!(data.fade_in_param, Some(AudioCueFadeParam { duration: 2.0, easing: Easing::Linear }));
             assert_eq!(data.end_time, Some(50.0));
             assert_eq!(data.fade_out_param, Some(AudioCueFadeParam { duration: 5.0, easing: Easing::InPowi(2) }));
-            assert_eq!(data.loop_region, LoopRegion { start: Some(2.0), end: None });
+            assert_eq!(data.loop_region, Some(LoopRegion { start: Some(2.0), end: None }));
         } else {
             unreachable!();
         }

@@ -37,7 +37,7 @@ pub enum CueParam {
         end_time: Option<f64>,
         fade_out_param: Option<AudioCueFadeParam>,
         levels: AudioCueLevels,
-        loop_region: LoopRegion,
+        loop_region: Option<LoopRegion>,
     },
     Wait {
         duration: f64,
