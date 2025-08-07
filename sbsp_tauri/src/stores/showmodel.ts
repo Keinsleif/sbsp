@@ -5,10 +5,6 @@ import { Cue } from "../types/Cue";
 
 export const useShowModel = defineStore("showmodel", {
     state: () => ({ name: "", cues: [], settings: {general: {}}, }) as ShowModel,
-    getters: {
-        model: (state) => state,
-        cueList: (state) => state.cues,
-    },
     actions: {
         updateAll(newModel: ShowModel) {
             this.name = newModel.name;

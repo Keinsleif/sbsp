@@ -14,7 +14,7 @@
     </thead>
     <tbody>
       <tr
-        v-for="(cue, i) in showModelState.model.cues"
+        v-for="(cue, i) in showModelState.cues"
         :key="cue.id"
         :class="[dragOverIndex == i ? $style['drag-over-row'] : '', isSelected(i) ? $style['selected-row'] : '']"
         draggable="true"
@@ -129,7 +129,7 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-    const cue_id = showModelState.model.cues[fromIndex].id;
+    const cue_id = showModelState.cues[fromIndex].id;
     const newIndex = index < fromIndex ? index : index - 1;
     // invoke("move_cue", {cue_id: cue_id, to_index: index});
     showModelState.moveCue(cue_id, newIndex);
