@@ -1,9 +1,9 @@
 <template>
-  <v-tabs grow fixed-tabs v-model="uiState.isSideBarOpen" density="compact">
+  <v-tabs grow fixed-tabs v-model="uiState.sideBarTab" density="compact">
     <v-tab border density="compact" value="activeCues">Active Cues</v-tab>
     <v-tab border density="compact" value="levels">Levels</v-tab>
   </v-tabs>
-  <v-tabs-window v-model="uiState.isSideBarOpen">
+  <v-tabs-window v-model="uiState.sideBarTab">
     <v-tabs-window-item
       value="activeCues"
       class="overflow-y-auto"
