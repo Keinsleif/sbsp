@@ -16,18 +16,19 @@
       <tr
         v-for="(cue, i) in showModel.cues"
         :key="cue.id"
-        :class="[dragOverIndex == i ? $style['drag-over-row'] : '']"
+        :class="[dragOverIndex == i ? $style['drag-over-row'] : '', isSelected(i) ? $style['selected-row'] : '']"
         draggable="true"
         @dragstart="dragStart($event, cue.id)"
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
         @drop="drop($event, i)"
+        @click="click($event, i)"
       >
         <td width="24px">
           <v-icon v-if="i === 1" :icon="mdiArrowRightBold"></v-icon>
         </td>
         <td width="24px">
-          <v-icon :icon="mdiVolumeHigh" />
+          <v-icon v-if="cue.param.type == 'audio'" :icon="mdiVolumeHigh" />
         </td>
         <td class="text-center" width="50px">
           <span class="cue-number mr-2">{{ cue.number }}.0</span>
@@ -93,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useShowModel } from "../stores/showmodel";
 import {
   mdiArrowBottomLeft,
@@ -134,10 +135,45 @@ const drop = (event: DragEvent, index: number) => {
     showModelState.moveCue(cue_id, index);
   }
 };
+
+const selected = ref<number|null>(null);
+const selectedRange = ref<[number,number]|null>(null);
+
+const isSelected = computed(() => {
+    return (index: number) => {
+        if (selectedRange.value == null) {
+            return selected.value == index;
+        } else {
+            return selectedRange.value[0] <= index && selectedRange.value[1] >= index;
+        }
+    }
+})
+
+const click = (event: MouseEvent, index: number) => {
+    if (event.shiftKey) {
+        if (selected.value != null) {
+            if (index >= selected.value) {
+                selectedRange.value = [selected.value, index];
+            } else {
+                selectedRange.value = [index, selected.value];
+            }
+        } else {
+            selectedRange.value = null;
+            selected.value = index;
+        }
+    } else {
+        selectedRange.value = null;
+        selected.value = index;
+    }
+}
 </script>
 
 <style lang="css" module>
 .drag-over-row > td {
   border-top: 2px solid rgb(var(--v-theme-primary)) !important;
+}
+.selected-row > td {
+    background-color: rgb(var(--v-theme-primary));
+    color: rgb(var(--v-theme-on-primary));
 }
 </style>
