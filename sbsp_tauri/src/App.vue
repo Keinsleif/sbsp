@@ -44,24 +44,7 @@
       location="right"
       width="300"
     >
-      <v-tabs grow fixed-tabs v-model="sidebarTab" density="compact">
-        <v-tab border density="compact" value="activeCues">Active Cues</v-tab>
-        <v-tab border density="compact" value="levels">Levels</v-tab>
-      </v-tabs>
-      <v-tabs-window v-model="sidebarTab">
-        <v-tabs-window-item value="activeCues" class="overflow-y-auto" transition="false" reverse-transition="false">
-          <v-card v-for="i in 3" :key="i" :value="i" class="border">
-            <v-card-title class="text-subtitle-2">
-              {{ i }}・Intro Music (Playing)
-            </v-card-title>
-            <v-progress-linear
-              color="primary"
-              :model-value="i * 20"
-              height="8"
-            ></v-progress-linear>
-          </v-card>
-        </v-tabs-window-item>
-      </v-tabs-window>
+      <SideBar />
     </v-navigation-drawer>
     <v-navigation-drawer
       v-model="editorOpen"
@@ -189,11 +172,11 @@ import {
 } from "@mdi/js";
 import ToolHeader from "./components/ToolHeader.vue";
 import CueList from "./components/CueList.vue";
+import SideBar from "./components/SideBar.vue";
 
 const rightSidebarOpen = ref(true);
 const editorOpen = ref(true);
 const editTab = ref("basics");
-const sidebarTab = ref("activeCues");
 
 const toggleRightSidebar = () => {
   rightSidebarOpen.value = !rightSidebarOpen.value;
