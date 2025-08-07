@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ShowState } from "../types/ShowState";
+import { ShowState } from "../types/state/ShowState";
 
 export const useShowState = defineStore("showstate", {
     state: () => ({ playbackCursor: null, activeCues: {} }) as ShowState,

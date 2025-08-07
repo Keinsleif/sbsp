@@ -7,9 +7,9 @@ fn main() {
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/controller/state.rs");
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/event.rs");
 
-    <ShowModel as TS>::export_all_to("../src/types/").unwrap();
-    <ShowState as TS>::export_all_to("../src/types/").unwrap();
-    <UiEvent as TS>::export_all_to("../src/types/").unwrap();
+    <ShowModel as TS>::export_all_to("../src/types/model").unwrap();
+    <ShowState as TS>::export_all_to("../src/types/state").unwrap();
+    <UiEvent as TS>::export_all_to("../src/types/event").unwrap();
 
     tauri_build::build()
 }

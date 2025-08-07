@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
-import type { ShowModel } from "../types/ShowModel";
-import { Cue } from "../types/Cue";
+import type { ShowModel } from "../types/model/ShowModel";
+import { Cue } from "../types/model/Cue";
 
 export const useShowModel = defineStore("showmodel", {
     state: () => ({ name: "", cues: [], settings: {general: {}}, }) as ShowModel,
