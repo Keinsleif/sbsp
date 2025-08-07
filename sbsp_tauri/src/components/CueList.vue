@@ -14,7 +14,7 @@
     </thead>
     <tbody>
       <tr
-        v-for="(cue, i) in showModelState.cues"
+        v-for="(cue, i) in showModel.cues"
         :key="cue.id"
         :class="[dragOverIndex == i ? $style['drag-over-row'] : '', isSelected(i) ? $style['selected-row'] : '']"
         draggable="true"
@@ -103,8 +103,10 @@ import {
   mdiVolumeHigh,
 } from "@mdi/js";
 import { Duration } from "luxon";
+import { useUiState } from "../stores/uistate";
 
-const showModelState = useShowModel();
+const showModel = useShowModel();
+const uiState = useUiState();
 
 const dragOverIndex = ref();
 
@@ -129,41 +131,38 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-    const cue_id = showModelState.cues[fromIndex].id;
+    const cue_id = showModel.cues[fromIndex].id;
     const newIndex = index < fromIndex ? index : index - 1;
     // invoke("move_cue", {cue_id: cue_id, to_index: index});
-    showModelState.moveCue(cue_id, newIndex);
+    showModel.moveCue(cue_id, newIndex);
   }
 };
 
-const selected = ref<number|null>(null);
-const selectedRange = ref<[number,number]|null>(null);
-
 const isSelected = computed(() => {
     return (index: number) => {
-        if (selectedRange.value == null) {
-            return selected.value == index;
+        if (uiState.selectedRange == null) {
+            return uiState.selected == index;
         } else {
-            return selectedRange.value[0] <= index && selectedRange.value[1] >= index;
+            return uiState.selectedRange[0] <= index && uiState.selectedRange[1] >= index;
         }
     }
 })
 
 const click = (event: MouseEvent, index: number) => {
     if (event.shiftKey) {
-        if (selected.value != null) {
-            if (index >= selected.value) {
-                selectedRange.value = [selected.value, index];
+        if (uiState.selected != null) {
+            if (index >= uiState.selected) {
+                uiState.selectedRange = [uiState.selected, index];
             } else {
-                selectedRange.value = [index, selected.value];
+                uiState.selectedRange = [index, uiState.selected];
             }
         } else {
-            selectedRange.value = null;
-            selected.value = index;
+            uiState.selectedRange = null;
+            uiState.selected = index;
         }
     } else {
-        selectedRange.value = null;
-        selected.value = index;
+        uiState.selectedRange = null;
+        uiState.selected = index;
     }
 }
 </script>
