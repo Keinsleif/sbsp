@@ -27,3 +27,6 @@ serde_json = "1"
 sbsp_backend = { path = "../../sbsp_backend" }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.17.0", features = ["serde", "v4", "v7"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = "2"

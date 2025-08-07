@@ -1,7 +1,13 @@
 use std::str::FromStr;
 
-use sbsp_backend::{controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::Cue, ShowModel}, start_backend, BackendHandle};
+use sbsp_backend::{
+    controller::{state::ShowState, ControllerCommand},
+    event::UiEvent,
+    model::{cue::Cue, ShowModel},
+    start_backend, BackendHandle,
+};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager as _, Size};
+use tauri_plugin_window_state::{WindowExt, AppHandleExt, StateFlags};
 use tokio::sync::{broadcast, watch};
 use uuid::Uuid;
 
@@ -26,19 +32,25 @@ async fn forward_backend_state_and_event(
 
 #[tauri::command]
 async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle.controller_tx.send(ControllerCommand::Go).await
+    handle
+        .controller_tx
+        .send(ControllerCommand::Go)
+        .await
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn set_playback_cursor(handle: tauri::State<'_, BackendHandle>, cue_id: String) -> Result<(), String> {
+async fn set_playback_cursor(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: String,
+) -> Result<(), String> {
     match Uuid::from_str(&cue_id) {
-        Ok(cursor) => {
-            handle.controller_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: cursor }).await.map_err(|e| e.to_string())
-        },
-        Err(e) => {
-            Err(e.to_string())
-        }
+        Ok(cursor) => handle
+            .controller_tx
+            .send(ControllerCommand::SetPlaybackCursor { cue_id: cursor })
+            .await
+            .map_err(|e| e.to_string()),
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -49,52 +61,78 @@ async fn get_show_model(handle: tauri::State<'_, BackendHandle>) -> Result<ShowM
 
 #[tauri::command]
 async fn update_cue(handle: tauri::State<'_, BackendHandle>, cue: Cue) -> Result<(), String> {
-    handle.model_handle.update_cue(cue).await.map_err(|e| e.to_string())
+    handle
+        .model_handle
+        .update_cue(cue)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-async fn add_cue(handle: tauri::State<'_, BackendHandle>, cue: Cue, at_index: usize) -> Result<(), String> {
-    handle.model_handle.add_cue(cue, at_index).await.map_err(|e| e.to_string())
+async fn add_cue(
+    handle: tauri::State<'_, BackendHandle>,
+    cue: Cue,
+    at_index: usize,
+) -> Result<(), String> {
+    handle
+        .model_handle
+        .add_cue(cue, at_index)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 async fn remove_cue(handle: tauri::State<'_, BackendHandle>, cue_id: &str) -> Result<(), String> {
     match Uuid::from_str(cue_id) {
-        Ok(cue_uuid) => {
-            handle.model_handle.remove_cue(cue_uuid).await.map_err(|e| e.to_string())
-        },
-        Err(e) => {
-            Err(e.to_string())
-        }
+        Ok(cue_uuid) => handle
+            .model_handle
+            .remove_cue(cue_uuid)
+            .await
+            .map_err(|e| e.to_string()),
+        Err(e) => Err(e.to_string()),
     }
 }
 
 #[tauri::command]
-async fn move_cue(handle: tauri::State<'_, BackendHandle>, cue_id: &str, to_index: usize) -> Result<(), String> {
+async fn move_cue(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: &str,
+    to_index: usize,
+) -> Result<(), String> {
     match Uuid::from_str(cue_id) {
-        Ok(cue_uuid) => {
-            handle.model_handle.move_cue(cue_uuid, to_index).await.map_err(|e| e.to_string())
-        },
-        Err(e) => {
-            Err(e.to_string())
-        }
+        Ok(cue_uuid) => handle
+            .model_handle
+            .move_cue(cue_uuid, to_index)
+            .await
+            .map_err(|e| e.to_string()),
+        Err(e) => Err(e.to_string()),
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
-
             let (backend_handle, state_rx, event_tx) = start_backend();
 
-            tauri::async_runtime::spawn(forward_backend_state_and_event(app.handle().clone(), state_rx, event_tx.subscribe()));
+            tauri::async_runtime::spawn(forward_backend_state_and_event(
+                app.handle().clone(),
+                state_rx,
+                event_tx.subscribe(),
+            ));
 
             app.manage(backend_handle);
 
             let main_window = app.get_webview_window("main").unwrap();
+            main_window.restore_state(StateFlags::all()).unwrap();
             main_window.set_size(Size::Logical(LogicalSize{ width: 1280.0, height: 720.0})).unwrap();
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested {..} = event {
+                window.app_handle().save_window_state(StateFlags::all()).unwrap();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             go,
