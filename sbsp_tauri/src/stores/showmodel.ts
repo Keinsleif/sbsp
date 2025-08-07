@@ -6,6 +6,7 @@ import { Cue } from "../types/Cue";
 export const useShowModel = defineStore("showmodel", {
     state: () => ({ name: "", cues: [], settings: {general: {}}, }) as ShowModel,
     getters: {
+        model: (state) => state,
         cueList: (state) => state.cues,
     },
     actions: {
@@ -13,6 +14,9 @@ export const useShowModel = defineStore("showmodel", {
             this.name = newModel.name;
             this.cues = newModel.cues;
             this.settings = newModel.settings;
+        },
+        updateWith(callback: (model: ShowModel) => void) {
+            callback(this);
         },
         updateCue(newCue: Cue) {
             this.cues.splice(this.cues.findIndex((cue) => cue.id = newCue.id), 1, newCue);
