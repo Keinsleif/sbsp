@@ -6,8 +6,9 @@ use sbsp_backend::{
     model::{cue::Cue, ShowModel},
     start_backend, BackendHandle,
 };
-use tauri::{AppHandle, Emitter, LogicalSize, Manager as _, Size};
+use tauri::{menu::{Menu, MenuId, MenuItem, SubmenuBuilder}, AppHandle, Emitter, LogicalSize, Manager as _, Size};
 use tauri_plugin_window_state::{WindowExt, AppHandleExt, StateFlags};
+use tauri_plugin_dialog::DialogExt;
 use tokio::sync::{broadcast, watch};
 use uuid::Uuid;
 
@@ -111,13 +112,46 @@ async fn move_cue(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    env_logger::init();
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
+            let app_handle = app.handle();
+
+            let menu = Menu::new(app_handle)?;
+            menu.append(&SubmenuBuilder::new(app_handle, "File")
+                .items(&[
+                    &MenuItem::with_id(app_handle, MenuId::new("id_open"), "Open", true, Some("Ctro+O"))?,
+                ])
+                .separator()
+                .text(MenuId::new("id_quit"), "Quit").build()?
+            )?;
+
+            app.set_menu(menu)?;
+
+            app.on_menu_event(|handle, event| {
+                match event.id().as_ref() {
+                    "id_open" => {
+                        if let Some(file_path) = handle.dialog().file().blocking_pick_file() {
+                            let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                            tauri::async_runtime::spawn(async move {
+                                model_handle.load_from_file(file_path.into_path().unwrap()).await.unwrap();
+                            });
+                        }
+                    },
+                    "id_quit" => {
+                        handle.cleanup_before_exit();
+                        std::process::exit(0);
+                    },
+                    _ => {},
+                }
+            });
+
             let (backend_handle, state_rx, event_tx) = start_backend();
 
             tauri::async_runtime::spawn(forward_backend_state_and_event(
-                app.handle().clone(),
+                app_handle.clone(),
                 state_rx,
                 event_tx.subscribe(),
             ));
