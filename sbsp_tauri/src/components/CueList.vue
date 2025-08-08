@@ -107,10 +107,13 @@ import {
 import { Duration } from "luxon";
 import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
+import { invoke } from "@tauri-apps/api/core";
+import { useUiSettings } from "../stores/uisettings";
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 const dragOverIndex = ref();
 
@@ -135,10 +138,12 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData("text/plain"));
-    const cue_id = showModel.cues[fromIndex].id;
+    const cueId = showModel.cues[fromIndex].id;
     const newIndex = index < fromIndex ? index : index - 1;
-    // invoke("move_cue", {cue_id: cue_id, to_index: index});
-    showModel.moveCue(cue_id, newIndex);
+    invoke("move_cue", {cueId: cueId, to_index: newIndex}).catch((e)=>{
+        console.log("Failed to move cue. "+e);
+    });
+    // showModel.moveCue(cue_id, newIndex);
   }
 };
 
@@ -167,6 +172,11 @@ const click = (event: MouseEvent, index: number) => {
         uiState.selectedRange = null;
     }
     uiState.selected = index;
+    if (uiSettings.lockCursorToSelection) {
+        invoke("set_playback_cursor", {cueId: showModel.cues[index].id}).catch((e) => {
+            console.error("Failed to set cursor. " + e);
+        })
+    }
 }
 </script>
 
