@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
@@ -136,11 +136,14 @@ impl Executor {
                 levels,
                 loop_region,
             } => {
+                let mut filepath = self.model_handle.get_current_file_path().await.unwrap_or(PathBuf::new());
+                filepath.pop();
+                filepath.push(target);
                 // AudioEngineが理解できるAudioCommandに変換
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
                     data: PlayCommandData {
-                        filepath: target.clone(),
+                        filepath,
                         levels: levels.clone(),
                         start_time: *start_time,
                         fade_in_param: *fade_in_param,
