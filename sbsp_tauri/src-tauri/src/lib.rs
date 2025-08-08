@@ -159,8 +159,9 @@ pub fn run() {
             app.manage(backend_handle);
 
             let main_window = app.get_webview_window("main").unwrap();
-            main_window.restore_state(StateFlags::all()).unwrap();
-            main_window.set_size(Size::Logical(LogicalSize{ width: 1280.0, height: 720.0})).unwrap();
+            if main_window.restore_state(StateFlags::all()).is_err() {
+                main_window.set_size(Size::Logical(LogicalSize{ width: 1280.0, height: 720.0})).unwrap();
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
