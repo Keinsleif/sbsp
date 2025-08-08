@@ -17,12 +17,12 @@
         <v-card-subtitle class="pa-0 d-flex justify-space-between">
           <v-list-item density="compact">
             <v-list-item-subtitle>
-              {{ activeCue != null ? Duration.fromMillis(activeCue.position * 1000).toFormat("mm:ss.SS") : "00:00.00" }}
+              {{ activeCue != null ? secondsToFormat(activeCue.position) : "00:00.00" }}
             </v-list-item-subtitle>
           </v-list-item>
           <v-list-item density="compact">
             <v-list-item-subtitle>
-              -{{ activeCue != null ? Duration.fromMillis((activeCue.duration - activeCue.position) * 1000).toFormat("mm:ss.SS") : "00:00.00" }}
+              -{{ activeCue != null ? secondsToFormat(activeCue.duration - activeCue.position) : "00:00.00" }}
             </v-list-item-subtitle>
           </v-list-item>
         </v-card-subtitle>
@@ -37,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { Duration } from 'luxon';
 import { useShowModel } from '../stores/showmodel';
 import { useShowState } from '../stores/showstate';
 import { useUiState } from '../stores/uistate';
+import { secondsToFormat } from '../utils';
 
 const showModel = useShowModel();
 const showState = useShowState();

@@ -49,7 +49,7 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ Duration.fromMillis(cue.preWait * 1000).toFormat("mm:ss.SS")}}
+            {{ secondsToFormat(cue.preWait) }}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
@@ -81,7 +81,7 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ Duration.fromMillis(cue.postWait * 1000).toFormat("mm:ss.SS")}}
+            {{ secondsToFormat(cue.postWait) }}
           </div>
         </td>
         <td width="24px">
@@ -104,11 +104,11 @@ import {
   mdiChevronDoubleDown,
   mdiVolumeHigh,
 } from "@mdi/js";
-import { Duration } from "luxon";
 import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
 import { invoke } from "@tauri-apps/api/core";
 import { useUiSettings } from "../stores/uisettings";
+import { secondsToFormat } from "../utils";
 
 const showModel = useShowModel();
 const showState = useShowState();
