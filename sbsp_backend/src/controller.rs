@@ -135,6 +135,18 @@ impl CueController {
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::ExecuteCue(cue_id);
             self.executor_tx.send(command).await?;
+            let model = self.model_handle.read().await;
+            if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == cue_id) {
+                if cue_index + 1 < model.cues.len() {
+                    self.state_tx.send_modify(|state| {
+                        state.playback_cursor = Some(model.cues[cue_index + 1].id);
+                    });
+                } else {
+                    self.state_tx.send_modify(|state| {
+                        state.playback_cursor = None;
+                    });
+                }
+            } 
         } else {
             log::warn!("GO: Reached end of cue list.");
         }
