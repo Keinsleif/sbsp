@@ -7,11 +7,12 @@
         color="primary"
         :true-icon="mdiLock"
         :false-icon="mdiLockOpen"
+        v-model="uiSettings.lockCursorToSelection"
       ></v-switch>
       <v-spacer></v-spacer>
       <v-btn :icon="mdiDockTop" size="small" variant="text"></v-btn>
     </v-sheet>
-    <v-sheet class="ml-auto mr-auto"> 50 cues </v-sheet>
+    <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} cues </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
       <v-btn
         :icon="mdiDockBottom"
@@ -40,6 +41,10 @@ import {
   mdiLockOpen,
 } from "@mdi/js";
 import { useUiState } from "../stores/uistate";
+import { useUiSettings } from "../stores/uisettings";
+import { useShowModel } from "../stores/showmodel";
 
+const showModel = useShowModel();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 </script>
