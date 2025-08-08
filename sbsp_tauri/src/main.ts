@@ -13,7 +13,6 @@ import { UiEvent } from "./types/event/UiEvent";
 import { useShowModel } from "./stores/showmodel";
 import { invoke } from "@tauri-apps/api/core";
 import { ShowModel } from "./types/model/ShowModel";
-import { ShowModel } from "./types/ShowModel";
 
 const vuetify = createVuetify({
   icons: {
@@ -41,10 +40,15 @@ listen<ShowState>("backend-state-update", (event) => {
 
 listen<UiEvent>("backend-event", (event) => {
   switch(event.payload.type) {
+    case "playbackCursorMoved":
+      break;
     case "showModelLoaded":
       invoke<ShowModel>("get_show_model").then((model) => {
         showModel.updateAll(model);
       });
+      break;
+    case "showModelSaved":
+      alert("Show file saved to "+ event.payload.param.path);
       break;
     case "cueUpdated":
       showModel.updateCue(event.payload.param.cue);
@@ -60,3 +64,7 @@ listen<UiEvent>("backend-event", (event) => {
       break;
   }
 });
+
+invoke<ShowModel>("get_show_model").then((model) => {
+  showModel.updateAll(model);
+}).catch((e) => console.error(e.toString()));
