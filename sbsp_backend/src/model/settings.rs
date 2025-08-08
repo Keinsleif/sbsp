@@ -21,14 +21,14 @@ pub struct GeneralSettings {}
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateSettings {
-    pub audio: Cue,
-    pub wait: Cue,
+    pub audio: Option<Cue>,
+    pub wait: Option<Cue>,
 }
 
 impl Default for TemplateSettings {
     fn default() -> Self {
         Self {
-            audio: Cue {
+            audio: Some(Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
                 name: "".to_string(),
@@ -37,8 +37,8 @@ impl Default for TemplateSettings {
                 post_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
                 param: CueParam::Audio { target: PathBuf::new(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, levels: AudioCueLevels::default(), loop_region: None },
-            },
-            wait: Cue {
+            }),
+            wait: Some(Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
                 name: "".to_string(),
@@ -47,7 +47,7 @@ impl Default for TemplateSettings {
                 post_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
                 param: CueParam::Wait { duration: 5.0 },
-            },
+            }),
         }
     }
 }
