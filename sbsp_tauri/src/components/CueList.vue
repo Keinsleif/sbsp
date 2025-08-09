@@ -31,10 +31,9 @@
           <v-icon v-if="cue.param.type == 'audio'" :icon="mdiVolumeHigh" />
         </td>
         <td class="text-center" width="50px">
-          <span class="cue-number mr-2">{{ cue.number }}.0</span>
+          <span class="cue-number mr-2">{{ cue.number }}</span>
         </td>
-        <td width="auto">
-          {{ cue.name }}
+        <td width="auto">         {{ cue.name }}
         </td>
         <td class="text-center pa-1" width="100px">
           <div
