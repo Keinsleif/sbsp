@@ -1,6 +1,9 @@
 <template>
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
-    <v-sheet class="d-flex flex-row ma-0 w-100">
+    <v-sheet class="d-flex flex-row ma-0 w-100 ga-4">
+      <v-sheet class="d-flex align-center border pa-3 text-center text-h2">
+        <span>{{ String(time.getHours()).padStart(2, '0') }}</span>:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span>.<span>{{ String(time.getSeconds()).padStart(2, '0') }}</span>
+      </v-sheet>
       <div class="d-flex flex-column ma-0 flex-grow-1">
         <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
           {{selectedCue != null ? selectedCue.number + "・" + selectedCue.name : ""}}
@@ -48,7 +51,7 @@ import {
   mdiVolumeHigh,
 } from "@mdi/js";
 import { useShowModel } from "../stores/showmodel";
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
 import { PlaybackStatus } from "../types/state/PlaybackStatus";
@@ -71,6 +74,20 @@ const isCueStatus = computed(() => (status: PlaybackStatus) => {
   }
   return false;
 })
+
+const time = ref();
+const ticker = ref();
+
+onMounted(() => {
+  ticker.value = setInterval(() => {
+    time.value = new Date();
+  }, 100)
+});
+
+onUnmounted(() => {
+  clearInterval(ticker.value);
+});
+
 </script>
 
 <style lang="css" module>
