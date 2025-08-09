@@ -1,5 +1,5 @@
 <template>
-  <v-table fixed-header density="compact" class="flex-grow-1" height="0">
+  <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
     <thead>
       <tr>
         <th></th>

@@ -4,8 +4,8 @@
       <ToolHeader />
     </v-app-bar>
 
-    <v-main>
-      <v-sheet height="100%" class="d-flex">
+    <v-main style="height: 100vh;">
+      <v-sheet class="d-flex fill-height">
         <CueList />
       </v-sheet>
     </v-main>
@@ -48,6 +48,10 @@ const uiState = useUiState();
 </script>
 
 <style>
+html {
+  overflow-y: hidden;
+  overscroll-behavior-y: none;
+}
 .centered-input input {
   text-align: center;
 }
