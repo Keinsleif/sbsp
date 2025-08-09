@@ -75,7 +75,7 @@ const isCueStatus = computed(() => (status: PlaybackStatus) => {
   return false;
 })
 
-const time = ref();
+const time = ref(new Date());
 const ticker = ref();
 
 onMounted(() => {
