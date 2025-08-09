@@ -54,18 +54,19 @@
         </td>
         <td class="text-center pa-1" width="100px">
           <div
-            class="border-md border-primary"
+            :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ? 'border-md border-primary' : '']"
             :style="{
               background:
+                cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ?
                 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                2 * i +
+                Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%, transparent ' +
-                2 * i +
-                '%)',
+                Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
+                '%)' : '',
               backgroundRepeat: 'no-repeat',
             }"
           >
-            05:00.00
+           {{ cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ? secondsToFormat(showState.activeCues[cue.id]!.position) : "05:00.00" }}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
