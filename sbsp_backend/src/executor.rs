@@ -257,11 +257,11 @@ impl Executor {
                 };
 
                 let executor_event = match pre_wait_event {
-                    PreWaitEvent::PreWaitStarted { .. } => ExecutorEvent::PreWaitStarted { cue_id },
-                    PreWaitEvent::PreWaitProgress { position, duration, .. } => ExecutorEvent::PreWaitProgress { cue_id, position, duration },
-                    PreWaitEvent::PreWaitPaused { position, duration, .. } => ExecutorEvent::PreWaitPaused { cue_id, position, duration },
-                    PreWaitEvent::PreWaitResumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
-                    PreWaitEvent::PreWaitCompleted { .. } => {
+                    PreWaitEvent::Started { .. } => ExecutorEvent::PreWaitStarted { cue_id },
+                    PreWaitEvent::Progress { position, duration, .. } => ExecutorEvent::PreWaitProgress { cue_id, position, duration },
+                    PreWaitEvent::Paused { position, duration, .. } => ExecutorEvent::PreWaitPaused { cue_id, position, duration },
+                    PreWaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
+                    PreWaitEvent::Completed { .. } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             self.dispatch_cue(&cue, instance_id).await?;
                         } else {

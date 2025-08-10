@@ -24,23 +24,23 @@ pub enum PreWaitCommand {
 
 #[derive(Debug)]
 pub enum PreWaitEvent {
-    PreWaitStarted {
+    Started {
         instance_id: Uuid,
     },
-    PreWaitProgress {
-        instance_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    PreWaitPaused {
+    Progress {
         instance_id: Uuid,
         position: f64,
         duration: f64,
     },
-    PreWaitResumed {
+    Paused {
+        instance_id: Uuid,
+        position: f64,
+        duration: f64,
+    },
+    Resumed {
         instance_id: Uuid,
     },
-    PreWaitCompleted {
+    Completed {
         instance_id: Uuid,
     },
 }
@@ -48,11 +48,11 @@ pub enum PreWaitEvent {
 impl PreWaitEvent {
     pub fn instance_id(&self) -> Uuid {
         match self {
-            PreWaitEvent::PreWaitStarted { instance_id } => *instance_id,
-            PreWaitEvent::PreWaitProgress { instance_id, .. } => *instance_id,
-            PreWaitEvent::PreWaitPaused { instance_id, .. } => *instance_id,
-            PreWaitEvent::PreWaitResumed { instance_id } => *instance_id,
-            PreWaitEvent::PreWaitCompleted { instance_id } => *instance_id,
+            PreWaitEvent::Started { instance_id } => *instance_id,
+            PreWaitEvent::Progress { instance_id, .. } => *instance_id,
+            PreWaitEvent::Paused { instance_id, .. } => *instance_id,
+            PreWaitEvent::Resumed { instance_id } => *instance_id,
+            PreWaitEvent::Completed { instance_id } => *instance_id,
         }
     }
 }
