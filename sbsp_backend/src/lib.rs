@@ -1,6 +1,6 @@
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{state::ShowState, ControllerCommand, CueController}, engine::{audio_engine::{AudioCommand, AudioEngine}, pre_wait_engine::PreWaitCommand}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}};
+use crate::{controller::{state::ShowState, ControllerCommand, CueController}, engine::{audio_engine::{AudioCommand, AudioEngine}, pre_wait_engine::{PreWaitCommand, PreWaitEngine}}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}};
 
 pub mod event;
 pub mod controller;
@@ -48,12 +48,14 @@ pub fn start_backend() -> (
         engine_event_rx,
     );
 
-    let audio_engine = AudioEngine::new(audio_rx, engine_event_tx).unwrap();
+    let audio_engine = AudioEngine::new(audio_rx, engine_event_tx.clone()).unwrap();
+    let pre_wait_engine = PreWaitEngine::new(pre_wait_rx, engine_event_tx);
 
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
+    tokio::spawn(pre_wait_engine.run());
 
     (
         BackendHandle { model_handle, controller_tx },
