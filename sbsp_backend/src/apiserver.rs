@@ -7,7 +7,7 @@ use crate::{controller::{ControllerCommand, state::ShowState}, event::UiEvent, m
 #[derive(Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 enum WsMessage {
-    Event(UiEvent),
+    Event(Box<UiEvent>),
     State(ShowState),
 }
 
@@ -84,7 +84,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
-                let ws_message = WsMessage::Event(event);
+                let ws_message = WsMessage::Event(Box::new(event));
 
                 if let Ok(payload) = serde_json::to_string(&ws_message) {
                     if socket.send(Message::Text(payload.into())).await.is_err() {
