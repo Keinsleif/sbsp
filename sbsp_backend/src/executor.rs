@@ -266,7 +266,6 @@ mod tests {
                     name: "Play IGY".to_string(),
                     notes: "".to_string(),
                     pre_wait: 0.0,
-                    post_wait: 0.0,
                     sequence: model::cue::CueSequence::DoNotContinue,
                     params: model::cue::CueParam::Audio {
                         target: PathBuf::from("./I.G.Y.flac"),

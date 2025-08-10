@@ -13,7 +13,6 @@ pub struct Cue {
     pub name: String,
     pub notes: String,
     pub pre_wait: f64,
-    pub post_wait: f64,
     pub sequence: CueSequence,
     pub params: CueParam,
 }
@@ -23,8 +22,10 @@ pub struct Cue {
 pub enum CueSequence {
     #[default]
     DoNotContinue,
-    AutoContinue,
-    AutoFollow,
+    AutoFollow {
+        target_id: Option<Uuid>,
+        post_wait: f64,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
