@@ -6,6 +6,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 pub enum PlaybackStatus {
+    PreWaiting,
+    PreWaitPaused,
     Playing,
     Paused,
     Completed,

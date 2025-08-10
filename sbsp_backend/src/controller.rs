@@ -160,13 +160,19 @@ impl CueController {
 
         match &event {
             ExecutorEvent::Started { cue_id } => {
-                let active_cue = ActiveCue {
-                    cue_id: *cue_id,
-                    position: 0.0,
-                    duration: 0.0,
-                    status: PlaybackStatus::Playing,
-                };
-                show_state.active_cues.insert(*cue_id, active_cue);
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.position = 0.0;
+                    active_cue.duration = 0.0;
+                    active_cue.status = PlaybackStatus::Playing;
+                } else {
+                    let active_cue = ActiveCue {
+                        cue_id: *cue_id,
+                        position: 0.0,
+                        duration: 0.0,
+                        status: PlaybackStatus::Playing,
+                    };
+                    show_state.active_cues.insert(*cue_id, active_cue);
+                }
                 state_changed = true;
             }
             ExecutorEvent::Progress {
@@ -239,6 +245,69 @@ impl CueController {
                     log::error!("State: Cue error on '{}': {}", active_cue.cue_id, error);
                 }
             }
+            ExecutorEvent::PreWaitStarted { cue_id } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.position = 0.0;
+                    active_cue.duration = 0.0;
+                    active_cue.status = PlaybackStatus::PreWaiting;
+                } else {
+                    let active_cue = ActiveCue {
+                        cue_id: *cue_id,
+                        position: 0.0,
+                        duration: 0.0,
+                        status: PlaybackStatus::PreWaiting,
+                    };
+                    show_state.active_cues.insert(*cue_id, active_cue);
+                }
+                state_changed = true;
+            },
+            ExecutorEvent::PreWaitProgress { cue_id, position, duration } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.position = *position;
+                    active_cue.duration = *duration;
+                    active_cue.status = PlaybackStatus::PreWaiting
+                } else {
+                    show_state.active_cues.insert(
+                        *cue_id,
+                        ActiveCue {
+                            cue_id: *cue_id,
+                            position: *position,
+                            duration: *duration,
+                            status: PlaybackStatus::PreWaiting,
+                        },
+                    );
+                }
+                state_changed = true;
+            },
+            ExecutorEvent::PreWaitPaused { cue_id, position, duration } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    if !active_cue.status.eq(&PlaybackStatus::Paused) {
+                        active_cue.position = *position;
+                        active_cue.duration = *duration;
+                        active_cue.status = PlaybackStatus::PreWaitPaused;
+                    }
+                } else {
+                    show_state.active_cues.insert(
+                        *cue_id,
+                        ActiveCue {
+                            cue_id: *cue_id,
+                            position: *position,
+                            duration: *duration,
+                            status: PlaybackStatus::PreWaitPaused,
+                        },
+                    );
+                }
+                state_changed = true;
+            },
+            ExecutorEvent::PreWaitResumed { cue_id } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    if !active_cue.status.eq(&PlaybackStatus::PreWaiting) {
+                        active_cue.status = PlaybackStatus::PreWaiting;
+                        state_changed = true;
+                    }
+                }
+            }
+            ExecutorEvent::PreWaitCompleted { .. } => {},
         }
 
         if state_changed && self.state_tx.send(show_state).is_err() {

@@ -10,6 +10,18 @@ use crate::{executor::ExecutorEvent, model::cue::Cue};
 #[serde(tag = "type", content = "param", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum UiEvent {
     // Cue Status Events
+    PreWaitStarted {
+        cue_id: Uuid,
+    },
+    PreWaitPaused {
+        cue_id: Uuid,
+    },
+    PreWaitResumed {
+        cue_id: Uuid,
+    },
+    PreWaitCompleted {
+        cue_id: Uuid,
+    },
     CueStarted {
         cue_id: Uuid,
     },
@@ -84,6 +96,11 @@ impl From<ExecutorEvent> for UiEvent {
             ExecutorEvent::Completed { cue_id } => UiEvent::CueCompleted { cue_id },
             ExecutorEvent::Progress { .. } => unreachable!(),
             ExecutorEvent::Error { cue_id, error } => UiEvent::CueError { cue_id, error },
+            ExecutorEvent::PreWaitStarted { cue_id } => UiEvent::PreWaitStarted { cue_id },
+            ExecutorEvent::PreWaitProgress { .. } => unreachable!(),
+            ExecutorEvent::PreWaitPaused { cue_id, .. } => UiEvent::PreWaitPaused { cue_id },
+            ExecutorEvent::PreWaitResumed { cue_id } => UiEvent::PreWaitResumed { cue_id },
+            ExecutorEvent::PreWaitCompleted { cue_id } => UiEvent::PreWaitCompleted { cue_id },
         }
     }
 }

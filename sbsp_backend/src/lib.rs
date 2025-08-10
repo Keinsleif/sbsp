@@ -1,6 +1,6 @@
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, CueController, state::ShowState}, engine::audio_engine::{AudioCommand, AudioEngine}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}};
+use crate::{controller::{state::ShowState, ControllerCommand, CueController}, engine::{audio_engine::{AudioCommand, AudioEngine}, pre_wait_engine::PreWaitCommand}, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}};
 
 pub mod event;
 pub mod controller;
@@ -23,6 +23,7 @@ pub fn start_backend() -> (
     let (controller_tx, controller_rx) = mpsc::channel::<ControllerCommand>(32);
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
+    let (pre_wait_tx, pre_wait_rx) = mpsc::channel::<PreWaitCommand>(32);
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
@@ -42,6 +43,7 @@ pub fn start_backend() -> (
         model_handle.clone(),
         exec_rx,
         audio_tx,
+        pre_wait_tx,
         executor_event_tx,
         engine_event_rx,
     );

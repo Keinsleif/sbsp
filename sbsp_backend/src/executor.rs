@@ -1,10 +1,10 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{mpsc, RwLock};
 use uuid::Uuid;
 
 use crate::{
-    engine::audio_engine::{AudioCommand, AudioEngineEvent, PlayCommandData},
+    engine::{audio_engine::{AudioCommand, AudioEngineEvent, PlayCommandData}, pre_wait_engine::{PreWaitCommand, PreWaitEvent}},
     manager::ShowModelHandle,
     model::cue::{Cue, CueParam},
 };
@@ -16,6 +16,25 @@ pub enum ExecutorCommand {
 
 #[derive(Debug, Clone)]
 pub enum ExecutorEvent {
+    PreWaitStarted {
+        cue_id: Uuid,
+    },
+    PreWaitProgress {
+        cue_id: Uuid,
+        position: f64,
+        duration: f64,
+    },
+    PreWaitPaused {
+        cue_id: Uuid,
+        position: f64,
+        duration: f64,
+    },
+    PreWaitResumed {
+        cue_id: Uuid,
+    },
+    PreWaitCompleted {
+        cue_id: Uuid,
+    },
     Started {
         cue_id: Uuid,
     },
@@ -45,6 +64,7 @@ pub enum ExecutorEvent {
 #[derive(Debug)]
 pub enum EngineEvent {
     Audio(AudioEngineEvent),
+    PreWait(PreWaitEvent),
     // Midi(MidiEngineEvent), // 将来の拡張
 }
 
@@ -52,9 +72,10 @@ pub struct Executor {
     model_handle: ShowModelHandle,
     command_rx: mpsc::Receiver<ExecutorCommand>, // CueControllerからの指示受信用
     audio_tx: mpsc::Sender<AudioCommand>,        // AudioEngineへのコマンド送信用
+    pre_wait_tx: mpsc::Sender<PreWaitCommand>,
     // midi_tx: mpsc::Sender<MidiCommand>, // 将来の拡張用
     // osc_tx: mpsc::Sender<OscCommand>,   // 将来の拡張用
-    playback_event_tx: mpsc::Sender<ExecutorEvent>, // CueControllerへのイベント送信用
+    executor_event_tx: mpsc::Sender<ExecutorEvent>, // CueControllerへのイベント送信用
     engine_event_rx: mpsc::Receiver<EngineEvent>,   // 各エンジンからのイベント受信用
 
     active_instances: Arc<RwLock<HashMap<Uuid, Uuid>>>,
@@ -66,6 +87,7 @@ impl Executor {
         model_handle: ShowModelHandle,
         command_rx: mpsc::Receiver<ExecutorCommand>,
         audio_tx: mpsc::Sender<AudioCommand>,
+        pre_wait_tx: mpsc::Sender<PreWaitCommand>,
         playback_event_tx: mpsc::Sender<ExecutorEvent>,
         engine_event_rx: mpsc::Receiver<EngineEvent>,
     ) -> Self {
@@ -73,7 +95,8 @@ impl Executor {
             model_handle,
             command_rx,
             audio_tx,
-            playback_event_tx,
+            pre_wait_tx,
+            executor_event_tx: playback_event_tx,
             engine_event_rx,
             active_instances: Arc::new(RwLock::new(HashMap::new())),
         }
@@ -107,8 +130,16 @@ impl Executor {
             ExecutorCommand::ExecuteCue(cue_id) => {
                 // ShowModelからIDでキューの詳細データを取得
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
-                    // キューのタイプに応じて処理を振り分け
-                    self.dispatch_cue(&cue).await?;
+                    let instance_id = Uuid::now_v7();
+                    self.active_instances
+                        .write()
+                        .await
+                        .insert(instance_id, cue.id);
+                    if cue.pre_wait > 0.0 {
+                        self.pre_wait_tx.send(PreWaitCommand::Start { instance_id, duration: cue.pre_wait }).await?;
+                    } else {
+                        self.dispatch_cue(&cue, instance_id).await?;
+                    }
                 } else {
                     log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
                 }
@@ -118,14 +149,7 @@ impl Executor {
     }
 
     /// キューを解釈し、適切なエンジンにコマンドを送信します。
-    async fn dispatch_cue(&self, cue: &Cue) -> Result<(), anyhow::Error> {
-        let instance_id = Uuid::now_v7();
-        log::info!(
-            "Dispatching cue '{}' with new instance_id '{}'",
-            cue.name,
-            instance_id
-        );
-
+    async fn dispatch_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
         match &cue.params {
             CueParam::Audio {
                 target,
@@ -152,12 +176,11 @@ impl Executor {
                         loop_region: *loop_region,
                     },
                 };
-                // AudioEngineにコマンドを送信
                 self.audio_tx.send(audio_command).await?;
             }
             CueParam::Wait { duration } => {
                 // イベント送信用チャネルのクローンを新しいタスクに渡す
-                let event_tx = self.playback_event_tx.clone();
+                let event_tx = self.executor_event_tx.clone();
                 let cue_id = cue.id;
                 let wait_duration = *duration;
 
@@ -180,10 +203,6 @@ impl Executor {
             }
         }
 
-        self.active_instances
-            .write()
-            .await
-            .insert(instance_id, cue.id);
         Ok(())
     }
 
@@ -227,8 +246,33 @@ impl Executor {
                     }
                 };
 
-                self.playback_event_tx.send(playback_event).await?;
+                self.executor_event_tx.send(playback_event).await?;
             }
+            EngineEvent::PreWait(pre_wait_event) => {
+                let instance_id = pre_wait_event.instance_id();
+                let instances = self.active_instances.read().await;
+                let Some(cue_id) = instances.get(&instance_id).cloned() else {
+                    log::warn!("Received event for unknown instance_id: {}", instance_id);
+                    return Ok(());
+                };
+
+                let executor_event = match pre_wait_event {
+                    PreWaitEvent::PreWaitStarted { .. } => ExecutorEvent::PreWaitStarted { cue_id },
+                    PreWaitEvent::PreWaitProgress { position, duration, .. } => ExecutorEvent::PreWaitProgress { cue_id, position, duration },
+                    PreWaitEvent::PreWaitPaused { position, duration, .. } => ExecutorEvent::PreWaitPaused { cue_id, position, duration },
+                    PreWaitEvent::PreWaitResumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
+                    PreWaitEvent::PreWaitCompleted { .. } => {
+                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                            self.dispatch_cue(&cue, instance_id).await?;
+                        } else {
+                            log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
+                        }
+                        ExecutorEvent::PreWaitCompleted { cue_id }
+                    },
+                };
+
+                self.executor_event_tx.send(executor_event).await?;
+            },
         }
         Ok(())
     }
@@ -252,6 +296,7 @@ mod tests {
     async fn setup_executor(cue_id: Uuid) -> (ShowModelManager, Sender<ExecutorCommand>, Receiver<AudioCommand>, Sender<EngineEvent>, Receiver<ExecutorEvent>) {
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
+        let (pre_wait_tx, _pre_wait_rx) = mpsc::channel::<PreWaitCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
         let (event_tx, _) = broadcast::channel::<UiEvent>(32);
@@ -291,6 +336,7 @@ mod tests {
             handle.clone(),
             exec_rx,
             audio_tx,
+            pre_wait_tx,
             playback_event_tx,
             engine_event_rx,
         );
