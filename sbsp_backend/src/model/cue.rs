@@ -15,7 +15,7 @@ pub struct Cue {
     pub pre_wait: f64,
     pub post_wait: f64,
     pub sequence: CueSequence,
-    pub param: CueParam,
+    pub params: CueParam,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
@@ -28,7 +28,7 @@ pub enum CueSequence {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-#[serde(tag = "type", content = "params", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum CueParam {
     Audio {
         target: PathBuf,

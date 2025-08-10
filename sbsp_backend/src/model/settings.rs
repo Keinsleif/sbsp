@@ -36,7 +36,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 post_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                param: CueParam::Audio { target: PathBuf::new(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, levels: AudioCueLevels::default(), loop_region: None },
+                params: CueParam::Audio { target: PathBuf::new(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, levels: AudioCueLevels::default(), loop_region: None },
             }),
             wait: Some(Cue {
                 id: Uuid::nil(),
@@ -46,7 +46,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 post_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                param: CueParam::Wait { duration: 5.0 },
+                params: CueParam::Wait { duration: 5.0 },
             }),
         }
     }

@@ -126,7 +126,7 @@ impl Executor {
             instance_id
         );
 
-        match &cue.param {
+        match &cue.params {
             CueParam::Audio {
                 target,
                 start_time,
@@ -268,7 +268,7 @@ mod tests {
                     pre_wait: 0.0,
                     post_wait: 0.0,
                     sequence: model::cue::CueSequence::DoNotContinue,
-                    param: model::cue::CueParam::Audio {
+                    params: model::cue::CueParam::Audio {
                         target: PathBuf::from("./I.G.Y.flac"),
                     start_time: Some(5.0),
                     fade_in_param: Some(AudioCueFadeParam {
