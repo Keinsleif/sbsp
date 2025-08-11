@@ -28,7 +28,7 @@
           <v-icon :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"></v-icon>
         </td>
         <td width="24px">
-          <v-icon v-if="cue.params.type == 'audio'" :icon="mdiVolumeHigh" />
+          <v-icon :icon="getCueIcon(cue.params.type)" />
         </td>
         <td class="text-center" width="50px">
           <span class="cue-number mr-2">{{ cue.number }}</span>
@@ -37,18 +37,19 @@
         </td>
         <td class="text-center pa-1" width="100px">
           <div
-            class="border-md border-primary"
+            :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? 'border-md border-primary' : '']"
             :style="{
               background:
+                cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ?
                 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                2 * i +
+                Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%, transparent ' +
-                2 * i +
-                '%)',
+                Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
+                '%)' : '',
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ secondsToFormat(cue.preWait) }}
+            {{ cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? secondsToFormat(showState.activeCues[cue.id]!.position) : secondsToFormat(cue.preWait) }}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
@@ -100,6 +101,7 @@ import {
   mdiArrowBottomLeft,
   mdiArrowRightBold,
   mdiChevronDoubleDown,
+  mdiTimerSandEmpty,
   mdiVolumeHigh,
 } from "@mdi/js";
 import { useUiState } from "../stores/uistate";
@@ -147,13 +149,13 @@ const drop = (event: DragEvent, index: number) => {
 
 const click = (event: MouseEvent, index: number) => {
     if (event.shiftKey) {
-        if (uiState.selected != null) {
+      if (uiState.selected != null) {
           uiState.selectedRows = [];
-            if (index >= uiState.selected) {
+          if (index >= uiState.selected) {
             for (let i = uiState.selected; i <= index; i++) {
               uiState.selectedRows.push(i);
             }
-            } else {
+          } else {
             for (let i = index; i <= uiState.selected; i++) {
               uiState.selectedRows.push(i);
             }
@@ -170,7 +172,7 @@ const click = (event: MouseEvent, index: number) => {
             uiState.selected = null;
           } else if (index === showModel.cues.findIndex(cue => cue.id == showState.playbackCursor)) {
             uiState.selected = uiState.selectedRows.reduce((a,b) => Math.max(a,b));
-            }
+          }
         } else {
           uiState.selectedRows.push(index);
           uiState.selected = index;
@@ -178,7 +180,7 @@ const click = (event: MouseEvent, index: number) => {
       } else {
         uiState.selectedRows = [index];
         uiState.selected = index;
-        }
+      }
     } else {
       uiState.selectedRows = [index];
       uiState.selected = index;
@@ -190,6 +192,15 @@ const click = (event: MouseEvent, index: number) => {
             console.error("Failed to set cursor. " + e);
         })
     }
+}
+
+const getCueIcon = (type: string): string|undefined => {
+  switch (type) {
+    case "audio":
+      return mdiVolumeHigh;
+    case "wait":
+      return mdiTimerSandEmpty;
+  }
 }
 </script>
 
