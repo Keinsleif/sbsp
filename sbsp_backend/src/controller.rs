@@ -14,7 +14,7 @@ pub enum ControllerCommand {
     Go,
     StopAll,
     SetPlaybackCursor {
-        cue_id: Uuid,
+        cue_id: Option<Uuid>,
     },
 }
 pub struct CueController {
@@ -114,16 +114,18 @@ impl CueController {
             },
             ControllerCommand::StopAll => Ok(()), /* TODO */
             ControllerCommand::SetPlaybackCursor { cue_id } => {
-                if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
-                    self.state_tx.send_modify(|state| {
-                        if state.playback_cursor.ne(&Some(cue_id)) {
-                            state.playback_cursor = Some(cue_id);
-                            if self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id }).is_err() {
-                                log::trace!("No UI clients are listening to playback events.");
-                            }
-                        }
-                    });
+                if let Some(cursor_cue_id) = cue_id
+                    && self.model_handle.get_cue_by_id(&cursor_cue_id).await.is_none() {
+                        return Err(anyhow::anyhow!("Invalid playback cursor destination cue_id. cue_id = {}", cursor_cue_id));
                 }
+                self.state_tx.send_modify(|state| {
+                    if state.playback_cursor.ne(&cue_id) {
+                        state.playback_cursor = cue_id;
+                        if self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id }).is_err() {
+                            log::trace!("No UI clients are listening to playback events.");
+                        }
+                    }
+                });
                 Ok(())
             }
         }
@@ -437,10 +439,10 @@ mod tests {
 
         assert_eq!(state_rx.borrow().playback_cursor, Some(cue_id));
 
-        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: cue_id_next }).await.unwrap();
+        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: Some(cue_id_next) }).await.unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert_eq!(event, UiEvent::PlaybackCursorMoved { cue_id: cue_id_next });
+        assert_eq!(event, UiEvent::PlaybackCursorMoved { cue_id: Some(cue_id_next) });
         if let Some(playback_cursor) = state_rx.borrow().playback_cursor {
             assert_eq!(playback_cursor, cue_id_next);
         }

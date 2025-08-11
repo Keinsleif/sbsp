@@ -41,7 +41,7 @@ pub enum UiEvent {
 
     // System Events
     PlaybackCursorMoved {
-        cue_id: Uuid,
+        cue_id: Option<Uuid>,
     },
 
     ShowModelLoaded {
