@@ -224,11 +224,10 @@ impl CueController {
                 }
             }
             ExecutorEvent::Resumed { cue_id } => {
-                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    if !active_cue.status.eq(&PlaybackStatus::Playing) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id)
+                    && !active_cue.status.eq(&PlaybackStatus::Playing) {
                         active_cue.status = PlaybackStatus::Playing;
                         state_changed = true;
-                    }
                 }
             }
             ExecutorEvent::Completed { cue_id, .. } => {
@@ -300,11 +299,10 @@ impl CueController {
                 state_changed = true;
             },
             ExecutorEvent::PreWaitResumed { cue_id } => {
-                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    if !active_cue.status.eq(&PlaybackStatus::PreWaiting) {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id)
+                    && !active_cue.status.eq(&PlaybackStatus::PreWaiting) {
                         active_cue.status = PlaybackStatus::PreWaiting;
                         state_changed = true;
-                    }
                 }
             }
             ExecutorEvent::PreWaitCompleted { .. } => {},

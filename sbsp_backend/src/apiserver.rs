@@ -86,23 +86,21 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
             Ok(event) = event_rx.recv() => {
                 let ws_message = WsMessage::Event(Box::new(event));
 
-                if let Ok(payload) = serde_json::to_string(&ws_message) {
-                    if socket.send(Message::Text(payload.into())).await.is_err() {
+                if let Ok(payload) = serde_json::to_string(&ws_message)
+                    && socket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
-                }
             }
             Ok(_) = state_rx.changed() => {
                 let new_state = state_rx.borrow().clone();
                 let ws_message = WsMessage::State(new_state);
                 
-                if let Ok(payload) = serde_json::to_string(&ws_message) {
-                    if socket.send(Message::Text(payload.into())).await.is_err() {
+                if let Ok(payload) = serde_json::to_string(&ws_message)
+                    && socket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
-                }
             }
             
             Some(Ok(msg)) = socket.recv() => {
