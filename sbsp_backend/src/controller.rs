@@ -169,7 +169,6 @@ impl CueController {
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::Pause(cue_id);
             self.executor_tx.send(command).await?;
-            self.update_playback_cursor().await?;
         } else {
             log::warn!("PAUSE: Invalid playback cursor.");
         }
@@ -182,7 +181,6 @@ impl CueController {
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::Resume(cue_id);
             self.executor_tx.send(command).await?;
-            self.update_playback_cursor().await?;
         } else {
             log::warn!("RESUME: Invalid playback cursor.");
         }
@@ -195,7 +193,6 @@ impl CueController {
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             let command = ExecutorCommand::Stop(cue_id);
             self.executor_tx.send(command).await?;
-            self.update_playback_cursor().await?;
         } else {
             log::warn!("STOP: Invalid playback cursor.");
         }

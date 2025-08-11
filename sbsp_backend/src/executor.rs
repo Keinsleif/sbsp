@@ -293,6 +293,7 @@ impl Executor {
                     return Ok(());
                 };
                 let cue_id = instance.cue_id;
+                drop(instances);
 
                 let playback_event = match audio_event {
                     AudioEngineEvent::Started { .. } => ExecutorEvent::Started { cue_id },
@@ -312,12 +313,10 @@ impl Executor {
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
                     AudioEngineEvent::Completed { .. } => {
-                        drop(instances);
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
                     }
                     AudioEngineEvent::Error { error, .. } => {
-                        drop(instances);
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Error { cue_id, error }
                     }

@@ -275,8 +275,7 @@ impl AudioEngine {
 
     fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         log::info!("STOP: id={}", id);
-        if let Some(mut playing_sound) = self.playing_sounds.remove(&id) {
-
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop(Tween::default());
             Ok(())
         } else {
