@@ -133,7 +133,7 @@ impl CueController {
         let model = self.model_handle.read().await;
 
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            let command = ExecutorCommand::ExecuteCue(cue_id);
+            let command = ExecutorCommand::Execute(cue_id);
             self.executor_tx.send(command).await?;
             let model = self.model_handle.read().await;
             if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == cue_id) {
@@ -420,7 +420,7 @@ mod tests {
             .await
             .unwrap();
 
-        if let Some(ExecutorCommand::ExecuteCue(id)) = exec_rx.recv().await {
+        if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
         } else {
             unreachable!();

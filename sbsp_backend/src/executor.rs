@@ -11,7 +11,10 @@ use crate::{
 
 #[derive(Debug)]
 pub enum ExecutorCommand {
-    ExecuteCue(Uuid), // cue_id
+    Execute(Uuid), // cue_id
+    Pause(Uuid),
+    Resume(Uuid),
+    Stop(Uuid),
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +71,19 @@ pub enum EngineEvent {
     // Midi(MidiEngineEvent), // 将来の拡張
 }
 
+#[derive(Debug)]
+pub enum EngineType {
+    PreWait,
+    Audio,
+    Wait,
+}
+
+#[derive(Debug)]
+pub struct ActiveInstance {
+    cue_id: Uuid,
+    engine_type: EngineType,
+}
+
 pub struct Executor {
     model_handle: ShowModelHandle,
     command_rx: mpsc::Receiver<ExecutorCommand>, // CueControllerからの指示受信用
@@ -78,7 +94,7 @@ pub struct Executor {
     executor_event_tx: mpsc::Sender<ExecutorEvent>, // CueControllerへのイベント送信用
     engine_event_rx: mpsc::Receiver<EngineEvent>,   // 各エンジンからのイベント受信用
 
-    active_instances: Arc<RwLock<HashMap<Uuid, Uuid>>>,
+    active_instances: Arc<RwLock<HashMap<Uuid, ActiveInstance>>>,
 }
 
 impl Executor {
@@ -127,15 +143,15 @@ impl Executor {
     /// 個別の指示を処理します。
     async fn process_command(&self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
-            ExecutorCommand::ExecuteCue(cue_id) => {
+            ExecutorCommand::Execute(cue_id) => {
                 // ShowModelからIDでキューの詳細データを取得
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let instance_id = Uuid::now_v7();
-                    self.active_instances
-                        .write()
-                        .await
-                        .insert(instance_id, cue.id);
                     if cue.pre_wait > 0.0 {
+                        self.active_instances
+                            .write()
+                            .await
+                            .insert(instance_id, ActiveInstance { cue_id, engine_type: EngineType::PreWait });
                         self.pre_wait_tx.send(PreWaitCommand::Start { instance_id, duration: cue.pre_wait }).await?;
                     } else {
                         self.dispatch_cue(&cue, instance_id).await?;
@@ -143,7 +159,49 @@ impl Executor {
                 } else {
                     log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
                 }
-            }
+            },
+            ExecutorCommand::Pause(cue_id) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) = active_instances.iter().find(|map| map.1.cue_id == cue_id) {
+                    match active_instance.engine_type {
+                        EngineType::PreWait => {
+                            self.pre_wait_tx.send(PreWaitCommand::Pause { instance_id: *instance_id }).await?;
+                        },
+                        EngineType::Audio => {
+                            self.audio_tx.send(AudioCommand::Pause { id: *instance_id }).await?;
+                        },
+                        EngineType::Wait => {},
+                    }
+                }
+            },
+            ExecutorCommand::Resume(cue_id) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) = active_instances.iter().find(|map| map.1.cue_id == cue_id) {
+                    match active_instance.engine_type {
+                        EngineType::PreWait => {
+                            self.pre_wait_tx.send(PreWaitCommand::Resume { instance_id: *instance_id }).await?;
+                        },
+                        EngineType::Audio => {
+                            self.audio_tx.send(AudioCommand::Resume { id: *instance_id }).await?;
+                        },
+                        EngineType::Wait => {},
+                    }
+                }
+            },
+            ExecutorCommand::Stop(cue_id) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) = active_instances.iter().find(|map| map.1.cue_id == cue_id) {
+                    match active_instance.engine_type {
+                        EngineType::PreWait => {
+                            self.pre_wait_tx.send(PreWaitCommand::Stop { instance_id: *instance_id }).await?;
+                        },
+                        EngineType::Audio => {
+                            self.audio_tx.send(AudioCommand::Stop { id: *instance_id }).await?;
+                        },
+                        EngineType::Wait => {},
+                    }
+                }
+            },
         }
         Ok(())
     }
@@ -160,6 +218,11 @@ impl Executor {
                 levels,
                 loop_region,
             } => {
+                self.active_instances
+                    .write()
+                    .await
+                    .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Audio });
+
                 let mut filepath = self.model_handle.get_current_file_path().await.unwrap_or(PathBuf::new());
                 filepath.pop();
                 filepath.push(target);
@@ -179,6 +242,11 @@ impl Executor {
                 self.audio_tx.send(audio_command).await?;
             }
             CueParam::Wait { duration } => {
+                self.active_instances
+                    .write()
+                    .await
+                    .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Wait });
+
                 // イベント送信用チャネルのクローンを新しいタスクに渡す
                 let event_tx = self.executor_event_tx.clone();
                 let cue_id = cue.id;
@@ -212,10 +280,11 @@ impl Executor {
                 let instance_id = audio_event.instance_id();
 
                 let instances = self.active_instances.read().await;
-                let Some(cue_id) = instances.get(&instance_id).cloned() else {
+                let Some(instance) = instances.get(&instance_id) else {
                     log::warn!("Received event for unknown instance_id: {}", instance_id);
                     return Ok(());
                 };
+                let cue_id = instance.cue_id;
 
                 let playback_event = match audio_event {
                     AudioEngineEvent::Started { .. } => ExecutorEvent::Started { cue_id },
@@ -251,17 +320,18 @@ impl Executor {
             EngineEvent::PreWait(pre_wait_event) => {
                 let instance_id = pre_wait_event.instance_id();
                 let instances = self.active_instances.read().await;
-                let Some(cue_id) = instances.get(&instance_id).cloned() else {
+                let Some(instance) = instances.get(&instance_id) else {
                     log::warn!("Received event for unknown instance_id: {}", instance_id);
                     return Ok(());
                 };
+                let cue_id = instance.cue_id;
 
                 let executor_event = match pre_wait_event {
                     PreWaitEvent::Started { .. } => ExecutorEvent::PreWaitStarted { cue_id },
                     PreWaitEvent::Progress { position, duration, .. } => ExecutorEvent::PreWaitProgress { cue_id, position, duration },
                     PreWaitEvent::Paused { position, duration, .. } => ExecutorEvent::PreWaitPaused { cue_id, position, duration },
                     PreWaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
-                    PreWaitEvent::Completed { .. } => {
+                    PreWaitEvent::Completed { instance_id } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             self.dispatch_cue(&cue, instance_id).await?;
                         } else {
@@ -356,7 +426,7 @@ mod tests {
         let old_id = Uuid::now_v7();
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(cue_id))
+            .send(ExecutorCommand::Execute(cue_id))
             .await
             .unwrap();
 
@@ -385,7 +455,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
@@ -417,7 +487,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
@@ -451,7 +521,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
@@ -485,7 +555,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
@@ -517,7 +587,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
@@ -549,7 +619,7 @@ mod tests {
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) = setup_executor(orig_cue_id).await;
 
         exec_tx
-            .send(ExecutorCommand::ExecuteCue(orig_cue_id))
+            .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
