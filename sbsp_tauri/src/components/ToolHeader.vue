@@ -54,7 +54,7 @@ import { useShowModel } from "../stores/showmodel";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
-import { PlaybackStatus } from "../types/state/PlaybackStatus";
+import { PlaybackStatus } from "../types/PlaybackStatus";
 import { invoke } from "@tauri-apps/api/core";
 
 const showModel = useShowModel();
