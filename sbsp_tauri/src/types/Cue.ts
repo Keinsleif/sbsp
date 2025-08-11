@@ -2,4 +2,4 @@
 import type { CueParam } from "./CueParam";
 import type { CueSequence } from "./CueSequence";
 
-export type Cue = { id: string, number: string, name: string, notes: string, preWait: number, postWait: number, sequence: CueSequence, params: CueParam, };
+export type Cue = { id: string, number: string, name: string, notes: string, preWait: number, sequence: CueSequence, params: CueParam, };
