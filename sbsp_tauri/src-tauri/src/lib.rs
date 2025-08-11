@@ -6,9 +6,12 @@ use sbsp_backend::{
     model::{cue::Cue, ShowModel},
     start_backend, BackendHandle,
 };
-use tauri::{menu::{Menu, MenuId, MenuItem, SubmenuBuilder}, AppHandle, Emitter, LogicalSize, Manager as _, Size};
-use tauri_plugin_window_state::{WindowExt, AppHandleExt, StateFlags};
+use tauri::{
+    menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
+    AppHandle, Emitter, LogicalSize, Manager as _, Size,
+};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
 use tokio::sync::{broadcast, watch};
 use uuid::Uuid;
 
@@ -146,38 +149,46 @@ async fn move_cue(
 pub fn run() {
     env_logger::init();
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
             let app_handle = app.handle();
 
             let menu = Menu::new(app_handle)?;
-            menu.append(&SubmenuBuilder::new(app_handle, "File")
-                .items(&[
-                    &MenuItem::with_id(app_handle, MenuId::new("id_open"), "Open", true, Some("Ctro+O"))?,
-                ])
-                .separator()
-                .text(MenuId::new("id_quit"), "Quit").build()?
+            menu.append(
+                &SubmenuBuilder::new(app_handle, "File")
+                    .items(&[&MenuItem::with_id(
+                        app_handle,
+                        MenuId::new("id_open"),
+                        "Open",
+                        true,
+                        Some("Ctro+O"),
+                    )?])
+                    .separator()
+                    .text(MenuId::new("id_quit"), "Quit")
+                    .build()?,
             )?;
 
             app.set_menu(menu)?;
 
-            app.on_menu_event(|handle, event| {
-                match event.id().as_ref() {
-                    "id_open" => {
-                        if let Some(file_path) = handle.dialog().file().blocking_pick_file() {
-                            let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                            tauri::async_runtime::spawn(async move {
-                                model_handle.load_from_file(file_path.into_path().unwrap()).await.unwrap();
-                            });
-                        }
-                    },
-                    "id_quit" => {
-                        handle.cleanup_before_exit();
-                        std::process::exit(0);
-                    },
-                    _ => {},
+            app.on_menu_event(|handle, event| match event.id().as_ref() {
+                "id_open" => {
+                    if let Some(file_path) = handle.dialog().file().blocking_pick_file() {
+                        let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                        tauri::async_runtime::spawn(async move {
+                            model_handle
+                                .load_from_file(file_path.into_path().unwrap())
+                                .await
+                                .unwrap();
+                        });
+                    }
                 }
+                "id_quit" => {
+                    handle.cleanup_before_exit();
+                    std::process::exit(0);
+                }
+                _ => {}
             });
 
             let (backend_handle, state_rx, event_tx) = start_backend();
@@ -192,13 +203,21 @@ pub fn run() {
 
             let main_window = app.get_webview_window("main").unwrap();
             if main_window.restore_state(StateFlags::all()).is_err() {
-                main_window.set_size(Size::Logical(LogicalSize{ width: 1280.0, height: 720.0})).unwrap();
+                main_window
+                    .set_size(Size::Logical(LogicalSize {
+                        width: 1280.0,
+                        height: 720.0,
+                    }))
+                    .unwrap();
             }
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested {..} = event {
-                window.app_handle().save_window_state(StateFlags::all()).unwrap();
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                window
+                    .app_handle()
+                    .save_window_state(StateFlags::all())
+                    .unwrap();
             }
         })
         .invoke_handler(tauri::generate_handler![
