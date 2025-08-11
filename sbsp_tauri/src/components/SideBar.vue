@@ -17,12 +17,12 @@
         <v-card-subtitle class="pa-0 d-flex justify-space-between">
           <v-list-item density="compact">
             <v-list-item-subtitle>
-              {{ activeCue != null ? secondsToFormat(activeCue.position) : "00:00.00" }}
+              {{ activeCue != null ? activeCue.status in ["PreWaiting", "PreWaitPaused"] ? "-"+secondsToFormat(activeCue.duration - activeCue.position) : secondsToFormat(activeCue.position) : "" }}
             </v-list-item-subtitle>
           </v-list-item>
           <v-list-item density="compact">
             <v-list-item-subtitle>
-              -{{ activeCue != null ? secondsToFormat(activeCue.duration - activeCue.position) : "00:00.00" }}
+              -{{ activeCue != null ? activeCue.status in ["PreWaiting", "PreWaitPaused"] ? "00:00.00" /* cue duration */ : secondsToFormat(activeCue.duration - activeCue.position) : "" }}
             </v-list-item-subtitle>
           </v-list-item>
         </v-card-subtitle>

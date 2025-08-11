@@ -218,10 +218,14 @@ impl Executor {
                 levels,
                 loop_region,
             } => {
-                self.active_instances
-                    .write()
-                    .await
-                    .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Audio });
+                if let Some(active_instance) = self.active_instances.write().await.get_mut(&instance_id) {
+                    active_instance.engine_type = EngineType::Audio;
+                } else {
+                    self.active_instances
+                        .write()
+                        .await
+                        .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Audio });
+                }
 
                 let mut filepath = self.model_handle.get_current_file_path().await.unwrap_or(PathBuf::new());
                 filepath.pop();
@@ -242,10 +246,14 @@ impl Executor {
                 self.audio_tx.send(audio_command).await?;
             }
             CueParam::Wait { duration } => {
-                self.active_instances
-                    .write()
-                    .await
-                    .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Wait });
+                if let Some(active_instance) = self.active_instances.write().await.get_mut(&instance_id) {
+                    active_instance.engine_type = EngineType::Wait;
+                } else {
+                    self.active_instances
+                        .write()
+                        .await
+                        .insert(instance_id, ActiveInstance { cue_id: cue.id, engine_type: EngineType::Wait });
+                }
 
                 // イベント送信用チャネルのクローンを新しいタスクに渡す
                 let event_tx = self.executor_event_tx.clone();
@@ -325,6 +333,7 @@ impl Executor {
                     return Ok(());
                 };
                 let cue_id = instance.cue_id;
+                drop(instances);
 
                 let executor_event = match pre_wait_event {
                     PreWaitEvent::Started { .. } => ExecutorEvent::PreWaitStarted { cue_id },
@@ -333,6 +342,7 @@ impl Executor {
                     PreWaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
                     PreWaitEvent::Completed { instance_id } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                            log::info!("PreWaitCompleted cue_id={}", cue.id);
                             self.dispatch_cue(&cue, instance_id).await?;
                         } else {
                             log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);

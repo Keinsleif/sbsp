@@ -59,10 +59,17 @@ impl PreWaitEvent {
 }
 
 pub struct WaitingInstance {
-    is_paused: bool,
+    status: WaitingStatus,
     total_duration: Duration,
     start_time: Instant,
     remaining_duration: Duration,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum WaitingStatus {
+    Waiting,
+    Paused,
+    Completed,
 }
 
 pub struct PreWaitEngine {
@@ -85,7 +92,7 @@ impl PreWaitEngine {
                     let result: Result<()> = match command {
                         PreWaitCommand::Start{instance_id, duration} => {
                             self.waiting_instances.insert(instance_id, WaitingInstance {
-                                is_paused: false,
+                                status: WaitingStatus::Waiting,
                                 total_duration: Duration::from_secs_f64(duration),
                                 start_time: Instant::now(),
                                 remaining_duration: Duration::from_secs_f64(duration),
@@ -98,9 +105,9 @@ impl PreWaitEngine {
                         },
                         PreWaitCommand::Pause{instance_id} => {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
-                                if !waiting_instance.is_paused {
+                                if !waiting_instance.status.eq(&WaitingStatus::Paused) {
                                     let elapsed = waiting_instance.start_time.elapsed();
-                                    waiting_instance.is_paused = true;
+                                    waiting_instance.status = WaitingStatus::Paused;
                                     waiting_instance.remaining_duration -= elapsed;
                                     if let Err(e) = self.event_tx.send(EngineEvent::PreWait(PreWaitEvent::Paused { instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() })).await {
                                         Err(anyhow::anyhow!("Error polling PreWait event: {:?}", e))
@@ -116,8 +123,8 @@ impl PreWaitEngine {
                         },
                         PreWaitCommand::Resume{instance_id} => {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
-                                if waiting_instance.is_paused {
-                                    waiting_instance.is_paused = false;
+                                if waiting_instance.status.eq(&WaitingStatus::Paused) {
+                                    waiting_instance.status = WaitingStatus::Waiting;
                                     waiting_instance.start_time = Instant::now();
                                     if let Err(e) = self.event_tx.send(EngineEvent::PreWait(PreWaitEvent::Resumed { instance_id })).await {
                                         Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
@@ -142,17 +149,21 @@ impl PreWaitEngine {
                     }
                 },
                 _  = push_timer.tick() => {
-                    for (instance_id, waiting_instance) in &self.waiting_instances {
+                    for (instance_id, waiting_instance) in &mut self.waiting_instances {
                         let elapsed = waiting_instance.start_time.elapsed();
                         if elapsed >= waiting_instance.remaining_duration {
-                            if let Err(e) = self.event_tx.send(EngineEvent::PreWait(PreWaitEvent::Completed { instance_id: *instance_id })).await {
-                                log::error!("Error sending PreWait event: {:?}", e);
+                            if !waiting_instance.status.eq(&WaitingStatus::Completed) {
+                                waiting_instance.status = WaitingStatus::Completed;
+                                if let Err(e) = self.event_tx.send(EngineEvent::PreWait(PreWaitEvent::Completed { instance_id: *instance_id })).await {
+                                    log::error!("Error sending PreWait event: {:?}", e);
+                                }
                             }
-                            break;
                         } else if let Err(e) = self.event_tx.send(EngineEvent::PreWait(PreWaitEvent::Progress { instance_id: *instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() })).await {
                            log::error!("Error sending PreWait event: {:?}", e);
                         }
                     }
+
+                    self.waiting_instances.retain(|_, waiting_instance| !waiting_instance.status.eq(&WaitingStatus::Completed));
                 }
             }
         }
