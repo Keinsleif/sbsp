@@ -28,7 +28,7 @@
           <v-icon v-if="showState.playbackCursor == cue.id" :icon="mdiArrowRightBold"></v-icon>
         </td>
         <td width="24px">
-          <v-icon v-if="cue.param.type == 'audio'" :icon="mdiVolumeHigh" />
+          <v-icon v-if="cue.params.type == 'audio'" :icon="mdiVolumeHigh" />
         </td>
         <td class="text-center" width="50px">
           <span class="cue-number mr-2">{{ cue.number }}</span>
@@ -81,12 +81,11 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ secondsToFormat(cue.postWait) }}
+            {{ cue.sequence.type == "autoFollow" ? secondsToFormat(cue.sequence.postWait) : '00:00.00' }}
           </div>
         </td>
         <td width="24px">
-          <v-icon v-if="cue.sequence == 'autoContinue'" :icon="mdiArrowBottomLeft" />
-          <v-icon v-if="cue.sequence == 'autoFollow'" :icon="mdiArrowDown" />
+          <v-icon v-if="cue.sequence.type != 'autoFollow'" :icon="mdiArrowBottomLeft" />
         </td>
       </tr>
       <tr></tr>
@@ -99,7 +98,6 @@ import { computed, ref } from "vue";
 import { useShowModel } from "../stores/showmodel";
 import {
   mdiArrowBottomLeft,
-  mdiArrowDown,
   mdiArrowRightBold,
   mdiChevronDoubleDown,
   mdiVolumeHigh,

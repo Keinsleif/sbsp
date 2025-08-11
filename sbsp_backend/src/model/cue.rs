@@ -18,7 +18,7 @@ pub struct Cue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
-#[serde(rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum CueSequence {
     #[default]
     DoNotContinue,
@@ -29,7 +29,7 @@ pub enum CueSequence {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum CueParam {
     Audio {
         target: PathBuf,

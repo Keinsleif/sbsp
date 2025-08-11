@@ -2,7 +2,7 @@
       <v-sheet class="overflow-hidden">
       <v-tabs v-model="uiState.editorTab" density="compact" class="border">
         <v-tab border density="compact" value="basics">Basics</v-tab>
-        <v-tab border density="compact" value="audio">Audio</v-tab>
+        <v-tab border density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type=='audio'">Audio</v-tab>
         <v-tab border density="compact" value="levels">Levels</v-tab>
       </v-tabs>
       <v-tabs-window v-model="uiState.editorTab">
@@ -16,6 +16,7 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
+                :model-value="selectedCue != null ? selectedCue.number : ''"
                 label="Number"
                 variant="outlined"
                 density="compact"
@@ -33,15 +34,8 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
+                :model-value="selectedCue != null ? selectedCue.preWait : ''"
                 label="Pre-Wait"
-                variant="outlined"
-                density="compact"
-                class="centered-input"
-              ></v-text-field>
-              <v-text-field
-                hide-details
-                persistent-placeholder
-                label="Post-Wait"
                 variant="outlined"
                 density="compact"
                 class="centered-input"
@@ -49,11 +43,23 @@
               <v-select
                 hide-details
                 persistent-placeholder
+                :model-value="selectedCue != null ? selectedCue.sequence.type : ''"
                 label="ContinueMode"
-                :items="['Auto-Continue', 'Auto-Follow', 'DoNotContinue']"
+                :items="[{value: 'doNotContinue', name: 'DoNotContinue'},{value: 'autoContinue', name: 'Auto-Continue'}, {value: 'autoFollow', name: 'Auto-Follow'}]"
+                item-value="value"
+                item-title="name"
                 variant="outlined"
                 density="compact"
               ></v-select>
+              <v-text-field
+                hide-details
+                persistent-placeholder
+                :model-value="selectedCue != null && selectedCue.sequence.type == 'autoFollow' ? selectedCue.sequence.postWait : ''"
+                label="Post-Wait"
+                variant="outlined"
+                density="compact"
+                class="centered-input"
+              ></v-text-field>
             </v-sheet>
             <v-sheet
               flat
@@ -62,22 +68,17 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
+                :model-value="selectedCue != null ? selectedCue.name : ''"
                 label="Name"
                 variant="outlined"
                 density="compact"
                 class="flex-grow-0"
               ></v-text-field>
-              <v-file-input
-                hide-details
-                :prepend-icon="mdiFile"
-                variant="outlined"
-                density="compact"
-                class="flex-grow-0"
-              ></v-file-input>
               <v-textarea
                 hide-details
                 persistent-placeholder
                 no-resize
+                :model-value="selectedCue != null ? selectedCue.notes : ''"
                 label="Notes"
                 variant="outlined"
                 density="compact"
@@ -86,26 +87,45 @@
           </v-sheet>
         </v-tabs-window-item>
         <v-tabs-window-item
+          v-if="selectedCue != null && selectedCue.params.type=='audio'"
           value="audio"
           reverse-transition="false"
           transition="false"
         >
-          <v-sheet height="275px"> </v-sheet>
+          <v-sheet flat class="d-flex flex-column pa-4">
+            <v-sheet flat class="d-flex flex-column">
+              <v-text-field
+                hide-details
+                persistent-placeholder
+                :model-value="selectedCue.params.target"
+                label="Target"
+                variant="outlined"
+                density="compact"
+                class="centered-input"
+              ></v-text-field>
+            </v-sheet>
+          </v-sheet>
         </v-tabs-window-item>
         <v-tabs-window-item
           value="levels"
           reverse-transition="false"
           transition="false"
         >
-          <v-sheet height="275px"> </v-sheet>
+          <v-sheet> </v-sheet>
         </v-tabs-window-item>
       </v-tabs-window>
       </v-sheet>
 </template>
 
 <script setup lang="ts">
-import { mdiFile } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
+import { useShowModel } from '../stores/showmodel';
+import { computed } from 'vue';
 
+const showModel = useShowModel();
 const uiState = useUiState();
+
+const selectedCue = computed(() => {
+  return uiState.selected != null ? showModel.cues[uiState.selected] : null;
+})
 </script>
