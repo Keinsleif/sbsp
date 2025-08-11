@@ -8,11 +8,11 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
 import { createPinia } from "pinia";
 import { useShowState } from "./stores/showstate";
 import { listen } from "@tauri-apps/api/event";
-import { ShowState } from "./types/state/ShowState";
-import { UiEvent } from "./types/event/UiEvent";
+import { ShowState } from "./types/ShowState";
+import { UiEvent } from "./types/UiEvent";
 import { useShowModel } from "./stores/showmodel";
 import { invoke } from "@tauri-apps/api/core";
-import { ShowModel } from "./types/model/ShowModel";
+import { ShowModel } from "./types/ShowModel";
 
 const vuetify = createVuetify({
   icons: {
