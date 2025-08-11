@@ -1,4 +1,5 @@
 [workspace]
+resolver = "3"
 members = [
     "sbsp_backend",
     "sbsp_tauri/src-tauri",
