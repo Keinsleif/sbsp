@@ -16,7 +16,7 @@
       <tr
         v-for="(cue, i) in showModel.cues"
         :key="cue.id"
-        :class="[dragOverIndex == i ? $style['drag-over-row'] : '', isSelected(i) ? $style['selected-row'] : '']"
+        :class="[dragOverIndex == i ? $style['drag-over-row'] : '', uiState.selectedRows.includes(i) ? $style['selected-row'] : '']"
         draggable="true"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
@@ -25,7 +25,7 @@
         @click="click($event, i)"
       >
         <td width="24px">
-          <v-icon v-if="showState.playbackCursor == cue.id" :icon="mdiArrowRightBold"></v-icon>
+          <v-icon :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"></v-icon>
         </td>
         <td width="24px">
           <v-icon v-if="cue.params.type == 'audio'" :icon="mdiVolumeHigh" />
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useShowModel } from "../stores/showmodel";
 import {
   mdiArrowBottomLeft,
@@ -145,33 +145,48 @@ const drop = (event: DragEvent, index: number) => {
   }
 };
 
-const isSelected = computed(() => {
-    return (index: number) => {
-        if (uiState.selectedRange == null) {
-            return uiState.selected == index;
-        } else {
-            return uiState.selectedRange[0] <= index && uiState.selectedRange[1] >= index;
-        }
-    }
-})
-
 const click = (event: MouseEvent, index: number) => {
     if (event.shiftKey) {
         if (uiState.selected != null) {
+          uiState.selectedRows = [];
             if (index >= uiState.selected) {
-                uiState.selectedRange = [uiState.selected, index];
+            for (let i = uiState.selected; i <= index; i++) {
+              uiState.selectedRows.push(i);
+            }
             } else {
-                uiState.selectedRange = [index, uiState.selected];
+            for (let i = index; i <= uiState.selected; i++) {
+              uiState.selectedRows.push(i);
+            }
+          }
+      } else {
+        uiState.selectedRows = [index];
+      }
+      uiState.selected = index;
+    } else if (event.ctrlKey) {
+      if (uiState.selected != null) {
+        if (index in uiState.selectedRows) {
+          uiState.selectedRows.splice(uiState.selectedRows.findIndex((row) => row === index), 1);
+          if (uiState.selectedRows.length === 0) {
+            uiState.selected = null;
+          } else if (index === showModel.cues.findIndex(cue => cue.id == showState.playbackCursor)) {
+            uiState.selected = uiState.selectedRows.reduce((a,b) => Math.max(a,b));
             }
         } else {
-            uiState.selectedRange = null;
+          uiState.selectedRows.push(index);
+          uiState.selected = index;
+        }
+      } else {
+        uiState.selectedRows = [index];
+        uiState.selected = index;
         }
     } else {
-        uiState.selectedRange = null;
+      uiState.selectedRows = [index];
+      uiState.selected = index;
     }
-    uiState.selected = index;
     if (uiSettings.lockCursorToSelection) {
-        invoke("set_playback_cursor", {cueId: showModel.cues[index].id}).catch((e) => {
+        invoke("set_playback_cursor", {
+          cueId: uiState.selected !== null ? showModel.cues[uiState.selected].id : null
+        }).catch((e) => {
             console.error("Failed to set cursor. " + e);
         })
     }

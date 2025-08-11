@@ -43,16 +43,21 @@ async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
 #[tauri::command]
 async fn set_playback_cursor(
     handle: tauri::State<'_, BackendHandle>,
-    cue_id: String,
+    cue_id: Option<String>,
 ) -> Result<(), String> {
-    match Uuid::from_str(&cue_id) {
-        Ok(cursor) => handle
-            .controller_tx
-            .send(ControllerCommand::SetPlaybackCursor { cue_id: cursor })
-            .await
-            .map_err(|e| e.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+    let cursor = if let Some(cue_id_string) = cue_id {
+        match Uuid::from_str(&cue_id_string) {
+            Ok(uuid) => Some(uuid),
+            Err(e) => return Err(e.to_string()),
+        }
+    } else {
+        None
+    };
+    handle
+        .controller_tx
+        .send(ControllerCommand::SetPlaybackCursor { cue_id: cursor })
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
