@@ -140,7 +140,7 @@ const drop = (event: DragEvent, index: number) => {
     const fromIndex = Number(event.dataTransfer.getData("text/plain"));
     const cueId = showModel.cues[fromIndex].id;
     const newIndex = index < fromIndex ? index : index - 1;
-    invoke("move_cue", {cueId: cueId, to_index: newIndex}).catch((e)=>{
+    invoke("move_cue", {cueId: cueId, toIndex: newIndex}).catch((e)=>{
         console.log("Failed to move cue. "+e);
     });
     // showModel.moveCue(cue_id, newIndex);
