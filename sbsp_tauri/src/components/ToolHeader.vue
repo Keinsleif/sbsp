@@ -6,12 +6,12 @@
       </v-sheet>
       <div class="d-flex flex-column ma-0 flex-grow-1">
         <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
-          {{selectedCue != null ? selectedCue.number + "・" + selectedCue.name : ""}}
+          {{playbackCursorCue != null ? playbackCursorCue.number + "・" + playbackCursorCue.name : ""}}
         </v-sheet>
         <v-sheet
           class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto"
           height="64px"
-        >{{selectedCue != null ? selectedCue.notes : ""}}</v-sheet>
+        >{{playbackCursorCue != null ? playbackCursorCue.notes : ""}}</v-sheet>
       </div>
     </v-sheet>
     <v-sheet class="d-flex flex-columns ga-4">
@@ -52,22 +52,20 @@ import {
 } from "@mdi/js";
 import { useShowModel } from "../stores/showmodel";
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
 import { PlaybackStatus } from "../types/PlaybackStatus";
 import { invoke } from "@tauri-apps/api/core";
 
 const showModel = useShowModel();
 const showState = useShowState();
-const uiState = useUiState();
 
-const selectedCue = computed(() => {
-  return uiState.selected != null ? showModel.cues[uiState.selected] : null;
+const playbackCursorCue = computed(() => {
+  return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
 })
 
 const isCueStatus = computed(() => (status: PlaybackStatus) => {
-  if (uiState.selected != null) {
-    const activeCue = showState.activeCues[showModel.cues[uiState.selected].id];
+  if (showState.playbackCursor != null) {
+    const activeCue = showState.activeCues[showState.playbackCursor];
     if (activeCue != null) {
       return activeCue.status == status;
     }
