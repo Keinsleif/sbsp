@@ -27,7 +27,7 @@
           </v-list-item>
         </v-card-subtitle>
         <v-progress-linear
-          color="primary"
+          :color="activeCue?.status == 'Paused' ? 'warning' : 'primary'"
           :model-value="activeCue != null ? activeCue?.position * 100 / activeCue?.duration : 0"
           height="8"
         ></v-progress-linear>

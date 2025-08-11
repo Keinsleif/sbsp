@@ -16,9 +16,9 @@
     </v-sheet>
     <v-sheet class="d-flex flex-columns ga-4">
       <v-btn-group variant="flat" divided border class="ml-0 mr-auto">
-        <v-btn :icon="mdiStop" active-color="error"></v-btn>
-        <v-btn :icon="mdiPlay" :active="isCueStatus('Playing')" active-color="success" @click="invoke('go').catch((e) => console.log(e.toString()))"></v-btn>
-        <v-btn :icon="mdiPause" :active="isCueStatus('Paused')" active-color="warning" :class="[isCueStatus('Paused') ? $style['pause-blink'] : '']"></v-btn>
+        <v-btn :icon="mdiStop" active-color="error" @click="invoke('stop').catch(e => console.log(e.toString()))"></v-btn>
+        <v-btn :icon="mdiPlay" :active="isCueStatus('Playing') || isCueStatus('PreWaiting')" active-color="success" :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']" @click="invoke('go').catch(e => console.log(e.toString()))"></v-btn>
+        <v-btn :icon="mdiPause" :active="isCueStatus('Paused')" active-color="warning" :class="[isCueStatus('Paused') ? $style['blink'] : '']" @click="isCueStatus('Paused') ? invoke('resume').catch(e => console.log(e.toString())) : invoke('pause').catch(e => console.log(e.toString()))"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
         <v-btn :icon="mdiVolumeHigh"></v-btn>
@@ -89,7 +89,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="css" module>
-.pause-blink {
+.blink {
   animation: flash 1s ease infinite;
 }
 @keyframes flash {

@@ -152,10 +152,16 @@ impl CueController {
 
     async fn handle_go(&self, cue_id: Uuid) -> Result<()> {
         let model = self.model_handle.read().await;
+        let state = self.state_tx.borrow().clone();
 
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            let command = ExecutorCommand::Execute(cue_id);
-            self.executor_tx.send(command).await?;
+            if let Some(active_cue) = state.active_cues.get(&cue_id) {
+                if active_cue.status == PlaybackStatus::Paused {
+                    self.executor_tx.send(ExecutorCommand::Resume(cue_id)).await?;
+                }
+            } else {
+                self.executor_tx.send(ExecutorCommand::Execute(cue_id)).await?;
+            };
             self.update_playback_cursor().await?;
         } else {
             log::warn!("GO: Invalid playback cursor.");
@@ -201,15 +207,23 @@ impl CueController {
 
     async fn update_playback_cursor(&self) -> Result<()> {
         let cues = self.model_handle.read().await.cues.clone();
+        let state = self.state_tx.borrow().clone();
+        if let Some(cue_index) = cues.iter().position(|cue| cue.id == state.playback_cursor.unwrap()) {
+            let next_cue_id = if cue_index + 1 < cues.len() {
+                Some(cues[cue_index + 1].id)
+            } else {
+                None
+            };
+            self.set_playback_cursor(next_cue_id).await?;
+        }
+        Ok(())
+    }
+
+    async fn set_playback_cursor(&self, cursor: Option<Uuid>) -> Result<()> {
         self.state_tx.send_modify(|state| {
-            if let Some(cue_index) = cues.iter().position(|cue| cue.id == state.playback_cursor.unwrap()) {
-                if cue_index + 1 < cues.len() {
-                    state.playback_cursor = Some(cues[cue_index + 1].id);
-                } else {
-                    state.playback_cursor = None;
-                }
-            } 
+            state.playback_cursor = cursor;
         });
+        self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id: cursor })?;
         Ok(())
     }
 
