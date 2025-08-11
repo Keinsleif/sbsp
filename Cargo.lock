@@ -3647,6 +3647,7 @@ name = "sbsp_tauri"
 version = "0.1.0"
 dependencies = [
  "env_logger",
+ "log",
  "sbsp_backend",
  "serde",
  "serde_json",

@@ -41,6 +41,33 @@ async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn pause(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::Pause)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn resume(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::Resume)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn stop(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::Stop)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn set_playback_cursor(
     handle: tauri::State<'_, BackendHandle>,
     cue_id: Option<String>,
@@ -176,6 +203,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             go,
+            pause,
+            resume,
+            stop,
             get_show_model,
             set_playback_cursor,
             update_cue,
