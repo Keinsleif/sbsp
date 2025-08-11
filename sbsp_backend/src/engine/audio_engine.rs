@@ -27,7 +27,6 @@ pub enum AudioCommand {
     },
     Stop {
         id: Uuid,
-        fade_out: Duration,
     },
     SetLevels {
         id: Uuid,
@@ -94,7 +93,7 @@ impl AudioEngine {
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
-                        AudioCommand::Stop { id, fade_out } => self.handle_stop(id, fade_out),
+                        AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SetLevels {id,levels, duration, easing } => self.handle_set_levels(id, levels, duration, easing),
                     };
                     if let Err(e) = result {
@@ -274,15 +273,11 @@ impl AudioEngine {
         }
     }
 
-    fn handle_stop(&mut self, id: Uuid, fade_out: Duration) -> Result<()> {
-        log::info!("STOP: id={}, fade_out={:?}", id, fade_out);
+    fn handle_stop(&mut self, id: Uuid) -> Result<()> {
+        log::info!("STOP: id={}", id);
         if let Some(mut playing_sound) = self.playing_sounds.remove(&id) {
-            let fade_tween = Tween {
-                start_time: StartTime::Immediate,
-                duration: fade_out,
-                easing: Easing::default(),
-            };
-            playing_sound.handle.stop(fade_tween);
+
+            playing_sound.handle.stop(Tween::default());
             Ok(())
         } else {
             log::warn!("Stop command received for non-existent ID: {}", id);
