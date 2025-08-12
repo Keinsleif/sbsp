@@ -16,7 +16,10 @@
       <tr
         v-for="(cue, i) in showModel.cues"
         :key="cue.id"
-        :class="[dragOverIndex == i ? $style['drag-over-row'] : '', uiState.selectedRows.includes(i) ? $style['selected-row'] : '']"
+        :class="[
+          dragOverIndex == i ? $style['drag-over-row'] : '',
+          uiState.selectedRows.includes(i) ? $style['selected-row'] : '',
+        ]"
         draggable="true"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
@@ -25,7 +28,11 @@
         @click="click($event, i)"
       >
         <td width="24px">
-          <v-icon :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"></v-icon>
+          <v-icon
+            :icon="
+              showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined
+            "
+          ></v-icon>
         </td>
         <td width="24px">
           <v-icon :icon="getCueIcon(cue.params.type)" />
@@ -33,8 +40,7 @@
         <td class="text-center" width="50px">
           <span class="cue-number mr-2">{{ cue.number }}</span>
         </td>
-        <td width="auto">         {{ cue.name }}
-        </td>
+        <td width="auto">{{ cue.name }}</td>
         <td class="text-center pa-1" width="100px">
           <div
             :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? 'border-md border-primary' : '']"
@@ -49,7 +55,12 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? secondsToFormat(showState.activeCues[cue.id]!.position) : secondsToFormat(cue.preWait) }}
+            {{
+              cue.id in showState.activeCues &&
+              showState.activeCues[cue.id]!.status == "PreWaiting"
+                ? secondsToFormat(showState.activeCues[cue.id]!.position)
+                : secondsToFormat(cue.preWait)
+            }}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
@@ -66,7 +77,12 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-           {{ cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ? secondsToFormat(showState.activeCues[cue.id]!.position) : "05:00.00" }}
+            {{
+              cue.id in showState.activeCues &&
+              showState.activeCues[cue.id]!.status == "Playing"
+                ? secondsToFormat(showState.activeCues[cue.id]!.position)
+                : "05:00.00"
+            }}
           </div>
         </td>
         <td class="text-center pa-1" width="100px">
@@ -82,14 +98,36 @@
               backgroundRepeat: 'no-repeat',
             }"
           >
-            {{ cue.sequence.type == "autoFollow" ? secondsToFormat(cue.sequence.postWait) : '00:00.00' }}
+            {{
+              cue.sequence.type == "autoFollow"
+                ? secondsToFormat(cue.sequence.postWait)
+                : "00:00.00"
+            }}
           </div>
         </td>
         <td width="24px">
-          <v-icon v-if="cue.sequence.type != 'autoFollow'" :icon="mdiArrowBottomLeft" />
+          <v-icon
+            v-if="cue.sequence.type != 'autoFollow'"
+            :icon="mdiArrowBottomLeft"
+          />
         </td>
       </tr>
-      <tr :class="dragOverIndex == showModel.cues.length ? $style['drag-over-row'] : ''" @dragover="dragOver($event, showModel.cues.length)" @drop="drop($event,showModel.cues.length)"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr
+        :class="
+          dragOverIndex == showModel.cues.length ? $style['drag-over-row'] : ''
+        "
+        @dragover="dragOver($event, showModel.cues.length)"
+        @drop="drop($event, showModel.cues.length)"
+      >
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
     </tbody>
   </v-table>
 </template>
@@ -131,8 +169,8 @@ const dragOver = (event: DragEvent, index: number) => {
 };
 
 const dragEnd = () => {
-    dragOverIndex.value = null;
-}
+  dragOverIndex.value = null;
+};
 
 const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
@@ -143,68 +181,77 @@ const drop = (event: DragEvent, index: number) => {
       return;
     }
     const newIndex = index < fromIndex ? index : index - 1;
-    invoke("move_cue", {cueId: cueId, toIndex: newIndex}).catch((e)=>{
-        console.log("Failed to move cue. "+e);
+    invoke("move_cue", { cueId: cueId, toIndex: newIndex }).catch((e) => {
+      console.log("Failed to move cue. " + e);
     });
     // showModel.moveCue(cue_id, newIndex);
   }
 };
 
 const click = (event: MouseEvent, index: number) => {
-    if (event.shiftKey) {
-      if (uiState.selected != null) {
-          uiState.selectedRows = [];
-          if (index >= uiState.selected) {
-            for (let i = uiState.selected; i <= index; i++) {
-              uiState.selectedRows.push(i);
-            }
-          } else {
-            for (let i = index; i <= uiState.selected; i++) {
-              uiState.selectedRows.push(i);
-            }
-          }
-      } else {
-        uiState.selectedRows = [index];
-      }
-      uiState.selected = index;
-    } else if (event.ctrlKey) {
-      if (uiState.selected != null) {
-        if (index in uiState.selectedRows) {
-          uiState.selectedRows.splice(uiState.selectedRows.findIndex((row) => row === index), 1);
-          if (uiState.selectedRows.length === 0) {
-            uiState.selected = null;
-          } else if (index === showModel.cues.findIndex(cue => cue.id == showState.playbackCursor)) {
-            uiState.selected = uiState.selectedRows.reduce((a,b) => Math.max(a,b));
-          }
-        } else {
-          uiState.selectedRows.push(index);
-          uiState.selected = index;
+  if (event.shiftKey) {
+    if (uiState.selected != null) {
+      uiState.selectedRows = [];
+      if (index >= uiState.selected) {
+        for (let i = uiState.selected; i <= index; i++) {
+          uiState.selectedRows.push(i);
         }
       } else {
-        uiState.selectedRows = [index];
+        for (let i = index; i <= uiState.selected; i++) {
+          uiState.selectedRows.push(i);
+        }
+      }
+    } else {
+      uiState.selectedRows = [index];
+    }
+    uiState.selected = index;
+  } else if (event.ctrlKey) {
+    if (uiState.selected != null) {
+      if (index in uiState.selectedRows) {
+        uiState.selectedRows.splice(
+          uiState.selectedRows.findIndex((row) => row === index),
+          1
+        );
+        if (uiState.selectedRows.length === 0) {
+          uiState.selected = null;
+        } else if (
+          index ===
+          showModel.cues.findIndex((cue) => cue.id == showState.playbackCursor)
+        ) {
+          uiState.selected = uiState.selectedRows.reduce((a, b) =>
+            Math.max(a, b)
+          );
+        }
+      } else {
+        uiState.selectedRows.push(index);
         uiState.selected = index;
       }
     } else {
       uiState.selectedRows = [index];
       uiState.selected = index;
     }
-    if (uiSettings.lockCursorToSelection) {
-        invoke("set_playback_cursor", {
-          cueId: uiState.selected !== null ? showModel.cues[uiState.selected].id : null
-        }).catch((e) => {
-            console.error("Failed to set cursor. " + e);
-        })
-    }
-}
+  } else {
+    uiState.selectedRows = [index];
+    uiState.selected = index;
+  }
+  if (uiSettings.lockCursorToSelection) {
+    invoke("set_playback_cursor", {
+      cueId:
+        uiState.selected !== null ? showModel.cues[uiState.selected].id : null,
+    }).catch((e) => {
+      console.error("Failed to set cursor. " + e);
+    });
+  }
+};
 
-const getCueIcon = (type: string): string|undefined => {
+const getCueIcon = (type: string): string | undefined => {
   switch (type) {
     case "audio":
       return mdiVolumeHigh;
     case "wait":
       return mdiTimerSandEmpty;
   }
-}
+};
 </script>
 
 <style lang="css" module>
@@ -212,7 +259,7 @@ const getCueIcon = (type: string): string|undefined => {
   border-top: 2px solid rgb(var(--v-theme-primary)) !important;
 }
 .selected-row > td {
-    background-color: rgb(var(--v-theme-primary), 0.2);
-    color: rgb(var(--v-theme-on-background));
+  background-color: rgb(var(--v-theme-primary), 0.2);
+  color: rgb(var(--v-theme-on-background));
 }
 </style>
