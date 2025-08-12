@@ -18,7 +18,7 @@ const secondsToFormat = (source_seconds: number): string => {
   return time
 }
 
-const formatToSeconds = (source_format: string): number|null => {
+const formatToSeconds = (source_format: string): number => {
   let is_minus = false;
   let result = 0;
   if (source_format.startsWith("-")) {
