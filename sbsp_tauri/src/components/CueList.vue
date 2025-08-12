@@ -41,12 +41,12 @@
           <span class="cue-number mr-2">{{ cue.number }}</span>
         </td>
         <td headers="cuelist_name" width="auto" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">{{ cue.name }}</td>
-        <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
+        <td headers="cuelist_pre_wait" class="text-center pa-1" :style="{pointerEvents: isPreWaitActive(cue.id) ? 'none' : 'auto'}" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <div
-            :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? 'border-md border-primary' : '']"
+            :class="[isPreWaitActive(cue.id) ? 'border-md border-primary' : '']"
             :style="{
               background:
-                cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ?
+                isPreWaitActive(cue.id) ?
                 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
                 Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%, transparent ' +
@@ -57,19 +57,18 @@
             }"
           >
             {{
-              cue.id in showState.activeCues &&
-              showState.activeCues[cue.id]!.status == "PreWaiting"
+              isPreWaitActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
                 : secondsToFormat(cue.preWait)
             }}
           </div>
         </td>
-        <td headers="cuelist_duration" class="text-center pa-1" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
+        <td headers="cuelist_duration" class="text-center pa-1" :style="{pointerEvents: isActive(cue.id) ? 'none' : 'auto'}" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <div
-            :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ? 'border-md border-primary' : '']"
+            :class="[isActive(cue.id) ? 'border-md border-primary' : '']"
             :style="{
               background:
-                cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ?
+                isActive(cue.id) ?
                 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
                 Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%, transparent ' +
@@ -80,10 +79,9 @@
             }"
           >
             {{
-              cue.id in showState.activeCues &&
-              showState.activeCues[cue.id]!.status == "Playing"
+              isActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : "05:00.00"
+                : "05:00.00" /* duration */
             }}
           </div>
         </td>
@@ -150,7 +148,8 @@ import { useShowState } from "../stores/showstate";
 import { invoke } from "@tauri-apps/api/core";
 import { useUiSettings } from "../stores/uisettings";
 import { formatToSeconds, secondsToFormat } from "../utils";
-import { Cue } from "../types/Cue";
+import type { Cue } from "../types/Cue";
+import type { PlaybackStatus } from "../types/PlaybackStatus";
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -323,6 +322,14 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
     }
   }
   target.dataset.prevText = undefined;
+}
+
+const isPreWaitActive = (cue_id: string): boolean => {
+  return cue_id in showState.activeCues && showState.activeCues[cue_id]!.status in (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]);
+}
+
+const isActive = (cue_id: string): boolean => {
+  return cue_id in showState.activeCues && showState.activeCues[cue_id]!.status in (['Playing', 'Paused', 'Completed'] as PlaybackStatus[]);
 }
 </script>
 
