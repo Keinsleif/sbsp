@@ -2,14 +2,14 @@
   <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
     <thead>
       <tr>
-        <th></th>
-        <th></th>
-        <th class="text-center">Number</th>
-        <th>Name</th>
-        <th class="text-center">Pre-Wait</th>
-        <th class="text-center">Duration</th>
-        <th class="text-center">Post-Wait</th>
-        <th><v-icon :icon="mdiChevronDoubleDown" /></th>
+        <th id="cuelist_cursor"></th>
+        <th id="cuelist_type"></th>
+        <th id="cuelist_number" class="text-center">Number</th>
+        <th id="cuelist_name">Name</th>
+        <th id="cuelist_pre_wait" class="text-center">Pre-Wait</th>
+        <th id="cuelist_duration" class="text-center">Duration</th>
+        <th id="cuelist_post_wait" class="text-center">Post-Wait</th>
+        <th id="cuelist_sequence"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
     </thead>
     <tbody>
@@ -27,21 +27,21 @@
         @drop="drop($event, i)"
         @click="click($event, i)"
       >
-        <td width="24px">
+        <td headers="cuelist_cursor" width="24px">
           <v-icon
             :icon="
               showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined
             "
           ></v-icon>
         </td>
-        <td width="24px">
+        <td headers="cuelist_type" width="24px">
           <v-icon :icon="getCueIcon(cue.params.type)" />
         </td>
-        <td class="text-center" width="50px">
+        <td headers="cuelist_number" class="text-center" width="50px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <span class="cue-number mr-2">{{ cue.number }}</span>
         </td>
-        <td width="auto">{{ cue.name }}</td>
-        <td class="text-center pa-1" width="100px">
+        <td headers="cuelist_name" width="auto" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">{{ cue.name }}</td>
+        <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <div
             :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'PreWaiting' ? 'border-md border-primary' : '']"
             :style="{
@@ -53,6 +53,7 @@
                 Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%)' : '',
               backgroundRepeat: 'no-repeat',
+              pointerEvents: 'none',
             }"
           >
             {{
@@ -63,7 +64,7 @@
             }}
           </div>
         </td>
-        <td class="text-center pa-1" width="100px">
+        <td headers="cuelist_duration" class="text-center pa-1" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <div
             :class="[cue.id in showState.activeCues && showState.activeCues[cue.id]!.status == 'Playing' ? 'border-md border-primary' : '']"
             :style="{
@@ -75,6 +76,7 @@
                 Math.floor(showState.activeCues[cue.id]!.position * 100 / showState.activeCues[cue.id]!.duration) +
                 '%)' : '',
               backgroundRepeat: 'no-repeat',
+              pointerEvents: 'none',
             }"
           >
             {{
@@ -85,7 +87,7 @@
             }}
           </div>
         </td>
-        <td class="text-center pa-1" width="100px">
+        <td headers="cuelist_post_wait" class="text-center pa-1" width="100px" @dblclick="openEditable($event)" @blur="closeEditable($event.target, true, i)" @keydown.enter="closeEditable($event.target, true, i)" @keydown.esc="closeEditable($event.target, false, i)">
           <div
             class="border-md border-primary"
             :style="{
@@ -96,6 +98,7 @@
                 2 * i +
                 '%)',
               backgroundRepeat: 'no-repeat',
+              pointerEvents: 'none',
             }"
           >
             {{
@@ -105,7 +108,7 @@
             }}
           </div>
         </td>
-        <td width="24px">
+        <td headers="cuelist_sequence" width="24px">
           <v-icon
             v-if="cue.sequence.type != 'autoFollow'"
             :icon="mdiArrowBottomLeft"
@@ -119,14 +122,14 @@
         @dragover="dragOver($event, showModel.cues.length)"
         @drop="drop($event, showModel.cues.length)"
       >
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td headers="cuelist_cursor"></td>
+        <td headers="cuelist_type"></td>
+        <td headers="cuelist_number"></td>
+        <td headers="cuelist_name"></td>
+        <td headers="cuelist_pre_wait"></td>
+        <td headers="cuelist_duration"></td>
+        <td headers="cuelist_post_wait"></td>
+        <td headers="cuelist_sequence"></td>
       </tr>
     </tbody>
   </v-table>
@@ -147,6 +150,7 @@ import { useShowState } from "../stores/showstate";
 import { invoke } from "@tauri-apps/api/core";
 import { useUiSettings } from "../stores/uisettings";
 import { secondsToFormat } from "../utils";
+import { Cue } from "../types/Cue";
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -252,6 +256,77 @@ const getCueIcon = (type: string): string | undefined => {
       return mdiTimerSandEmpty;
   }
 };
+
+const openEditable = (e: MouseEvent) => {
+  if (e.target == null || !(e.target instanceof HTMLTableCellElement) || e.target.contentEditable === "true") {
+    return;
+  }
+  e.target.contentEditable="true";
+  e.target.classList.add('inEdit');
+  e.target.dataset.prevText = e.target.innerText;
+  var range = document.createRange();
+  range.selectNodeContents(e.target);
+  var sel = window.getSelection();
+  if (sel != null) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    e.target.focus();
+  }
+}
+
+const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: number) => {
+  if (target == null || !(target instanceof HTMLTableCellElement) || target.contentEditable === "false") {
+    return;
+  }
+  target.contentEditable="false";
+  target.classList.remove('inEdit');
+  if (needSave) {
+    const newCue = JSON.parse(JSON.stringify(showModel.cues[rowIndex])) as Cue;
+    switch (target.headers) {
+      case "cuelist_number":
+        newCue.number = target.innerText;
+        break;
+      case "cuelist_name":
+        newCue.name = target.innerText;
+        break;
+      case "cuelist_pre_wait": {
+        let newPreWait = Number(target.innerText);
+        if (isNaN(newPreWait) || newPreWait < 0) {
+          newPreWait = 0;
+        }
+        newCue.preWait = newPreWait;
+        break;
+      }
+      case "cuelist_duration": {
+        if (newCue.params.type != "audio") {
+          let newDuration = Number(target.innerText);
+          if (isNaN(newDuration) || newDuration < 0) {
+            newDuration = 0;
+          }
+          newCue.params.duration = newDuration;
+        }
+        break;
+      }
+      case "cuelist_post_wait": {
+        if (newCue.sequence.type == "autoFollow") {
+          let newPostWait = Number(target.innerText);
+          if (isNaN(newPostWait)) {
+            newPostWait = 0;
+          }
+          newCue.sequence.postWait = newPostWait;
+        }
+        break;
+      }
+    }
+    invoke("update_cue", {cue: newCue}).catch(e=>console.log(e.toString()));
+  } else {
+    if (target.dataset.prevText != undefined) {
+      target.innerText = target.dataset.prevText;
+    }
+  }
+  target.dataset.prevText = undefined;
+}
 </script>
 
 <style lang="css" module>
