@@ -1,8 +1,11 @@
 use anyhow::{Context, Result};
 use kira::{
-    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
-        static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, PlaybackState, Region
-    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween,
+    clock::{ClockHandle, ClockSpeed, ClockTime},
+    sound::{
+        EndPosition, PlaybackPosition, PlaybackState, Region,
+        static_sound::{StaticSoundData, StaticSoundHandle},
+    },
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -179,7 +182,7 @@ impl AudioEngine {
                 })
                 .volume(Decibels::from(data.levels.master as f32))
                 .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
-        
+
         if let Some(region) = data.loop_region {
             sound_data = sound_data.loop_region(region);
         }

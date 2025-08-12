@@ -7,84 +7,47 @@ use uuid::Uuid;
 use crate::{executor::ExecutorEvent, model::cue::Cue};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[serde(tag = "type", content = "param", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    content = "param",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum UiEvent {
     // Cue Status Events
-    PreWaitStarted {
-        cue_id: Uuid,
-    },
-    PreWaitPaused {
-        cue_id: Uuid,
-    },
-    PreWaitResumed {
-        cue_id: Uuid,
-    },
-    PreWaitCompleted {
-        cue_id: Uuid,
-    },
-    CueStarted {
-        cue_id: Uuid,
-    },
-    CuePaused {
-        cue_id: Uuid,
-    },
-    CueResumed {
-        cue_id: Uuid,
-    },
-    CueCompleted {
-        cue_id: Uuid,
-    },
-    CueError {
-        cue_id: Uuid,
-        error: String,
-    },
+    PreWaitStarted { cue_id: Uuid },
+    PreWaitPaused { cue_id: Uuid },
+    PreWaitResumed { cue_id: Uuid },
+    PreWaitCompleted { cue_id: Uuid },
+    CueStarted { cue_id: Uuid },
+    CuePaused { cue_id: Uuid },
+    CueResumed { cue_id: Uuid },
+    CueCompleted { cue_id: Uuid },
+    CueError { cue_id: Uuid, error: String },
 
     // System Events
-    PlaybackCursorMoved {
-        cue_id: Option<Uuid>,
-    },
+    PlaybackCursorMoved { cue_id: Option<Uuid> },
 
-    ShowModelLoaded {
-        path: PathBuf
-    },
-    ShowModelSaved {
-        path: PathBuf,
-    },
-    CueUpdated {
-        cue: Cue,
-    },
-    CueAdded {
-        cue: Cue,
-        at_index: usize,
-    },
-    CueRemoved {
-        cue_id: Uuid,
-    },
-    CueMoved {
-        cue_id: Uuid,
-        to_index: usize,
-    },
+    ShowModelLoaded { path: PathBuf },
+    ShowModelSaved { path: PathBuf },
+    CueUpdated { cue: Cue },
+    CueAdded { cue: Cue, at_index: usize },
+    CueRemoved { cue_id: Uuid },
+    CueMoved { cue_id: Uuid, to_index: usize },
 
-    OperationFailed {
-        error: UiError,
-    }
+    OperationFailed { error: UiError },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[serde(tag = "type", rename_all="camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum UiError {
-    FileSave {
-        path: PathBuf,
-        message: String,
-    },
-    FileLoad {
-        path: PathBuf,
-        message: String,
-    },
-    CueEdit {
-        cue_id: Uuid,
-        message: String,
-    },
+    FileSave { path: PathBuf, message: String },
+    FileLoad { path: PathBuf, message: String },
+    CueEdit { cue_id: Uuid, message: String },
 }
 
 impl From<ExecutorEvent> for UiEvent {

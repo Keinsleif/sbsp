@@ -8,19 +8,10 @@ use crate::executor::EngineEvent;
 
 #[derive(Debug)]
 pub enum PreWaitCommand {
-    Start {
-        instance_id: Uuid,
-        duration: f64,
-    },
-    Pause {
-        instance_id: Uuid,
-    },
-    Resume {
-        instance_id: Uuid,
-    },
-    Stop {
-        instance_id: Uuid,
-    },
+    Start { instance_id: Uuid, duration: f64 },
+    Pause { instance_id: Uuid },
+    Resume { instance_id: Uuid },
+    Stop { instance_id: Uuid },
 }
 
 #[derive(Debug)]
@@ -79,8 +70,15 @@ pub struct PreWaitEngine {
 }
 
 impl PreWaitEngine {
-    pub fn new(pre_wait_command_rx: mpsc::Receiver<PreWaitCommand>, pre_wait_event_tx: mpsc::Sender<EngineEvent>) -> Self {
-        Self { command_rx: pre_wait_command_rx, event_tx: pre_wait_event_tx, waiting_instances: HashMap::new() }
+    pub fn new(
+        pre_wait_command_rx: mpsc::Receiver<PreWaitCommand>,
+        pre_wait_event_tx: mpsc::Sender<EngineEvent>,
+    ) -> Self {
+        Self {
+            command_rx: pre_wait_command_rx,
+            event_tx: pre_wait_event_tx,
+            waiting_instances: HashMap::new(),
+        }
     }
 
     pub async fn run(mut self) {

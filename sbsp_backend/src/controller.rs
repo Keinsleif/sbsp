@@ -6,20 +6,26 @@ use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::state::{ActiveCue, PlaybackStatus, ShowState}, event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle
+    controller::state::{ActiveCue, PlaybackStatus, ShowState},
+    event::UiEvent,
+    executor::{ExecutorCommand, ExecutorEvent},
+    manager::ShowModelHandle,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "command", content = "params", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "command",
+    content = "params",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ControllerCommand {
     Go,
     Pause,
     Resume,
     Stop,
     StopAll,
-    SetPlaybackCursor {
-        cue_id: Option<Uuid>,
-    },
+    SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 pub struct CueController {
     model_handle: ShowModelHandle,
@@ -113,34 +119,54 @@ impl CueController {
         match command {
             ControllerCommand::Go => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state.playback_cursor.expect("GO: Playback Cursor is unavailable.");
+                let cue_id = state
+                    .playback_cursor
+                    .expect("GO: Playback Cursor is unavailable.");
                 self.handle_go(cue_id).await
-            },
+            }
             ControllerCommand::Pause => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state.playback_cursor.expect("PAUSE: Playback Cursor is unavailable.");
+                let cue_id = state
+                    .playback_cursor
+                    .expect("PAUSE: Playback Cursor is unavailable.");
                 self.handle_pause(cue_id).await
-            },
+            }
             ControllerCommand::Resume => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state.playback_cursor.expect("RESUME: Playback Cursor is unavailable.");
+                let cue_id = state
+                    .playback_cursor
+                    .expect("RESUME: Playback Cursor is unavailable.");
                 self.handle_resume(cue_id).await
-            },
+            }
             ControllerCommand::Stop => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state.playback_cursor.expect("STOP: Playback Cursor is unavailable.");
+                let cue_id = state
+                    .playback_cursor
+                    .expect("STOP: Playback Cursor is unavailable.");
                 self.handle_stop(cue_id).await
-            },
+            }
             ControllerCommand::StopAll => Ok(()), /* TODO */
             ControllerCommand::SetPlaybackCursor { cue_id } => {
                 if let Some(cursor_cue_id) = cue_id
-                    && self.model_handle.get_cue_by_id(&cursor_cue_id).await.is_none() {
-                        return Err(anyhow::anyhow!("Invalid playback cursor destination cue_id. cue_id = {}", cursor_cue_id));
+                    && self
+                        .model_handle
+                        .get_cue_by_id(&cursor_cue_id)
+                        .await
+                        .is_none()
+                {
+                    return Err(anyhow::anyhow!(
+                        "Invalid playback cursor destination cue_id. cue_id = {}",
+                        cursor_cue_id
+                    ));
                 }
                 self.state_tx.send_modify(|state| {
                     if state.playback_cursor.ne(&cue_id) {
                         state.playback_cursor = cue_id;
-                        if self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id }).is_err() {
+                        if self
+                            .event_tx
+                            .send(UiEvent::PlaybackCursorMoved { cue_id })
+                            .is_err()
+                        {
                             log::trace!("No UI clients are listening to playback events.");
                         }
                     }
@@ -157,10 +183,14 @@ impl CueController {
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
             if let Some(active_cue) = state.active_cues.get(&cue_id) {
                 if active_cue.status == PlaybackStatus::Paused {
-                    self.executor_tx.send(ExecutorCommand::Resume(cue_id)).await?;
+                    self.executor_tx
+                        .send(ExecutorCommand::Resume(cue_id))
+                        .await?;
                 }
             } else {
-                self.executor_tx.send(ExecutorCommand::Execute(cue_id)).await?;
+                self.executor_tx
+                    .send(ExecutorCommand::Execute(cue_id))
+                    .await?;
             };
             self.update_playback_cursor().await?;
         } else {
@@ -208,7 +238,10 @@ impl CueController {
     async fn update_playback_cursor(&self) -> Result<()> {
         let cues = self.model_handle.read().await.cues.clone();
         let state = self.state_tx.borrow().clone();
-        if let Some(cue_index) = cues.iter().position(|cue| cue.id == state.playback_cursor.unwrap()) {
+        if let Some(cue_index) = cues
+            .iter()
+            .position(|cue| cue.id == state.playback_cursor.unwrap())
+        {
             let next_cue_id = if cue_index + 1 < cues.len() {
                 Some(cues[cue_index + 1].id)
             } else {
@@ -223,7 +256,8 @@ impl CueController {
         self.state_tx.send_modify(|state| {
             state.playback_cursor = cursor;
         });
-        self.event_tx.send(UiEvent::PlaybackCursorMoved { cue_id: cursor })?;
+        self.event_tx
+            .send(UiEvent::PlaybackCursorMoved { cue_id: cursor })?;
         Ok(())
     }
 
@@ -299,9 +333,10 @@ impl CueController {
             }
             ExecutorEvent::Resumed { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id)
-                    && !active_cue.status.eq(&PlaybackStatus::Playing) {
-                        active_cue.status = PlaybackStatus::Playing;
-                        state_changed = true;
+                    && !active_cue.status.eq(&PlaybackStatus::Playing)
+                {
+                    active_cue.status = PlaybackStatus::Playing;
+                    state_changed = true;
                 }
             }
             ExecutorEvent::Completed { cue_id, .. } => {
@@ -333,8 +368,12 @@ impl CueController {
                     show_state.active_cues.insert(*cue_id, active_cue);
                 }
                 state_changed = true;
-            },
-            ExecutorEvent::PreWaitProgress { cue_id, position, duration } => {
+            }
+            ExecutorEvent::PreWaitProgress {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     active_cue.duration = *duration;
@@ -351,8 +390,12 @@ impl CueController {
                     );
                 }
                 state_changed = true;
-            },
-            ExecutorEvent::PreWaitPaused { cue_id, position, duration } => {
+            }
+            ExecutorEvent::PreWaitPaused {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     if !active_cue.status.eq(&PlaybackStatus::Paused) {
                         active_cue.position = *position;
@@ -371,15 +414,16 @@ impl CueController {
                     );
                 }
                 state_changed = true;
-            },
+            }
             ExecutorEvent::PreWaitResumed { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id)
-                    && !active_cue.status.eq(&PlaybackStatus::PreWaiting) {
-                        active_cue.status = PlaybackStatus::PreWaiting;
-                        state_changed = true;
+                    && !active_cue.status.eq(&PlaybackStatus::PreWaiting)
+                {
+                    active_cue.status = PlaybackStatus::PreWaiting;
+                    state_changed = true;
                 }
             }
-            ExecutorEvent::PreWaitCompleted { .. } => {},
+            ExecutorEvent::PreWaitCompleted { .. } => {}
         }
 
         if state_changed && self.state_tx.send(show_state).is_err() {
@@ -387,16 +431,16 @@ impl CueController {
         }
 
         match &event {
-            ExecutorEvent::Started { .. } |
-            ExecutorEvent::Paused { .. } |
-            ExecutorEvent::Resumed { .. } |
-            ExecutorEvent::Completed { .. } |
-            ExecutorEvent::Error { .. } => {
+            ExecutorEvent::Started { .. }
+            | ExecutorEvent::Paused { .. }
+            | ExecutorEvent::Resumed { .. }
+            | ExecutorEvent::Completed { .. }
+            | ExecutorEvent::Error { .. } => {
                 if self.event_tx.send(UiEvent::from(event)).is_err() {
                     log::trace!("No UI clients are listening to playback events.");
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
         // TODO: ApiServerに状態変更を通知する
         Ok(())
@@ -408,10 +452,13 @@ mod tests {
 
     use std::path::PathBuf;
 
-    use crate::{manager::ShowModelManager, model::{
-        self,
-        cue::{AudioCueFadeParam, AudioCueLevels, Cue, Easing},
-    }};
+    use crate::{
+        manager::ShowModelManager,
+        model::{
+            self,
+            cue::{AudioCueFadeParam, AudioCueLevels, Cue, Easing},
+        },
+    };
 
     use super::*;
 
@@ -477,7 +524,14 @@ mod tests {
             event_tx,
         );
 
-        (controller, ctrl_tx, exec_rx, playback_event_tx, state_rx, event_rx)
+        (
+            controller,
+            ctrl_tx,
+            exec_rx,
+            playback_event_tx,
+            state_rx,
+            event_rx,
+        )
     }
 
     #[tokio::test]
@@ -487,10 +541,7 @@ mod tests {
 
         tokio::spawn(controller.run());
 
-        ctrl_tx
-            .send(ControllerCommand::Go)
-            .await
-            .unwrap();
+        ctrl_tx.send(ControllerCommand::Go).await.unwrap();
 
         if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
@@ -505,16 +556,27 @@ mod tests {
         println!("{}", cue_id);
         let cue_id_next = Uuid::new_v4();
         println!("{}", cue_id_next);
-        let (controller, ctrl_tx, _, _, state_rx, mut event_rx) = setup_controller(&[cue_id, cue_id_next]).await;
+        let (controller, ctrl_tx, _, _, state_rx, mut event_rx) =
+            setup_controller(&[cue_id, cue_id_next]).await;
 
         tokio::spawn(controller.run());
 
         assert_eq!(state_rx.borrow().playback_cursor, Some(cue_id));
 
-        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: Some(cue_id_next) }).await.unwrap();
+        ctrl_tx
+            .send(ControllerCommand::SetPlaybackCursor {
+                cue_id: Some(cue_id_next),
+            })
+            .await
+            .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert_eq!(event, UiEvent::PlaybackCursorMoved { cue_id: Some(cue_id_next) });
+        assert_eq!(
+            event,
+            UiEvent::PlaybackCursorMoved {
+                cue_id: Some(cue_id_next)
+            }
+        );
         if let Some(playback_cursor) = state_rx.borrow().playback_cursor {
             assert_eq!(playback_cursor, cue_id_next);
         }
@@ -523,7 +585,8 @@ mod tests {
     #[tokio::test]
     async fn started_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+            setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -533,7 +596,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStarted {cue_id}));
+        assert!(event.eq(&UiEvent::CueStarted { cue_id }));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -547,7 +610,8 @@ mod tests {
     #[tokio::test]
     async fn progress_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, mut state_rx, event_rx) = setup_controller(&[cue_id]).await;
+        let (controller, _, _, playback_event_tx, mut state_rx, event_rx) =
+            setup_controller(&[cue_id]).await;
         state_rx.mark_unchanged();
 
         tokio::spawn(controller.run());
@@ -576,7 +640,8 @@ mod tests {
     #[tokio::test]
     async fn pause_n_resume_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+            setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -620,7 +685,8 @@ mod tests {
     #[tokio::test]
     async fn completed_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
+        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+            setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 

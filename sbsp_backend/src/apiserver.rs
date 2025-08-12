@@ -1,8 +1,21 @@
-use axum::{extract::{ws::{Message, WebSocket}, State, WebSocketUpgrade}, response::IntoResponse, routing::get, Router};
+use axum::{
+    Router,
+    extract::{
+        State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
+    response::IntoResponse,
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc, watch};
 
-use crate::{controller::{ControllerCommand, state::ShowState}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel};
+use crate::{
+    controller::{ControllerCommand, state::ShowState},
+    event::UiEvent,
+    manager::{ModelCommand, ShowModelHandle},
+    model::ShowModel,
+};
 
 #[derive(Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
@@ -15,7 +28,7 @@ enum WsMessage {
 #[serde(tag = "type", rename_all = "camelCase")]
 enum ApiCommand {
     Controll(ControllerCommand),
-    Model(Box<ModelCommand>)
+    Model(Box<ModelCommand>),
 }
 
 #[derive(Clone)]
@@ -53,18 +66,15 @@ struct FullShowState {
     show_state: ShowState,
 }
 
-async fn get_full_state_handler(
-    State(state): State<ApiState>,
-) -> axum::Json<FullShowState> {
-
-    let show_model = state.model_handle.read().await.clone();    
+async fn get_full_state_handler(State(state): State<ApiState>) -> axum::Json<FullShowState> {
+    let show_model = state.model_handle.read().await.clone();
     let show_state = state.state_rx.borrow().clone();
 
     let full_state = FullShowState {
         show_model,
         show_state,
     };
-    
+
     axum::Json(full_state)
 }
 
@@ -95,14 +105,14 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
             Ok(_) = state_rx.changed() => {
                 let new_state = state_rx.borrow().clone();
                 let ws_message = WsMessage::State(new_state);
-                
+
                 if let Ok(payload) = serde_json::to_string(&ws_message)
                     && socket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
             }
-            
+
             Some(Ok(msg)) = socket.recv() => {
                 if let Message::Text(text) = msg {
                     if let Ok(command_request) = serde_json::from_str::<ApiCommand>(&text) {

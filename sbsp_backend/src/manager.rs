@@ -1,26 +1,29 @@
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc, RwLock};
+use tokio::sync::{RwLock, broadcast, mpsc};
 use uuid::Uuid;
 
-use crate::{event::{UiError, UiEvent}, model::{cue::Cue, ShowModel}};
+use crate::{
+    event::{UiError, UiEvent},
+    model::{ShowModel, cue::Cue},
+};
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "command", content = "params", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "command",
+    content = "params",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ModelCommand {
     UpdateCue(Cue),
-    AddCue {
-        cue: Cue,
-        at_index: usize,
-    },
-    RemoveCue {
-        cue_id: Uuid,
-    },
-    MoveCue {
-        cue_id: Uuid,
-        to_index: usize,
-    },
+    AddCue { cue: Cue, at_index: usize },
+    RemoveCue { cue_id: Uuid },
+    MoveCue { cue_id: Uuid, to_index: usize },
 
     Save,
     SaveToFile(PathBuf),
@@ -72,15 +75,30 @@ impl ShowModelManager {
                     model.cues[index] = cue.clone();
                     Some(UiEvent::CueUpdated { cue })
                 } else {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Cue doesn't exist.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id: cue.id,
+                            message: "Cue doesn't exist.".to_string(),
+                        },
+                    })
                 }
             }
             ModelCommand::AddCue { cue, at_index } => {
                 let mut model = self.model.write().await;
                 if model.cues.iter().any(|c| c.id == cue.id) {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Cue already exist.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id: cue.id,
+                            message: "Cue already exist.".to_string(),
+                        },
+                    })
                 } else if at_index > model.cues.len() {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id: cue.id, message: "Insert index is out of list.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id: cue.id,
+                            message: "Insert index is out of list.".to_string(),
+                        },
+                    })
                 } else {
                     model.cues.insert(at_index, cue.clone());
                     Some(UiEvent::CueAdded { cue, at_index })
@@ -92,7 +110,12 @@ impl ShowModelManager {
                     model.cues.remove(index);
                     Some(UiEvent::CueRemoved { cue_id })
                 } else {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Cue doesn't exist.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id,
+                            message: "Cue doesn't exist.".to_string(),
+                        },
+                    })
                 }
             }
             ModelCommand::MoveCue { cue_id, to_index } => {
@@ -102,28 +125,52 @@ impl ShowModelManager {
                     model.cues.insert(to_index, cue.clone());
                     Some(UiEvent::CueMoved { cue_id, to_index })
                 } else if to_index > model.cues.len() {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Insert index is out of list.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id,
+                            message: "Insert index is out of list.".to_string(),
+                        },
+                    })
                 } else {
-                    Some(UiEvent::OperationFailed { error: UiError::CueEdit { cue_id, message: "Cue doesn't exist.".to_string() } })
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            cue_id,
+                            message: "Cue doesn't exist.".to_string(),
+                        },
+                    })
                 }
             }
             ModelCommand::Save => {
                 if let Some(path) = self.show_model_path.read().await.as_ref() {
                     if let Err(error) = self.save_to_file(path.as_path()).await {
                         log::error!("Failed to save model file: {}", error);
-                        Some(UiEvent::OperationFailed { error: UiError::FileSave { path: path.to_path_buf(), message: error.to_string() } })
+                        Some(UiEvent::OperationFailed {
+                            error: UiError::FileSave {
+                                path: path.to_path_buf(),
+                                message: error.to_string(),
+                            },
+                        })
                     } else {
-                        Some(UiEvent::ShowModelSaved { path: path.to_path_buf() })
+                        Some(UiEvent::ShowModelSaved {
+                            path: path.to_path_buf(),
+                        })
                     }
                 } else {
-                    log::warn!("Save command issued, but no file path is set. Use SaveToFile first.");
+                    log::warn!(
+                        "Save command issued, but no file path is set. Use SaveToFile first."
+                    );
                     Some(UiEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } })
                 }
             }
             ModelCommand::SaveToFile(path) => {
                 if let Err(error) = self.save_to_file(path.as_path()).await {
                     log::error!("Failed to save model file: {}", error);
-                    Some(UiEvent::OperationFailed {error: UiError::FileSave { path, message: error.to_string() }})
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::FileSave {
+                            path,
+                            message: error.to_string(),
+                        },
+                    })
                 } else {
                     let mut show_model_path = self.show_model_path.write().await;
                     *show_model_path = Some(path.clone());
@@ -133,7 +180,12 @@ impl ShowModelManager {
             ModelCommand::LoadFromFile(path) => {
                 if let Err(error) = self.load_from_file(path.as_path()).await {
                     log::error!("Failed to load model file: {}", error);
-                    Some(UiEvent::OperationFailed {error: UiError::FileLoad { path, message: error.to_string() }})
+                    Some(UiEvent::OperationFailed {
+                        error: UiError::FileLoad {
+                            path,
+                            message: error.to_string(),
+                        },
+                    })
                 } else {
                     let mut show_model_path = self.show_model_path.write().await;
                     *show_model_path = Some(path.clone());
@@ -186,7 +238,6 @@ impl ShowModelManager {
     }
 }
 
-
 #[derive(Clone)]
 pub struct ShowModelHandle {
     model: Arc<RwLock<ShowModel>>,
@@ -204,19 +255,22 @@ impl ShowModelHandle {
         self.send_command(ModelCommand::UpdateCue(cue)).await?;
         Ok(())
     }
-    
+
     pub async fn add_cue(&self, cue: Cue, at_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::AddCue { cue, at_index }).await?;
+        self.send_command(ModelCommand::AddCue { cue, at_index })
+            .await?;
         Ok(())
     }
 
     pub async fn remove_cue(&self, cue_id: Uuid) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::RemoveCue { cue_id }).await?;
+        self.send_command(ModelCommand::RemoveCue { cue_id })
+            .await?;
         Ok(())
     }
 
     pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::MoveCue { cue_id, to_index }).await?;
+        self.send_command(ModelCommand::MoveCue { cue_id, to_index })
+            .await?;
         Ok(())
     }
 
@@ -247,7 +301,7 @@ impl ShowModelHandle {
     pub async fn get_current_file_path(&self) -> Option<PathBuf> {
         self.show_model_path.read().await.clone()
     }
-    
+
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {
         self.model.read().await
     }

@@ -18,7 +18,11 @@ pub struct Cue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum CueSequence {
     #[default]
     DoNotContinue,
@@ -29,7 +33,11 @@ pub enum CueSequence {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum CueParam {
     Audio {
         target: PathBuf,
@@ -59,7 +67,7 @@ pub struct AudioCueFadeParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
-pub struct LoopRegion{
+pub struct LoopRegion {
     pub start: Option<f64>,
     pub end: Option<f64>,
 }
@@ -77,9 +85,18 @@ impl From<LoopRegion> for Option<Region> {
     fn from(val: LoopRegion) -> Self {
         match (val.start, val.end) {
             (None, None) => None,
-            (None, Some(end)) => Some(Region { start: kira::sound::PlaybackPosition::Seconds(0.0), end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)) }),
-            (Some(start), None) => Some(Region { start: kira::sound::PlaybackPosition::Seconds(start), end: kira::sound::EndPosition::EndOfAudio }),
-            (Some(start), Some(end)) => Some(Region { start: kira::sound::PlaybackPosition::Seconds(start), end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)) }),
+            (None, Some(end)) => Some(Region {
+                start: kira::sound::PlaybackPosition::Seconds(0.0),
+                end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)),
+            }),
+            (Some(start), None) => Some(Region {
+                start: kira::sound::PlaybackPosition::Seconds(start),
+                end: kira::sound::EndPosition::EndOfAudio,
+            }),
+            (Some(start), Some(end)) => Some(Region {
+                start: kira::sound::PlaybackPosition::Seconds(start),
+                end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)),
+            }),
         }
     }
 }
@@ -92,16 +109,16 @@ impl IntoOptionalRegion for LoopRegion {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 pub enum Easing {
-	Linear,
-	InPowi(i32),
-	OutPowi(i32),
-	InOutPowi(i32),
-	InPowf(f64),
-	OutPowf(f64),
-	InOutPowf(f64),
+    Linear,
+    InPowi(i32),
+    OutPowi(i32),
+    InOutPowi(i32),
+    InPowf(f64),
+    OutPowf(f64),
+    InOutPowf(f64),
 }
 
-impl From <kira::Easing> for Easing {
+impl From<kira::Easing> for Easing {
     fn from(value: kira::Easing) -> Self {
         match value {
             kira::Easing::Linear => Self::Linear,
