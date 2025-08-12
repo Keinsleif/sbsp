@@ -89,7 +89,7 @@
           <v-icon v-if="cue.sequence.type != 'autoFollow'" :icon="mdiArrowBottomLeft" />
         </td>
       </tr>
-      <tr></tr>
+      <tr :class="dragOverIndex == showModel.cues.length ? $style['drag-over-row'] : ''" @dragover="dragOver($event, showModel.cues.length)" @drop="drop($event,showModel.cues.length)"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
     </tbody>
   </v-table>
 </template>
@@ -139,6 +139,9 @@ const drop = (event: DragEvent, index: number) => {
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData("text/plain"));
     const cueId = showModel.cues[fromIndex].id;
+    if (fromIndex === index) {
+      return;
+    }
     const newIndex = index < fromIndex ? index : index - 1;
     invoke("move_cue", {cueId: cueId, toIndex: newIndex}).catch((e)=>{
         console.log("Failed to move cue. "+e);
