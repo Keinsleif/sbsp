@@ -149,7 +149,7 @@ import { useUiState } from "../stores/uistate";
 import { useShowState } from "../stores/showstate";
 import { invoke } from "@tauri-apps/api/core";
 import { useUiSettings } from "../stores/uisettings";
-import { secondsToFormat } from "../utils";
+import { formatToSeconds, secondsToFormat } from "../utils";
 import { Cue } from "../types/Cue";
 
 const showModel = useShowModel();
@@ -291,8 +291,8 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
         newCue.name = target.innerText;
         break;
       case "cuelist_pre_wait": {
-        let newPreWait = Number(target.innerText);
-        if (isNaN(newPreWait) || newPreWait < 0) {
+        let newPreWait = formatToSeconds(target.innerText);
+        if (newPreWait < 0) {
           newPreWait = 0;
         }
         newCue.preWait = newPreWait;
@@ -300,8 +300,8 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
       }
       case "cuelist_duration": {
         if (newCue.params.type != "audio") {
-          let newDuration = Number(target.innerText);
-          if (isNaN(newDuration) || newDuration < 0) {
+          let newDuration = formatToSeconds(target.innerText);
+          if (newDuration < 0) {
             newDuration = 0;
           }
           newCue.params.duration = newDuration;
@@ -310,10 +310,7 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
       }
       case "cuelist_post_wait": {
         if (newCue.sequence.type == "autoFollow") {
-          let newPostWait = Number(target.innerText);
-          if (isNaN(newPostWait)) {
-            newPostWait = 0;
-          }
+          let newPostWait = formatToSeconds(target.innerText);
           newCue.sequence.postWait = newPostWait;
         }
         break;
