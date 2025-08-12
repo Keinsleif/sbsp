@@ -18,4 +18,23 @@ const secondsToFormat = (source_seconds: number): string => {
   return time
 }
 
-export {secondsToFormat}
+const formatToSeconds = (source_format: string): number|null => {
+  let is_minus = false;
+  let result = 0;
+  if (source_format.startsWith("-")) {
+    is_minus = true;
+    source_format = source_format.slice(1);
+  }
+  const tokens = source_format.split(":");
+  for (let i = 0; i<tokens.length; i++) {
+    const num = Number(tokens[i]);
+    if (isNaN(num) || num < 0) {
+      break;
+    }
+    result += Math.pow(60, tokens.length - i - 1) * num;
+  }
+
+  return is_minus ? -1 * result : result;
+};
+
+export {secondsToFormat, formatToSeconds}
