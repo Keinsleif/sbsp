@@ -149,7 +149,6 @@ async fn move_cue(
 pub fn run() {
     env_logger::init();
     tauri::Builder::default()
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| {
@@ -174,15 +173,17 @@ pub fn run() {
 
             app.on_menu_event(|handle, event| match event.id().as_ref() {
                 "id_open" => {
-                    if let Some(file_path) = handle.dialog().file().blocking_pick_file() {
-                        let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                        tauri::async_runtime::spawn(async move {
-                            model_handle
-                                .load_from_file(file_path.into_path().unwrap())
-                                .await
-                                .unwrap();
-                        });
-                    }
+                    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                    handle.dialog().file().pick_file(|file_path_option| {
+                        if let Some(file_path) = file_path_option {
+                            tauri::async_runtime::spawn(async move {
+                                model_handle
+                                    .load_from_file(file_path.into_path().unwrap())
+                                    .await
+                                    .unwrap();
+                            });
+                        }
+                    });
                 }
                 "id_quit" => {
                     handle.cleanup_before_exit();
