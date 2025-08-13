@@ -108,7 +108,7 @@
         </td>
         <td headers="cuelist_sequence" width="24px">
           <v-icon
-            v-if="cue.sequence.type != 'autoFollow'"
+            v-if="cue.sequence.type == 'autoFollow'"
             :icon="mdiArrowBottomLeft"
           />
         </td>
