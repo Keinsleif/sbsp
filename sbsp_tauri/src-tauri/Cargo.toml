@@ -1,9 +1,9 @@
 [package]
 name = "sbsp_tauri"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
+description = "A SBS Player Frontend App powered by tauri."
+authors = ["Keinsleif"]
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,12 +23,9 @@ ts-rs = { version = "11.0.1" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 sbsp_backend = { path = "../../sbsp_backend" }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
-ts-rs = "11.0.1"
 log = "0.4.27"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
