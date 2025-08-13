@@ -51,6 +51,7 @@ const uiState = useUiState();
 html {
   overflow-y: hidden;
   overscroll-behavior-y: none;
+  user-select: none;
 }
 .centered-input input {
   text-align: center;
