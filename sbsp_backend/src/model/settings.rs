@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::model::cue::{AudioCueLevels, Cue, CueParam, CueSequence};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowSettings {
     pub general: GeneralSettings,
@@ -14,11 +14,13 @@ pub struct ShowSettings {
     // TODO Templates, Audio, Network, MIDI, OSC, Video settings
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct GeneralSettings {}
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateSettings {
     pub audio: Option<Cue>,

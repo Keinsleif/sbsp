@@ -11,7 +11,9 @@ use crate::{
     manager::{ShowModelHandle, ShowModelManager},
 };
 
+#[cfg(feature = "apiserver")]
 pub mod apiserver;
+
 pub mod controller;
 mod engine;
 pub mod event;

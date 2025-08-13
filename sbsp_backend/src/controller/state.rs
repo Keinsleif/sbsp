@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use ts_rs::TS;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub enum PlaybackStatus {
     PreWaiting,
     PreWaitPaused,
@@ -14,7 +14,8 @@ pub enum PlaybackStatus {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize, TS)]
+#[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct ActiveCue {
     pub cue_id: Uuid,
     pub position: f64,
@@ -22,7 +23,8 @@ pub struct ActiveCue {
     pub status: PlaybackStatus,
 }
 
-#[derive(Debug, Clone, Default, Serialize, TS)]
+#[derive(Debug, Clone, Default, Serialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowState {
     pub playback_cursor: Option<Uuid>,

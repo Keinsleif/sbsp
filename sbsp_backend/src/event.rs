@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{executor::ExecutorEvent, model::cue::Cue};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     content = "param",
@@ -38,7 +38,8 @@ pub enum UiEvent {
     OperationFailed { error: UiError },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",

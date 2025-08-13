@@ -16,7 +16,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
-sbsp_backend = { path = "../../sbsp_backend" }
+sbsp_backend = { path = "../../sbsp_backend", features = ["type_export"] }
 ts-rs = { version = "11.0.1" }
 
 [dependencies]

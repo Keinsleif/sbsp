@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use kira::sound::{IntoOptionalRegion, Region};
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
@@ -17,7 +17,8 @@ pub struct Cue {
     pub params: CueParam,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -32,7 +33,8 @@ pub enum CueSequence {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -53,20 +55,23 @@ pub enum CueParam {
     }, // TODO midi, osc wait, group cue
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueLevels {
     pub master: f64, // decibels
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueFadeParam {
     pub duration: f64,
     pub easing: Easing,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct LoopRegion {
     pub start: Option<f64>,
     pub end: Option<f64>,
@@ -107,7 +112,8 @@ impl IntoOptionalRegion for LoopRegion {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub enum Easing {
     Linear,
     InPowi(i32),
