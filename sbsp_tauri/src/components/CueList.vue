@@ -248,7 +248,6 @@ const click = (event: MouseEvent, index: number) => {
       console.error("Failed to set cursor. " + e);
     });
   }
-  console.log(uiState.selectedRows);
 };
 
 const getCueIcon = (type: string): string | undefined => {
