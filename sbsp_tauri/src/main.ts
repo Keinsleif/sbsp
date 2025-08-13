@@ -14,6 +14,7 @@ import { useShowModel } from "./stores/showmodel";
 import { invoke } from "@tauri-apps/api/core";
 import { ShowModel } from "./types/ShowModel";
 import { useUiState } from "./stores/uistate";
+import { useUiSettings } from "./stores/uisettings";
 
 const vuetify = createVuetify({
   icons: {
@@ -35,6 +36,7 @@ createApp(App).use(vuetify).use(pinia).mount("#app");
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 listen<ShowState>("backend-state-update", (event) => {
   showState.update(event.payload)
@@ -43,16 +45,20 @@ listen<ShowState>("backend-state-update", (event) => {
 listen<UiEvent>("backend-event", (event) => {
   switch(event.payload.type) {
     case "playbackCursorMoved": {
-      const cueId = event.payload.param.cueId;
-      let index = null;
-      if (cueId != null) {
-        index = showModel.cues.findIndex((cue) => cue.id === cueId);
-        uiState.selectedRows = [index];
-      } else {
-        uiState.selectedRows = [];
-      }
-      if (uiState.selected != index) {
-        uiState.selected = index;
+      if (uiSettings.lockCursorToSelection){
+        const cueId = event.payload.param.cueId;
+        if (cueId != null) {
+          const index = showModel.cues.findIndex((cue) => cue.id === cueId);
+          if (uiState.selected != index) {
+            uiState.selected = index;
+            if (!(index in uiState.selectedRows)) {
+              uiState.selectedRows = [index];
+            }
+          }
+        } else {
+          uiState.selectedRows = [];
+          uiState.selected = null;
+        }
       }
       break;
     }

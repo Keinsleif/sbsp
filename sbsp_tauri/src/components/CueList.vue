@@ -210,7 +210,7 @@ const click = (event: MouseEvent, index: number) => {
     uiState.selected = index;
   } else if (event.ctrlKey) {
     if (uiState.selected != null) {
-      if (index in uiState.selectedRows) {
+      if (uiState.selectedRows.includes(index)) {
         uiState.selectedRows.splice(
           uiState.selectedRows.findIndex((row) => row === index),
           1
@@ -245,6 +245,7 @@ const click = (event: MouseEvent, index: number) => {
       console.error("Failed to set cursor. " + e);
     });
   }
+  console.log(uiState.selectedRows);
 };
 
 const getCueIcon = (type: string): string | undefined => {

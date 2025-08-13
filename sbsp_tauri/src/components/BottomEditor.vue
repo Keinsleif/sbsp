@@ -3,9 +3,9 @@
       <v-tabs v-model="uiState.editorTab" density="compact" class="border">
         <v-tab border density="compact" value="basics">Basics</v-tab>
         <v-tab border density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type=='audio'">Audio</v-tab>
-        <v-tab border density="compact" value="levels">Levels</v-tab>
+        <v-tab border density="compact" value="levels" v-if="selectedCue != null && selectedCue.params.type=='audio'">Levels</v-tab>
       </v-tabs>
-      <v-tabs-window v-model="uiState.editorTab">
+      <v-tabs-window v-if="selectedCue != null" v-model="uiState.editorTab">
         <v-tabs-window-item
           value="basics"
           reverse-transition="false"
@@ -16,7 +16,7 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue != null ? selectedCue.number : ''"
+                :model-value="selectedCue.number"
                 label="Number"
                 variant="outlined"
                 density="compact"
@@ -25,7 +25,8 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                readonly
+                :model-value="'00:00.00'"
+                :disabled="selectedCue.params.type == 'audio'"
                 label="Duration"
                 variant="outlined"
                 density="compact"
@@ -34,7 +35,7 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue != null ? selectedCue.preWait : ''"
+                :model-value="secondsToFormat(selectedCue.preWait)"
                 label="Pre-Wait"
                 variant="outlined"
                 density="compact"
@@ -43,7 +44,7 @@
               <v-select
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue != null ? selectedCue.sequence.type : ''"
+                :model-value="selectedCue.sequence.type"
                 label="ContinueMode"
                 :items="[{value: 'doNotContinue', name: 'DoNotContinue'},{value: 'autoContinue', name: 'Auto-Continue'}, {value: 'autoFollow', name: 'Auto-Follow'}]"
                 item-value="value"
@@ -54,7 +55,8 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue != null && selectedCue.sequence.type == 'autoFollow' ? selectedCue.sequence.postWait : ''"
+                :model-value="selectedCue.sequence.type == 'autoFollow' ? secondsToFormat(selectedCue.sequence.postWait) : '00:00.00'"
+                :disabled="selectedCue.sequence.type != 'autoFollow'"
                 label="Post-Wait"
                 variant="outlined"
                 density="compact"
@@ -68,7 +70,7 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue != null ? selectedCue.name : ''"
+                :model-value="selectedCue.name"
                 label="Name"
                 variant="outlined"
                 density="compact"
@@ -78,7 +80,7 @@
                 hide-details
                 persistent-placeholder
                 no-resize
-                :model-value="selectedCue != null ? selectedCue.notes : ''"
+                :model-value="selectedCue.notes"
                 label="Notes"
                 variant="outlined"
                 density="compact"
@@ -121,6 +123,7 @@
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { computed } from 'vue';
+import { secondsToFormat } from '../utils';
 
 const showModel = useShowModel();
 const uiState = useUiState();
