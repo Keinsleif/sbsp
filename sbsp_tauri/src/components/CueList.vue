@@ -81,7 +81,7 @@
             {{
               isActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : "05:00.00" /* duration */
+                : cue.params.type == "wait" ? secondsToFormat(cue.params.duration) : "00:00.00" /* duration */
             }}
           </div>
         </td>
