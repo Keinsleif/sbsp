@@ -12,7 +12,7 @@ export const useShowModel = defineStore("showmodel", {
             this.settings = newModel.settings;
         },
         updateCue(newCue: Cue) {
-            this.cues.splice(this.cues.findIndex((cue) => cue.id = newCue.id), 1, newCue);
+            this.cues.splice(this.cues.findIndex((cue) => cue.id == newCue.id), 1, newCue);
         },
         addCue(cue: Cue, atIndex: number) {
             this.cues.splice(atIndex, 0, cue);
