@@ -16,51 +16,69 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue.number"
+                v-model="editorValue.number"
                 label="Number"
                 variant="outlined"
                 density="compact"
                 :class="$style['centered-input']"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-text-field>
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="'00:00.00'"
+                v-model="editorValue.duration"
                 :disabled="selectedCue.params.type == 'audio'"
                 label="Duration"
                 variant="outlined"
                 density="compact"
                 :class="$style['centered-input']"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-text-field>
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="secondsToFormat(selectedCue.preWait)"
+                v-model="editorValue.preWait"
                 label="Pre-Wait"
                 variant="outlined"
                 density="compact"
                 :class="$style['centered-input']"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-text-field>
               <v-select
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue.sequence.type"
+                v-model="editorValue.sequence"
                 label="ContinueMode"
-                :items="[{value: 'doNotContinue', name: 'DoNotContinue'},{value: 'autoContinue', name: 'Auto-Continue'}, {value: 'autoFollow', name: 'Auto-Follow'}]"
+                :items="[{value: 'doNotContinue', name: 'DoNotContinue'}, {value: 'autoFollow', name: 'Auto-Follow'}]"
                 item-value="value"
                 item-title="name"
                 variant="outlined"
                 density="compact"
+                autocomplete="off"
+                @update:modelValue="saveEditorValue"
               ></v-select>
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue.sequence.type == 'autoFollow' ? secondsToFormat(selectedCue.sequence.postWait) : '00:00.00'"
+                v-model="editorValue.postWait"
                 :disabled="selectedCue.sequence.type != 'autoFollow'"
                 label="Post-Wait"
                 variant="outlined"
                 density="compact"
                 :class="$style['centered-input']"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-text-field>
             </v-sheet>
             <v-sheet
@@ -70,20 +88,28 @@
               <v-text-field
                 hide-details
                 persistent-placeholder
-                :model-value="selectedCue.name"
+                v-model="editorValue.name"
                 label="Name"
                 variant="outlined"
                 density="compact"
                 class="flex-grow-0"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-text-field>
               <v-textarea
                 hide-details
                 persistent-placeholder
                 no-resize
-                :model-value="selectedCue.notes"
+                v-model="editorValue.notes"
                 label="Notes"
                 variant="outlined"
                 density="compact"
+                autocomplete="off"
+                @blur="saveEditorValue"
+                @keydown.enter="$event.target.blur()"
+                @keydown.esc="resetEditorValue();$event.target.blur()"
               ></v-textarea>
             </v-sheet>
           </v-sheet>
@@ -122,15 +148,69 @@
 <script setup lang="ts">
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
-import { computed } from 'vue';
-import { secondsToFormat } from '../utils';
+import { computed, ref, watch } from 'vue';
+import { formatToSeconds, secondsToFormat } from '../utils';
+import type { Cue } from '../types/Cue';
+import { invoke } from '@tauri-apps/api/core';
+import { VTextField } from 'vuetify/components';
 
 const showModel = useShowModel();
 const uiState = useUiState();
 
 const selectedCue = computed(() => {
   return uiState.selected != null ? showModel.cues.find(cue => cue.id === uiState.selected) : null;
+});
+
+const computeEditorValue = () => {
+  return {
+      number: selectedCue.value ? selectedCue.value.number : null,
+      name: selectedCue.value ? selectedCue.value.name : null,
+      notes: selectedCue.value ? selectedCue.value.notes : null,
+      preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
+      duration: selectedCue.value ? ( selectedCue.value.params.type == "wait" ? secondsToFormat(selectedCue.value.params.duration) : "00:00.00") : null,
+      sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
+      postWait: selectedCue.value ? (selectedCue.value.sequence.type != "doNotContinue" ? secondsToFormat(selectedCue.value.sequence.postWait) : "00:00.00") : null
+    };
+};
+
+const editorValue = ref(computeEditorValue());
+
+watch(selectedCue, () => {
+  editorValue.value = computeEditorValue();
 })
+
+const resetEditorValue = () => {
+  editorValue.value = computeEditorValue();
+}
+
+const saveEditorValue = () => {
+  if (selectedCue.value == null) {
+    return;
+  }
+  const newCue = JSON.parse(JSON.stringify(selectedCue.value)) as Cue;
+  if (editorValue.value.number != null) {
+    newCue.number = editorValue.value.number;
+  }
+  if (editorValue.value.name != null) {
+    newCue.name = editorValue.value.name;
+  }
+  if (editorValue.value.notes != null) {
+    newCue.notes = editorValue.value.notes;
+  }
+  if (editorValue.value.preWait != null) {
+    newCue.preWait = formatToSeconds(editorValue.value.preWait, false);
+  }
+  if (editorValue.value.duration != null && newCue.params.type == "wait") {
+    newCue.params.duration = formatToSeconds(editorValue.value.duration, false);
+  }
+  if (editorValue.value.sequence != null) {
+    newCue.sequence.type = editorValue.value.sequence;
+  }
+  if (editorValue.value.postWait != null && newCue.sequence.type != "doNotContinue") {
+    newCue.sequence.postWait = formatToSeconds(editorValue.value.postWait);
+  }
+  invoke("update_cue", {cue: newCue})
+}
 </script>
 
 <style lang="css" module>
