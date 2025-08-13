@@ -20,7 +20,7 @@
                 label="Number"
                 variant="outlined"
                 density="compact"
-                class="centered-input"
+                :class="$style['centered-input']"
               ></v-text-field>
               <v-text-field
                 hide-details
@@ -30,7 +30,7 @@
                 label="Duration"
                 variant="outlined"
                 density="compact"
-                class="centered-input"
+                :class="$style['centered-input']"
               ></v-text-field>
               <v-text-field
                 hide-details
@@ -39,7 +39,7 @@
                 label="Pre-Wait"
                 variant="outlined"
                 density="compact"
-                class="centered-input"
+                :class="$style['centered-input']"
               ></v-text-field>
               <v-select
                 hide-details
@@ -60,7 +60,7 @@
                 label="Post-Wait"
                 variant="outlined"
                 density="compact"
-                class="centered-input"
+                :class="$style['centered-input']"
               ></v-text-field>
             </v-sheet>
             <v-sheet
@@ -103,7 +103,7 @@
                 label="Target"
                 variant="outlined"
                 density="compact"
-                class="centered-input"
+                :class="$style['centered-input']"
               ></v-text-field>
             </v-sheet>
           </v-sheet>
@@ -132,3 +132,9 @@ const selectedCue = computed(() => {
   return uiState.selected != null ? showModel.cues.find(cue => cue.id === uiState.selected) : null;
 })
 </script>
+
+<style lang="css" module>
+.centered-input input {
+  text-align: center;
+}
+</style>

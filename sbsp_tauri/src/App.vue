@@ -5,7 +5,7 @@
     </v-app-bar>
 
     <v-main style="height: 100vh;">
-      <v-sheet class="d-flex fill-height">
+      <v-sheet class="d-flex fill-height list-wrapper">
         <CueList />
       </v-sheet>
     </v-main>
@@ -52,8 +52,5 @@ html {
   overflow-y: hidden;
   overscroll-behavior-y: none;
   user-select: none;
-}
-.centered-input input {
-  text-align: center;
 }
 </style>
