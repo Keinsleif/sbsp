@@ -328,11 +328,11 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
 }
 
 const isPreWaitActive = (cue_id: string): boolean => {
-  return cue_id in showState.activeCues && showState.activeCues[cue_id]!.status in (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]);
+  return cue_id in showState.activeCues && (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status);
 }
 
 const isActive = (cue_id: string): boolean => {
-  return cue_id in showState.activeCues && showState.activeCues[cue_id]!.status in (['Playing', 'Paused', 'Completed'] as PlaybackStatus[]);
+  return cue_id in showState.activeCues && (['Playing', 'Paused', 'Completed'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status);
 }
 </script>
 
