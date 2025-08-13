@@ -48,11 +48,10 @@ listen<UiEvent>("backend-event", (event) => {
       if (uiSettings.lockCursorToSelection){
         const cueId = event.payload.param.cueId;
         if (cueId != null) {
-          const index = showModel.cues.findIndex((cue) => cue.id === cueId);
-          if (uiState.selected != index) {
-            uiState.selected = index;
-            if (!(index in uiState.selectedRows)) {
-              uiState.selectedRows = [index];
+          if (uiState.selected != cueId) {
+            uiState.selected = cueId;
+            if (!uiState.selectedRows.includes(cueId)) {
+              uiState.selectedRows = [cueId];
             }
           }
         } else {

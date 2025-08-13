@@ -2,8 +2,8 @@ import { defineStore } from "pinia";
 
 export const useUiState = defineStore("uistate", {
     state: () => ({
-        selected: null as number|null,
-        selectedRows: [] as number[],
+        selected: null as string|null,
+        selectedRows: [] as string[],
         sideBarTab: "activeCues" as "activeCues" | "levels",
         editorTab: "basics",
         isRightSidebarOpen: true,

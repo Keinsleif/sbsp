@@ -129,6 +129,6 @@ const showModel = useShowModel();
 const uiState = useUiState();
 
 const selectedCue = computed(() => {
-  return uiState.selected != null ? showModel.cues[uiState.selected] : null;
+  return uiState.selected != null ? showModel.cues.find(cue => cue.id === uiState.selected) : null;
 })
 </script>

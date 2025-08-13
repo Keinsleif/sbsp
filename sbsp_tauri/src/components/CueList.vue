@@ -18,7 +18,7 @@
         :key="cue.id"
         :class="[
           dragOverIndex == i ? $style['drag-over-row'] : '',
-          uiState.selectedRows.includes(i) ? $style['selected-row'] : '',
+          uiState.selectedRows.includes(cue.id) ? $style['selected-row'] : '',
         ]"
         draggable="true"
         @dragstart="dragStart($event, i)"
@@ -192,27 +192,29 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
+  const clickedId = showModel.cues[index].id;
   if (event.shiftKey) {
     if (uiState.selected != null) {
       uiState.selectedRows = [];
-      if (index >= uiState.selected) {
-        for (let i = uiState.selected; i <= index; i++) {
-          uiState.selectedRows.push(i);
+      const prevIndex = showModel.cues.findIndex(cue => cue.id === uiState.selected);
+      if (index >= prevIndex) {
+        for (let i = prevIndex; i <= index; i++) {
+          uiState.selectedRows.push(showModel.cues[i].id);
         }
       } else {
-        for (let i = index; i <= uiState.selected; i++) {
-          uiState.selectedRows.push(i);
+        for (let i = index; i <= prevIndex; i++) {
+          uiState.selectedRows.push(showModel.cues[i].id);
         }
       }
     } else {
-      uiState.selectedRows = [index];
+      uiState.selectedRows = [clickedId];
     }
-    uiState.selected = index;
+    uiState.selected = clickedId;
   } else if (event.ctrlKey) {
     if (uiState.selected != null) {
-      if (uiState.selectedRows.includes(index)) {
+      if (uiState.selectedRows.includes(clickedId)) {
         uiState.selectedRows.splice(
-          uiState.selectedRows.findIndex((row) => row === index),
+          uiState.selectedRows.findIndex((row) => row === clickedId),
           1
         );
         if (uiState.selectedRows.length === 0) {
@@ -221,26 +223,27 @@ const click = (event: MouseEvent, index: number) => {
           index ===
           showModel.cues.findIndex((cue) => cue.id == showState.playbackCursor)
         ) {
-          uiState.selected = uiState.selectedRows.reduce((a, b) =>
-            Math.max(a, b)
-          );
+          const findIdx = (x: string):number => showModel.cues.findIndex(cue => cue.id===x);
+          uiState.selected = uiState.selectedRows.reduce((a, b) => {
+            return findIdx(a) > findIdx(b) ? a : b
+          });
         }
       } else {
-        uiState.selectedRows.push(index);
-        uiState.selected = index;
+        uiState.selectedRows.push(clickedId);
+        uiState.selected = clickedId;
       }
     } else {
-      uiState.selectedRows = [index];
-      uiState.selected = index;
+      uiState.selectedRows = [clickedId];
+      uiState.selected = clickedId;
     }
   } else {
-    uiState.selectedRows = [index];
-    uiState.selected = index;
+    uiState.selectedRows = [clickedId];
+    uiState.selected = clickedId;
   }
   if (uiSettings.lockCursorToSelection) {
     invoke("set_playback_cursor", {
       cueId:
-        uiState.selected !== null ? showModel.cues[uiState.selected].id : null,
+        uiState.selected !== null ? uiState.selected : null,
     }).catch((e) => {
       console.error("Failed to set cursor. " + e);
     });
