@@ -18,7 +18,7 @@ const secondsToFormat = (source_seconds: number): string => {
   return time
 }
 
-const formatToSeconds = (source_format: string): number => {
+const formatToSeconds = (source_format: string, acceptMinus: boolean = true): number => {
   let is_minus = false;
   let result = 0;
   if (source_format.startsWith("-")) {
@@ -34,7 +34,7 @@ const formatToSeconds = (source_format: string): number => {
     result += Math.pow(60, tokens.length - i - 1) * num;
   }
 
-  return is_minus ? -1 * result : result;
+  return is_minus ? ( acceptMinus ? -1 * result : 0 ) : result;
 };
 
 export {secondsToFormat, formatToSeconds}

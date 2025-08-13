@@ -293,19 +293,13 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
         newCue.name = target.innerText;
         break;
       case "cuelist_pre_wait": {
-        let newPreWait = formatToSeconds(target.innerText);
-        if (newPreWait < 0) {
-          newPreWait = 0;
-        }
+        let newPreWait = formatToSeconds(target.innerText, false);
         newCue.preWait = newPreWait;
         break;
       }
       case "cuelist_duration": {
         if (newCue.params.type != "audio") {
-          let newDuration = formatToSeconds(target.innerText);
-          if (newDuration < 0) {
-            newDuration = 0;
-          }
+          let newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
         }
         break;
