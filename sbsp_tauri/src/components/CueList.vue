@@ -318,7 +318,7 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
       target.innerText = target.dataset.prevText;
     }
   }
-  target.dataset.prevText = undefined;
+  delete target.dataset.prevText;
 }
 
 const isPreWaitActive = (cue_id: string): boolean => {
