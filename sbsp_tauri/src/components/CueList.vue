@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, toRaw } from "vue";
 import { useShowModel } from "../stores/showmodel";
 import {
   mdiArrowBottomLeft,
@@ -148,7 +148,6 @@ import { useShowState } from "../stores/showstate";
 import { invoke } from "@tauri-apps/api/core";
 import { useUiSettings } from "../stores/uisettings";
 import { formatToSeconds, secondsToFormat } from "../utils";
-import type { Cue } from "../types/Cue";
 import type { PlaybackStatus } from "../types/PlaybackStatus";
 
 const showModel = useShowModel();
@@ -284,7 +283,7 @@ const closeEditable = (target: EventTarget|null, needSave: boolean, rowIndex: nu
   target.contentEditable="false";
   target.classList.remove('inEdit');
   if (needSave) {
-    const newCue = JSON.parse(JSON.stringify(showModel.cues[rowIndex])) as Cue;
+    const newCue = structuredClone(toRaw(showModel.cues[rowIndex]));
     switch (target.headers) {
       case "cuelist_number":
         newCue.number = target.innerText;

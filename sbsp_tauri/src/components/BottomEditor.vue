@@ -148,9 +148,8 @@
 <script setup lang="ts">
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRaw, watch } from 'vue';
 import { formatToSeconds, secondsToFormat } from '../utils';
-import type { Cue } from '../types/Cue';
 import { invoke } from '@tauri-apps/api/core';
 import { VTextField } from 'vuetify/components';
 
@@ -187,7 +186,7 @@ const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
   }
-  const newCue = JSON.parse(JSON.stringify(selectedCue.value)) as Cue;
+  const newCue = structuredClone(toRaw(selectedCue.value));
   if (editorValue.value.number != null) {
     newCue.number = editorValue.value.number;
   }
