@@ -21,8 +21,8 @@
         <v-btn :icon="mdiPause" :active="isCueStatus('Paused')" active-color="warning" :class="[isCueStatus('Paused') ? $style['blink'] : '']" @click="isCueStatus('Paused') ? invoke('resume').catch(e => console.log(e.toString())) : invoke('pause').catch(e => console.log(e.toString()))"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
-        <v-btn :icon="mdiVolumeHigh"></v-btn>
-        <v-btn :icon="mdiTimerSandEmpty"></v-btn>
+        <v-btn :icon="mdiVolumeHigh" @click="addEmptyCue('audio')"></v-btn>
+        <v-btn :icon="mdiTimerSandEmpty" @click="addEmptyCue('wait')"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
         <v-btn :icon="mdiPlayCircleOutline"></v-btn>
@@ -51,19 +51,22 @@ import {
   mdiVolumeHigh,
 } from "@mdi/js";
 import { useShowModel } from "../stores/showmodel";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, toRaw } from "vue";
 import { useShowState } from "../stores/showstate";
 import { PlaybackStatus } from "../types/PlaybackStatus";
 import { invoke } from "@tauri-apps/api/core";
+import { v4 } from "uuid";
+import { useUiState } from "../stores/uistate";
 
 const showModel = useShowModel();
 const showState = useShowState();
+const uiState = useUiState();
 
 const playbackCursorCue = computed(() => {
   return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
 })
 
-const isCueStatus = computed(() => (status: PlaybackStatus) => {
+const isCueStatus = (status: PlaybackStatus) => {
   if (showState.playbackCursor != null) {
     const activeCue = showState.activeCues[showState.playbackCursor];
     if (activeCue != null) {
@@ -71,7 +74,21 @@ const isCueStatus = computed(() => (status: PlaybackStatus) => {
     }
   }
   return false;
-})
+};
+
+const addEmptyCue = (type: "audio"|"wait") => {
+  const newCue = structuredClone(toRaw(showModel.settings.template[type]));
+  if (newCue != null) {
+    newCue.id = v4();
+    let insertIndex;
+    if (uiState.selected) {
+      insertIndex = showModel.cues.findIndex(cue=> cue.id == uiState.selected) + 1;
+    } else {
+      insertIndex = showModel.cues.length;
+    }
+    invoke("add_cue", {cue: newCue, atIndex: insertIndex}).catch(e=>console.log(e.toString()));
+  }
+};
 
 const time = ref(new Date());
 const ticker = ref();
