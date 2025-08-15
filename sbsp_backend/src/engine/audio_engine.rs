@@ -54,7 +54,7 @@ struct PlayingSound {
     duration: f64,
     handle: StaticSoundHandle,
     last_state: PlaybackState,
-    _clock: ClockHandle,
+    clock: ClockHandle,
 }
 
 pub struct AudioEngine {
@@ -227,7 +227,7 @@ impl AudioEngine {
                 duration,
                 handle,
                 last_state: PlaybackState::Playing,
-                _clock: clock,
+                clock,
             },
         );
         Ok(())
@@ -237,6 +237,7 @@ impl AudioEngine {
         log::info!("PAUSE: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.pause(Tween::default());
+            playing_sound.clock.pause();
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Paused {
                     instance_id: id,
@@ -260,6 +261,7 @@ impl AudioEngine {
                 .eq(&kira::sound::PlaybackState::Paused)
             {
                 playing_sound.handle.resume(Tween::default());
+                playing_sound.clock.start();
                 self.event_tx
                     .send(EngineEvent::Audio(AudioEngineEvent::Resumed {
                         instance_id: id,
@@ -280,6 +282,7 @@ impl AudioEngine {
         log::info!("STOP: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop(Tween::default());
+            playing_sound.clock.stop();
             Ok(())
         } else {
             log::warn!("Stop command received for non-existent ID: {}", id);
