@@ -340,11 +340,13 @@ impl CueController {
                 }
             }
             ExecutorEvent::Completed { cue_id, .. } => {
-                if let Some(mut active_cue) = show_state.active_cues.remove(cue_id) {
-                    active_cue.status = PlaybackStatus::Completed;
-                    state_changed = true;
-                    // TODO: Auto-Followロジックをここでトリガー
-                }
+                self.state_tx.send_modify(|state| {
+                    if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
+                        active_cue.status = PlaybackStatus::Completed;
+                    }
+                });
+                show_state.active_cues.remove(cue_id);
+                state_changed = true;
             }
             ExecutorEvent::Error { cue_id, error, .. } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
