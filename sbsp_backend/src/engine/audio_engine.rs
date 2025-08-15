@@ -50,11 +50,53 @@ pub struct PlayCommandData {
     pub loop_region: Option<LoopRegion>,
 }
 
-struct PlayingSound {
-    duration: f64,
+struct SoundHandle {
     handle: StaticSoundHandle,
-    last_state: PlaybackState,
     clock: ClockHandle,
+}
+
+impl SoundHandle {
+    fn state(&self) -> PlaybackState {
+        self.handle.state()
+    }
+
+    fn position(&self) -> f64 {
+        let clock_time = self.clock.time();
+        log::debug!("sound: {}, clock: {}",self.handle.position(), clock_time.ticks as f64 + clock_time.fraction);
+        self.handle.position()
+    }
+
+    fn start(&mut self) {
+        self.clock.start();
+    }
+
+    fn pause(&mut self) {
+        self.handle.pause(Tween::default());
+        self.clock.pause();
+    }
+
+    fn resume(&mut self) {
+        self.handle.resume(Tween::default());
+        self.clock.start();
+    }
+
+    fn stop(&mut self) {
+        self.handle.stop(Tween::default());
+        self.clock.start();
+    }
+
+    fn set_volume(&mut self, levels: AudioCueLevels, tween: Tween) {
+        self.handle.set_volume(
+            levels.master as f32,
+            tween,
+        );
+    }
+}
+
+struct PlayingSound {
+    handle: SoundHandle,
+    duration: f64,
+    last_state: PlaybackState,
 }
 
 pub struct AudioEngine {
@@ -224,10 +266,12 @@ impl AudioEngine {
         self.playing_sounds.insert(
             id,
             PlayingSound {
+                handle: SoundHandle {
+                    handle,
+                    clock,
+                },
                 duration,
-                handle,
                 last_state: PlaybackState::Playing,
-                clock,
             },
         );
         Ok(())
@@ -236,8 +280,7 @@ impl AudioEngine {
     async fn handle_pause(&mut self, id: Uuid) -> Result<()> {
         log::info!("PAUSE: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.pause(Tween::default());
-            playing_sound.clock.pause();
+            playing_sound.handle.pause();
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Paused {
                     instance_id: id,
@@ -260,8 +303,7 @@ impl AudioEngine {
                 .state()
                 .eq(&kira::sound::PlaybackState::Paused)
             {
-                playing_sound.handle.resume(Tween::default());
-                playing_sound.clock.start();
+                playing_sound.handle.resume();
                 self.event_tx
                     .send(EngineEvent::Audio(AudioEngineEvent::Resumed {
                         instance_id: id,
@@ -281,8 +323,7 @@ impl AudioEngine {
     fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         log::info!("STOP: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.stop(Tween::default());
-            playing_sound.clock.stop();
+            playing_sound.handle.stop();
             Ok(())
         } else {
             log::warn!("Stop command received for non-existent ID: {}", id);
@@ -299,14 +340,11 @@ impl AudioEngine {
     ) -> Result<()> {
         log::info!("SET LEVELS: id={}, levels={:?}", id, levels);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_volume(
-                levels.master as f32,
-                Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(duration),
-                    easing,
-                },
-            );
+            playing_sound.handle.set_volume(levels, Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(duration),
+                easing,
+            });
             Ok(())
         } else {
             log::warn!("SetLevels command received for non-existent ID: {}", id);
