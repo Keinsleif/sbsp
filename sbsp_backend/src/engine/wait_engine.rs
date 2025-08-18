@@ -9,9 +9,9 @@ use crate::executor::EngineEvent;
 #[derive(Debug)]
 pub enum WaitCommand {
     Start { wait_type: WaitType, instance_id: Uuid, duration: f64 },
-    Pause { wait_type: WaitType, instance_id: Uuid },
-    Resume { wait_type: WaitType, instance_id: Uuid },
-    Stop { wait_type: WaitType, instance_id: Uuid },
+    Pause { instance_id: Uuid },
+    Resume { instance_id: Uuid },
+    Stop { instance_id: Uuid },
 }
 
 #[derive(Debug)]

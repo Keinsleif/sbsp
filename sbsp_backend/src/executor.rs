@@ -230,7 +230,6 @@ impl Executor {
                         EngineType::PreWait => {
                             self.wait_tx
                                 .send(WaitCommand::Pause {
-                                    wait_type: WaitType::PreWait,
                                     instance_id: *instance_id,
                                 })
                                 .await?;
@@ -242,7 +241,7 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Pause { wait_type: WaitType::Wait, instance_id: *instance_id })
+                                .send(WaitCommand::Pause { instance_id: *instance_id })
                                 .await?;
                         }
                     }
@@ -257,7 +256,6 @@ impl Executor {
                         EngineType::PreWait => {
                             self.wait_tx
                                 .send(WaitCommand::Resume {
-                                    wait_type: WaitType::PreWait,
                                     instance_id: *instance_id,
                                 })
                                 .await?;
@@ -269,7 +267,7 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Resume { wait_type: WaitType::Wait, instance_id: *instance_id })
+                                .send(WaitCommand::Resume { instance_id: *instance_id })
                                 .await?;
                         }
                     }
@@ -284,7 +282,6 @@ impl Executor {
                         EngineType::PreWait => {
                             self.wait_tx
                                 .send(WaitCommand::Stop {
-                                    wait_type: WaitType::PreWait,
                                     instance_id: *instance_id,
                                 })
                                 .await?;
@@ -296,7 +293,7 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Stop { wait_type: WaitType::Wait, instance_id: *instance_id })
+                                .send(WaitCommand::Stop { instance_id: *instance_id })
                                 .await?;
                         }
                     }
