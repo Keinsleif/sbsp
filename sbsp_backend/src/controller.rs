@@ -25,6 +25,7 @@ pub enum ControllerCommand {
     Resume,
     Stop,
     StopAll,
+    Load,
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 pub struct CueController {
@@ -146,6 +147,11 @@ impl CueController {
                 self.handle_stop(cue_id).await
             }
             ControllerCommand::StopAll => Ok(()), /* TODO */
+            ControllerCommand::Load => {
+                let state = self.state_tx.borrow().clone();
+                let cue_id = state.playback_cursor.expect("LOAD: Playback Cursor is unavailable.");
+                self.handle_load(cue_id).await
+            }
             ControllerCommand::SetPlaybackCursor { cue_id } => {
                 if let Some(cursor_cue_id) = cue_id
                     && self
@@ -185,6 +191,10 @@ impl CueController {
                 if active_cue.status == PlaybackStatus::Paused {
                     self.executor_tx
                         .send(ExecutorCommand::Resume(cue_id))
+                        .await?;
+                } else if active_cue.status == PlaybackStatus::Loaded {
+                    self.executor_tx
+                        .send(ExecutorCommand::Execute(cue_id))
                         .await?;
                 }
             } else {
@@ -235,6 +245,18 @@ impl CueController {
         Ok(())
     }
 
+    async fn handle_load(&self, cue_id: Uuid) -> Result<()> {
+        let model = self.model_handle.read().await;
+
+        if model.cues.iter().any(|cue| cue.id == cue_id) {
+            let command = ExecutorCommand::Load(cue_id);
+            self.executor_tx.send(command).await?;
+        } else {
+            log::warn!("LOAD: Invalid playback cursor.");
+        }
+        Ok(())
+    }
+
     async fn update_playback_cursor(&self) -> Result<()> {
         let cues = self.model_handle.read().await.cues.clone();
         let state = self.state_tx.borrow().clone();
@@ -267,6 +289,22 @@ impl CueController {
         let mut state_changed = false;
 
         match &event {
+            ExecutorEvent::Loaded { cue_id } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.position = 0.0;
+                    active_cue.duration = 0.0;
+                    active_cue.status = PlaybackStatus::Loaded;
+                } else {
+                    let active_cue = ActiveCue {
+                        cue_id: *cue_id,
+                        position: 0.0,
+                        duration: 0.0,
+                        status: PlaybackStatus::Loaded,
+                    };
+                    show_state.active_cues.insert(*cue_id, active_cue);
+                }
+                state_changed = true;
+            }
             ExecutorEvent::Started { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = 0.0;

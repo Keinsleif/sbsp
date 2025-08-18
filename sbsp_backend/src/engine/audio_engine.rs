@@ -18,9 +18,13 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum AudioCommand {
+    Load {
+        id: Uuid,
+        data: AudioCommandData,
+    },
     Play {
         id: Uuid,
-        data: PlayCommandData,
+        data: AudioCommandData,
     },
     Pause {
         id: Uuid,
@@ -40,7 +44,7 @@ pub enum AudioCommand {
 }
 
 #[derive(Debug, Clone)]
-pub struct PlayCommandData {
+pub struct AudioCommandData {
     pub filepath: PathBuf,
     pub levels: AudioCueLevels,
     pub start_time: Option<f64>,
@@ -53,6 +57,7 @@ pub struct PlayCommandData {
 struct SoundHandle {
     handle: StaticSoundHandle,
     clock: ClockHandle,
+    duration: f64,
 }
 
 impl SoundHandle {
@@ -61,8 +66,6 @@ impl SoundHandle {
     }
 
     fn position(&self) -> f64 {
-        let clock_time = self.clock.time();
-        log::debug!("sound: {}, clock: {}",self.handle.position(), clock_time.ticks as f64 + clock_time.fraction);
         self.handle.position()
     }
 
@@ -95,7 +98,6 @@ impl SoundHandle {
 
 struct PlayingSound {
     handle: SoundHandle,
-    duration: f64,
     last_state: PlaybackState,
 }
 
@@ -104,6 +106,7 @@ pub struct AudioEngine {
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     playing_sounds: HashMap<Uuid, PlayingSound>,
+    loaded_sounds: HashMap<Uuid, SoundHandle>,
 }
 
 impl AudioEngine {
@@ -119,6 +122,7 @@ impl AudioEngine {
             command_rx,
             event_tx,
             playing_sounds: HashMap::new(),
+            loaded_sounds: HashMap::new(),
         })
     }
 
@@ -131,6 +135,9 @@ impl AudioEngine {
                     log::debug!("AudioEngine received command: {:?}", command);
 
                     let result = match command {
+                        AudioCommand::Load { id, data } => {
+                            self.handle_load(id, data).await
+                        }
                         // TODO: output is ignored. AudioEngine should have AudioManager for enabled devices
                         AudioCommand::Play {id, data} => {
                             self.handle_play(id, data)
@@ -155,26 +162,26 @@ impl AudioEngine {
                         let playback_state = playing_sound.handle.state();
                         let event = match playback_state {
                             kira::sound::PlaybackState::Playing => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
+                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Pausing => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
+                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Paused => {
                                 if playing_sound.last_state.eq(&PlaybackState::Paused) {
                                     continue;
                                 }
                                 log::info!("PAUSE: id={}", *id);
-                                EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
+                                EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::WaitingToResume => {
                                 continue
                             },
                             kira::sound::PlaybackState::Resuming => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
+                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Stopping => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.duration })
+                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position: playing_sound.handle.position(), duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Stopped => {
                                 if playing_sound.last_state.eq(&PlaybackState::Stopped) {
@@ -200,9 +207,9 @@ impl AudioEngine {
         log::info!("AudioEngine run loop finished.");
     }
 
-    async fn handle_play(&mut self, id: Uuid, data: PlayCommandData) -> Result<()> {
+    async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
         let manager = self.manager.as_mut().unwrap();
-        let mut clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
+        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
 
         let filepath_clone = data.filepath.clone();
         let mut sound_data =
@@ -239,9 +246,8 @@ impl AudioEngine {
 
         let duration = sound_data.duration().as_secs_f64();
 
-        log::info!("PLAY: id={}, file={}", id, data.filepath.display());
+        log::info!("LOAD: id={}, file={}", id, data.filepath.display());
         let mut handle = manager.play(sound_data)?;
-        clock.start();
 
         if let Some(fade_out_param) = data.fade_out_param {
             handle.set_volume(
@@ -258,6 +264,33 @@ impl AudioEngine {
         }
 
         self.event_tx
+            .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                instance_id: id,
+            }))
+            .await?;
+
+        self.loaded_sounds.insert(
+            id,
+            SoundHandle {
+                handle,
+                clock,
+                duration,
+            }
+        );
+        Ok(())
+    }
+
+    async fn handle_play(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
+        if !self.loaded_sounds.contains_key(&id) {
+            self.handle_load(id, data.clone()).await?;
+        }
+
+        let mut handle = self.loaded_sounds.remove(&id).unwrap();
+        handle.start();
+
+        log::info!("PLAY: id={}, file={}", id, data.filepath.display());
+
+        self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id: id,
             }))
@@ -266,11 +299,7 @@ impl AudioEngine {
         self.playing_sounds.insert(
             id,
             PlayingSound {
-                handle: SoundHandle {
-                    handle,
-                    clock,
-                },
-                duration,
+                handle,
                 last_state: PlaybackState::Playing,
             },
         );
@@ -285,7 +314,7 @@ impl AudioEngine {
                 .send(EngineEvent::Audio(AudioEngineEvent::Paused {
                     instance_id: id,
                     position: playing_sound.handle.position(),
-                    duration: playing_sound.duration,
+                    duration: playing_sound.handle.duration,
                 }))
                 .await?;
             Ok(())
@@ -358,6 +387,9 @@ impl AudioEngine {
 
 #[derive(Debug)]
 pub enum AudioEngineEvent {
+    Loaded {
+        instance_id: Uuid,
+    },
     Started {
         instance_id: Uuid,
     },
@@ -386,6 +418,7 @@ pub enum AudioEngineEvent {
 impl AudioEngineEvent {
     pub fn instance_id(&self) -> Uuid {
         match self {
+            Self::Loaded { instance_id } => *instance_id,
             Self::Started { instance_id } => *instance_id,
             Self::Progress { instance_id, .. } => *instance_id,
             Self::Paused { instance_id, .. } => *instance_id,

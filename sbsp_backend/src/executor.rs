@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     engine::{
-        audio_engine::{AudioCommand, AudioEngineEvent, PlayCommandData},
+        audio_engine::{AudioCommand, AudioEngineEvent, AudioCommandData},
         pre_wait_engine::{PreWaitCommand, PreWaitEvent},
     },
     manager::ShowModelHandle,
@@ -14,6 +14,7 @@ use crate::{
 
 #[derive(Debug)]
 pub enum ExecutorCommand {
+    Load(Uuid),
     Execute(Uuid), // cue_id
     Pause(Uuid),
     Resume(Uuid),
@@ -22,6 +23,9 @@ pub enum ExecutorCommand {
 
 #[derive(Debug, Clone)]
 pub enum ExecutorEvent {
+    Loaded {
+        cue_id: Uuid,
+    },
     PreWaitStarted {
         cue_id: Uuid,
     },
@@ -146,18 +150,58 @@ impl Executor {
     /// 個別の指示を処理します。
     async fn process_command(&self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
-            ExecutorCommand::Execute(cue_id) => {
-                // ShowModelからIDでキューの詳細データを取得
+            ExecutorCommand::Load(cue_id) => {
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let instance_id = Uuid::now_v7();
+                    match cue.params {
+                        CueParam::Audio { target, start_time, fade_in_param, end_time, fade_out_param, levels, loop_region } => {
+                            let mut filepath = self
+                                .model_handle
+                                .get_current_file_path()
+                                .await
+                                .unwrap_or(PathBuf::new());
+                            filepath.pop();
+                            filepath.push(target);
+
+                            self.audio_tx.send(AudioCommand::Load {
+                                id: instance_id,
+                                data: AudioCommandData {
+                                    filepath,
+                                    levels: levels.clone(),
+                                    start_time,
+                                    fade_in_param,
+                                    end_time,
+                                    fade_out_param,
+                                    loop_region,
+                                },
+                            }).await?;
+                        }
+                        CueParam::Wait { duration } => {
+                            todo!()
+                        }
+                    }
+                    self.active_instances.write().await.insert(instance_id, ActiveInstance { cue_id, engine_type: EngineType::Audio });
+                }
+            }
+            ExecutorCommand::Execute(cue_id) => {
+                if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                    let mut instance_id = Uuid::now_v7();
+                    let mut active_instances = self.active_instances.write().await;
+                    log::debug!("debug: active_ins = {:?}", active_instances);
                     if cue.pre_wait > 0.0 {
-                        self.active_instances.write().await.insert(
-                            instance_id,
-                            ActiveInstance {
-                                cue_id,
-                                engine_type: EngineType::PreWait,
-                            },
-                        );
+                        if let Some(loaded_instance) = active_instances.iter_mut().find(|cue| cue.1.cue_id == cue_id) {
+                            log::debug!("EXECUTE: loaded cue found");
+                            instance_id = *loaded_instance.0;
+                            loaded_instance.1.engine_type = EngineType::PreWait;
+                        } else {
+                            active_instances.insert(
+                                instance_id,
+                                ActiveInstance {
+                                    cue_id,
+                                    engine_type: EngineType::PreWait,
+                                },
+                            );
+                        }
                         self.pre_wait_tx
                             .send(PreWaitCommand::Start {
                                 instance_id,
@@ -165,6 +209,10 @@ impl Executor {
                             })
                             .await?;
                     } else {
+                        if let Some(loaded_instance) = active_instances.iter_mut().find(|cue| cue.1.cue_id == cue_id) {
+                            log::debug!("EXECUTE: loaded cue found");
+                            instance_id = *loaded_instance.0;
+                        }
                         self.dispatch_cue(&cue, instance_id).await?;
                     }
                 } else {
@@ -277,7 +325,7 @@ impl Executor {
                 // AudioEngineが理解できるAudioCommandに変換
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
-                    data: PlayCommandData {
+                    data: AudioCommandData {
                         filepath,
                         levels: levels.clone(),
                         start_time: *start_time,
@@ -345,6 +393,7 @@ impl Executor {
                 drop(instances);
 
                 let playback_event = match audio_event {
+                    AudioEngineEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
                     AudioEngineEvent::Started { .. } => ExecutorEvent::Started { cue_id },
                     AudioEngineEvent::Progress {
                         position, duration, ..

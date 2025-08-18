@@ -6,6 +6,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub enum PlaybackStatus {
+    Loaded,
     PreWaiting,
     PreWaitPaused,
     Playing,
