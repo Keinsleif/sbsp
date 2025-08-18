@@ -192,75 +192,6 @@ pub fn run() {
 
             app.set_menu(menu)?;
 
-            app.on_menu_event(|handle, event| match event.id().as_ref() {
-                "id_open" => {
-                    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                    handle.dialog().file().pick_file(|file_path_option| {
-                        if let Some(file_path) = file_path_option {
-                            tauri::async_runtime::spawn(async move {
-                                model_handle
-                                    .load_from_file(file_path.into_path().unwrap())
-                                    .await
-                                    .unwrap();
-                            });
-                        }
-                    });
-                }
-                "id_save" => {
-                    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                    let file_dialog_builder =
-                        handle.dialog().file().add_filter("Show Model", &["json"]);
-                    tauri::async_runtime::spawn(async move {
-                        if model_handle.get_current_file_path().await.is_some() {
-                            model_handle.save().await.unwrap();
-                        } else {
-                            file_dialog_builder.save_file(move |file_path_option| {
-                                if let Some(file_path) = file_path_option {
-                                    let file_pathbuf = file_path.into_path().unwrap();
-                                    tauri::async_runtime::spawn(async move {
-                                        model_handle.save_as(file_pathbuf).await.unwrap();
-                                    });
-                                }
-                            })
-                        }
-                    });
-                }
-                "id_save_as" => {
-                    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                    let file_dialog_builder =
-                        handle.dialog().file().add_filter("Show Model", &["json"]);
-                    tauri::async_runtime::spawn(async move {
-                        if let Some(current_path) = model_handle.get_current_file_path().await {
-                            file_dialog_builder
-                                .set_directory(current_path.parent().unwrap())
-                                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                                .save_file(move |file_path_option| {
-                                    if let Some(file_path) = file_path_option {
-                                        let file_pathbuf = file_path.into_path().unwrap();
-                                        tauri::async_runtime::spawn(async move {
-                                            model_handle.save_as(file_pathbuf).await.unwrap();
-                                        });
-                                    }
-                                })
-                        } else {
-                            file_dialog_builder.save_file(move |file_path_option| {
-                                if let Some(file_path) = file_path_option {
-                                    let file_pathbuf = file_path.into_path().unwrap();
-                                    tauri::async_runtime::spawn(async move {
-                                        model_handle.save_as(file_pathbuf).await.unwrap();
-                                    });
-                                }
-                            })
-                        }
-                    });
-                }
-                "id_quit" => {
-                    handle.cleanup_before_exit();
-                    std::process::exit(0);
-                }
-                _ => {}
-            });
-
             let (backend_handle, state_rx, event_tx) = start_backend();
 
             tauri::async_runtime::spawn(forward_backend_state_and_event(
@@ -281,6 +212,74 @@ pub fn run() {
                     .unwrap();
             }
             Ok(())
+        })
+        .on_menu_event(|handle, event| match event.id().as_ref() {
+            "id_open" => {
+                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                handle.dialog().file().pick_file(|file_path_option| {
+                    if let Some(file_path) = file_path_option {
+                        tauri::async_runtime::spawn(async move {
+                            model_handle
+                                .load_from_file(file_path.into_path().unwrap())
+                                .await
+                                .unwrap();
+                        });
+                    }
+                });
+            }
+            "id_save" => {
+                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                let file_dialog_builder =
+                    handle.dialog().file().add_filter("Show Model", &["json"]);
+                tauri::async_runtime::spawn(async move {
+                    if model_handle.get_current_file_path().await.is_some() {
+                        model_handle.save().await.unwrap();
+                    } else {
+                        file_dialog_builder.save_file(move |file_path_option| {
+                            if let Some(file_path) = file_path_option {
+                                let file_pathbuf = file_path.into_path().unwrap();
+                                tauri::async_runtime::spawn(async move {
+                                    model_handle.save_as(file_pathbuf).await.unwrap();
+                                });
+                            }
+                        })
+                    }
+                });
+            }
+            "id_save_as" => {
+                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+                let file_dialog_builder =
+                    handle.dialog().file().add_filter("Show Model", &["json"]);
+                tauri::async_runtime::spawn(async move {
+                    if let Some(current_path) = model_handle.get_current_file_path().await {
+                        file_dialog_builder
+                            .set_directory(current_path.parent().unwrap())
+                            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
+                            .save_file(move |file_path_option| {
+                                if let Some(file_path) = file_path_option {
+                                    let file_pathbuf = file_path.into_path().unwrap();
+                                    tauri::async_runtime::spawn(async move {
+                                        model_handle.save_as(file_pathbuf).await.unwrap();
+                                    });
+                                }
+                            })
+                    } else {
+                        file_dialog_builder.save_file(move |file_path_option| {
+                            if let Some(file_path) = file_path_option {
+                                let file_pathbuf = file_path.into_path().unwrap();
+                                tauri::async_runtime::spawn(async move {
+                                    model_handle.save_as(file_pathbuf).await.unwrap();
+                                });
+                            }
+                        })
+                    }
+                });
+            }
+            "id_quit" => {
+                handle.cleanup_before_exit();
+                std::process::exit(0);
+            }
+            _ => {}
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
