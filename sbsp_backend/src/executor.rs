@@ -154,43 +154,7 @@ impl Executor {
             ExecutorCommand::Load(cue_id) => {
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let instance_id = Uuid::now_v7();
-                    match cue.params {
-                        CueParam::Audio {
-                            target,
-                            start_time,
-                            fade_in_param,
-                            end_time,
-                            fade_out_param,
-                            levels,
-                            loop_region,
-                        } => {
-                            let mut filepath = self
-                                .model_handle
-                                .get_current_file_path()
-                                .await
-                                .unwrap_or(PathBuf::new());
-                            filepath.pop();
-                            filepath.push(target);
-
-                            self.audio_tx
-                                .send(AudioCommand::Load {
-                                    id: instance_id,
-                                    data: AudioCommandData {
-                                        filepath,
-                                        levels: levels.clone(),
-                                        start_time,
-                                        fade_in_param,
-                                        end_time,
-                                        fade_out_param,
-                                        loop_region,
-                                    },
-                                })
-                                .await?;
-                        }
-                        CueParam::Wait { .. } => {
-                            unimplemented!()
-                        }
-                    }
+                    self.load_cue(&cue, instance_id).await?;
                     self.active_instances.write().await.insert(
                         instance_id,
                         ActiveInstance {
@@ -220,6 +184,7 @@ impl Executor {
                                     engine_type: EngineType::PreWait,
                                 },
                             );
+                            self.load_cue(&cue, instance_id).await?;
                         }
                         self.wait_tx
                             .send(WaitCommand::Start {
@@ -237,7 +202,7 @@ impl Executor {
                             instance_id = *loaded_instance.0;
                         }
                         drop(active_instances);
-                        self.dispatch_cue(&cue, instance_id).await?;
+                        self.execute_cue(&cue, instance_id).await?;
                     }
                 } else {
                     log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
@@ -331,7 +296,48 @@ impl Executor {
         Ok(())
     }
 
-    async fn dispatch_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
+    async fn load_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
+        match &cue.params {
+            CueParam::Audio {
+                target,
+                start_time,
+                fade_in_param,
+                end_time,
+                fade_out_param,
+                levels,
+                loop_region,
+            } => {
+                let mut filepath = self
+                    .model_handle
+                    .get_current_file_path()
+                    .await
+                    .unwrap_or(PathBuf::new());
+                filepath.pop();
+                filepath.push(target);
+
+                self.audio_tx
+                    .send(AudioCommand::Load {
+                        id: instance_id,
+                        data: AudioCommandData {
+                            filepath,
+                            levels: levels.clone(),
+                            start_time: *start_time,
+                            fade_in_param: *fade_in_param,
+                            end_time: *end_time,
+                            fade_out_param: *fade_out_param,
+                            loop_region: *loop_region,
+                        },
+                    })
+                    .await?;
+            }
+            CueParam::Wait { .. } => {
+                unimplemented!()
+            }
+        }
+        Ok(())
+    }
+
+    async fn execute_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
         match &cue.params {
             CueParam::Audio {
                 target,
@@ -479,7 +485,7 @@ impl Executor {
                     WaitEvent::Completed { instance_id } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             log::info!("PreWaitCompleted cue_id={}", cue.id);
-                            self.dispatch_cue(&cue, instance_id).await?;
+                            self.execute_cue(&cue, instance_id).await?;
                         } else {
                             log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
                         }
