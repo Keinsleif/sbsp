@@ -1,7 +1,7 @@
 use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{
-    controller::{state::ShowState, ControllerCommand, CueController},
+    controller::{ControllerCommand, CueController, state::ShowState},
     engine::{
         audio_engine::{AudioCommand, AudioEngine},
         wait_engine::{WaitCommand, WaitEngine},

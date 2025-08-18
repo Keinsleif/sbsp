@@ -149,7 +149,9 @@ impl CueController {
             ControllerCommand::StopAll => Ok(()), /* TODO */
             ControllerCommand::Load => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state.playback_cursor.expect("LOAD: Playback Cursor is unavailable.");
+                let cue_id = state
+                    .playback_cursor
+                    .expect("LOAD: Playback Cursor is unavailable.");
                 self.handle_load(cue_id).await
             }
             ControllerCommand::SetPlaybackCursor { cue_id } => {

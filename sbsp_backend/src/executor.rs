@@ -155,7 +155,15 @@ impl Executor {
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let instance_id = Uuid::now_v7();
                     match cue.params {
-                        CueParam::Audio { target, start_time, fade_in_param, end_time, fade_out_param, levels, loop_region } => {
+                        CueParam::Audio {
+                            target,
+                            start_time,
+                            fade_in_param,
+                            end_time,
+                            fade_out_param,
+                            levels,
+                            loop_region,
+                        } => {
                             let mut filepath = self
                                 .model_handle
                                 .get_current_file_path()
@@ -164,24 +172,32 @@ impl Executor {
                             filepath.pop();
                             filepath.push(target);
 
-                            self.audio_tx.send(AudioCommand::Load {
-                                id: instance_id,
-                                data: AudioCommandData {
-                                    filepath,
-                                    levels: levels.clone(),
-                                    start_time,
-                                    fade_in_param,
-                                    end_time,
-                                    fade_out_param,
-                                    loop_region,
-                                },
-                            }).await?;
+                            self.audio_tx
+                                .send(AudioCommand::Load {
+                                    id: instance_id,
+                                    data: AudioCommandData {
+                                        filepath,
+                                        levels: levels.clone(),
+                                        start_time,
+                                        fade_in_param,
+                                        end_time,
+                                        fade_out_param,
+                                        loop_region,
+                                    },
+                                })
+                                .await?;
                         }
                         CueParam::Wait { .. } => {
                             unimplemented!()
                         }
                     }
-                    self.active_instances.write().await.insert(instance_id, ActiveInstance { cue_id, engine_type: EngineType::Audio });
+                    self.active_instances.write().await.insert(
+                        instance_id,
+                        ActiveInstance {
+                            cue_id,
+                            engine_type: EngineType::Audio,
+                        },
+                    );
                 }
             }
             ExecutorCommand::Execute(cue_id) => {
@@ -189,7 +205,10 @@ impl Executor {
                     let mut instance_id = Uuid::now_v7();
                     let mut active_instances = self.active_instances.write().await;
                     if cue.pre_wait > 0.0 {
-                        if let Some(loaded_instance) = active_instances.iter_mut().find(|cue| cue.1.cue_id == cue_id) {
+                        if let Some(loaded_instance) = active_instances
+                            .iter_mut()
+                            .find(|cue| cue.1.cue_id == cue_id)
+                        {
                             log::debug!("EXECUTE: loaded cue found");
                             instance_id = *loaded_instance.0;
                             loaded_instance.1.engine_type = EngineType::PreWait;
@@ -210,7 +229,10 @@ impl Executor {
                             })
                             .await?;
                     } else {
-                        if let Some(loaded_instance) = active_instances.iter_mut().find(|cue| cue.1.cue_id == cue_id) {
+                        if let Some(loaded_instance) = active_instances
+                            .iter_mut()
+                            .find(|cue| cue.1.cue_id == cue_id)
+                        {
                             log::debug!("EXECUTE: loaded cue found");
                             instance_id = *loaded_instance.0;
                         }
@@ -241,7 +263,9 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Pause { instance_id: *instance_id })
+                                .send(WaitCommand::Pause {
+                                    instance_id: *instance_id,
+                                })
                                 .await?;
                         }
                     }
@@ -267,7 +291,9 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Resume { instance_id: *instance_id })
+                                .send(WaitCommand::Resume {
+                                    instance_id: *instance_id,
+                                })
                                 .await?;
                         }
                     }
@@ -293,7 +319,9 @@ impl Executor {
                         }
                         EngineType::Wait => {
                             self.wait_tx
-                                .send(WaitCommand::Stop { instance_id: *instance_id })
+                                .send(WaitCommand::Stop {
+                                    instance_id: *instance_id,
+                                })
                                 .await?;
                         }
                     }
@@ -365,7 +393,13 @@ impl Executor {
                     );
                 }
 
-                self.wait_tx.send(WaitCommand::Start { wait_type: WaitType::Wait, instance_id, duration: *duration }).await?;
+                self.wait_tx
+                    .send(WaitCommand::Start {
+                        wait_type: WaitType::Wait,
+                        instance_id,
+                        duration: *duration,
+                    })
+                    .await?;
             }
         }
 

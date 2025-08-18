@@ -102,10 +102,7 @@ impl SoundHandle {
     }
 
     fn set_volume(&mut self, levels: AudioCueLevels, tween: Tween) {
-        self.handle.set_volume(
-            levels.master as f32,
-            tween,
-        );
+        self.handle.set_volume(levels.master as f32, tween);
     }
 }
 
@@ -289,7 +286,7 @@ impl AudioEngine {
                 handle,
                 clock,
                 duration,
-            }
+            },
         );
         Ok(())
     }
@@ -383,11 +380,14 @@ impl AudioEngine {
     ) -> Result<()> {
         log::info!("SET LEVELS: id={}, levels={:?}", id, levels);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_volume(levels, Tween {
-                start_time: StartTime::Immediate,
-                duration: Duration::from_secs_f64(duration),
-                easing,
-            });
+            playing_sound.handle.set_volume(
+                levels,
+                Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_secs_f64(duration),
+                    easing,
+                },
+            );
             Ok(())
         } else {
             log::warn!("SetLevels command received for non-existent ID: {}", id);

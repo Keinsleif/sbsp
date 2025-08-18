@@ -1,14 +1,15 @@
 use std::str::FromStr;
 
 use sbsp_backend::{
-    controller::{state::ShowState, ControllerCommand},
+    BackendHandle,
+    controller::{ControllerCommand, state::ShowState},
     event::UiEvent,
-    model::{cue::Cue, ShowModel},
-    start_backend, BackendHandle,
+    model::{ShowModel, cue::Cue},
+    start_backend,
 };
 use tauri::{
-    menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
     AppHandle, Emitter, Manager as _,
+    menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
@@ -72,7 +73,11 @@ async fn stop(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
 
 #[tauri::command]
 async fn load(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle.controller_tx.send(ControllerCommand::Load).await.map_err(|e| e.to_string())
+    handle
+        .controller_tx
+        .send(ControllerCommand::Load)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
