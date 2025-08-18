@@ -18,7 +18,7 @@
       <v-btn-group variant="flat" divided border class="ml-0 mr-auto">
         <v-btn :icon="mdiStop" active-color="error" @click="invoke('stop').catch(e => console.log(e.toString()))"></v-btn>
         <v-btn :icon="mdiPlay" :active="isCueStatus('Playing') || isCueStatus('PreWaiting')" active-color="success" :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']" @click="invoke('go').catch(e => console.log(e.toString()))"></v-btn>
-        <v-btn :icon="mdiPause" :active="isCueStatus('Paused')" active-color="warning" :class="[isCueStatus('Paused') ? $style['blink'] : '']" @click="isCueStatus('Paused') ? invoke('resume').catch(e => console.log(e.toString())) : invoke('pause').catch(e => console.log(e.toString()))"></v-btn>
+        <v-btn :icon="mdiPause" :active="isCueStatus('Paused') || isCueStatus('Loaded')" active-color="warning" :class="[isCueStatus('Loaded') ? $style['blink'] : '']" @click="handleReadyPauseButton"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
         <v-btn :icon="mdiVolumeHigh" @click="addEmptyCue('audio')"></v-btn>
@@ -89,6 +89,25 @@ const addEmptyCue = (type: "audio"|"wait") => {
     invoke("add_cue", {cue: newCue, atIndex: insertIndex}).catch(e=>console.log(e.toString()));
   }
 };
+
+const handleReadyPauseButton = () => {
+  if (showState.playbackCursor!=null) {
+    switch (showState.activeCues[showState.playbackCursor]?.status) {
+      case "Playing": {
+        invoke("pause").catch(e=>console.error(e));
+        break;
+      }
+      case "Paused": {
+        invoke("resume").catch(e=>console.error(e));
+        break;
+      }
+      case undefined: {
+        invoke("load").catch(e=>console.error(e));
+        break;
+      }
+    }
+  }
+}
 
 const time = ref(new Date());
 const ticker = ref();

@@ -71,6 +71,11 @@ async fn stop(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn load(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle.controller_tx.send(ControllerCommand::Load).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn set_playback_cursor(
     handle: tauri::State<'_, BackendHandle>,
     cue_id: Option<String>,
@@ -290,6 +295,7 @@ pub fn run() {
             pause,
             resume,
             stop,
+            load,
             get_show_model,
             set_playback_cursor,
             update_cue,
