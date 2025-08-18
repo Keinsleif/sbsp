@@ -175,11 +175,38 @@ import { invoke } from '@tauri-apps/api/core';
 import { useUiSettings } from '../stores/uisettings';
 import { formatToSeconds, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
+import { useHotkey } from 'vuetify';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
+
+useHotkey('arrowup', () => {
+  if (uiState.selected != null) {
+    const cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) - 1;
+    if (cursorIndex >= 0 && cursorIndex < showModel.cues.length) {
+      uiState.setSelected(showModel.cues[cursorIndex].id);
+    }
+  } else if (showModel.cues.length > 0) {
+    uiState.setSelected(showModel.cues[0].id);
+  }
+});
+
+useHotkey('arrowdown', () => {
+  if (uiState.selected != null) {
+    const cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+    if (cursorIndex > 0 && cursorIndex < showModel.cues.length) {
+      uiState.setSelected(showModel.cues[cursorIndex].id);
+    }
+  } else if (showModel.cues.length > 0) {
+    uiState.setSelected(showModel.cues[-1].id);
+  }
+});
+
+useHotkey('cmd+a', () => {
+  uiState.selectedRows = showModel.cues.map((cue) => cue.id);
+});
 
 const dragOverIndex = ref();
 
