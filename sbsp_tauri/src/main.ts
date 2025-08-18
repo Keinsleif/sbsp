@@ -1,20 +1,20 @@
-import { createApp } from "vue";
-import App from "./App.vue";
+import { createApp } from 'vue';
+import App from './App.vue';
 
 // Vuetify
-import 'vuetify/styles'
-import { createVuetify } from 'vuetify'
-import { aliases, mdi } from 'vuetify/iconsets/mdi-svg'
-import { createPinia } from "pinia";
-import { useShowState } from "./stores/showstate";
-import { listen } from "@tauri-apps/api/event";
-import { ShowState } from "./types/ShowState";
-import { UiEvent } from "./types/UiEvent";
-import { useShowModel } from "./stores/showmodel";
-import { invoke } from "@tauri-apps/api/core";
-import { ShowModel } from "./types/ShowModel";
-import { useUiState } from "./stores/uistate";
-import { useUiSettings } from "./stores/uisettings";
+import 'vuetify/styles';
+import { createVuetify } from 'vuetify';
+import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
+import { createPinia } from 'pinia';
+import { useShowState } from './stores/showstate';
+import { listen } from '@tauri-apps/api/event';
+import { ShowState } from './types/ShowState';
+import { UiEvent } from './types/UiEvent';
+import { useShowModel } from './stores/showmodel';
+import { invoke } from '@tauri-apps/api/core';
+import { ShowModel } from './types/ShowModel';
+import { useUiState } from './stores/uistate';
+import { useUiSettings } from './stores/uisettings';
 
 const vuetify = createVuetify({
   icons: {
@@ -25,27 +25,27 @@ const vuetify = createVuetify({
     },
   },
   theme: {
-    defaultTheme: "system",
+    defaultTheme: 'system',
   },
 });
 
 const pinia = createPinia();
 
-createApp(App).use(vuetify).use(pinia).mount("#app");
+createApp(App).use(vuetify).use(pinia).mount('#app');
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
 
-listen<ShowState>("backend-state-update", (event) => {
-  showState.update(event.payload)
+listen<ShowState>('backend-state-update', (event) => {
+  showState.update(event.payload);
 });
 
-listen<UiEvent>("backend-event", (event) => {
-  switch(event.payload.type) {
-    case "playbackCursorMoved": {
-      if (uiSettings.lockCursorToSelection){
+listen<UiEvent>('backend-event', (event) => {
+  switch (event.payload.type) {
+    case 'playbackCursorMoved': {
+      if (uiSettings.lockCursorToSelection) {
         const cueId = event.payload.param.cueId;
         if (cueId != null) {
           if (uiState.selected != cueId) {
@@ -61,29 +61,31 @@ listen<UiEvent>("backend-event", (event) => {
       }
       break;
     }
-    case "showModelLoaded":
-      invoke<ShowModel>("get_show_model").then((model) => {
+    case 'showModelLoaded':
+      invoke<ShowModel>('get_show_model').then((model) => {
         showModel.updateAll(model);
       });
       break;
-    case "showModelSaved":
-      alert("Show file saved to "+ event.payload.param.path);
+    case 'showModelSaved':
+      alert('Show file saved to ' + event.payload.param.path);
       break;
-    case "cueUpdated":
+    case 'cueUpdated':
       showModel.updateCue(event.payload.param.cue);
       break;
-    case "cueAdded":
+    case 'cueAdded':
       showModel.addCue(event.payload.param.cue, event.payload.param.atIndex);
       break;
-    case "cueRemoved":
+    case 'cueRemoved':
       showModel.removeCue(event.payload.param.cueId);
       break;
-    case "cueMoved":
+    case 'cueMoved':
       showModel.moveCue(event.payload.param.cueId, event.payload.param.toIndex);
       break;
   }
 });
 
-invoke<ShowModel>("get_show_model").then((model) => {
-  showModel.updateAll(model);
-}).catch((e) => console.error(e.toString()));
+invoke<ShowModel>('get_show_model')
+  .then((model) => {
+    showModel.updateAll(model);
+  })
+  .catch((e) => console.error(e.toString()));

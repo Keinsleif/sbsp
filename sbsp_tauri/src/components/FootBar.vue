@@ -14,35 +14,18 @@
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} cues </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
-      <v-btn
-        :icon="mdiDockBottom"
-        size="small"
-        variant="text"
-        @click="uiState.toggleEditor"
-      ></v-btn>
-      <v-btn
-        :icon="mdiDockRight"
-        size="small"
-        variant="text"
-        @click="uiState.toggleRightSidebar"
-      ></v-btn>
+      <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleEditor"></v-btn>
+      <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
       <v-btn :icon="mdiCog" size="small" variant="text"></v-btn>
     </v-sheet>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
-import {
-  mdiCog,
-  mdiDockBottom,
-  mdiDockRight,
-  mdiDockTop,
-  mdiLock,
-  mdiLockOpen,
-} from "@mdi/js";
-import { useUiState } from "../stores/uistate";
-import { useUiSettings } from "../stores/uisettings";
-import { useShowModel } from "../stores/showmodel";
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop, mdiLock, mdiLockOpen } from '@mdi/js';
+import { useUiState } from '../stores/uistate';
+import { useUiSettings } from '../stores/uisettings';
+import { useShowModel } from '../stores/showmodel';
 
 const showModel = useShowModel();
 const uiState = useUiState();

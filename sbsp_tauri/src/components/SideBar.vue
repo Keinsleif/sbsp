@@ -4,32 +4,39 @@
     <v-tab border density="compact" value="levels">Levels</v-tab>
   </v-tabs>
   <v-tabs-window v-model="uiState.sideBarTab">
-    <v-tabs-window-item
-      value="activeCues"
-      class="overflow-y-auto"
-      transition="false"
-      reverse-transition="false"
-    >
+    <v-tabs-window-item value="activeCues" class="overflow-y-auto" transition="false" reverse-transition="false">
       <template v-for="(activeCue, cue_id) in showState.activeCues" :key="cue_id">
         <v-card v-if="activeCue != null" class="border">
           <v-card-title class="text-subtitle-1 pb-0">
-            {{ showModel.cues.find((cue) => cue.id == cue_id)?.number+ "・" + showModel.cues.find((cue) => cue.id == cue_id)?.name }}
+            {{
+              showModel.cues.find((cue) => cue.id == cue_id)?.number +
+              '・' +
+              showModel.cues.find((cue) => cue.id == cue_id)?.name
+            }}
           </v-card-title>
           <v-card-subtitle class="pa-0 d-flex justify-space-between">
             <v-list-item density="compact">
               <v-list-item-subtitle>
-                {{ (["PreWaiting", "PreWaitPaused"] as PlaybackStatus[]).includes(activeCue.status) ? "-"+secondsToFormat(activeCue.duration - activeCue.position) : secondsToFormat(activeCue.position) }}
+                {{
+                  (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]).includes(activeCue.status)
+                    ? '-' + secondsToFormat(activeCue.duration - activeCue.position)
+                    : secondsToFormat(activeCue.position)
+                }}
               </v-list-item-subtitle>
             </v-list-item>
             <v-list-item density="compact">
               <v-list-item-subtitle>
-                -{{(["PreWaiting", "PreWaitPaused"] as PlaybackStatus[]).includes(activeCue.status) ? "00:00.00" /* cue duration */ : secondsToFormat(activeCue.duration - activeCue.position) }}
+                -{{
+                  (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]).includes(activeCue.status)
+                    ? '00:00.00' /* cue duration */
+                    : secondsToFormat(activeCue.duration - activeCue.position)
+                }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-card-subtitle>
           <v-progress-linear
             :color="activeCue.status == 'Paused' ? 'warning' : 'primary'"
-            :model-value="activeCue != null ? activeCue.position * 100 / activeCue.duration : 0"
+            :model-value="activeCue != null ? (activeCue.position * 100) / activeCue.duration : 0"
             height="16"
           ></v-progress-linear>
         </v-card>
