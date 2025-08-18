@@ -31,8 +31,14 @@ import SideBar from './components/SideBar.vue';
 import FootBar from './components/FootBar.vue';
 import { useUiState } from './stores/uistate';
 import BottomEditor from './components/BottomEditor.vue';
+import { useHotkey } from 'vuetify';
+import { invoke } from '@tauri-apps/api/core';
 
 const uiState = useUiState();
+
+useHotkey('space', () => {
+  invoke('go').catch((e) => console.error(e));
+});
 </script>
 
 <style>
