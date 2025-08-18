@@ -8,7 +8,7 @@ use sbsp_backend::{
 };
 use tauri::{
     menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
-    AppHandle, Emitter, LogicalSize, Manager as _, Size,
+    AppHandle, Emitter, Manager as _,
 };
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
@@ -203,14 +203,7 @@ pub fn run() {
             app.manage(backend_handle);
 
             let main_window = app.get_webview_window("main").unwrap();
-            if main_window.restore_state(StateFlags::all()).is_err() {
-                main_window
-                    .set_size(Size::Logical(LogicalSize {
-                        width: 1280.0,
-                        height: 720.0,
-                    }))
-                    .unwrap();
-            }
+            main_window.restore_state(StateFlags::all()).unwrap();
             Ok(())
         })
         .on_menu_event(|handle, event| match event.id().as_ref() {
