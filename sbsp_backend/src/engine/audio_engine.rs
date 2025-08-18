@@ -43,6 +43,19 @@ pub enum AudioCommand {
     },
 }
 
+impl AudioCommand {
+    fn id(&self) -> Uuid {
+        match self {
+            AudioCommand::Load { id, .. } => *id,
+            AudioCommand::Play { id, .. } => *id,
+            AudioCommand::Pause { id } => *id,
+            AudioCommand::Resume { id } => *id,
+            AudioCommand::Stop { id } => *id,
+            AudioCommand::SetLevels { id, .. } => *id,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct AudioCommandData {
     pub filepath: PathBuf,
@@ -133,12 +146,12 @@ impl AudioEngine {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     log::debug!("AudioEngine received command: {:?}", command);
+                    let instance_id = command.id();
 
                     let result = match command {
                         AudioCommand::Load { id, data } => {
                             self.handle_load(id, data).await
                         }
-                        // TODO: output is ignored. AudioEngine should have AudioManager for enabled devices
                         AudioCommand::Play {id, data} => {
                             self.handle_play(id, data)
                                 .await
@@ -149,6 +162,7 @@ impl AudioEngine {
                         AudioCommand::SetLevels {id,levels, duration, easing } => self.handle_set_levels(id, levels, duration, easing),
                     };
                     if let Err(e) = result {
+                        self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();
                         log::error!("Error processing audio_engine command: {:?}", e);
                     }
                 },
