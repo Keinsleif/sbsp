@@ -7,7 +7,7 @@ use crate::model::cue::{AudioCueLevels, Cue, CueParam, CueSequence};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct ShowSettings {
     pub general: GeneralSettings,
     pub hotkey: HotkeySettings,
@@ -17,7 +17,7 @@ pub struct ShowSettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
     pub lock_cursor_to_selection: bool,
 }
@@ -32,7 +32,7 @@ impl Default for GeneralSettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct HotkeySettings {
     pub go: Option<String>,
     pub load: Option<String>,
@@ -53,7 +53,7 @@ impl Default for HotkeySettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct TemplateSettings {
     pub audio: Option<Cue>,
     pub wait: Option<Cue>,
