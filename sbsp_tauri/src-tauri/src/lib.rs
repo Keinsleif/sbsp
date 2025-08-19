@@ -8,7 +8,6 @@ use tauri::{
     menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
 };
 use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
 use tokio::sync::{broadcast, watch};
 use uuid::Uuid;
 
@@ -161,7 +160,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_window_state::Builder::new().with_denylist(&["settings"]).build())
         .setup(|app| {
             let app_handle = app.handle();
 
@@ -208,8 +207,6 @@ pub fn run() {
 
             app.manage(backend_handle);
 
-            let main_window = app.get_webview_window("main").unwrap();
-            main_window.restore_state(StateFlags::all()).unwrap();
             Ok(())
         })
         .on_menu_event(|handle, event| match event.id().as_ref() {
@@ -279,14 +276,6 @@ pub fn run() {
                 std::process::exit(0);
             }
             _ => {}
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                window
-                    .app_handle()
-                    .save_window_state(StateFlags::all())
-                    .unwrap();
-            }
         })
         .invoke_handler(tauri::generate_handler![
             go,
