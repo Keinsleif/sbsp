@@ -40,8 +40,8 @@ const openSettings = async () => {
   const settingsWindow = new WebviewWindow('settings', {
     url: '/settings',
     title: 'Settings',
-    width: 720,
-    height: 480,
+    width: 1280,
+    height: 720,
     resizable: false,
     dragDropEnabled: false,
   });
