@@ -28,7 +28,10 @@
         @click="click($event, i)"
       >
         <td headers="cuelist_cursor" width="24px">
-          <v-icon :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"></v-icon>
+          <v-icon
+            :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"
+            @click="setPlaybackCursor(cue.id)"
+          ></v-icon>
         </td>
         <td headers="cuelist_type" width="24px">
           <v-icon :icon="getCueIcon(cue.params.type)" />
@@ -381,6 +384,12 @@ const isActive = (cue_id: string): boolean => {
     cue_id in showState.activeCues &&
     (['Playing', 'Paused', 'Completed'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status)
   );
+};
+
+const setPlaybackCursor = (cueId: string) => {
+  if (!uiSettings.lockCursorToSelection) {
+    invoke('set_playback_cursor', { cueId: cueId }).catch((e) => console.error(e));
+  }
 };
 </script>
 
