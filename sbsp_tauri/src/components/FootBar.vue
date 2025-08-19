@@ -1,14 +1,14 @@
 <template>
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="ml-0 mr-auto d-flex align-center">
-      <v-switch
+      <!-- <v-switch
         inset
         hide-details
         color="primary"
         :true-icon="mdiLock"
         :false-icon="mdiLockOpen"
         v-model="showModel.settings.general.lockCursorToSelection"
-      ></v-switch>
+      ></v-switch> -->
       <v-spacer></v-spacer>
       <v-btn :icon="mdiDockTop" size="small" variant="text"></v-btn>
     </v-sheet>
@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop, mdiLock, mdiLockOpen } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
