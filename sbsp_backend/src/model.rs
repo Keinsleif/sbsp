@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::model::{cue::Cue, settings::ShowSettings};
 
 pub mod cue;
-mod settings;
+pub mod settings;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]

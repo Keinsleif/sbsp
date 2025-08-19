@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     event::{UiError, UiEvent},
-    model::{ShowModel, cue::Cue},
+    model::{cue::Cue, settings::ShowSettings, ShowModel},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -24,6 +24,8 @@ pub enum ModelCommand {
     AddCue { cue: Cue, at_index: usize },
     RemoveCue { cue_id: Uuid },
     MoveCue { cue_id: Uuid, to_index: usize },
+
+    UpdateSettings(Box<ShowSettings>),
 
     Save,
     SaveToFile(PathBuf),
@@ -139,6 +141,12 @@ impl ShowModelManager {
                         },
                     })
                 }
+            }
+            ModelCommand::UpdateSettings(new_settings) => {
+                let mut model = self.model.write().await;
+                // TODO setting validation
+                model.settings = *new_settings;
+                Some(UiEvent::SettingsUpdated)
             }
             ModelCommand::Save => {
                 if let Some(path) = self.show_model_path.read().await.as_ref() {
@@ -271,6 +279,11 @@ impl ShowModelHandle {
     pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) -> anyhow::Result<()> {
         self.send_command(ModelCommand::MoveCue { cue_id, to_index })
             .await?;
+        Ok(())
+    }
+
+    pub async fn update_settings(&self, new_settings: ShowSettings) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::UpdateSettings(Box::new(new_settings))).await?;
         Ok(())
     }
 

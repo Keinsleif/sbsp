@@ -35,6 +35,7 @@ pub enum UiEvent {
     CueAdded { cue: Cue, at_index: usize },
     CueRemoved { cue_id: Uuid },
     CueMoved { cue_id: Uuid, to_index: usize },
+    SettingsUpdated,
 
     OperationFailed { error: UiError },
 }
