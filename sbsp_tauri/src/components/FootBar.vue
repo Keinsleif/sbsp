@@ -43,7 +43,7 @@ const openSettings = async () => {
     width: 720,
     height: 480,
     resizable: false,
-    center: true,
+    dragDropEnabled: false,
   });
   settingsWindow.once('tauri://error', (e) => {
     console.error(e.payload);
