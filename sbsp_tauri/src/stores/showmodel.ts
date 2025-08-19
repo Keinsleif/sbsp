@@ -10,7 +10,7 @@ export const useShowModel = defineStore('showmodel', {
       cues: [],
       settings: {
         general: { lockCursorToSelection: true },
-        hotkey: { go: 'Space', load: 'L', stop: 'Backspace', stopAll: 'Esc' },
+        hotkey: { go: 'Space', load: 'L', stop: 'Backspace', stopAll: 'Escape' },
         template: { audio: null, wait: null },
       },
     }) as ShowModel,

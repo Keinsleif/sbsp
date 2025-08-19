@@ -46,7 +46,7 @@ impl Default for HotkeySettings {
             go: Some("Space".to_string()),
             load: Some("L".to_string()),
             stop: Some("Backspace".to_string()),
-            stop_all: Some("Esc".to_string()),
+            stop_all: Some("Escape".to_string()),
         }
     }
 }
