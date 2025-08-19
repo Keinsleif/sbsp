@@ -82,9 +82,7 @@ listen<UiEvent>('backend-event', (event) => {
       break;
     case 'settingsUpdated': {
       const settings = event.payload.param.newSettings;
-      showModel.$patch((state) => {
-        state.settings = settings;
-      });
+      showModel.$patch({ settings: settings });
       break;
     }
   }
