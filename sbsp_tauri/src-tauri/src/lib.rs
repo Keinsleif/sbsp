@@ -1,11 +1,7 @@
 use std::str::FromStr;
 
 use sbsp_backend::{
-    BackendHandle,
-    controller::{ControllerCommand, state::ShowState},
-    event::UiEvent,
-    model::{ShowModel, cue::Cue},
-    start_backend,
+    controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::Cue, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
 };
 use tauri::{
     AppHandle, Emitter, Manager as _,
@@ -155,6 +151,11 @@ async fn move_cue(
     }
 }
 
+#[tauri::command]
+async fn update_settings(handle: tauri::State<'_, BackendHandle>, new_settings: ShowSettings) -> Result<(), String> {
+    handle.model_handle.update_settings(new_settings).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -299,6 +300,7 @@ pub fn run() {
             add_cue,
             remove_cue,
             move_cue,
+            update_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
