@@ -42,11 +42,3 @@ useHotkey(showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : 
   invoke('go').catch((e) => console.error(e));
 });
 </script>
-
-<style>
-html {
-  overflow-y: hidden;
-  overscroll-behavior-y: none;
-  user-select: none;
-}
-</style>
