@@ -16,7 +16,7 @@
     <v-sheet class="mr-0 ml-auto d-flex align-center">
       <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleEditor"></v-btn>
       <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
-      <v-btn :icon="mdiCog" size="small" variant="text"></v-btn>
+      <v-btn :icon="mdiCog" size="small" variant="text" @click="openSettings"></v-btn>
     </v-sheet>
   </v-sheet>
 </template>
@@ -26,8 +26,29 @@ import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop, mdiLock, mdiLockOpen }
 import { useUiState } from '../stores/uistate';
 import { useUiSettings } from '../stores/uisettings';
 import { useShowModel } from '../stores/showmodel';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { Window } from '@tauri-apps/api/window';
 
 const showModel = useShowModel();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
+
+const openSettings = async () => {
+  const existSettingsWindow = await Window.getByLabel('settings');
+  if (existSettingsWindow != null) {
+    await existSettingsWindow.setFocus();
+    return;
+  }
+  const settingsWindow = new WebviewWindow('settings', {
+    url: '/settings',
+    title: 'Settings',
+    width: 720,
+    height: 480,
+    resizable: false,
+    center: true,
+  });
+  settingsWindow.once('tauri://error', (e) => {
+    console.error(e.payload);
+  });
+};
 </script>
