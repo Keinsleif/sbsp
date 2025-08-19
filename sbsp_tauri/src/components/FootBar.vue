@@ -7,7 +7,7 @@
         color="primary"
         :true-icon="mdiLock"
         :false-icon="mdiLockOpen"
-        v-model="uiSettings.lockCursorToSelection"
+        v-model="showModel.settings.general.lockCursorToSelection"
       ></v-switch>
       <v-spacer></v-spacer>
       <v-btn :icon="mdiDockTop" size="small" variant="text"></v-btn>
@@ -24,14 +24,12 @@
 <script setup lang="ts">
 import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop, mdiLock, mdiLockOpen } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
-import { useUiSettings } from '../stores/uisettings';
 import { useShowModel } from '../stores/showmodel';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Window } from '@tauri-apps/api/window';
 
 const showModel = useShowModel();
 const uiState = useUiState();
-const uiSettings = useUiSettings();
 
 const openSettings = async () => {
   const existSettingsWindow = await Window.getByLabel('settings');

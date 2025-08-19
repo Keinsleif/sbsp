@@ -10,14 +10,46 @@ use crate::model::cue::{AudioCueLevels, Cue, CueParam, CueSequence};
 #[serde(rename_all = "camelCase")]
 pub struct ShowSettings {
     pub general: GeneralSettings,
+    pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
-    // TODO Templates, Audio, Network, MIDI, OSC, Video settings
+    // TODO Audio, Network, MIDI, OSC, Video settings, Remote
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
-pub struct GeneralSettings {}
+pub struct GeneralSettings {
+    pub lock_cursor_to_selection: bool,
+}
+
+impl Default for GeneralSettings {
+    fn default() -> Self {
+        Self {
+            lock_cursor_to_selection: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct HotkeySettings {
+    pub go: Option<String>,
+    pub load: Option<String>,
+    pub stop: Option<String>,
+    pub stop_all: Option<String>,
+}
+
+impl Default for HotkeySettings {
+    fn default() -> Self {
+        Self {
+            go: Some("Space".to_string()),
+            load: Some("L".to_string()),
+            stop: Some("Backspace".to_string()),
+            stop_all: Some("Esc".to_string()),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]

@@ -33,12 +33,12 @@ import SideBar from './components/SideBar.vue';
 import FootBar from './components/FootBar.vue';
 import BottomEditor from './components/BottomEditor.vue';
 import { useUiState } from './stores/uistate';
-import { useUiSettings } from './stores/uisettings';
+import { useShowModel } from './stores/showmodel';
 
 const uiState = useUiState();
-const uiSettings = useUiSettings();
+const showModel = useShowModel();
 
-useHotkey(uiSettings.hotkeys.go, () => {
+useHotkey(showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined, () => {
   invoke('go').catch((e) => console.error(e));
 });
 </script>

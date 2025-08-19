@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
-import { useUiSettings } from './uisettings';
 import { invoke } from '@tauri-apps/api/core';
+import { useShowModel } from './showmodel';
+
+const shwoModel = useShowModel();
 
 export const useUiState = defineStore('uistate', {
   state: () => ({
@@ -13,10 +15,9 @@ export const useUiState = defineStore('uistate', {
   }),
   actions: {
     clearSelected() {
-      const uiSettings = useUiSettings();
       this.selected = null;
       this.selectedRows = [];
-      if (uiSettings.lockCursorToSelection) {
+      if (shwoModel.settings.general.lockCursorToSelection) {
         invoke('set_playback_cursor', {
           cueId: null,
         }).catch((e) => {
@@ -25,10 +26,9 @@ export const useUiState = defineStore('uistate', {
       }
     },
     setSelected(id: string) {
-      const uiSettings = useUiSettings();
       this.selected = id;
       this.selectedRows = [id];
-      if (uiSettings.lockCursorToSelection) {
+      if (shwoModel.settings.general.lockCursorToSelection) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {

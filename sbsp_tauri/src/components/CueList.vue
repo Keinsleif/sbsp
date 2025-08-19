@@ -175,7 +175,6 @@ import { mdiArrowBottomLeft, mdiArrowRightBold, mdiChevronDoubleDown, mdiTimerSa
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
-import { useUiSettings } from '../stores/uisettings';
 import { formatToSeconds, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
@@ -183,7 +182,6 @@ import { useHotkey } from 'vuetify';
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
-const uiSettings = useUiSettings();
 
 useHotkey('arrowup', () => {
   if (uiState.selected != null) {
@@ -292,7 +290,7 @@ const click = (event: MouseEvent, index: number) => {
     uiState.selectedRows = [clickedId];
     uiState.selected = clickedId;
   }
-  if (uiSettings.lockCursorToSelection) {
+  if (showModel.settings.general.lockCursorToSelection) {
     invoke('set_playback_cursor', {
       cueId: uiState.selected !== null ? uiState.selected : null,
     }).catch((e) => {
@@ -387,7 +385,7 @@ const isActive = (cue_id: string): boolean => {
 };
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!uiSettings.lockCursorToSelection) {
+  if (!showModel.settings.general.lockCursorToSelection) {
     invoke('set_playback_cursor', { cueId: cueId }).catch((e) => console.error(e));
   }
 };

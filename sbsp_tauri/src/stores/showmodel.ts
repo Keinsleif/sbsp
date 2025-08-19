@@ -4,7 +4,7 @@ import type { ShowModel } from '../types/ShowModel';
 import { Cue } from '../types/Cue';
 
 export const useShowModel = defineStore('showmodel', {
-  state: () => ({ name: '', cues: [], settings: { general: {}, template: { audio: null, wait: null } } }) as ShowModel,
+  state: () => ({}) as ShowModel,
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;
