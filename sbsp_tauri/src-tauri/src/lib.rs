@@ -155,6 +155,72 @@ async fn update_settings(handle: tauri::State<'_, BackendHandle>, new_settings: 
     handle.model_handle.update_settings(new_settings).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn file_open(app_handle: tauri::AppHandle) {
+    let model_handle = app_handle.state::<BackendHandle>().model_handle.clone();
+    app_handle.dialog().file().pick_file(|file_path_option| {
+        if let Some(file_path) = file_path_option {
+            tauri::async_runtime::spawn(async move {
+                model_handle
+                    .load_from_file(file_path.into_path().unwrap())
+                    .await.unwrap();
+            });
+        }
+    });
+}
+
+#[tauri::command]
+fn file_save(handle: tauri::AppHandle) {
+    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+    let file_dialog_builder =
+        handle.dialog().file().add_filter("Show Model", &["json"]);
+    tauri::async_runtime::spawn(async move {
+        if model_handle.get_current_file_path().await.is_some() {
+            model_handle.save().await.unwrap();
+        } else {
+            file_dialog_builder.save_file(move |file_path_option| {
+                if let Some(file_path) = file_path_option {
+                    let file_pathbuf = file_path.into_path().unwrap();
+                    tauri::async_runtime::spawn(async move {
+                        model_handle.save_as(file_pathbuf).await.unwrap();
+                    });
+                }
+            })
+        }
+    });
+}
+
+#[tauri::command]
+fn file_save_as(handle: tauri::AppHandle) {
+    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
+    let file_dialog_builder =
+        handle.dialog().file().add_filter("Show Model", &["json"]);
+    tauri::async_runtime::spawn(async move {
+        if let Some(current_path) = model_handle.get_current_file_path().await {
+            file_dialog_builder
+                .set_directory(current_path.parent().unwrap())
+                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
+                .save_file(move |file_path_option| {
+                    if let Some(file_path) = file_path_option {
+                        let file_pathbuf = file_path.into_path().unwrap();
+                        tauri::async_runtime::spawn(async move {
+                            model_handle.save_as(file_pathbuf).await.unwrap();
+                        });
+                    }
+                })
+        } else {
+            file_dialog_builder.save_file(move |file_path_option| {
+                if let Some(file_path) = file_path_option {
+                    let file_pathbuf = file_path.into_path().unwrap();
+                    tauri::async_runtime::spawn(async move {
+                        model_handle.save_as(file_pathbuf).await.unwrap();
+                    });
+                }
+            })
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -211,65 +277,13 @@ pub fn run() {
         })
         .on_menu_event(|handle, event| match event.id().as_ref() {
             "id_open" => {
-                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                handle.dialog().file().pick_file(|file_path_option| {
-                    if let Some(file_path) = file_path_option {
-                        tauri::async_runtime::spawn(async move {
-                            model_handle
-                                .load_from_file(file_path.into_path().unwrap())
-                                .await
-                                .unwrap();
-                        });
-                    }
-                });
+                file_open(handle.clone());
             }
             "id_save" => {
-                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                let file_dialog_builder =
-                    handle.dialog().file().add_filter("Show Model", &["json"]);
-                tauri::async_runtime::spawn(async move {
-                    if model_handle.get_current_file_path().await.is_some() {
-                        model_handle.save().await.unwrap();
-                    } else {
-                        file_dialog_builder.save_file(move |file_path_option| {
-                            if let Some(file_path) = file_path_option {
-                                let file_pathbuf = file_path.into_path().unwrap();
-                                tauri::async_runtime::spawn(async move {
-                                    model_handle.save_as(file_pathbuf).await.unwrap();
-                                });
-                            }
-                        })
-                    }
-                });
+                file_save(handle.clone());
             }
             "id_save_as" => {
-                let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-                let file_dialog_builder =
-                    handle.dialog().file().add_filter("Show Model", &["json"]);
-                tauri::async_runtime::spawn(async move {
-                    if let Some(current_path) = model_handle.get_current_file_path().await {
-                        file_dialog_builder
-                            .set_directory(current_path.parent().unwrap())
-                            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                            .save_file(move |file_path_option| {
-                                if let Some(file_path) = file_path_option {
-                                    let file_pathbuf = file_path.into_path().unwrap();
-                                    tauri::async_runtime::spawn(async move {
-                                        model_handle.save_as(file_pathbuf).await.unwrap();
-                                    });
-                                }
-                            })
-                    } else {
-                        file_dialog_builder.save_file(move |file_path_option| {
-                            if let Some(file_path) = file_path_option {
-                                let file_pathbuf = file_path.into_path().unwrap();
-                                tauri::async_runtime::spawn(async move {
-                                    model_handle.save_as(file_pathbuf).await.unwrap();
-                                });
-                            }
-                        })
-                    }
-                });
+                file_save_as(handle.clone());
             }
             "id_quit" => {
                 handle.cleanup_before_exit();
@@ -290,6 +304,9 @@ pub fn run() {
             remove_cue,
             move_cue,
             update_settings,
+            file_open,
+            file_save,
+            file_save_as,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
