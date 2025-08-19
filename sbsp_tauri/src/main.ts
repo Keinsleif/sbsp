@@ -6,15 +6,16 @@ import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
 import { createPinia } from 'pinia';
-import { useShowState } from './stores/showstate';
 import { listen } from '@tauri-apps/api/event';
-import { ShowState } from './types/ShowState';
-import { UiEvent } from './types/UiEvent';
-import { useShowModel } from './stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
-import { ShowModel } from './types/ShowModel';
+import { useShowModel } from './stores/showmodel';
+import { useShowState } from './stores/showstate';
 import { useUiState } from './stores/uistate';
 import { useUiSettings } from './stores/uisettings';
+import type { ShowState } from './types/ShowState';
+import type { UiEvent } from './types/UiEvent';
+import type { ShowModel } from './types/ShowModel';
+import router from './router';
 
 const vuetify = createVuetify({
   icons: {
@@ -31,7 +32,7 @@ const vuetify = createVuetify({
 
 const pinia = createPinia();
 
-createApp(App).use(vuetify).use(pinia).mount('#app');
+createApp(App).use(vuetify).use(router).use(pinia).mount('#app');
 
 const showModel = useShowModel();
 const showState = useShowState();
