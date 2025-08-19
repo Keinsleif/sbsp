@@ -145,8 +145,8 @@ impl ShowModelManager {
             ModelCommand::UpdateSettings(new_settings) => {
                 let mut model = self.model.write().await;
                 // TODO setting validation
-                model.settings = *new_settings;
-                Some(UiEvent::SettingsUpdated)
+                model.settings = *new_settings.clone();
+                Some(UiEvent::SettingsUpdated { new_settings })
             }
             ModelCommand::Save => {
                 if let Some(path) = self.show_model_path.read().await.as_ref() {

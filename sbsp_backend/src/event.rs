@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{executor::ExecutorEvent, model::cue::Cue};
+use crate::{executor::ExecutorEvent, model::{cue::Cue, settings::ShowSettings}};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -35,7 +35,7 @@ pub enum UiEvent {
     CueAdded { cue: Cue, at_index: usize },
     CueRemoved { cue_id: Uuid },
     CueMoved { cue_id: Uuid, to_index: usize },
-    SettingsUpdated,
+    SettingsUpdated { new_settings: Box<ShowSettings> },
 
     OperationFailed { error: UiError },
 }
