@@ -4,7 +4,16 @@ import type { ShowModel } from '../types/ShowModel';
 import { Cue } from '../types/Cue';
 
 export const useShowModel = defineStore('showmodel', {
-  state: () => ({}) as ShowModel,
+  state: () =>
+    ({
+      name: '',
+      cues: [],
+      settings: {
+        general: { lockCursorToSelection: true },
+        hotkey: { go: 'Space', load: 'L', stop: 'Backspace', stopAll: 'Esc' },
+        template: { audio: null, wait: null },
+      },
+    }) as ShowModel,
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;
