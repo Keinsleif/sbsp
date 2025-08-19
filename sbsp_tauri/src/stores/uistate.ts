@@ -2,8 +2,6 @@ import { defineStore } from 'pinia';
 import { invoke } from '@tauri-apps/api/core';
 import { useShowModel } from './showmodel';
 
-const shwoModel = useShowModel();
-
 export const useUiState = defineStore('uistate', {
   state: () => ({
     selected: null as string | null,
@@ -15,6 +13,7 @@ export const useUiState = defineStore('uistate', {
   }),
   actions: {
     clearSelected() {
+      const shwoModel = useShowModel();
       this.selected = null;
       this.selectedRows = [];
       if (shwoModel.settings.general.lockCursorToSelection) {
@@ -26,6 +25,7 @@ export const useUiState = defineStore('uistate', {
       }
     },
     setSelected(id: string) {
+      const shwoModel = useShowModel();
       this.selected = id;
       this.selectedRows = [id];
       if (shwoModel.settings.general.lockCursorToSelection) {
