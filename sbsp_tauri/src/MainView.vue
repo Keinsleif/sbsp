@@ -34,11 +34,44 @@ import FootBar from './components/FootBar.vue';
 import BottomEditor from './components/BottomEditor.vue';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 const uiState = useUiState();
 const showModel = useShowModel();
 
+const wakeLock = ref<WakeLockSentinel | null>(null);
+
+const onVisibilityChange = () => {
+  if (wakeLock.value !== null && document.visibilityState === 'visible') {
+    navigator.wakeLock.request('screen').then((value) => {
+      wakeLock.value = value;
+    });
+  }
+};
+
+onMounted(() => {
+  navigator.wakeLock.request('screen').then((value) => {
+    wakeLock.value = value;
+  });
+  document.addEventListener('visibilitychange', onVisibilityChange);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  if (wakeLock.value != null) {
+    wakeLock.value.release().then(() => {
+      wakeLock.value = null;
+    });
+  }
+});
+
 useHotkey(showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined, () => {
   invoke('go').catch((e) => console.error(e));
+});
+useHotkey(showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined, () => {
+  invoke('load').catch((e) => console.error(e));
+});
+useHotkey(showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined, () => {
+  invoke('stop').catch((e) => console.error(e));
 });
 </script>
