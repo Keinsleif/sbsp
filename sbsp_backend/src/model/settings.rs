@@ -65,7 +65,7 @@ impl Default for TemplateSettings {
             audio: Some(Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
-                name: "".to_string(),
+                name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
@@ -82,7 +82,7 @@ impl Default for TemplateSettings {
             wait: Some(Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
-                name: "".to_string(),
+                name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,

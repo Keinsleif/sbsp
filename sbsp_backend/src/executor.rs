@@ -580,7 +580,7 @@ mod tests {
                 model.cues.push(Cue {
                     id: cue_id,
                     number: "1".to_string(),
-                    name: "Play IGY".to_string(),
+                    name: None,
                     notes: "".to_string(),
                     pre_wait: 0.0,
                     sequence: model::cue::CueSequence::DoNotContinue,

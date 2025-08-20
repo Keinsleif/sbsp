@@ -10,7 +10,7 @@ use uuid::Uuid;
 pub struct Cue {
     pub id: Uuid,
     pub number: String,
-    pub name: String,
+    pub name: Option<String>,
     pub notes: String,
     pub pre_wait: f64,
     pub sequence: CueSequence,
