@@ -100,6 +100,7 @@
             <v-text-field
               hide-details
               persistent-placeholder
+              :placeholder="buildCueName(selectedCue)"
               v-model="editorValue.name"
               label="Name"
               variant="outlined"
@@ -163,7 +164,7 @@
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { computed, ref, toRaw, watch } from 'vue';
-import { formatToSeconds, secondsToFormat } from '../utils';
+import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
 import { invoke } from '@tauri-apps/api/core';
 import { VTextField } from 'vuetify/components';
 
@@ -213,7 +214,12 @@ const saveEditorValue = () => {
     newCue.number = editorValue.value.number;
   }
   if (editorValue.value.name != null) {
-    newCue.name = editorValue.value.name;
+    const newName = editorValue.value.name.trim();
+    if (newName == '') {
+      newCue.name = null;
+    } else {
+      newCue.name = newName;
+    }
   }
   if (editorValue.value.notes != null) {
     newCue.notes = editorValue.value.notes;

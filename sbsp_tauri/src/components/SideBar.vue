@@ -9,9 +9,11 @@
         <v-card v-if="activeCue != null" class="border">
           <v-card-title class="text-subtitle-1 pb-0">
             {{
-              showModel.cues.find((cue) => cue.id == cue_id)?.number +
+              showModel.cues.find((cue) => cue.id == cue_id)!.number +
               '・' +
-              showModel.cues.find((cue) => cue.id == cue_id)?.name
+              (showModel.cues.find((cue) => cue.id == cue_id)!.name != null
+                ? showModel.cues.find((cue) => cue.id == cue_id)!.name
+                : buildCueName(showModel.cues.find((cue) => cue.id == cue_id)!))
             }}
           </v-card-title>
           <v-card-subtitle class="pa-0 d-flex justify-space-between">
@@ -50,7 +52,7 @@ import { useShowModel } from '../stores/showmodel';
 import { useShowState } from '../stores/showstate';
 import { useUiState } from '../stores/uistate';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
-import { secondsToFormat } from '../utils';
+import { buildCueName, secondsToFormat } from '../utils';
 
 const showModel = useShowModel();
 const showState = useShowState();

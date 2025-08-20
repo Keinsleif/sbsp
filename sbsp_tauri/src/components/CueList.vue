@@ -55,7 +55,7 @@
           @keydown.enter="closeEditable($event.target, true, i)"
           @keydown.esc="closeEditable($event.target, false, i)"
         >
-          {{ cue.name }}
+          {{ cue.name != null ? cue.name : buildCueName(cue) }}
         </td>
         <td
           headers="cuelist_pre_wait"
@@ -175,7 +175,7 @@ import { mdiArrowBottomLeft, mdiArrowRightBold, mdiChevronDoubleDown, mdiTimerSa
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
-import { formatToSeconds, secondsToFormat } from '../utils';
+import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 
@@ -338,9 +338,15 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
       case 'cuelist_number':
         newCue.number = target.innerText;
         break;
-      case 'cuelist_name':
-        newCue.name = target.innerText;
+      case 'cuelist_name': {
+        const newText = target.innerText.trim();
+        if (newText == '') {
+          newCue.name = null;
+        } else {
+          newCue.name = newText;
+        }
         break;
+      }
       case 'cuelist_pre_wait': {
         let newPreWait = formatToSeconds(target.innerText, false);
         newCue.preWait = newPreWait;

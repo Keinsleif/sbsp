@@ -8,7 +8,7 @@
       </v-sheet>
       <div class="d-flex flex-column ma-0 flex-grow-1">
         <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
-          {{ playbackCursorCue != null ? playbackCursorCue.number + '・' + playbackCursorCue.name : '' }}
+          {{ playbackCursorCueTitle }}
         </v-sheet>
         <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto" height="64px">{{
           playbackCursorCue != null ? playbackCursorCue.notes : ''
@@ -74,6 +74,7 @@ import { PlaybackStatus } from '../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
 import { v4 } from 'uuid';
 import { useUiState } from '../stores/uistate';
+import { buildCueName } from '../utils';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -81,6 +82,14 @@ const uiState = useUiState();
 
 const playbackCursorCue = computed(() => {
   return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
+});
+
+const playbackCursorCueTitle = computed(() => {
+  return playbackCursorCue.value != null
+    ? playbackCursorCue.value.number +
+        '・' +
+        (playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value))
+    : '';
 });
 
 const isCueStatus = (status: PlaybackStatus) => {

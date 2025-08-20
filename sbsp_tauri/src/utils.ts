@@ -1,13 +1,15 @@
+import type { Cue } from './types/Cue';
+
 const secondsToFormat = (source_seconds: number): string => {
   const hour = Math.floor(source_seconds / 3600);
   const minute = Math.floor((source_seconds - 3600 * hour) / 60);
   const seconds = Math.floor(source_seconds - 3600 * hour - 60 * minute);
   const milliseconds = Math.floor((source_seconds - 3600 * hour - 60 * minute - seconds) * 100);
 
-  const hh = ('0' + hour).slice(-2);
-  const mm = ('0' + minute).slice(-2);
-  const ss = ('0' + seconds).slice(-2);
-  const ms = ('0' + milliseconds).slice(-2);
+  const hh = ('00' + hour).slice(-2);
+  const mm = ('00' + minute).slice(-2);
+  const ss = ('00' + seconds).slice(-2);
+  const ms = ('00' + milliseconds).slice(-2);
   let time = '';
   if (hour > 0) {
     time = `${hh}:${mm}:${ss}.${ms}`;
@@ -37,4 +39,41 @@ const formatToSeconds = (source_format: string, acceptMinus: boolean = true): nu
   return is_minus ? (acceptMinus ? -1 * result : 0) : result;
 };
 
-export { secondsToFormat, formatToSeconds };
+const secondsToHMR = (source_seconds: number): string => {
+  const hour = Math.floor(source_seconds / 3600);
+  const minute = Math.floor((source_seconds - 3600 * hour) / 60);
+  const seconds = Math.floor(source_seconds - 3600 * hour - 60 * minute);
+  const milliseconds = Math.floor((source_seconds - 3600 * hour - 60 * minute - seconds) * 100);
+
+  const hh = ('00' + hour).slice(-2);
+  const mm = ('00' + minute).slice(-2);
+  const ss = ('00' + seconds).slice(-2);
+  let ms = ('00' + milliseconds).slice(-2);
+
+  if (ms.endsWith('0')) {
+    ms = ms.slice(0, 1);
+  }
+
+  let time = '';
+  if (hour > 0) {
+    time = `${hh}h ${mm}m ${ss}s`;
+  } else if (minute > 0) {
+    time = `${mm}m ${ss}.${ms}s`;
+  } else if (milliseconds == 0) {
+    time = `${seconds}s`;
+  } else {
+    time = `${seconds}.${ms}s`;
+  }
+
+  return time;
+};
+
+const buildCueName = (cue: Cue) => {
+  if (cue.params.type == 'audio') {
+    return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
+  } else {
+    return `Wait ${secondsToHMR(cue.params.duration)}`;
+  }
+};
+
+export { secondsToFormat, formatToSeconds, buildCueName };
