@@ -9,7 +9,7 @@
         >Levels</v-tab
       >
     </v-tabs>
-    <v-tabs-window v-if="selectedCue != null" v-model="uiState.editorTab">
+    <v-tabs-window v-if="selectedCue != null && editorValue != null" v-model="uiState.editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
         <v-sheet flat class="d-flex flex-row pa-4 ga-4">
           <v-sheet flat class="d-flex flex-column ga-2" width="175px">
@@ -144,11 +144,13 @@
             <v-text-field
               hide-details
               persistent-placeholder
-              :model-value="selectedCue.params.target"
+              :append-icon="mdiFileMusic"
+              v-model="editorValue.params.target"
               label="Target"
               variant="outlined"
               density="compact"
               :class="$style['centered-input']"
+              @click:append="pickFile"
             ></v-text-field>
           </v-sheet>
         </v-sheet>
@@ -161,12 +163,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, toRaw, watch } from 'vue';
+import { VTextField } from 'vuetify/components';
+import { mdiFileMusic } from '@mdi/js';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
-import { computed, ref, toRaw, watch } from 'vue';
 import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
-import { invoke } from '@tauri-apps/api/core';
-import { VTextField } from 'vuetify/components';
 
 const showModel = useShowModel();
 const uiState = useUiState();
@@ -176,23 +180,41 @@ const selectedCue = computed(() => {
 });
 
 const computeEditorValue = () => {
-  return {
-    number: selectedCue.value ? selectedCue.value.number : null,
-    name: selectedCue.value ? selectedCue.value.name : null,
-    notes: selectedCue.value ? selectedCue.value.notes : null,
-    preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
-    duration: selectedCue.value
-      ? selectedCue.value.params.type == 'wait'
-        ? secondsToFormat(selectedCue.value.params.duration)
-        : '00:00.00'
-      : null,
-    sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
-    postWait: selectedCue.value
-      ? selectedCue.value.sequence.type != 'doNotContinue'
-        ? secondsToFormat(selectedCue.value.sequence.postWait)
-        : '00:00.00'
-      : null,
-  };
+  if (selectedCue.value?.params.type == 'audio') {
+    return {
+      number: selectedCue.value ? selectedCue.value.number : null,
+      name: selectedCue.value ? selectedCue.value.name : null,
+      notes: selectedCue.value ? selectedCue.value.notes : null,
+      preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
+      duration: '00:00.00',
+      sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
+      postWait: selectedCue.value
+        ? selectedCue.value.sequence.type != 'doNotContinue'
+          ? secondsToFormat(selectedCue.value.sequence.postWait)
+          : '00:00.00'
+        : null,
+      params: {
+        target: selectedCue.value ? selectedCue.value.params.target : null,
+      },
+    };
+  } else if (selectedCue.value?.params.type == 'wait') {
+    return {
+      number: selectedCue.value ? selectedCue.value.number : null,
+      name: selectedCue.value ? selectedCue.value.name : null,
+      notes: selectedCue.value ? selectedCue.value.notes : null,
+      preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
+      duration: selectedCue.value ? secondsToFormat(selectedCue.value.params.duration) : null,
+      sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
+      postWait: selectedCue.value
+        ? selectedCue.value.sequence.type != 'doNotContinue'
+          ? secondsToFormat(selectedCue.value.sequence.postWait)
+          : '00:00.00'
+        : null,
+      params: {},
+    };
+  } else {
+    return null;
+  }
 };
 
 const editorValue = ref(computeEditorValue());
@@ -206,7 +228,7 @@ const resetEditorValue = () => {
 };
 
 const saveEditorValue = () => {
-  if (selectedCue.value == null) {
+  if (selectedCue.value == null || editorValue.value == null) {
     return;
   }
   const newCue = structuredClone(toRaw(selectedCue.value));
@@ -236,7 +258,44 @@ const saveEditorValue = () => {
   if (editorValue.value.postWait != null && newCue.sequence.type != 'doNotContinue') {
     newCue.sequence.postWait = formatToSeconds(editorValue.value.postWait);
   }
+  if (newCue.params.type == 'audio' && editorValue.value.params.target != null) {
+    newCue.params.target = editorValue.value.params.target;
+  }
   invoke('update_cue', { cue: newCue });
+};
+
+const pickFile = () => {
+  open({
+    multiple: false,
+    filters: [
+      {
+        name: 'Audio',
+        extensions: [
+          'aiff',
+          'aif',
+          'caf',
+          'mp4',
+          'm4a',
+          'mkv',
+          'mka',
+          'webm',
+          'ogg',
+          'oga',
+          'wav',
+          'aac',
+          'alac',
+          'flac',
+          'mp3',
+        ],
+      },
+    ],
+  }).then((value) => {
+    if (editorValue.value == null || value == null) {
+      return;
+    }
+    editorValue.value.params.target = value;
+    saveEditorValue();
+  });
 };
 </script>
 
