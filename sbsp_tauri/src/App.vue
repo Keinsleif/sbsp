@@ -9,7 +9,8 @@ html {
   overscroll-behavior-y: none;
   user-select: none;
 }
-body, #app {
+body,
+#app {
   height: 100%;
 }
 </style>
