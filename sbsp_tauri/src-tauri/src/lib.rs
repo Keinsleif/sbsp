@@ -1,7 +1,11 @@
 use std::str::FromStr;
 
 use sbsp_backend::{
-    controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::Cue, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
+    BackendHandle,
+    controller::{ControllerCommand, state::ShowState},
+    event::UiEvent,
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    start_backend,
 };
 use tauri::{
     AppHandle, Emitter, Manager as _,
@@ -151,8 +155,15 @@ async fn move_cue(
 }
 
 #[tauri::command]
-async fn update_settings(handle: tauri::State<'_, BackendHandle>, new_settings: ShowSettings) -> Result<(), String> {
-    handle.model_handle.update_settings(new_settings).await.map_err(|e| e.to_string())
+async fn update_settings(
+    handle: tauri::State<'_, BackendHandle>,
+    new_settings: ShowSettings,
+) -> Result<(), String> {
+    handle
+        .model_handle
+        .update_settings(new_settings)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -163,7 +174,8 @@ fn file_open(app_handle: tauri::AppHandle) {
             tauri::async_runtime::spawn(async move {
                 model_handle
                     .load_from_file(file_path.into_path().unwrap())
-                    .await.unwrap();
+                    .await
+                    .unwrap();
             });
         }
     });
@@ -172,8 +184,7 @@ fn file_open(app_handle: tauri::AppHandle) {
 #[tauri::command]
 fn file_save(handle: tauri::AppHandle) {
     let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder =
-        handle.dialog().file().add_filter("Show Model", &["json"]);
+    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
     tauri::async_runtime::spawn(async move {
         if model_handle.get_current_file_path().await.is_some() {
             model_handle.save().await.unwrap();
@@ -193,8 +204,7 @@ fn file_save(handle: tauri::AppHandle) {
 #[tauri::command]
 fn file_save_as(handle: tauri::AppHandle) {
     let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder =
-        handle.dialog().file().add_filter("Show Model", &["json"]);
+    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
     tauri::async_runtime::spawn(async move {
         if let Some(current_path) = model_handle.get_current_file_path().await {
             file_dialog_builder
@@ -226,7 +236,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_window_state::Builder::new().with_denylist(&["settings"]).build())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_denylist(&["settings"])
+                .build(),
+        )
         .setup(|app| {
             let app_handle = app.handle();
 

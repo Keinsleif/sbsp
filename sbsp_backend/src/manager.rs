@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     event::{UiError, UiEvent},
-    model::{cue::Cue, settings::ShowSettings, ShowModel},
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -283,7 +283,8 @@ impl ShowModelHandle {
     }
 
     pub async fn update_settings(&self, new_settings: ShowSettings) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::UpdateSettings(Box::new(new_settings))).await?;
+        self.send_command(ModelCommand::UpdateSettings(Box::new(new_settings)))
+            .await?;
         Ok(())
     }
 
