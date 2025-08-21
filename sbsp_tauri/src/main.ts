@@ -63,10 +63,11 @@ listen<UiEvent>('backend-event', (event) => {
     case 'showModelLoaded':
       invoke<ShowModel>('get_show_model').then((model) => {
         showModel.updateAll(model);
+        uiState.success('ShowModel loaded.');
       });
       break;
     case 'showModelSaved':
-      alert('Show file saved to ' + event.payload.param.path);
+      uiState.success('ShowModel saved.');
       break;
     case 'cueUpdated':
       showModel.updateCue(event.payload.param.cue);

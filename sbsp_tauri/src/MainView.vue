@@ -21,6 +21,9 @@
     <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="301">
       <BottomEditor />
     </v-navigation-drawer>
+
+    <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
+    <v-snackbar-queue v-model="uiState.error_messages" timeout="2000" color="error"></v-snackbar-queue>
   </v-app>
 </template>
 

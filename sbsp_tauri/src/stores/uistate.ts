@@ -10,6 +10,8 @@ export const useUiState = defineStore('uistate', {
     editorTab: 'basics',
     isRightSidebarOpen: true,
     isEditorOpen: true,
+    success_messages: [] as string[],
+    error_messages: [] as string[],
   }),
   actions: {
     clearSelected() {
@@ -41,6 +43,12 @@ export const useUiState = defineStore('uistate', {
     },
     toggleEditor() {
       this.isEditorOpen = !this.isEditorOpen;
+    },
+    success(message: string) {
+      this.success_messages.push(message);
+    },
+    error(message: string) {
+      this.error_messages.push(message);
     },
   },
 });
