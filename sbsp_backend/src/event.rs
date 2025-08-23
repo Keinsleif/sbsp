@@ -40,13 +40,6 @@ pub enum UiEvent {
     CueMoved { cue_id: Uuid, to_index: usize },
     SettingsUpdated { new_settings: Box<ShowSettings> },
 
-    // Asset Events
-    AssetDataUpdated {
-        path: PathBuf,
-        duration: f64,
-        waveform: Vec<f32>
-    },
-
     OperationFailed { error: UiError },
 }
 

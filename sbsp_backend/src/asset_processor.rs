@@ -2,21 +2,30 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
 use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, errors::{Error, Result}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint};
-use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio::sync::{mpsc, oneshot, RwLock};
 
-use crate::{event::UiEvent, manager::ShowModelHandle};
+use crate::manager::ShowModelHandle;
 
-#[derive(Debug)]
 pub enum AssetCommand {
-    RequestAssetData(PathBuf),
+    RequestAssetData {
+        path: PathBuf,
+        responder: oneshot::Sender<anyhow::Result<AssetData>>,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct AssetData {
+    pub path: PathBuf,
+    pub duration: f64,
+    pub waveform: Vec<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CacheEntry {
-    pub path: PathBuf,
     last_modified: SystemTime,
-    pub duration: f64,
-    pub waveform: Vec<f32>,
+    data: AssetData,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -35,7 +44,6 @@ impl AssetCache {
 pub struct AssetProcessor {
     model_handle: ShowModelHandle,
     command_rx: mpsc::Receiver<AssetCommand>,
-    event_tx: broadcast::Sender<UiEvent>,
 
     cache: Arc<RwLock<AssetCache>>,
 }
@@ -43,7 +51,6 @@ pub struct AssetProcessor {
 impl AssetProcessor {
     pub fn new(
         model_handle: ShowModelHandle,
-        event_tx: broadcast::Sender<UiEvent>,
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
@@ -51,7 +58,6 @@ impl AssetProcessor {
             Self {
                 model_handle,
                 command_rx,
-                event_tx,
                 cache: cache.clone(),
             },
             AssetProcessorHandle { command_tx },
@@ -61,46 +67,44 @@ impl AssetProcessor {
     pub async fn run(mut self) {
         while let Some(command) = self.command_rx.recv().await {
             match command {
-                AssetCommand::RequestAssetData(path_buf) => {
+                AssetCommand::RequestAssetData{path, responder} => {
                     let mut filepath = self
                         .model_handle
                         .get_current_file_path()
                         .await
                         .unwrap_or(PathBuf::new());
                     filepath.pop();
-                    filepath.push(path_buf);
+                    filepath.push(path);
                     let cache = self.cache.read().await;
-                    let entry_option;
+                    let asset_data;
                     if cache.entries.contains_key(&filepath) {
-                        let cache_entry = cache.entries.get(&filepath).unwrap();
+                        let cache_entry = cache.entries.get(&filepath).unwrap().clone();
+                        drop(cache);
                         let modified = filepath.metadata().unwrap().modified().unwrap();
                         if cache_entry.last_modified != modified {
-                            entry_option = self.process_asset(filepath).await;
+                            asset_data = self.process_asset(filepath.clone()).await;
+                            let mut cache = self.cache.write().await;
+                            if let Ok(data) = &asset_data {
+                                cache.entries.insert(filepath.clone(), CacheEntry { last_modified: filepath.metadata().unwrap().modified().unwrap(), data: data.clone() });
+                            }
                         } else {
-                            entry_option = Ok(cache_entry.clone());
+                            asset_data = Ok(cache_entry.data.clone());
                         }
                     } else {
-                        let result = self.process_asset(filepath).await;
-                        entry_option = result;
+                        asset_data = self.process_asset(filepath.clone()).await;
+                        let mut cache = self.cache.write().await;
+                        if let Ok(data) = &asset_data {
+                            cache.entries.insert(filepath.clone(), CacheEntry { last_modified: filepath.metadata().unwrap().modified().unwrap(), data: data.clone() });
+                        }
                     }
 
-                    if let Ok(entry) = entry_option {
-                        if self.event_tx.send(UiEvent::AssetDataUpdated {
-                            path: entry.path,
-                            duration: entry.duration,
-                            waveform: entry.waveform,
-                        }).is_err() {
-                            log::trace!("No UI clients are listening to playback events.");
-                        }
-                    } else if let Err(e) = entry_option {
-                        log::error!("Failed to parse asset: {}", e);
-                    }
+                    responder.send(asset_data).unwrap();
                 }
             }
         }
     }
 
-    async fn process_asset(&self, path: PathBuf) -> anyhow::Result<CacheEntry> {
+    async fn process_asset(&self, path: PathBuf) -> anyhow::Result<AssetData> {
         let src = std::fs::File::open(&path).unwrap();
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
@@ -201,14 +205,7 @@ impl AssetProcessor {
             }
         }
 
-        let last_modified = path.metadata().unwrap().modified().unwrap();
-
-        Ok(CacheEntry {
-            path,
-            last_modified,
-            duration: samples.len() as f64 / spec_data.rate as f64,
-            waveform: peaks,
-        })
+        Ok(AssetData { path, duration: samples.len() as f64 / spec_data.rate as f64, waveform: peaks })
     }
 }
 
@@ -217,11 +214,14 @@ pub struct AssetProcessorHandle {
 }
 
 impl AssetProcessorHandle {
-    pub async fn request_asset_data(&self, target: PathBuf) {
+    pub async fn request_asset_data(&self, target: PathBuf) -> anyhow::Result<AssetData> {
+        let (result_tx, result_rx) = oneshot::channel();
         self.command_tx
-            .send(AssetCommand::RequestAssetData(target))
+            .send(AssetCommand::RequestAssetData {path: target, responder: result_tx})
             .await
             .unwrap();
+
+        result_rx.await.unwrap_or_else(|_| Err(anyhow::anyhow!("AssetProcessor task may have panicked")))
     }
 }
 

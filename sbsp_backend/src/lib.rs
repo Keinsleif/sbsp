@@ -60,7 +60,7 @@ pub fn start_backend() -> (
     let audio_engine = AudioEngine::new(audio_rx, engine_event_tx.clone()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
-    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone(), event_tx.clone());
+    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone());
 
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());

@@ -1,4 +1,4 @@
-use sbsp_backend::{controller::state::ShowState, event::UiEvent, model::ShowModel};
+use sbsp_backend::{asset_processor::AssetData, controller::state::ShowState, event::UiEvent, model::ShowModel};
 use ts_rs::TS;
 
 fn main() {
@@ -10,6 +10,7 @@ fn main() {
     <ShowModel as TS>::export_all_to("../src/types").unwrap();
     <ShowState as TS>::export_all_to("../src/types").unwrap();
     <UiEvent as TS>::export_all_to("../src/types").unwrap();
+    <AssetData as TS>::export_all_to("../src/types").unwrap();
 
     tauri_build::build()
 }
