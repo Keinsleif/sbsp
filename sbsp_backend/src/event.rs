@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    executor::ExecutorEvent,
-    model::{cue::Cue, settings::ShowSettings},
+    executor::ExecutorEvent, model::{cue::Cue, settings::ShowSettings}
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -32,6 +31,7 @@ pub enum UiEvent {
     // System Events
     PlaybackCursorMoved { cue_id: Option<Uuid> },
 
+    // Model Events
     ShowModelLoaded { path: PathBuf },
     ShowModelSaved { path: PathBuf },
     CueUpdated { cue: Cue },
@@ -39,6 +39,13 @@ pub enum UiEvent {
     CueRemoved { cue_id: Uuid },
     CueMoved { cue_id: Uuid, to_index: usize },
     SettingsUpdated { new_settings: Box<ShowSettings> },
+
+    // Asset Events
+    AssetDataUpdated {
+        path: PathBuf,
+        duration: f64,
+        waveform: Vec<f32>
+    },
 
     OperationFailed { error: UiError },
 }

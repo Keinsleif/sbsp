@@ -1,14 +1,10 @@
 use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{
-    controller::{ControllerCommand, CueController, state::ShowState},
-    engine::{
+    asset_processor::{AssetProcessor, AssetProcessorHandle}, controller::{state::ShowState, ControllerCommand, CueController}, engine::{
         audio_engine::{AudioCommand, AudioEngine},
         wait_engine::{WaitCommand, WaitEngine},
-    },
-    event::UiEvent,
-    executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent},
-    manager::{ShowModelHandle, ShowModelManager},
+    }, event::UiEvent, executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent}, manager::{ShowModelHandle, ShowModelManager}
 };
 
 #[cfg(feature = "apiserver")]
@@ -20,9 +16,11 @@ pub mod event;
 mod executor;
 pub mod manager;
 pub mod model;
+pub mod asset_processor;
 
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
+    pub asset_handle: AssetProcessorHandle,
     pub controller_tx: mpsc::Sender<ControllerCommand>,
 }
 
@@ -62,15 +60,19 @@ pub fn start_backend() -> (
     let audio_engine = AudioEngine::new(audio_rx, engine_event_tx.clone()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
+    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone(), event_tx.clone());
+
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());
     tokio::spawn(executor.run());
     tokio::spawn(audio_engine.run());
     tokio::spawn(wait_engine.run());
+    tokio::spawn(asset_processor.run());
 
     (
         BackendHandle {
             model_handle,
+            asset_handle,
             controller_tx,
         },
         state_rx,
