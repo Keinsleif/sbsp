@@ -319,6 +319,7 @@ pub fn run() {
             remove_cue,
             move_cue,
             update_settings,
+            process_asset,
             file_open,
             file_save,
             file_save_as,

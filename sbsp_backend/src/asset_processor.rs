@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
-use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, errors::{Error, Result}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint};
+use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, errors::{Error, Result}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint, units::TimeBase};
 use tokio::sync::{mpsc, oneshot, RwLock};
 
 use crate::manager::ShowModelHandle;
@@ -18,7 +18,7 @@ pub enum AssetCommand {
 #[serde(rename_all = "camelCase")]
 pub struct AssetData {
     pub path: PathBuf,
-    pub duration: f64,
+    pub duration: Option<f64>,
     pub waveform: Vec<f32>,
 }
 
@@ -75,30 +75,16 @@ impl AssetProcessor {
                         .unwrap_or(PathBuf::new());
                     filepath.pop();
                     filepath.push(path);
-                    let cache = self.cache.read().await;
-                    let asset_data;
-                    if cache.entries.contains_key(&filepath) {
-                        let cache_entry = cache.entries.get(&filepath).unwrap().clone();
-                        drop(cache);
-                        let modified = filepath.metadata().unwrap().modified().unwrap();
-                        if cache_entry.last_modified != modified {
-                            asset_data = self.process_asset(filepath.clone()).await;
-                            let mut cache = self.cache.write().await;
-                            if let Ok(data) = &asset_data {
-                                cache.entries.insert(filepath.clone(), CacheEntry { last_modified: filepath.metadata().unwrap().modified().unwrap(), data: data.clone() });
-                            }
-                        } else {
-                            asset_data = Ok(cache_entry.data.clone());
-                        }
+                    let mut cache = self.cache.write().await;
+                    if let Some(entry) = cache.entries.get(&filepath) {
+                        responder.send(Ok(entry.data.clone())).unwrap();
                     } else {
-                        asset_data = self.process_asset(filepath.clone()).await;
-                        let mut cache = self.cache.write().await;
+                        let asset_data = self.process_asset(filepath.clone()).await;
                         if let Ok(data) = &asset_data {
                             cache.entries.insert(filepath.clone(), CacheEntry { last_modified: filepath.metadata().unwrap().modified().unwrap(), data: data.clone() });
                         }
+                        responder.send(asset_data).unwrap();
                     }
-
-                    responder.send(asset_data).unwrap();
                 }
             }
         }
@@ -130,6 +116,17 @@ impl AssetProcessor {
             .unwrap();
 
         let track_id = track.id;
+
+        let duration = if let Some(n_frames) = track.codec_params.n_frames.map(|frames| track.codec_params.start_ts + frames) {
+            if let Some(tb) = track.codec_params.time_base {
+                let time = tb.calc_time(n_frames);
+                Some(time.seconds as f64 + time.frac)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         let mut sample_buf = None;
         let mut spec: Option<SignalSpec> = None;
@@ -185,8 +182,8 @@ impl AssetProcessor {
         let mut peaks = Vec::new();
 
         for i in 0..step {
-            let start = i * spec_data.rate as usize;
-            if samples.len() < start + spec_data.rate as usize {
+            let start = i * window as usize;
+            if samples.len() < start + window as usize {
                 peaks.push(
                     samples[start..]
                         .iter()
@@ -196,7 +193,7 @@ impl AssetProcessor {
                 );
             } else {
                 peaks.push(
-                    samples[start..(start + spec_data.rate as usize)]
+                    samples[start..(start + window as usize)]
                         .iter()
                         .copied()
                         .max_by(|a, b| a.partial_cmp(b).unwrap())
@@ -205,7 +202,7 @@ impl AssetProcessor {
             }
         }
 
-        Ok(AssetData { path, duration: samples.len() as f64 / spec_data.rate as f64, waveform: peaks })
+        Ok(AssetData { path, duration, waveform: peaks })
     }
 }
 
