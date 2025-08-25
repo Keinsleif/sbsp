@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use sbsp_backend::{
-    asset_processor::AssetData, controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::Cue, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
+    asset_processor::AssetData, controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
 };
 use tauri::{
     AppHandle, Emitter, Manager as _,
@@ -166,7 +166,12 @@ async fn update_settings(
 async fn process_asset(handle: tauri::State<'_, BackendHandle>, cue_id: &str) -> Result<(Uuid, AssetData), String> {
     match Uuid::from_str(cue_id) {
         Ok(cue_uuid) => {
-            handle.asset_handle.request_cue_asset_data(cue_uuid).await.map_err(|e| e.to_string()).map(|asset_data| (cue_uuid, asset_data))
+            if let Some(cue) = handle.model_handle.read().await.cues.iter().find(|cue| cue.id == cue_uuid)
+                && let CueParam::Audio{target, ..} = &cue.params {
+                handle.asset_handle.request_file_asset_data(target.clone()).await.map_err(|e| e.to_string()).map(|asset_data| (cue_uuid, asset_data))
+            } else {
+                Err(format!("Cue not found. id={}", cue_uuid))
+            }
         },
         Err(e) => Err(e.to_string()),
     }

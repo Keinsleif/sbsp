@@ -3,17 +3,12 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 use serde::{Deserialize, Serialize};
 use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint};
 use tokio::sync::{mpsc, oneshot, broadcast, RwLock};
-use uuid::Uuid;
 
 use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 
 pub enum AssetCommand {
     RequestFileAssetData {
         path: PathBuf,
-        responder: oneshot::Sender<Result<AssetData, String>>,
-    },
-    RequestCueAssetData {
-        cue_id: Uuid,
         responder: oneshot::Sender<Result<AssetData, String>>,
     },
     ProcessAll,
@@ -95,14 +90,6 @@ impl AssetProcessor {
                         AssetCommand::RequestFileAssetData{path, responder} => {
                             self.handle_process_file(path, responder).await;
                         }
-                        AssetCommand::RequestCueAssetData{cue_id, responder} => {
-                            if let Some(cue) = self.model_handle.read().await.cues.iter().find(|cue| cue.id == cue_id)
-                                && let CueParam::Audio{target, ..} = &cue.params {
-                                self.handle_process_file(target.clone(), responder).await;
-                            } else {
-                                responder.send(Err(format!("Cue not found. id={}", cue_id))).unwrap();
-                            }
-                        },
                         AssetCommand::ProcessAll => {
                             self.handle_process_all().await;
                         }
@@ -324,16 +311,6 @@ impl AssetProcessorHandle {
         let (result_tx, result_rx) = oneshot::channel();
         self.command_tx
             .send(AssetCommand::RequestFileAssetData {path: target, responder: result_tx})
-            .await
-            .unwrap();
-
-        result_rx.await.unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
-    }
-
-    pub async fn request_cue_asset_data(&self, cue_id: Uuid) -> Result<AssetData, String> {
-        let (result_tx, result_rx) = oneshot::channel();
-        self.command_tx
-            .send(AssetCommand::RequestCueAssetData { cue_id, responder: result_tx })
             .await
             .unwrap();
 
