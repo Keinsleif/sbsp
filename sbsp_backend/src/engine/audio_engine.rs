@@ -305,7 +305,6 @@ impl AudioEngine {
     }
 
     async fn handle_pause(&mut self, id: Uuid) -> Result<()> {
-        log::info!("PAUSE: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.pause();
             self.event_tx
@@ -348,7 +347,6 @@ impl AudioEngine {
     }
 
     fn handle_stop(&mut self, id: Uuid) -> Result<()> {
-        log::info!("STOP: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop();
             Ok(())
