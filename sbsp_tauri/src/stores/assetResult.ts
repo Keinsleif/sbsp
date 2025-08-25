@@ -14,7 +14,6 @@ export const useAssetResult = defineStore('assetResult', {
       const showModel = useShowModel();
       for (const cue of showModel.cues) {
         if (cue.params.type == 'audio') {
-          this.duration[cue.id] = null;
           invoke<[string, AssetData]>('process_asset', { cueId: cue.id }).then((value) => {
             if (value[1].duration != null) {
               this.duration[cue.id] = calculateDuration(cue.params, value[1].duration);
