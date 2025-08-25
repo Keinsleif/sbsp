@@ -25,7 +25,7 @@
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
         @drop="drop($event, i)"
-        @click="click($event, i)"
+        @mousedown="click($event, i)"
       >
         <td headers="cuelist_cursor" width="24px">
           <v-icon
