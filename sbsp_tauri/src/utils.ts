@@ -1,7 +1,7 @@
 import type { Cue } from './types/Cue';
 import { CueParam } from './types/CueParam';
 
-const secondsToFormat = (source_seconds: number): string => {
+export const secondsToFormat = (source_seconds: number): string => {
   const hour = Math.floor(source_seconds / 3600);
   const minute = Math.floor((source_seconds - 3600 * hour) / 60);
   const seconds = Math.floor(source_seconds - 3600 * hour - 60 * minute);
@@ -21,7 +21,7 @@ const secondsToFormat = (source_seconds: number): string => {
   return time;
 };
 
-const formatToSeconds = (source_format: string, acceptMinus: boolean = true): number => {
+export const formatToSeconds = (source_format: string, acceptMinus: boolean = true): number => {
   let is_minus = false;
   let result = 0;
   if (source_format.startsWith('-')) {
@@ -69,7 +69,7 @@ const secondsToHMR = (source_seconds: number): string => {
   return time;
 };
 
-const buildCueName = (cue: Cue) => {
+export const buildCueName = (cue: Cue) => {
   if (cue.params.type == 'audio') {
     return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
   } else {
@@ -77,7 +77,7 @@ const buildCueName = (cue: Cue) => {
   }
 };
 
-const calculateDuration = (cueParam: CueParam, totalDuration: number): number => {
+export const calculateDuration = (cueParam: CueParam, totalDuration: number): number => {
   if (cueParam.type != 'audio') {
     return 0;
   }
@@ -90,5 +90,3 @@ const calculateDuration = (cueParam: CueParam, totalDuration: number): number =>
   }
   return duration;
 };
-
-export { secondsToFormat, formatToSeconds, buildCueName, calculateDuration };
