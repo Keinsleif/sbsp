@@ -47,19 +47,13 @@ pub enum CueParam {
         fade_in_param: Option<AudioCueFadeParam>,
         end_time: Option<f64>,
         fade_out_param: Option<AudioCueFadeParam>,
-        levels: AudioCueLevels,
+        volume: f32,
+        pan: f32,
         loop_region: Option<LoopRegion>,
     },
     Wait {
         duration: f64,
     }, // TODO midi, osc wait, group cue
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub struct AudioCueLevels {
-    pub master: f64, // decibels
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]

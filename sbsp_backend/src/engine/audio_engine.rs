@@ -1,11 +1,8 @@
 use anyhow::{Context, Result};
 use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Easing, StartTime, Tween,
-    clock::{ClockHandle, ClockSpeed, ClockTime},
-    sound::{
-        EndPosition, PlaybackPosition, PlaybackState, Region,
-        static_sound::{StaticSoundData, StaticSoundHandle},
-    },
+    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
+        static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, PlaybackState, Region
+    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -13,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     executor::EngineEvent,
-    model::cue::{AudioCueFadeParam, AudioCueLevels, LoopRegion},
+    model::cue::{AudioCueFadeParam, LoopRegion},
 };
 
 #[derive(Debug, Clone)]
@@ -35,12 +32,6 @@ pub enum AudioCommand {
     Stop {
         id: Uuid,
     },
-    SetLevels {
-        id: Uuid,
-        levels: AudioCueLevels,
-        duration: f64,
-        easing: Easing,
-    },
 }
 
 impl AudioCommand {
@@ -51,7 +42,6 @@ impl AudioCommand {
             AudioCommand::Pause { id } => *id,
             AudioCommand::Resume { id } => *id,
             AudioCommand::Stop { id } => *id,
-            AudioCommand::SetLevels { id, .. } => *id,
         }
     }
 }
@@ -59,7 +49,8 @@ impl AudioCommand {
 #[derive(Debug, Clone)]
 pub struct AudioCommandData {
     pub filepath: PathBuf,
-    pub levels: AudioCueLevels,
+    pub volume: f32,
+    pub pan: f32,
     pub start_time: Option<f64>,
     pub fade_in_param: Option<AudioCueFadeParam>,
     pub end_time: Option<f64>,
@@ -99,10 +90,6 @@ impl SoundHandle {
     fn stop(&mut self) {
         self.handle.stop(Tween::default());
         self.clock.start();
-    }
-
-    fn set_volume(&mut self, levels: AudioCueLevels, tween: Tween) {
-        self.handle.set_volume(levels.master as f32, tween);
     }
 }
 
@@ -156,7 +143,6 @@ impl AudioEngine {
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
                         AudioCommand::Stop { id } => self.handle_stop(id),
-                        AudioCommand::SetLevels {id,levels, duration, easing } => self.handle_set_levels(id, levels, duration, easing),
                     };
                     if let Err(e) = result {
                         self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();
@@ -240,7 +226,8 @@ impl AudioEngine {
                         EndPosition::EndOfAudio
                     },
                 })
-                .volume(Decibels::from(data.levels.master as f32))
+                .volume(Decibels::from(data.volume))
+                .panning(Panning::from(data.pan))
                 .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
 
         if let Some(region) = data.loop_region {
@@ -368,33 +355,6 @@ impl AudioEngine {
         } else {
             log::warn!("Stop command received for non-existent ID: {}", id);
             Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
-        }
-    }
-
-    fn handle_set_levels(
-        &mut self,
-        id: Uuid,
-        levels: AudioCueLevels,
-        duration: f64,
-        easing: Easing,
-    ) -> Result<()> {
-        log::info!("SET LEVELS: id={}, levels={:?}", id, levels);
-        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_volume(
-                levels,
-                Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(duration),
-                    easing,
-                },
-            );
-            Ok(())
-        } else {
-            log::warn!("SetLevels command received for non-existent ID: {}", id);
-            Err(anyhow::anyhow!(
-                "Sound with ID {} not found for set levels.",
-                id
-            ))
         }
     }
 }

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::model::cue::{AudioCueLevels, Cue, CueParam, CueSequence};
+use crate::model::cue::{Cue, CueParam, CueSequence};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -75,7 +75,8 @@ impl Default for TemplateSettings {
                     fade_in_param: None,
                     end_time: None,
                     fade_out_param: None,
-                    levels: AudioCueLevels::default(),
+                    volume: 0.0,
+                    pan: 0.0,
                     loop_region: None,
                 },
             }),

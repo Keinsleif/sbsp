@@ -498,7 +498,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueFadeParam, AudioCueLevels, Cue, Easing},
+            cue::{AudioCueFadeParam, Cue, Easing},
         },
     };
 
@@ -549,7 +549,8 @@ mod tests {
                                 duration: 5.0,
                                 easing: Easing::InPowi(2),
                             }),
-                            levels: AudioCueLevels { master: 0.0 },
+                            volume: 0.0,
+                            pan: 0.0,
                             loop_region: Some((Some(2.0), None).into()),
                         },
                     });

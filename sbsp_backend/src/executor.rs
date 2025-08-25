@@ -304,7 +304,8 @@ impl Executor {
                 fade_in_param,
                 end_time,
                 fade_out_param,
-                levels,
+                volume,
+                pan,
                 loop_region,
             } => {
                 let mut filepath = self
@@ -320,7 +321,8 @@ impl Executor {
                         id: instance_id,
                         data: AudioCommandData {
                             filepath,
-                            levels: levels.clone(),
+                            volume: *volume,
+                            pan: *pan,
                             start_time: *start_time,
                             fade_in_param: *fade_in_param,
                             end_time: *end_time,
@@ -345,7 +347,8 @@ impl Executor {
                 fade_in_param,
                 end_time,
                 fade_out_param,
-                levels,
+                volume,
+                pan,
                 loop_region,
             } => {
                 if let Some(active_instance) =
@@ -374,7 +377,8 @@ impl Executor {
                     id: instance_id,
                     data: AudioCommandData {
                         filepath,
-                        levels: levels.clone(),
+                        volume: *volume,
+                        pan: *pan,
                         start_time: *start_time,
                         fade_in_param: *fade_in_param,
                         end_time: *end_time,
@@ -553,7 +557,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueFadeParam, AudioCueLevels, Cue, Easing, LoopRegion},
+            cue::{AudioCueFadeParam, Cue, Easing, LoopRegion},
         },
     };
 
@@ -596,7 +600,8 @@ mod tests {
                             duration: 5.0,
                             easing: Easing::InPowi(2),
                         }),
-                        levels: AudioCueLevels { master: 0.0 },
+                        volume: 0.0,
+                        pan: 0.0,
                         loop_region: Some((Some(2.0), None).into()),
                     },
                 });
@@ -644,7 +649,8 @@ mod tests {
             let now_id = Uuid::now_v7();
             assert!(id < now_id);
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
-            assert_eq!(data.levels, AudioCueLevels { master: 0.0 });
+            assert_eq!(data.volume, 0.0);
+            assert_eq!(data.pan, 0.0);
             assert_eq!(data.start_time, Some(5.0));
             assert_eq!(
                 data.fade_in_param,
