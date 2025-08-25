@@ -18,6 +18,10 @@
         "
         @click:append="pickFile"
       ></v-text-field>
+      <div class="d-flex flex-row">
+        <volume-fader class="mt-4" v-model="volume" label="Volume" @update:model-value="saveEditorValue('volume')" />
+        <panning-fader class="" label="Pan" @update:model-value="saveEditorValue('pan')" />
+      </div>
     </v-sheet>
   </v-sheet>
 </template>
@@ -29,6 +33,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
+import VolumeFader from './VolumeFader.vue';
+import PanningFader from './PanningFader.vue';
 
 const showModel = useShowModel();
 const uiState = useUiState();
@@ -41,11 +47,21 @@ const target = ref(
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
 );
 
+const volume = ref(
+  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.volume : 0,
+);
+
+const panning = ref(
+  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.pan : 0,
+);
+
 watch(selectedCue, () => {
   if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
     return;
   }
   target.value = selectedCue.value.params.target;
+  volume.value = selectedCue.value.params.volume;
+  panning.value = selectedCue.value.params.pan;
 });
 
 const saveEditorValue = (name: string) => {
@@ -60,6 +76,12 @@ const saveEditorValue = (name: string) => {
     case 'target':
       newCue.params.target = target.value;
       break;
+    case 'volume':
+      newCue.params.volume = volume.value;
+      break;
+    case 'pan':
+      newCue.params.pan = panning.value;
+      break;
   }
   invoke('update_cue', { cue: newCue });
 };
@@ -71,6 +93,9 @@ const resetEditorValue = (name: string) => {
   switch (name) {
     case 'target':
       target.value = selectedCue.value.params.target;
+      break;
+    case 'volume':
+      volume.value = selectedCue.value.params.volume;
       break;
   }
 };
