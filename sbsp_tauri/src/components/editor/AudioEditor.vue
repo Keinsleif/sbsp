@@ -18,9 +18,10 @@
         "
         @click:append="pickFile"
       ></v-text-field>
-      <div class="d-flex flex-row">
+      <div class="d-flex flex-row ga-4">
         <volume-fader class="mt-4" v-model="volume" label="Volume" @update:model-value="saveEditorValue('volume')" />
-        <panning-fader class="" label="Pan" @update:model-value="saveEditorValue('pan')" />
+        <v-divider vertical inset thickness="2" />
+        <panning-fader class="mt-4" label="Pan" @update:model-value="saveEditorValue('pan')" />
       </div>
     </v-sheet>
   </v-sheet>
