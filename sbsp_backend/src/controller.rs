@@ -583,6 +583,7 @@ mod tests {
 
         tokio::spawn(controller.run());
 
+        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: Some(cue_id) }).await.unwrap();
         ctrl_tx.send(ControllerCommand::Go).await.unwrap();
 
         if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {
@@ -603,7 +604,7 @@ mod tests {
 
         tokio::spawn(controller.run());
 
-        assert_eq!(state_rx.borrow().playback_cursor, Some(cue_id));
+        assert_eq!(state_rx.borrow().playback_cursor, None);
 
         ctrl_tx
             .send(ControllerCommand::SetPlaybackCursor {
