@@ -75,9 +75,8 @@
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
                   '%, transparent ' +
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
-                  '%)'
+                  '%) no-repeat'
                 : '',
-              backgroundRepeat: 'no-repeat',
               pointerEvents: 'none',
             }"
           >
@@ -106,9 +105,8 @@
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
                   '%, transparent ' +
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
-                  '%)'
+                  '%) no-repeat'
                 : '',
-              backgroundRepeat: 'no-repeat',
               pointerEvents: 'none',
             }"
           >
@@ -117,7 +115,7 @@
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
                 : cue.params.type == 'wait'
                   ? secondsToFormat(cue.params.duration)
-                  : '00:00.00' /* duration */
+                  : assetResult.duration[cue.id] /* duration */
             }}
           </div>
         </td>
@@ -138,8 +136,7 @@
                 2 * i +
                 '%, transparent ' +
                 2 * i +
-                '%)',
-              backgroundRepeat: 'no-repeat',
+                '%) no-repeat',
               pointerEvents: 'none',
             }"
           >
@@ -169,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw } from 'vue';
+import { ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import { mdiArrowBottomLeft, mdiArrowRightBold, mdiChevronDoubleDown, mdiTimerSandEmpty, mdiVolumeHigh } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
@@ -178,10 +175,20 @@ import { invoke } from '@tauri-apps/api/core';
 import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
+import { useAssetResult } from '../stores/assetResult';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+const assetResult = useAssetResult();
+
+watch(
+  () => showModel.cues,
+  () => {
+    assetResult.updateAssetData();
+  },
+  { deep: true },
+);
 
 useHotkey('arrowup', () => {
   if (uiState.selected != null) {

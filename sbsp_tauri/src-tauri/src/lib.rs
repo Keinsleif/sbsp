@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::str::FromStr;
 
 use sbsp_backend::{
     asset_processor::AssetData, controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::Cue, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
@@ -163,8 +163,13 @@ async fn update_settings(
 }
 
 #[tauri::command]
-async fn process_asset(handle: tauri::State<'_, BackendHandle>, path: PathBuf) -> Result<AssetData, String> {
-    handle.asset_handle.request_asset_data(path).await.map_err(|e| e.to_string())
+async fn process_asset(handle: tauri::State<'_, BackendHandle>, cue_id: &str) -> Result<(Uuid, AssetData), String> {
+    match Uuid::from_str(cue_id) {
+        Ok(cue_uuid) => {
+            handle.asset_handle.request_cue_asset_data(cue_uuid).await.map_err(|e| e.to_string()).map(|asset_data| (cue_uuid, asset_data))
+        },
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 #[tauri::command]

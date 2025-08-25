@@ -1,16 +1,28 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
-use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, errors::{Error, Result}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint, units::TimeBase};
-use tokio::sync::{mpsc, oneshot, RwLock};
+use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint};
+use tokio::sync::{mpsc, oneshot, broadcast, RwLock};
+use uuid::Uuid;
 
-use crate::manager::ShowModelHandle;
+use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 
 pub enum AssetCommand {
-    RequestAssetData {
+    RequestFileAssetData {
         path: PathBuf,
-        responder: oneshot::Sender<anyhow::Result<AssetData>>,
+        responder: oneshot::Sender<Result<AssetData, String>>,
     },
+    RequestCueAssetData {
+        cue_id: Uuid,
+        responder: oneshot::Sender<Result<AssetData, String>>,
+    },
+    ProcessAll,
+}
+
+#[derive(Clone, Debug)]
+struct ProcessResult {
+    path: PathBuf,
+    data: Result<AssetData, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -43,54 +55,151 @@ impl AssetCache {
 
 pub struct AssetProcessor {
     model_handle: ShowModelHandle,
-    command_rx: mpsc::Receiver<AssetCommand>,
 
+    command_rx: mpsc::Receiver<AssetCommand>,
+    event_rx: broadcast::Receiver<UiEvent>,
+
+    process_tx: broadcast::Sender<ProcessResult>,
+    process_rx: broadcast::Receiver<ProcessResult>,
     cache: Arc<RwLock<AssetCache>>,
+    processing: Arc<RwLock<Vec<PathBuf>>>,
 }
 
 impl AssetProcessor {
     pub fn new(
         model_handle: ShowModelHandle,
+        event_rx: broadcast::Receiver<UiEvent>,
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
+        let (process_tx, process_rx) = broadcast::channel(8);
         (
             Self {
                 model_handle,
                 command_rx,
+                event_rx,
+                process_tx,
+                process_rx,
                 cache: cache.clone(),
+                processing: Arc::new(RwLock::new(Vec::new())),
             },
             AssetProcessorHandle { command_tx },
         )
     }
 
     pub async fn run(mut self) {
-        while let Some(command) = self.command_rx.recv().await {
-            match command {
-                AssetCommand::RequestAssetData{path, responder} => {
-                    let mut filepath = self
-                        .model_handle
-                        .get_current_file_path()
-                        .await
-                        .unwrap_or(PathBuf::new());
-                    filepath.pop();
-                    filepath.push(path);
-                    let mut cache = self.cache.write().await;
-                    if let Some(entry) = cache.entries.get(&filepath) {
-                        responder.send(Ok(entry.data.clone())).unwrap();
-                    } else {
-                        let asset_data = self.process_asset(filepath.clone()).await;
-                        if let Ok(data) = &asset_data {
-                            cache.entries.insert(filepath.clone(), CacheEntry { last_modified: filepath.metadata().unwrap().modified().unwrap(), data: data.clone() });
+        loop {
+            tokio::select! {
+                Some(command) = self.command_rx.recv() => {
+                    match command {
+                        AssetCommand::RequestFileAssetData{path, responder} => {
+                            self.handle_process_file(path, responder).await;
                         }
-                        responder.send(asset_data).unwrap();
+                        AssetCommand::RequestCueAssetData{cue_id, responder} => {
+                            if let Some(cue) = self.model_handle.read().await.cues.iter().find(|cue| cue.id == cue_id)
+                                && let CueParam::Audio{target, ..} = &cue.params {
+                                self.handle_process_file(target.clone(), responder).await;
+                            } else {
+                                responder.send(Err(format!("Cue not found. id={}", cue_id))).unwrap();
+                            }
+                        },
+                        AssetCommand::ProcessAll => {
+                            self.handle_process_all().await;
+                        }
                     }
-                }
+                },
+                Ok(result) = self.process_rx.recv() => {
+                    let mut cache = self.cache.write().await;
+                    if let Ok(data) = &result.data {
+                        cache.entries.insert(result.path.clone(), CacheEntry { last_modified: result.path.metadata().unwrap().modified().unwrap(), data: data.clone() });
+                    }
+                    self.processing.write().await.retain(|value| *value != result.path);
+                },
+                Ok(event) = self.event_rx.recv() => {
+                    if let UiEvent::ShowModelLoaded{..} = event {
+                        self.handle_process_all().await;
+                    }
+                },
             }
         }
     }
 
-    async fn process_asset(&self, path: PathBuf) -> anyhow::Result<AssetData> {
+    async fn handle_process_file(&self, path:PathBuf, responder: oneshot::Sender<Result<AssetData, String>> ) {
+        let mut filepath = self
+            .model_handle
+            .get_current_file_path()
+            .await
+            .unwrap_or(PathBuf::new());
+        filepath.pop();
+        filepath.push(&path);
+        let cache = self.cache.read().await;
+        if let Some(entry) = cache.entries.get(&filepath) {
+            responder.send(Ok(entry.data.clone())).unwrap();
+        } else {
+            let mut processing = self.processing.write().await;
+
+            if processing.contains(&filepath) {
+                let mut receiver = self.process_tx.subscribe();
+                let path_clone = filepath.clone();
+                tokio::spawn(async move {
+                    while let Ok(result) = receiver.recv().await {
+                        if result.path == path_clone {
+                            responder.send(result.data).ok();
+                            break;
+                        }
+                    }
+                });
+            } else {
+                processing.push(filepath.clone());
+                drop(processing);
+
+                let path_clone = filepath.clone();
+                let process_tx = self.process_tx.clone();
+                tokio::spawn(async move {
+                    let asset_data = Self::process_asset(path_clone.clone()).await.map_err(|e| e.to_string());
+                    responder.send(asset_data.clone()).unwrap();
+                    process_tx.send(ProcessResult { path: path_clone, data: asset_data }).unwrap();
+                });
+            }
+        }
+    }
+
+    async fn handle_process_all(&self) {
+        let model = self.model_handle.read().await;
+        let parent = self
+            .model_handle
+            .get_current_file_path()
+            .await
+            .unwrap_or(PathBuf::new());
+
+        let paths = model.cues.iter().filter_map(|cue| {
+            if let CueParam::Audio{target, ..} = &cue.params {
+                let mut filepath = parent.clone();
+                filepath.pop();
+                filepath.push(target);
+
+                Some(filepath)
+            } else {
+                None
+            }
+        });
+        let mut processing = self.processing.write().await;
+        for path in paths {
+            if self.cache.read().await.entries.contains_key(&path.clone()) || processing.contains(&path) {
+                continue;
+            }
+            processing.push(path.clone());
+
+            let path_clone = path.clone();
+            let process_tx = self.process_tx.clone();
+            tokio::spawn(async move {
+                let asset_data = Self::process_asset(path_clone.clone()).await.map_err(|e| e.to_string());
+                process_tx.send(ProcessResult { path: path_clone, data: asset_data }).unwrap();
+            });
+        }
+    }
+
+    async fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
         let src = std::fs::File::open(&path).unwrap();
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
@@ -161,7 +270,7 @@ impl AssetProcessor {
                         }
                     }
                 }
-                Err(Error::DecodeError(_)) => (),
+                Err(symphonia::core::errors::Error::DecodeError(_)) => (),
                 Err(err) => break Err(err),
             }
         };
@@ -211,20 +320,30 @@ pub struct AssetProcessorHandle {
 }
 
 impl AssetProcessorHandle {
-    pub async fn request_asset_data(&self, target: PathBuf) -> anyhow::Result<AssetData> {
+    pub async fn request_file_asset_data(&self, target: PathBuf) -> Result<AssetData, String> {
         let (result_tx, result_rx) = oneshot::channel();
         self.command_tx
-            .send(AssetCommand::RequestAssetData {path: target, responder: result_tx})
+            .send(AssetCommand::RequestFileAssetData {path: target, responder: result_tx})
             .await
             .unwrap();
 
-        result_rx.await.unwrap_or_else(|_| Err(anyhow::anyhow!("AssetProcessor task may have panicked")))
+        result_rx.await.unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
+    }
+
+    pub async fn request_cue_asset_data(&self, cue_id: Uuid) -> Result<AssetData, String> {
+        let (result_tx, result_rx) = oneshot::channel();
+        self.command_tx
+            .send(AssetCommand::RequestCueAssetData { cue_id, responder: result_tx })
+            .await
+            .unwrap();
+
+        result_rx.await.unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
     }
 }
 
-fn ignore_end_of_stream_error(result: Result<()>) -> Result<()> {
+fn ignore_end_of_stream_error(result: symphonia::core::errors::Result<()>) -> symphonia::core::errors::Result<()> {
     match result {
-        Err(Error::IoError(err))
+        Err(symphonia::core::errors::Error::IoError(err))
             if err.kind() == std::io::ErrorKind::UnexpectedEof
                 && err.to_string() == "end of stream" =>
         {
@@ -234,7 +353,7 @@ fn ignore_end_of_stream_error(result: Result<()>) -> Result<()> {
     }
 }
 
-fn do_verification(finalization: FinalizeResult) -> Result<i32> {
+fn do_verification(finalization: FinalizeResult) -> symphonia::core::errors::Result<i32> {
     match finalization.verify_ok {
         Some(is_ok) => {
             log::debug!("verification: {}", if is_ok { "passed" } else { "failed" });

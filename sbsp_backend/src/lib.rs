@@ -36,7 +36,7 @@ pub fn start_backend() -> (
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (event_tx, _event_rx) = broadcast::channel::<UiEvent>(32);
+    let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
     let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
     let controller = CueController::new(
@@ -60,7 +60,7 @@ pub fn start_backend() -> (
     let audio_engine = AudioEngine::new(audio_rx, engine_event_tx.clone()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
-    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone());
+    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone(), event_rx);
 
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());

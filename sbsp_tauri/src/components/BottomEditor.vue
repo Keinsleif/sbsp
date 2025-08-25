@@ -171,12 +171,11 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
-import type { AssetData } from '../types/AssetData';
+import { useAssetResult } from '../stores/assetResult';
 
 const showModel = useShowModel();
 const uiState = useUiState();
-
-const assetData = ref<AssetData | null>(null);
+const assetResult = useAssetResult();
 
 const selectedCue = computed(() => {
   return uiState.selected != null ? showModel.cues.find((cue) => cue.id === uiState.selected) : null;
@@ -189,10 +188,7 @@ const computeEditorValue = () => {
       name: selectedCue.value ? selectedCue.value.name : null,
       notes: selectedCue.value ? selectedCue.value.notes : null,
       preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
-      duration:
-        assetData.value != null && assetData.value.duration != null
-          ? secondsToFormat(assetData.value.duration)
-          : '--:--.--',
+      duration: selectedCue.value.id in assetResult.duration ? assetResult.duration[selectedCue.value.id] : '--:--.--',
       sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
       postWait: selectedCue.value
         ? selectedCue.value.sequence.type != 'doNotContinue'
@@ -227,19 +223,16 @@ const editorValue = ref(computeEditorValue());
 
 watch(selectedCue, () => {
   editorValue.value = computeEditorValue();
-  assetData.value = null;
-  if (selectedCue.value?.params.type == 'audio') {
-    invoke<AssetData>('process_asset', { path: selectedCue.value.params.target })
-      .then((value) => {
-        console.log(value);
-        assetData.value = value;
-        if (editorValue.value?.duration == '--:--.--' && assetData.value.duration != null) {
-          editorValue.value.duration = secondsToFormat(assetData.value.duration);
-        }
-      })
-      .catch((e) => console.error(e));
-  }
 });
+
+watch(
+  () => (selectedCue.value?.id != null ? assetResult.duration[selectedCue.value.id] : null),
+  () => {
+    if (editorValue.value?.duration == '--:--.--' && selectedCue.value?.params.type == 'audio') {
+      editorValue.value.duration = assetResult.duration[selectedCue.value.id];
+    }
+  },
+);
 
 const resetEditorValue = () => {
   editorValue.value = computeEditorValue();
