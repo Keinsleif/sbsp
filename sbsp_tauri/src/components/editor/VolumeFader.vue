@@ -1,6 +1,7 @@
 <template>
   <v-slider
     v-model="faderPosition"
+    :class="props.direction == 'vertical' ? $style['vertical-fader'] : ''"
     thumb-label
     show-ticks="always"
     step="0.05"
@@ -23,9 +24,9 @@
         density="compact"
         :precision="2"
         variant="outlined"
-        control-variant="stacked"
+        :control-variant="props.direction == 'horizontal' ? 'stacked' : 'hidden'"
         hide-details
-        width="135px"
+        :width="props.direction == 'horizontal' ? '135px' : '100px'"
         @dblclick.stop
       ></v-number-input>
     </template>
@@ -83,3 +84,11 @@ const tickLabels = {
   '-30': '-60',
 };
 </script>
+
+<style lang="css" module>
+.vertical-fader label {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+</style>
