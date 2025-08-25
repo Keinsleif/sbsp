@@ -113,9 +113,9 @@
             {{
               isActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : cue.params.type == 'wait'
-                  ? secondsToFormat(cue.params.duration)
-                  : assetResult.duration[cue.id] /* duration */
+                : assetResult.duration[cue.id] != null
+                  ? secondsToFormat(assetResult.duration[cue.id]!)
+                  : '--:--.--'
             }}
           </div>
         </td>
@@ -129,18 +129,52 @@
           @keydown.esc="closeEditable($event.target, false, i)"
         >
           <div
-            class="border-md border-primary"
+            :class="
+              isActive(cue.id) &&
+              cue.sequence.type == 'autoContinue' &&
+              showState.activeCues[cue.id]!.position < cue.sequence.postWait
+                ? 'border-md border-primary'
+                : ''
+            "
             :style="{
               background:
-                'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                2 * i +
-                '%, transparent ' +
-                2 * i +
-                '%) no-repeat',
+                isActive(cue.id) &&
+                cue.sequence.type != 'doNotContinue' &&
+                showState.activeCues[cue.id]!.position <
+                  (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.position)
+                  ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
+                    Math.floor(
+                      (showState.activeCues[cue.id]!.position * 100) /
+                        (cue.sequence.type == 'autoContinue'
+                          ? cue.sequence.postWait
+                          : showState.activeCues[cue.id]!.position),
+                    ) +
+                    '%, transparent ' +
+                    Math.floor(
+                      (showState.activeCues[cue.id]!.position * 100) /
+                        (cue.sequence.type == 'autoContinue'
+                          ? cue.sequence.postWait
+                          : showState.activeCues[cue.id]!.position),
+                    ) +
+                    '%) no-repeat'
+                  : '',
               pointerEvents: 'none',
             }"
           >
-            {{ cue.sequence.type == 'autoFollow' ? secondsToFormat(cue.sequence.postWait) : '00:00.00' }}
+            {{
+              isActive(cue.id) &&
+              cue.sequence.type != 'doNotContinue' &&
+              showState.activeCues[cue.id]!.position <
+                (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.position)
+                ? secondsToFormat(showState.activeCues[cue.id]!.position)
+                : cue.sequence.type != 'doNotContinue'
+                  ? cue.sequence.type == 'autoContinue'
+                    ? secondsToFormat(cue.sequence.postWait)
+                    : assetResult.duration[cue.id] != null
+                      ? secondsToFormat(assetResult.duration[cue.id]!)
+                      : '--:--.--'
+                  : '--:--.--'
+            }}
           </div>
         </td>
         <td headers="cuelist_sequence" width="24px">
@@ -367,7 +401,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
         break;
       }
       case 'cuelist_post_wait': {
-        if (newCue.sequence.type == 'autoFollow') {
+        if (newCue.sequence.type == 'autoContinue') {
           let newPostWait = formatToSeconds(target.innerText);
           newCue.sequence.postWait = newPostWait;
         }

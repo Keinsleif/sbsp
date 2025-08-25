@@ -1,8 +1,10 @@
 pub mod state;
 
+use std::{collections::HashMap, sync::Arc};
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc, watch};
+use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
@@ -10,6 +12,7 @@ use crate::{
     event::UiEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
+    model::cue::CueSequence,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,6 +40,8 @@ pub struct CueController {
     state_tx: watch::Sender<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
     event_rx: broadcast::Receiver<UiEvent>,
+
+    wait_tasks: Arc<RwLock<HashMap<Uuid, CueSequence>>>,
 }
 
 impl CueController {
@@ -57,6 +62,7 @@ impl CueController {
             state_tx,
             event_tx,
             event_rx,
+            wait_tasks: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -123,7 +129,9 @@ impl CueController {
                 let cue_id = state
                     .playback_cursor
                     .expect("GO: Playback Cursor is unavailable.");
-                self.handle_go(cue_id).await
+                self.handle_go(cue_id).await?;
+                self.update_playback_cursor().await?;
+                Ok(())
             }
             ControllerCommand::Pause => {
                 let state = self.state_tx.borrow().clone();
@@ -204,9 +212,8 @@ impl CueController {
                     .send(ExecutorCommand::Execute(cue_id))
                     .await?;
             };
-            self.update_playback_cursor().await?;
         } else {
-            log::warn!("GO: Invalid playback cursor.");
+            log::warn!("GO: Invalid cue id.");
         }
         Ok(())
     }
@@ -308,6 +315,21 @@ impl CueController {
                 state_changed = true;
             }
             ExecutorEvent::Started { cue_id } => {
+                let cue = self
+                    .model_handle
+                    .read()
+                    .await
+                    .cues
+                    .iter()
+                    .find(|cue| cue.id == *cue_id)
+                    .unwrap()
+                    .clone();
+                if matches!(cue.sequence, CueSequence::AutoContinue { .. }) {
+                    self.wait_tasks
+                        .write()
+                        .await
+                        .insert(*cue_id, cue.sequence.clone());
+                }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = 0.0;
                     active_cue.duration = 0.0;
@@ -329,6 +351,27 @@ impl CueController {
                 duration,
                 ..
             } => {
+                let mut wait_tasks = self.wait_tasks.write().await;
+                if let Some(sequence) = wait_tasks.get(cue_id)
+                    && let CueSequence::AutoContinue {
+                        target_id,
+                        post_wait,
+                    } = sequence
+                    && position > post_wait
+                {
+                    if let Some(target) = target_id {
+                        self.handle_go(*target).await.unwrap();
+                    } else {
+                        let model = self.model_handle.read().await;
+                        if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
+                            && cue_index + 1 < model.cues.len()
+                        {
+                            self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                        }
+                    }
+                    wait_tasks.remove(cue_id);
+                }
+                drop(wait_tasks);
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     active_cue.duration = *duration;
@@ -380,6 +423,25 @@ impl CueController {
                 }
             }
             ExecutorEvent::Completed { cue_id, .. } => {
+                let mut wait_tasks = self.wait_tasks.write().await;
+                if let Some(sequence) = wait_tasks.get(cue_id)
+                    && let CueSequence::AutoFollow {
+                        target_id,
+                    } = sequence
+                {
+                    if let Some(target) = target_id {
+                        self.handle_go(*target).await.unwrap();
+                    } else {
+                        let model = self.model_handle.read().await;
+                        if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
+                            && cue_index + 1 < model.cues.len()
+                        {
+                            self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                        }
+                    }
+                    wait_tasks.remove(cue_id);
+                }
+                drop(wait_tasks);
                 self.state_tx.send_modify(|state| {
                     if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
                         active_cue.status = PlaybackStatus::Completed;
@@ -584,7 +646,12 @@ mod tests {
 
         tokio::spawn(controller.run());
 
-        ctrl_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: Some(cue_id) }).await.unwrap();
+        ctrl_tx
+            .send(ControllerCommand::SetPlaybackCursor {
+                cue_id: Some(cue_id),
+            })
+            .await
+            .unwrap();
         ctrl_tx.send(ControllerCommand::Go).await.unwrap();
 
         if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {

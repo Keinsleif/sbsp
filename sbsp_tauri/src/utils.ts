@@ -1,4 +1,5 @@
 import type { Cue } from './types/Cue';
+import { CueParam } from './types/CueParam';
 
 const secondsToFormat = (source_seconds: number): string => {
   const hour = Math.floor(source_seconds / 3600);
@@ -76,4 +77,18 @@ const buildCueName = (cue: Cue) => {
   }
 };
 
-export { secondsToFormat, formatToSeconds, buildCueName };
+const calculateDuration = (cueParam: CueParam, totalDuration: number): number => {
+  if (cueParam.type != 'audio') {
+    return 0;
+  }
+  let duration = totalDuration;
+  if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
+    duration = cueParam.endTime;
+  }
+  if (cueParam.startTime != null) {
+    duration -= cueParam.startTime;
+  }
+  return duration;
+};
+
+export { secondsToFormat, formatToSeconds, buildCueName, calculateDuration };

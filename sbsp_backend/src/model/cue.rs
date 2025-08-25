@@ -27,9 +27,12 @@ pub struct Cue {
 pub enum CueSequence {
     #[default]
     DoNotContinue,
-    AutoFollow {
+    AutoContinue {
         target_id: Option<Uuid>,
         post_wait: f64,
+    },
+    AutoFollow {
+        target_id: Option<Uuid>,
     },
 }
 

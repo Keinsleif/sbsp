@@ -69,6 +69,7 @@
               label="ContinueMode"
               :items="[
                 { value: 'doNotContinue', name: 'DoNotContinue' },
+                { value: 'autoContinue', name: 'Auto-Continue' },
                 { value: 'autoFollow', name: 'Auto-Follow' },
               ]"
               item-value="value"
@@ -82,7 +83,7 @@
               hide-details
               persistent-placeholder
               v-model="editorValue.postWait"
-              :disabled="selectedCue.sequence.type != 'autoFollow'"
+              :disabled="selectedCue.sequence.type != 'autoContinue'"
               label="Post-Wait"
               variant="outlined"
               density="compact"
@@ -188,10 +189,13 @@ const computeEditorValue = () => {
       name: selectedCue.value ? selectedCue.value.name : null,
       notes: selectedCue.value ? selectedCue.value.notes : null,
       preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
-      duration: selectedCue.value.id in assetResult.duration ? assetResult.duration[selectedCue.value.id] : '--:--.--',
+      duration:
+        selectedCue.value.id in assetResult.duration && assetResult.duration[selectedCue.value.id] != null
+          ? secondsToFormat(assetResult.duration[selectedCue.value.id]!)
+          : '--:--.--',
       sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
       postWait: selectedCue.value
-        ? selectedCue.value.sequence.type != 'doNotContinue'
+        ? selectedCue.value.sequence.type == 'autoContinue'
           ? secondsToFormat(selectedCue.value.sequence.postWait)
           : '00:00.00'
         : null,
@@ -208,7 +212,7 @@ const computeEditorValue = () => {
       duration: selectedCue.value ? secondsToFormat(selectedCue.value.params.duration) : null,
       sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
       postWait: selectedCue.value
-        ? selectedCue.value.sequence.type != 'doNotContinue'
+        ? selectedCue.value.sequence.type == 'autoContinue'
           ? secondsToFormat(selectedCue.value.sequence.postWait)
           : '00:00.00'
         : null,
@@ -229,7 +233,10 @@ watch(
   () => (selectedCue.value?.id != null ? assetResult.duration[selectedCue.value.id] : null),
   () => {
     if (editorValue.value?.duration == '--:--.--' && selectedCue.value?.params.type == 'audio') {
-      editorValue.value.duration = assetResult.duration[selectedCue.value.id];
+      editorValue.value.duration =
+        assetResult.duration[selectedCue.value.id] != null
+          ? secondsToFormat(assetResult.duration[selectedCue.value.id]!)
+          : '--:--.--';
     }
   },
 );
@@ -266,7 +273,7 @@ const saveEditorValue = () => {
   if (editorValue.value.sequence != null) {
     newCue.sequence.type = editorValue.value.sequence;
   }
-  if (editorValue.value.postWait != null && newCue.sequence.type != 'doNotContinue') {
+  if (editorValue.value.postWait != null && newCue.sequence.type == 'autoContinue') {
     newCue.sequence.postWait = formatToSeconds(editorValue.value.postWait);
   }
   if (newCue.params.type == 'audio' && editorValue.value.params.target != null) {
