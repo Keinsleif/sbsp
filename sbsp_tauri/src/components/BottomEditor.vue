@@ -5,9 +5,6 @@
       <v-tab border density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
         >Audio</v-tab
       >
-      <v-tab border density="compact" value="levels" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
-        >Levels</v-tab
-      >
     </v-tabs>
     <v-tabs-window v-if="selectedCue != null" v-model="uiState.editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
@@ -20,9 +17,6 @@
         transition="false"
       >
         <AudioEditor />
-      </v-tabs-window-item>
-      <v-tabs-window-item value="levels" reverse-transition="false" transition="false">
-        <v-sheet> </v-sheet>
       </v-tabs-window-item>
     </v-tabs-window>
   </v-sheet>
