@@ -130,7 +130,10 @@ impl CueController {
                     .playback_cursor
                     .expect("GO: Playback Cursor is unavailable.");
                 self.handle_go(cue_id).await?;
-                self.update_playback_cursor().await?;
+                let settings = self.model_handle.read().await.settings.clone();
+                if settings.general.advance_cursor_when_go {
+                    self.update_playback_cursor().await?;
+                }
                 Ok(())
             }
             ControllerCommand::Pause => {

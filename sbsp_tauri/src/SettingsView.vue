@@ -11,6 +11,8 @@
           transition="slide-y-transition"
           reverse-transition="slide-y-reverse-transition"
         >
+          <v-checkbox v-model="editingSettings.general.advanceCursorWhenGo" label="Advance cursor when GO"></v-checkbox>
+          <v-divider></v-divider>
           <v-checkbox
             v-model="editingSettings.general.lockCursorToSelection"
             label="Lock Cursor to Selection"

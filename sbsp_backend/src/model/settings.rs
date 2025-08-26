@@ -19,12 +19,14 @@ pub struct ShowSettings {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
+    pub advance_cursor_when_go: bool,
     pub lock_cursor_to_selection: bool,
 }
 
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
+            advance_cursor_when_go: true,
             lock_cursor_to_selection: true,
         }
     }
@@ -55,14 +57,14 @@ impl Default for HotkeySettings {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct TemplateSettings {
-    pub audio: Option<Cue>,
-    pub wait: Option<Cue>,
+    pub audio: Cue,
+    pub wait: Cue,
 }
 
 impl Default for TemplateSettings {
     fn default() -> Self {
         Self {
-            audio: Some(Cue {
+            audio: Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
                 name: None,
@@ -79,8 +81,8 @@ impl Default for TemplateSettings {
                     pan: 0.0,
                     loop_region: None,
                 },
-            }),
-            wait: Some(Cue {
+            },
+            wait: Cue {
                 id: Uuid::nil(),
                 number: "".to_string(),
                 name: None,
@@ -88,7 +90,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
                 params: CueParam::Wait { duration: 5.0 },
-            }),
+            },
         }
     }
 }
