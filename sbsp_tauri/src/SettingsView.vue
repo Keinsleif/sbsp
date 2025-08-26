@@ -8,8 +8,8 @@
       <v-tabs-window v-model="tab" class="flex-grow-1">
         <v-tabs-window-item
           value="general"
-          transition="slide-y-transition"
-          reverse-transition="slide-y-reverse-transition"
+          transition="toggle-slide-y-transition"
+          reverse-transition="toggle-slide-y-reverse-transition"
         >
           <v-checkbox v-model="editingSettings.general.advanceCursorWhenGo" label="Advance cursor when GO"></v-checkbox>
           <v-divider></v-divider>
@@ -21,49 +21,13 @@
         <v-tabs-window-item
           value="hotkey"
           class="pa-3"
-          transition="slide-y-transition"
-          reverse-transition="slide-y-reverse-transition"
+          transition="toggle-slide-y-transition"
+          reverse-transition="toggle-slide-y-reverse-transition"
         >
-          <v-text-field
-            v-model="editingSettings.hotkey.go"
-            readonly
-            clearable
-            persistent-clear
-            variant="outlined"
-            density="compact"
-            label="Go"
-            @keydown="inputHotkey('go', $event)"
-          ></v-text-field>
-          <v-text-field
-            v-model="editingSettings.hotkey.load"
-            readonly
-            clearable
-            persistent-clear
-            variant="outlined"
-            density="compact"
-            label="Load"
-            @keydown="inputHotkey('load', $event)"
-          ></v-text-field>
-          <v-text-field
-            v-model="editingSettings.hotkey.stop"
-            readonly
-            clearable
-            persistent-clear
-            variant="outlined"
-            density="compact"
-            label="Stop"
-            @keydown="inputHotkey('stop', $event)"
-          ></v-text-field>
-          <v-text-field
-            v-model="editingSettings.hotkey.stopAll"
-            readonly
-            clearable
-            persistent-clear
-            variant="outlined"
-            density="compact"
-            label="Stop All"
-            @keydown="inputHotkey('stopAll', $event)"
-          ></v-text-field>
+          <hotkey-input v-model="editingSettings.hotkey.go" label="Go"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.load" label="Load"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.stop" label="Stop"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.stopAll" label="Stop All"></hotkey-input>
         </v-tabs-window-item>
       </v-tabs-window>
     </v-sheet>
@@ -86,6 +50,7 @@ import { useShowModel } from './stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { ShowSettings } from './types/ShowSettings';
+import HotkeyInput from './components/settings/HotkeyInput.vue';
 
 const showModel = useShowModel();
 
@@ -101,46 +66,5 @@ watch(
 
 const saveSettings = () => {
   invoke('update_settings', { newSettings: editingSettings.value }).catch((e) => console.error(e));
-};
-
-const inputHotkey = (action: string, event: KeyboardEvent) => {
-  event.preventDefault();
-  let shortcut = '';
-  if (event.ctrlKey) {
-    shortcut += 'Ctrl+';
-  }
-  if (event.altKey) {
-    shortcut += 'Alt+';
-  }
-  if (event.shiftKey) {
-    shortcut += 'Shift+';
-  }
-  if (event.key == 'Control') {
-    shortcut = 'Ctrl';
-  } else if (event.key == 'Alt') {
-    shortcut = 'Alt';
-  } else if (event.key == 'Shift') {
-    shortcut = 'Shift';
-  } else if (event.key == ' ') {
-    shortcut += 'Space';
-  } else if (event.key.length === 1) {
-    shortcut += event.key.toUpperCase();
-  } else {
-    shortcut += event.key;
-  }
-  switch (action) {
-    case 'go':
-      editingSettings.value.hotkey.go = shortcut;
-      break;
-    case 'load':
-      editingSettings.value.hotkey.load = shortcut;
-      break;
-    case 'stop':
-      editingSettings.value.hotkey.stop = shortcut;
-      break;
-    case 'stopAll':
-      editingSettings.value.hotkey.stopAll = shortcut;
-      break;
-  }
 };
 </script>
