@@ -178,7 +178,8 @@
           </div>
         </td>
         <td headers="cuelist_sequence" width="24px">
-          <v-icon v-if="cue.sequence.type == 'autoFollow'" :icon="mdiArrowBottomLeft" />
+          <v-icon v-if="cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
+          <v-icon v-if="cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
       </tr>
       <tr
@@ -202,7 +203,14 @@
 <script setup lang="ts">
 import { ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../stores/showmodel';
-import { mdiArrowBottomLeft, mdiArrowRightBold, mdiChevronDoubleDown, mdiTimerSandEmpty, mdiVolumeHigh } from '@mdi/js';
+import {
+  mdiArrowDown,
+  mdiArrowExpandDown,
+  mdiArrowRightBold,
+  mdiChevronDoubleDown,
+  mdiTimerSandEmpty,
+  mdiVolumeHigh,
+} from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
