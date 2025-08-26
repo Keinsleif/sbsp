@@ -1,8 +1,15 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
-use symphonia::core::{audio::{SampleBuffer, SignalSpec}, codecs::{DecoderOptions, FinalizeResult}, formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint};
-use tokio::sync::{mpsc, oneshot, broadcast, RwLock};
+use symphonia::core::{
+    audio::{SampleBuffer, SignalSpec},
+    codecs::{DecoderOptions, FinalizeResult},
+    formats::FormatOptions,
+    io::MediaSourceStream,
+    meta::MetadataOptions,
+    probe::Hint,
+};
+use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 
 use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 
@@ -111,7 +118,11 @@ impl AssetProcessor {
         }
     }
 
-    async fn handle_process_file(&self, path:PathBuf, responder: oneshot::Sender<Result<AssetData, String>> ) {
+    async fn handle_process_file(
+        &self,
+        path: PathBuf,
+        responder: oneshot::Sender<Result<AssetData, String>>,
+    ) {
         let mut filepath = self
             .model_handle
             .get_current_file_path()
@@ -143,9 +154,16 @@ impl AssetProcessor {
                 let path_clone = filepath.clone();
                 let process_tx = self.process_tx.clone();
                 tokio::spawn(async move {
-                    let asset_data = Self::process_asset(path_clone.clone()).await.map_err(|e| e.to_string());
+                    let asset_data = Self::process_asset(path_clone.clone())
+                        .await
+                        .map_err(|e| e.to_string());
                     responder.send(asset_data.clone()).unwrap();
-                    process_tx.send(ProcessResult { path: path_clone, data: asset_data }).unwrap();
+                    process_tx
+                        .send(ProcessResult {
+                            path: path_clone,
+                            data: asset_data,
+                        })
+                        .unwrap();
                 });
             }
         }
@@ -160,7 +178,7 @@ impl AssetProcessor {
             .unwrap_or(PathBuf::new());
 
         let paths = model.cues.iter().filter_map(|cue| {
-            if let CueParam::Audio{target, ..} = &cue.params {
+            if let CueParam::Audio { target, .. } = &cue.params {
                 let mut filepath = parent.clone();
                 filepath.pop();
                 filepath.push(target);
@@ -172,7 +190,9 @@ impl AssetProcessor {
         });
         let mut processing = self.processing.write().await;
         for path in paths {
-            if self.cache.read().await.entries.contains_key(&path.clone()) || processing.contains(&path) {
+            if self.cache.read().await.entries.contains_key(&path.clone())
+                || processing.contains(&path)
+            {
                 continue;
             }
             processing.push(path.clone());
@@ -180,8 +200,15 @@ impl AssetProcessor {
             let path_clone = path.clone();
             let process_tx = self.process_tx.clone();
             tokio::spawn(async move {
-                let asset_data = Self::process_asset(path_clone.clone()).await.map_err(|e| e.to_string());
-                process_tx.send(ProcessResult { path: path_clone, data: asset_data }).unwrap();
+                let asset_data = Self::process_asset(path_clone.clone())
+                    .await
+                    .map_err(|e| e.to_string());
+                process_tx
+                    .send(ProcessResult {
+                        path: path_clone,
+                        data: asset_data,
+                    })
+                    .unwrap();
             });
         }
     }
@@ -213,7 +240,11 @@ impl AssetProcessor {
 
         let track_id = track.id;
 
-        let duration = if let Some(n_frames) = track.codec_params.n_frames.map(|frames| track.codec_params.start_ts + frames) {
+        let duration = if let Some(n_frames) = track
+            .codec_params
+            .n_frames
+            .map(|frames| track.codec_params.start_ts + frames)
+        {
             if let Some(tb) = track.codec_params.time_base {
                 let time = tb.calc_time(n_frames);
                 Some(time.seconds as f64 + time.frac)
@@ -271,8 +302,7 @@ impl AssetProcessor {
         let step = if samples.len() < window as usize {
             1
         } else {
-            (samples.len() - (samples.len() % window as usize)) / window as usize
-                + 1
+            (samples.len() - (samples.len() % window as usize)) / window as usize + 1
         };
 
         let mut peaks = Vec::new();
@@ -298,7 +328,11 @@ impl AssetProcessor {
             }
         }
 
-        Ok(AssetData { path, duration, waveform: peaks })
+        Ok(AssetData {
+            path,
+            duration,
+            waveform: peaks,
+        })
     }
 }
 
@@ -310,15 +344,22 @@ impl AssetProcessorHandle {
     pub async fn request_file_asset_data(&self, target: PathBuf) -> Result<AssetData, String> {
         let (result_tx, result_rx) = oneshot::channel();
         self.command_tx
-            .send(AssetCommand::RequestFileAssetData {path: target, responder: result_tx})
+            .send(AssetCommand::RequestFileAssetData {
+                path: target,
+                responder: result_tx,
+            })
             .await
             .unwrap();
 
-        result_rx.await.unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
+        result_rx
+            .await
+            .unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
     }
 }
 
-fn ignore_end_of_stream_error(result: symphonia::core::errors::Result<()>) -> symphonia::core::errors::Result<()> {
+fn ignore_end_of_stream_error(
+    result: symphonia::core::errors::Result<()>,
+) -> symphonia::core::errors::Result<()> {
     match result {
         Err(symphonia::core::errors::Error::IoError(err))
             if err.kind() == std::io::ErrorKind::UnexpectedEof

@@ -1,10 +1,20 @@
 use std::str::FromStr;
 
 use sbsp_backend::{
-    asset_processor::AssetData, controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
+    BackendHandle,
+    asset_processor::AssetData,
+    controller::{ControllerCommand, state::ShowState},
+    event::UiEvent,
+    model::{
+        ShowModel,
+        cue::{Cue, CueParam},
+        settings::ShowSettings,
+    },
+    start_backend,
 };
 use tauri::{
-    menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder}, AppHandle, Emitter, Manager as _
+    AppHandle, Emitter, Manager as _,
+    menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
 use tauri_plugin_dialog::DialogExt;
 use tokio::sync::{broadcast, watch};
@@ -162,16 +172,31 @@ async fn update_settings(
 }
 
 #[tauri::command]
-async fn process_asset(handle: tauri::State<'_, BackendHandle>, cue_id: &str) -> Result<(Uuid, AssetData), String> {
+async fn process_asset(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: &str,
+) -> Result<(Uuid, AssetData), String> {
     match Uuid::from_str(cue_id) {
         Ok(cue_uuid) => {
-            if let Some(cue) = handle.model_handle.read().await.cues.iter().find(|cue| cue.id == cue_uuid)
-                && let CueParam::Audio{target, ..} = &cue.params {
-                handle.asset_handle.request_file_asset_data(target.clone()).await.map_err(|e| e.to_string()).map(|asset_data| (cue_uuid, asset_data))
+            if let Some(cue) = handle
+                .model_handle
+                .read()
+                .await
+                .cues
+                .iter()
+                .find(|cue| cue.id == cue_uuid)
+                && let CueParam::Audio { target, .. } = &cue.params
+            {
+                handle
+                    .asset_handle
+                    .request_file_asset_data(target.clone())
+                    .await
+                    .map_err(|e| e.to_string())
+                    .map(|asset_data| (cue_uuid, asset_data))
             } else {
                 Err(format!("Cue not found. id={}", cue_uuid))
             }
-        },
+        }
         Err(e) => Err(e.to_string()),
     }
 }
@@ -285,7 +310,13 @@ pub fn run() {
                 .cut()
                 .copy()
                 .paste()
-                .item(&MenuItem::with_id(app, MenuId::new("id_delete"), "Delete", true, Some("Ctrl+Backspace"))?)
+                .item(&MenuItem::with_id(
+                    app,
+                    MenuId::new("id_delete"),
+                    "Delete",
+                    true,
+                    Some("Ctrl+Backspace"),
+                )?)
                 .select_all()
                 .build()?;
             let menu = MenuBuilder::new(app)

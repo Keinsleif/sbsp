@@ -1,4 +1,6 @@
-use sbsp_backend::{asset_processor::AssetData, controller::state::ShowState, event::UiEvent, model::ShowModel};
+use sbsp_backend::{
+    asset_processor::AssetData, controller::state::ShowState, event::UiEvent, model::ShowModel,
+};
 use ts_rs::TS;
 
 fn main() {

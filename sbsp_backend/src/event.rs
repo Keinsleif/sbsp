@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    executor::ExecutorEvent, model::{cue::Cue, settings::ShowSettings}
+    executor::ExecutorEvent,
+    model::{cue::Cue, settings::ShowSettings},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,8 +1,11 @@
 use anyhow::{Context, Result};
 use kira::{
-    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
-        static_sound::{StaticSoundData, StaticSoundHandle}, EndPosition, PlaybackPosition, PlaybackState, Region
-    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
+    clock::{ClockHandle, ClockSpeed, ClockTime},
+    sound::{
+        EndPosition, PlaybackPosition, PlaybackState, Region,
+        static_sound::{StaticSoundData, StaticSoundHandle},
+    },
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -15,23 +18,11 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum AudioCommand {
-    Load {
-        id: Uuid,
-        data: AudioCommandData,
-    },
-    Play {
-        id: Uuid,
-        data: AudioCommandData,
-    },
-    Pause {
-        id: Uuid,
-    },
-    Resume {
-        id: Uuid,
-    },
-    Stop {
-        id: Uuid,
-    },
+    Load { id: Uuid, data: AudioCommandData },
+    Play { id: Uuid, data: AudioCommandData },
+    Pause { id: Uuid },
+    Resume { id: Uuid },
+    Stop { id: Uuid },
 }
 
 impl AudioCommand {
