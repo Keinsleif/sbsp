@@ -250,6 +250,12 @@ useHotkey('cmd+a', () => {
   uiState.selectedRows = showModel.cues.map((cue) => cue.id);
 });
 
+useHotkey('cmd+backspace', () => {
+  for (const row of uiState.selectedRows) {
+    invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+  }
+});
+
 const dragOverIndex = ref();
 
 const dragStart = (event: DragEvent, index: number) => {
