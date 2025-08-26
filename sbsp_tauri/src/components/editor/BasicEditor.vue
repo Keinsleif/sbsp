@@ -1,59 +1,18 @@
 <template>
-  <v-sheet v-if="selectedCue != null && editorValue != null" flat class="d-flex flex-row pa-4 ga-4">
+  <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
     <v-sheet flat class="d-flex flex-column ga-2" width="175px">
-      <v-text-field
-        hide-details
-        persistent-placeholder
-        v-model="editorValue.number"
-        label="Number"
-        variant="outlined"
-        density="compact"
-        :class="$style['centered-input']"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-text-field>
-      <v-text-field
-        hide-details
-        persistent-placeholder
-        v-model="editorValue.duration"
+      <text-input v-model="number" label="Number" @update="saveEditorValue('number')"></text-input>
+      <time-input
+        v-model="duration"
         :disabled="selectedCue.params.type == 'audio'"
         label="Duration"
-        variant="outlined"
-        density="compact"
-        :class="$style['centered-input']"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-text-field>
-      <v-text-field
-        hide-details
-        persistent-placeholder
-        v-model="editorValue.preWait"
-        label="Pre-Wait"
-        variant="outlined"
-        density="compact"
-        :class="$style['centered-input']"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-text-field>
+        @update="saveEditorValue('duration')"
+      ></time-input>
+      <time-input v-model="preWait" label="Pre-Wait" @update="saveEditorValue('preWait')"></time-input>
       <v-select
         hide-details
         persistent-placeholder
-        v-model="editorValue.sequence"
+        v-model="sequence"
         label="ContinueMode"
         :items="[
           { value: 'doNotContinue', name: 'DoNotContinue' },
@@ -65,72 +24,38 @@
         variant="outlined"
         density="compact"
         autocomplete="off"
-        @update:modelValue="saveEditorValue"
+        @update:modelValue="saveEditorValue('sequence')"
       ></v-select>
-      <v-text-field
-        hide-details
-        persistent-placeholder
-        v-model="editorValue.postWait"
+      <time-input
+        v-model="postWait"
         :disabled="selectedCue.sequence.type != 'autoContinue'"
         label="Post-Wait"
-        variant="outlined"
-        density="compact"
-        :class="$style['centered-input']"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-text-field>
+        @update="saveEditorValue('postWait')"
+      ></time-input>
     </v-sheet>
     <v-sheet flat class="d-flex flex-grow-1 flex-column ga-2 justify-start">
-      <v-text-field
-        hide-details
-        persistent-placeholder
+      <text-input
         :placeholder="buildCueName(selectedCue)"
-        v-model="editorValue.name"
+        v-model="name"
         label="Name"
-        variant="outlined"
-        density="compact"
+        alignInput="left"
         class="flex-grow-0"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-text-field>
-      <v-textarea
-        hide-details
-        persistent-placeholder
-        no-resize
-        v-model="editorValue.notes"
-        label="Notes"
-        variant="outlined"
-        density="compact"
-        autocomplete="off"
-        @blur="saveEditorValue"
-        @keydown.enter="$event.target.blur()"
-        @keydown.esc="
-          resetEditorValue();
-          $event.target.blur();
-        "
-      ></v-textarea>
+        @update="saveEditorValue('name')"
+      ></text-input>
+      <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue('notes')"></text-input>
     </v-sheet>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
-import { VTextField } from 'vuetify/components';
 import { invoke } from '@tauri-apps/api/core';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
-import { buildCueName, formatToSeconds, secondsToFormat } from '../../utils';
+import { buildCueName } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
+import TextInput from './TextInput.vue';
+import TimeInput from './TimeInput.vue';
 
 const showModel = useShowModel();
 const uiState = useUiState();
@@ -140,95 +65,90 @@ const selectedCue = computed(() => {
   return uiState.selected != null ? showModel.cues.find((cue) => cue.id === uiState.selected) : null;
 });
 
-const computeEditorValue = () => {
-  if (selectedCue.value?.params.type == 'audio') {
-    return {
-      number: selectedCue.value ? selectedCue.value.number : null,
-      name: selectedCue.value ? selectedCue.value.name : null,
-      notes: selectedCue.value ? selectedCue.value.notes : null,
-      preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
-      duration:
-        selectedCue.value.id in assetResult.duration && assetResult.duration[selectedCue.value.id] != null
-          ? secondsToFormat(assetResult.duration[selectedCue.value.id]!)
-          : '--:--.--',
-      sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
-      postWait: selectedCue.value
-        ? selectedCue.value.sequence.type == 'autoContinue'
-          ? secondsToFormat(selectedCue.value.sequence.postWait)
-          : '00:00.00'
-        : null,
-    };
-  } else if (selectedCue.value?.params.type == 'wait') {
-    return {
-      number: selectedCue.value ? selectedCue.value.number : null,
-      name: selectedCue.value ? selectedCue.value.name : null,
-      notes: selectedCue.value ? selectedCue.value.notes : null,
-      preWait: selectedCue.value ? secondsToFormat(selectedCue.value.preWait) : null,
-      duration: selectedCue.value ? secondsToFormat(selectedCue.value.params.duration) : null,
-      sequence: selectedCue.value ? selectedCue.value.sequence.type : null,
-      postWait: selectedCue.value
-        ? selectedCue.value.sequence.type == 'autoContinue'
-          ? secondsToFormat(selectedCue.value.sequence.postWait)
-          : '00:00.00'
-        : null,
-    };
-  } else {
+const getDuration = (): number | null => {
+  if (selectedCue.value == null) {
     return null;
+  }
+  switch (selectedCue.value.params.type) {
+    case 'wait':
+      return selectedCue.value.params.duration;
+    case 'audio':
+      return assetResult.duration[selectedCue.value.id];
   }
 };
 
-const editorValue = ref(computeEditorValue());
+const number = ref(selectedCue.value != null ? selectedCue.value.number : null);
+const duration = ref(getDuration());
+const preWait = ref(selectedCue.value != null ? selectedCue.value.preWait : null);
+const sequence = ref(selectedCue.value != null ? selectedCue.value.sequence.type : null);
+const postWait = ref(
+  selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
+    ? selectedCue.value.sequence.type == 'autoContinue'
+      ? selectedCue.value.sequence.postWait
+      : getDuration()
+    : null,
+);
+const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
+const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 
 watch(selectedCue, () => {
-  editorValue.value = computeEditorValue();
+  number.value = selectedCue.value != null ? selectedCue.value.number : null;
+  duration.value = getDuration();
+  preWait.value = selectedCue.value != null ? selectedCue.value.preWait : null;
+  sequence.value = selectedCue.value != null ? selectedCue.value.sequence.type : null;
+  postWait.value =
+    selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
+      ? selectedCue.value.sequence.type == 'autoContinue'
+        ? selectedCue.value.sequence.postWait
+        : getDuration()
+      : null;
+  name.value = selectedCue.value != null ? selectedCue.value.name : null;
+  notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
 });
 
-watch(
-  () => (selectedCue.value?.id != null ? assetResult.duration[selectedCue.value.id] : null),
-  () => {
-    if (editorValue.value?.duration == '--:--.--' && selectedCue.value?.params.type == 'audio') {
-      editorValue.value.duration =
-        assetResult.duration[selectedCue.value.id] != null
-          ? secondsToFormat(assetResult.duration[selectedCue.value.id]!)
-          : '--:--.--';
-    }
-  },
-);
-
-const resetEditorValue = () => {
-  editorValue.value = computeEditorValue();
-};
-
-const saveEditorValue = () => {
-  if (selectedCue.value == null || editorValue.value == null) {
+const saveEditorValue = (paramName: string) => {
+  if (selectedCue.value == null) {
     return;
   }
   const newCue = structuredClone(toRaw(selectedCue.value));
-  if (editorValue.value.number != null) {
-    newCue.number = editorValue.value.number;
-  }
-  if (editorValue.value.name != null) {
-    const newName = editorValue.value.name.trim();
-    if (newName == '') {
-      newCue.name = null;
-    } else {
-      newCue.name = newName;
+  switch (paramName) {
+    case 'number':
+      if (number.value != null) {
+        newCue.number = number.value;
+      }
+      break;
+    case 'duration':
+    case 'preWait':
+      if (preWait.value != null) {
+        newCue.preWait = preWait.value;
+      }
+      break;
+    case 'sequence':
+      if (sequence.value != null) {
+        newCue.sequence.type = sequence.value;
+      }
+      break;
+    case 'postWait':
+      if (postWait.value != null && newCue.sequence.type == 'autoContinue') {
+        newCue.sequence.postWait = postWait.value;
+      }
+      break;
+    case 'name': {
+      if (name.value != null) {
+        const newName = name.value.trim();
+        if (newName == '') {
+          newCue.name = null;
+        } else {
+          newCue.name = newName;
+        }
+      }
+      break;
     }
-  }
-  if (editorValue.value.notes != null) {
-    newCue.notes = editorValue.value.notes;
-  }
-  if (editorValue.value.preWait != null) {
-    newCue.preWait = formatToSeconds(editorValue.value.preWait, false);
-  }
-  if (editorValue.value.duration != null && newCue.params.type == 'wait') {
-    newCue.params.duration = formatToSeconds(editorValue.value.duration, false);
-  }
-  if (editorValue.value.sequence != null) {
-    newCue.sequence.type = editorValue.value.sequence;
-  }
-  if (editorValue.value.postWait != null && newCue.sequence.type == 'autoContinue') {
-    newCue.sequence.postWait = formatToSeconds(editorValue.value.postWait);
+    case 'notes':
+      if (notes.value != null) {
+        newCue.notes = notes.value;
+      }
+      break;
   }
   invoke('update_cue', { cue: newCue });
 };
