@@ -4,8 +4,7 @@ use sbsp_backend::{
     asset_processor::AssetData, controller::{state::ShowState, ControllerCommand}, event::UiEvent, model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel}, start_backend, BackendHandle
 };
 use tauri::{
-    AppHandle, Emitter, Manager as _,
-    menu::{Menu, MenuId, MenuItem, SubmenuBuilder},
+    menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder}, AppHandle, Emitter, Manager as _
 };
 use tauri_plugin_dialog::DialogExt;
 use tokio::sync::{broadcast, watch};
@@ -255,37 +254,43 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle();
 
-            let menu = Menu::new(app_handle)?;
-            menu.append(
-                &SubmenuBuilder::new(app_handle, "File")
-                    .items(&[
-                        &MenuItem::with_id(
-                            app_handle,
-                            MenuId::new("id_open"),
-                            "Open",
-                            true,
-                            Some("Ctrl+O"),
-                        )?,
-                        &MenuItem::with_id(
-                            app_handle,
-                            MenuId::new("id_save"),
-                            "Save",
-                            true,
-                            Some("Ctrl+S"),
-                        )?,
-                        &MenuItem::with_id(
-                            app_handle,
-                            MenuId::new("id_save_as"),
-                            "Save As...",
-                            true,
-                            Some("Ctrl+Shift+S"),
-                        )?,
-                    ])
-                    .separator()
-                    .text(MenuId::new("id_quit"), "Quit")
-                    .build()?,
-            )?;
-
+            let file_menu = SubmenuBuilder::new(app, "File")
+                .items(&[
+                    &MenuItem::with_id(
+                        app_handle,
+                        MenuId::new("id_open"),
+                        "Open",
+                        true,
+                        Some("Ctrl+O"),
+                    )?,
+                    &MenuItem::with_id(
+                        app_handle,
+                        MenuId::new("id_save"),
+                        "Save",
+                        true,
+                        Some("Ctrl+S"),
+                    )?,
+                    &MenuItem::with_id(
+                        app_handle,
+                        MenuId::new("id_save_as"),
+                        "Save As...",
+                        true,
+                        Some("Ctrl+Shift+S"),
+                    )?,
+                ])
+                .separator()
+                .text(MenuId::new("id_quit"), "Quit")
+                .build()?;
+            let edit_menu = SubmenuBuilder::new(app, "Edit")
+                .cut()
+                .copy()
+                .paste()
+                .item(&MenuItem::with_id(app, MenuId::new("id_delete"), "Delete", true, Some("Ctrl+Backspace"))?)
+                .select_all()
+                .build()?;
+            let menu = MenuBuilder::new(app)
+                .items(&[&file_menu, &edit_menu])
+                .build()?;
             app.set_menu(menu)?;
 
             let (backend_handle, state_rx, event_tx) = start_backend();
