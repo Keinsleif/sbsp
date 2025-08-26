@@ -50,7 +50,7 @@ import { useShowModel } from './stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { ShowSettings } from './types/ShowSettings';
-import HotkeyInput from './components/settings/HotkeyInput.vue';
+import HotkeyInput from './components/input/HotkeyInput.vue';
 
 const showModel = useShowModel();
 

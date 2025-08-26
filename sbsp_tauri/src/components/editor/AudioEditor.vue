@@ -34,8 +34,8 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
-import VolumeFader from './VolumeFader.vue';
-import PanningFader from './PanningFader.vue';
+import VolumeFader from '../input/VolumeFader.vue';
+import PanningFader from '../input/PanningFader.vue';
 
 const showModel = useShowModel();
 const uiState = useUiState();

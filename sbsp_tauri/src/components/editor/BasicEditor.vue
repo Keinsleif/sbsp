@@ -54,8 +54,8 @@ import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { buildCueName } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
-import TextInput from './TextInput.vue';
-import TimeInput from './TimeInput.vue';
+import TextInput from '../input/TextInput.vue';
+import TimeInput from '../input/TimeInput.vue';
 
 const showModel = useShowModel();
 const uiState = useUiState();
