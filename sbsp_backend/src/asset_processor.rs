@@ -240,20 +240,10 @@ impl AssetProcessor {
 
         let track_id = track.id;
 
-        let duration = if let Some(n_frames) = track
-            .codec_params
-            .n_frames
-            .map(|frames| track.codec_params.start_ts + frames)
-        {
-            if let Some(tb) = track.codec_params.time_base {
-                let time = tb.calc_time(n_frames);
-                Some(time.seconds as f64 + time.frac)
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+        let duration = track.codec_params.time_base.zip(track.codec_params.n_frames).map(|(base, spans)| {
+            let symphonia_time = base.calc_time(spans);
+            symphonia_time.seconds as f64 + symphonia_time.frac
+        });
 
         let mut sample_buf = None;
         let mut spec: Option<SignalSpec> = None;
