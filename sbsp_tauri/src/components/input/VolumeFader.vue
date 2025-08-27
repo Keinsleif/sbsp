@@ -1,5 +1,6 @@
 <template>
   <v-slider
+    hide-details
     v-model="faderPosition"
     :class="props.direction == 'vertical' ? $style['vertical-fader'] : ''"
     thumb-label
