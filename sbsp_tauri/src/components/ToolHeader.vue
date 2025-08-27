@@ -48,7 +48,7 @@
         <v-btn :icon="mdiCheckCircleOutline"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
-        <v-btn :icon="mdiFullscreen"></v-btn>
+        <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggleFullscreen"></v-btn>
       </v-btn-group>
     </v-sheet>
   </v-sheet>
@@ -58,6 +58,7 @@
 import {
   mdiCheckCircleOutline,
   mdiFullscreen,
+  mdiFullscreenExit,
   mdiPause,
   mdiPauseCircleOutline,
   mdiPlay,
@@ -79,6 +80,16 @@ import { buildCueName } from '../utils';
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+
+const isFullscreen = ref(false);
+const updateFullscreenState = () => (isFullscreen.value = !!document.fullscreenElement);
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
 
 const playbackCursorCue = computed(() => {
   return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
@@ -142,10 +153,12 @@ onMounted(() => {
   ticker.value = setInterval(() => {
     time.value = new Date();
   }, 100);
+  document.addEventListener('fullscreenchange', updateFullscreenState);
 });
 
 onUnmounted(() => {
   clearInterval(ticker.value);
+  document.removeEventListener('fullscreenchange', updateFullscreenState);
 });
 </script>
 
