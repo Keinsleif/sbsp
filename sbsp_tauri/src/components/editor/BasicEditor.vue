@@ -52,7 +52,7 @@ import { computed, ref, toRaw, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
-import { buildCueName } from '../../utils';
+import { buildCueName, calculateDuration } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
@@ -73,7 +73,7 @@ const getDuration = (): number | null => {
     case 'wait':
       return selectedCue.value.params.duration;
     case 'audio':
-      return assetResult.duration[selectedCue.value.id];
+      return calculateDuration(selectedCue.value.params, assetResult.duration[selectedCue.value.id]);
   }
 };
 

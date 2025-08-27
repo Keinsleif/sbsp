@@ -114,7 +114,7 @@
               isActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
                 : assetResult.duration[cue.id] != null
-                  ? secondsToFormat(assetResult.duration[cue.id]!)
+                  ? secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
                   : '--:--.--'
             }}
           </div>
@@ -171,7 +171,7 @@
                   ? cue.sequence.type == 'autoContinue'
                     ? secondsToFormat(cue.sequence.postWait)
                     : assetResult.duration[cue.id] != null
-                      ? secondsToFormat(assetResult.duration[cue.id]!)
+                      ? secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
                       : '--:--.--'
                   : '--:--.--'
             }}
@@ -214,7 +214,7 @@ import {
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
-import { buildCueName, formatToSeconds, secondsToFormat } from '../utils';
+import { buildCueName, calculateDuration, formatToSeconds, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';

@@ -2,11 +2,10 @@ import { defineStore } from 'pinia';
 import { useShowModel } from './showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import { AssetData } from '../types/AssetData';
-import { calculateDuration } from '../utils';
 
 export const useAssetResult = defineStore('assetResult', {
   state: () => ({
-    duration: {} as { [cue_id: string]: number | null },
+    duration: {} as { [cue_id: string]: number },
     waveform: {} as { [cue_id: string]: number[] },
   }),
   actions: {
@@ -16,7 +15,7 @@ export const useAssetResult = defineStore('assetResult', {
         if (cue.params.type == 'audio') {
           invoke<[string, AssetData]>('process_asset', { cueId: cue.id }).then((value) => {
             if (value[1].duration != null) {
-              this.duration[cue.id] = calculateDuration(cue.params, value[1].duration);
+              this.duration[cue.id] = value[1].duration;
               this.waveform[cue.id] = value[1].waveform;
             }
           });
