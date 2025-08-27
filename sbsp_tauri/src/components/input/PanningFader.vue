@@ -25,9 +25,9 @@
         density="compact"
         :precision="3"
         variant="outlined"
-        control-variant="stacked"
+        control-variant="hidden"
         hide-details
-        width="135px"
+        width="100px"
         @dblclick.stop
       ></v-number-input>
     </template>

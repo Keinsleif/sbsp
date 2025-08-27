@@ -7,7 +7,6 @@ export const useUiState = defineStore('uistate', {
     selected: null as string | null,
     selectedRows: [] as string[],
     sideBarTab: 'activeCues' as 'activeCues' | 'levels',
-    editorTab: 'basics',
     isRightSidebarOpen: true,
     isEditorOpen: true,
     success_messages: [] as string[],

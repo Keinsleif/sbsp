@@ -39,10 +39,10 @@ watch(seconds, () => {
 
 const save = () => {
   const innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
+  seconds.value = innerValue;
   if (seconds.value != innerValue) {
     emit('update');
   }
-  seconds.value = innerValue;
 };
 
 const reset = () => {

@@ -25,9 +25,9 @@
         density="compact"
         :precision="2"
         variant="outlined"
-        :control-variant="props.direction == 'horizontal' ? 'stacked' : 'hidden'"
+        control-variant="hidden"
         hide-details
-        :width="props.direction == 'horizontal' ? '135px' : '100px'"
+        width="100px"
         @dblclick.stop
       ></v-number-input>
     </template>
