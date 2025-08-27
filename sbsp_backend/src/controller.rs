@@ -614,7 +614,7 @@ mod tests {
                             }),
                             volume: 0.0,
                             pan: 0.0,
-                            loop_region: Some((Some(2.0), None).into()),
+                            repeat: false,
                         },
                     });
                 }

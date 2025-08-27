@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     executor::EngineEvent,
-    model::cue::{AudioCueFadeParam, LoopRegion},
+    model::cue::AudioCueFadeParam,
 };
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ pub struct AudioCommandData {
     pub fade_in_param: Option<AudioCueFadeParam>,
     pub end_time: Option<f64>,
     pub fade_out_param: Option<AudioCueFadeParam>,
-    pub loop_region: Option<LoopRegion>,
+    pub repeat: bool,
 }
 
 struct SoundHandle {
@@ -221,8 +221,11 @@ impl AudioEngine {
                 .panning(Panning::from(data.pan))
                 .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
 
-        if let Some(region) = data.loop_region {
-            sound_data = sound_data.loop_region(region);
+        if data.repeat {
+            sound_data = sound_data.loop_region(Some(Region {
+                start: PlaybackPosition::Seconds(0.0),
+                end: EndPosition::EndOfAudio,
+            }));
         }
 
         if let Some(fade_in_param) = data.fade_in_param {

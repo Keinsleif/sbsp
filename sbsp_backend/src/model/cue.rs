@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use kira::sound::{IntoOptionalRegion, Region};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -52,7 +51,7 @@ pub enum CueParam {
         fade_out_param: Option<AudioCueFadeParam>,
         volume: f32,
         pan: f32,
-        loop_region: Option<LoopRegion>,
+        repeat: bool,
     },
     Wait {
         duration: f64,
@@ -65,48 +64,6 @@ pub enum CueParam {
 pub struct AudioCueFadeParam {
     pub duration: f64,
     pub easing: Easing,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-pub struct LoopRegion {
-    pub start: Option<f64>,
-    pub end: Option<f64>,
-}
-
-impl From<(Option<f64>, Option<f64>)> for LoopRegion {
-    fn from(value: (Option<f64>, Option<f64>)) -> Self {
-        Self {
-            start: value.0,
-            end: value.1,
-        }
-    }
-}
-
-impl From<LoopRegion> for Option<Region> {
-    fn from(val: LoopRegion) -> Self {
-        match (val.start, val.end) {
-            (None, None) => None,
-            (None, Some(end)) => Some(Region {
-                start: kira::sound::PlaybackPosition::Seconds(0.0),
-                end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)),
-            }),
-            (Some(start), None) => Some(Region {
-                start: kira::sound::PlaybackPosition::Seconds(start),
-                end: kira::sound::EndPosition::EndOfAudio,
-            }),
-            (Some(start), Some(end)) => Some(Region {
-                start: kira::sound::PlaybackPosition::Seconds(start),
-                end: kira::sound::EndPosition::Custom(kira::sound::PlaybackPosition::Seconds(end)),
-            }),
-        }
-    }
-}
-
-impl IntoOptionalRegion for LoopRegion {
-    fn into_optional_region(self) -> Option<Region> {
-        self.into()
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]

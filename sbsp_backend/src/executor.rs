@@ -306,7 +306,7 @@ impl Executor {
                 fade_out_param,
                 volume,
                 pan,
-                loop_region,
+                repeat,
             } => {
                 let mut filepath = self
                     .model_handle
@@ -327,7 +327,7 @@ impl Executor {
                             fade_in_param: *fade_in_param,
                             end_time: *end_time,
                             fade_out_param: *fade_out_param,
-                            loop_region: *loop_region,
+                            repeat: *repeat,
                         },
                     })
                     .await?;
@@ -349,7 +349,7 @@ impl Executor {
                 fade_out_param,
                 volume,
                 pan,
-                loop_region,
+                repeat,
             } => {
                 if let Some(active_instance) =
                     self.active_instances.write().await.get_mut(&instance_id)
@@ -383,7 +383,7 @@ impl Executor {
                         fade_in_param: *fade_in_param,
                         end_time: *end_time,
                         fade_out_param: *fade_out_param,
-                        loop_region: *loop_region,
+                        repeat: *repeat,
                     },
                 };
                 self.audio_tx.send(audio_command).await?;
@@ -557,7 +557,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueFadeParam, Cue, Easing, LoopRegion},
+            cue::{AudioCueFadeParam, Cue, Easing},
         },
     };
 
@@ -602,7 +602,7 @@ mod tests {
                         }),
                         volume: 0.0,
                         pan: 0.0,
-                        loop_region: Some((Some(2.0), None).into()),
+                        repeat: false,
                     },
                 });
                 cue_id
@@ -667,12 +667,8 @@ mod tests {
                     easing: Easing::InPowi(2)
                 })
             );
-            assert_eq!(
-                data.loop_region,
-                Some(LoopRegion {
-                    start: Some(2.0),
-                    end: None
-                })
+            assert!(
+                !data.repeat
             );
         } else {
             unreachable!();

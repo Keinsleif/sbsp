@@ -79,7 +79,7 @@ impl Default for TemplateSettings {
                     fade_out_param: None,
                     volume: 0.0,
                     pan: 0.0,
-                    loop_region: None,
+                    repeat: false,
                 },
             },
             wait: Cue {
