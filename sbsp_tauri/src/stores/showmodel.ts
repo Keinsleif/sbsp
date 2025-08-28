@@ -9,9 +9,45 @@ export const useShowModel = defineStore('showmodel', {
       name: '',
       cues: [],
       settings: {
-        general: { lockCursorToSelection: true },
+        general: { lockCursorToSelection: true, advanceCursorWhenGo: true },
         hotkey: { go: 'Space', load: 'L', stop: 'Backspace', stopAll: 'Escape' },
-        template: { audio: null, wait: null },
+        template: {
+          audio: {
+            id: '00000000-0000-0000-0000-000000000000',
+            number: '',
+            name: null,
+            notes: '',
+            preWait: 0.0,
+            sequence: {
+              type: 'doNotContinue',
+            },
+            params: {
+              type: 'audio',
+              target: '',
+              startTime: null,
+              fadeInParam: null,
+              endTime: null,
+              fadeOutParam: null,
+              volume: 0.0,
+              pan: 0.0,
+              repeat: false,
+            },
+          },
+          wait: {
+            id: '00000000-0000-0000-0000-000000000000',
+            number: '',
+            name: null,
+            notes: '',
+            preWait: 0.0,
+            sequence: {
+              type: 'doNotContinue',
+            },
+            params: {
+              type: 'wait',
+              duration: 5.0,
+            },
+          },
+        },
       },
     }) as ShowModel,
   actions: {
