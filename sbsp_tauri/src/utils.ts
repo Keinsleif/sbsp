@@ -1,5 +1,6 @@
 import type { Cue } from './types/Cue';
-import { CueParam } from './types/CueParam';
+import type { CueParam } from './types/CueParam';
+import type { Easing } from './types/Easing';
 
 export const secondsToFormat = (source_seconds: number): string => {
   const hour = Math.floor(source_seconds / 3600);
@@ -89,4 +90,56 @@ export const calculateDuration = (cueParam: CueParam, totalDuration: number): nu
     duration -= cueParam.startTime;
   }
   return duration;
+};
+
+export type Curve = {
+  type: 'inPow' | 'outPow' | 'inOutPow' | 'linear';
+  power: number | null;
+};
+
+export const easingToCurve = (easing: Easing): Curve => {
+  switch (easing.type) {
+    case 'linear':
+      return { type: 'linear', power: null };
+    case 'inPowi':
+    case 'inPowf':
+      return { type: 'inPow', power: easing.intensity };
+    case 'outPowi':
+    case 'outPowf':
+      return { type: 'outPow', power: easing.intensity };
+    case 'inOutPowi':
+    case 'inOutPowf':
+      return { type: 'inOutPow', power: easing.intensity };
+  }
+};
+
+export const curveToEasing = (curve: Curve): Easing => {
+  if (curve.type == null) {
+    return { type: 'linear' };
+  }
+  if (curve.power == null) {
+    curve.power = 2;
+  }
+  switch (curve.type) {
+    case 'linear':
+      return { type: 'linear' };
+    case 'inPow':
+      if (Number.isInteger(curve.power)) {
+        return { type: 'inPowi', intensity: curve.power };
+      } else {
+        return { type: 'inPowf', intensity: curve.power };
+      }
+    case 'outPow':
+      if (Number.isInteger(curve.power)) {
+        return { type: 'outPowi', intensity: curve.power };
+      } else {
+        return { type: 'outPowf', intensity: curve.power };
+      }
+    case 'inOutPow':
+      if (Number.isInteger(curve.power)) {
+        return { type: 'inOutPowi', intensity: curve.power };
+      } else {
+        return { type: 'inOutPowf', intensity: curve.power };
+      }
+  }
 };
