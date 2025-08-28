@@ -13,6 +13,8 @@ use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
 
 use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 
+const WAVEFORM_THRESHOLD: usize = 2000;
+
 pub enum AssetCommand {
     RequestFileAssetData {
         path: PathBuf,
@@ -287,19 +289,22 @@ impl AssetProcessor {
         do_verification(decoder.finalize()).unwrap();
 
         let spec_data = spec.unwrap();
-        let window = spec_data.rate / 10;
+        let mut window = (spec_data.rate / 10) as usize;
 
-        let step = if samples.len() < window as usize {
+        let step = if samples.len() < window {
             1
+        } else if samples.len() / window < 5000 {
+            (samples.len() - (samples.len() % window)) / window + 1
         } else {
-            (samples.len() - (samples.len() % window as usize)) / window as usize + 1
+            window = (samples.len() - (samples.len() % (WAVEFORM_THRESHOLD - 1))) / (WAVEFORM_THRESHOLD - 1);
+            WAVEFORM_THRESHOLD
         };
 
         let mut peaks = Vec::new();
 
         for i in 0..step {
-            let start = i * window as usize;
-            if samples.len() < start + window as usize {
+            let start = i * window;
+            if samples.len() < start + window {
                 peaks.push(
                     samples[start..]
                         .iter()
@@ -309,7 +314,7 @@ impl AssetProcessor {
                 );
             } else {
                 peaks.push(
-                    samples[start..(start + window as usize)]
+                    samples[start..(start + window)]
                         .iter()
                         .copied()
                         .max_by(|a, b| a.partial_cmp(b).unwrap())
