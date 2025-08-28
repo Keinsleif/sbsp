@@ -18,7 +18,7 @@
       <SideBar />
     </v-navigation-drawer>
 
-    <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="301">
+    <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
       <BottomEditor />
     </v-navigation-drawer>
 

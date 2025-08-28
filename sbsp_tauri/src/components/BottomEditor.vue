@@ -1,15 +1,15 @@
 <template>
   <v-sheet class="overflow-hidden">
-    <v-tabs v-model="editorTab" density="compact" class="border">
-      <v-tab border density="compact" value="basics">Basics</v-tab>
-      <v-tab border density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
+    <v-tabs v-model="editorTab" density="compact">
+      <v-tab density="compact" value="basics">Basics</v-tab>
+      <v-tab density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
         >Audio</v-tab
       >
-      <v-tab border density="compact" value="time" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
+      <v-tab density="compact" value="time" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
         >Time & Levels</v-tab
       >
     </v-tabs>
-    <v-tabs-window v-if="selectedCue != null" v-model="editorTab">
+    <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
         <BasicEditor />
       </v-tabs-window-item>
