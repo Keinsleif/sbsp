@@ -68,6 +68,12 @@ pub struct AudioCueFadeParam {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(
+    tag = "type",
+    content = "intensity",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum Easing {
     Linear,
     InPowi(i32),
