@@ -9,6 +9,7 @@
         <th id="cuelist_pre_wait" class="text-center">Pre-Wait</th>
         <th id="cuelist_duration" class="text-center">Duration</th>
         <th id="cuelist_post_wait" class="text-center">Post-Wait</th>
+        <th id="cuelist_repeat"><v-icon :icon="mdiRepeat"></v-icon></th>
         <th id="cuelist_sequence"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
     </thead>
@@ -177,6 +178,9 @@
             }}
           </div>
         </td>
+        <td headers="cuelist_repeat" width="24px">
+          <v-icon v-if="cue.params.type == 'audio' && cue.params.repeat" :icon="mdiRepeat" />
+        </td>
         <td headers="cuelist_sequence" width="24px">
           <v-icon v-if="cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
           <v-icon v-if="cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
@@ -194,6 +198,7 @@
         <td headers="cuelist_pre_wait"></td>
         <td headers="cuelist_duration"></td>
         <td headers="cuelist_post_wait"></td>
+        <td headers="cuelist_repeat"></td>
         <td headers="cuelist_sequence"></td>
       </tr>
     </tbody>
@@ -208,6 +213,7 @@ import {
   mdiArrowExpandDown,
   mdiArrowRightBold,
   mdiChevronDoubleDown,
+  mdiRepeat,
   mdiTimerSandEmpty,
   mdiVolumeHigh,
 } from '@mdi/js';

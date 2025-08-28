@@ -17,6 +17,14 @@
       <volume-fader class="mt-4" v-model="volume" label="Volume" @update:model-value="saveEditorValue('volume')" />
       <v-divider vertical inset thickness="2" />
       <panning-fader class="mt-4" label="Pan" @update:model-value="saveEditorValue('pan')" />
+      <v-divider vertical inset thickness="2" />
+      <v-checkbox
+        v-model="repeat"
+        hide-details
+        density="compact"
+        label="Repeat"
+        @update:model-value="saveEditorValue('repeat')"
+      ></v-checkbox>
     </div>
   </v-sheet>
 </template>
@@ -58,6 +66,10 @@ const panning = ref(
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.pan : 0,
 );
 
+const repeat = ref(
+  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.repeat : false,
+);
+
 watch(selectedCue, () => {
   if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
     return;
@@ -68,6 +80,7 @@ watch(selectedCue, () => {
   ];
   volume.value = selectedCue.value.params.volume;
   panning.value = selectedCue.value.params.pan;
+  repeat.value = selectedCue.value.params.repeat;
 });
 
 const saveEditorValue = throttle((name: string) => {
@@ -88,6 +101,9 @@ const saveEditorValue = throttle((name: string) => {
       break;
     case 'pan':
       newCue.params.pan = panning.value;
+      break;
+    case 'repeat':
+      newCue.params.repeat = repeat.value;
       break;
   }
   invoke('update_cue', { cue: newCue });
