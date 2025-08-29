@@ -2,7 +2,10 @@ import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
 
-export const secondsToFormat = (source_seconds: number): string => {
+export const secondsToFormat = (source_seconds: number | null): string => {
+  if (source_seconds == null || isNaN(source_seconds)) {
+    return '--:--.--';
+  }
   const hour = Math.floor(source_seconds / 3600);
   const minute = Math.floor((source_seconds - 3600 * hour) / 60);
   const seconds = Math.floor(source_seconds - 3600 * hour - 60 * minute);
@@ -78,9 +81,12 @@ export const buildCueName = (cue: Cue) => {
   }
 };
 
-export const calculateDuration = (cueParam: CueParam, totalDuration: number): number => {
+export const calculateDuration = (cueParam: CueParam, totalDuration: number | null): number | null => {
+  if (totalDuration == null || isNaN(totalDuration)) {
+    return null;
+  }
   if (cueParam.type != 'audio') {
-    return 0;
+    return null;
   }
   let duration = totalDuration;
   if (cueParam.endTime != null && cueParam.endTime < totalDuration) {

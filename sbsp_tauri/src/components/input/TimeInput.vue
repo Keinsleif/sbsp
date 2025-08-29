@@ -31,10 +31,10 @@ const props = withDefaults(
 );
 const emit = defineEmits(['update']);
 
-const formattedValue = ref(seconds.value != null ? secondsToFormat(seconds.value) : '--:--.--');
+const formattedValue = ref(secondsToFormat(seconds.value));
 
 watch(seconds, () => {
-  formattedValue.value = seconds.value != null ? secondsToFormat(seconds.value) : '--:--.--';
+  formattedValue.value = secondsToFormat(seconds.value);
 });
 
 const save = () => {
@@ -46,7 +46,7 @@ const save = () => {
 };
 
 const reset = () => {
-  formattedValue.value = seconds.value != null ? secondsToFormat(seconds.value) : '--:--.--';
+  formattedValue.value = secondsToFormat(seconds.value);
 };
 </script>
 

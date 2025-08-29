@@ -114,9 +114,7 @@
             {{
               isActive(cue.id)
                 ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : assetResult.duration[cue.id] != null
-                  ? secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
-                  : '--:--.--'
+                : secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
             }}
           </div>
         </td>
@@ -171,9 +169,7 @@
                 : cue.sequence.type != 'doNotContinue'
                   ? cue.sequence.type == 'autoContinue'
                     ? secondsToFormat(cue.sequence.postWait)
-                    : assetResult.duration[cue.id] != null
-                      ? secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
-                      : '--:--.--'
+                    : secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
                   : '--:--.--'
             }}
           </div>
