@@ -137,23 +137,23 @@
             "
             :style="{
               background:
-                isActive(cue.id) &&
                 cue.sequence.type != 'doNotContinue' &&
+                isActive(cue.id) &&
                 showState.activeCues[cue.id]!.position <
-                  (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.position)
+                  (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.duration)
                   ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
                     Math.floor(
                       (showState.activeCues[cue.id]!.position * 100) /
                         (cue.sequence.type == 'autoContinue'
                           ? cue.sequence.postWait
-                          : showState.activeCues[cue.id]!.position),
+                          : showState.activeCues[cue.id]!.duration),
                     ) +
                     '%, transparent ' +
                     Math.floor(
                       (showState.activeCues[cue.id]!.position * 100) /
                         (cue.sequence.type == 'autoContinue'
                           ? cue.sequence.postWait
-                          : showState.activeCues[cue.id]!.position),
+                          : showState.activeCues[cue.id]!.duration),
                     ) +
                     '%) no-repeat'
                   : '',
@@ -161,16 +161,17 @@
             }"
           >
             {{
-              isActive(cue.id) &&
-              cue.sequence.type != 'doNotContinue' &&
-              showState.activeCues[cue.id]!.position <
-                (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.position)
-                ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : cue.sequence.type != 'doNotContinue'
-                  ? cue.sequence.type == 'autoContinue'
+              cue.sequence.type == 'doNotContinue'
+                ? '--:--.--'
+                : isActive(cue.id) &&
+                    showState.activeCues[cue.id]!.position <
+                      (cue.sequence.type == 'autoContinue'
+                        ? cue.sequence.postWait
+                        : showState.activeCues[cue.id]!.duration)
+                  ? secondsToFormat(showState.activeCues[cue.id]!.position)
+                  : cue.sequence.type == 'autoContinue'
                     ? secondsToFormat(cue.sequence.postWait)
                     : secondsToFormat(calculateDuration(cue.params, assetResult.duration[cue.id]!))
-                  : '--:--.--'
             }}
           </div>
         </td>

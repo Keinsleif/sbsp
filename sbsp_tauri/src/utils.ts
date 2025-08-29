@@ -85,17 +85,20 @@ export const calculateDuration = (cueParam: CueParam, totalDuration: number | nu
   if (totalDuration == null || isNaN(totalDuration)) {
     return null;
   }
-  if (cueParam.type != 'audio') {
-    return null;
+  if (cueParam.type == 'wait') {
+    return cueParam.duration;
   }
-  let duration = totalDuration;
-  if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
-    duration = cueParam.endTime;
+  if (cueParam.type == 'audio') {
+    let duration = totalDuration;
+    if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
+      duration = cueParam.endTime;
+    }
+    if (cueParam.startTime != null) {
+      duration -= cueParam.startTime;
+    }
+    return duration;
   }
-  if (cueParam.startTime != null) {
-    duration -= cueParam.startTime;
-  }
-  return duration;
+  return null;
 };
 
 export type Curve = {
