@@ -238,27 +238,43 @@ watch(
   { deep: true },
 );
 
-useHotkey('arrowup', () => {
+const onArrowUp = (e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    const cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) - 1;
-    if (cursorIndex >= 0 && cursorIndex < showModel.cues.length) {
+    let cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) - 1;
+    if (cursorIndex < 0) {
+      cursorIndex++;
+    }
+    if (e.shiftKey) {
+      uiState.addSelected(showModel.cues[cursorIndex].id);
+    } else {
       uiState.setSelected(showModel.cues[cursorIndex].id);
     }
   } else if (showModel.cues.length > 0) {
     uiState.setSelected(showModel.cues[0].id);
   }
-});
+};
 
-useHotkey('arrowdown', () => {
+useHotkey('arrowup', onArrowUp);
+useHotkey('shift+arrowup', onArrowUp);
+
+const onArrowDown = (e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    const cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-    if (cursorIndex > 0 && cursorIndex < showModel.cues.length) {
+    let cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+    if (cursorIndex >= showModel.cues.length) {
+      cursorIndex--;
+    }
+    if (e.shiftKey) {
+      uiState.addSelected(showModel.cues[cursorIndex].id);
+    } else {
       uiState.setSelected(showModel.cues[cursorIndex].id);
     }
   } else if (showModel.cues.length > 0) {
-    uiState.setSelected(showModel.cues[-1].id);
+    uiState.setSelected(showModel.cues[showModel.cues.length - 1].id);
   }
-});
+};
+
+useHotkey('arrowdown', onArrowDown);
+useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
   uiState.selectedRows = showModel.cues.map((cue) => cue.id);

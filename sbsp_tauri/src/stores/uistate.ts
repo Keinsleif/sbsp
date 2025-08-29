@@ -26,10 +26,24 @@ export const useUiState = defineStore('uistate', {
       }
     },
     setSelected(id: string) {
-      const shwoModel = useShowModel();
+      const showModel = useShowModel();
       this.selected = id;
       this.selectedRows = [id];
-      if (shwoModel.settings.general.lockCursorToSelection) {
+      if (showModel.settings.general.lockCursorToSelection) {
+        invoke('set_playback_cursor', {
+          cueId: id,
+        }).catch((e) => {
+          console.error('Failed to set cursor. ' + e);
+        });
+      }
+    },
+    addSelected(id: string) {
+      const showModel = useShowModel();
+      this.selected = id;
+      if (!this.selectedRows.includes(id)) {
+        this.selectedRows.push(id);
+      }
+      if (showModel.settings.general.lockCursorToSelection) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {
