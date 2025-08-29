@@ -20,11 +20,17 @@
         <v-btn
           :icon="mdiStop"
           active-color="error"
-          @click="invoke('stop').catch((e) => console.log(e.toString()))"
+          :disabled="showState.playbackCursor == null"
+          @click="
+            if (showState.playbackCursor != null) {
+              invoke('stop', { cueId: showState.playbackCursor }).catch((e) => console.log(e.toString()));
+            }
+          "
         ></v-btn>
         <v-btn
           :icon="mdiPlay"
           :active="isCueStatus('Playing') || isCueStatus('PreWaiting')"
+          :disabled="showState.playbackCursor == null"
           active-color="success"
           :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']"
           @click="invoke('go').catch((e) => console.log(e.toString()))"
@@ -32,6 +38,7 @@
         <v-btn
           :icon="mdiPause"
           :active="isCueStatus('Paused') || isCueStatus('Loaded')"
+          :disabled="showState.playbackCursor == null"
           active-color="warning"
           :class="[isCueStatus('Loaded') ? $style['blink'] : '']"
           @click="handleReadyPauseButton"
@@ -131,15 +138,15 @@ const handleReadyPauseButton = () => {
   if (showState.playbackCursor != null) {
     switch (showState.activeCues[showState.playbackCursor]?.status) {
       case 'Playing': {
-        invoke('pause').catch((e) => console.error(e));
+        invoke('pause', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
         break;
       }
       case 'Paused': {
-        invoke('resume').catch((e) => console.error(e));
+        invoke('resume', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
         break;
       }
       case undefined: {
-        invoke('load').catch((e) => console.error(e));
+        invoke('load', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
         break;
       }
     }

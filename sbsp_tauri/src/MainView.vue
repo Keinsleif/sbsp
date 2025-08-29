@@ -68,13 +68,41 @@ onUnmounted(() => {
   }
 });
 
-useHotkey(showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined, () => {
-  invoke('go').catch((e) => console.error(e));
-});
-useHotkey(showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined, () => {
-  invoke('load').catch((e) => console.error(e));
-});
-useHotkey(showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined, () => {
-  invoke('stop').catch((e) => console.error(e));
-});
+useHotkey(
+  showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined,
+  () => {
+    invoke('go').catch((e) => console.error(e));
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined,
+  () => {
+    if (uiState.selected != null) {
+      for (let cueId of uiState.selectedRows) {
+        invoke('load', { cueId: cueId }).catch((e) => console.error(e));
+      }
+    }
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined,
+  () => {
+    if (uiState.selected != null) {
+      for (let cueId of uiState.selectedRows) {
+        invoke('stop', { cueId: cueId }).catch((e) => console.error(e));
+      }
+    }
+  },
+  {
+    preventDefault: true,
+  },
+);
 </script>
