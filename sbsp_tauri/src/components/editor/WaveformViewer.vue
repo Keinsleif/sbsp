@@ -3,9 +3,7 @@
     <svg
       ref="svg"
       preserveAspectRatio="none"
-      v-if="
-        targetId != null && targetCue != null && targetCue.params.type == 'audio' && targetId in assetResult.waveform
-      "
+      v-if="targetId != null && targetId in assetResult.waveform"
       xmlns="http://www.w3.org/2000/svg"
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"
@@ -22,8 +20,22 @@
           :height="sample * 92"
         ></rect>
       </g>
-      <rect :x="nonNullStartTime * (compressedWaveform.length - 1)" y="0" width="2" height="116" fill="blue"></rect>
-      <rect :x="nonNullEndTime * (compressedWaveform.length - 1) - 1" y="0" width="2" height="116" fill="blue"></rect>
+      <rect
+        v-show="props.startTime != null"
+        :x="nonNullStartTime * (compressedWaveform.length - 1)"
+        y="0"
+        width="2"
+        height="116"
+        fill="blue"
+      ></rect>
+      <rect
+        v-show="props.endTime != null"
+        :x="nonNullEndTime * (compressedWaveform.length - 1) - 1"
+        y="0"
+        width="2"
+        height="116"
+        fill="blue"
+      ></rect>
       <rect
         v-if="position != null"
         :x="
@@ -44,9 +56,7 @@ import { computed, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import type { PlaybackStatus } from '../../types/PlaybackStatus';
-import { useShowModel } from '../../stores/showmodel';
 
-const showModel = useShowModel();
 const showState = useShowState();
 const assetResult = useAssetResult();
 
@@ -56,26 +66,20 @@ const props = withDefaults(
     volume?: number;
     startTime?: number | null;
     endTime?: number | null;
-    duration?: number;
   }>(),
   {
     volume: 0,
     startTime: 0,
     endTime: 1,
-    duration: 0,
   },
 );
 
 const nonNullStartTime = computed(() => {
-  return props.startTime != null ? props.startTime / props.duration : 0;
+  return targetId.value != null && props.startTime != null ? props.startTime / assetResult.duration[targetId.value] : 0;
 });
 
 const nonNullEndTime = computed(() => {
-  return props.endTime != null ? props.endTime / props.duration : 1;
-});
-
-const targetCue = computed(() => {
-  return targetId.value != null ? showModel.cues.find((cue) => cue.id === targetId.value) : null;
+  return targetId.value != null && props.endTime != null ? props.endTime / assetResult.duration[targetId.value] : 1;
 });
 
 const svgRef = useTemplateRef('svg');
@@ -90,19 +94,25 @@ const position = computed(() => {
     return null;
   }
 });
-const compressedWaveform = computed(() => {
+const compressedWaveform = computed<number[]>((oldValue) => {
   if (svgRef.value != null && targetId.value != null && targetId.value in assetResult.waveform) {
-    let result = [];
+    let result = [] as number[];
     let source = assetResult.waveform[targetId.value];
+    if (source == null || svgRef.value.clientWidth < 1) {
+      return oldValue != null ? oldValue : [];
+    }
     const window = source.length / (svgRef.value.clientWidth - 1);
-    for (let i = 0; i < source.length; i += window) {
+    let loop_count = 0;
+    for (let i = 0; i < source.length || loop_count > 10000; i += window) {
+      loop_count++;
       let start = Math.floor(i);
       let end = Math.floor(i + window);
       let slice;
       if (start == end) {
         result.push(source[start]);
         continue;
-      } else if (source.length < end) {
+      }
+      if (source.length < end) {
         slice = source.slice(start);
       } else {
         slice = source.slice(start, end);
@@ -113,7 +123,7 @@ const compressedWaveform = computed(() => {
     }
     return result;
   } else {
-    return [];
+    return oldValue != null ? oldValue : [];
   }
 });
 </script>

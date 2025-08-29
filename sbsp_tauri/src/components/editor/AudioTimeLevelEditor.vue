@@ -11,7 +11,6 @@
       :volume="volume"
       :start-time="range[0]"
       :end-time="range[1]"
-      :duration="assetResult.duration[selectedCue!.id]"
     ></waveform-viewer>
     <div class="d-flex flex-row ga-4">
       <volume-fader class="mt-4" v-model="volume" label="Volume" @update:model-value="saveEditorValue('volume')" />
