@@ -47,6 +47,7 @@
         :disabled="!fadeEnabled"
         class="border-md"
         width="80px"
+        :type="props.condition"
         :curve="easingType"
         :power="easingPower"
       ></curve-viewer>
@@ -65,9 +66,11 @@ const param = defineModel<AudioCueFadeParam | null>({ required: true });
 const props = withDefaults(
   defineProps<{
     label?: string;
+    condition?: 'in' | 'out';
   }>(),
   {
     label: '',
+    condition: 'in',
   },
 );
 const emit = defineEmits(['update']);

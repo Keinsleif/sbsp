@@ -21,11 +21,13 @@
       <fade-param-input
         v-model="fadeInParam"
         label="Fade In"
+        condition="in"
         @update="saveEditorValue('fadeInParam')"
       ></fade-param-input>
       <fade-param-input
         v-model="fadeOutParam"
         label="Fade Out"
+        condition="out"
         @update="saveEditorValue('fadeOutParam')"
       ></fade-param-input>
     </v-sheet>
