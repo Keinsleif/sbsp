@@ -19,13 +19,15 @@ use crate::{
 pub enum UiEvent {
     // Cue Status Events
     CueLoaded { cue_id: Uuid },
-    PreWaitStarted { cue_id: Uuid },
-    PreWaitPaused { cue_id: Uuid },
-    PreWaitResumed { cue_id: Uuid },
-    PreWaitCompleted { cue_id: Uuid },
+    CuePreWaitStarted { cue_id: Uuid },
+    CuePreWaitPaused { cue_id: Uuid },
+    CuePreWaitResumed { cue_id: Uuid },
+    CuePreWaitStopped { cue_id: Uuid },
+    CuePreWaitCompleted { cue_id: Uuid },
     CueStarted { cue_id: Uuid },
     CuePaused { cue_id: Uuid },
     CueResumed { cue_id: Uuid },
+    CueStopped { cue_id: Uuid },
     CueCompleted { cue_id: Uuid },
     CueError { cue_id: Uuid, error: String },
 
@@ -64,14 +66,16 @@ impl From<ExecutorEvent> for UiEvent {
             ExecutorEvent::Started { cue_id } => UiEvent::CueStarted { cue_id },
             ExecutorEvent::Paused { cue_id, .. } => UiEvent::CuePaused { cue_id },
             ExecutorEvent::Resumed { cue_id } => UiEvent::CueResumed { cue_id },
+            ExecutorEvent::Stopped { cue_id } => UiEvent::CueStopped { cue_id },
             ExecutorEvent::Completed { cue_id } => UiEvent::CueCompleted { cue_id },
             ExecutorEvent::Progress { .. } => unreachable!(),
             ExecutorEvent::Error { cue_id, error } => UiEvent::CueError { cue_id, error },
-            ExecutorEvent::PreWaitStarted { cue_id } => UiEvent::PreWaitStarted { cue_id },
+            ExecutorEvent::PreWaitStarted { cue_id } => UiEvent::CuePreWaitStarted { cue_id },
             ExecutorEvent::PreWaitProgress { .. } => unreachable!(),
-            ExecutorEvent::PreWaitPaused { cue_id, .. } => UiEvent::PreWaitPaused { cue_id },
-            ExecutorEvent::PreWaitResumed { cue_id } => UiEvent::PreWaitResumed { cue_id },
-            ExecutorEvent::PreWaitCompleted { cue_id } => UiEvent::PreWaitCompleted { cue_id },
+            ExecutorEvent::PreWaitPaused { cue_id, .. } => UiEvent::CuePreWaitPaused { cue_id },
+            ExecutorEvent::PreWaitResumed { cue_id } => UiEvent::CuePreWaitResumed { cue_id },
+            ExecutorEvent::PreWaitStopped { cue_id } => UiEvent::CuePreWaitStopped { cue_id },
+            ExecutorEvent::PreWaitCompleted { cue_id } => UiEvent::CuePreWaitCompleted { cue_id },
         }
     }
 }

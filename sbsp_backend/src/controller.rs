@@ -386,6 +386,16 @@ impl CueController {
                     state_changed = true;
                 }
             }
+            ExecutorEvent::Stopped { cue_id } => {
+                self.state_tx.send_modify(|state| {
+                    if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
+                        active_cue.status = PlaybackStatus::Stopped;
+                    }
+                });
+                show_state.active_cues.remove(cue_id);
+                state_changed = true;
+
+            }
             ExecutorEvent::Completed { cue_id, .. } => {
                 let mut wait_tasks = self.wait_tasks.write().await;
                 if let Some(sequence) = wait_tasks.get(cue_id)
@@ -488,6 +498,10 @@ impl CueController {
                     active_cue.status = PlaybackStatus::PreWaiting;
                     state_changed = true;
                 }
+            }
+            ExecutorEvent::PreWaitStopped { cue_id } => {
+                show_state.active_cues.remove(cue_id);
+                state_changed = true;
             }
             ExecutorEvent::PreWaitCompleted { .. } => {}
         }

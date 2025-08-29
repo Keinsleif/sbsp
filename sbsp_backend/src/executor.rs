@@ -44,6 +44,9 @@ pub enum ExecutorEvent {
     PreWaitResumed {
         cue_id: Uuid,
     },
+    PreWaitStopped {
+        cue_id: Uuid,
+    },
     PreWaitCompleted {
         cue_id: Uuid,
     },
@@ -62,6 +65,9 @@ pub enum ExecutorEvent {
         duration: f64,
     },
     Resumed {
+        cue_id: Uuid,
+    },
+    Stopped {
         cue_id: Uuid,
     },
     Completed {
@@ -278,6 +284,7 @@ impl Executor {
                                     instance_id: *instance_id,
                                 })
                                 .await?;
+                            self.executor_event_tx.send(ExecutorEvent::PreWaitStopped { cue_id }).await?;
                         }
                         EngineType::Audio => {
                             self.audio_tx
@@ -483,6 +490,10 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
+                    AudioEngineEvent::Stopped { .. } => {
+                        self.active_instances.write().await.remove(&instance_id);
+                        ExecutorEvent::Stopped { cue_id }
+                    },
                     AudioEngineEvent::Completed { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }

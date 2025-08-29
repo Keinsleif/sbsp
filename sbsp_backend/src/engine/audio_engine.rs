@@ -102,6 +102,7 @@ impl SoundHandle {
 struct PlayingSound {
     handle: SoundHandle,
     last_state: PlaybackState,
+    manual_stop_sent: bool,
 }
 
 pub struct AudioEngine {
@@ -193,7 +194,11 @@ impl AudioEngine {
                                     continue;
                                 }
                                 log::info!("STOP: id={}", *id);
-                                EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
+                                if playing_sound.manual_stop_sent {
+                                    EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: *id })
+                                } else {
+                                    EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
+                                }
                             },
                         };
                         if let Err(e) = self.event_tx.send(event).await {
@@ -279,7 +284,7 @@ impl AudioEngine {
                 clock,
                 duration,
                 repeat: data.repeat,
-                fade_out_tween, 
+                fade_out_tween,
             },
         );
         Ok(())
@@ -306,6 +311,7 @@ impl AudioEngine {
             PlayingSound {
                 handle,
                 last_state: PlaybackState::Playing,
+                manual_stop_sent: false,
             },
         );
         Ok(())
@@ -354,6 +360,7 @@ impl AudioEngine {
     fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop();
+            playing_sound.manual_stop_sent = true;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
@@ -400,6 +407,9 @@ pub enum AudioEngineEvent {
     Resumed {
         instance_id: Uuid,
     },
+    Stopped {
+        instance_id: Uuid,
+    },
     Completed {
         instance_id: Uuid,
     },
@@ -417,6 +427,7 @@ impl AudioEngineEvent {
             Self::Progress { instance_id, .. } => *instance_id,
             Self::Paused { instance_id, .. } => *instance_id,
             Self::Resumed { instance_id } => *instance_id,
+            Self::Stopped { instance_id } => *instance_id,
             Self::Completed { instance_id } => *instance_id,
             Self::Error { instance_id, .. } => *instance_id,
         }

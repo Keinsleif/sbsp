@@ -11,6 +11,7 @@ pub enum PlaybackStatus {
     PreWaitPaused,
     Playing,
     Paused,
+    Stopped,
     Completed,
     Error,
 }
