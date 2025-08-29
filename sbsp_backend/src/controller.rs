@@ -288,7 +288,7 @@ impl CueController {
                     .find(|cue| cue.id == *cue_id)
                     .unwrap()
                     .clone();
-                if matches!(cue.sequence, CueSequence::AutoContinue { .. }) {
+                if !matches!(cue.sequence, CueSequence::DoNotContinue) {
                     self.wait_tasks
                         .write()
                         .await
@@ -387,6 +387,7 @@ impl CueController {
                 }
             }
             ExecutorEvent::Stopped { cue_id } => {
+                self.wait_tasks.write().await.remove(cue_id);
                 self.state_tx.send_modify(|state| {
                     if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
                         active_cue.status = PlaybackStatus::Stopped;
@@ -398,11 +399,11 @@ impl CueController {
             }
             ExecutorEvent::Completed { cue_id, .. } => {
                 let mut wait_tasks = self.wait_tasks.write().await;
-                if let Some(sequence) = wait_tasks.get(cue_id)
+                if let Some(sequence) = wait_tasks.remove(cue_id)
                     && let CueSequence::AutoFollow { target_id } = sequence
                 {
                     if let Some(target) = target_id {
-                        self.handle_go(*target).await.unwrap();
+                        self.handle_go(target).await.unwrap();
                     } else {
                         let model = self.model_handle.read().await;
                         if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
@@ -411,7 +412,6 @@ impl CueController {
                             self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
                         }
                     }
-                    wait_tasks.remove(cue_id);
                 }
                 drop(wait_tasks);
                 self.state_tx.send_modify(|state| {

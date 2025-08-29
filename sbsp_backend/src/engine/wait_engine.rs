@@ -42,6 +42,9 @@ pub enum WaitEvent {
     Resumed {
         instance_id: Uuid,
     },
+    Stopped {
+        instance_id: Uuid,
+    },
     Completed {
         instance_id: Uuid,
     },
@@ -54,6 +57,7 @@ impl WaitEvent {
             WaitEvent::Progress { instance_id, .. } => *instance_id,
             WaitEvent::Paused { instance_id, .. } => *instance_id,
             WaitEvent::Resumed { instance_id } => *instance_id,
+            WaitEvent::Stopped { instance_id} => *instance_id,
             WaitEvent::Completed { instance_id } => *instance_id,
         }
     }
@@ -155,8 +159,15 @@ impl WaitEngine {
                             }
                         },
                         WaitCommand::Stop{instance_id, ..} => {
-                            self.waiting_instances.remove(&instance_id);
-                            Ok(())
+                            if self.waiting_instances.remove(&instance_id).is_some() {
+                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Stopped { instance_id })).await {
+                                    Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
+                                } else {
+                                    Ok(())
+                                }
+                            } else {
+                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                            }
                         }
                     };
 

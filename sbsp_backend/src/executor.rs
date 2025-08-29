@@ -533,6 +533,14 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
+                    WaitEvent::Stopped { .. } => {
+                        if self.active_instances.write().await.remove(&cue_id).is_some() {
+                            log::info!("PreWaitStopped cue_id={}", cue_id);
+                        } else {
+                            log::error!("Cue with id '{}' not found.", cue_id);
+                        }
+                        ExecutorEvent::PreWaitStopped { cue_id }
+                    }
                     WaitEvent::Completed { instance_id } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             log::info!("PreWaitCompleted cue_id={}", cue.id);
@@ -574,10 +582,14 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
+                    WaitEvent::Stopped { .. } => {
+                        self.active_instances.write().await.remove(&instance_id);
+                        ExecutorEvent::Stopped { cue_id }
+                    },
                     WaitEvent::Completed { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
-                    }
+                    },
                 };
 
                 self.executor_event_tx.send(playback_event).await?;
