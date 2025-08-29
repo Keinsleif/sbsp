@@ -58,7 +58,7 @@
 import { computed } from 'vue';
 import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
 import { curveToEasing, easingToCurve } from '../../utils';
-import CurveViewer from '../editor/CurveViewer.vue';
+import CurveViewer from './CurveViewer.vue';
 import TimeInput from './TimeInput.vue';
 
 const param = defineModel<AudioCueFadeParam | null>({ required: true });
