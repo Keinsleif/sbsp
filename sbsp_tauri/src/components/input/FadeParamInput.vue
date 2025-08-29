@@ -88,6 +88,7 @@ const fadeEnabled = computed({
     } else {
       param.value = null;
     }
+    document.body.focus();
     emit('update');
   },
 });
@@ -98,6 +99,7 @@ const duration = computed({
   set(newValue) {
     if (fadeEnabled.value && param.value != null && newValue != null) {
       param.value.duration = newValue;
+      document.body.focus();
       emit('update');
     }
   },
@@ -109,6 +111,7 @@ const easingType = computed({
   set(newValue) {
     if (fadeEnabled.value && param.value != null && newValue != null) {
       param.value.easing = curveToEasing({ type: newValue, power: easingPower.value });
+      document.body.focus();
       emit('update');
     }
   },
@@ -120,6 +123,7 @@ const easingPower = computed({
   set(newValue) {
     if (fadeEnabled.value && param.value != null && easingType.value != null && newValue != null) {
       param.value.easing = curveToEasing({ type: easingType.value, power: newValue });
+      document.body.focus();
       emit('update');
     }
   },

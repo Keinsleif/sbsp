@@ -103,6 +103,7 @@ const saveEditorValue = throttle((name: string) => {
       break;
     case 'repeat':
       newCue.params.repeat = repeat.value;
+      document.body.focus();
       break;
   }
   invoke('update_cue', { cue: newCue });

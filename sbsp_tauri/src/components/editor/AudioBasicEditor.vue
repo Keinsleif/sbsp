@@ -3,7 +3,6 @@
     <v-text-field
       hide-details
       persistent-placeholder
-      :append-icon="mdiFileMusic"
       v-model="target"
       label="Target"
       variant="outlined"
@@ -15,8 +14,11 @@
         resetEditorValue('target');
         $event.target.blur();
       "
-      @click:append="pickFile()"
-    ></v-text-field>
+    >
+      <template v-slot:append>
+        <v-btn :active="false" density="compact" :icon="mdiFileMusic" @click="pickFile"></v-btn>
+      </template>
+    </v-text-field>
     <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
       <fade-param-input
         v-model="fadeInParam"
@@ -138,6 +140,7 @@ const pickFile = () => {
     target.value = value;
     saveEditorValue('target');
   });
+  document.body.focus();
 };
 </script>
 

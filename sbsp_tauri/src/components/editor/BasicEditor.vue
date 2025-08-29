@@ -14,6 +14,7 @@
         persistent-placeholder
         v-model="sequence"
         label="ContinueMode"
+        ref="cue_sequence"
         :items="[
           { value: 'doNotContinue', name: 'DoNotContinue' },
           { value: 'autoContinue', name: 'Auto-Continue' },
@@ -126,6 +127,7 @@ const saveEditorValue = (paramName: string) => {
     case 'sequence':
       if (sequence.value != null) {
         newCue.sequence.type = sequence.value;
+        document.body.focus();
       }
       break;
     case 'postWait':
