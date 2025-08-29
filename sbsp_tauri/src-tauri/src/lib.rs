@@ -1,24 +1,17 @@
-use std::str::FromStr;
+mod command;
 
 use sbsp_backend::{
-    BackendHandle,
-    asset_processor::AssetData,
-    controller::{ControllerCommand, state::ShowState},
+    controller::state::ShowState,
     event::UiEvent,
-    model::{
-        ShowModel,
-        cue::{Cue, CueParam},
-        settings::ShowSettings,
-    },
     start_backend,
 };
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
-use tauri_plugin_dialog::DialogExt;
 use tokio::sync::{broadcast, watch};
-use uuid::Uuid;
+
+use crate::command::{cue_controller::{go, load, pause, resume, seek_by, seek_to, set_playback_cursor, stop}, file_open, file_save, file_save_as, model_manager::{add_cue, get_show_model, move_cue, remove_cue, update_cue, update_settings}, process_asset};
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -37,233 +30,6 @@ async fn forward_backend_state_and_event(
             else => break,
         }
     }
-}
-
-#[tauri::command]
-async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::Go)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn pause(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::Pause)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn resume(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::Resume)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn stop(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::Stop)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn load(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::Load)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn set_playback_cursor(
-    handle: tauri::State<'_, BackendHandle>,
-    cue_id: Option<String>,
-) -> Result<(), String> {
-    let cursor = if let Some(cue_id_string) = cue_id {
-        match Uuid::from_str(&cue_id_string) {
-            Ok(uuid) => Some(uuid),
-            Err(e) => return Err(e.to_string()),
-        }
-    } else {
-        None
-    };
-    handle
-        .controller_tx
-        .send(ControllerCommand::SetPlaybackCursor { cue_id: cursor })
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_show_model(handle: tauri::State<'_, BackendHandle>) -> Result<ShowModel, String> {
-    Ok(handle.model_handle.read().await.clone())
-}
-
-#[tauri::command]
-async fn update_cue(handle: tauri::State<'_, BackendHandle>, cue: Cue) -> Result<(), String> {
-    handle
-        .model_handle
-        .update_cue(cue)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn add_cue(
-    handle: tauri::State<'_, BackendHandle>,
-    cue: Cue,
-    at_index: usize,
-) -> Result<(), String> {
-    handle
-        .model_handle
-        .add_cue(cue, at_index)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn remove_cue(handle: tauri::State<'_, BackendHandle>, cue_id: &str) -> Result<(), String> {
-    match Uuid::from_str(cue_id) {
-        Ok(cue_uuid) => handle
-            .model_handle
-            .remove_cue(cue_uuid)
-            .await
-            .map_err(|e| e.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn move_cue(
-    handle: tauri::State<'_, BackendHandle>,
-    cue_id: &str,
-    to_index: usize,
-) -> Result<(), String> {
-    match Uuid::from_str(cue_id) {
-        Ok(cue_uuid) => handle
-            .model_handle
-            .move_cue(cue_uuid, to_index)
-            .await
-            .map_err(|e| e.to_string()),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
-async fn update_settings(
-    handle: tauri::State<'_, BackendHandle>,
-    new_settings: ShowSettings,
-) -> Result<(), String> {
-    handle
-        .model_handle
-        .update_settings(new_settings)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn process_asset(
-    handle: tauri::State<'_, BackendHandle>,
-    cue_id: &str,
-) -> Result<(Uuid, AssetData), String> {
-    match Uuid::from_str(cue_id) {
-        Ok(cue_uuid) => {
-            if let Some(cue) = handle
-                .model_handle
-                .read()
-                .await
-                .cues
-                .iter()
-                .find(|cue| cue.id == cue_uuid)
-                && let CueParam::Audio { target, .. } = &cue.params
-            {
-                handle
-                    .asset_handle
-                    .request_file_asset_data(target.clone())
-                    .await
-                    .map_err(|e| e.to_string())
-                    .map(|asset_data| (cue_uuid, asset_data))
-            } else {
-                Err(format!("Cue not found. id={}", cue_uuid))
-            }
-        }
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-#[tauri::command]
-fn file_open(app_handle: tauri::AppHandle) {
-    let model_handle = app_handle.state::<BackendHandle>().model_handle.clone();
-    app_handle.dialog().file().pick_file(|file_path_option| {
-        if let Some(file_path) = file_path_option {
-            tauri::async_runtime::spawn(async move {
-                model_handle
-                    .load_from_file(file_path.into_path().unwrap())
-                    .await
-                    .unwrap();
-            });
-        }
-    });
-}
-
-#[tauri::command]
-fn file_save(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
-    tauri::async_runtime::spawn(async move {
-        if model_handle.get_current_file_path().await.is_some() {
-            model_handle.save().await.unwrap();
-        } else {
-            file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
-                }
-            })
-        }
-    });
-}
-
-#[tauri::command]
-fn file_save_as(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
-    tauri::async_runtime::spawn(async move {
-        if let Some(current_path) = model_handle.get_current_file_path().await {
-            file_dialog_builder
-                .set_directory(current_path.parent().unwrap())
-                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                .save_file(move |file_path_option| {
-                    if let Some(file_path) = file_path_option {
-                        let file_pathbuf = file_path.into_path().unwrap();
-                        tauri::async_runtime::spawn(async move {
-                            model_handle.save_as(file_pathbuf).await.unwrap();
-                        });
-                    }
-                })
-        } else {
-            file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
-                }
-            })
-        }
-    });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -358,6 +124,8 @@ pub fn run() {
             resume,
             stop,
             load,
+            seek_to,
+            seek_by,
             get_show_model,
             set_playback_cursor,
             update_cue,
