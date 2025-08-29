@@ -29,7 +29,7 @@
       ></v-select>
       <time-input
         v-model="postWait"
-        :disabled="selectedCue.sequence.type != 'autoContinue'"
+        :disabled="sequence != 'autoContinue'"
         label="Post-Wait"
         @update="saveEditorValue('postWait')"
       ></time-input>
@@ -127,6 +127,9 @@ const saveEditorValue = (paramName: string) => {
     case 'sequence':
       if (sequence.value != null) {
         newCue.sequence.type = sequence.value;
+        if (newCue.sequence.type == 'autoContinue') {
+          newCue.sequence.postWait = 0;
+        }
         document.body.focus();
       }
       break;
