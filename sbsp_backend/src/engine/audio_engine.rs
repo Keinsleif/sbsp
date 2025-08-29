@@ -23,6 +23,8 @@ pub enum AudioCommand {
     Pause { id: Uuid },
     Resume { id: Uuid },
     Stop { id: Uuid },
+    SeekTo { id: Uuid, position: f64 },
+    SeekBy { id: Uuid, amount: f64 },
 }
 
 impl AudioCommand {
@@ -33,6 +35,8 @@ impl AudioCommand {
             AudioCommand::Pause { id } => *id,
             AudioCommand::Resume { id } => *id,
             AudioCommand::Stop { id } => *id,
+            AudioCommand::SeekTo { id, .. } => *id,
+            AudioCommand::SeekBy { id, .. } => *id,
         }
     }
 }
@@ -53,6 +57,8 @@ struct SoundHandle {
     handle: StaticSoundHandle,
     clock: ClockHandle,
     duration: f64,
+    fade_out_tween: Option<Tween>,
+    repeat: bool,
 }
 
 impl SoundHandle {
@@ -69,18 +75,27 @@ impl SoundHandle {
     }
 
     fn pause(&mut self) {
-        self.handle.pause(Tween::default());
-        self.clock.pause();
+        self.handle.pause(self.fade_out_tween.unwrap_or_default());
     }
 
     fn resume(&mut self) {
         self.handle.resume(Tween::default());
-        self.clock.start();
     }
 
     fn stop(&mut self) {
-        self.handle.stop(Tween::default());
-        self.clock.start();
+        self.handle.stop(self.fade_out_tween.unwrap_or_default());
+    }
+
+    fn seek_to(&mut self, position: f64) {
+        self.handle.seek_to(position);
+    }
+
+    fn seek_by(&mut self, amount: f64) {
+        self.handle.seek_by(amount);
+    }
+
+    fn set_repeat(&mut self, repeat: bool) {
+        self.repeat = repeat;
     }
 }
 
@@ -134,6 +149,8 @@ impl AudioEngine {
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
                         AudioCommand::Stop { id } => self.handle_stop(id),
+                        AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
+                        AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
                     };
                     if let Err(e) = result {
                         self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();
@@ -236,24 +253,18 @@ impl AudioEngine {
             });
         }
 
+        let fade_out_tween = data.fade_out_param.map(|fade_out_param| {
+            Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(fade_out_param.duration),
+                easing: fade_out_param.easing.into(),
+            }
+        });
+
         let duration = sound_data.duration().as_secs_f64();
 
         log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-        let mut handle = manager.play(sound_data)?;
-
-        if let Some(fade_out_param) = data.fade_out_param {
-            handle.set_volume(
-                Decibels::SILENCE,
-                Tween {
-                    start_time: StartTime::ClockTime(ClockTime::from_ticks_f64(
-                        &clock,
-                        duration - fade_out_param.duration,
-                    )),
-                    duration: Duration::from_secs_f64(fade_out_param.duration),
-                    easing: fade_out_param.easing.into(),
-                },
-            );
-        }
+        let handle = manager.play(sound_data)?;
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
@@ -267,6 +278,8 @@ impl AudioEngine {
                 handle,
                 clock,
                 duration,
+                repeat: data.repeat,
+                fade_out_tween, 
             },
         );
         Ok(())
@@ -310,7 +323,6 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            log::warn!("Pause command received for non-existent ID: {}", id);
             Err(anyhow::anyhow!("Sound with ID {} not found for pause.", id))
         }
     }
@@ -332,7 +344,6 @@ impl AudioEngine {
             }
             Ok(())
         } else {
-            log::warn!("Resume command received for non-existent ID: {}", id);
             Err(anyhow::anyhow!(
                 "Sound with ID {} not found for resume.",
                 id
@@ -345,8 +356,25 @@ impl AudioEngine {
             playing_sound.handle.stop();
             Ok(())
         } else {
-            log::warn!("Stop command received for non-existent ID: {}", id);
             Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
+        }
+    }
+
+    fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            playing_sound.handle.seek_to(position);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
+        }
+    }
+
+    fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            playing_sound.handle.seek_by(amount);
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
         }
     }
 }

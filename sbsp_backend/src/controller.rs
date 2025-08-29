@@ -24,13 +24,32 @@ use crate::{
 )]
 pub enum ControllerCommand {
     Go,
-    Pause,
-    Resume,
-    Stop,
+    Load(Uuid),
+    Pause(Uuid),
+    Resume(Uuid),
+    Stop(Uuid),
+    SeekTo(Uuid, f64),
+    SeekBy(Uuid, f64),
+    PauseAll,
+    ResumeAll,
     StopAll,
-    Load,
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
+
+impl ControllerCommand {
+    fn try_into_executor_command(&self) -> Option<ExecutorCommand> {
+        match self {
+            Self::Pause(uuid) => Some(ExecutorCommand::Pause(*uuid)),
+            Self::Resume(uuid) => Some(ExecutorCommand::Resume(*uuid)),
+            Self::Stop(uuid) => Some(ExecutorCommand::Stop(*uuid)),
+            Self::Load(uuid) => Some(ExecutorCommand::Load(*uuid)),
+            Self::SeekTo(uuid, position) => Some(ExecutorCommand::SeekTo(*uuid, *position)),
+            Self::SeekBy(uuid, amount) => Some(ExecutorCommand::SeekBy(*uuid, *amount)),
+            _ => None,
+        }
+    }
+}
+
 pub struct CueController {
     model_handle: ShowModelHandle,
     executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル
@@ -136,35 +155,25 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::Pause => {
-                let state = self.state_tx.borrow().clone();
-                let cue_id = state
-                    .playback_cursor
-                    .expect("PAUSE: Playback Cursor is unavailable.");
-                self.handle_pause(cue_id).await
+            ControllerCommand::Load(cue_id) |
+            ControllerCommand::SeekTo(cue_id, .. ) |
+            ControllerCommand::SeekBy(cue_id, .. ) |
+            ControllerCommand::Pause(cue_id) |
+            ControllerCommand::Resume(cue_id) |
+            ControllerCommand::Stop(cue_id) => {
+                let model = self.model_handle.read().await;
+
+                if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
+                    let executor_command = command.try_into_executor_command().unwrap();
+                    self.executor_tx.send(executor_command).await?;
+                } else {
+                    log::warn!("PAUSE: Invalid playback cursor.");
+                }
+                Ok(())
             }
-            ControllerCommand::Resume => {
-                let state = self.state_tx.borrow().clone();
-                let cue_id = state
-                    .playback_cursor
-                    .expect("RESUME: Playback Cursor is unavailable.");
-                self.handle_resume(cue_id).await
-            }
-            ControllerCommand::Stop => {
-                let state = self.state_tx.borrow().clone();
-                let cue_id = state
-                    .playback_cursor
-                    .expect("STOP: Playback Cursor is unavailable.");
-                self.handle_stop(cue_id).await
-            }
+            ControllerCommand::PauseAll => Ok(()),
+            ControllerCommand::ResumeAll => Ok(()),
             ControllerCommand::StopAll => Ok(()), /* TODO */
-            ControllerCommand::Load => {
-                let state = self.state_tx.borrow().clone();
-                let cue_id = state
-                    .playback_cursor
-                    .expect("LOAD: Playback Cursor is unavailable.");
-                self.handle_load(cue_id).await
-            }
             ControllerCommand::SetPlaybackCursor { cue_id } => {
                 if let Some(cursor_cue_id) = cue_id
                     && self
@@ -217,54 +226,6 @@ impl CueController {
             };
         } else {
             log::warn!("GO: Invalid cue id.");
-        }
-        Ok(())
-    }
-
-    async fn handle_pause(&self, cue_id: Uuid) -> Result<()> {
-        let model = self.model_handle.read().await;
-
-        if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            let command = ExecutorCommand::Pause(cue_id);
-            self.executor_tx.send(command).await?;
-        } else {
-            log::warn!("PAUSE: Invalid playback cursor.");
-        }
-        Ok(())
-    }
-
-    async fn handle_resume(&self, cue_id: Uuid) -> Result<()> {
-        let model = self.model_handle.read().await;
-
-        if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            let command = ExecutorCommand::Resume(cue_id);
-            self.executor_tx.send(command).await?;
-        } else {
-            log::warn!("RESUME: Invalid playback cursor.");
-        }
-        Ok(())
-    }
-
-    async fn handle_stop(&self, cue_id: Uuid) -> Result<()> {
-        let model = self.model_handle.read().await;
-
-        if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            let command = ExecutorCommand::Stop(cue_id);
-            self.executor_tx.send(command).await?;
-        } else {
-            log::warn!("STOP: Invalid playback cursor.");
-        }
-        Ok(())
-    }
-
-    async fn handle_load(&self, cue_id: Uuid) -> Result<()> {
-        let model = self.model_handle.read().await;
-
-        if model.cues.iter().any(|cue| cue.id == cue_id) {
-            let command = ExecutorCommand::Load(cue_id);
-            self.executor_tx.send(command).await?;
-        } else {
-            log::warn!("LOAD: Invalid playback cursor.");
         }
         Ok(())
     }

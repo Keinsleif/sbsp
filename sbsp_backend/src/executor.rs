@@ -19,6 +19,8 @@ pub enum ExecutorCommand {
     Pause(Uuid),
     Resume(Uuid),
     Stop(Uuid),
+    SeekTo(Uuid, f64),
+    SeekBy(Uuid, f64),
 }
 
 #[derive(Debug, Clone)]
@@ -290,6 +292,40 @@ impl Executor {
                                 .await?;
                         }
                     }
+                }
+            }
+            ExecutorCommand::SeekTo(cue_id, position) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) =
+                    active_instances.iter().find(|map| map.1.cue_id == cue_id)
+                {
+                    match active_instance.engine_type {
+                        EngineType::PreWait => {
+                            todo!()
+                        },
+                        EngineType::Audio => {
+                            self.audio_tx.send(AudioCommand::SeekTo { id: *instance_id, position }).await?;
+                        },
+                        EngineType::Wait => todo!(),
+                    }
+
+                }
+            }
+            ExecutorCommand::SeekBy(cue_id, amount) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) =
+                    active_instances.iter().find(|map| map.1.cue_id == cue_id)
+                {
+                    match active_instance.engine_type {
+                        EngineType::PreWait => {
+                            todo!()
+                        },
+                        EngineType::Audio => {
+                            self.audio_tx.send(AudioCommand::SeekBy { id: *instance_id, amount }).await?;
+                        },
+                        EngineType::Wait => todo!(),
+                    }
+
                 }
             }
         }
