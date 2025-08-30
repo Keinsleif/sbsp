@@ -11,7 +11,7 @@ use tauri::{
 };
 use tokio::sync::{broadcast, watch};
 
-use crate::command::{cue_controller::{go, load, pause, resume, seek_by, seek_to, set_playback_cursor, stop}, file_open, file_save, file_save_as, model_manager::{add_cue, get_show_model, move_cue, remove_cue, update_cue, update_settings}, process_asset};
+use crate::command::{cue_controller::{go, load, pause, resume, seek_by, seek_to, set_playback_cursor, stop}, file_open, file_save, file_save_as, model_manager::{add_cue, add_cues, get_show_model, move_cue, remove_cue, update_cue, update_settings}, process_asset};
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -130,6 +130,7 @@ pub fn run() {
             set_playback_cursor,
             update_cue,
             add_cue,
+            add_cues,
             remove_cue,
             move_cue,
             update_settings,

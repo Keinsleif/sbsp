@@ -30,6 +30,19 @@ pub async fn add_cue(
 }
 
 #[tauri::command]
+pub async fn add_cues(
+    handle: tauri::State<'_, BackendHandle>,
+    cues: Vec<Cue>,
+    at_index: usize,
+) -> Result<(), String> {
+    handle
+        .model_handle
+        .add_cues(cues, at_index)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn remove_cue(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
     handle
         .model_handle

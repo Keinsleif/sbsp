@@ -39,6 +39,7 @@ pub enum UiEvent {
     ShowModelSaved { path: PathBuf },
     CueUpdated { cue: Cue },
     CueAdded { cue: Cue, at_index: usize },
+    CuesAdded { cues: Vec<Cue>, at_index: usize },
     CueRemoved { cue_id: Uuid },
     CueMoved { cue_id: Uuid, to_index: usize },
     SettingsUpdated { new_settings: Box<ShowSettings> },
@@ -56,7 +57,7 @@ pub enum UiEvent {
 pub enum UiError {
     FileSave { path: PathBuf, message: String },
     FileLoad { path: PathBuf, message: String },
-    CueEdit { cue_id: Uuid, message: String },
+    CueEdit { message: String },
 }
 
 impl From<ExecutorEvent> for UiEvent {

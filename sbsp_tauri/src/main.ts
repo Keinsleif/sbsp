@@ -75,6 +75,9 @@ listen<UiEvent>('backend-event', (event) => {
     case 'cueAdded':
       showModel.addCue(event.payload.param.cue, event.payload.param.atIndex);
       break;
+    case 'cuesAdded':
+      showModel.addCues(event.payload.param.cues, event.payload.param.atIndex);
+      break;
     case 'cueRemoved':
       showModel.removeCue(event.payload.param.cueId);
       break;
@@ -86,6 +89,9 @@ listen<UiEvent>('backend-event', (event) => {
       showModel.$patch({ settings: settings });
       break;
     }
+    case 'operationFailed':
+      console.error(event.payload.param.error);
+      break;
   }
 });
 

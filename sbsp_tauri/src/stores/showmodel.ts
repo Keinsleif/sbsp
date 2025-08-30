@@ -66,6 +66,9 @@ export const useShowModel = defineStore('showmodel', {
     addCue(cue: Cue, atIndex: number) {
       this.cues.splice(atIndex, 0, cue);
     },
+    addCues(cues: Cue[], atIndex: number) {
+      this.cues.splice(atIndex, 0, ...cues);
+    },
     removeCue(cueId: string) {
       this.cues.splice(
         this.cues.findIndex((cue) => cue.id == cueId),

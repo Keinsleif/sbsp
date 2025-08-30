@@ -22,6 +22,7 @@ use crate::{
 pub enum ModelCommand {
     UpdateCue(Cue),
     AddCue { cue: Cue, at_index: usize },
+    AddCues { cues: Vec<Cue>, at_index: usize },
     RemoveCue { cue_id: Uuid },
     MoveCue { cue_id: Uuid, to_index: usize },
 
@@ -62,143 +63,179 @@ impl ShowModelManager {
 
     pub async fn run(mut self) {
         while let Some(command) = self.command_rx.recv().await {
-            let event = self.process_command(command).await;
-            if let Some(event) = event {
-                self.event_tx.send(event).ok();
+            if let Err(e) = self.process_command(command).await {
+                log::error!("Failed modifying show model: {}", e);
             }
         }
     }
 
-    async fn process_command(&self, command: ModelCommand) -> Option<UiEvent> {
+    async fn process_command(&self, command: ModelCommand) -> anyhow::Result<()> {
         match command {
             ModelCommand::UpdateCue(cue) => {
                 let mut model = self.model.write().await;
-                if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
+                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
                     model.cues[index] = cue.clone();
-                    Some(UiEvent::CueUpdated { cue })
+                    UiEvent::CueUpdated { cue }
                 } else {
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id: cue.id,
-                            message: "Cue doesn't exist.".to_string(),
+                            message: format!("Cue doesn't exist: cue_id={}", cue.id),
                         },
-                    })
-                }
+                    }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
             ModelCommand::AddCue { cue, at_index } => {
                 let mut model = self.model.write().await;
-                if model.cues.iter().any(|c| c.id == cue.id) {
-                    Some(UiEvent::OperationFailed {
+                let event = if model.cues.iter().any(|c| c.id == cue.id) {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id: cue.id,
-                            message: "Cue already exist.".to_string(),
+                            message: format!("Cue already exist: cue_id={}", cue.id),
                         },
-                    })
+                    }
                 } else if at_index > model.cues.len() {
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id: cue.id,
                             message: "Insert index is out of list.".to_string(),
                         },
-                    })
+                    }
                 } else {
                     model.cues.insert(at_index, cue.clone());
-                    Some(UiEvent::CueAdded { cue, at_index })
+                    UiEvent::CueAdded { cue, at_index }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
+            }
+            ModelCommand::AddCues { cues, at_index } => {
+                let mut model = self.model.write().await;
+                let mut added_cues = vec![];
+                if at_index > model.cues.len() {
+                    self.event_tx.send(UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            message: "Insert index is out of list.".to_string(),
+                        },
+                    })?;
+                } else {
+                    let mut insert_index = 0;
+                    for cue in cues.iter() {
+                        if model.cues.iter().any(|c| c.id == cue.id) {
+                            self.event_tx.send(UiEvent::OperationFailed {
+                                error: UiError::CueEdit {
+                                    message: format!("Cue already exist. cue_id={}", cue.id),
+                                },
+                            })?;
+                        } else {
+                            model.cues.insert(at_index + insert_index, cue.clone());
+                            added_cues.push(cue.clone());
+                            insert_index += 1;
+                        }
+                    }
+                    self.event_tx.send(UiEvent::CuesAdded { cues: added_cues, at_index })?;
                 }
+                Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
                 let mut model = self.model.write().await;
-                if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
+                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
                     model.cues.remove(index);
-                    Some(UiEvent::CueRemoved { cue_id })
+                    UiEvent::CueRemoved { cue_id }
                 } else {
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id,
-                            message: "Cue doesn't exist.".to_string(),
+                            message: format!("Cue already exist: cue_id={}", cue_id),
                         },
-                    })
-                }
+                    }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
             ModelCommand::MoveCue { cue_id, to_index } => {
                 let mut model = self.model.write().await;
-                if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
+                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
                     let cue = model.cues.remove(index);
                     model.cues.insert(to_index, cue.clone());
-                    Some(UiEvent::CueMoved { cue_id, to_index })
+                    UiEvent::CueMoved { cue_id, to_index }
                 } else if to_index > model.cues.len() {
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id,
                             message: "Insert index is out of list.".to_string(),
                         },
-                    })
+                    }
                 } else {
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            cue_id,
-                            message: "Cue doesn't exist.".to_string(),
+                            message: format!("Cue already exist: cue_id={}", cue_id),
                         },
-                    })
-                }
+                    }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
             ModelCommand::UpdateSettings(new_settings) => {
                 let mut model = self.model.write().await;
                 // TODO setting validation
                 model.settings = *new_settings.clone();
-                Some(UiEvent::SettingsUpdated { new_settings })
+                self.event_tx.send(UiEvent::SettingsUpdated { new_settings })?;
+                Ok(())
             }
             ModelCommand::Save => {
-                if let Some(path) = self.show_model_path.read().await.as_ref() {
+                let event = if let Some(path) = self.show_model_path.read().await.as_ref() {
                     if let Err(error) = self.save_to_file(path.as_path()).await {
                         log::error!("Failed to save model file: {}", error);
-                        Some(UiEvent::OperationFailed {
+                        UiEvent::OperationFailed {
                             error: UiError::FileSave {
                                 path: path.to_path_buf(),
                                 message: error.to_string(),
                             },
-                        })
+                        }
                     } else {
-                        Some(UiEvent::ShowModelSaved {
+                        UiEvent::ShowModelSaved {
                             path: path.to_path_buf(),
-                        })
+                        }
                     }
                 } else {
                     log::warn!(
                         "Save command issued, but no file path is set. Use SaveToFile first."
                     );
-                    Some(UiEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } })
-                }
+                    UiEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
             ModelCommand::SaveToFile(path) => {
-                if let Err(error) = self.save_to_file(path.as_path()).await {
+                let event = if let Err(error) = self.save_to_file(path.as_path()).await {
                     log::error!("Failed to save model file: {}", error);
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::FileSave {
                             path,
                             message: error.to_string(),
                         },
-                    })
+                    }
                 } else {
                     let mut show_model_path = self.show_model_path.write().await;
                     *show_model_path = Some(path.clone());
-                    Some(UiEvent::ShowModelSaved { path })
-                }
+                    UiEvent::ShowModelSaved { path }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
             ModelCommand::LoadFromFile(path) => {
-                if let Err(error) = self.load_from_file(path.as_path()).await {
+                let event = if let Err(error) = self.load_from_file(path.as_path()).await {
                     log::error!("Failed to load model file: {}", error);
-                    Some(UiEvent::OperationFailed {
+                    UiEvent::OperationFailed {
                         error: UiError::FileLoad {
                             path,
                             message: error.to_string(),
                         },
-                    })
+                    }
                 } else {
                     let mut show_model_path = self.show_model_path.write().await;
                     *show_model_path = Some(path.clone());
-                    Some(UiEvent::ShowModelLoaded { path })
-                }
+                    UiEvent::ShowModelLoaded { path }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
             }
         }
     }
@@ -267,6 +304,11 @@ impl ShowModelHandle {
     pub async fn add_cue(&self, cue: Cue, at_index: usize) -> anyhow::Result<()> {
         self.send_command(ModelCommand::AddCue { cue, at_index })
             .await?;
+        Ok(())
+    }
+
+    pub async fn add_cues(&self, cues: Vec<Cue>, at_index: usize) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::AddCues { cues, at_index }).await?;
         Ok(())
     }
 
