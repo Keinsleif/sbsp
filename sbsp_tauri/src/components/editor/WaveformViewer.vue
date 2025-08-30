@@ -8,6 +8,7 @@
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"
       height="116px"
+      @mousedown="seek($event)"
     >
       <g :transform="`scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, 12)`" transform-origin="center">
         <rect
@@ -20,22 +21,8 @@
           :height="sample * 92"
         ></rect>
       </g>
-      <rect
-        v-show="props.startTime != null"
-        :x="nonNullStartTime * (compressedWaveform.length - 1)"
-        y="0"
-        width="2"
-        height="116"
-        fill="blue"
-      ></rect>
-      <rect
-        v-show="props.endTime != null"
-        :x="nonNullEndTime * (compressedWaveform.length - 1) - 1"
-        y="0"
-        width="2"
-        height="116"
-        fill="blue"
-      ></rect>
+      <rect :x="nonNullStartTime * (compressedWaveform.length - 1)" y="0" width="2" height="116" fill="blue"></rect>
+      <rect :x="nonNullEndTime * (compressedWaveform.length - 1) - 1" y="0" width="2" height="116" fill="blue"></rect>
       <rect
         v-if="position != null"
         :x="
@@ -56,6 +43,7 @@ import { computed, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import type { PlaybackStatus } from '../../types/PlaybackStatus';
+import { invoke } from '@tauri-apps/api/core';
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -99,7 +87,7 @@ const compressedWaveform = computed<number[]>((oldValue) => {
     let result = [] as number[];
     let source = assetResult.waveform[targetId.value];
     if (source == null || svgRef.value.clientWidth < 1) {
-      return oldValue != null ? oldValue : [];
+      return oldValue != null ? oldValue : [0];
     }
     const window = source.length / (svgRef.value.clientWidth - 1);
     let loop_count = 0;
@@ -123,16 +111,31 @@ const compressedWaveform = computed<number[]>((oldValue) => {
     }
     return result;
   } else {
-    return oldValue != null ? oldValue : [];
+    return oldValue != null ? oldValue : [0];
   }
 });
+
+const seek = (event: MouseEvent) => {
+  if (
+    svgRef.value == null ||
+    svgRef.value.clientWidth < 1 ||
+    targetId.value == null ||
+    !(targetId.value in showState.activeCues) ||
+    !(['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[targetId.value]!.status)
+  ) {
+    return;
+  }
+  const position =
+    (event.offsetX - nonNullStartTime.value * svgRef.value.clientWidth) /
+    (svgRef.value.clientWidth * (nonNullEndTime.value - nonNullStartTime.value));
+  if (position > 0 && position < 1) {
+    invoke('seek_to', { cueId: targetId.value, position: position * showState.activeCues[targetId.value]!.duration });
+  }
+};
 </script>
 
 <style lang="css" module>
 .waveform {
   fill: rgb(var(--v-theme-surface-variant), 0.8);
 }
-/* .draggable {
-  cursor: col-resize;
-} */
 </style>
