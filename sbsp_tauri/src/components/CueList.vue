@@ -221,6 +221,7 @@ import { buildCueName, calculateDuration, formatToSeconds, secondsToFormat } fro
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
+import { debounce } from 'vuetify/lib/util/helpers.mjs';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -229,9 +230,9 @@ const assetResult = useAssetResult();
 
 watch(
   () => showModel.cues,
-  () => {
+  debounce(() => {
     assetResult.updateAssetData();
-  },
+  }, 500),
   { deep: true },
 );
 
