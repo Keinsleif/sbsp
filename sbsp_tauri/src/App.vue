@@ -5,7 +5,8 @@
 <style>
 html {
   height: 100%;
-  overflow-y: hidden;
+  overflow: hidden;
+  scrollbar-width: none;
   overscroll-behavior-y: none;
   user-select: none;
 }
