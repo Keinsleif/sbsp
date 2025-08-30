@@ -8,6 +8,11 @@ use crate::executor::EngineEvent;
 
 #[derive(Debug)]
 pub enum WaitCommand {
+    Load {
+        wait_type: WaitType,
+        instance_id: Uuid,
+        duration: f64,
+    },
     Start {
         wait_type: WaitType,
         instance_id: Uuid,
@@ -26,6 +31,9 @@ pub enum WaitCommand {
 
 #[derive(Debug)]
 pub enum WaitEvent {
+    Loaded {
+        instance_id: Uuid,
+    },
     Started {
         instance_id: Uuid,
     },
@@ -53,6 +61,7 @@ pub enum WaitEvent {
 impl WaitEvent {
     pub fn instance_id(&self) -> Uuid {
         match self {
+            WaitEvent::Loaded { instance_id } => *instance_id,
             WaitEvent::Started { instance_id } => *instance_id,
             WaitEvent::Progress { instance_id, .. } => *instance_id,
             WaitEvent::Paused { instance_id, .. } => *instance_id,
@@ -63,7 +72,7 @@ impl WaitEvent {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WaitType {
     PreWait,
     Wait,
@@ -77,6 +86,18 @@ pub struct WaitingInstance {
     remaining_duration: Duration,
 }
 
+pub struct LoadedInstance {
+    wait_type: WaitType,
+    total_duration: Duration,
+    remaining_duration: Duration,
+}
+
+impl LoadedInstance {
+    fn start_waiting(&self) -> WaitingInstance {
+        WaitingInstance { wait_type: self.wait_type, status: WaitingStatus::Waiting, total_duration: self.total_duration, start_time: Instant::now(), remaining_duration: self.remaining_duration }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum WaitingStatus {
     Waiting,
@@ -88,6 +109,7 @@ pub struct WaitEngine {
     command_rx: mpsc::Receiver<WaitCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     waiting_instances: HashMap<Uuid, WaitingInstance>,
+    loaded_instances: HashMap<Uuid, LoadedInstance>,
 }
 
 impl WaitEngine {
@@ -99,6 +121,7 @@ impl WaitEngine {
             command_rx: wait_command_rx,
             event_tx: wait_event_tx,
             waiting_instances: HashMap::new(),
+            loaded_instances: HashMap::new(),
         }
     }
 
@@ -109,14 +132,30 @@ impl WaitEngine {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     let result: Result<()> = match command {
+                        WaitCommand::Load { wait_type, instance_id, duration } => {
+                            if wait_type.eq(&WaitType::Wait) {
+                                self.loaded_instances.insert(instance_id, LoadedInstance { wait_type, total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
+                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id })).await {
+                                    Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
+                                } else {
+                                    Ok(())
+                                }
+                            } else {
+                                Ok(())
+                            }
+                        }
                         WaitCommand::Start{wait_type, instance_id, duration} => {
-                            self.waiting_instances.insert(instance_id, WaitingInstance {
-                                wait_type,
-                                status: WaitingStatus::Waiting,
-                                total_duration: Duration::from_secs_f64(duration),
-                                start_time: Instant::now(),
-                                remaining_duration: Duration::from_secs_f64(duration),
-                            });
+                            if let Some(loaded_instance) = self.loaded_instances.remove(&instance_id) {
+                                self.waiting_instances.insert(instance_id, loaded_instance.start_waiting());
+                            } else {
+                                self.waiting_instances.insert(instance_id, WaitingInstance {
+                                    wait_type,
+                                    status: WaitingStatus::Waiting,
+                                    total_duration: Duration::from_secs_f64(duration),
+                                    start_time: Instant::now(),
+                                    remaining_duration: Duration::from_secs_f64(duration),
+                                });
+                            }
                             if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Started { instance_id })).await {
                                 Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
                             } else {
@@ -187,6 +226,9 @@ impl WaitEngine {
                                 continue;
                             }
                         } else {
+                            if waiting_instance.status.ne(&WaitingStatus::Waiting) {
+                                continue;
+                            }
                             event = WaitEvent::Progress { instance_id: *instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
                         }
                         match waiting_instance.wait_type {

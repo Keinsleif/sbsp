@@ -375,8 +375,8 @@ impl Executor {
                     })
                     .await?;
             }
-            CueParam::Wait { .. } => {
-                unimplemented!()
+            CueParam::Wait { duration } => {
+                self.wait_tx.send(WaitCommand::Load { wait_type: WaitType::Wait, instance_id, duration: *duration }).await?;
             }
         }
         Ok(())
@@ -517,6 +517,7 @@ impl Executor {
                 drop(instances);
 
                 let executor_event = match wait_event {
+                    WaitEvent::Loaded { .. } => unreachable!(),
                     WaitEvent::Started { .. } => ExecutorEvent::PreWaitStarted { cue_id },
                     WaitEvent::Progress {
                         position, duration, ..
@@ -566,6 +567,7 @@ impl Executor {
                 drop(instances);
 
                 let playback_event = match wait_event {
+                    WaitEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
                     WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id },
                     WaitEvent::Progress {
                         position, duration, ..
