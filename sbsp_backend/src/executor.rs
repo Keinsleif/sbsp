@@ -308,12 +308,14 @@ impl Executor {
                 {
                     match active_instance.engine_type {
                         EngineType::PreWait => {
-                            todo!()
+                            self.wait_tx.send(WaitCommand::SeekTo { instance_id: *instance_id, position }).await?;
                         },
                         EngineType::Audio => {
                             self.audio_tx.send(AudioCommand::SeekTo { id: *instance_id, position }).await?;
                         },
-                        EngineType::Wait => todo!(),
+                        EngineType::Wait => {
+                            self.wait_tx.send(WaitCommand::SeekTo { instance_id: *instance_id, position }).await?;
+                        },
                     }
 
                 }
@@ -325,12 +327,14 @@ impl Executor {
                 {
                     match active_instance.engine_type {
                         EngineType::PreWait => {
-                            todo!()
+                            self.wait_tx.send(WaitCommand::SeekBy { instance_id: *instance_id, amount }).await?;
                         },
                         EngineType::Audio => {
                             self.audio_tx.send(AudioCommand::SeekBy { id: *instance_id, amount }).await?;
                         },
-                        EngineType::Wait => todo!(),
+                        EngineType::Wait => {
+                            self.wait_tx.send(WaitCommand::SeekBy { instance_id: *instance_id, amount }).await?;
+                        },
                     }
 
                 }

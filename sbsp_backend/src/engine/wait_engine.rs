@@ -24,6 +24,14 @@ pub enum WaitCommand {
     Resume {
         instance_id: Uuid,
     },
+    SeekTo {
+        instance_id: Uuid,
+        position: f64,
+    },
+    SeekBy {
+        instance_id: Uuid,
+        amount: f64,
+    },
     Stop {
         instance_id: Uuid,
     },
@@ -192,6 +200,39 @@ impl WaitEngine {
                                     }
                                 } else {
                                     Err(anyhow::anyhow!("Instance with ID {} is playing.", instance_id))
+                                }
+                            } else {
+                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                            }
+                        },
+                        WaitCommand::SeekTo {instance_id, position} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
+                                waiting_instance.remaining_duration = waiting_instance.total_duration - Duration::from_secs_f64(position);
+                                if waiting_instance.status.eq(&WaitingStatus::Paused) {
+                                    if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Paused { instance_id, position, duration: waiting_instance.total_duration.as_secs_f64() })).await {
+                                        Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
+                                    } else {
+                                        Ok(())
+                                    }
+                                } else {
+                                    Ok(())
+                                }
+                            } else {
+                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                            }
+                        },
+                        WaitCommand::SeekBy {instance_id, amount} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
+                                waiting_instance.remaining_duration -= Duration::from_secs_f64(amount);
+                                let position = (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64();
+                                if waiting_instance.status.eq(&WaitingStatus::Paused) {
+                                    if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Paused { instance_id, position, duration: waiting_instance.total_duration.as_secs_f64() })).await {
+                                        Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
+                                    } else {
+                                        Ok(())
+                                    }
+                                } else {
+                                    Ok(())
                                 }
                             } else {
                                 Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
