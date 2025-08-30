@@ -167,7 +167,7 @@ impl CueController {
                     let executor_command = command.try_into_executor_command().unwrap();
                     self.executor_tx.send(executor_command).await?;
                 } else {
-                    log::warn!("PAUSE: Invalid playback cursor.");
+                    log::warn!("DIRECT: Cue not found. cue_id={}", cue_id);
                 }
                 Ok(())
             }

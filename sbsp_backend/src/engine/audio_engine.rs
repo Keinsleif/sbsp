@@ -193,10 +193,11 @@ impl AudioEngine {
                                 if playing_sound.last_state.eq(&PlaybackState::Stopped) {
                                     continue;
                                 }
-                                log::info!("STOP: id={}", *id);
                                 if playing_sound.manual_stop_sent {
+                                    log::info!("STOP: id={}", *id);
                                     EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: *id })
                                 } else {
+                                    log::info!("COMPLETE: id={}", *id);
                                     EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
                                 }
                             },
