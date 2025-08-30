@@ -216,29 +216,28 @@ impl AssetProcessor {
     }
 
     async fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
-        let src = std::fs::File::open(&path).unwrap();
+        let src: std::fs::File = std::fs::File::open(&path)?;
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
         let mut hint = Hint::new();
-        if let Some(ext_osstr) = path.extension() {
-            hint.with_extension(ext_osstr.to_str().unwrap());
-        }
+        if let Some(ext_osstr) = path.extension()
+            && let Some(ext_str) = ext_osstr.to_str() {
+                hint.with_extension(ext_str);
+            }
 
         let format_opts: FormatOptions = Default::default();
         let metadata_opts: MetadataOptions = Default::default();
         let decoder_opts: DecoderOptions = Default::default();
 
         let probed = symphonia::default::get_probe()
-            .format(&hint, mss, &format_opts, &metadata_opts)
-            .unwrap();
+            .format(&hint, mss, &format_opts, &metadata_opts)?;
 
         let mut format = probed.format;
 
         let track = format.default_track().unwrap();
 
         let mut decoder = symphonia::default::get_codecs()
-            .make(&track.codec_params, &decoder_opts)
-            .unwrap();
+            .make(&track.codec_params, &decoder_opts)?;
 
         let track_id = track.id;
 
@@ -285,8 +284,8 @@ impl AssetProcessor {
             }
         };
 
-        ignore_end_of_stream_error(result).unwrap();
-        do_verification(decoder.finalize()).unwrap();
+        ignore_end_of_stream_error(result)?;
+        do_verification(decoder.finalize())?;
 
         let spec_data = spec.unwrap();
         let mut window = (spec_data.rate / 10) as usize;
