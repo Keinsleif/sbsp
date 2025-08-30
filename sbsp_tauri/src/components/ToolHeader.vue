@@ -123,9 +123,15 @@ const isCueStatus = (status: PlaybackStatus) => {
 };
 
 const addEmptyCue = (type: 'audio' | 'wait') => {
+  let insertIndex;
+  if (uiState.selected) {
+    insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+  } else {
+    insertIndex = showModel.cues.length;
+  }
   if (type == 'audio') {
     open({
-      multiple: false,
+      multiple: true,
       filters: [
         {
           name: 'Audio',
@@ -152,27 +158,28 @@ const addEmptyCue = (type: 'audio' | 'wait') => {
       if (value == null) {
         return;
       }
-      const newCue = structuredClone(toRaw(showModel.settings.template['audio']));
-      if (newCue.params.type != 'audio') return;
-      newCue.params.target = value;
-      addCue(newCue);
+      if (value.length === 1) {
+        let newCue = structuredClone(toRaw(showModel.settings.template['audio']));
+        if (newCue.params.type != 'audio') return;
+        newCue.id = v4();
+        newCue.params.target = value[0];
+        invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
+      } else {
+        const newCues: Cue[] = [];
+        value.forEach((filename) => {
+          let newCue = structuredClone(toRaw(showModel.settings.template['audio']));
+          if (newCue.params.type != 'audio') return;
+          newCue.id = v4();
+          newCue.params.target = filename;
+          newCues.push(newCue);
+        });
+        invoke('add_cues', { cues: newCues, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
+      }
     });
   } else if (type == 'wait') {
     const newCue = structuredClone(toRaw(showModel.settings.template['wait']));
-    addCue(newCue);
-  }
-};
-
-const addCue = (cue: Cue) => {
-  if (cue != null) {
-    cue.id = v4();
-    let insertIndex;
-    if (uiState.selected) {
-      insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-    } else {
-      insertIndex = showModel.cues.length;
-    }
-    invoke('add_cue', { cue: cue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
+    newCue.id = v4();
+    invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
   }
 };
 
