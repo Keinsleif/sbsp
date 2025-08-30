@@ -24,7 +24,7 @@
       <rect :x="nonNullStartTime * (compressedWaveform.length - 1)" y="0" width="2" height="116" fill="blue"></rect>
       <rect :x="nonNullEndTime * (compressedWaveform.length - 1) - 1" y="0" width="2" height="116" fill="blue"></rect>
       <rect
-        v-if="position != null"
+        v-show="position != 0"
         :x="
           position * ((nonNullEndTime - nonNullStartTime) * (compressedWaveform.length - 1)) +
           nonNullStartTime * compressedWaveform.length
@@ -79,7 +79,7 @@ const position = computed(() => {
   ) {
     return showState.activeCues[targetId.value]!.position / showState.activeCues[targetId.value]!.duration;
   } else {
-    return null;
+    return 0;
   }
 });
 const compressedWaveform = computed<number[]>((oldValue) => {
