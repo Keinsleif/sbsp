@@ -83,6 +83,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { v4 } from 'uuid';
 import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
+import type { Cue } from '../types/Cue';
+import { open } from '@tauri-apps/plugin-dialog';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -121,16 +123,56 @@ const isCueStatus = (status: PlaybackStatus) => {
 };
 
 const addEmptyCue = (type: 'audio' | 'wait') => {
-  const newCue = structuredClone(toRaw(showModel.settings.template[type]));
-  if (newCue != null) {
-    newCue.id = v4();
+  if (type == 'audio') {
+    open({
+      multiple: false,
+      filters: [
+        {
+          name: 'Audio',
+          extensions: [
+            'aiff',
+            'aif',
+            'caf',
+            'mp4',
+            'm4a',
+            'mkv',
+            'mka',
+            'webm',
+            'ogg',
+            'oga',
+            'wav',
+            'aac',
+            'alac',
+            'flac',
+            'mp3',
+          ],
+        },
+      ],
+    }).then((value) => {
+      if (value == null) {
+        return;
+      }
+      const newCue = structuredClone(toRaw(showModel.settings.template['audio']));
+      if (newCue.params.type != 'audio') return;
+      newCue.params.target = value;
+      addCue(newCue);
+    });
+  } else if (type == 'wait') {
+    const newCue = structuredClone(toRaw(showModel.settings.template['wait']));
+    addCue(newCue);
+  }
+};
+
+const addCue = (cue: Cue) => {
+  if (cue != null) {
+    cue.id = v4();
     let insertIndex;
     if (uiState.selected) {
       insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
     } else {
       insertIndex = showModel.cues.length;
     }
-    invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
+    invoke('add_cue', { cue: cue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
   }
 };
 
