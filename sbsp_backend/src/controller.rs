@@ -28,13 +28,11 @@ pub enum ControllerCommand {
     Pause(Uuid),
     Resume(Uuid),
     Stop(Uuid),
-    HardStop(Uuid),
     SeekTo(Uuid, f64),
     SeekBy(Uuid, f64),
     PauseAll,
     ResumeAll,
     StopAll,
-    HardStopAll,
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 
@@ -44,7 +42,6 @@ impl ControllerCommand {
             Self::Pause(uuid) => Some(ExecutorCommand::Pause(*uuid)),
             Self::Resume(uuid) => Some(ExecutorCommand::Resume(*uuid)),
             Self::Stop(uuid) => Some(ExecutorCommand::Stop(*uuid)),
-            Self::HardStop(uuid) => Some(ExecutorCommand::HardStop(*uuid)),
             Self::Load(uuid) => Some(ExecutorCommand::Load(*uuid)),
             Self::SeekTo(uuid, position) => Some(ExecutorCommand::SeekTo(*uuid, *position)),
             Self::SeekBy(uuid, amount) => Some(ExecutorCommand::SeekBy(*uuid, *amount)),
@@ -57,7 +54,6 @@ impl ControllerCommand {
             Self::PauseAll => Some(ExecutorCommand::Pause(cue_id)),
             Self::ResumeAll => Some(ExecutorCommand::Resume(cue_id)),
             Self::StopAll => Some(ExecutorCommand::Stop(cue_id)),
-            Self::HardStopAll => Some(ExecutorCommand::HardStop(cue_id)),
             _ => None,
         }
     }
@@ -177,8 +173,7 @@ impl CueController {
             ControllerCommand::SeekBy(cue_id, .. ) |
             ControllerCommand::Pause(cue_id) |
             ControllerCommand::Resume(cue_id) |
-            ControllerCommand::Stop(cue_id) |
-            ControllerCommand::HardStop(cue_id) => {
+            ControllerCommand::Stop(cue_id) => {
                 let model = self.model_handle.read().await;
 
                 if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
@@ -191,8 +186,7 @@ impl CueController {
             }
             ControllerCommand::PauseAll |
             ControllerCommand::ResumeAll |
-            ControllerCommand::StopAll |
-            ControllerCommand::HardStopAll => {
+            ControllerCommand::StopAll => {
                 let model = self.model_handle.read().await;
 
                 for cue in &model.cues {

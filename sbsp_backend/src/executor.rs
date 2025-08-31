@@ -19,7 +19,6 @@ pub enum ExecutorCommand {
     Pause(Uuid),
     Resume(Uuid),
     Stop(Uuid),
-    HardStop(Uuid),
     SeekTo(Uuid, f64),
     SeekBy(Uuid, f64),
 }
@@ -290,35 +289,6 @@ impl Executor {
                         EngineType::Audio => {
                             self.audio_tx
                                 .send(AudioCommand::Stop { id: *instance_id })
-                                .await?;
-                        }
-                        EngineType::Wait => {
-                            self.wait_tx
-                                .send(WaitCommand::Stop {
-                                    instance_id: *instance_id,
-                                })
-                                .await?;
-                        }
-                    }
-                }
-            }
-            ExecutorCommand::HardStop(cue_id) => {
-                let active_instances = self.active_instances.read().await;
-                if let Some((instance_id, active_instance)) =
-                    active_instances.iter().find(|map| map.1.cue_id == cue_id)
-                {
-                    match active_instance.engine_type {
-                        EngineType::PreWait => {
-                            self.wait_tx
-                                .send(WaitCommand::Stop {
-                                    instance_id: *instance_id,
-                                })
-                                .await?;
-                            self.executor_event_tx.send(ExecutorEvent::PreWaitStopped { cue_id }).await?;
-                        }
-                        EngineType::Audio => {
-                            self.audio_tx
-                                .send(AudioCommand::HardStop { id: *instance_id })
                                 .await?;
                         }
                         EngineType::Wait => {

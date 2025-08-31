@@ -47,15 +47,6 @@ pub async fn stop(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
-pub async fn hard_stop(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::HardStop(cue_id))
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 pub async fn pause_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
     handle
         .controller_tx
@@ -78,15 +69,6 @@ pub async fn stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), Str
     handle
         .controller_tx
         .send(ControllerCommand::StopAll)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn hard_stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
-    handle
-        .controller_tx
-        .send(ControllerCommand::HardStopAll)
         .await
         .map_err(|e| e.to_string())
 }
