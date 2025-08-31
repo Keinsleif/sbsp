@@ -73,7 +73,10 @@ const secondsToHMR = (source_seconds: number): string => {
   return time;
 };
 
-export const buildCueName = (cue: Cue) => {
+export const buildCueName = (cue: Cue | null) => {
+  if (cue == null) {
+    return '';
+  }
   if (cue.params.type == 'audio') {
     return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
   } else {

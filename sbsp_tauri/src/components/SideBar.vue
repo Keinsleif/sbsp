@@ -9,11 +9,13 @@
         <v-card v-if="activeCue != null" class="border">
           <v-card-title class="text-subtitle-1 pb-0">
             {{
-              showModel.cues.find((cue) => cue.id == cue_id)!.number +
-              '・' +
-              (showModel.cues.find((cue) => cue.id == cue_id)!.name != null
-                ? showModel.cues.find((cue) => cue.id == cue_id)!.name
-                : buildCueName(showModel.cues.find((cue) => cue.id == cue_id)!))
+              showModel.cues.find((cue) => cue.id == cue_id) != null
+                ? showModel.cues.find((cue) => cue.id == cue_id)?.number +
+                  '・' +
+                  (showModel.cues.find((cue) => cue.id == cue_id)?.name != null
+                    ? showModel.cues.find((cue) => cue.id == cue_id)?.name
+                    : buildCueName(showModel.cues.find((cue) => cue.id == cue_id) || null))
+                : ''
             }}
           </v-card-title>
           <v-card-subtitle class="pa-0 d-flex justify-space-between">

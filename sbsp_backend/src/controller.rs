@@ -131,6 +131,10 @@ impl CueController {
                                     });
                                 }
                             }
+                            if self.state_tx.borrow().active_cues.contains_key(&cue_id)
+                                && let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
+                                    log::error!("{}", e);
+                                }
                         }
                         _ => {}
                     }
