@@ -3,7 +3,7 @@ use tauri::Manager as _;
 use tauri_plugin_dialog::DialogExt as _;
 use uuid::Uuid;
 
-pub mod cue_controller;
+pub mod controller;
 pub mod model_manager;
 
 #[tauri::command]
