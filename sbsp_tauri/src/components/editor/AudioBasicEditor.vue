@@ -7,6 +7,7 @@
       label="Target"
       variant="outlined"
       density="compact"
+      :disabled="selectedCue!.id in showState.activeCues"
       :class="$style['centered-input']"
       @blur="saveEditorValue('target')"
       @keydown.enter="$event.target.blur()"
@@ -16,7 +17,13 @@
       "
     >
       <template v-slot:append>
-        <v-btn :active="false" density="compact" :icon="mdiFileMusic" @click="pickFile"></v-btn>
+        <v-btn
+          :active="false"
+          density="compact"
+          :disabled="selectedCue!.id in showState.activeCues"
+          :icon="mdiFileMusic"
+          @click="pickFile"
+        ></v-btn>
       </template>
     </v-text-field>
     <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
@@ -24,12 +31,14 @@
         v-model="fadeInParam"
         label="Fade In"
         condition="in"
+        :disabled="selectedCue!.id in showState.activeCues"
         @update="saveEditorValue('fadeInParam')"
       ></fade-param-input>
       <fade-param-input
         v-model="fadeOutParam"
         label="Fade Out"
         condition="out"
+        :disabled="selectedCue!.id in showState.activeCues"
         @update="saveEditorValue('fadeOutParam')"
       ></fade-param-input>
     </v-sheet>
@@ -45,8 +54,10 @@ import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import FadeParamInput from '../input/FadeParamInput.vue';
 import { throttle } from 'vuetify/lib/util/helpers.mjs';
+import { useShowState } from '../../stores/showstate';
 
 const showModel = useShowModel();
+const showState = useShowState();
 const uiState = useUiState();
 
 const selectedCue = computed(() => {

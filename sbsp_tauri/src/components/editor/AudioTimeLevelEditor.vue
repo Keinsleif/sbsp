@@ -13,15 +13,27 @@
       :end-time="range[1]"
     ></waveform-viewer>
     <div class="d-flex flex-row ga-4">
-      <volume-fader class="mt-4" v-model="volume" label="Volume" @update:model-value="saveEditorValue('volume')" />
+      <volume-fader
+        class="mt-4"
+        v-model="volume"
+        label="Volume"
+        :disabled="selectedCue!.id in showState.activeCues"
+        @update:model-value="saveEditorValue('volume')"
+      />
       <v-divider vertical inset thickness="2" />
-      <panning-fader class="mt-4" label="Pan" @update:model-value="saveEditorValue('pan')" />
+      <panning-fader
+        class="mt-4"
+        label="Pan"
+        :disabled="selectedCue!.id in showState.activeCues"
+        @update:model-value="saveEditorValue('pan')"
+      />
       <v-divider vertical inset thickness="2" />
       <v-checkbox
         v-model="repeat"
         hide-details
         density="compact"
         label="Repeat"
+        :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue('repeat')"
       ></v-checkbox>
     </div>

@@ -2,10 +2,10 @@
   <div class="mt-3 pa-2 border-md rounded position-relative">
     <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
     <v-sheet class="d-flex flex-row align-end ga-4">
-      <v-checkbox hide-details v-model="fadeEnabled"></v-checkbox>
+      <v-checkbox hide-details :disabled="props.disabled" v-model="fadeEnabled"></v-checkbox>
       <time-input
         v-model="duration"
-        :disabled="!fadeEnabled"
+        :disabled="!fadeEnabled || props.disabled"
         class="flex-grow-0"
         label="Duration"
         width="100px"
@@ -23,7 +23,7 @@
           { value: 'outPow', name: 'OutPow' },
           { value: 'inOutPow', name: 'InOutPow' },
         ]"
-        :disabled="!fadeEnabled"
+        :disabled="!fadeEnabled || props.disabled"
         item-value="value"
         item-title="name"
         variant="outlined"
@@ -35,7 +35,7 @@
         inset
         persistent-placeholder
         v-model="easingPower"
-        :disabled="!fadeEnabled || easingType == 'linear'"
+        :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
         :min="1"
         width="160px"
         label="Intensity"
@@ -44,7 +44,7 @@
         autocomplete="off"
       ></v-number-input>
       <curve-viewer
-        :disabled="!fadeEnabled"
+        :disabled="!fadeEnabled || props.disabled"
         class="border-md"
         width="80px"
         :type="props.condition"
@@ -67,10 +67,12 @@ const props = withDefaults(
   defineProps<{
     label?: string;
     condition?: 'in' | 'out';
+    disabled?: boolean;
   }>(),
   {
     label: '',
     condition: 'in',
+    disabled: false,
   },
 );
 const emit = defineEmits(['update']);
