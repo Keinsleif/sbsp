@@ -1,11 +1,13 @@
 <template>
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100 ga-4">
-      <v-sheet class="d-flex align-center border pa-3 text-center text-h2">
-        <span>{{ String(time.getHours()).padStart(2, '0') }}</span
-        >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
-        >.<span>{{ String(time.getSeconds()).padStart(2, '0') }}</span>
-      </v-sheet>
+      <div class="d-flex align-center border">
+        <div class="d-flex align-end pl-3 pr-3 text-center text-h2">
+          <span>{{ String(time.getHours()).padStart(2, '0') }}</span
+          >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
+          >.<span class="text-h3">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
+        </div>
+      </div>
       <div class="d-flex flex-column ma-0 flex-grow-1">
         <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
           {{ playbackCursorCueTitle }}
