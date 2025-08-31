@@ -9,8 +9,6 @@
         :false-icon="mdiLockOpen"
         v-model="showModel.settings.general.lockCursorToSelection"
       ></v-switch> -->
-      <v-spacer></v-spacer>
-      <v-btn :icon="mdiDockTop" size="small" variant="text"></v-btn>
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} cues </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
@@ -22,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiDockTop } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
