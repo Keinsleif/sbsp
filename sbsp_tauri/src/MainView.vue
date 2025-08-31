@@ -70,6 +70,30 @@ onUnmounted(() => {
   }
 });
 
+useHotkey(
+  'cmd+o',
+  () => {
+    invoke('file_open');
+  },
+  { preventDefault: true },
+);
+
+useHotkey(
+  'cmd+s',
+  () => {
+    invoke('file_save');
+  },
+  { preventDefault: true },
+);
+
+useHotkey(
+  'cmd+shift+a',
+  () => {
+    invoke('file_save_as');
+  },
+  { preventDefault: true },
+);
+
 const goHotkey = computed(() => (showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined));
 const loadHotkey = computed(() =>
   showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined,
