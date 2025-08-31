@@ -557,7 +557,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueFadeParam, Cue, Easing},
+            cue::{AudioCueFadeParam, Cue, Easing, SoundType},
         },
     };
 
@@ -611,6 +611,7 @@ mod tests {
                             volume: 0.0,
                             pan: 0.0,
                             repeat: false,
+                            sound_type: SoundType::Streaming,
                         },
                     });
                 }

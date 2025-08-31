@@ -354,6 +354,7 @@ impl Executor {
                 volume,
                 pan,
                 repeat,
+                sound_type,
             } => {
                 let mut filepath = self
                     .model_handle
@@ -375,6 +376,7 @@ impl Executor {
                             end_time: *end_time,
                             fade_out_param: *fade_out_param,
                             repeat: *repeat,
+                            sound_type: *sound_type,
                         },
                     })
                     .await?;
@@ -397,6 +399,7 @@ impl Executor {
                 volume,
                 pan,
                 repeat,
+                sound_type,
             } => {
                 if let Some(active_instance) =
                     self.active_instances.write().await.get_mut(&instance_id)
@@ -431,6 +434,7 @@ impl Executor {
                         end_time: *end_time,
                         fade_out_param: *fade_out_param,
                         repeat: *repeat,
+                        sound_type: *sound_type,
                     },
                 };
                 self.audio_tx.send(audio_command).await?;
@@ -622,7 +626,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{AudioCueFadeParam, Cue, Easing},
+            cue::{AudioCueFadeParam, Cue, Easing, SoundType},
         },
     };
 
@@ -668,6 +672,7 @@ mod tests {
                         volume: 0.0,
                         pan: 0.0,
                         repeat: false,
+                        sound_type: SoundType::Streaming,
                     },
                 });
                 cue_id

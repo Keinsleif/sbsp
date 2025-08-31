@@ -52,6 +52,7 @@ pub enum CueParam {
         volume: f32,
         pan: f32,
         repeat: bool,
+        sound_type: SoundType,
     },
     Wait {
         duration: f64,
@@ -110,4 +111,15 @@ impl From<Easing> for kira::Easing {
             Easing::InOutPowf(f) => kira::Easing::InOutPowf(f),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum SoundType {
+    Static,
+    Streaming,
 }

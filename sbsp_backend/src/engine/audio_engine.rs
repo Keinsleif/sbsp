@@ -1,11 +1,8 @@
 use anyhow::{Context, Result};
 use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
-    clock::{ClockHandle, ClockSpeed, ClockTime},
-    sound::{
-        EndPosition, PlaybackPosition, PlaybackState, Region,
-        static_sound::{StaticSoundData, StaticSoundHandle},
-    },
+    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
+        static_sound::{StaticSoundData, StaticSoundHandle}, streaming::{StreamingSoundData, StreamingSoundHandle}, EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region
+    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
 };
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -13,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     executor::EngineEvent,
-    model::cue::AudioCueFadeParam,
+    model::cue::{AudioCueFadeParam, SoundType},
 };
 
 #[derive(Debug, Clone)]
@@ -43,6 +40,7 @@ impl AudioCommand {
 
 #[derive(Debug, Clone)]
 pub struct AudioCommandData {
+    pub sound_type: SoundType,
     pub filepath: PathBuf,
     pub volume: f32,
     pub pan: f32,
@@ -53,8 +51,61 @@ pub struct AudioCommandData {
     pub repeat: bool,
 }
 
+enum SpecificSoundHandle {
+    Static(StaticSoundHandle),
+    Streaming(StreamingSoundHandle<FromFileError>),
+}
+
+impl SpecificSoundHandle {
+    fn state(&self) -> PlaybackState {
+        match self {
+            Self::Static(handle) => handle.state(),
+            Self::Streaming(handle) => handle.state(),
+        }
+    }
+
+    fn position(&self) -> f64 {
+        match self {
+            Self::Static(handle) => handle.position(),
+            Self::Streaming(handle) => handle.position(),
+        }
+    }
+
+    fn pause(&mut self, tween: Tween) {
+        match self {
+            Self::Static(handle) => handle.pause(tween),
+            Self::Streaming(handle) => handle.pause(tween),
+        }
+    }
+
+    fn resume(&mut self, tween: Tween) {
+        match self {
+            Self::Static(handle) => handle.resume(tween),
+            Self::Streaming(handle) => handle.resume(tween),
+        }
+    }
+    fn stop(&mut self, tween: Tween) {
+        match self {
+            Self::Static(handle) => handle.stop(tween),
+            Self::Streaming(handle) => handle.stop(tween),
+        }
+    }
+    fn seek_to(&mut self, position: f64) {
+        match self {
+            Self::Static(handle) => handle.seek_to(position),
+            Self::Streaming(handle) => handle.seek_to(position),
+        }
+    }
+    fn seek_by(&mut self, amount: f64) {
+        match self {
+            Self::Static(handle) => handle.seek_by(amount),
+            Self::Streaming(handle) => handle.seek_by(amount),
+        }
+    }
+}
+
 struct SoundHandle {
-    handle: StaticSoundHandle,
+    handle: SpecificSoundHandle,
     clock: ClockHandle,
     duration: f64,
     fade_out_tween: Option<Tween>,
@@ -228,40 +279,92 @@ impl AudioEngine {
         let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
 
         let filepath_clone = data.filepath.clone();
-        let mut sound_data =
-            tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
-                .await?
-                .with_context(|| {
-                    format!(
-                        "Failed to load sound data from: {}",
-                        data.filepath.display()
-                    )
-                })?
-                .slice(Region {
-                    start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
-                    end: if let Some(end_time) = data.end_time {
-                        EndPosition::Custom(PlaybackPosition::Seconds(end_time))
-                    } else {
-                        EndPosition::EndOfAudio
-                    },
-                })
-                .volume(Decibels::from(data.volume))
-                .panning(Panning::from(data.pan))
-                .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
 
-        if data.repeat {
-            sound_data = sound_data.loop_region(Some(Region {
-                start: PlaybackPosition::Seconds(0.0),
-                end: EndPosition::EndOfAudio,
-            }));
-        }
+        let duration;
+        let handle;
 
-        if let Some(fade_in_param) = data.fade_in_param {
-            sound_data = sound_data.fade_in_tween(Tween {
-                start_time: StartTime::Immediate,
-                duration: Duration::from_secs_f64(fade_in_param.duration),
-                easing: fade_in_param.easing.into(),
-            });
+        if data.sound_type == SoundType::Static {
+            let mut sound_data =
+                tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
+                    .await?
+                    .with_context(|| {
+                        format!(
+                            "Failed to load sound data from: {}",
+                            data.filepath.display()
+                        )
+                    })?
+                    .slice(Region {
+                        start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
+                        end: if let Some(end_time) = data.end_time {
+                            EndPosition::Custom(PlaybackPosition::Seconds(end_time))
+                        } else {
+                            EndPosition::EndOfAudio
+                        },
+                    })
+                    .volume(Decibels::from(data.volume))
+                    .panning(Panning::from(data.pan))
+                    .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
+
+            if data.repeat {
+                sound_data = sound_data.loop_region(Some(Region {
+                    start: PlaybackPosition::Seconds(0.0),
+                    end: EndPosition::EndOfAudio,
+                }));
+            }
+
+            if let Some(fade_in_param) = data.fade_in_param {
+                sound_data = sound_data.fade_in_tween(Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_secs_f64(fade_in_param.duration),
+                    easing: fade_in_param.easing.into(),
+                });
+            }
+
+            duration = sound_data.duration().as_secs_f64();
+
+            log::info!("LOAD: id={}, file={}", id, data.filepath.display());
+            handle = SpecificSoundHandle::Static(manager.play(sound_data)?);
+        } else {
+            let mut sound_data =
+                tokio::task::spawn_blocking(move || StreamingSoundData::from_file(filepath_clone))
+                    .await?
+                    .with_context(|| {
+                        format!(
+                            "Failed to load sound data from: {}",
+                            data.filepath.display()
+                        )
+                    })?
+                    .slice(Region {
+                        start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
+                        end: if let Some(end_time) = data.end_time {
+                            EndPosition::Custom(PlaybackPosition::Seconds(end_time))
+                        } else {
+                            EndPosition::EndOfAudio
+                        },
+                    })
+                    .volume(Decibels::from(data.volume))
+                    .panning(Panning::from(data.pan))
+                    .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
+
+            if data.repeat {
+                sound_data = sound_data.loop_region(Some(Region {
+                    start: PlaybackPosition::Seconds(0.0),
+                    end: EndPosition::EndOfAudio,
+                }));
+            }
+
+            if let Some(fade_in_param) = data.fade_in_param {
+                sound_data = sound_data.fade_in_tween(Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_secs_f64(fade_in_param.duration),
+                    easing: fade_in_param.easing.into(),
+                });
+            }
+
+            duration = sound_data.duration().as_secs_f64();
+
+            log::info!("LOAD: id={}, file={}", id, data.filepath.display());
+            handle = SpecificSoundHandle::Streaming(manager.play(sound_data)?);
         }
 
         let fade_out_tween = data.fade_out_param.map(|fade_out_param| {
@@ -271,11 +374,6 @@ impl AudioEngine {
                 easing: fade_out_param.easing.into(),
             }
         });
-
-        let duration = sound_data.duration().as_secs_f64();
-
-        log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-        let handle = manager.play(sound_data)?;
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
