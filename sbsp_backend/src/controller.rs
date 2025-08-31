@@ -48,6 +48,15 @@ impl ControllerCommand {
             _ => None,
         }
     }
+
+    fn try_all_into_single_executor_command(&self, cue_id: Uuid) -> Option<ExecutorCommand> {
+        match self {
+            Self::PauseAll => Some(ExecutorCommand::Pause(cue_id)),
+            Self::ResumeAll => Some(ExecutorCommand::Resume(cue_id)),
+            Self::StopAll => Some(ExecutorCommand::Stop(cue_id)),
+            _ => None,
+        }
+    }
 }
 
 pub struct CueController {
@@ -175,9 +184,17 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::PauseAll => Ok(()),
-            ControllerCommand::ResumeAll => Ok(()),
-            ControllerCommand::StopAll => Ok(()), /* TODO */
+            ControllerCommand::PauseAll |
+            ControllerCommand::ResumeAll |
+            ControllerCommand::StopAll => {
+                let model = self.model_handle.read().await;
+
+                for cue in &model.cues {
+                    let executor_command = command.try_all_into_single_executor_command(cue.id).unwrap();
+                    self.executor_tx.send(executor_command).await?;
+                }
+                Ok(())
+            },
             ControllerCommand::SetPlaybackCursor { cue_id } => {
                 if let Some(cursor_cue_id) = cue_id
                     && self
