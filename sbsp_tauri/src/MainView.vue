@@ -37,9 +37,11 @@ import FootBar from './components/FootBar.vue';
 import BottomEditor from './components/BottomEditor.vue';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useShowState } from './stores/showstate';
 
 const uiState = useUiState();
+const showState = useShowState();
 const showModel = useShowModel();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
@@ -68,8 +70,28 @@ onUnmounted(() => {
   }
 });
 
+const goHotkey = computed(() => (showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined));
+const loadHotkey = computed(() =>
+  showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined,
+);
+const pauseAndResumeHotkey = computed(() =>
+  showModel.settings.hotkey.pauseAndResume != null ? showModel.settings.hotkey.pauseAndResume : undefined,
+);
+const pauseAllHotkey = computed(() =>
+  showModel.settings.hotkey.pauseAll != null ? showModel.settings.hotkey.pauseAll : undefined,
+);
+const resumeAllHotkey = computed(() =>
+  showModel.settings.hotkey.resumeAll != null ? showModel.settings.hotkey.resumeAll : undefined,
+);
+const stopHotkey = computed(() =>
+  showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined,
+);
+const stopAllHotkey = computed(() =>
+  showModel.settings.hotkey.stopAll != null ? showModel.settings.hotkey.stopAll : undefined,
+);
+
 useHotkey(
-  showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined,
+  goHotkey,
   () => {
     invoke('go').catch((e) => console.error(e));
   },
@@ -79,11 +101,25 @@ useHotkey(
 );
 
 useHotkey(
-  showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined,
+  loadHotkey,
   () => {
-    if (uiState.selected != null) {
-      for (let cueId of uiState.selectedRows) {
-        invoke('load', { cueId: cueId }).catch((e) => console.error(e));
+    for (let cueId of uiState.selectedRows) {
+      invoke('load', { cueId: cueId }).catch((e) => console.error(e));
+    }
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  pauseAndResumeHotkey,
+  () => {
+    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+      if (showState.activeCues[uiState.selected]?.status == 'Playing') {
+        invoke('pause', { cueId: uiState.selected }).catch((e) => console.error(e));
+      } else if (showState.activeCues[uiState.selected]?.status == 'Paused') {
+        invoke('resume', { cueId: uiState.selected }).catch((e) => console.error(e));
       }
     }
   },
@@ -93,12 +129,30 @@ useHotkey(
 );
 
 useHotkey(
-  showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined,
+  pauseAllHotkey,
   () => {
-    if (uiState.selected != null) {
-      for (let cueId of uiState.selectedRows) {
-        invoke('stop', { cueId: cueId }).catch((e) => console.error(e));
-      }
+    invoke('pause_all').catch((e) => console.error(e));
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  resumeAllHotkey,
+  () => {
+    invoke('resume_all').catch((e) => console.error(e));
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  stopHotkey,
+  () => {
+    for (let cueId of uiState.selectedRows) {
+      invoke('stop', { cueId: cueId }).catch((e) => console.error(e));
     }
   },
   {
@@ -107,11 +161,9 @@ useHotkey(
 );
 
 useHotkey(
-  showModel.settings.hotkey.stopAll != null ? showModel.settings.hotkey.stopAll : undefined,
+  stopAllHotkey,
   () => {
-    if (uiState.selected != null) {
-      invoke('stop_all').catch((e) => console.error(e));
-    }
+    invoke('stop_all').catch((e) => console.error(e));
   },
   {
     preventDefault: true,

@@ -26,6 +26,9 @@
         >
           <hotkey-input v-model="editingSettings.hotkey.go" label="Go"></hotkey-input>
           <hotkey-input v-model="editingSettings.hotkey.load" label="Load"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.pauseAndResume" label="Pause & Resume"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.pauseAll" label="Pause All"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.resumeAll" label="Resume All"></hotkey-input>
           <hotkey-input v-model="editingSettings.hotkey.stop" label="Stop"></hotkey-input>
           <hotkey-input v-model="editingSettings.hotkey.stopAll" label="Stop All"></hotkey-input>
         </v-tabs-window-item>

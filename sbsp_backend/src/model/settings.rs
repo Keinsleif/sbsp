@@ -38,6 +38,9 @@ impl Default for GeneralSettings {
 pub struct HotkeySettings {
     pub go: Option<String>,
     pub load: Option<String>,
+    pub pause_and_resume: Option<String>,
+    pub pause_all: Option<String>,
+    pub resume_all: Option<String>,
     pub stop: Option<String>,
     pub stop_all: Option<String>,
 }
@@ -45,8 +48,11 @@ pub struct HotkeySettings {
 impl Default for HotkeySettings {
     fn default() -> Self {
         Self {
-            go: Some("Space".to_string()),
+            go: Some("Enter".to_string()),
             load: Some("L".to_string()),
+            pause_and_resume: Some("Space".to_string()),
+            pause_all: Some("[".to_string()),
+            resume_all: Some("]".to_string()),
             stop: Some("Backspace".to_string()),
             stop_all: Some("Escape".to_string()),
         }
