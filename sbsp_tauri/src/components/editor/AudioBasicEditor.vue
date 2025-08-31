@@ -34,7 +34,9 @@
         density="compact"
         label="Load entire file on memory"
         @update:model-value="saveEditorValue('soundType')"
-      ></v-checkbox>
+      >
+        <v-tooltip activator="parent" location="end">Change this only if you know what you're doing.</v-tooltip>
+      </v-checkbox>
     </v-sheet>
     <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
       <fade-param-input
