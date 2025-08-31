@@ -107,6 +107,10 @@ watch(selectedCue, () => {
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
 });
 
+watch(getDuration, () => {
+  duration.value = getDuration();
+});
+
 const saveEditorValue = (paramName: string) => {
   if (selectedCue.value == null) {
     return;
