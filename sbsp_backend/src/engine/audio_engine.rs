@@ -23,6 +23,7 @@ pub enum AudioCommand {
     Pause { id: Uuid },
     Resume { id: Uuid },
     Stop { id: Uuid },
+    HardStop { id: Uuid },
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
 }
@@ -35,6 +36,7 @@ impl AudioCommand {
             AudioCommand::Pause { id } => *id,
             AudioCommand::Resume { id } => *id,
             AudioCommand::Stop { id } => *id,
+            AudioCommand::HardStop { id } => *id,
             AudioCommand::SeekTo { id, .. } => *id,
             AudioCommand::SeekBy { id, .. } => *id,
         }
@@ -75,7 +77,7 @@ impl SoundHandle {
     }
 
     fn pause(&mut self) {
-        self.handle.pause(self.fade_out_tween.unwrap_or_default());
+        self.handle.pause(Tween::default());
     }
 
     fn resume(&mut self) {
@@ -84,6 +86,10 @@ impl SoundHandle {
 
     fn stop(&mut self) {
         self.handle.stop(self.fade_out_tween.unwrap_or_default());
+    }
+
+    fn hard_stop(&mut self) {
+        self.handle.stop(Tween::default());
     }
 
     fn seek_to(&mut self, position: f64) {
@@ -150,6 +156,7 @@ impl AudioEngine {
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
                         AudioCommand::Stop { id } => self.handle_stop(id),
+                        AudioCommand::HardStop { id } => self.handle_hard_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
                     };
@@ -361,6 +368,16 @@ impl AudioEngine {
     fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop();
+            playing_sound.manual_stop_sent = true;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
+        }
+    }
+
+    fn handle_hard_stop(&mut self, id: Uuid) -> Result<()> {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            playing_sound.handle.hard_stop();
             playing_sound.manual_stop_sent = true;
             Ok(())
         } else {
