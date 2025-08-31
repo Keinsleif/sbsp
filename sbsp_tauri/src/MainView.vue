@@ -105,4 +105,16 @@ useHotkey(
     preventDefault: true,
   },
 );
+
+useHotkey(
+  showModel.settings.hotkey.stopAll != null ? showModel.settings.hotkey.stopAll : undefined,
+  () => {
+    if (uiState.selected != null) {
+      invoke('stop_all').catch((e) => console.error(e));
+    }
+  },
+  {
+    preventDefault: true,
+  },
+);
 </script>

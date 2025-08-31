@@ -47,6 +47,33 @@ pub async fn stop(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
+pub async fn pause_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::PauseAll)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn resume_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::ResumeAll)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+    handle
+        .controller_tx
+        .send(ControllerCommand::StopAll)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn seek_to(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid, position: f64) -> Result<(), String> {
     handle
         .controller_tx
