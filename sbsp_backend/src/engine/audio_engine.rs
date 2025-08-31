@@ -83,7 +83,12 @@ impl SoundHandle {
     }
 
     fn stop(&mut self) {
-        self.handle.stop(self.fade_out_tween.unwrap_or_default());
+        if self.state().eq(&PlaybackState::Stopping) {
+            // Hard Stop
+            self.handle.stop(Tween::default());
+        } else {
+            self.handle.stop(self.fade_out_tween.unwrap_or_default());
+        }
     }
 
     fn seek_to(&mut self, position: f64) {
