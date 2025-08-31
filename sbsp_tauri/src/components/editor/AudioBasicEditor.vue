@@ -26,6 +26,16 @@
         ></v-btn>
       </template>
     </v-text-field>
+    <v-sheet flat class="d-flex flex-row ga-4 mt-4">
+      <v-checkbox
+        hide-details
+        v-model="soundType"
+        :disabled="selectedCue!.id in showState.activeCues"
+        density="compact"
+        label="Load entire file on memory"
+        @update:model-value="saveEditorValue('soundType')"
+      ></v-checkbox>
+    </v-sheet>
     <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
       <fade-param-input
         v-model="fadeInParam"
@@ -68,6 +78,12 @@ const target = ref(
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
 );
 
+const soundType = ref(
+  selectedCue.value != null && selectedCue.value.params.type == 'audio'
+    ? selectedCue.value.params.soundType == 'static'
+    : false,
+);
+
 const fadeInParam = ref(
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.fadeInParam : null,
 );
@@ -82,6 +98,7 @@ watch(selectedCue, () => {
   }
 
   target.value = selectedCue.value.params.target;
+  soundType.value = selectedCue.value.params.soundType == 'static';
   fadeInParam.value = selectedCue.value.params.fadeInParam;
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
@@ -97,6 +114,9 @@ const saveEditorValue = throttle((name: string) => {
   switch (name) {
     case 'target':
       newCue.params.target = target.value;
+      break;
+    case 'soundType':
+      newCue.params.soundType = soundType.value ? 'static' : 'streaming';
       break;
     case 'fadeInParam':
       newCue.params.fadeInParam = fadeInParam.value;
