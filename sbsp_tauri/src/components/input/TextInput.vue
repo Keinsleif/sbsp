@@ -33,11 +33,11 @@
     autocomplete="off"
     no-resize
     @blur="save"
-    @keydown.enter="$event.target.blur()"
     @keydown.esc="
       reset();
       $event.target.blur();
     "
+    @keydown.tab.prevent="onTabInput"
   ></v-textarea>
 </template>
 
@@ -72,6 +72,22 @@ const save = () => {
 
 const reset = () => {
   innerText.value = text.value != null ? text.value : '';
+};
+
+const onTabInput = (event: KeyboardEvent) => {
+  event.preventDefault();
+  const textarea = event.target as HTMLTextAreaElement;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+
+  textarea.setRangeText('\t', start, end, 'end');
+  const inputEvent = new InputEvent('input', {
+    bubbles: true,
+    cancelable: false,
+    inputType: 'insertText',
+    data: '\t',
+  });
+  textarea.dispatchEvent(inputEvent);
 };
 </script>
 
