@@ -42,6 +42,7 @@ pub enum UiEvent {
     CuesAdded { cues: Vec<Cue>, at_index: usize },
     CueRemoved { cue_id: Uuid },
     CueMoved { cue_id: Uuid, to_index: usize },
+    CueListUpdated { cues: Vec<Cue> },
     SettingsUpdated { new_settings: Box<ShowSettings> },
 
     OperationFailed { error: UiError },

@@ -11,7 +11,7 @@ use tauri::{
 };
 use tokio::sync::{broadcast, watch};
 
-use crate::command::{controller::{go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor, stop, stop_all}, file_open, file_save, file_save_as, model_manager::{add_cue, add_cues, get_show_model, move_cue, remove_cue, update_cue, update_settings}, process_asset};
+use crate::command::{controller::{go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor, stop, stop_all}, file_open, file_save, file_save_as, model_manager::{add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue, update_settings}, process_asset};
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -85,8 +85,17 @@ pub fn run() {
                 )?)
                 .select_all()
                 .build()?;
+            let tools_menu = SubmenuBuilder::new(app, "Tools")
+                .item(&MenuItem::with_id(
+                    app,
+                    MenuId::new("id_renumber"),
+                    "Renumber selected cues",
+                    true,
+                    Some("Ctrl+R"),
+                )?)
+                .build()?;
             let menu = MenuBuilder::new(app)
-                .items(&[&file_menu, &edit_menu])
+                .items(&[&file_menu, &edit_menu, &tools_menu])
                 .build()?;
             app.set_menu(menu)?;
 
@@ -116,6 +125,10 @@ pub fn run() {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
             }
+            "id_delete" |
+            "id_renumber" => {
+                let _ = handle.emit("menu_clicked", event.id());
+            }
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
@@ -136,6 +149,7 @@ pub fn run() {
             add_cues,
             remove_cue,
             move_cue,
+            renumber_cues,
             update_settings,
             process_asset,
             file_open,

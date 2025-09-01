@@ -84,6 +84,9 @@ listen<UiEvent>('backend-event', (event) => {
     case 'cueMoved':
       showModel.moveCue(event.payload.param.cueId, event.payload.param.toIndex);
       break;
+    case 'cueListUpdated':
+      showModel.$patch({ cues: event.payload.param.cues });
+      break;
     case 'settingsUpdated': {
       const settings = event.payload.param.newSettings;
       showModel.$patch({ settings: settings });

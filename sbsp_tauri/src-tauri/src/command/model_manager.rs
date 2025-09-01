@@ -65,6 +65,11 @@ pub async fn move_cue(
 }
 
 #[tauri::command]
+pub async fn renumber_cues(handle: tauri::State<'_, BackendHandle>, cues: Vec<Uuid>, start_from: f64, increment: f64) -> Result<(), String> {
+    handle.model_handle.renumber_cues(cues, start_from, increment).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn update_settings(
     handle: tauri::State<'_, BackendHandle>,
     new_settings: ShowSettings,

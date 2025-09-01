@@ -1,6 +1,5 @@
 use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
+    collections::HashSet, path::{Path, PathBuf}, sync::Arc
 };
 
 use serde::{Deserialize, Serialize};
@@ -25,6 +24,12 @@ pub enum ModelCommand {
     AddCues { cues: Vec<Cue>, at_index: usize },
     RemoveCue { cue_id: Uuid },
     MoveCue { cue_id: Uuid, to_index: usize },
+    
+    RenumberCues {
+        cues: Vec<Uuid>,
+        start_from: f64,
+        increment: f64,
+    },
 
     UpdateSettings(Box<ShowSettings>),
 
@@ -170,6 +175,21 @@ impl ShowModelManager {
                     }
                 };
                 self.event_tx.send(event)?;
+                Ok(())
+            }
+            ModelCommand::RenumberCues { cues, start_from, increment } => {
+                let mut model = self.model.write().await;
+                let mut number = start_from;
+                let targets: HashSet<Uuid> = cues.into_iter().collect();
+                for cue in model.cues.iter_mut() {
+                    if targets.contains(&cue.id) {
+                        cue.number = number.to_string();
+                        number += increment;
+                    }
+                }
+                if number != start_from {
+                    self.event_tx.send(UiEvent::CueListUpdated { cues: model.cues.clone() })?;
+                }
                 Ok(())
             }
             ModelCommand::UpdateSettings(new_settings) => {
@@ -320,6 +340,12 @@ impl ShowModelHandle {
 
     pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) -> anyhow::Result<()> {
         self.send_command(ModelCommand::MoveCue { cue_id, to_index })
+            .await?;
+        Ok(())
+    }
+
+    pub async fn renumber_cues(&self, cues: Vec<Uuid>, start_from: f64, increment: f64) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::RenumberCues { cues, start_from, increment })
             .await?;
         Ok(())
     }

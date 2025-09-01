@@ -24,6 +24,8 @@
 
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
     <v-snackbar-queue v-model="uiState.error_messages" timeout="2000" color="error"></v-snackbar-queue>
+
+    <renumber-dialog v-model="isRenumberDialogOpen"></renumber-dialog>
   </v-app>
 </template>
 
@@ -39,10 +41,14 @@ import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useShowState } from './stores/showstate';
+import { listen } from '@tauri-apps/api/event';
+import RenumberDialog from './components/dialog/RenumberDialog.vue';
 
 const uiState = useUiState();
 const showState = useShowState();
 const showModel = useShowModel();
+
+const isRenumberDialogOpen = ref(false);
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -192,5 +198,25 @@ useHotkey(
   {
     preventDefault: true,
   },
+);
+
+listen<string>('menu_clicked', (event) => {
+  switch (event.payload) {
+    case 'id_delete':
+      for (const row of uiState.selectedRows) {
+        invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+      }
+      break;
+    case 'id_renumber':
+      isRenumberDialogOpen.value = true;
+      break;
+  }
+});
+useHotkey(
+  'cmd+r',
+  () => {
+    isRenumberDialogOpen.value = true;
+  },
+  { preventDefault: true },
 );
 </script>
