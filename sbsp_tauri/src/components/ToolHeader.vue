@@ -1,7 +1,7 @@
 <template>
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100 ga-4">
-      <div class="d-flex align-center border">
+      <div class="d-flex align-center border" :class="hasFocus ? '' : 'bg-red'">
         <div class="d-flex align-end pl-3 pr-3 text-center text-h2">
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
           >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
@@ -87,6 +87,7 @@ import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
 import type { Cue } from '../types/Cue';
 import { open } from '@tauri-apps/plugin-dialog';
+import { useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -101,6 +102,8 @@ const toggleFullscreen = () => {
     document.exitFullscreen();
   }
 };
+
+const hasFocus = useWindowFocus();
 
 const playbackCursorCue = computed(() => {
   return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
