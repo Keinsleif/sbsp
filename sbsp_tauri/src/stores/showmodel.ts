@@ -10,7 +10,15 @@ export const useShowModel = defineStore('showmodel', {
       cues: [],
       settings: {
         general: { lockCursorToSelection: true, advanceCursorWhenGo: true },
-        hotkey: { go: 'Space', load: 'L', stop: 'Backspace', stopAll: 'Escape' },
+        hotkey: {
+          go: 'Enter',
+          load: 'L',
+          pauseAndResume: 'Space',
+          pauseAll: '[',
+          resumeAll: ']',
+          stop: 'Backspace',
+          stopAll: 'Escape',
+        },
         template: {
           audio: {
             id: '00000000-0000-0000-0000-000000000000',
@@ -22,6 +30,7 @@ export const useShowModel = defineStore('showmodel', {
               type: 'doNotContinue',
             },
             params: {
+              soundType: 'streaming',
               type: 'audio',
               target: '',
               startTime: null,
