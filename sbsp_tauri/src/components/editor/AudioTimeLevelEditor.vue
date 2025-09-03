@@ -7,7 +7,7 @@
       @update="saveEditorValue('range')"
     ></time-range>
     <waveform-viewer
-      v-model="uiState.selected"
+      :target-id="props.selectedId"
       :volume="volume"
       :start-time="range[0]"
       :end-time="range[1]"
@@ -42,7 +42,6 @@
 
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
-import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import VolumeFader from '../input/VolumeFader.vue';
@@ -55,11 +54,19 @@ import { useShowState } from '../../stores/showstate';
 
 const showModel = useShowModel();
 const showState = useShowState();
-const uiState = useUiState();
 const assetResult = useAssetResult();
 
+const props = withDefaults(
+  defineProps<{
+    selectedId: string | null;
+  }>(),
+  {
+    selectedId: null,
+  },
+);
+
 const selectedCue = computed(() => {
-  return uiState.selected != null ? showModel.cues.find((cue) => cue.id === uiState.selected) : null;
+  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
 });
 
 const range = ref([

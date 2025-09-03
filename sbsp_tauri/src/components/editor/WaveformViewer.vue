@@ -48,14 +48,15 @@ import { invoke } from '@tauri-apps/api/core';
 const showState = useShowState();
 const assetResult = useAssetResult();
 
-const targetId = defineModel<string | null>({ required: true });
 const props = withDefaults(
   defineProps<{
+    targetId: string | null;
     volume?: number;
     startTime?: number | null;
     endTime?: number | null;
   }>(),
   {
+    targetId: null,
     volume: 0,
     startTime: 0,
     endTime: 1,
@@ -63,29 +64,29 @@ const props = withDefaults(
 );
 
 const nonNullStartTime = computed(() => {
-  return targetId.value != null && props.startTime != null ? props.startTime / assetResult.duration[targetId.value] : 0;
+  return props.targetId != null && props.startTime != null ? props.startTime / assetResult.duration[props.targetId] : 0;
 });
 
 const nonNullEndTime = computed(() => {
-  return targetId.value != null && props.endTime != null ? props.endTime / assetResult.duration[targetId.value] : 1;
+  return props.targetId != null && props.endTime != null ? props.endTime / assetResult.duration[props.targetId] : 1;
 });
 
 const svgRef = useTemplateRef('svg');
 const position = computed(() => {
   if (
-    targetId.value != null &&
-    targetId.value in showState.activeCues &&
-    (['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[targetId.value]!.status)
+    props.targetId != null &&
+    props.targetId in showState.activeCues &&
+    (['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[props.targetId]!.status)
   ) {
-    return showState.activeCues[targetId.value]!.position / showState.activeCues[targetId.value]!.duration;
+    return showState.activeCues[props.targetId]!.position / showState.activeCues[props.targetId]!.duration;
   } else {
     return 0;
   }
 });
 const compressedWaveform = computed<number[]>((oldValue) => {
-  if (svgRef.value != null && targetId.value != null && targetId.value in assetResult.waveform) {
+  if (svgRef.value != null && props.targetId != null && props.targetId in assetResult.waveform) {
     let result = [] as number[];
-    let source = assetResult.waveform[targetId.value];
+    let source = assetResult.waveform[props.targetId];
     if (source == null || svgRef.value.clientWidth < 1) {
       return oldValue != null ? oldValue : [0];
     }
@@ -119,9 +120,9 @@ const seek = (event: MouseEvent) => {
   if (
     svgRef.value == null ||
     svgRef.value.clientWidth < 1 ||
-    targetId.value == null ||
-    !(targetId.value in showState.activeCues) ||
-    !(['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[targetId.value]!.status)
+    props.targetId == null ||
+    !(props.targetId in showState.activeCues) ||
+    !(['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[props.targetId]!.status)
   ) {
     return;
   }
@@ -129,7 +130,7 @@ const seek = (event: MouseEvent) => {
     (event.offsetX - nonNullStartTime.value * svgRef.value.clientWidth) /
     (svgRef.value.clientWidth * (nonNullEndTime.value - nonNullStartTime.value));
   if (position > 0 && position < 1) {
-    invoke('seek_to', { cueId: targetId.value, position: position * showState.activeCues[targetId.value]!.duration });
+    invoke('seek_to', { cueId: props.targetId, position: position * showState.activeCues[props.targetId]!.duration });
   }
 };
 </script>

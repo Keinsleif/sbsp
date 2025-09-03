@@ -61,7 +61,6 @@
 import { mdiFileMusic } from '@mdi/js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { computed, ref, toRaw, watch } from 'vue';
-import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import FadeParamInput from '../input/FadeParamInput.vue';
@@ -70,10 +69,18 @@ import { useShowState } from '../../stores/showstate';
 
 const showModel = useShowModel();
 const showState = useShowState();
-const uiState = useUiState();
+
+const props = withDefaults(
+  defineProps<{
+    selectedId: string | null;
+  }>(),
+  {
+    selectedId: null,
+  },
+);
 
 const selectedCue = computed(() => {
-  return uiState.selected != null ? showModel.cues.find((cue) => cue.id === uiState.selected) : null;
+  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
 });
 
 const target = ref(

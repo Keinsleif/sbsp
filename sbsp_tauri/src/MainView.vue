@@ -19,7 +19,7 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
-      <BottomEditor />
+      <BottomEditor :selected-id="uiState.selected" />
     </v-navigation-drawer>
 
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>

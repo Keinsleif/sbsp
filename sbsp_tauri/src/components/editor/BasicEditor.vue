@@ -51,7 +51,6 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
-import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { buildCueName, calculateDuration } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
@@ -59,11 +58,19 @@ import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
 
 const showModel = useShowModel();
-const uiState = useUiState();
 const assetResult = useAssetResult();
 
+const props = withDefaults(
+  defineProps<{
+    selectedId: string | null;
+  }>(),
+  {
+    selectedId: null,
+  },
+);
+
 const selectedCue = computed(() => {
-  return uiState.selected != null ? showModel.cues.find((cue) => cue.id === uiState.selected) : null;
+  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
 });
 
 const getDuration = (): number | null => {
