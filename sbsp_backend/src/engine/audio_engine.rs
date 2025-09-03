@@ -36,7 +36,7 @@ impl AudioCommand {
             AudioCommand::Stop { id } => *id,
             AudioCommand::SeekTo { id, .. } => *id,
             AudioCommand::SeekBy { id, .. } => *id,
-            _ => unreachable!(),
+            _ => Uuid::nil(),
         }
     }
 }
