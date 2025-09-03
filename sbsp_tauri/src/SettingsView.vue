@@ -4,6 +4,7 @@
       <v-tabs v-model="tab" direction="vertical">
         <v-tab text="General" value="general"></v-tab>
         <v-tab text="Hotkey" value="hotkey"></v-tab>
+        <v-tab text="Audio" value="audio"></v-tab>
       </v-tabs>
       <v-tabs-window v-model="tab" class="flex-grow-1">
         <v-tabs-window-item
@@ -31,6 +32,14 @@
           <hotkey-input v-model="editingSettings.hotkey.resumeAll" label="Resume All"></hotkey-input>
           <hotkey-input v-model="editingSettings.hotkey.stop" label="Stop"></hotkey-input>
           <hotkey-input v-model="editingSettings.hotkey.stopAll" label="Stop All"></hotkey-input>
+        </v-tabs-window-item>
+        <v-tabs-window-item
+          value="audio"
+          class="pa-3"
+          transition="toggle-slide-y-transition"
+          reverse-transition="toggle-slide-y-reverse-transition"
+        >
+          <v-checkbox v-model="editingSettings.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
         </v-tabs-window-item>
       </v-tabs-window>
     </v-sheet>

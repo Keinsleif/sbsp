@@ -57,6 +57,9 @@ export const useShowModel = defineStore('showmodel', {
             },
           },
         },
+        audio: {
+          monoOutput: false,
+        },
       },
     }) as ShowModel,
   actions: {
