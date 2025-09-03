@@ -11,6 +11,7 @@
     :ticks="tickLabels"
     :direction="props.direction"
     @dblclick="faderPosition = 0"
+    @keydown.stop
   >
     <template v-slot:thumb-label="{ modelValue }">
       {{ thumbLabel(modelValue) }}

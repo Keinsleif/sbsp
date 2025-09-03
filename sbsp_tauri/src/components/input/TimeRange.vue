@@ -1,5 +1,12 @@
 <template>
-  <v-range-slider hide-details v-model="innerRange" min="0" :max="props.duration" @update:model-value="emit('update')">
+  <v-range-slider
+    hide-details
+    v-model="innerRange"
+    min="0"
+    :max="props.duration"
+    @update:model-value="emit('update')"
+    @keydown.stop
+  >
     <template v-slot:prepend>
       <time-input v-model="range[0]" width="100px" @update="emit('update')"></time-input>
     </template>

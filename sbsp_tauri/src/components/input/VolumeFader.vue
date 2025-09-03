@@ -12,6 +12,7 @@
     :ticks="tickLabels"
     :direction="props.direction"
     @dblclick="faderPosition = 0"
+    @keydown.stop
   >
     <template v-slot:thumb-label="{ modelValue }">
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}

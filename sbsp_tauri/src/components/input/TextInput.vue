@@ -21,6 +21,7 @@
       reset();
       $event.target.blur();
     "
+    @keydown.stop
   ></v-text-field>
   <v-textarea
     v-if="props.type == 'area'"
@@ -38,6 +39,7 @@
       $event.target.blur();
     "
     @keydown.tab.prevent="onTabInput"
+    @keydown.stop
   ></v-textarea>
 </template>
 

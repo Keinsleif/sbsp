@@ -29,6 +29,7 @@
         variant="outlined"
         density="compact"
         autocomplete="off"
+        @keydown.stop
       ></v-select>
       <v-number-input
         hide-details
@@ -42,6 +43,7 @@
         density="compact"
         variant="outlined"
         autocomplete="off"
+        @keydown.stop
       ></v-number-input>
       <curve-viewer
         :disabled="!fadeEnabled || props.disabled"

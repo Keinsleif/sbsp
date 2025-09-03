@@ -43,8 +43,8 @@
           width="50px"
           @dblclick="openEditable($event)"
           @blur="closeEditable($event.target, true, i)"
-          @keydown.enter="closeEditable($event.target, true, i)"
-          @keydown.esc="closeEditable($event.target, false, i)"
+          @keydown.enter.stop="closeEditable($event.target, true, i)"
+          @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
           <span class="cue-number mr-2">{{ cue.number }}</span>
         </td>
@@ -53,8 +53,8 @@
           width="auto"
           @dblclick="openEditable($event)"
           @blur="closeEditable($event.target, true, i)"
-          @keydown.enter="closeEditable($event.target, true, i)"
-          @keydown.esc="closeEditable($event.target, false, i)"
+          @keydown.enter.stop="closeEditable($event.target, true, i)"
+          @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
           {{ cue.name != null ? cue.name : buildCueName(cue) }}
         </td>
@@ -65,8 +65,8 @@
           width="100px"
           @dblclick="openEditable($event)"
           @blur="closeEditable($event.target, true, i)"
-          @keydown.enter="closeEditable($event.target, true, i)"
-          @keydown.esc="closeEditable($event.target, false, i)"
+          @keydown.enter.stop="closeEditable($event.target, true, i)"
+          @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
           <div
             :class="[isPreWaitActive(cue.id) ? 'border-md border-primary' : '']"
@@ -95,8 +95,8 @@
           width="100px"
           @dblclick="openEditable($event)"
           @blur="closeEditable($event.target, true, i)"
-          @keydown.enter="closeEditable($event.target, true, i)"
-          @keydown.esc="closeEditable($event.target, false, i)"
+          @keydown.enter.stop="closeEditable($event.target, true, i)"
+          @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
           <div
             :class="[isActive(cue.id) ? 'border-md border-primary' : '']"
@@ -124,8 +124,8 @@
           width="100px"
           @dblclick="openEditable($event)"
           @blur="closeEditable($event.target, true, i)"
-          @keydown.enter="closeEditable($event.target, true, i)"
-          @keydown.esc="closeEditable($event.target, false, i)"
+          @keydown.enter.stop="closeEditable($event.target, true, i)"
+          @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
           <div
             :class="

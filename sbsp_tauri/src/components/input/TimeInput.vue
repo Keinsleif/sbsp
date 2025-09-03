@@ -13,6 +13,7 @@
       reset();
       $event.target.blur();
     "
+    @keydown.stop
   ></v-text-field>
 </template>
 

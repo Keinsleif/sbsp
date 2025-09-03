@@ -6,7 +6,7 @@
     persistent-clear
     variant="outlined"
     density="compact"
-    @keydown="keyinput($event)"
+    @keydown.stop="keyinput($event)"
   ></v-text-field>
 </template>
 
