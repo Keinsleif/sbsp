@@ -9,7 +9,7 @@ use crate::{
         wait_engine::{WaitCommand, WaitEvent, WaitType},
     },
     manager::ShowModelHandle,
-    model::cue::{Cue, CueParam},
+    model::{cue::{Cue, CueParam}, settings::ShowSettings},
 };
 
 #[derive(Debug)]
@@ -21,6 +21,7 @@ pub enum ExecutorCommand {
     Stop(Uuid),
     SeekTo(Uuid, f64),
     SeekBy(Uuid, f64),
+    ReconfigureEngines(Box<ShowSettings>),
 }
 
 #[derive(Debug, Clone)]
@@ -338,6 +339,9 @@ impl Executor {
                     }
 
                 }
+            }
+            ExecutorCommand::ReconfigureEngines(settings) => {
+                self.audio_tx.send(AudioCommand::Reconfigure(settings.audio)).await?;
             }
         }
         Ok(())

@@ -1,3 +1,5 @@
+mod mono_effect;
+
 use anyhow::{Context, Result};
 use kira::{
     clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
@@ -9,8 +11,7 @@ use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
 use crate::{
-    executor::EngineEvent,
-    model::cue::{AudioCueFadeParam, SoundType},
+    engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::{AudioCueFadeParam, SoundType}, settings::AudioSettings}
 };
 
 #[derive(Debug, Clone)]
@@ -22,6 +23,7 @@ pub enum AudioCommand {
     Stop { id: Uuid },
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
+    Reconfigure(AudioSettings),
 }
 
 impl AudioCommand {
@@ -34,6 +36,7 @@ impl AudioCommand {
             AudioCommand::Stop { id } => *id,
             AudioCommand::SeekTo { id, .. } => *id,
             AudioCommand::SeekBy { id, .. } => *id,
+            _ => unreachable!(),
         }
     }
 }
@@ -163,6 +166,8 @@ struct PlayingSound {
 
 pub struct AudioEngine {
     manager: Option<AudioManager>,
+    mono_effect_handle: MonoEffectHandle,
+    settings: AudioSettings,
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     playing_sounds: HashMap<Uuid, PlayingSound>,
@@ -173,12 +178,17 @@ impl AudioEngine {
     pub fn new(
         command_rx: mpsc::Receiver<AudioCommand>,
         event_tx: mpsc::Sender<EngineEvent>,
+        settings: AudioSettings,
     ) -> Result<Self> {
-        let manager = AudioManager::<DefaultBackend>::new(AudioManagerSettings::default())
+        let mut audio_manager_settings = AudioManagerSettings::default();
+        let mono_effect_handle = audio_manager_settings.main_track_builder.add_effect(MonoEffectBuilder::new(settings.mono_output));
+        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)
             .context("Failed to initialize AudioManager")?;
 
         Ok(Self {
             manager: Some(manager),
+            mono_effect_handle,
+            settings,
             command_rx,
             event_tx,
             playing_sounds: HashMap::new(),
@@ -208,6 +218,12 @@ impl AudioEngine {
                         AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
+                        AudioCommand::Reconfigure(settings) => {
+                            if settings.mono_output != self.settings.mono_output {
+                                self.mono_effect_handle.set_enable(settings.mono_output);
+                            }
+                            Ok(())
+                        },
                     };
                     if let Err(e) = result {
                         self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();

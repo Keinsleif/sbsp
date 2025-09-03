@@ -145,6 +145,11 @@ impl CueController {
                                     log::error!("{}", e);
                                 }
                         }
+                        UiEvent::SettingsUpdated{ new_settings } => {
+                            if let Err(e) = self.executor_tx.send(ExecutorCommand::ReconfigureEngines(new_settings)).await {
+                                log::error!("{}", e);
+                            }
+                        }
                         _ => {}
                     }
                 }

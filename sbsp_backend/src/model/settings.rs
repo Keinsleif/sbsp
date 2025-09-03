@@ -12,7 +12,8 @@ pub struct ShowSettings {
     pub general: GeneralSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
-    // TODO Audio, Network, MIDI, OSC, Video settings, Remote
+    pub audio: AudioSettings,
+    // TODO Network, MIDI, OSC, Video settings, Remote
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -100,4 +101,11 @@ impl Default for TemplateSettings {
             },
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase", default)]
+pub struct AudioSettings {
+    pub mono_output: bool,
 }
