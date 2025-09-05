@@ -180,10 +180,10 @@ impl AssetProcessor {
             .unwrap_or(PathBuf::new());
 
         let paths = model.cues.iter().filter_map(|cue| {
-            if let CueParam::Audio { target, .. } = &cue.params {
+            if let CueParam::Audio(param) = &cue.params {
                 let mut filepath = parent.clone();
                 filepath.pop();
-                filepath.push(target);
+                filepath.push(param.target.clone());
 
                 Some(filepath)
             } else {

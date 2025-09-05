@@ -18,11 +18,11 @@ pub async fn process_asset(
         .cues
         .iter()
         .find(|cue| cue.id == cue_id)
-        && let CueParam::Audio { target, .. } = &cue.params
+        && let CueParam::Audio (params) = &cue.params
     {
         handle
             .asset_handle
-            .request_file_asset_data(target.clone())
+            .request_file_asset_data(params.target.clone())
             .await
             .map_err(|e| e.to_string())
             .map(|asset_data| (cue_id, asset_data))

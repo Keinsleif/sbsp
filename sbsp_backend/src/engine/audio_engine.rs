@@ -11,7 +11,7 @@ use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
 use crate::{
-    engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::{AudioCueFadeParam, SoundType}, settings::AudioSettings}
+    engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::audio::{AudioFadeParam, SoundType}, settings::AudioSettings}
 };
 
 #[derive(Debug, Clone)]
@@ -48,9 +48,9 @@ pub struct AudioCommandData {
     pub volume: f32,
     pub pan: f32,
     pub start_time: Option<f64>,
-    pub fade_in_param: Option<AudioCueFadeParam>,
+    pub fade_in_param: Option<AudioFadeParam>,
     pub end_time: Option<f64>,
-    pub fade_out_param: Option<AudioCueFadeParam>,
+    pub fade_out_param: Option<AudioFadeParam>,
     pub repeat: bool,
 }
 

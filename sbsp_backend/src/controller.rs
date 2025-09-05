@@ -561,8 +561,7 @@ mod tests {
     use crate::{
         manager::ShowModelManager,
         model::{
-            self,
-            cue::{AudioCueFadeParam, Cue, Easing, SoundType},
+            self, cue::{audio::{AudioCueParam, AudioFadeParam, Easing, SoundType}, Cue},
         },
     };
 
@@ -601,15 +600,15 @@ mod tests {
                         notes: "".to_string(),
                         pre_wait: 0.0,
                         sequence: model::cue::CueSequence::DoNotContinue,
-                        params: model::cue::CueParam::Audio {
+                        params: model::cue::CueParam::Audio(AudioCueParam {
                             target: PathBuf::from("./I.G.Y.flac"),
                             start_time: Some(5.0),
-                            fade_in_param: Some(AudioCueFadeParam {
+                            fade_in_param: Some(AudioFadeParam {
                                 duration: 2.0,
                                 easing: Easing::Linear,
                             }),
                             end_time: Some(50.0),
-                            fade_out_param: Some(AudioCueFadeParam {
+                            fade_out_param: Some(AudioFadeParam {
                                 duration: 5.0,
                                 easing: Easing::InPowi(2),
                             }),
@@ -617,7 +616,7 @@ mod tests {
                             pan: 0.0,
                             repeat: false,
                             sound_type: SoundType::Streaming,
-                        },
+                        }),
                     });
                 }
             })

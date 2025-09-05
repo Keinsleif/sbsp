@@ -9,7 +9,7 @@ use crate::{
         wait_engine::{WaitCommand, WaitEvent, WaitType},
     },
     manager::ShowModelHandle,
-    model::{cue::{Cue, CueParam}, settings::ShowSettings},
+    model::{cue::{audio::AudioCueParam, Cue, CueParam}, settings::ShowSettings},
 };
 
 #[derive(Debug)]
@@ -349,7 +349,7 @@ impl Executor {
 
     async fn load_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
         match &cue.params {
-            CueParam::Audio {
+            CueParam::Audio(AudioCueParam {
                 target,
                 start_time,
                 fade_in_param,
@@ -359,7 +359,7 @@ impl Executor {
                 pan,
                 repeat,
                 sound_type,
-            } => {
+            }) => {
                 let mut filepath = self
                     .model_handle
                     .get_current_file_path()
@@ -394,7 +394,7 @@ impl Executor {
 
     async fn execute_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
         match &cue.params {
-            CueParam::Audio {
+            CueParam::Audio(AudioCueParam {
                 target,
                 start_time,
                 fade_in_param,
@@ -404,7 +404,7 @@ impl Executor {
                 pan,
                 repeat,
                 sound_type,
-            } => {
+            }) => {
                 if let Some(active_instance) =
                     self.active_instances.write().await.get_mut(&instance_id)
                 {
@@ -629,8 +629,7 @@ mod tests {
         event::UiEvent,
         manager::ShowModelManager,
         model::{
-            self,
-            cue::{AudioCueFadeParam, Cue, Easing, SoundType},
+            self, cue::audio::{AudioFadeParam, Easing, SoundType},
         },
     };
 
@@ -661,15 +660,15 @@ mod tests {
                     notes: "".to_string(),
                     pre_wait: 0.0,
                     sequence: model::cue::CueSequence::DoNotContinue,
-                    params: model::cue::CueParam::Audio {
+                    params: model::cue::CueParam::Audio(AudioCueParam {
                         target: PathBuf::from("./I.G.Y.flac"),
                         start_time: Some(5.0),
-                        fade_in_param: Some(AudioCueFadeParam {
+                        fade_in_param: Some(AudioFadeParam {
                             duration: 2.0,
                             easing: Easing::Linear,
                         }),
                         end_time: Some(50.0),
-                        fade_out_param: Some(AudioCueFadeParam {
+                        fade_out_param: Some(AudioFadeParam {
                             duration: 5.0,
                             easing: Easing::InPowi(2),
                         }),
@@ -677,7 +676,7 @@ mod tests {
                         pan: 0.0,
                         repeat: false,
                         sound_type: SoundType::Streaming,
-                    },
+                    }),
                 });
                 cue_id
             })
@@ -728,7 +727,7 @@ mod tests {
             assert_eq!(data.start_time, Some(5.0));
             assert_eq!(
                 data.fade_in_param,
-                Some(AudioCueFadeParam {
+                Some(AudioFadeParam {
                     duration: 2.0,
                     easing: Easing::Linear
                 })
@@ -736,7 +735,7 @@ mod tests {
             assert_eq!(data.end_time, Some(50.0));
             assert_eq!(
                 data.fade_out_param,
-                Some(AudioCueFadeParam {
+                Some(AudioFadeParam {
                     duration: 5.0,
                     easing: Easing::InPowi(2)
                 })
