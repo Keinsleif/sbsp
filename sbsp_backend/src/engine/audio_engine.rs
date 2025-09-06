@@ -11,7 +11,7 @@ use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
 use crate::{
-    engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::audio::{AudioFadeParam, SoundType}, settings::AudioSettings}
+    action::AudioAction, engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::audio::{AudioFadeParam, SoundType}, settings::AudioSettings}
 };
 
 #[derive(Debug, Clone)]
@@ -23,6 +23,7 @@ pub enum AudioCommand {
     Stop { id: Uuid },
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
+    PerformAction { id: Uuid, action: AudioAction },
     Reconfigure(AudioSettings),
 }
 
@@ -36,6 +37,7 @@ impl AudioCommand {
             AudioCommand::Stop { id } => *id,
             AudioCommand::SeekTo { id, .. } => *id,
             AudioCommand::SeekBy { id, .. } => *id,
+            AudioCommand::PerformAction { id, .. } => *id,
             _ => Uuid::nil(),
         }
     }
@@ -218,6 +220,7 @@ impl AudioEngine {
                         AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
+                        AudioCommand::PerformAction { id, action } => self.handle_action(id, action),
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
                                 self.mono_effect_handle.set_enable(settings.mono_output);
@@ -503,6 +506,19 @@ impl AudioEngine {
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
         }
+    }
+
+    fn handle_action(&mut self, id: Uuid, action: AudioAction) -> Result<()> {
+        match action {
+            AudioAction::SetRepeat(enabled) => {
+                if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+                    playing_sound.handle.set_repeat(enabled);
+                } else {
+                    return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
+                }
+            },
+        }
+        Ok(())
     }
 }
 

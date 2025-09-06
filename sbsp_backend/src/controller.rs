@@ -8,11 +8,7 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::state::{ActiveCue, PlaybackStatus, ShowState},
-    event::UiEvent,
-    executor::{ExecutorCommand, ExecutorEvent},
-    manager::ShowModelHandle,
-    model::cue::CueSequence,
+    action::CueAction, controller::state::{ActiveCue, PlaybackStatus, ShowState}, event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle, model::cue::CueSequence
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,6 +29,7 @@ pub enum ControllerCommand {
     PauseAll,
     ResumeAll,
     StopAll,
+    PerformAction(Uuid, CueAction),
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 
@@ -45,6 +42,7 @@ impl ControllerCommand {
             Self::Load(uuid) => Some(ExecutorCommand::Load(*uuid)),
             Self::SeekTo(uuid, position) => Some(ExecutorCommand::SeekTo(*uuid, *position)),
             Self::SeekBy(uuid, amount) => Some(ExecutorCommand::SeekBy(*uuid, *amount)),
+            Self::PerformAction(uuid, action) => Some(ExecutorCommand::PerformAction(*uuid, *action)),
             _ => None,
         }
     }
@@ -178,7 +176,8 @@ impl CueController {
             ControllerCommand::SeekBy(cue_id, .. ) |
             ControllerCommand::Pause(cue_id) |
             ControllerCommand::Resume(cue_id) |
-            ControllerCommand::Stop(cue_id) => {
+            ControllerCommand::Stop(cue_id) |
+            ControllerCommand::PerformAction(cue_id, .. ) => {
                 let model = self.model_handle.read().await;
 
                 if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {

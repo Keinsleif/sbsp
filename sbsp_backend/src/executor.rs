@@ -4,12 +4,10 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    engine::{
+    action::CueAction, engine::{
         audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent},
         wait_engine::{WaitCommand, WaitEvent, WaitType},
-    },
-    manager::ShowModelHandle,
-    model::{cue::{audio::AudioCueParam, Cue, CueParam}, settings::ShowSettings},
+    }, manager::ShowModelHandle, model::{cue::{audio::AudioCueParam, Cue, CueParam}, settings::ShowSettings}
 };
 
 #[derive(Debug)]
@@ -21,6 +19,7 @@ pub enum ExecutorCommand {
     Stop(Uuid),
     SeekTo(Uuid, f64),
     SeekBy(Uuid, f64),
+    PerformAction(Uuid, CueAction),
     ReconfigureEngines(Box<ShowSettings>),
 }
 
@@ -88,7 +87,7 @@ pub enum EngineEvent {
     // Midi(MidiEngineEvent), // 将来の拡張
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum EngineType {
     PreWait,
     Audio,
@@ -336,6 +335,22 @@ impl Executor {
                         EngineType::Wait => {
                             self.wait_tx.send(WaitCommand::SeekBy { instance_id: *instance_id, amount }).await?;
                         },
+                    }
+
+                }
+            }
+            ExecutorCommand::PerformAction(cue_id, action) => {
+                let active_instances = self.active_instances.read().await;
+                if let Some((instance_id, active_instance)) =
+                    active_instances.iter().find(|map| map.1.cue_id == cue_id)
+                {
+                    match (action, active_instance.engine_type) {
+                        (CueAction::Audio(audio_action), EngineType::Audio) => {
+                            self.audio_tx.send(AudioCommand::PerformAction { id: *instance_id, action: audio_action }).await?;
+                        },
+                        _ => {
+                            log::warn!("Action type isn't match active cue's type. ignoring...");
+                        }
                     }
 
                 }

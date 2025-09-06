@@ -18,6 +18,7 @@ pub mod apiserver;
 pub mod asset_processor;
 pub mod controller;
 mod engine;
+pub mod action;
 pub mod event;
 mod executor;
 pub mod manager;
