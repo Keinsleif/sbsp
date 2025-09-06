@@ -1,5 +1,7 @@
 pub mod state;
+mod handle;
 
+pub use handle::*;
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
@@ -74,22 +76,27 @@ impl CueController {
     pub fn new(
         model_handle: ShowModelHandle,
         executor_tx: mpsc::Sender<ExecutorCommand>,
-        command_rx: mpsc::Receiver<ControllerCommand>,
         executor_event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
-    ) -> Self {
+    ) -> (Self, CueControllerHandle) {
         let event_rx = event_tx.subscribe();
-        Self {
-            model_handle,
-            executor_tx,
-            command_rx,
-            executor_event_rx,
-            state_tx,
-            event_tx,
-            event_rx,
-            wait_tasks: Arc::new(RwLock::new(HashMap::new())),
-        }
+        let (command_tx, command_rx) = mpsc::channel::<ControllerCommand>(32);
+        (
+            Self {
+                model_handle,
+                executor_tx,
+                command_rx,
+                executor_event_rx,
+                state_tx,
+                event_tx,
+                event_rx,
+                wait_tasks: Arc::new(RwLock::new(HashMap::new())),
+            },
+            CueControllerHandle {
+                command_tx,
+            },
+        )
     }
 
     pub async fn run(mut self) {
@@ -575,13 +582,12 @@ mod tests {
         cue_ids: &[Uuid],
     ) -> (
         CueController,
-        Sender<ControllerCommand>,
+        CueControllerHandle,
         Receiver<ExecutorCommand>,
         Sender<ExecutorEvent>,
         watch::Receiver<ShowState>,
         broadcast::Receiver<UiEvent>,
     ) {
-        let (ctrl_tx, ctrl_rx) = mpsc::channel::<ControllerCommand>(32);
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
@@ -621,10 +627,9 @@ mod tests {
             })
             .await;
 
-        let controller = CueController::new(
+        let (controller, controller_handle) = CueController::new(
             handle.clone(),
             exec_tx,
-            ctrl_rx,
             playback_event_rx,
             state_tx,
             event_tx,
@@ -632,7 +637,7 @@ mod tests {
 
         (
             controller,
-            ctrl_tx,
+            controller_handle,
             exec_rx,
             playback_event_tx,
             state_rx,
@@ -643,17 +648,15 @@ mod tests {
     #[tokio::test]
     async fn go_command() {
         let cue_id = Uuid::new_v4();
-        let (controller, ctrl_tx, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
+        let (controller, controller_handle, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
-        ctrl_tx
-            .send(ControllerCommand::SetPlaybackCursor {
-                cue_id: Some(cue_id),
-            })
+        controller_handle
+            .set_playback_cursor(Some(cue_id))
             .await
             .unwrap();
-        ctrl_tx.send(ControllerCommand::Go).await.unwrap();
+        controller_handle.go().await.unwrap();
 
         if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
@@ -668,17 +671,14 @@ mod tests {
         println!("{}", cue_id);
         let cue_id_next = Uuid::new_v4();
         println!("{}", cue_id_next);
-        let (controller, ctrl_tx, _, _, state_rx, mut event_rx) =
+        let (controller, controller_handle, _, _, state_rx, mut event_rx) =
             setup_controller(&[cue_id, cue_id_next]).await;
 
         tokio::spawn(controller.run());
 
         assert_eq!(state_rx.borrow().playback_cursor, None);
 
-        ctrl_tx
-            .send(ControllerCommand::SetPlaybackCursor {
-                cue_id: Some(cue_id_next),
-            })
+        controller_handle.set_playback_cursor(Some(cue_id))
             .await
             .unwrap();
 

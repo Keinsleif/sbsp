@@ -2,7 +2,7 @@ use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{
     asset_processor::{AssetProcessor, AssetProcessorHandle},
-    controller::{state::ShowState, ControllerCommand, CueController},
+    controller::{state::ShowState, CueController, CueControllerHandle},
     engine::{
         audio_engine::{AudioCommand, AudioEngine},
         wait_engine::{WaitCommand, WaitEngine},
@@ -27,7 +27,7 @@ pub mod model;
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
     pub asset_handle: AssetProcessorHandle,
-    pub controller_tx: mpsc::Sender<ControllerCommand>,
+    pub controller_handle: CueControllerHandle,
 }
 
 pub fn start_backend() -> (
@@ -35,8 +35,7 @@ pub fn start_backend() -> (
     watch::Receiver<ShowState>,
     broadcast::Sender<UiEvent>,
 ) {
-    let (controller_tx, controller_rx) = mpsc::channel::<ControllerCommand>(32);
-    let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
+    let (executor_command_tx, executor_command_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
     let (wait_tx, wait_rx) = mpsc::channel::<WaitCommand>(32);
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
@@ -45,10 +44,9 @@ pub fn start_backend() -> (
     let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
     let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
-    let controller = CueController::new(
+    let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
-        exec_tx,
-        controller_rx,
+        executor_command_tx,
         executor_event_rx,
         state_tx,
         event_tx.clone(),
@@ -56,7 +54,7 @@ pub fn start_backend() -> (
 
     let executor = Executor::new(
         model_handle.clone(),
-        exec_rx,
+        executor_command_rx,
         audio_tx,
         wait_tx,
         executor_event_tx,
@@ -79,7 +77,7 @@ pub fn start_backend() -> (
         BackendHandle {
             model_handle,
             asset_handle,
-            controller_tx,
+            controller_handle,
         },
         state_rx,
         event_tx,
