@@ -13,7 +13,6 @@ pub struct ShowSettings {
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
     pub audio: AudioSettings,
-    // TODO Network, MIDI, OSC, Video settings, Remote
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

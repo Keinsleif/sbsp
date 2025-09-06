@@ -12,13 +12,17 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::state::{ActiveCue, PlaybackStatus, ShowState}, event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle, model::cue::CueSequence
+    controller::state::{ActiveCue, PlaybackStatus, ShowState},
+    event::UiEvent,
+    executor::{ExecutorCommand, ExecutorEvent},
+    manager::ShowModelHandle,
+    model::cue::CueSequence
 };
 
 pub struct CueController {
     model_handle: ShowModelHandle,
-    executor_tx: mpsc::Sender<ExecutorCommand>, // Executorへの指示用チャネル
-    command_rx: mpsc::Receiver<ControllerCommand>, // 外部からのトリガー受信用チャネル
+    executor_tx: mpsc::Sender<ExecutorCommand>,
+    command_rx: mpsc::Receiver<ControllerCommand>,
 
     executor_event_rx: mpsc::Receiver<ExecutorEvent>,
     state_tx: watch::Sender<ShowState>,
@@ -244,7 +248,6 @@ impl CueController {
         Ok(())
     }
 
-    /// Executorからの再生イベントを処理します
     async fn handle_executor_event(&self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
         let mut show_state = self.state_tx.borrow().clone();
         let mut state_changed = false;
@@ -510,7 +513,6 @@ impl CueController {
             }
             _ => (),
         }
-        // TODO: ApiServerに状態変更を通知する
         Ok(())
     }
 }

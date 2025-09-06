@@ -53,11 +53,9 @@ pub async fn create_api_router(
     };
 
     Router::new()
-        // WebSocket接続用のエンドポイント
         .route("/ws", get(websocket_handler))
-        // 初回接続時にショー全体の状態を取得するエンドポイント
         .route("/api/show/full_state", get(get_full_state_handler))
-        .with_state(state) // ルーター全体で状態を共有
+        .with_state(state)
 }
 
 #[derive(Serialize)]

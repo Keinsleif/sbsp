@@ -32,7 +32,6 @@ pub enum ExecutorEvent {
     },
     Progress {
         cue_id: Uuid,
-        // ここでは単純な経過時間(秒)としますが、より詳細な情報も可能です
         position: f64,
         duration: f64,
     },

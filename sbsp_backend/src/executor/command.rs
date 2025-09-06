@@ -5,7 +5,7 @@ use crate::{action::CueAction, model::settings::ShowSettings};
 #[derive(Debug)]
 pub enum ExecutorCommand {
     Load(Uuid),
-    Execute(Uuid), // cue_id
+    Execute(Uuid),
     Pause(Uuid),
     Resume(Uuid),
     Stop(Uuid),

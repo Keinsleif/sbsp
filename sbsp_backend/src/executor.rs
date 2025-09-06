@@ -10,9 +10,14 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    action::CueAction, engine::{
-        audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent}, wait_engine::{WaitCommand, WaitEvent, WaitType}, EngineEvent, EngineType
-    }, manager::ShowModelHandle, model::cue::{audio::AudioCueParam, Cue, CueParam}
+    action::CueAction,
+    engine::{
+        audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent},
+        wait_engine::{WaitCommand, WaitEvent, WaitType},
+        EngineEvent, EngineType
+    },
+    manager::ShowModelHandle,
+    model::cue::{audio::AudioCueParam, Cue, CueParam}
 };
 
 #[derive(Debug)]
@@ -23,19 +28,16 @@ pub struct ActiveInstance {
 
 pub struct Executor {
     model_handle: ShowModelHandle,
-    command_rx: mpsc::Receiver<ExecutorCommand>, // CueControllerからの指示受信用
-    audio_tx: mpsc::Sender<AudioCommand>,        // AudioEngineへのコマンド送信用
+    command_rx: mpsc::Receiver<ExecutorCommand>,
+    audio_tx: mpsc::Sender<AudioCommand>,
     wait_tx: mpsc::Sender<WaitCommand>,
-    // midi_tx: mpsc::Sender<MidiCommand>, // 将来の拡張用
-    // osc_tx: mpsc::Sender<OscCommand>,   // 将来の拡張用
-    executor_event_tx: mpsc::Sender<ExecutorEvent>, // CueControllerへのイベント送信用
-    engine_event_rx: mpsc::Receiver<EngineEvent>,   // 各エンジンからのイベント受信用
+    executor_event_tx: mpsc::Sender<ExecutorEvent>,
+    engine_event_rx: mpsc::Receiver<EngineEvent>,
 
     active_instances: Arc<RwLock<HashMap<Uuid, ActiveInstance>>>,
 }
 
 impl Executor {
-    /// 新しいExecutorを生成します。
     pub fn new(
         model_handle: ShowModelHandle,
         command_rx: mpsc::Receiver<ExecutorCommand>,
@@ -55,7 +57,6 @@ impl Executor {
         }
     }
 
-    /// Executorのメインループ。指示を待ち受け、処理します。
     pub async fn run(mut self) {
         log::info!("Executor run loop started.");
         loop {
@@ -77,7 +78,6 @@ impl Executor {
         log::info!("Executor run loop finished.");
     }
 
-    /// 個別の指示を処理します。
     async fn process_command(&self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
             ExecutorCommand::Load(cue_id) => {

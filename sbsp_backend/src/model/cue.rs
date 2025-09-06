@@ -48,5 +48,5 @@ pub enum CueParam {
     Audio(AudioCueParam),
     Wait {
         duration: f64,
-    }, // TODO midi, osc wait, group cue
+    },
 }

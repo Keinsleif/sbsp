@@ -254,7 +254,6 @@ impl AudioEngine {
                     for playing_sound in self.playing_sounds.values_mut() {
                         playing_sound.last_state = playing_sound.handle.state();
                     }
-                    // 停止状態のPlayingSoundを削除
                     self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), kira::sound::PlaybackState::Stopped));
                 },
                 else => break
