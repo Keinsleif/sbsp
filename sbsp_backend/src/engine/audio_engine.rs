@@ -225,6 +225,7 @@ impl AudioEngine {
                             if settings.mono_output != self.settings.mono_output {
                                 self.mono_effect_handle.set_enable(settings.mono_output);
                             }
+                            self.settings = settings.clone();
                             Ok(())
                         },
                     };
