@@ -46,7 +46,5 @@ pub enum CueSequence {
 )]
 pub enum CueParam {
     Audio(AudioCueParam),
-    Wait {
-        duration: f64,
-    },
+    Wait { duration: f64 },
 }

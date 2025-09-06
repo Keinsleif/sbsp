@@ -1,6 +1,8 @@
 use kira::effect::EffectBuilder;
 
-use crate::engine::audio_engine::mono_effect::{command_writers_and_readers, handle::MonoEffectHandle, MonoEffect};
+use crate::engine::audio_engine::mono_effect::{
+    MonoEffect, command_writers_and_readers, handle::MonoEffectHandle,
+};
 
 pub struct MonoEffectBuilder {
     pub enabled: bool,
@@ -20,7 +22,7 @@ impl Default for MonoEffectBuilder {
 
 impl EffectBuilder for MonoEffectBuilder {
     type Handle = MonoEffectHandle;
-    
+
     fn build(self) -> (Box<dyn kira::effect::Effect>, Self::Handle) {
         let (command_writers, command_readers) = command_writers_and_readers();
         (

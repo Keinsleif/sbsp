@@ -1,9 +1,12 @@
 use std::{path::PathBuf, sync::Arc};
 
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
-use crate::{manager::ModelCommand, model::{cue::Cue, settings::ShowSettings, ShowModel}};
+use crate::{
+    manager::ModelCommand,
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
+};
 
 #[derive(Clone)]
 pub struct ShowModelHandle {
@@ -30,7 +33,8 @@ impl ShowModelHandle {
     }
 
     pub async fn add_cues(&self, cues: Vec<Cue>, at_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::AddCues { cues, at_index }).await?;
+        self.send_command(ModelCommand::AddCues { cues, at_index })
+            .await?;
         Ok(())
     }
 
@@ -46,9 +50,18 @@ impl ShowModelHandle {
         Ok(())
     }
 
-    pub async fn renumber_cues(&self, cues: Vec<Uuid>, start_from: f64, increment: f64) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::RenumberCues { cues, start_from, increment })
-            .await?;
+    pub async fn renumber_cues(
+        &self,
+        cues: Vec<Uuid>,
+        start_from: f64,
+        increment: f64,
+    ) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::RenumberCues {
+            cues,
+            start_from,
+            increment,
+        })
+        .await?;
         Ok(())
     }
 

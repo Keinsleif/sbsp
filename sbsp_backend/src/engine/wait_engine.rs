@@ -34,7 +34,13 @@ pub struct LoadedInstance {
 
 impl LoadedInstance {
     fn start_waiting(&self) -> WaitingInstance {
-        WaitingInstance { wait_type: self.wait_type, status: WaitingStatus::Waiting, total_duration: self.total_duration, start_time: Instant::now(), remaining_duration: self.remaining_duration }
+        WaitingInstance {
+            wait_type: self.wait_type,
+            status: WaitingStatus::Waiting,
+            total_duration: self.total_duration,
+            start_time: Instant::now(),
+            remaining_duration: self.remaining_duration,
+        }
     }
 }
 

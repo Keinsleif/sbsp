@@ -1,6 +1,8 @@
-use sbsp_backend::{model::{cue::Cue, settings::ShowSettings, ShowModel}, BackendHandle};
+use sbsp_backend::{
+    BackendHandle,
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
+};
 use uuid::Uuid;
-
 
 #[tauri::command]
 pub async fn get_show_model(handle: tauri::State<'_, BackendHandle>) -> Result<ShowModel, String> {
@@ -43,7 +45,10 @@ pub async fn add_cues(
 }
 
 #[tauri::command]
-pub async fn remove_cue(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
+pub async fn remove_cue(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: Uuid,
+) -> Result<(), String> {
     handle
         .model_handle
         .remove_cue(cue_id)
@@ -65,8 +70,17 @@ pub async fn move_cue(
 }
 
 #[tauri::command]
-pub async fn renumber_cues(handle: tauri::State<'_, BackendHandle>, cues: Vec<Uuid>, start_from: f64, increment: f64) -> Result<(), String> {
-    handle.model_handle.renumber_cues(cues, start_from, increment).await.map_err(|e| e.to_string())
+pub async fn renumber_cues(
+    handle: tauri::State<'_, BackendHandle>,
+    cues: Vec<Uuid>,
+    start_from: f64,
+    increment: f64,
+) -> Result<(), String> {
+    handle
+        .model_handle
+        .renumber_cues(cues, start_from, increment)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

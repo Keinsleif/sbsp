@@ -13,17 +13,20 @@ struct MonoEffect {
 
 impl MonoEffect {
     fn new(builder: MonoEffectBuilder, command_readers: CommandReaders) -> Self {
-        Self { command_readers, enabled: builder.enabled }
+        Self {
+            command_readers,
+            enabled: builder.enabled,
+        }
     }
 }
 
 impl Effect for MonoEffect {
-	fn on_start_processing(&mut self) {
+    fn on_start_processing(&mut self) {
         if let Some(enabled) = self.command_readers.set_enable.read() {
             self.enabled = enabled;
         }
-	}
-    
+    }
+
     fn process(&mut self, input: &mut [kira::Frame], _dt: f64, _info: &kira::info::Info) {
         if self.enabled {
             for frame in input {

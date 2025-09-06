@@ -74,7 +74,11 @@ pub async fn stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), Str
 }
 
 #[tauri::command]
-pub async fn seek_to(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid, position: f64) -> Result<(), String> {
+pub async fn seek_to(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: Uuid,
+    position: f64,
+) -> Result<(), String> {
     handle
         .controller_handle
         .seek_to(cue_id, position)
@@ -83,7 +87,11 @@ pub async fn seek_to(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid, posi
 }
 
 #[tauri::command]
-pub async fn seek_by(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid, amount: f64) -> Result<(), String> {
+pub async fn seek_by(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: Uuid,
+    amount: f64,
+) -> Result<(), String> {
     handle
         .controller_handle
         .seek_by(cue_id, amount)

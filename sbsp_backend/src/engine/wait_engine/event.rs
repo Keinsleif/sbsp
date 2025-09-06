@@ -37,7 +37,7 @@ impl WaitEvent {
             WaitEvent::Progress { instance_id, .. } => *instance_id,
             WaitEvent::Paused { instance_id, .. } => *instance_id,
             WaitEvent::Resumed { instance_id } => *instance_id,
-            WaitEvent::Stopped { instance_id} => *instance_id,
+            WaitEvent::Stopped { instance_id } => *instance_id,
             WaitEvent::Completed { instance_id } => *instance_id,
         }
     }

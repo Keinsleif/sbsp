@@ -12,12 +12,12 @@ use uuid::Uuid;
 use crate::{
     action::CueAction,
     engine::{
+        EngineEvent, EngineType,
         audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent},
         wait_engine::{WaitCommand, WaitEvent, WaitType},
-        EngineEvent, EngineType
     },
     manager::ShowModelHandle,
-    model::cue::{audio::AudioCueParam, Cue, CueParam}
+    model::cue::{Cue, CueParam, audio::AudioCueParam},
 };
 
 #[derive(Debug)]
@@ -205,7 +205,9 @@ impl Executor {
                                     instance_id: *instance_id,
                                 })
                                 .await?;
-                            self.executor_event_tx.send(ExecutorEvent::PreWaitStopped { cue_id }).await?;
+                            self.executor_event_tx
+                                .send(ExecutorEvent::PreWaitStopped { cue_id })
+                                .await?;
                         }
                         EngineType::Audio => {
                             self.audio_tx
@@ -229,16 +231,30 @@ impl Executor {
                 {
                     match active_instance.engine_type {
                         EngineType::PreWait => {
-                            self.wait_tx.send(WaitCommand::SeekTo { instance_id: *instance_id, position }).await?;
-                        },
+                            self.wait_tx
+                                .send(WaitCommand::SeekTo {
+                                    instance_id: *instance_id,
+                                    position,
+                                })
+                                .await?;
+                        }
                         EngineType::Audio => {
-                            self.audio_tx.send(AudioCommand::SeekTo { id: *instance_id, position }).await?;
-                        },
+                            self.audio_tx
+                                .send(AudioCommand::SeekTo {
+                                    id: *instance_id,
+                                    position,
+                                })
+                                .await?;
+                        }
                         EngineType::Wait => {
-                            self.wait_tx.send(WaitCommand::SeekTo { instance_id: *instance_id, position }).await?;
-                        },
+                            self.wait_tx
+                                .send(WaitCommand::SeekTo {
+                                    instance_id: *instance_id,
+                                    position,
+                                })
+                                .await?;
+                        }
                     }
-
                 }
             }
             ExecutorCommand::SeekBy(cue_id, amount) => {
@@ -248,16 +264,30 @@ impl Executor {
                 {
                     match active_instance.engine_type {
                         EngineType::PreWait => {
-                            self.wait_tx.send(WaitCommand::SeekBy { instance_id: *instance_id, amount }).await?;
-                        },
+                            self.wait_tx
+                                .send(WaitCommand::SeekBy {
+                                    instance_id: *instance_id,
+                                    amount,
+                                })
+                                .await?;
+                        }
                         EngineType::Audio => {
-                            self.audio_tx.send(AudioCommand::SeekBy { id: *instance_id, amount }).await?;
-                        },
+                            self.audio_tx
+                                .send(AudioCommand::SeekBy {
+                                    id: *instance_id,
+                                    amount,
+                                })
+                                .await?;
+                        }
                         EngineType::Wait => {
-                            self.wait_tx.send(WaitCommand::SeekBy { instance_id: *instance_id, amount }).await?;
-                        },
+                            self.wait_tx
+                                .send(WaitCommand::SeekBy {
+                                    instance_id: *instance_id,
+                                    amount,
+                                })
+                                .await?;
+                        }
                     }
-
                 }
             }
             ExecutorCommand::PerformAction(cue_id, action) => {
@@ -267,17 +297,23 @@ impl Executor {
                 {
                     match (action, active_instance.engine_type) {
                         (CueAction::Audio(audio_action), EngineType::Audio) => {
-                            self.audio_tx.send(AudioCommand::PerformAction { id: *instance_id, action: audio_action }).await?;
-                        },
+                            self.audio_tx
+                                .send(AudioCommand::PerformAction {
+                                    id: *instance_id,
+                                    action: audio_action,
+                                })
+                                .await?;
+                        }
                         _ => {
                             log::warn!("Action type isn't match active cue's type. ignoring...");
                         }
                     }
-
                 }
             }
             ExecutorCommand::ReconfigureEngines(settings) => {
-                self.audio_tx.send(AudioCommand::Reconfigure(settings.audio)).await?;
+                self.audio_tx
+                    .send(AudioCommand::Reconfigure(settings.audio))
+                    .await?;
             }
         }
         Ok(())
@@ -322,7 +358,13 @@ impl Executor {
                     .await?;
             }
             CueParam::Wait { duration } => {
-                self.wait_tx.send(WaitCommand::Load { wait_type: WaitType::Wait, instance_id, duration: *duration }).await?;
+                self.wait_tx
+                    .send(WaitCommand::Load {
+                        wait_type: WaitType::Wait,
+                        instance_id,
+                        duration: *duration,
+                    })
+                    .await?;
             }
         }
         Ok(())
@@ -441,7 +483,7 @@ impl Executor {
                     AudioEngineEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Stopped { cue_id }
-                    },
+                    }
                     AudioEngineEvent::Completed { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
@@ -483,7 +525,13 @@ impl Executor {
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
                     WaitEvent::Stopped { .. } => {
-                        if self.active_instances.write().await.remove(&cue_id).is_some() {
+                        if self
+                            .active_instances
+                            .write()
+                            .await
+                            .remove(&cue_id)
+                            .is_some()
+                        {
                             log::info!("PreWaitStopped cue_id={}", cue_id);
                         } else {
                             log::error!("Cue with id '{}' not found.", cue_id);
@@ -535,11 +583,11 @@ impl Executor {
                     WaitEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Stopped { cue_id }
-                    },
+                    }
                     WaitEvent::Completed { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
-                    },
+                    }
                 };
 
                 self.executor_event_tx.send(playback_event).await?;
@@ -565,7 +613,8 @@ mod tests {
         event::UiEvent,
         manager::ShowModelManager,
         model::{
-            self, cue::audio::{AudioFadeParam, Easing, SoundType},
+            self,
+            cue::audio::{AudioFadeParam, Easing, SoundType},
         },
     };
 
@@ -676,9 +725,7 @@ mod tests {
                     easing: Easing::InPowi(2)
                 })
             );
-            assert!(
-                !data.repeat
-            );
+            assert!(!data.repeat);
         } else {
             unreachable!();
         }

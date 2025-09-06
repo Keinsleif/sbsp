@@ -225,30 +225,35 @@ impl AssetProcessor {
 
         let mut hint = Hint::new();
         if let Some(ext_osstr) = path.extension()
-            && let Some(ext_str) = ext_osstr.to_str() {
-                hint.with_extension(ext_str);
-            }
+            && let Some(ext_str) = ext_osstr.to_str()
+        {
+            hint.with_extension(ext_str);
+        }
 
         let format_opts: FormatOptions = Default::default();
         let metadata_opts: MetadataOptions = Default::default();
         let decoder_opts: DecoderOptions = Default::default();
 
-        let probed = symphonia::default::get_probe()
-            .format(&hint, mss, &format_opts, &metadata_opts)?;
+        let probed =
+            symphonia::default::get_probe().format(&hint, mss, &format_opts, &metadata_opts)?;
 
         let mut format = probed.format;
 
         let track = format.default_track().unwrap();
 
-        let mut decoder = symphonia::default::get_codecs()
-            .make(&track.codec_params, &decoder_opts)?;
+        let mut decoder =
+            symphonia::default::get_codecs().make(&track.codec_params, &decoder_opts)?;
 
         let track_id = track.id;
 
-        let duration = track.codec_params.time_base.zip(track.codec_params.n_frames).map(|(base, spans)| {
-            let symphonia_time = base.calc_time(spans);
-            symphonia_time.seconds as f64 + symphonia_time.frac
-        });
+        let duration = track
+            .codec_params
+            .time_base
+            .zip(track.codec_params.n_frames)
+            .map(|(base, spans)| {
+                let symphonia_time = base.calc_time(spans);
+                symphonia_time.seconds as f64 + symphonia_time.frac
+            });
 
         let mut sample_buf = None;
         let mut spec: Option<SignalSpec> = None;
@@ -299,7 +304,8 @@ impl AssetProcessor {
         } else if samples.len() / window < 5000 {
             (samples.len() - (samples.len() % window)) / window + 1
         } else {
-            window = (samples.len() - (samples.len() % (WAVEFORM_THRESHOLD - 1))) / (WAVEFORM_THRESHOLD - 1);
+            window = (samples.len() - (samples.len() % (WAVEFORM_THRESHOLD - 1)))
+                / (WAVEFORM_THRESHOLD - 1);
             WAVEFORM_THRESHOLD
         };
 

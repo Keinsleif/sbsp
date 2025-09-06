@@ -1,17 +1,24 @@
 mod command;
 
-use sbsp_backend::{
-    controller::state::ShowState,
-    event::UiEvent,
-    start_backend,
-};
+use sbsp_backend::{controller::state::ShowState, event::UiEvent, start_backend};
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
 use tokio::sync::{broadcast, watch};
 
-use crate::command::{controller::{go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor, stop, stop_all}, file_open, file_save, file_save_as, model_manager::{add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue, update_settings}, process_asset};
+use crate::command::{
+    controller::{
+        go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
+        stop, stop_all,
+    },
+    file_open, file_save, file_save_as,
+    model_manager::{
+        add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
+        update_settings,
+    },
+    process_asset,
+};
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -125,8 +132,7 @@ pub fn run() {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
             }
-            "id_delete" |
-            "id_renumber" => {
+            "id_delete" | "id_renumber" => {
                 let _ = handle.emit("menu_clicked", event.id());
             }
             _ => {}

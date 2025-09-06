@@ -1,28 +1,29 @@
-mod mono_effect;
 mod command;
 mod event;
+mod mono_effect;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use kira::{
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
     clock::{ClockHandle, ClockSpeed, ClockTime},
     sound::{
+        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region,
         static_sound::{StaticSoundData, StaticSoundHandle},
         streaming::{StreamingSoundData, StreamingSoundHandle},
-        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region
     },
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
 };
 use std::{collections::HashMap, time::Duration};
 use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
-use crate::{
-    action::AudioAction, model::{cue::audio::SoundType, settings::AudioSettings}
-};
 use super::EngineEvent;
+use crate::{
+    action::AudioAction,
+    model::{cue::audio::SoundType, settings::AudioSettings},
+};
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
 enum SoundHandle {
@@ -152,7 +153,9 @@ impl AudioEngine {
         settings: AudioSettings,
     ) -> Result<Self> {
         let mut audio_manager_settings = AudioManagerSettings::default();
-        let mono_effect_handle = audio_manager_settings.main_track_builder.add_effect(MonoEffectBuilder::new(settings.mono_output));
+        let mono_effect_handle = audio_manager_settings
+            .main_track_builder
+            .add_effect(MonoEffectBuilder::new(settings.mono_output));
         let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)
             .context("Failed to initialize AudioManager")?;
 
@@ -355,12 +358,10 @@ impl AudioEngine {
             handle = SoundHandle::Streaming(manager.play(sound_data)?);
         }
 
-        let fade_out_tween = data.fade_out_param.map(|fade_out_param| {
-            Tween {
-                start_time: StartTime::Immediate,
-                duration: Duration::from_secs_f64(fade_out_param.duration),
-                easing: fade_out_param.easing.into(),
-            }
+        let fade_out_tween = data.fade_out_param.map(|fade_out_param| Tween {
+            start_time: StartTime::Immediate,
+            duration: Duration::from_secs_f64(fade_out_param.duration),
+            easing: fade_out_param.easing.into(),
         });
 
         self.event_tx
@@ -485,7 +486,7 @@ impl AudioEngine {
                 } else {
                     return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
                 }
-            },
+            }
         }
         Ok(())
     }

@@ -2,7 +2,13 @@ use std::path::PathBuf;
 
 use uuid::Uuid;
 
-use crate::{action::AudioAction, model::{cue::audio::{AudioFadeParam, SoundType}, settings::AudioSettings}};
+use crate::{
+    action::AudioAction,
+    model::{
+        cue::audio::{AudioFadeParam, SoundType},
+        settings::AudioSettings,
+    },
+};
 
 #[derive(Debug, Clone)]
 pub enum AudioCommand {

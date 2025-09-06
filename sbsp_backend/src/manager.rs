@@ -3,7 +3,9 @@ mod handle;
 pub use handle::ShowModelHandle;
 
 use std::{
-    collections::HashSet, path::{Path, PathBuf}, sync::Arc
+    collections::HashSet,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};
@@ -24,11 +26,22 @@ use crate::{
 )]
 pub enum ModelCommand {
     UpdateCue(Cue),
-    AddCue { cue: Cue, at_index: usize },
-    AddCues { cues: Vec<Cue>, at_index: usize },
-    RemoveCue { cue_id: Uuid },
-    MoveCue { cue_id: Uuid, to_index: usize },
-    
+    AddCue {
+        cue: Cue,
+        at_index: usize,
+    },
+    AddCues {
+        cues: Vec<Cue>,
+        at_index: usize,
+    },
+    RemoveCue {
+        cue_id: Uuid,
+    },
+    MoveCue {
+        cue_id: Uuid,
+        to_index: usize,
+    },
+
     RenumberCues {
         cues: Vec<Uuid>,
         start_from: f64,
@@ -140,7 +153,10 @@ impl ShowModelManager {
                             insert_index += 1;
                         }
                     }
-                    self.event_tx.send(UiEvent::CuesAdded { cues: added_cues, at_index })?;
+                    self.event_tx.send(UiEvent::CuesAdded {
+                        cues: added_cues,
+                        at_index,
+                    })?;
                 }
                 Ok(())
             }
@@ -181,7 +197,11 @@ impl ShowModelManager {
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::RenumberCues { cues, start_from, increment } => {
+            ModelCommand::RenumberCues {
+                cues,
+                start_from,
+                increment,
+            } => {
                 let mut model = self.model.write().await;
                 let mut number = start_from;
                 let targets: HashSet<Uuid> = cues.into_iter().collect();
@@ -192,7 +212,9 @@ impl ShowModelManager {
                     }
                 }
                 if number != start_from {
-                    self.event_tx.send(UiEvent::CueListUpdated { cues: model.cues.clone() })?;
+                    self.event_tx.send(UiEvent::CueListUpdated {
+                        cues: model.cues.clone(),
+                    })?;
                 }
                 Ok(())
             }
@@ -200,7 +222,8 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 // TODO setting validation
                 model.settings = *new_settings.clone();
-                self.event_tx.send(UiEvent::SettingsUpdated { new_settings })?;
+                self.event_tx
+                    .send(UiEvent::SettingsUpdated { new_settings })?;
                 Ok(())
             }
             ModelCommand::Save => {

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(
     tag = "type",

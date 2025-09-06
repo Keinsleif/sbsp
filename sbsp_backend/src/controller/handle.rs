@@ -27,7 +27,9 @@ impl CueControllerHandle {
     }
 
     pub async fn resume(&self, uuid: Uuid) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::Resume(uuid)).await?;
+        self.command_tx
+            .send(ControllerCommand::Resume(uuid))
+            .await?;
         Ok(())
     }
 
@@ -37,12 +39,16 @@ impl CueControllerHandle {
     }
 
     pub async fn seek_to(&self, uuid: Uuid, position: f64) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::SeekTo(uuid, position)).await?;
+        self.command_tx
+            .send(ControllerCommand::SeekTo(uuid, position))
+            .await?;
         Ok(())
     }
 
     pub async fn seek_by(&self, uuid: Uuid, amount: f64) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::SeekBy(uuid, amount)).await?;
+        self.command_tx
+            .send(ControllerCommand::SeekBy(uuid, amount))
+            .await?;
         Ok(())
     }
 
@@ -62,12 +68,16 @@ impl CueControllerHandle {
     }
 
     pub async fn perform_action(&self, uuid: Uuid, action: CueAction) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::PerformAction(uuid, action)).await?;
+        self.command_tx
+            .send(ControllerCommand::PerformAction(uuid, action))
+            .await?;
         Ok(())
     }
 
     pub async fn set_playback_cursor(&self, uuid: Option<Uuid>) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::SetPlaybackCursor { cue_id: uuid }).await?;
+        self.command_tx
+            .send(ControllerCommand::SetPlaybackCursor { cue_id: uuid })
+            .await?;
         Ok(())
     }
 }

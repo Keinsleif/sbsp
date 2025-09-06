@@ -1,4 +1,4 @@
-use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam, BackendHandle};
+use sbsp_backend::{BackendHandle, asset_processor::AssetData, model::cue::CueParam};
 use tauri::Manager as _;
 use tauri_plugin_dialog::DialogExt as _;
 use uuid::Uuid;
@@ -18,7 +18,7 @@ pub async fn process_asset(
         .cues
         .iter()
         .find(|cue| cue.id == cue_id)
-        && let CueParam::Audio (params) = &cue.params
+        && let CueParam::Audio(params) = &cue.params
     {
         handle
             .asset_handle

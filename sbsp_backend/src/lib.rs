@@ -2,24 +2,25 @@ use tokio::sync::{broadcast, mpsc, watch};
 
 use crate::{
     asset_processor::{AssetProcessor, AssetProcessorHandle},
-    controller::{state::ShowState, CueController, CueControllerHandle},
+    controller::{CueController, CueControllerHandle, state::ShowState},
     engine::{
+        EngineEvent,
         audio_engine::{AudioCommand, AudioEngine},
         wait_engine::{WaitCommand, WaitEngine},
-        EngineEvent
     },
     event::UiEvent,
     executor::{Executor, ExecutorCommand, ExecutorEvent},
-    manager::{ShowModelHandle, ShowModelManager}, model::settings::AudioSettings,
+    manager::{ShowModelHandle, ShowModelManager},
+    model::settings::AudioSettings,
 };
 
 #[cfg(feature = "apiserver")]
 pub mod apiserver;
 
+pub mod action;
 pub mod asset_processor;
 pub mod controller;
 mod engine;
-pub mod action;
 pub mod event;
 mod executor;
 pub mod manager;
@@ -62,7 +63,8 @@ pub fn start_backend() -> (
         engine_event_rx,
     );
 
-    let audio_engine = AudioEngine::new(audio_rx, engine_event_tx.clone(), AudioSettings::default()).unwrap();
+    let audio_engine =
+        AudioEngine::new(audio_rx, engine_event_tx.clone(), AudioSettings::default()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
     let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone(), event_rx);

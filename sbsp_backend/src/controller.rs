@@ -1,9 +1,9 @@
-pub mod state;
-mod handle;
 mod command;
+mod handle;
+pub mod state;
 
-pub use handle::*;
 pub use command::*;
+pub use handle::*;
 
 use std::{collections::HashMap, sync::Arc};
 
@@ -16,7 +16,7 @@ use crate::{
     event::UiEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
-    model::cue::CueSequence
+    model::cue::CueSequence,
 };
 
 pub struct CueController {
@@ -53,9 +53,7 @@ impl CueController {
                 event_rx,
                 wait_tasks: Arc::new(RwLock::new(HashMap::new())),
             },
-            CueControllerHandle {
-                command_tx,
-            },
+            CueControllerHandle { command_tx },
         )
     }
 
@@ -138,13 +136,13 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::Load(cue_id) |
-            ControllerCommand::SeekTo(cue_id, .. ) |
-            ControllerCommand::SeekBy(cue_id, .. ) |
-            ControllerCommand::Pause(cue_id) |
-            ControllerCommand::Resume(cue_id) |
-            ControllerCommand::Stop(cue_id) |
-            ControllerCommand::PerformAction(cue_id, .. ) => {
+            ControllerCommand::Load(cue_id)
+            | ControllerCommand::SeekTo(cue_id, ..)
+            | ControllerCommand::SeekBy(cue_id, ..)
+            | ControllerCommand::Pause(cue_id)
+            | ControllerCommand::Resume(cue_id)
+            | ControllerCommand::Stop(cue_id)
+            | ControllerCommand::PerformAction(cue_id, ..) => {
                 let model = self.model_handle.read().await;
 
                 if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
@@ -155,17 +153,19 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::PauseAll |
-            ControllerCommand::ResumeAll |
-            ControllerCommand::StopAll => {
+            ControllerCommand::PauseAll
+            | ControllerCommand::ResumeAll
+            | ControllerCommand::StopAll => {
                 let model = self.model_handle.read().await;
 
                 for cue in &model.cues {
-                    let executor_command = command.try_all_into_single_executor_command(cue.id).unwrap();
+                    let executor_command = command
+                        .try_all_into_single_executor_command(cue.id)
+                        .unwrap();
                     self.executor_tx.send(executor_command).await?;
                 }
                 Ok(())
-            },
+            }
             ControllerCommand::SetPlaybackCursor { cue_id } => {
                 if let Some(cursor_cue_id) = cue_id
                     && self
@@ -386,7 +386,6 @@ impl CueController {
                 });
                 show_state.active_cues.remove(cue_id);
                 state_changed = true;
-
             }
             ExecutorEvent::Completed { cue_id, .. } => {
                 let mut wait_tasks = self.wait_tasks.write().await;
@@ -525,7 +524,11 @@ mod tests {
     use crate::{
         manager::ShowModelManager,
         model::{
-            self, cue::{audio::{AudioCueParam, AudioFadeParam, Easing, SoundType}, Cue},
+            self,
+            cue::{
+                Cue,
+                audio::{AudioCueParam, AudioFadeParam, Easing, SoundType},
+            },
         },
     };
 
@@ -606,7 +609,8 @@ mod tests {
     #[tokio::test]
     async fn go_command() {
         let cue_id = Uuid::new_v4();
-        let (controller, controller_handle, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
+        let (controller, controller_handle, mut exec_rx, _, _, _) =
+            setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
 
@@ -636,7 +640,8 @@ mod tests {
 
         assert_eq!(state_rx.borrow().playback_cursor, None);
 
-        controller_handle.set_playback_cursor(Some(cue_id))
+        controller_handle
+            .set_playback_cursor(Some(cue_id))
             .await
             .unwrap();
 

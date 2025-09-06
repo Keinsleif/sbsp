@@ -3,7 +3,10 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::model::cue::{audio::{AudioCueParam, SoundType}, Cue, CueParam, CueSequence};
+use crate::model::cue::{
+    Cue, CueParam, CueSequence,
+    audio::{AudioCueParam, SoundType},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -77,7 +80,7 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Audio ( AudioCueParam {
+                params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
                     start_time: None,
                     fade_in_param: None,

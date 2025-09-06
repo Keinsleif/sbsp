@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -74,10 +73,7 @@ impl From<Easing> for kira::Easing {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,
     Streaming,

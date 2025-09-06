@@ -25,7 +25,6 @@ pub enum ControllerCommand {
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 
-
 impl ControllerCommand {
     pub(super) fn try_into_executor_command(&self) -> Option<ExecutorCommand> {
         match self {
@@ -35,12 +34,17 @@ impl ControllerCommand {
             Self::Load(uuid) => Some(ExecutorCommand::Load(*uuid)),
             Self::SeekTo(uuid, position) => Some(ExecutorCommand::SeekTo(*uuid, *position)),
             Self::SeekBy(uuid, amount) => Some(ExecutorCommand::SeekBy(*uuid, *amount)),
-            Self::PerformAction(uuid, action) => Some(ExecutorCommand::PerformAction(*uuid, *action)),
+            Self::PerformAction(uuid, action) => {
+                Some(ExecutorCommand::PerformAction(*uuid, *action))
+            }
             _ => None,
         }
     }
 
-    pub(super) fn try_all_into_single_executor_command(&self, cue_id: Uuid) -> Option<ExecutorCommand> {
+    pub(super) fn try_all_into_single_executor_command(
+        &self,
+        cue_id: Uuid,
+    ) -> Option<ExecutorCommand> {
         match self {
             Self::PauseAll => Some(ExecutorCommand::Pause(cue_id)),
             Self::ResumeAll => Some(ExecutorCommand::Resume(cue_id)),
