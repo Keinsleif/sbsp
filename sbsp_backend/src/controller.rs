@@ -2,8 +2,8 @@ mod command;
 mod handle;
 pub mod state;
 
-pub use command::*;
-pub use handle::*;
+pub use command::ControllerCommand;
+pub use handle::CueControllerHandle;
 
 use std::{collections::HashMap, sync::Arc};
 

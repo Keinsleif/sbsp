@@ -3,10 +3,9 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    executor::ExecutorEvent,
-    model::{cue::Cue, settings::ShowSettings},
-};
+#[cfg(not(feature = "type_export"))]
+use crate::executor::ExecutorEvent;
+use crate::model::{cue::Cue, settings::ShowSettings};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -61,6 +60,7 @@ pub enum UiError {
     CueEdit { message: String },
 }
 
+#[cfg(not(feature = "type_export"))]
 impl From<ExecutorEvent> for UiEvent {
     fn from(value: ExecutorEvent) -> Self {
         match value {

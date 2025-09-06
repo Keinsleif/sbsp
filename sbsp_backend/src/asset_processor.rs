@@ -1,8 +1,11 @@
+mod data;
 mod handle;
 
+pub use data::AssetData;
 pub use handle::AssetProcessorHandle;
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
+use std::path::PathBuf;
+use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
@@ -31,15 +34,6 @@ pub enum AssetCommand {
 struct ProcessResult {
     path: PathBuf,
     data: Result<AssetData, String>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub struct AssetData {
-    pub path: PathBuf,
-    pub duration: Option<f64>,
-    pub waveform: Vec<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
