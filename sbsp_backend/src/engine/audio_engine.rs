@@ -1,67 +1,36 @@
 mod mono_effect;
+mod command;
+mod event;
+
+pub use command::{AudioCommand, AudioCommandData};
+pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use kira::{
-    clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
-        static_sound::{StaticSoundData, StaticSoundHandle}, streaming::{StreamingSoundData, StreamingSoundHandle}, EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region
-    }, AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
+    clock::{ClockHandle, ClockSpeed, ClockTime},
+    sound::{
+        static_sound::{StaticSoundData, StaticSoundHandle},
+        streaming::{StreamingSoundData, StreamingSoundHandle},
+        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region
+    },
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween
 };
-use std::{collections::HashMap, path::PathBuf, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
 use crate::{
-    action::AudioAction, engine::audio_engine::mono_effect::{builder::MonoEffectBuilder, handle::MonoEffectHandle}, executor::EngineEvent, model::{cue::audio::{AudioFadeParam, SoundType}, settings::AudioSettings}
+    action::AudioAction, model::{cue::audio::SoundType, settings::AudioSettings}
 };
+use super::EngineEvent;
+use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
-#[derive(Debug, Clone)]
-pub enum AudioCommand {
-    Load { id: Uuid, data: AudioCommandData },
-    Play { id: Uuid, data: AudioCommandData },
-    Pause { id: Uuid },
-    Resume { id: Uuid },
-    Stop { id: Uuid },
-    SeekTo { id: Uuid, position: f64 },
-    SeekBy { id: Uuid, amount: f64 },
-    PerformAction { id: Uuid, action: AudioAction },
-    Reconfigure(AudioSettings),
-}
-
-impl AudioCommand {
-    fn id(&self) -> Uuid {
-        match self {
-            AudioCommand::Load { id, .. } => *id,
-            AudioCommand::Play { id, .. } => *id,
-            AudioCommand::Pause { id } => *id,
-            AudioCommand::Resume { id } => *id,
-            AudioCommand::Stop { id } => *id,
-            AudioCommand::SeekTo { id, .. } => *id,
-            AudioCommand::SeekBy { id, .. } => *id,
-            AudioCommand::PerformAction { id, .. } => *id,
-            _ => Uuid::nil(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AudioCommandData {
-    pub sound_type: SoundType,
-    pub filepath: PathBuf,
-    pub volume: f32,
-    pub pan: f32,
-    pub start_time: Option<f64>,
-    pub fade_in_param: Option<AudioFadeParam>,
-    pub end_time: Option<f64>,
-    pub fade_out_param: Option<AudioFadeParam>,
-    pub repeat: bool,
-}
-
-enum SpecificSoundHandle {
+enum SoundHandle {
     Static(StaticSoundHandle),
     Streaming(StreamingSoundHandle<FromFileError>),
 }
 
-impl SpecificSoundHandle {
+impl SoundHandle {
     fn state(&self) -> PlaybackState {
         match self {
             Self::Static(handle) => handle.state(),
@@ -109,15 +78,15 @@ impl SpecificSoundHandle {
     }
 }
 
-struct SoundHandle {
-    handle: SpecificSoundHandle,
+struct PlaybackHandle {
+    handle: SoundHandle,
     clock: ClockHandle,
     duration: f64,
     fade_out_tween: Option<Tween>,
     repeat: bool,
 }
 
-impl SoundHandle {
+impl PlaybackHandle {
     fn state(&self) -> PlaybackState {
         self.handle.state()
     }
@@ -161,7 +130,7 @@ impl SoundHandle {
 }
 
 struct PlayingSound {
-    handle: SoundHandle,
+    handle: PlaybackHandle,
     last_state: PlaybackState,
     manual_stop_sent: bool,
 }
@@ -173,7 +142,7 @@ pub struct AudioEngine {
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     playing_sounds: HashMap<Uuid, PlayingSound>,
-    loaded_sounds: HashMap<Uuid, SoundHandle>,
+    loaded_sounds: HashMap<Uuid, PlaybackHandle>,
 }
 
 impl AudioEngine {
@@ -343,7 +312,7 @@ impl AudioEngine {
             duration = sound_data.duration().as_secs_f64();
 
             log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-            handle = SpecificSoundHandle::Static(manager.play(sound_data)?);
+            handle = SoundHandle::Static(manager.play(sound_data)?);
         } else {
             let mut sound_data =
                 tokio::task::spawn_blocking(move || StreamingSoundData::from_file(filepath_clone))
@@ -384,7 +353,7 @@ impl AudioEngine {
             duration = sound_data.duration().as_secs_f64();
 
             log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-            handle = SpecificSoundHandle::Streaming(manager.play(sound_data)?);
+            handle = SoundHandle::Streaming(manager.play(sound_data)?);
         }
 
         let fade_out_tween = data.fade_out_param.map(|fade_out_param| {
@@ -403,7 +372,7 @@ impl AudioEngine {
 
         self.loaded_sounds.insert(
             id,
-            SoundHandle {
+            PlaybackHandle {
                 handle,
                 clock,
                 duration,
@@ -520,53 +489,5 @@ impl AudioEngine {
             },
         }
         Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub enum AudioEngineEvent {
-    Loaded {
-        instance_id: Uuid,
-    },
-    Started {
-        instance_id: Uuid,
-    },
-    Progress {
-        instance_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    Paused {
-        instance_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    Resumed {
-        instance_id: Uuid,
-    },
-    Stopped {
-        instance_id: Uuid,
-    },
-    Completed {
-        instance_id: Uuid,
-    },
-    Error {
-        instance_id: Uuid,
-        error: String,
-    },
-}
-
-impl AudioEngineEvent {
-    pub fn instance_id(&self) -> Uuid {
-        match self {
-            Self::Loaded { instance_id } => *instance_id,
-            Self::Started { instance_id } => *instance_id,
-            Self::Progress { instance_id, .. } => *instance_id,
-            Self::Paused { instance_id, .. } => *instance_id,
-            Self::Resumed { instance_id } => *instance_id,
-            Self::Stopped { instance_id } => *instance_id,
-            Self::Completed { instance_id } => *instance_id,
-            Self::Error { instance_id, .. } => *instance_id,
-        }
     }
 }

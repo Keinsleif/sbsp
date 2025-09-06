@@ -1,3 +1,9 @@
+mod command;
+mod event;
+
+pub use command::ExecutorCommand;
+pub use event::ExecutorEvent;
+
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use tokio::sync::{RwLock, mpsc};
@@ -5,94 +11,9 @@ use uuid::Uuid;
 
 use crate::{
     action::CueAction, engine::{
-        audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent},
-        wait_engine::{WaitCommand, WaitEvent, WaitType},
-    }, manager::ShowModelHandle, model::{cue::{audio::AudioCueParam, Cue, CueParam}, settings::ShowSettings}
+        audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent}, wait_engine::{WaitCommand, WaitEvent, WaitType}, EngineEvent, EngineType
+    }, manager::ShowModelHandle, model::cue::{audio::AudioCueParam, Cue, CueParam}
 };
-
-#[derive(Debug)]
-pub enum ExecutorCommand {
-    Load(Uuid),
-    Execute(Uuid), // cue_id
-    Pause(Uuid),
-    Resume(Uuid),
-    Stop(Uuid),
-    SeekTo(Uuid, f64),
-    SeekBy(Uuid, f64),
-    PerformAction(Uuid, CueAction),
-    ReconfigureEngines(Box<ShowSettings>),
-}
-
-#[derive(Debug, Clone)]
-pub enum ExecutorEvent {
-    Loaded {
-        cue_id: Uuid,
-    },
-    PreWaitStarted {
-        cue_id: Uuid,
-    },
-    PreWaitProgress {
-        cue_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    PreWaitPaused {
-        cue_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    PreWaitResumed {
-        cue_id: Uuid,
-    },
-    PreWaitStopped {
-        cue_id: Uuid,
-    },
-    PreWaitCompleted {
-        cue_id: Uuid,
-    },
-    Started {
-        cue_id: Uuid,
-    },
-    Progress {
-        cue_id: Uuid,
-        // ここでは単純な経過時間(秒)としますが、より詳細な情報も可能です
-        position: f64,
-        duration: f64,
-    },
-    Paused {
-        cue_id: Uuid,
-        position: f64,
-        duration: f64,
-    },
-    Resumed {
-        cue_id: Uuid,
-    },
-    Stopped {
-        cue_id: Uuid,
-    },
-    Completed {
-        cue_id: Uuid,
-    },
-    Error {
-        cue_id: Uuid,
-        error: String,
-    },
-}
-
-#[derive(Debug)]
-pub enum EngineEvent {
-    Audio(AudioEngineEvent),
-    Wait(WaitEvent),
-    PreWait(WaitEvent),
-    // Midi(MidiEngineEvent), // 将来の拡張
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum EngineType {
-    PreWait,
-    Audio,
-    Wait,
-}
 
 #[derive(Debug)]
 pub struct ActiveInstance {

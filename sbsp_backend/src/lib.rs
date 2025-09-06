@@ -6,9 +6,10 @@ use crate::{
     engine::{
         audio_engine::{AudioCommand, AudioEngine},
         wait_engine::{WaitCommand, WaitEngine},
+        EngineEvent
     },
     event::UiEvent,
-    executor::{EngineEvent, Executor, ExecutorCommand, ExecutorEvent},
+    executor::{Executor, ExecutorCommand, ExecutorEvent},
     manager::{ShowModelHandle, ShowModelManager}, model::settings::AudioSettings,
 };
 

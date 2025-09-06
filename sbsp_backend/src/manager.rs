@@ -1,6 +1,6 @@
 mod handle;
 
-pub use handle::*;
+pub use handle::ShowModelHandle;
 
 use std::{
     collections::HashSet, path::{Path, PathBuf}, sync::Arc

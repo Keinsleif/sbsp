@@ -1,9 +1,10 @@
-pub mod builder;
-pub mod handle;
+mod builder;
+mod handle;
+
+pub use builder::MonoEffectBuilder;
+pub use handle::MonoEffectHandle;
 
 use kira::{command_writers_and_readers, effect::Effect};
-
-use crate::engine::audio_engine::mono_effect::builder::MonoEffectBuilder;
 
 struct MonoEffect {
     command_readers: CommandReaders,
