@@ -201,7 +201,7 @@ impl CueController {
         let state = self.state_tx.borrow().clone();
 
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            if state.active_cues.contains_key(&cue_id) {
+            if let Some(active_cue) = state.active_cues.get(&cue_id) && active_cue.status != PlaybackStatus::Loaded {
                 log::warn!("GO: Cue already executed.");
             } else {
                 self.executor_tx
