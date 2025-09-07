@@ -57,7 +57,7 @@
         <v-btn :icon="mdiCheckCircleOutline"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
-        <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggleFullscreen"></v-btn>
+        <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggle"></v-btn>
       </v-btn-group>
     </v-sheet>
   </v-sheet>
@@ -87,21 +87,13 @@ import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
 import type { Cue } from '../types/Cue';
 import { open } from '@tauri-apps/plugin-dialog';
-import { useWindowFocus } from '@vueuse/core';
+import { useFullscreen, useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 
-const isFullscreen = ref(false);
-const updateFullscreenState = () => (isFullscreen.value = !!document.fullscreenElement);
-const toggleFullscreen = () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
-};
+const { isFullscreen, toggle } = useFullscreen();
 
 const hasFocus = useWindowFocus();
 
@@ -191,10 +183,12 @@ const addEmptyCue = (type: 'audio' | 'wait') => {
 const handleReadyPauseButton = () => {
   if (showState.playbackCursor != null) {
     switch (showState.activeCues[showState.playbackCursor]?.status) {
+      case 'PreWaiting':
       case 'Playing': {
         invoke('pause', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
         break;
       }
+      case 'PreWaitPaused':
       case 'Paused': {
         invoke('resume', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
         break;
@@ -214,12 +208,10 @@ onMounted(() => {
   ticker.value = setInterval(() => {
     time.value = new Date();
   }, 100);
-  document.addEventListener('fullscreenchange', updateFullscreenState);
 });
 
 onUnmounted(() => {
   clearInterval(ticker.value);
-  document.removeEventListener('fullscreenchange', updateFullscreenState);
 });
 </script>
 
