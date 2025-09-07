@@ -282,6 +282,7 @@ impl CueController {
                     active_cue.position = 0.0;
                     active_cue.duration = 0.0;
                     active_cue.status = PlaybackStatus::Playing;
+                    active_cue.params = *initial_params;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,

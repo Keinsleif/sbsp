@@ -10,7 +10,7 @@
           <v-sheet class="d-flex flex-row align-center justify-space-between pl-3 pr-3 pt-2">
             <span>{{ buildTitle(cue_id) }}</span>
             <v-icon
-              :icon="activeCue.params.type == 'audio' && activeCue.params.repeating ? mdiRepeat : undefined"
+              :icon="activeCue.params.type == 'audio' && activeCue.params.repeating === true ? mdiRepeat : undefined"
             ></v-icon>
           </v-sheet>
           <v-sheet class="pa-0 d-flex flex-row justify-space-between">
