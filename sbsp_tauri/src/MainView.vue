@@ -43,6 +43,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useShowState } from './stores/showstate';
 import { listen } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
+import { PlaybackStatus } from './types/PlaybackStatus';
 
 const uiState = useUiState();
 const showState = useShowState();
@@ -123,6 +124,11 @@ const stopHotkey = computed(() =>
 const stopAllHotkey = computed(() =>
   showModel.settings.hotkey.playback.stopAll != null ? showModel.settings.hotkey.playback.stopAll : undefined,
 );
+const audioToggleRepeatHotkey = computed(() =>
+  showModel.settings.hotkey.audioAction.toggleRepeat != null
+    ? showModel.settings.hotkey.audioAction.toggleRepeat
+    : undefined,
+);
 
 useHotkey(
   goHotkey,
@@ -150,9 +156,11 @@ useHotkey(
   pauseAndResumeHotkey,
   () => {
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
-      if (showState.activeCues[uiState.selected]?.status == 'Playing') {
+      if ((['PreWaiting', 'Playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
         invoke('pause', { cueId: uiState.selected }).catch((e) => console.error(e));
-      } else if (showState.activeCues[uiState.selected]?.status == 'Paused') {
+      } else if (
+        (['PreWaitPaused', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
+      ) {
         invoke('resume', { cueId: uiState.selected }).catch((e) => console.error(e));
       }
     }
@@ -198,6 +206,18 @@ useHotkey(
   stopAllHotkey,
   () => {
     invoke('stop_all').catch((e) => console.error(e));
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  audioToggleRepeatHotkey,
+  () => {
+    for (let cueId of uiState.selectedRows) {
+      invoke('toggle_repeat', { cueId: cueId }).catch((e) => console.log(e));
+    }
   },
   {
     preventDefault: true,
