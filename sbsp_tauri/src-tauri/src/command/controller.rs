@@ -1,4 +1,4 @@
-use sbsp_backend::BackendHandle;
+use sbsp_backend::{BackendHandle, action::{CueAction, AudioAction}};
 use uuid::Uuid;
 
 #[tauri::command]
@@ -107,6 +107,18 @@ pub async fn set_playback_cursor(
     handle
         .controller_handle
         .set_playback_cursor(cue_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn toggle_repeat(
+    handle: tauri::State<'_, BackendHandle>,
+    cue_id: Uuid,
+) -> Result<(), String> {
+    handle
+        .controller_handle
+        .perform_action(cue_id, CueAction::Audio(AudioAction::ToggleRepeat))
         .await
         .map_err(|e| e.to_string())
 }

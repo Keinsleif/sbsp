@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub enum PlaybackStatus {
     Loaded,
@@ -16,16 +16,39 @@ pub enum PlaybackStatus {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum StateParam {
+    #[default]
+    None,
+    Audio (AudioStateParam),
+    Wait,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct AudioStateParam {
+    pub repeating: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
 pub struct ActiveCue {
     pub cue_id: Uuid,
     pub position: f64,
     pub duration: f64,
     pub status: PlaybackStatus,
+    pub params: StateParam,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowState {

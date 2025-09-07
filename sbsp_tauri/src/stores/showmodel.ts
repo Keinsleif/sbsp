@@ -11,13 +11,18 @@ export const useShowModel = defineStore('showmodel', {
       settings: {
         general: { lockCursorToSelection: true, advanceCursorWhenGo: true },
         hotkey: {
-          go: 'Enter',
-          load: 'L',
-          pauseAndResume: 'Space',
-          pauseAll: '[',
-          resumeAll: ']',
-          stop: 'Backspace',
-          stopAll: 'Escape',
+          playback: {
+            go: 'Enter',
+            load: 'L',
+            pauseAndResume: 'Space',
+            pauseAll: '[',
+            resumeAll: ']',
+            stop: 'Backspace',
+            stopAll: 'Escape',
+          },
+          audioAction: {
+            toggleRepeat: 'R',
+          },
         },
         template: {
           audio: {

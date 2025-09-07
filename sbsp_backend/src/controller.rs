@@ -12,7 +12,7 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::state::{ActiveCue, PlaybackStatus, ShowState},
+    controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
     event::UiEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
@@ -264,12 +264,13 @@ impl CueController {
                         position: 0.0,
                         duration: 0.0,
                         status: PlaybackStatus::Loaded,
+                        params: StateParam::None,
                     };
                     show_state.active_cues.insert(*cue_id, active_cue);
                 }
                 state_changed = true;
             }
-            ExecutorEvent::Started { cue_id } => {
+            ExecutorEvent::Started { cue_id, initial_params } => {
                 let cue = self
                     .model_handle
                     .read()
@@ -295,6 +296,7 @@ impl CueController {
                         position: 0.0,
                         duration: 0.0,
                         status: PlaybackStatus::Playing,
+                        params: *initial_params,
                     };
                     show_state.active_cues.insert(*cue_id, active_cue);
                 }
@@ -339,6 +341,7 @@ impl CueController {
                             position: *position,
                             duration: *duration,
                             status: PlaybackStatus::Playing,
+                            params: StateParam::None,
                         },
                     );
                 }
@@ -364,6 +367,7 @@ impl CueController {
                             position: *position,
                             duration: *duration,
                             status: PlaybackStatus::Paused,
+                            params: StateParam::None,
                         },
                     );
                     state_changed = true;
@@ -412,6 +416,12 @@ impl CueController {
                 show_state.active_cues.remove(cue_id);
                 state_changed = true;
             }
+            ExecutorEvent::StateParamUpdated { cue_id, params } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.params = *params;
+                    state_changed = true;
+                }
+            }
             ExecutorEvent::Error { cue_id, error, .. } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.status = PlaybackStatus::Error;
@@ -430,6 +440,7 @@ impl CueController {
                         position: 0.0,
                         duration: 0.0,
                         status: PlaybackStatus::PreWaiting,
+                        params: StateParam::None,
                     };
                     show_state.active_cues.insert(*cue_id, active_cue);
                 }
@@ -452,6 +463,7 @@ impl CueController {
                             position: *position,
                             duration: *duration,
                             status: PlaybackStatus::PreWaiting,
+                            params: StateParam::None,
                         },
                     );
                 }
@@ -476,6 +488,7 @@ impl CueController {
                             position: *position,
                             duration: *duration,
                             status: PlaybackStatus::PreWaitPaused,
+                            params: StateParam::None,
                         },
                     );
                 }
@@ -666,7 +679,7 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(ExecutorEvent::Started { cue_id })
+            .send(ExecutorEvent::Started { cue_id, initial_params: StateParam::None })
             .await
             .unwrap();
 
@@ -677,6 +690,7 @@ mod tests {
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
             assert_eq!(active_cue.duration, 0.0);
             assert_eq!(active_cue.position, 0.0);
+            assert_eq!(active_cue.params, StateParam::None);
         } else {
             unreachable!();
         }

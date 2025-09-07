@@ -10,7 +10,7 @@ use tokio::sync::{broadcast, watch};
 use crate::command::{
     controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
-        stop, stop_all,
+        stop, stop_all, toggle_repeat,
     },
     file_open, file_save, file_save_as,
     model_manager::{
@@ -150,6 +150,7 @@ pub fn run() {
             seek_by,
             get_show_model,
             set_playback_cursor,
+            toggle_repeat,
             update_cue,
             add_cue,
             add_cues,

@@ -100,24 +100,28 @@ useHotkey(
   { preventDefault: true },
 );
 
-const goHotkey = computed(() => (showModel.settings.hotkey.go != null ? showModel.settings.hotkey.go : undefined));
+const goHotkey = computed(() =>
+  showModel.settings.hotkey.playback.go != null ? showModel.settings.hotkey.playback.go : undefined,
+);
 const loadHotkey = computed(() =>
-  showModel.settings.hotkey.load != null ? showModel.settings.hotkey.load : undefined,
+  showModel.settings.hotkey.playback.load != null ? showModel.settings.hotkey.playback.load : undefined,
 );
 const pauseAndResumeHotkey = computed(() =>
-  showModel.settings.hotkey.pauseAndResume != null ? showModel.settings.hotkey.pauseAndResume : undefined,
+  showModel.settings.hotkey.playback.pauseAndResume != null
+    ? showModel.settings.hotkey.playback.pauseAndResume
+    : undefined,
 );
 const pauseAllHotkey = computed(() =>
-  showModel.settings.hotkey.pauseAll != null ? showModel.settings.hotkey.pauseAll : undefined,
+  showModel.settings.hotkey.playback.pauseAll != null ? showModel.settings.hotkey.playback.pauseAll : undefined,
 );
 const resumeAllHotkey = computed(() =>
-  showModel.settings.hotkey.resumeAll != null ? showModel.settings.hotkey.resumeAll : undefined,
+  showModel.settings.hotkey.playback.resumeAll != null ? showModel.settings.hotkey.playback.resumeAll : undefined,
 );
 const stopHotkey = computed(() =>
-  showModel.settings.hotkey.stop != null ? showModel.settings.hotkey.stop : undefined,
+  showModel.settings.hotkey.playback.stop != null ? showModel.settings.hotkey.playback.stop : undefined,
 );
 const stopAllHotkey = computed(() =>
-  showModel.settings.hotkey.stopAll != null ? showModel.settings.hotkey.stopAll : undefined,
+  showModel.settings.hotkey.playback.stopAll != null ? showModel.settings.hotkey.playback.stopAll : undefined,
 );
 
 useHotkey(

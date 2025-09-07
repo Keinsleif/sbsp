@@ -18,6 +18,7 @@ use crate::{
     },
     manager::ShowModelHandle,
     model::cue::{Cue, CueParam, audio::AudioCueParam},
+    controller::state::StateParam,
 };
 
 #[derive(Debug)]
@@ -464,7 +465,7 @@ impl Executor {
 
                 let playback_event = match audio_event {
                     AudioEngineEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
-                    AudioEngineEvent::Started { .. } => ExecutorEvent::Started { cue_id },
+                    AudioEngineEvent::Started { initial_params, .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Audio(initial_params) },
                     AudioEngineEvent::Progress {
                         position, duration, ..
                     } => ExecutorEvent::Progress {
@@ -488,6 +489,10 @@ impl Executor {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
                     }
+                    AudioEngineEvent::StateParamUpdated { params, .. } => ExecutorEvent::StateParamUpdated {
+                        cue_id,
+                        params: StateParam::Audio(params),
+                    },
                     AudioEngineEvent::Error { error, .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Error { cue_id, error }
@@ -564,7 +569,7 @@ impl Executor {
 
                 let playback_event = match wait_event {
                     WaitEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
-                    WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id },
+                    WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Wait },
                     WaitEvent::Progress {
                         position, duration, ..
                     } => ExecutorEvent::Progress {
@@ -616,6 +621,7 @@ mod tests {
             self,
             cue::audio::{AudioFadeParam, Easing, SoundType},
         },
+        controller::state::AudioStateParam,
     };
 
     async fn setup_executor(
@@ -754,13 +760,15 @@ mod tests {
         engine_event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id,
+                initial_params: AudioStateParam::default(),
             }))
             .await
             .unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Started { cue_id } = event {
+            if let ExecutorEvent::Started { cue_id, initial_params } = event {
                 assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(initial_params, StateParam::Audio(AudioStateParam::default()));
             } else {
                 panic!("Wrong Playback Event emitted.");
             }

@@ -1,5 +1,7 @@
 use uuid::Uuid;
 
+use crate::controller::state::StateParam;
+
 #[derive(Debug, Clone)]
 pub enum ExecutorEvent {
     Loaded {
@@ -29,6 +31,7 @@ pub enum ExecutorEvent {
     },
     Started {
         cue_id: Uuid,
+        initial_params: StateParam,
     },
     Progress {
         cue_id: Uuid,
@@ -48,6 +51,10 @@ pub enum ExecutorEvent {
     },
     Completed {
         cue_id: Uuid,
+    },
+    StateParamUpdated {
+        cue_id: Uuid,
+        params: StateParam,
     },
     Error {
         cue_id: Uuid,

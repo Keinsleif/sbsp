@@ -23,6 +23,7 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     model::{cue::audio::SoundType, settings::AudioSettings},
+    controller::state::AudioStateParam,
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -90,6 +91,10 @@ struct PlaybackHandle {
 impl PlaybackHandle {
     fn state(&self) -> PlaybackState {
         self.handle.state()
+    }
+
+    fn is_repeating(&self) -> bool {
+        self.repeat
     }
 
     fn position(&self) -> f64 {
@@ -192,7 +197,7 @@ impl AudioEngine {
                         AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
-                        AudioCommand::PerformAction { id, action } => self.handle_action(id, action),
+                        AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
                                 self.mono_effect_handle.set_enable(settings.mono_output);
@@ -396,6 +401,9 @@ impl AudioEngine {
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id: id,
+                initial_params: AudioStateParam {
+                    repeating: data.repeat,
+                },
             }))
             .await?;
 
@@ -478,11 +486,18 @@ impl AudioEngine {
         }
     }
 
-    fn handle_action(&mut self, id: Uuid, action: AudioAction) -> Result<()> {
+    async fn handle_action(&mut self, id: Uuid, action: AudioAction) -> Result<()> {
         match action {
-            AudioAction::SetRepeat(enabled) => {
+            AudioAction::ToggleRepeat => {
                 if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-                    playing_sound.handle.set_repeat(enabled);
+                    let repeat_state = playing_sound.handle.is_repeating();
+                    playing_sound.handle.set_repeat(!repeat_state);
+                    self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
+                        instance_id: id,
+                        params: AudioStateParam {
+                            repeating: repeat_state,
+                        },
+                    })).await?;
                 } else {
                     return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
                 }

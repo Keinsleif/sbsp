@@ -25,13 +25,17 @@
           transition="toggle-slide-y-transition"
           reverse-transition="toggle-slide-y-reverse-transition"
         >
-          <hotkey-input v-model="editingSettings.hotkey.go" label="Go"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.load" label="Load"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.pauseAndResume" label="Pause & Resume"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.pauseAll" label="Pause All"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.resumeAll" label="Resume All"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.stop" label="Stop"></hotkey-input>
-          <hotkey-input v-model="editingSettings.hotkey.stopAll" label="Stop All"></hotkey-input>
+          <h2>Playback</h2>
+          <hotkey-input v-model="editingSettings.hotkey.playback.go" label="Go"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.load" label="Load"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.pauseAndResume" label="Pause & Resume"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.pauseAll" label="Pause All"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.resumeAll" label="Resume All"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.stop" label="Stop"></hotkey-input>
+          <hotkey-input v-model="editingSettings.hotkey.playback.stopAll" label="Stop All"></hotkey-input>
+          <v-divider></v-divider>
+          <h2>Audio Action</h2>
+          <hotkey-input v-model="editingSettings.hotkey.audioAction.toggleRepeat" label="ToggleRepeat"></hotkey-input>
         </v-tabs-window-item>
         <v-tabs-window-item
           value="audio"

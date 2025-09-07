@@ -17,5 +17,5 @@ pub enum CueAction {
     rename_all_fields = "camelCase"
 )]
 pub enum AudioAction {
-    SetRepeat(bool),
+    ToggleRepeat,
 }
