@@ -10,7 +10,7 @@ use kira::{
     AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
     clock::{ClockHandle, ClockSpeed, ClockTime},
     sound::{
-        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region,
+        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region, IntoOptionalRegion,
         static_sound::{StaticSoundData, StaticSoundHandle},
         streaming::{StreamingSoundData, StreamingSoundHandle},
     },
@@ -78,6 +78,12 @@ impl SoundHandle {
             Self::Streaming(handle) => handle.seek_by(amount),
         }
     }
+    fn set_loop_region(&mut self, loop_region: impl IntoOptionalRegion) {
+        match self {
+            Self::Static(handle) => handle.set_loop_region(loop_region),
+            Self::Streaming(handle) => handle.set_loop_region(loop_region),
+        }
+    }
 }
 
 struct PlaybackHandle {
@@ -131,6 +137,14 @@ impl PlaybackHandle {
     }
 
     fn set_repeat(&mut self, repeat: bool) {
+        if repeat {
+            self.handle.set_loop_region(Some(Region {
+                start: PlaybackPosition::Seconds(0.0),
+                end: EndPosition::EndOfAudio,
+            }));
+        } else {
+            self.handle.set_loop_region(None);
+        }
         self.repeat = repeat;
     }
 }
@@ -495,7 +509,7 @@ impl AudioEngine {
                     self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
                         instance_id: id,
                         params: AudioStateParam {
-                            repeating: repeat_state,
+                            repeating: !repeat_state,
                         },
                     })).await?;
                 } else {
