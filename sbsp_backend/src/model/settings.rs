@@ -1,3 +1,5 @@
+pub mod hotkey;
+
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -7,6 +9,7 @@ use crate::model::cue::{
     Cue, CueParam, CueSequence,
     audio::{AudioCueParam, SoundType},
 };
+use hotkey::HotkeySettings;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -31,33 +34,6 @@ impl Default for GeneralSettings {
         Self {
             advance_cursor_when_go: true,
             lock_cursor_to_selection: true,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase", default)]
-pub struct HotkeySettings {
-    pub go: Option<String>,
-    pub load: Option<String>,
-    pub pause_and_resume: Option<String>,
-    pub pause_all: Option<String>,
-    pub resume_all: Option<String>,
-    pub stop: Option<String>,
-    pub stop_all: Option<String>,
-}
-
-impl Default for HotkeySettings {
-    fn default() -> Self {
-        Self {
-            go: Some("Enter".to_string()),
-            load: Some("L".to_string()),
-            pause_and_resume: Some("Space".to_string()),
-            pause_all: Some("[".to_string()),
-            resume_all: Some("]".to_string()),
-            stop: Some("Backspace".to_string()),
-            stop_all: Some("Escape".to_string()),
         }
     }
 }
