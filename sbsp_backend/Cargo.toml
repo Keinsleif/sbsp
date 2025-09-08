@@ -24,3 +24,4 @@ anyhow = "1.0.98"
 axum = { version = "0.8.4", features = ["ws"], optional = true }
 env_logger = { version = "0.11.8", optional = true }
 ts-rs = { version = "11.0.1", features = ["uuid-impl"], optional = true }
+ebur128 = "0.1.10"

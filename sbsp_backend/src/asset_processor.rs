@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
-    audio::{SampleBuffer, SignalSpec},
+    audio::SampleBuffer,
     codecs::{DecoderOptions, FinalizeResult},
     formats::FormatOptions,
     io::MediaSourceStream,
@@ -17,10 +17,12 @@ use symphonia::core::{
     probe::Hint,
 };
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
+use ebur128::EbuR128;
 
 use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 
 const WAVEFORM_THRESHOLD: usize = 2000;
+const AUDIO_THRESHOLD: f32 = 0.001_f32;
 
 pub enum AssetCommand {
     RequestFileAssetData {
@@ -158,6 +160,7 @@ impl AssetProcessor {
                         .await
                         .map_err(|e| e.to_string());
                     responder.send(asset_data.clone()).unwrap();
+                    log::debug!("{:?}", asset_data.clone());
                     process_tx
                         .send(ProcessResult {
                             path: path_clone,
@@ -247,11 +250,24 @@ impl AssetProcessor {
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
-            });
+            }
+        );
 
-        let mut sample_buf = None;
-        let mut spec: Option<SignalSpec> = None;
-        let mut samples = vec![];
+        let sample_rate = track.codec_params.sample_rate.ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
+        let total_samples = track.codec_params.n_frames.unwrap_or(0);
+
+        let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
+
+        if total_samples > 0 && (total_samples / samples_per_peaks) > WAVEFORM_THRESHOLD as u64 {
+            samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64)) / (WAVEFORM_THRESHOLD - 1) as u64;
+        }
+
+        let mut ebur128 = None;
+        let mut first_audio_sample = None;
+        let mut last_audio_sample = None;
+        let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
+        let mut sample_index = 0;
+        let mut max_in_current_peak: f32 = 0.0;
 
         let result = loop {
             let packet = match format.next_packet() {
@@ -264,21 +280,31 @@ impl AssetProcessor {
             }
 
             match decoder.decode(&packet) {
-                Ok(audio_buf) => {
-                    if sample_buf.is_none() {
-                        let spec_local = *audio_buf.spec();
+                Ok(decoded) => {
+                    let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, *decoded.spec());
+                    let spec = *decoded.spec();
 
-                        let duration = audio_buf.capacity() as u64;
+                    sample_buf.copy_interleaved_ref(decoded);
 
-                        sample_buf = Some(SampleBuffer::<f32>::new(duration, spec_local));
-                        spec = Some(spec_local);
+                    if ebur128.is_none() {
+                        ebur128 = Some(EbuR128::new(spec.channels.count() as u32, spec.rate, ebur128::Mode::I)?);
                     }
+                    ebur128.as_mut().unwrap().add_frames_f32(sample_buf.samples())?;
 
-                    if let Some(buf) = &mut sample_buf {
-                        buf.copy_interleaved_ref(audio_buf);
+                    for &sample in sample_buf.samples() {
+                        if sample.abs() >= AUDIO_THRESHOLD {
+                            if first_audio_sample.is_none() {
+                                first_audio_sample = Some(sample_index);
+                            }
+                            last_audio_sample = Some(sample_index);
 
-                        for &sample in buf.samples() {
-                            samples.push(sample);
+                            max_in_current_peak = max_in_current_peak.max(sample.abs());
+
+                            sample_index += 1;
+                            if sample_index % samples_per_peaks == 0 {
+                                waveform.push(max_in_current_peak);
+                                max_in_current_peak = 0.0;
+                            }
                         }
                     }
                 }
@@ -290,46 +316,25 @@ impl AssetProcessor {
         ignore_end_of_stream_error(result)?;
         do_verification(decoder.finalize())?;
 
-        let spec_data = spec.unwrap();
-        let mut window = (spec_data.rate / 10) as usize;
+        if sample_index % samples_per_peaks > 0 {
+            waveform.push(max_in_current_peak);
+        }
 
-        let step = if samples.len() < window {
-            1
-        } else if samples.len() / window < 5000 {
-            (samples.len() - (samples.len() % window)) / window + 1
-        } else {
-            window = (samples.len() - (samples.len() % (WAVEFORM_THRESHOLD - 1)))
-                / (WAVEFORM_THRESHOLD - 1);
-            WAVEFORM_THRESHOLD
-        };
+        let start_time = first_audio_sample.map(|index| index as f64 / sample_rate as f64);
+        let end_time = last_audio_sample.map(|index| index as f64 / sample_rate as f64);
 
-        let mut peaks = Vec::new();
-
-        for i in 0..step {
-            let start = i * window;
-            if samples.len() < start + window {
-                peaks.push(
-                    samples[start..]
-                        .iter()
-                        .copied()
-                        .max_by(|a, b| a.partial_cmp(b).unwrap())
-                        .unwrap(),
-                );
-            } else {
-                peaks.push(
-                    samples[start..(start + window)]
-                        .iter()
-                        .copied()
-                        .max_by(|a, b| a.partial_cmp(b).unwrap())
-                        .unwrap(),
-                );
-            }
+        let mut integrated_lufs = None;
+        if let Some(ebur128_result) = ebur128 {
+            integrated_lufs = ebur128_result.loudness_global().ok();
         }
 
         Ok(AssetData {
             path,
             duration,
-            waveform: peaks,
+            waveform,
+            integrated_lufs,
+            start_time,
+            end_time,
         })
     }
 }

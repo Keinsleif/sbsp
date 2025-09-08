@@ -8,4 +8,7 @@ pub struct AssetData {
     pub path: PathBuf,
     pub duration: Option<f64>,
     pub waveform: Vec<f32>,
+    pub integrated_lufs: Option<f64>,
+    pub start_time: Option<f64>,
+    pub end_time: Option<f64>,
 }
