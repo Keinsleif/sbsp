@@ -81,7 +81,7 @@ const getDuration = (): number | null => {
     case 'wait':
       return selectedCue.value.params.duration;
     case 'audio':
-      return calculateDuration(selectedCue.value.params, assetResult.duration[selectedCue.value.id]);
+      return calculateDuration(selectedCue.value.params, assetResult.results[selectedCue.value.id].duration);
   }
 };
 

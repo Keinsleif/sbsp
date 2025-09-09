@@ -1,11 +1,27 @@
 <template>
   <v-sheet flat class="d-flex flex-column pa-4 ga-2">
-    <time-range
-      v-model="range"
-      :disabled="selectedCue!.id in showState.activeCues"
-      :duration="assetResult.duration[selectedCue!.id]"
-      @update="saveEditorValue('range')"
-    ></time-range>
+    <v-sheet flat class="d-flex flex-row ga-2">
+      <time-range
+        v-model="range"
+        :disabled="selectedCue!.id in showState.activeCues"
+        :duration="assetResult.results[selectedCue!.id]?.duration || undefined"
+        @update="saveEditorValue('range')"
+      ></time-range>
+      <v-btn-group variant="tonal" divided>
+        <v-tooltip target="cursor">
+          <template v-slot:activator="{ props: activatorProps }">
+            <v-btn v-bind="activatorProps" :icon="mdiSkipNext" @click="skipFirstSilence"></v-btn>
+          </template>
+          <span>Skip first silence</span>
+        </v-tooltip>
+        <v-tooltip target="cursor">
+          <template v-slot:activator="{ props: activatorProps }">
+            <v-btn v-bind="activatorProps" :icon="mdiSkipPrevious" @click="skipLastSilence"></v-btn>
+          </template>
+          <span>Skip last silence</span>
+        </v-tooltip>
+      </v-btn-group>
+    </v-sheet>
     <waveform-viewer
       :target-id="props.selectedId"
       :volume="volume"
@@ -51,6 +67,7 @@ import { throttle } from 'vuetify/lib/util/helpers.mjs';
 import TimeRange from '../input/TimeRange.vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
+import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -73,7 +90,7 @@ const range = ref([
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
   selectedCue.value != null && selectedCue.value.params.type == 'audio'
     ? selectedCue.value.params.endTime
-    : assetResult.duration[selectedCue.value!.id],
+    : assetResult.results[selectedCue.value!.id].duration,
 ] as [number | null, number | null]);
 
 const volume = ref(
@@ -127,6 +144,32 @@ const saveEditorValue = throttle((name: string) => {
   }
   invoke('update_cue', { cue: newCue });
 }, 500);
+
+const skipFirstSilence = () => {
+  if (
+    props.selectedId == null ||
+    !(props.selectedId in assetResult.results) ||
+    assetResult.results[props.selectedId].startTime == null
+  ) {
+    return;
+  }
+  console.log(assetResult.results[props.selectedId].startTime);
+  range.value[0] = assetResult.results[props.selectedId].startTime;
+  saveEditorValue('range');
+};
+
+const skipLastSilence = () => {
+  if (
+    props.selectedId == null ||
+    !(props.selectedId in assetResult.results) ||
+    assetResult.results[props.selectedId].endTime == null
+  ) {
+    return;
+  }
+  console.log(assetResult.results[props.selectedId].endTime);
+  range.value[1] = assetResult.results[props.selectedId].endTime;
+  saveEditorValue('range');
+};
 </script>
 
 <style lang="css" module>

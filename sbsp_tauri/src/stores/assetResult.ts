@@ -5,8 +5,7 @@ import { AssetData } from '../types/AssetData';
 
 export const useAssetResult = defineStore('assetResult', {
   state: () => ({
-    duration: {} as { [cue_id: string]: number },
-    waveform: {} as { [cue_id: string]: number[] },
+    results: {} as { [cue_id: string]: AssetData },
   }),
   actions: {
     updateAssetData() {
@@ -14,13 +13,8 @@ export const useAssetResult = defineStore('assetResult', {
       for (const cue of showModel.cues) {
         if (cue.params.type == 'audio') {
           invoke<[string, AssetData]>('process_asset', { cueId: cue.id }).then((value) => {
-            if (value[1].duration != null) {
-              this.duration[cue.id] = value[1].duration;
-              this.waveform[cue.id] = value[1].waveform;
-            }
+            this.results[cue.id] = value[1];
           });
-        } else if (cue.params.type == 'wait') {
-          this.duration[cue.id] = cue.params.duration;
         }
       }
     },

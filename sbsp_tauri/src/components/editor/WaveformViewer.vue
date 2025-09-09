@@ -3,7 +3,7 @@
     <svg
       ref="svg"
       preserveAspectRatio="none"
-      v-if="targetId != null && targetId in assetResult.waveform"
+      v-if="targetId != null && targetId in assetResult.results"
       xmlns="http://www.w3.org/2000/svg"
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"
@@ -64,11 +64,19 @@ const props = withDefaults(
 );
 
 const nonNullStartTime = computed(() => {
-  return props.targetId != null && props.startTime != null ? props.startTime / assetResult.duration[props.targetId] : 0;
+  if (props.targetId == null) {
+    return 0;
+  }
+  const duration = assetResult.results[props.targetId].duration;
+  return props.startTime != null && duration != null ? props.startTime / duration : 0;
 });
 
 const nonNullEndTime = computed(() => {
-  return props.targetId != null && props.endTime != null ? props.endTime / assetResult.duration[props.targetId] : 1;
+  if (props.targetId == null) {
+    return 1;
+  }
+  const duration = assetResult.results[props.targetId].duration;
+  return props.endTime != null && duration != null ? props.endTime / duration : 1;
 });
 
 const svgRef = useTemplateRef('svg');
@@ -84,9 +92,9 @@ const position = computed(() => {
   }
 });
 const compressedWaveform = computed<number[]>((oldValue) => {
-  if (svgRef.value != null && props.targetId != null && props.targetId in assetResult.waveform) {
+  if (svgRef.value != null && props.targetId != null && props.targetId in assetResult.results) {
     let result = [] as number[];
-    let source = assetResult.waveform[props.targetId];
+    let source = assetResult.results[props.targetId].waveform;
     if (source == null || svgRef.value.clientWidth < 1) {
       return oldValue != null ? oldValue : [0];
     }
