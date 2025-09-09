@@ -160,7 +160,6 @@ impl AssetProcessor {
                         .await
                         .map_err(|e| e.to_string());
                     responder.send(asset_data.clone()).unwrap();
-                    log::debug!("{:?}", asset_data.clone());
                     process_tx
                         .send(ProcessResult {
                             path: path_clone,
@@ -237,24 +236,25 @@ impl AssetProcessor {
         let mut format = probed.format;
 
         let track = format.default_track().unwrap();
+        let codec_params = track.codec_params.clone();
 
         let mut decoder =
-            symphonia::default::get_codecs().make(&track.codec_params, &decoder_opts)?;
+            symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
 
         let track_id = track.id;
 
-        let duration = track
-            .codec_params
+        let duration = codec_params
             .time_base
-            .zip(track.codec_params.n_frames)
+            .zip(codec_params.n_frames)
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
             }
         );
 
-        let sample_rate = track.codec_params.sample_rate.ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
-        let total_samples = track.codec_params.n_frames.unwrap_or(0);
+        let sample_rate = codec_params.sample_rate.ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
+        let channel_count = codec_params.channels.map_or(1, |channels| channels.count());
+        let total_samples = codec_params.n_frames.unwrap_or(0);
 
         let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
 
@@ -262,7 +262,7 @@ impl AssetProcessor {
             samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64)) / (WAVEFORM_THRESHOLD - 1) as u64;
         }
 
-        let mut ebur128 = None;
+        let mut ebur128 = EbuR128::new(channel_count as u32, sample_rate, ebur128::Mode::I)?;
         let mut first_audio_sample = None;
         let mut last_audio_sample = None;
         let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
@@ -282,14 +282,10 @@ impl AssetProcessor {
             match decoder.decode(&packet) {
                 Ok(decoded) => {
                     let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, *decoded.spec());
-                    let spec = *decoded.spec();
 
                     sample_buf.copy_interleaved_ref(decoded);
 
-                    if ebur128.is_none() {
-                        ebur128 = Some(EbuR128::new(spec.channels.count() as u32, spec.rate, ebur128::Mode::I)?);
-                    }
-                    ebur128.as_mut().unwrap().add_frames_f32(sample_buf.samples())?;
+                    ebur128.add_frames_f32(sample_buf.samples())?;
 
                     for &sample in sample_buf.samples() {
                         if sample.abs() >= AUDIO_THRESHOLD {
@@ -320,13 +316,24 @@ impl AssetProcessor {
             waveform.push(max_in_current_peak);
         }
 
-        let start_time = first_audio_sample.map(|index| index as f64 / sample_rate as f64);
-        let end_time = last_audio_sample.map(|index| index as f64 / sample_rate as f64);
+        let start_time = codec_params
+            .time_base
+            .zip(first_audio_sample.map(|samples| (samples as f64 / channel_count as f64).floor() as u64))
+            .map(|(base, spans)| {
+                let symphonia_time = base.calc_time(spans);
+                symphonia_time.seconds as f64 + symphonia_time.frac
+            }
+        );
+        let end_time = codec_params
+            .time_base
+            .zip(last_audio_sample.map(|samples| (samples as f64 / channel_count as f64).floor() as u64))
+            .map(|(base, spans)| {
+                let symphonia_time = base.calc_time(spans);
+                symphonia_time.seconds as f64 + symphonia_time.frac
+            }
+        );
 
-        let mut integrated_lufs = None;
-        if let Some(ebur128_result) = ebur128 {
-            integrated_lufs = ebur128_result.loudness_global().ok();
-        }
+        let integrated_lufs = ebur128.loudness_global().ok();
 
         Ok(AssetData {
             path,
