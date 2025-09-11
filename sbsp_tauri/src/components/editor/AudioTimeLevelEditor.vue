@@ -1,11 +1,11 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-4 ga-2">
+  <v-sheet flat class="d-flex flex-column pa-2 ga-2">
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
         :disabled="selectedCue!.id in showState.activeCues"
         :duration="assetResult.results[selectedCue!.id]?.duration || undefined"
-        @update="saveEditorValue('range')"
+        @update="saveEditorValue"
       ></time-range>
       <v-btn-group variant="tonal" divided>
         <v-tooltip target="cursor">
@@ -28,20 +28,28 @@
       :start-time="range[0]"
       :end-time="range[1]"
     ></waveform-viewer>
-    <div class="d-flex flex-row ga-4">
+    <div class="d-flex flex-row ga-4 align-end">
       <volume-fader
         class="mt-4"
         v-model="volume"
         label="Volume"
         :disabled="selectedCue!.id in showState.activeCues"
-        @update:model-value="saveEditorValue('volume')"
+        @update:model-value="saveEditorValue"
       />
+      <v-btn-group variant="tonal" divided>
+        <v-tooltip target="cursor">
+          <template v-slot:activator="{ props: activatorProps }">
+            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToLUFS">LUFS</v-btn>
+          </template>
+          <span>Set volume to match -14LUFS</span>
+        </v-tooltip>
+      </v-btn-group>
       <v-divider vertical inset thickness="2" />
       <panning-fader
         class="mt-4"
         label="Pan"
         :disabled="selectedCue!.id in showState.activeCues"
-        @update:model-value="saveEditorValue('pan')"
+        @update:model-value="saveEditorValue"
       />
       <v-divider vertical inset thickness="2" />
       <v-checkbox
@@ -50,7 +58,7 @@
         density="compact"
         label="Repeat"
         :disabled="selectedCue!.id in showState.activeCues"
-        @update:model-value="saveEditorValue('repeat')"
+        @update:model-value="saveEditorValue"
       ></v-checkbox>
     </div>
   </v-sheet>
@@ -63,7 +71,7 @@ import { invoke } from '@tauri-apps/api/core';
 import VolumeFader from '../input/VolumeFader.vue';
 import PanningFader from '../input/PanningFader.vue';
 import WaveformViewer from './WaveformViewer.vue';
-import { throttle } from 'vuetify/lib/util/helpers.mjs';
+import { debounce } from 'vuetify/lib/util/helpers.mjs';
 import TimeRange from '../input/TimeRange.vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
@@ -118,7 +126,7 @@ watch(selectedCue, () => {
   repeat.value = selectedCue.value.params.repeat;
 });
 
-const saveEditorValue = throttle((name: string) => {
+const saveEditorValue = debounce(() => {
   if (selectedCue.value == null) {
     return;
   }
@@ -126,49 +134,47 @@ const saveEditorValue = throttle((name: string) => {
   if (newCue.params.type != 'audio') {
     return;
   }
-  switch (name) {
-    case 'range':
-      newCue.params.startTime = range.value[0];
-      newCue.params.endTime = range.value[1];
-      break;
-    case 'volume':
-      newCue.params.volume = volume.value;
-      break;
-    case 'pan':
-      newCue.params.pan = panning.value;
-      break;
-    case 'repeat':
-      newCue.params.repeat = repeat.value;
-      document.body.focus();
-      break;
-  }
+  newCue.params.startTime = range.value[0];
+  newCue.params.endTime = range.value[1];
+  newCue.params.volume = volume.value;
+  newCue.params.pan = panning.value;
+  newCue.params.repeat = repeat.value;
+  document.body.focus();
   invoke('update_cue', { cue: newCue });
 }, 500);
 
 const skipFirstSilence = () => {
-  if (
-    props.selectedId == null ||
-    !(props.selectedId in assetResult.results) ||
-    assetResult.results[props.selectedId].startTime == null
-  ) {
+  if (props.selectedId == null || !(props.selectedId in assetResult.results)) {
     return;
   }
-  console.log(assetResult.results[props.selectedId].startTime);
-  range.value[0] = assetResult.results[props.selectedId].startTime;
+  const startTime = assetResult.results[props.selectedId].startTime;
+  if (startTime == null) return;
+  range.value[0] = startTime;
   saveEditorValue('range');
 };
 
 const skipLastSilence = () => {
+  if (props.selectedId == null || !(props.selectedId in assetResult.results)) {
+    return;
+  }
+  const endTime = assetResult.results[props.selectedId].endTime;
+  if (endTime == null) return;
+  range.value[1] = endTime;
+  saveEditorValue('range');
+};
+
+const setVolumeToLUFS = () => {
   if (
     props.selectedId == null ||
     !(props.selectedId in assetResult.results) ||
-    assetResult.results[props.selectedId].endTime == null
+    assetResult.results[props.selectedId].integratedLufs == null
   ) {
     return;
   }
-  console.log(assetResult.results[props.selectedId].endTime);
-  range.value[1] = assetResult.results[props.selectedId].endTime;
-  saveEditorValue('range');
+  const integratedLufs = assetResult.results[props.selectedId].integratedLufs;
+  if (integratedLufs == null) return;
+  volume.value = -14 - integratedLufs;
+  saveEditorValue('volume');
 };
 </script>
 

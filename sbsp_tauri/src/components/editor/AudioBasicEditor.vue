@@ -9,7 +9,7 @@
       density="compact"
       :disabled="selectedCue!.id in showState.activeCues"
       :class="$style['centered-input']"
-      @blur="saveEditorValue('target')"
+      @blur="saveEditorValue"
       @keydown.enter="$event.target.blur()"
       @keydown.esc="
         resetEditorValue('target');
@@ -33,7 +33,7 @@
         :disabled="selectedCue!.id in showState.activeCues"
         density="compact"
         label="Load entire file on memory"
-        @update:model-value="saveEditorValue('soundType')"
+        @update:model-value="saveEditorValue"
       >
         <v-tooltip activator="parent" location="end">Change this only if you know what you're doing.</v-tooltip>
       </v-checkbox>
@@ -44,14 +44,14 @@
         label="Fade In"
         condition="in"
         :disabled="selectedCue!.id in showState.activeCues"
-        @update="saveEditorValue('fadeInParam')"
+        @update="saveEditorValue"
       ></fade-param-input>
       <fade-param-input
         v-model="fadeOutParam"
         label="Fade Out"
         condition="out"
         :disabled="selectedCue!.id in showState.activeCues"
-        @update="saveEditorValue('fadeOutParam')"
+        @update="saveEditorValue"
       ></fade-param-input>
     </v-sheet>
   </v-sheet>
@@ -64,7 +64,7 @@ import { computed, ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import FadeParamInput from '../input/FadeParamInput.vue';
-import { throttle } from 'vuetify/lib/util/helpers.mjs';
+import { debounce } from 'vuetify/lib/util/helpers.mjs';
 import { useShowState } from '../../stores/showstate';
 
 const showModel = useShowModel();
@@ -112,7 +112,7 @@ watch(selectedCue, () => {
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
 
-const saveEditorValue = throttle((name: string) => {
+const saveEditorValue = debounce(() => {
   if (selectedCue.value == null) {
     return;
   }
@@ -120,20 +120,10 @@ const saveEditorValue = throttle((name: string) => {
   if (newCue.params.type != 'audio') {
     return;
   }
-  switch (name) {
-    case 'target':
-      newCue.params.target = target.value;
-      break;
-    case 'soundType':
-      newCue.params.soundType = soundType.value ? 'static' : 'streaming';
-      break;
-    case 'fadeInParam':
-      newCue.params.fadeInParam = fadeInParam.value;
-      break;
-    case 'fadeOutParam':
-      newCue.params.fadeOutParam = fadeOutParam.value;
-      break;
-  }
+  newCue.params.target = target.value;
+  newCue.params.soundType = soundType.value ? 'static' : 'streaming';
+  newCue.params.fadeInParam = fadeInParam.value;
+  newCue.params.fadeOutParam = fadeOutParam.value;
   invoke('update_cue', { cue: newCue });
 }, 500);
 

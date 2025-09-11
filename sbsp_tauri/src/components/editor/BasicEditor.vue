@@ -1,14 +1,14 @@
 <template>
   <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
     <v-sheet flat class="d-flex flex-column ga-2" width="175px">
-      <text-input v-model="number" label="Number" @update="saveEditorValue('number')"></text-input>
+      <text-input v-model="number" label="Number" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
         :disabled="selectedCue.params.type == 'audio'"
         label="Duration"
-        @update="saveEditorValue('duration')"
+        @update="saveEditorValue"
       ></time-input>
-      <time-input v-model="preWait" label="Pre-Wait" @update="saveEditorValue('preWait')"></time-input>
+      <time-input v-model="preWait" label="Pre-Wait" @update="saveEditorValue"></time-input>
       <v-select
         hide-details
         persistent-placeholder
@@ -25,13 +25,13 @@
         variant="outlined"
         density="compact"
         autocomplete="off"
-        @update:modelValue="saveEditorValue('sequence')"
+        @update:modelValue="saveEditorValue"
       ></v-select>
       <time-input
         v-model="postWait"
         :disabled="sequence != 'autoContinue'"
         label="Post-Wait"
-        @update="saveEditorValue('postWait')"
+        @update="saveEditorValue"
       ></time-input>
     </v-sheet>
     <v-sheet flat class="d-flex flex-grow-1 flex-column ga-2 justify-start">
@@ -41,9 +41,9 @@
         label="Name"
         alignInput="left"
         class="flex-grow-0"
-        @update="saveEditorValue('name')"
+        @update="saveEditorValue"
       ></text-input>
-      <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue('notes')"></text-input>
+      <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue"></text-input>
     </v-sheet>
   </v-sheet>
 </template>
@@ -56,6 +56,7 @@ import { buildCueName, calculateDuration } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
+import { debounce } from 'vuetify/lib/util/helpers.mjs';
 
 const showModel = useShowModel();
 const assetResult = useAssetResult();
@@ -81,7 +82,7 @@ const getDuration = (): number | null => {
     case 'wait':
       return selectedCue.value.params.duration;
     case 'audio':
-      return calculateDuration(selectedCue.value.params, assetResult.results[selectedCue.value.id].duration);
+      return calculateDuration(selectedCue.value.params, assetResult.results[selectedCue.value.id]?.duration);
   }
 };
 
@@ -118,56 +119,40 @@ watch(getDuration, () => {
   duration.value = getDuration();
 });
 
-const saveEditorValue = (paramName: string) => {
+const saveEditorValue = debounce(() => {
   if (selectedCue.value == null) {
     return;
   }
   const newCue = structuredClone(toRaw(selectedCue.value));
-  switch (paramName) {
-    case 'number':
-      if (number.value != null) {
-        newCue.number = number.value;
-      }
-      break;
-    case 'duration':
-    case 'preWait':
-      if (preWait.value != null) {
-        newCue.preWait = preWait.value;
-      }
-      break;
-    case 'sequence':
-      if (sequence.value != null) {
-        newCue.sequence.type = sequence.value;
-        if (newCue.sequence.type == 'autoContinue') {
-          newCue.sequence.postWait = 0;
-        }
-        document.body.focus();
-      }
-      break;
-    case 'postWait':
-      if (postWait.value != null && newCue.sequence.type == 'autoContinue') {
-        newCue.sequence.postWait = postWait.value;
-      }
-      break;
-    case 'name': {
-      if (name.value != null) {
-        const newName = name.value.trim();
-        if (newName == '') {
-          newCue.name = null;
-        } else {
-          newCue.name = newName;
-        }
-      }
-      break;
+  if (number.value != null) {
+    newCue.number = number.value;
+  }
+  if (preWait.value != null) {
+    newCue.preWait = preWait.value;
+  }
+  if (sequence.value != null) {
+    newCue.sequence.type = sequence.value;
+    if (newCue.sequence.type == 'autoContinue') {
+      newCue.sequence.postWait = 0;
     }
-    case 'notes':
-      if (notes.value != null) {
-        newCue.notes = notes.value;
-      }
-      break;
+    document.body.focus();
+  }
+  if (postWait.value != null && newCue.sequence.type == 'autoContinue') {
+    newCue.sequence.postWait = postWait.value;
+  }
+  if (name.value != null) {
+    const newName = name.value.trim();
+    if (newName == '') {
+      newCue.name = null;
+    } else {
+      newCue.name = newName;
+    }
+  }
+  if (notes.value != null) {
+    newCue.notes = notes.value;
   }
   invoke('update_cue', { cue: newCue });
-};
+}, 500);
 </script>
 
 <style lang="css" module>
