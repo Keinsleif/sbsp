@@ -293,14 +293,13 @@ impl AssetProcessor {
                                 first_audio_sample = Some(sample_index);
                             }
                             last_audio_sample = Some(sample_index);
+                        }
+                        max_in_current_peak = max_in_current_peak.max(sample.abs());
 
-                            max_in_current_peak = max_in_current_peak.max(sample.abs());
-
-                            sample_index += 1;
-                            if sample_index % samples_per_peaks == 0 {
-                                waveform.push(max_in_current_peak);
-                                max_in_current_peak = 0.0;
-                            }
+                        sample_index += 1;
+                        if sample_index % samples_per_peaks == 0 {
+                            waveform.push(max_in_current_peak);
+                            max_in_current_peak = 0.0;
                         }
                     }
                 }
