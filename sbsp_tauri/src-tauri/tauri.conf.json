@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "sbsp_tauri",
+        "title": "SBS Player",
         "width": 1280,
         "height": 720,
         "dragDropEnabled": false
