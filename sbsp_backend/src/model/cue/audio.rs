@@ -43,6 +43,7 @@ pub enum Easing {
     InOutPowf(f64),
 }
 
+#[cfg(feature = "backend")]
 impl From<kira::Easing> for Easing {
     fn from(value: kira::Easing) -> Self {
         match value {
@@ -57,6 +58,7 @@ impl From<kira::Easing> for Easing {
     }
 }
 
+#[cfg(feature = "backend")]
 impl From<Easing> for kira::Easing {
     fn from(val: Easing) -> Self {
         match val {

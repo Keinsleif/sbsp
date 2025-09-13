@@ -1,7 +1,7 @@
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 use tokio::sync::{broadcast, mpsc, watch};
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 use crate::{
     asset_processor::{AssetProcessor, AssetProcessorHandle},
     controller::{CueController, CueControllerHandle, state::ShowState},
@@ -19,38 +19,38 @@ use crate::{
 #[cfg(feature = "apiserver")]
 pub mod apiserver;
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub mod action;
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub mod asset_processor;
 #[cfg(feature = "type_export")]
 pub mod asset_processor {
     mod data;
     pub use data::AssetData;
 }
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub mod controller;
 #[cfg(feature = "type_export")]
 pub mod controller {
     pub mod state;
 }
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 mod engine;
 pub mod event;
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 mod executor;
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub mod manager;
 pub mod model;
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
     pub asset_handle: AssetProcessorHandle,
     pub controller_handle: CueControllerHandle,
 }
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 pub fn start_backend() -> (
     BackendHandle,
     watch::Receiver<ShowState>,

@@ -9,19 +9,31 @@ path = "src/main.rs"
 required-features = ["apiserver"]
 
 [features]
-apiserver = ["axum", "env_logger"]
-type_export = ["ts-rs"]
+default = ["backend"]
+backend = [
+    "dep:tokio",
+    "dep:serde_json",
+    "dep:kira",
+    "dep:symphonia",
+    "dep:log",
+    "dep:anyhow",
+    "dep:ebur128",
+    "apiserver"
+]
+apiserver = ["dep:axum", "dep:env_logger"]
+type_export = ["dep:ts-rs"]
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-kira = { version = "0.10.8", features = ["serde"] }
-symphonia = { version = "0.5.4", features = ["all"] }
 uuid = { version = "1.17.0", features = ["serde", "v4", "v7"] }
-log = "0.4.27"
-anyhow = "1.0.98"
+tokio = { version = "1", features = ["full"], optional = true }
+serde_json = { version = "1.0", optional = true }
+symphonia = { version = "0.5.4", features = ["all"], optional = true }
+log = { version = "0.4.27", optional = true }
+anyhow = { version = "1.0.98", optional = true }
+ebur128 = { version = "0.1.10", optional = true }
+
 axum = { version = "0.8.4", features = ["ws"], optional = true }
 env_logger = { version = "0.11.8", optional = true }
+
 ts-rs = { version = "11.0.1", features = ["uuid-impl"], optional = true }
-ebur128 = "0.1.10"
