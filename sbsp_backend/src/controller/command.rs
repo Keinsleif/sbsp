@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{action::CueAction, executor::ExecutorCommand};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(
     tag = "command",
     content = "params",

@@ -16,24 +16,13 @@ use crate::{
     model::settings::AudioSettings,
 };
 
-#[cfg(feature = "apiserver")]
-pub mod apiserver;
-
+pub mod model;
 #[cfg(feature = "backend")]
 pub mod action;
 #[cfg(feature = "backend")]
 pub mod asset_processor;
-#[cfg(feature = "type_export")]
-pub mod asset_processor {
-    mod data;
-    pub use data::AssetData;
-}
 #[cfg(feature = "backend")]
 pub mod controller;
-#[cfg(feature = "type_export")]
-pub mod controller {
-    pub mod state;
-}
 #[cfg(feature = "backend")]
 mod engine;
 pub mod event;
@@ -41,7 +30,19 @@ pub mod event;
 mod executor;
 #[cfg(feature = "backend")]
 pub mod manager;
-pub mod model;
+
+#[cfg(feature = "apiserver")]
+pub mod apiserver;
+
+#[cfg(feature = "type_export")]
+pub mod asset_processor {
+    mod data;
+    pub use data::AssetData;
+}
+#[cfg(feature = "type_export")]
+pub mod controller {
+    pub mod state;
+}
 
 #[cfg(feature = "backend")]
 pub struct BackendHandle {

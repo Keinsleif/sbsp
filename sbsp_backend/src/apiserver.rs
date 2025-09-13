@@ -8,10 +8,10 @@ use axum::{
     routing::get,
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, mpsc, watch};
+use tokio::sync::{broadcast, watch};
 
 use crate::{
-    controller::{ControllerCommand, state::ShowState},
+    controller::{CueControllerHandle, ControllerCommand, state::ShowState},
     event::UiEvent,
     manager::{ModelCommand, ShowModelHandle},
     model::ShowModel,
@@ -33,20 +33,20 @@ enum ApiCommand {
 
 #[derive(Clone)]
 struct ApiState {
-    controller_tx: mpsc::Sender<ControllerCommand>,
+    controller_handle: CueControllerHandle,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
     model_handle: ShowModelHandle,
 }
 
 pub async fn create_api_router(
-    controller_tx: mpsc::Sender<ControllerCommand>,
+    controller_handle: CueControllerHandle,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
     model_handle: ShowModelHandle,
 ) -> Router {
     let state = ApiState {
-        controller_tx,
+        controller_handle,
         state_rx,
         event_rx_factory,
         model_handle,
@@ -116,7 +116,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                     if let Ok(command_request) = serde_json::from_str::<ApiCommand>(&text) {
                         match command_request {
                             ApiCommand::Controll(controller_command) => {
-                                if state.controller_tx.send(controller_command).await.is_err() {
+                                if state.controller_handle.send_command(controller_command).await.is_err() {
                                     log::error!("Failed to send Go command to CueController.");
                                     break;
                                 }

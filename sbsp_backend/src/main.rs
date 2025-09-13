@@ -7,7 +7,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let (backend_handle, state_rx, event_tx) = start_backend();
 
     let app = create_api_router(
-        backend_handle.controller_tx.clone(),
+        backend_handle.controller_handle.clone(),
         state_rx,
         event_tx,
         backend_handle.model_handle.clone(),

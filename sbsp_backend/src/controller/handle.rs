@@ -11,6 +11,11 @@ pub struct CueControllerHandle {
 }
 
 impl CueControllerHandle {
+    pub async fn send_command(&self, command: ControllerCommand) -> anyhow::Result<()> {
+        self.command_tx.send(command).await?;
+        Ok(())
+    }
+
     pub async fn go(&self) -> anyhow::Result<()> {
         self.command_tx.send(ControllerCommand::Go).await?;
         Ok(())
