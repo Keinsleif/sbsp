@@ -7,17 +7,19 @@ use axum::{
     response::IntoResponse,
     routing::get,
 };
+use gethostname::gethostname;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, watch};
+use tokio::{runtime::Handle, sync::{broadcast, oneshot, watch}};
+use libmdns::Responder;
 
 use crate::{
-    controller::{CueControllerHandle, ControllerCommand, state::ShowState},
+    controller::{state::ShowState, ControllerCommand, CueControllerHandle},
     event::UiEvent,
     manager::{ModelCommand, ShowModelHandle},
-    model::ShowModel,
+    model::ShowModel, BackendHandle,
 };
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 enum WsMessage {
     Event(Box<UiEvent>),
@@ -39,6 +41,65 @@ struct ApiState {
     model_handle: ShowModelHandle,
 }
 
+pub async fn run(port: usize, backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>, discoverable: bool) -> anyhow::Result<()> {
+    let app = create_api_router(
+        backend_handle.controller_handle.clone(),
+        state_rx,
+        event_tx,
+        backend_handle.model_handle.clone(),
+    )
+    .await;
+
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
+    log::info!("ApiServer listening on 0.0.0.0:{}", port);
+
+    let (shutdown_tx, shutdown_rx) = oneshot::channel();
+
+    if discoverable {
+        tokio::task::spawn_blocking(move || {
+            let handle = Handle::current();
+            let responder = Responder::spawn(&handle).unwrap();
+            let hostname = gethostname();
+            let svc = responder.register("_sbsp._tcp", hostname.to_str().unwrap_or("SBSP_Server"), port as u16, &[]);
+            let _ = shutdown_rx.blocking_recv();
+            std::mem::drop(svc);
+        });
+        tokio::spawn(async move {
+            shutdown_signal().await;
+            let _ = shutdown_tx.send(0);
+        });
+    }
+
+    axum::serve(listener, app)
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
+    Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+}
+
 pub async fn create_api_router(
     controller_handle: CueControllerHandle,
     state_rx: watch::Receiver<ShowState>,
@@ -58,7 +119,7 @@ pub async fn create_api_router(
         .with_state(state)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct FullShowState {
     show_model: ShowModel,
     show_state: ShowState,
