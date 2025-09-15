@@ -10,9 +10,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct ShowModelHandle {
-    pub(super) model: Arc<RwLock<ShowModel>>,
-    pub(super) command_tx: mpsc::Sender<ModelCommand>,
-    pub(super) show_model_path: Arc<RwLock<Option<PathBuf>>>,
+    pub(crate) model: Arc<RwLock<ShowModel>>,
+    pub(crate) command_tx: mpsc::Sender<ModelCommand>,
+    pub(crate) show_model_path: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl ShowModelHandle {

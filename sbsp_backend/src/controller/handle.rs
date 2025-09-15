@@ -7,7 +7,7 @@ use super::ControllerCommand;
 
 #[derive(Clone)]
 pub struct CueControllerHandle {
-    pub(super) command_tx: mpsc::Sender<ControllerCommand>,
+    pub(crate) command_tx: mpsc::Sender<ControllerCommand>,
 }
 
 impl CueControllerHandle {

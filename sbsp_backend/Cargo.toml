@@ -28,6 +28,13 @@ apiserver = [
     "dep:gethostname",
     "dep:serde_json"
 ]
+apiclient = [
+    "dep:tokio",
+    "dep:reqwest",
+    "dep:reqwest-websocket",
+    "dep:futures-util",
+    "dep:serde_json",
+]
 type_export = ["dep:ts-rs"]
 
 [dependencies]
@@ -45,5 +52,9 @@ env_logger = { version = "0.11.8", optional = true }
 axum = { version = "0.8.4", features = ["ws"], optional = true }
 libmdns = { version = "0.10.1", optional = true }
 gethostname = { version = "1.0.2", optional = true }
+
+reqwest = { version = "0.12.23", features = ["json"], optional = true }
+reqwest-websocket = { version = "0.5.1", optional = true }
+futures-util = { version = "0.3.31",default-features = false, features = ["sink"], optional = true }
 
 ts-rs = { version = "11.0.1", features = ["uuid-impl"], optional = true }
