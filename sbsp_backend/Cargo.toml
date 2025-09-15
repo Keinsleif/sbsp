@@ -20,7 +20,14 @@ backend = [
     "dep:ebur128",
     "apiserver"
 ]
-apiserver = ["dep:axum", "dep:env_logger", "dep:libmdns", "dep:gethostname"]
+apiserver = [
+    "dep:tokio",
+    "dep:axum",
+    "dep:env_logger",
+    "dep:libmdns",
+    "dep:gethostname",
+    "dep:serde_json"
+]
 type_export = ["dep:ts-rs"]
 
 [dependencies]

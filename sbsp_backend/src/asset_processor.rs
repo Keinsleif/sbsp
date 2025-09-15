@@ -3,6 +3,7 @@ mod handle;
 
 pub use data::AssetData;
 pub use handle::AssetProcessorHandle;
+use uuid::Uuid;
 
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
@@ -16,7 +17,7 @@ use symphonia::core::{
     meta::MetadataOptions,
     probe::Hint,
 };
-use tokio::sync::{RwLock, broadcast, mpsc, oneshot};
+use tokio::sync::{RwLock, broadcast, mpsc};
 use ebur128::EbuR128;
 
 use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
@@ -24,18 +25,20 @@ use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
 
-pub enum AssetCommand {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AssetProcessorCommand {
     RequestFileAssetData {
+        id: Uuid,
         path: PathBuf,
-        responder: oneshot::Sender<Result<AssetData, String>>,
     },
     ProcessAll,
 }
 
-#[derive(Clone, Debug)]
-struct ProcessResult {
-    path: PathBuf,
-    data: Result<AssetData, String>,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProcessResult {
+    pub id: Uuid,
+    pub path: PathBuf,
+    pub data: Result<AssetData, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -60,11 +63,11 @@ impl AssetCache {
 pub struct AssetProcessor {
     model_handle: ShowModelHandle,
 
-    command_rx: mpsc::Receiver<AssetCommand>,
+    command_rx: mpsc::Receiver<AssetProcessorCommand>,
     event_rx: broadcast::Receiver<UiEvent>,
+    result_tx: broadcast::Sender<ProcessResult>,
+    result_rx: broadcast::Receiver<ProcessResult>,
 
-    process_tx: broadcast::Sender<ProcessResult>,
-    process_rx: broadcast::Receiver<ProcessResult>,
     cache: Arc<RwLock<AssetCache>>,
     processing: Arc<RwLock<Vec<PathBuf>>>,
 }
@@ -74,20 +77,23 @@ impl AssetProcessor {
         model_handle: ShowModelHandle,
         event_rx: broadcast::Receiver<UiEvent>,
     ) -> (Self, AssetProcessorHandle) {
-        let (command_tx, command_rx) = mpsc::channel::<AssetCommand>(32);
+        let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
-        let (process_tx, process_rx) = broadcast::channel(8);
+        let (result_tx, result_rx) = broadcast::channel(8);
         (
             Self {
                 model_handle,
                 command_rx,
                 event_rx,
-                process_tx,
-                process_rx,
+                result_tx: result_tx.clone(),
+                result_rx,
                 cache: cache.clone(),
                 processing: Arc::new(RwLock::new(Vec::new())),
             },
-            AssetProcessorHandle { command_tx },
+            AssetProcessorHandle {
+                result_rx_factory: result_tx,
+                command_tx,
+            },
         )
     }
 
@@ -96,15 +102,15 @@ impl AssetProcessor {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     match command {
-                        AssetCommand::RequestFileAssetData{path, responder} => {
-                            self.handle_process_file(path, responder).await;
+                        AssetProcessorCommand::RequestFileAssetData{id, path} => {
+                            self.handle_process_file(id, path).await;
                         }
-                        AssetCommand::ProcessAll => {
+                        AssetProcessorCommand::ProcessAll => {
                             self.handle_process_all().await;
                         }
                     }
                 },
-                Ok(result) = self.process_rx.recv() => {
+                Ok(result) = self.result_rx.recv() => {
                     let mut cache = self.cache.write().await;
                     if let Ok(data) = &result.data {
                         cache.entries.insert(result.path.clone(), CacheEntry { last_modified: result.path.metadata().unwrap().modified().unwrap(), data: data.clone() });
@@ -122,8 +128,8 @@ impl AssetProcessor {
 
     async fn handle_process_file(
         &self,
+        id: Uuid,
         path: PathBuf,
-        responder: oneshot::Sender<Result<AssetData, String>>,
     ) {
         let mut filepath = self
             .model_handle
@@ -134,17 +140,18 @@ impl AssetProcessor {
         filepath.push(&path);
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&filepath) {
-            responder.send(Ok(entry.data.clone())).unwrap();
+            self.result_tx.send(ProcessResult { id, path: filepath, data: Ok(entry.data.clone()) }).unwrap();
         } else {
             let mut processing = self.processing.write().await;
 
             if processing.contains(&filepath) {
-                let mut receiver = self.process_tx.subscribe();
+                let mut receiver = self.result_tx.subscribe();
+                let sender = self.result_tx.clone();
                 let path_clone = filepath.clone();
                 tokio::spawn(async move {
                     while let Ok(result) = receiver.recv().await {
                         if result.path == path_clone {
-                            responder.send(result.data).ok();
+                            sender.send(ProcessResult { id, path: result.path, data: result.data }).unwrap();
                             break;
                         }
                     }
@@ -154,14 +161,14 @@ impl AssetProcessor {
                 drop(processing);
 
                 let path_clone = filepath.clone();
-                let process_tx = self.process_tx.clone();
+                let result_tx = self.result_tx.clone();
                 tokio::spawn(async move {
                     let asset_data = Self::process_asset(path_clone.clone())
                         .await
                         .map_err(|e| e.to_string());
-                    responder.send(asset_data.clone()).unwrap();
-                    process_tx
+                    result_tx
                         .send(ProcessResult {
+                            id,
                             path: path_clone,
                             data: asset_data,
                         })
@@ -200,13 +207,14 @@ impl AssetProcessor {
             processing.push(path.clone());
 
             let path_clone = path.clone();
-            let process_tx = self.process_tx.clone();
+            let process_tx = self.result_tx.clone();
             tokio::spawn(async move {
                 let asset_data = Self::process_asset(path_clone.clone())
                     .await
                     .map_err(|e| e.to_string());
                 process_tx
                     .send(ProcessResult {
+                        id: Uuid::nil(),
                         path: path_clone,
                         data: asset_data,
                     })

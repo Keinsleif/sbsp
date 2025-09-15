@@ -13,40 +13,37 @@ use tokio::{runtime::Handle, sync::{broadcast, oneshot, watch}};
 use libmdns::Responder;
 
 use crate::{
-    controller::{state::ShowState, ControllerCommand, CueControllerHandle},
-    event::UiEvent,
-    manager::{ModelCommand, ShowModelHandle},
-    model::ShowModel, BackendHandle,
+    asset_processor::{AssetProcessorCommand, ProcessResult}, controller::{state::ShowState, ControllerCommand}, event::UiEvent, manager::ModelCommand, model::ShowModel, BackendHandle
 };
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
-enum WsMessage {
+pub enum WsMessage {
     Event(Box<UiEvent>),
     State(ShowState),
+    AssetProcessorResult(ProcessResult)
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
-enum ApiCommand {
+pub enum ApiCommand {
     Controll(ControllerCommand),
     Model(Box<ModelCommand>),
+    AssetProcessor(AssetProcessorCommand),
 }
 
 #[derive(Clone)]
 struct ApiState {
-    controller_handle: CueControllerHandle,
+    backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
-    model_handle: ShowModelHandle,
 }
 
 pub async fn run(port: usize, backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>, discoverable: bool) -> anyhow::Result<()> {
     let app = create_api_router(
-        backend_handle.controller_handle.clone(),
+        backend_handle,
         state_rx,
         event_tx,
-        backend_handle.model_handle.clone(),
     )
     .await;
 
@@ -101,16 +98,14 @@ async fn shutdown_signal() {
 }
 
 pub async fn create_api_router(
-    controller_handle: CueControllerHandle,
+    backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
-    model_handle: ShowModelHandle,
 ) -> Router {
     let state = ApiState {
-        controller_handle,
+        backend_handle,
         state_rx,
         event_rx_factory,
-        model_handle,
     };
 
     Router::new()
@@ -120,13 +115,13 @@ pub async fn create_api_router(
 }
 
 #[derive(Serialize, Deserialize)]
-struct FullShowState {
-    show_model: ShowModel,
-    show_state: ShowState,
+pub struct FullShowState {
+    pub show_model: ShowModel,
+    pub show_state: ShowState,
 }
 
 async fn get_full_state_handler(State(state): State<ApiState>) -> axum::Json<FullShowState> {
-    let show_model = state.model_handle.read().await.clone();
+    let show_model = state.backend_handle.model_handle.read().await.clone();
     let show_state = state.state_rx.borrow().clone();
 
     let full_state = FullShowState {
@@ -144,7 +139,7 @@ async fn websocket_handler(
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
-async fn handle_socket(mut socket: WebSocket, state: ApiState) {
+async fn handle_socket(mut socket: WebSocket, mut state: ApiState) {
     let mut state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
 
@@ -177,17 +172,35 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                     if let Ok(command_request) = serde_json::from_str::<ApiCommand>(&text) {
                         match command_request {
                             ApiCommand::Controll(controller_command) => {
-                                if state.controller_handle.send_command(controller_command).await.is_err() {
+                                if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
                                     log::error!("Failed to send Go command to CueController.");
                                     break;
                                 }
                             },
                             ApiCommand::Model(model_command) => {
-                                if state.model_handle.send_command(*model_command).await.is_err() {
+                                if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
                                     log::error!("Failed to send Model command to ShowModelManager.");
                                     break;
                                 }
                             },
+                            ApiCommand::AssetProcessor(asset_processor_command) => {
+                                match asset_processor_command {
+                                    AssetProcessorCommand::RequestFileAssetData { id, path } => {
+                                        let result = state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
+                                        let ws_message = WsMessage::AssetProcessorResult(ProcessResult {
+                                            id,
+                                            path,
+                                            data: result,
+                                        });
+                                        if let Ok(payload) = serde_json::to_string(&ws_message)
+                                        && socket.send(Message::Text(payload.into())).await.is_err() {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            break;
+                                        }
+                                    },
+                                    AssetProcessorCommand::ProcessAll => todo!(),
+                                }
+                            }
                         }
                     } else {
                         log::error!("Invalid command received.")

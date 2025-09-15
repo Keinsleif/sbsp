@@ -45,9 +45,10 @@ pub mod controller {
 }
 
 #[cfg(feature = "backend")]
+#[derive(Clone)]
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
-    pub asset_handle: AssetProcessorHandle,
+    pub asset_processor_handle: AssetProcessorHandle,
     pub controller_handle: CueControllerHandle,
 }
 
@@ -87,7 +88,7 @@ pub fn start_backend() -> (
         AudioEngine::new(audio_rx, engine_event_tx.clone(), AudioSettings::default()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
-    let (asset_processor, asset_handle) = AssetProcessor::new(model_handle.clone(), event_rx);
+    let (asset_processor, asset_processor_handle) = AssetProcessor::new(model_handle.clone(), event_rx);
 
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());
@@ -99,7 +100,7 @@ pub fn start_backend() -> (
     (
         BackendHandle {
             model_handle,
-            asset_handle,
+            asset_processor_handle,
             controller_handle,
         },
         state_rx,

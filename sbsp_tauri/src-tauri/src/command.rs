@@ -21,7 +21,7 @@ pub async fn process_asset(
         && let CueParam::Audio(params) = &cue.params
     {
         handle
-            .asset_handle
+            .asset_processor_handle
             .request_file_asset_data(params.target.clone())
             .await
             .map_err(|e| e.to_string())

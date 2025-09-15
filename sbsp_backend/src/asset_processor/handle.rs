@@ -1,26 +1,34 @@
-use std::path::PathBuf;
+use std::{path::PathBuf};
 
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc};
+use uuid::Uuid;
 
-use super::{AssetCommand, AssetData};
+use crate::asset_processor::ProcessResult;
 
+use super::{AssetProcessorCommand, AssetData};
+
+#[derive(Clone)]
 pub struct AssetProcessorHandle {
-    pub(super) command_tx: mpsc::Sender<AssetCommand>,
+    pub(crate) result_rx_factory: broadcast::Sender<ProcessResult>,
+    pub(crate) command_tx: mpsc::Sender<AssetProcessorCommand>,
 }
 
 impl AssetProcessorHandle {
     pub async fn request_file_asset_data(&self, target: PathBuf) -> Result<AssetData, String> {
-        let (result_tx, result_rx) = oneshot::channel();
+        let id = Uuid::now_v7();
         self.command_tx
-            .send(AssetCommand::RequestFileAssetData {
+            .send(AssetProcessorCommand::RequestFileAssetData {
+                id,
                 path: target,
-                responder: result_tx,
             })
             .await
             .unwrap();
 
-        result_rx
-            .await
-            .unwrap_or_else(|_| Err("AssetProcessor task may have panicked".to_string()))
+        loop {
+            if let Ok(result) = self.result_rx_factory.subscribe().recv().await
+            && result.id == id {
+                break result.data;
+            }
+        }
     }
 }
