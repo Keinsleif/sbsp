@@ -8,29 +8,15 @@ use axum::{
     routing::get,
 };
 use gethostname::gethostname;
-use serde::{Deserialize, Serialize};
 use tokio::{runtime::Handle, sync::{broadcast, oneshot, watch}};
 use libmdns::Responder;
 
 use crate::{
-    asset_processor::{AssetProcessorCommand, ProcessResult}, controller::{state::ShowState, ControllerCommand}, event::UiEvent, manager::ModelCommand, model::ShowModel, BackendHandle
+    asset_processor::{AssetProcessorCommand, ProcessResult}, controller::state::ShowState, event::UiEvent, BackendHandle
 };
-
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "type", content = "data", rename_all = "camelCase")]
-pub enum WsMessage {
-    Event(Box<UiEvent>),
-    State(ShowState),
-    AssetProcessorResult(ProcessResult)
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum ApiCommand {
-    Controll(ControllerCommand),
-    Model(Box<ModelCommand>),
-    AssetProcessor(AssetProcessorCommand),
-}
+use super::{
+    WsCommand, WsFeedback, FullShowState
+};
 
 #[derive(Clone)]
 struct ApiState {
@@ -114,12 +100,6 @@ pub async fn create_api_router(
         .with_state(state)
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FullShowState {
-    pub show_model: ShowModel,
-    pub show_state: ShowState,
-}
-
 async fn get_full_state_handler(State(state): State<ApiState>) -> axum::Json<FullShowState> {
     let show_model = state.backend_handle.model_handle.read().await.clone();
     let show_state = state.state_rx.borrow().clone();
@@ -139,7 +119,7 @@ async fn websocket_handler(
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
-async fn handle_socket(mut socket: WebSocket, mut state: ApiState) {
+async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let mut state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
 
@@ -148,7 +128,7 @@ async fn handle_socket(mut socket: WebSocket, mut state: ApiState) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
-                let ws_message = WsMessage::Event(Box::new(event));
+                let ws_message = WsFeedback::Event(Box::new(event));
 
                 if let Ok(payload) = serde_json::to_string(&ws_message)
                     && socket.send(Message::Text(payload.into())).await.is_err() {
@@ -158,7 +138,7 @@ async fn handle_socket(mut socket: WebSocket, mut state: ApiState) {
             }
             Ok(_) = state_rx.changed() => {
                 let new_state = state_rx.borrow().clone();
-                let ws_message = WsMessage::State(new_state);
+                let ws_message = WsFeedback::State(new_state);
 
                 if let Ok(payload) = serde_json::to_string(&ws_message)
                     && socket.send(Message::Text(payload.into())).await.is_err() {
@@ -169,25 +149,25 @@ async fn handle_socket(mut socket: WebSocket, mut state: ApiState) {
 
             Some(Ok(msg)) = socket.recv() => {
                 if let Message::Text(text) = msg {
-                    if let Ok(command_request) = serde_json::from_str::<ApiCommand>(&text) {
+                    if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
                         match command_request {
-                            ApiCommand::Controll(controller_command) => {
+                            WsCommand::Controll(controller_command) => {
                                 if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
                                     log::error!("Failed to send Go command to CueController.");
                                     break;
                                 }
                             },
-                            ApiCommand::Model(model_command) => {
+                            WsCommand::Model(model_command) => {
                                 if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
                                     log::error!("Failed to send Model command to ShowModelManager.");
                                     break;
                                 }
                             },
-                            ApiCommand::AssetProcessor(asset_processor_command) => {
+                            WsCommand::AssetProcessor(asset_processor_command) => {
                                 match asset_processor_command {
                                     AssetProcessorCommand::RequestFileAssetData { id, path } => {
                                         let result = state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
-                                        let ws_message = WsMessage::AssetProcessorResult(ProcessResult {
+                                        let ws_message = WsFeedback::AssetProcessorResult(ProcessResult {
                                             id,
                                             path,
                                             data: result,

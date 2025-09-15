@@ -5,7 +5,10 @@ use reqwest::Client;
 use reqwest_websocket::{Message, RequestBuilderExt};
 use tokio::sync::{broadcast, mpsc, watch, RwLock};
 
-use crate::{apiserver::{ApiCommand, FullShowState, WsMessage}, asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{state::ShowState, ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel, BackendHandle};
+use crate::{asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{state::ShowState, ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel, BackendHandle};
+use super::{
+    WsCommand, WsFeedback, FullShowState
+};
 
 pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
     BackendHandle,
@@ -41,21 +44,21 @@ pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
             tokio::select! {
                 Ok(Some(message)) = websocket.try_next() => {
                     if let Message::Text(text) = message {
-                        if let Ok(ws_message) = serde_json::from_str::<WsMessage>(&text) {
+                        if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
                             match ws_message {
-                                WsMessage::Event(ui_event) => {
+                                WsFeedback::Event(ui_event) => {
                                     if event_tx_clone.send(*ui_event).is_err() {
                                         log::error!("Failed to send UiEvent to channel.");
                                         break;
                                     }
                                 },
-                                WsMessage::State(show_state) => {
+                                WsFeedback::State(show_state) => {
                                     if state_tx.send(show_state).is_err() {
                                         log::error!("Failed to send ShowState to channel.");
                                         break;
                                     }
                                 },
-                                WsMessage::AssetProcessorResult(process_result) => {
+                                WsFeedback::AssetProcessorResult(process_result) => {
                                     if asset_result_tx_clone.send(process_result).is_err() {
                                         log::error!("Failed to send AssetProcessor result to channel.");
                                         break;
@@ -71,7 +74,7 @@ pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
                     }
                 }
                 Some(model_command) = model_rx.recv() => {
-                    let api_command = ApiCommand::Model(Box::new(model_command));
+                    let api_command = WsCommand::Model(Box::new(model_command));
                     if let Ok(payload) = serde_json::to_string(&api_command)
                     && websocket.send(Message::Text(payload)).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
@@ -79,7 +82,7 @@ pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
                     }
                 }
                 Some(controller_command) = controller_rx.recv() => {
-                    let api_command = ApiCommand::Controll(controller_command);
+                    let api_command = WsCommand::Controll(controller_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
                     && websocket.send(Message::Text(payload)).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
@@ -87,7 +90,7 @@ pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
                     }
                 }
                 Some(asset_processor_command) = asset_rx.recv() => {
-                    let api_command = ApiCommand::AssetProcessor(asset_processor_command);
+                    let api_command = WsCommand::AssetProcessor(asset_processor_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
                     && websocket.send(Message::Text(payload)).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");

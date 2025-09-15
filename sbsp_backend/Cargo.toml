@@ -21,7 +21,7 @@ backend = [
     "apiserver"
 ]
 apiserver = [
-    "dep:tokio",
+    "backend",
     "dep:axum",
     "dep:env_logger",
     "dep:libmdns",
@@ -29,7 +29,7 @@ apiserver = [
     "dep:serde_json"
 ]
 apiclient = [
-    "dep:tokio",
+    "backend",
     "dep:reqwest",
     "dep:reqwest-websocket",
     "dep:futures-util",

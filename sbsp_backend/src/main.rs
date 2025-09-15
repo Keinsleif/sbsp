@@ -1,4 +1,4 @@
-use sbsp_backend::{apiserver::run, start_backend};
+use sbsp_backend::{api::server::run, start_backend};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

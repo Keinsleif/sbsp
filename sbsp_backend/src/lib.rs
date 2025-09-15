@@ -31,11 +31,8 @@ mod executor;
 #[cfg(feature = "backend")]
 pub mod manager;
 
-#[cfg(feature = "apiserver")]
-pub mod apiserver;
-
-#[cfg(feature = "apiclient")]
-pub mod apiclient;
+#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+pub mod api;
 
 #[cfg(feature = "type_export")]
 pub mod asset_processor {
