@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 use crate::{
     event::{UiError, UiEvent},
-    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -95,9 +95,18 @@ impl ShowModelManager {
         match command {
             ModelCommand::UpdateCue(cue) => {
                 let mut model = self.model.write().await;
+                let model_path_option = self.show_model_path.read().await.clone();
                 let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
-                    model.cues[index] = cue.clone();
-                    UiEvent::CueUpdated { cue }
+                    let mut new_cue = cue.clone();
+                    if let CueParam::Audio(audio_param) = &mut new_cue.params
+                    && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                        let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                        if let Ok(target) = new_target {
+                            audio_param.target = target;
+                        } // ignore failed to import asset. use absolute path
+                    }
+                    model.cues[index] = new_cue.clone();
+                    UiEvent::CueUpdated { cue: new_cue }
                 } else {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
@@ -110,6 +119,7 @@ impl ShowModelManager {
             }
             ModelCommand::AddCue { cue, at_index } => {
                 let mut model = self.model.write().await;
+                let model_path_option = self.show_model_path.read().await.clone();
                 let event = if model.cues.iter().any(|c| c.id == cue.id) {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
@@ -123,14 +133,23 @@ impl ShowModelManager {
                         },
                     }
                 } else {
-                    model.cues.insert(at_index, cue.clone());
-                    UiEvent::CueAdded { cue, at_index }
+                    let mut new_cue = cue.clone();
+                    if let CueParam::Audio(audio_param) = &mut new_cue.params
+                    && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                        let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                        if let Ok(target) = new_target {
+                            audio_param.target = target;
+                        } // ignore failed to import asset. use absolute path
+                    }
+                    model.cues.insert(at_index, new_cue.clone());
+                    UiEvent::CueAdded { cue: new_cue, at_index }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
             ModelCommand::AddCues { cues, at_index } => {
                 let mut model = self.model.write().await;
+                let model_path_option = self.show_model_path.read().await.clone();
                 let mut added_cues = vec![];
                 if at_index > model.cues.len() {
                     self.event_tx.send(UiEvent::OperationFailed {
@@ -148,8 +167,16 @@ impl ShowModelManager {
                                 },
                             })?;
                         } else {
-                            model.cues.insert(at_index + insert_index, cue.clone());
-                            added_cues.push(cue.clone());
+                            let mut new_cue = cue.clone();
+                            if let CueParam::Audio(audio_param) = &mut new_cue.params
+                            && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                                let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                                if let Ok(target) = new_target {
+                                    audio_param.target = target;
+                                } // ignore failed to import asset. use absolute path
+                            }
+                            model.cues.insert(at_index + insert_index, new_cue.clone());
+                            added_cues.push(new_cue.clone());
                             insert_index += 1;
                         }
                     }
@@ -228,7 +255,7 @@ impl ShowModelManager {
             }
             ModelCommand::Save => {
                 let event = if let Some(path) = self.show_model_path.read().await.as_ref() {
-                    if let Err(error) = self.save_to_file(path.as_path()).await {
+                    if let Err(error) = self.save_to_file(path).await {
                         log::error!("Failed to save model file: {}", error);
                         UiEvent::OperationFailed {
                             error: UiError::FileSave {
@@ -251,7 +278,7 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::SaveToFile(path) => {
-                let event = if let Err(error) = self.save_to_file(path.as_path()).await {
+                let event = if let Err(error) = self.save_to_file(&path).await {
                     log::error!("Failed to save model file: {}", error);
                     UiEvent::OperationFailed {
                         error: UiError::FileSave {
@@ -296,7 +323,7 @@ impl ShowModelManager {
     }
 
     pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
-        let content = tokio::fs::read_to_string(path).await?;
+        let content = tokio::fs::read_to_string(path.join("model.json")).await?;
 
         let new_model: ShowModel =
             tokio::task::spawn_blocking(move || serde_json::from_str(&content)).await??;
@@ -309,18 +336,53 @@ impl ShowModelManager {
         Ok(())
     }
 
-    pub async fn save_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
-        let state_guard = self.read().await;
+    pub async fn save_to_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
+        let mut state_guard = self.write().await;
+
+        let model_path_option = self.show_model_path.read().await.clone();
+        for cue in &mut state_guard.cues {
+            if let CueParam::Audio(audio_param) = &mut cue.params {
+                if let Some(model_path) = &model_path_option && model_path != path {
+                    // copy exists project to another path
+                    let asset_path = model_path.join("audio").join(&audio_param.target);
+                    let new_path = self.import_asset_file(&asset_path, path).await?;
+                    audio_param.target = new_path;
+                } else if audio_param.target.is_absolute() {
+                    // update exists project
+                    // create new project
+                    let new_path = self.import_asset_file(&audio_param.target, path).await?;
+                    audio_param.target = new_path;
+                }
+            }
+        }
 
         let model_clone = state_guard.clone();
-        drop(state_guard); // Readロックを明示的に解放
+        drop(state_guard);
 
         let content =
             tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&model_clone))
                 .await??;
 
-        tokio::fs::write(path, content).await?;
+        tokio::fs::write(path.join("model.json"), content).await?;
         log::info!("Show saved to: {}", path.display());
         Ok(())
+    }
+
+    async fn import_asset_file(&self, asset_path: &PathBuf, model_path: &Path) -> anyhow::Result<PathBuf> {
+        let audio_dir = model_path.join("audio");
+        if !audio_dir.exists() {
+            tokio::fs::create_dir_all(&audio_dir).await?;
+        } else if audio_dir.is_file() {
+            anyhow::bail!("Failed to copy asset to library. Library is not directory");
+        }
+        let dest_path = audio_dir.join(asset_path.file_name().unwrap().to_str().unwrap()).clone();
+        tokio::fs::copy(asset_path, &dest_path).await?;
+        Ok(dest_path)
+    }
+
+    #[cfg(test)]
+    pub async fn set_show_model_path(&self, path_option: Option<PathBuf>) {
+        let mut write_lock = self.show_model_path.write().await;
+        *write_lock = path_option;
     }
 }

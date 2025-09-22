@@ -34,7 +34,7 @@ pub async fn process_asset(
 #[tauri::command]
 pub fn file_open(app_handle: tauri::AppHandle) {
     let model_handle = app_handle.state::<BackendHandle>().model_handle.clone();
-    app_handle.dialog().file().pick_file(|file_path_option| {
+    app_handle.dialog().file().pick_folder(|file_path_option| {
         if let Some(file_path) = file_path_option {
             tauri::async_runtime::spawn(async move {
                 model_handle
@@ -49,7 +49,7 @@ pub fn file_open(app_handle: tauri::AppHandle) {
 #[tauri::command]
 pub fn file_save(handle: tauri::AppHandle) {
     let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
+    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
     tauri::async_runtime::spawn(async move {
         if model_handle.get_current_file_path().await.is_some() {
             model_handle.save().await.unwrap();
@@ -69,7 +69,7 @@ pub fn file_save(handle: tauri::AppHandle) {
 #[tauri::command]
 pub fn file_save_as(handle: tauri::AppHandle) {
     let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["json"]);
+    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
     tauri::async_runtime::spawn(async move {
         if let Some(current_path) = model_handle.get_current_file_path().await {
             file_dialog_builder
