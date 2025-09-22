@@ -291,12 +291,8 @@ impl ShowModelManager {
         self.model.read().await
     }
 
-    pub async fn write_with<F, R>(&self, updater: F) -> R
-    where
-        F: FnOnce(&mut ShowModel) -> R,
-    {
-        let mut guard = self.model.write().await;
-        updater(&mut guard)
+    pub async fn write(&self) -> tokio::sync::RwLockWriteGuard<'_, ShowModel> {
+        self.model.write().await
     }
 
     pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
@@ -305,10 +301,9 @@ impl ShowModelManager {
         let new_model: ShowModel =
             tokio::task::spawn_blocking(move || serde_json::from_str(&content)).await??;
 
-        self.write_with(|state| {
-            *state = new_model;
-        })
-        .await;
+        let mut write_lock = self.write().await;
+        *write_lock = new_model;
+        drop(write_lock);
 
         log::info!("Show loaded from: {}", path.display());
         Ok(())

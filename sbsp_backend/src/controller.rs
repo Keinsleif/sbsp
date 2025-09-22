@@ -561,39 +561,35 @@ mod tests {
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
         let (manager, handle) = ShowModelManager::new(event_tx.clone());
-        manager
-            .write_with(|model| {
-                model.name = "TestShowModel".to_string();
-                for cue_id in cue_ids {
-                    model.cues.push(Cue {
-                        id: *cue_id,
-                        number: "1".to_string(),
-                        name: None,
-                        notes: "".to_string(),
-                        pre_wait: 0.0,
-                        sequence: model::cue::CueSequence::DoNotContinue,
-                        params: model::cue::CueParam::Audio(AudioCueParam {
-                            target: PathBuf::from("./I.G.Y.flac"),
-                            start_time: Some(5.0),
-                            fade_in_param: Some(AudioFadeParam {
-                                duration: 2.0,
-                                easing: Easing::Linear,
-                            }),
-                            end_time: Some(50.0),
-                            fade_out_param: Some(AudioFadeParam {
-                                duration: 5.0,
-                                easing: Easing::InPowi(2),
-                            }),
-                            volume: 0.0,
-                            pan: 0.0,
-                            repeat: false,
-                            sound_type: SoundType::Streaming,
-                        }),
-                    });
-                }
-            })
-            .await;
-
+        let mut write_lock = manager.write().await;
+        write_lock.name = "TestShowModel".to_string();
+        for cue_id in cue_ids {
+            write_lock.cues.push(Cue {
+                id: *cue_id,
+                number: "1".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: model::cue::CueSequence::DoNotContinue,
+                params: model::cue::CueParam::Audio(AudioCueParam {
+                    target: PathBuf::from("./I.G.Y.flac"),
+                    start_time: Some(5.0),
+                    fade_in_param: Some(AudioFadeParam {
+                        duration: 2.0,
+                        easing: Easing::Linear,
+                    }),
+                    end_time: Some(50.0),
+                    fade_out_param: Some(AudioFadeParam {
+                        duration: 5.0,
+                        easing: Easing::InPowi(2),
+                    }),
+                    volume: 0.0,
+                    pan: 0.0,
+                    repeat: false,
+                    sound_type: SoundType::Streaming,
+                }),
+            });
+        }
         let (controller, controller_handle) = CueController::new(
             handle.clone(),
             exec_tx,
