@@ -647,7 +647,7 @@ mod tests {
         assert_eq!(state_rx.borrow().playback_cursor, None);
 
         controller_handle
-            .set_playback_cursor(Some(cue_id))
+            .set_playback_cursor(Some(cue_id_next))
             .await
             .unwrap();
 
