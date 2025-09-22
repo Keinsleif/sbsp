@@ -386,3 +386,106 @@ impl ShowModelManager {
         *write_lock = path_option;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use tempfile::{tempdir, NamedTempFile};
+    use tokio::sync::broadcast;
+    use uuid::Uuid;
+    use crate::{event::UiEvent, model::{cue::{audio::{AudioCueParam, SoundType}, Cue, CueParam, CueSequence}, settings::{GeneralSettings, ShowSettings}, ShowModel}};
+
+    use super::{ShowModelManager, ShowModelHandle};
+
+    async fn setup_manager(initial_model: Option<ShowModel>, model_path: Option<PathBuf>) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
+        let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
+        let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
+        if let Some(inital) = initial_model {
+            let mut model_lock = model_manager.write().await;
+            *model_lock = inital;
+            drop(model_lock);
+        }
+        model_manager.set_show_model_path(model_path).await;
+        tokio::spawn(model_manager.run());
+        (model_handle, event_rx)
+    }
+
+    #[tokio::test]
+    async fn update_cue() {
+        let temp_dir = tempdir().unwrap();
+        let temp_target = NamedTempFile::with_suffix(".mp3").unwrap();
+        let temp_target_after = NamedTempFile::with_suffix(".wav").unwrap();
+        let cue_id = Uuid::new_v4();
+        let (model_handle, mut event_rx) = setup_manager(Some(ShowModel {
+            name: "test".into(),
+            cues: vec![
+                Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) }
+            ],
+            settings: ShowSettings { general: GeneralSettings { copy_assets_when_add: true, ..Default::default() }, ..Default::default() },
+        }), Some(temp_dir.path().to_path_buf())).await;
+
+        let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target_after.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
+        model_handle.update_cue(new_cue.clone()).await.unwrap();
+
+        let estimated_audio_target = temp_dir.path().join("audio").join(temp_target_after.path().file_name().unwrap().to_str().unwrap());
+        let mut estimated_new_cue = new_cue.clone();
+        if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
+            audio_param.target = estimated_audio_target.clone();
+        }
+
+        let updated_cue;
+        loop {
+            if let Ok(UiEvent::CueUpdated { cue }) = event_rx.recv().await {
+                updated_cue = cue;
+                break;
+            }
+        }
+        assert_eq!(updated_cue, estimated_new_cue);
+
+        let model = model_handle.read().await;
+        assert_eq!(model.cues[0], estimated_new_cue);
+        assert!(estimated_audio_target.exists());
+        drop(temp_target);
+        drop(temp_dir);
+    }
+
+    #[tokio::test]
+    async fn add_cue() {
+        let temp_dir = tempdir().unwrap();
+        let temp_target = NamedTempFile::with_suffix(".mp3").unwrap();
+        let cue_id = Uuid::new_v4();
+        let (model_handle, mut event_rx) = setup_manager(Some(ShowModel {
+            name: "test".into(),
+            cues: vec![],
+            settings: ShowSettings { general: GeneralSettings { copy_assets_when_add: true, ..Default::default() }, ..Default::default() },
+        }), Some(temp_dir.path().to_path_buf())).await;
+
+        let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
+        model_handle.add_cue(new_cue.clone(), 0).await.unwrap();
+
+        let estimated_audio_target = temp_dir.path().join("audio").join(temp_target.path().file_name().unwrap().to_str().unwrap());
+        let mut estimated_new_cue = new_cue.clone();
+        if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
+            audio_param.target = estimated_audio_target.clone();
+        }
+
+        let added_cue;
+        let added_at_index;
+        loop {
+            if let Ok(UiEvent::CueAdded { cue, at_index }) = event_rx.recv().await {
+                added_cue = cue;
+                added_at_index = at_index;
+                break;
+            }
+        }
+        assert_eq!(added_cue, estimated_new_cue);
+        assert_eq!(added_at_index, 0);
+
+        let model = model_handle.read().await;
+        assert_eq!(model.cues[0], estimated_new_cue);
+        assert!(estimated_audio_target.exists());
+        drop(temp_target);
+        drop(temp_dir);
+    }
+}
