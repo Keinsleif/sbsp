@@ -19,7 +19,7 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
-      <BottomEditor :selected-id="uiState.selected" />
+      <BottomEditor v-model="selectedCue" @update="onCueEdited" />
     </v-navigation-drawer>
 
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
@@ -40,12 +40,14 @@ import FootBar from './components/FootBar.vue';
 import BottomEditor from './components/BottomEditor.vue';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import { useShowState } from './stores/showstate';
 import { listen } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
+import type { Cue } from './types/Cue';
+import { debounce } from 'vuetify/lib/util/helpers.mjs';
 
 const uiState = useUiState();
 const showState = useShowState();
@@ -78,6 +80,24 @@ onUnmounted(() => {
     });
   }
 });
+
+const selectedCue = ref<Cue | null>(
+  uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null,
+);
+
+watch(
+  () => uiState.selected,
+  () => {
+    selectedCue.value = uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null;
+  },
+);
+
+const onCueEdited = debounce(() => {
+  if (selectedCue.value == null) {
+    return;
+  }
+  invoke('update_cue', { cue: toRaw(selectedCue.value) });
+}, 500);
 
 useHotkey(
   'cmd+o',
