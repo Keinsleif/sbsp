@@ -16,14 +16,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
-sbsp_backend = { path = "../../sbsp_backend", features = ["type_export"], default-features = false}
+sbsp_backend = { path = "../sbsp_backend", features = ["type_export"], default-features = false}
 ts-rs = { version = "11.0.1" }
 
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
-sbsp_backend = { path = "../../sbsp_backend", features = ["apiserver"] }
+sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
 log = "0.4.27"

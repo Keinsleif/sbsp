@@ -9,7 +9,7 @@ export const useShowModel = defineStore('showmodel', {
       name: '',
       cues: [],
       settings: {
-        general: { lockCursorToSelection: true, advanceCursorWhenGo: true },
+        general: { lockCursorToSelection: true, advanceCursorWhenGo: true, copyAssetsWhenAdd: false },
         hotkey: {
           playback: {
             go: 'Enter',

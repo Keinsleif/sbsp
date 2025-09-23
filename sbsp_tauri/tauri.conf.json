@@ -4,10 +4,16 @@
   "version": "0.1.0",
   "identifier": "com.keinsleif.sbsp",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": {
+      "script": "pnpm dev",
+      "cwd": "../sbsp_frontend"
+    },
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist"
+    "beforeBuildCommand": {
+      "script": "pnpm build",
+      "cwd": "../sbsp_frontend"
+    },
+    "frontendDist": "../sbsp_frontend/dist"
   },
   "app": {
     "windows": [
@@ -23,7 +29,7 @@
     }
   },
   "bundle": {
-    "active": true,
+    "active": false,
     "targets": "all",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
   }
