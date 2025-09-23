@@ -1,0 +1,32 @@
+[package]
+name = "sbsp_remote"
+version = "0.1.0"
+description = "A SBS Player Remote Control App powered by tauri."
+authors = ["Keinsleif"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "sbsp_remote_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+sbsp_backend = { path = "../sbsp_backend", features = ["type_export"], default-features = false}
+ts-rs = { version = "11.0.1" }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
+sbsp_backend = { path = "../sbsp_backend", features = ["apiclient"] }
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
+log = "0.4.27"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = "2"

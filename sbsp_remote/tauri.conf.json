@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "sbsp_remote",
+  "version": "0.1.0",
+  "identifier": "com.keinsleif.sbsp",
+  "build": {
+    "beforeDevCommand": {
+      "script": "pnpm dev",
+      "cwd": "../sbsp_frontend"
+    },
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": {
+      "script": "pnpm build",
+      "cwd": "../sbsp_frontend"
+    },
+    "frontendDist": "../sbsp_frontend/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SBS Player Remote",
+        "width": 1280,
+        "height": 720,
+        "dragDropEnabled": false,
+        "visible": false
+      },
+      {
+        "label": "connect",
+        "title": "Connect",
+        "width": 1280,
+        "height": 720,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+  }
+}
