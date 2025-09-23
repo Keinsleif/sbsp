@@ -10,13 +10,11 @@ use super::{
     WsCommand, WsFeedback, FullShowState
 };
 
-pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
+pub fn create_remote_backend(address: String) -> anyhow::Result<(
     BackendHandle,
     watch::Receiver<ShowState>,
     broadcast::Sender<UiEvent>,
 )> {
-    let host = format!("{}:{}", host, port);
-
     let model = Arc::new(RwLock::new(ShowModel::default()));
     let show_model_path = Arc::new(RwLock::new(None));
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
@@ -30,14 +28,14 @@ pub fn create_remote_backend(host: &str, port: u16) -> anyhow::Result<(
     let event_tx_clone = event_tx.clone();
     let asset_result_tx_clone = asset_result_tx.clone();
     tokio::spawn(async move {
-        let full_state = reqwest::get(format!("http://{}/api/show/full_state", host)).await.unwrap().json::<FullShowState>().await.unwrap();
+        let full_state = reqwest::get(format!("http://{}/api/show/full_state", address)).await.unwrap().json::<FullShowState>().await.unwrap();
         let mut show_model = model_clone.write().await;
         *show_model = full_state.show_model;
         drop(show_model);
         state_tx.send_modify(|state| {
             *state = full_state.show_state;
         });
-        let response = Client::default().get(format!("ws://{}", host)).upgrade().send().await.unwrap();
+        let response = Client::default().get(format!("ws://{}", address)).upgrade().send().await.unwrap();
         let mut websocket = response.into_websocket().await.unwrap();
 
         loop {
