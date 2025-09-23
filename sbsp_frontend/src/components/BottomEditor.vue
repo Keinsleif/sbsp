@@ -11,7 +11,7 @@
     </v-tabs>
     <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
-        <basic-editor :selected-id="props.selectedId" />
+        <basic-editor v-model="selectedCue" @update="emit('update')" />
       </v-tabs-window-item>
       <v-tabs-window-item
         v-if="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -19,7 +19,7 @@
         reverse-transition="false"
         transition="false"
       >
-        <audio-basic-editor :selected-id="props.selectedId" />
+        <audio-basic-editor v-model="selectedCue" @update="emit('update')" />
       </v-tabs-window-item>
       <v-tabs-window-item
         v-if="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -27,35 +27,23 @@
         reverse-transition="false"
         transition="false"
       >
-        <audio-time-level-editor :selected-id="props.selectedId" />
+        <audio-time-level-editor v-model="selectedCue" @update="emit('update')" />
       </v-tabs-window-item>
     </v-tabs-window>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useShowModel } from '../stores/showmodel';
+import { ref } from 'vue';
 import BasicEditor from './editor/BasicEditor.vue';
 import AudioTimeLevelEditor from './editor/AudioTimeLevelEditor.vue';
 import AudioBasicEditor from './editor/AudioBasicEditor.vue';
+import type { Cue } from '../types/Cue';
 
-const props = withDefaults(
-  defineProps<{
-    selectedId: string | null;
-  }>(),
-  {
-    selectedId: null,
-  },
-);
-
-const showModel = useShowModel();
+const selectedCue = defineModel<Cue | null>();
+const emit = defineEmits(['update']);
 
 const editorTab = ref('basics');
-
-const selectedCue = computed(() => {
-  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
-});
 </script>
 
 <style lang="css" module>

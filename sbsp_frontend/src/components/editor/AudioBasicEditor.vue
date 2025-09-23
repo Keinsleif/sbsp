@@ -60,28 +60,15 @@
 <script setup lang="ts">
 import { mdiFileMusic } from '@mdi/js';
 import { open } from '@tauri-apps/plugin-dialog';
-import { computed, ref, toRaw, watch } from 'vue';
-import { useShowModel } from '../../stores/showmodel';
-import { invoke } from '@tauri-apps/api/core';
+import { ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
-import { debounce } from 'vuetify/lib/util/helpers.mjs';
 import { useShowState } from '../../stores/showstate';
+import type { Cue } from '../../types/Cue';
 
-const showModel = useShowModel();
 const showState = useShowState();
 
-const props = withDefaults(
-  defineProps<{
-    selectedId: string | null;
-  }>(),
-  {
-    selectedId: null,
-  },
-);
-
-const selectedCue = computed(() => {
-  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
-});
+const selectedCue = defineModel<Cue | null>();
+const emit = defineEmits(['update']);
 
 const target = ref(
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
@@ -112,20 +99,19 @@ watch(selectedCue, () => {
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
 
-const saveEditorValue = debounce(() => {
+const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
   }
-  const newCue = structuredClone(toRaw(selectedCue.value));
-  if (newCue.params.type != 'audio') {
+  if (selectedCue.value.params.type != 'audio') {
     return;
   }
-  newCue.params.target = target.value;
-  newCue.params.soundType = soundType.value ? 'static' : 'streaming';
-  newCue.params.fadeInParam = fadeInParam.value;
-  newCue.params.fadeOutParam = fadeOutParam.value;
-  invoke('update_cue', { cue: newCue });
-}, 500);
+  selectedCue.value.params.target = target.value;
+  selectedCue.value.params.soundType = soundType.value ? 'static' : 'streaming';
+  selectedCue.value.params.fadeInParam = fadeInParam.value;
+  selectedCue.value.params.fadeOutParam = fadeOutParam.value;
+  emit('update');
+};
 
 const resetEditorValue = (name: string) => {
   if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
@@ -168,7 +154,7 @@ const pickFile = () => {
       return;
     }
     target.value = value;
-    saveEditorValue('target');
+    saveEditorValue();
   });
   document.body.focus();
 };

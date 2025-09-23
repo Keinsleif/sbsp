@@ -49,30 +49,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
-import { useShowModel } from '../../stores/showmodel';
+import { ref, watch } from 'vue';
 import { buildCueName, calculateDuration } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
-import { debounce } from 'vuetify/lib/util/helpers.mjs';
+import type { Cue } from '../../types/Cue';
 
-const showModel = useShowModel();
 const assetResult = useAssetResult();
 
-const props = withDefaults(
-  defineProps<{
-    selectedId: string | null;
-  }>(),
-  {
-    selectedId: null,
-  },
-);
-
-const selectedCue = computed(() => {
-  return props.selectedId != null ? showModel.cues.find((cue) => cue.id === props.selectedId) : null;
-});
+const selectedCue = defineModel<Cue | null>();
+const emit = defineEmits(['update']);
 
 const getDuration = (): number | null => {
   if (selectedCue.value == null) {
@@ -119,40 +106,39 @@ watch(getDuration, () => {
   duration.value = getDuration();
 });
 
-const saveEditorValue = debounce(() => {
+const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
   }
-  const newCue = structuredClone(toRaw(selectedCue.value));
   if (number.value != null) {
-    newCue.number = number.value;
+    selectedCue.value.number = number.value;
   }
   if (preWait.value != null) {
-    newCue.preWait = preWait.value;
+    selectedCue.value.preWait = preWait.value;
   }
   if (sequence.value != null) {
-    newCue.sequence.type = sequence.value;
-    if (newCue.sequence.type == 'autoContinue') {
-      newCue.sequence.postWait = 0;
+    selectedCue.value.sequence.type = sequence.value;
+    if (selectedCue.value.sequence.type == 'autoContinue') {
+      selectedCue.value.sequence.postWait = 0;
     }
     document.body.focus();
   }
-  if (postWait.value != null && newCue.sequence.type == 'autoContinue') {
-    newCue.sequence.postWait = postWait.value;
+  if (postWait.value != null && selectedCue.value.sequence.type == 'autoContinue') {
+    selectedCue.value.sequence.postWait = postWait.value;
   }
   if (name.value != null) {
     const newName = name.value.trim();
     if (newName == '') {
-      newCue.name = null;
+      selectedCue.value.name = null;
     } else {
-      newCue.name = newName;
+      selectedCue.value.name = newName;
     }
   }
   if (notes.value != null) {
-    newCue.notes = notes.value;
+    selectedCue.value.notes = notes.value;
   }
-  invoke('update_cue', { cue: newCue });
-}, 500);
+  emit('update');
+};
 </script>
 
 <style lang="css" module>

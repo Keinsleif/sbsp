@@ -65,7 +65,7 @@ const props = withDefaults(
   },
 );
 
-const nonNullStartTime = computed(() => {
+const nonNullStartTime = computed<number>(() => {
   if (props.targetId == null) {
     return 0;
   }
@@ -73,7 +73,7 @@ const nonNullStartTime = computed(() => {
   return props.startTime != null && duration != null ? props.startTime / duration : 0;
 });
 
-const nonNullEndTime = computed(() => {
+const nonNullEndTime = computed<number>(() => {
   if (props.targetId == null) {
     return 1;
   }
@@ -82,13 +82,18 @@ const nonNullEndTime = computed(() => {
 });
 
 const svgRef = useTemplateRef('svg');
-const position = computed(() => {
-  if (
-    props.targetId != null &&
-    props.targetId in showState.activeCues &&
-    (['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[props.targetId]!.status)
-  ) {
-    return showState.activeCues[props.targetId]!.position / showState.activeCues[props.targetId]!.duration;
+const position = computed<number>(() => {
+  if (props.targetId != null && props.targetId in showState.activeCues) {
+    const activeCue = showState.activeCues[props.targetId];
+    if (
+      activeCue != null &&
+      (['Playing', 'Paused'] as PlaybackStatus[]).includes(activeCue.status) &&
+      activeCue.duration !== 0
+    ) {
+      return activeCue.position / activeCue.duration;
+    } else {
+      return 0;
+    }
   } else {
     return 0;
   }
@@ -133,16 +138,19 @@ const seek = (event: MouseEvent) => {
     svgRef.value == null ||
     svgRef.value.clientWidth < 1 ||
     props.targetId == null ||
-    !(props.targetId in showState.activeCues) ||
-    !(['Playing', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[props.targetId]!.status)
+    !(props.targetId in showState.activeCues)
   ) {
+    return;
+  }
+  const activeCue = showState.activeCues[props.targetId];
+  if (activeCue == null || !(['Playing', 'Paused'] as PlaybackStatus[]).includes(activeCue.status)) {
     return;
   }
   const position =
     (event.offsetX - nonNullStartTime.value * svgRef.value.clientWidth) /
     (svgRef.value.clientWidth * (nonNullEndTime.value - nonNullStartTime.value));
   if (position > 0 && position < 1) {
-    invoke('seek_to', { cueId: props.targetId, position: position * showState.activeCues[props.targetId]!.duration });
+    invoke('seek_to', { cueId: props.targetId, position: position * activeCue.duration });
   }
 };
 </script>
