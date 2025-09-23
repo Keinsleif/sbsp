@@ -84,6 +84,7 @@ import { ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import type { ShowSettings } from '../../types/ShowSettings';
+import HotkeyInput from '../input/HotkeyInput.vue';
 
 const showModel = useShowModel();
 
