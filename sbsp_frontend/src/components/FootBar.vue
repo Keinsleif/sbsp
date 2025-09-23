@@ -23,28 +23,11 @@
 import { mdiCog, mdiDockBottom, mdiDockRight } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { Window } from '@tauri-apps/api/window';
 
 const showModel = useShowModel();
 const uiState = useUiState();
 
 const openSettings = async () => {
-  const existSettingsWindow = await Window.getByLabel('settings');
-  if (existSettingsWindow != null) {
-    await existSettingsWindow.setFocus();
-    return;
-  }
-  const settingsWindow = new WebviewWindow('settings', {
-    url: '/settings',
-    title: 'Settings',
-    width: 1280,
-    height: 720,
-    resizable: false,
-    dragDropEnabled: false,
-  });
-  settingsWindow.once('tauri://error', (e) => {
-    console.error(e.payload);
-  });
+  uiState.isSettingsDialogOpen = true;
 };
 </script>

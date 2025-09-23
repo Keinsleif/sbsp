@@ -26,6 +26,7 @@
     <v-snackbar-queue v-model="uiState.error_messages" timeout="2000" color="error"></v-snackbar-queue>
 
     <renumber-dialog v-model="isRenumberDialogOpen"></renumber-dialog>
+    <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
   </v-app>
 </template>
 
@@ -44,6 +45,7 @@ import { useShowState } from './stores/showstate';
 import { listen } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
+import SettingsDialog from './components/dialog/SettingsDialog.vue';
 
 const uiState = useUiState();
 const showState = useShowState();
