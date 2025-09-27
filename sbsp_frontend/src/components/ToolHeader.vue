@@ -78,15 +78,12 @@ import {
   mdiVolumeHigh,
 } from '@mdi/js';
 import { useShowModel } from '../stores/showmodel';
-import { computed, onMounted, onUnmounted, ref, toRaw } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useShowState } from '../stores/showstate';
 import { PlaybackStatus } from '../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
-import { v4 } from 'uuid';
 import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
-import type { Cue } from '../types/Cue';
-import { open } from '@tauri-apps/plugin-dialog';
 import { useFullscreen, useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
@@ -119,65 +116,14 @@ const isCueStatus = (status: PlaybackStatus) => {
   return false;
 };
 
-const addEmptyCue = (type: 'audio' | 'wait') => {
+const addEmptyCue = (cueType: 'audio' | 'wait') => {
   let insertIndex;
   if (uiState.selected) {
     insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
   } else {
     insertIndex = showModel.cues.length;
   }
-  if (type == 'audio') {
-    open({
-      multiple: true,
-      filters: [
-        {
-          name: 'Audio',
-          extensions: [
-            'aiff',
-            'aif',
-            'caf',
-            'mp4',
-            'm4a',
-            'mkv',
-            'mka',
-            'webm',
-            'ogg',
-            'oga',
-            'wav',
-            'aac',
-            'alac',
-            'flac',
-            'mp3',
-          ],
-        },
-      ],
-    }).then((value) => {
-      if (value == null) {
-        return;
-      }
-      if (value.length === 1) {
-        let newCue = structuredClone(toRaw(showModel.settings.template['audio']));
-        if (newCue.params.type != 'audio') return;
-        newCue.id = v4();
-        newCue.params.target = value[0];
-        invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
-      } else {
-        const newCues: Cue[] = [];
-        value.forEach((filename) => {
-          let newCue = structuredClone(toRaw(showModel.settings.template['audio']));
-          if (newCue.params.type != 'audio') return;
-          newCue.id = v4();
-          newCue.params.target = filename;
-          newCues.push(newCue);
-        });
-        invoke('add_cues', { cues: newCues, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
-      }
-    });
-  } else if (type == 'wait') {
-    const newCue = structuredClone(toRaw(showModel.settings.template['wait']));
-    newCue.id = v4();
-    invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.log(e.toString()));
-  }
+  invoke('add_empty_cue', { cueType: cueType, atIndex: insertIndex }).catch((e) => console.error(e));
 };
 
 const handleReadyPauseButton = () => {
