@@ -1,29 +1,28 @@
 mod command;
 
-use sbsp_backend::{controller::state::ShowState, event::UiEvent, start_backend};
+use log::LevelFilter;
+use sbsp_backend::{api::{client::{create_remote_backend, start_discovery, FileListHandle}}, controller::state::ShowState, event::UiEvent, BackendHandle};
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{broadcast, mpsc, watch, Mutex, RwLock};
 
 use crate::command::{
-    controller::{
+    add_empty_cue, client::{connect_to_server, disconnect_from_server, get_server_address, request_file_list, start_server_discovery, stop_server_discovery}, controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
         stop, stop_all, toggle_repeat,
-    },
-    file_open, file_save, file_save_as,
-    model_manager::{
+    }, model_manager::{
         add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
         update_settings,
-    },
-    process_asset,
+    }, process_asset
 };
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
     mut state_rx: watch::Receiver<ShowState>,
     mut event_rx: broadcast::Receiver<UiEvent>,
+    mut asset_list_handle: FileListHandle,
 ) {
     loop {
         tokio::select! {
@@ -33,8 +32,105 @@ async fn forward_backend_state_and_event(
             },
             Ok(event) = event_rx.recv() => {
                 app_handle.emit("backend-event", event).ok();
+            },
+            Ok(list) = asset_list_handle.recv_file_list() => {
+                app_handle.emit("asset-list-update", list).ok();
             }
             else => break,
+        }
+    }
+}
+
+pub struct ConnectionData {
+    backend_handle: BackendHandle,
+    address: String,
+    asset_list_handle: FileListHandle,
+    disconnect_tx: mpsc::Sender<()>,
+}
+
+#[derive(Default)]
+pub struct AppState {
+    connection_data: RwLock<Option<ConnectionData>>,
+    discovery_stop_tx: Mutex<Option<mpsc::Sender<()>>>,
+}
+
+impl AppState {
+    pub async fn get_handle(&self) -> Option<BackendHandle> {
+        self.connection_data.read().await.as_ref().map(|connection_data| connection_data.backend_handle.clone())
+    }
+
+    pub async fn get_address(&self) -> Option<String> {
+        self.connection_data.read().await.as_ref().map(|connection_data| connection_data.address.clone())
+    }
+
+    pub async fn connect(&self, address: String, app_handle: AppHandle) -> anyhow::Result<()> {
+        let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) = create_remote_backend(address.clone()).await?;
+        let mut connection_data_lock = self.connection_data.write().await;
+        *connection_data_lock = Some(ConnectionData {
+            backend_handle: remote_handle,
+            address,
+            asset_list_handle: asset_list_handle.clone(),
+            disconnect_tx: shutdown_tx.clone(),
+        });
+        drop(connection_data_lock);
+
+        tokio::spawn(forward_backend_state_and_event(app_handle.clone(), state_rx, event_tx.subscribe(), asset_list_handle));
+
+        tokio::spawn(async move {
+            shutdown_tx.closed().await;
+            let state = app_handle.state::<AppState>();
+            state.disconnect_cleanup().await;
+            tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[1]).unwrap().build().map_err(|e| e.to_string()).unwrap();
+            if let Some(main_window) = app_handle.get_webview_window("main") {
+                let _ = main_window.close();
+            }
+        });
+        Ok(())
+    }
+
+    pub async fn disconnect(&self) {
+        if let Some(conn_data) = self.connection_data.read().await.as_ref() {
+            let _ = conn_data.disconnect_tx.send(()).await;
+        }
+    }
+
+    pub async fn disconnect_cleanup(&self) {
+        let mut connection_data_lock = self.connection_data.write().await;
+        *connection_data_lock = None;
+    }
+
+    pub async fn request_file_list(&self) -> anyhow::Result<()> {
+        if let Some(conn_data) = self.connection_data.read().await.as_ref() {
+            conn_data.asset_list_handle.request_file_list().await?;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Not connected."))
+        }
+    }
+
+    pub async fn start_discovery(&self, app_handle: AppHandle) {
+        let mut watch_rx = start_discovery();
+        let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    Ok(_) = watch_rx.changed() => {
+                        let services = watch_rx.borrow().clone();
+                        app_handle.emit("remote-discovery", services).ok();
+                    },
+                    _ = shutdown_rx.recv() => {
+                        drop(watch_rx);
+                        break;
+                    },
+                }
+            }
+        });
+        *(self.discovery_stop_tx.lock().await) = Some(shutdown_tx);
+    }
+
+    pub async fn stop_discovery(&self) {
+        if let Some(stop_tx) = self.discovery_stop_tx.lock().await.as_ref() {
+            let _ = stop_tx.send(()).await;
         }
     }
 }
@@ -42,7 +138,7 @@ async fn forward_backend_state_and_event(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(tauri_plugin_log::Builder::new().level(LevelFilter::Debug).build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
@@ -50,32 +146,7 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            let app_handle = app.handle();
-
             let file_menu = SubmenuBuilder::new(app, "File")
-                .items(&[
-                    &MenuItem::with_id(
-                        app_handle,
-                        MenuId::new("id_open"),
-                        "Open",
-                        true,
-                        Some("Ctrl+O"),
-                    )?,
-                    &MenuItem::with_id(
-                        app_handle,
-                        MenuId::new("id_save"),
-                        "Save",
-                        true,
-                        Some("Ctrl+S"),
-                    )?,
-                    &MenuItem::with_id(
-                        app_handle,
-                        MenuId::new("id_save_as"),
-                        "Save As...",
-                        true,
-                        Some("Ctrl+Shift+S"),
-                    )?,
-                ])
                 .separator()
                 .text(MenuId::new("id_quit"), "Quit")
                 .build()?;
@@ -106,28 +177,11 @@ pub fn run() {
                 .build()?;
             app.set_menu(menu)?;
 
-            let (backend_handle, state_rx, event_tx) = start_backend();
-
-            tauri::async_runtime::spawn(forward_backend_state_and_event(
-                app_handle.clone(),
-                state_rx,
-                event_tx.subscribe(),
-            ));
-
-            app.manage(backend_handle);
+            app.manage(AppState::default());
 
             Ok(())
         })
         .on_menu_event(|handle, event| match event.id().as_ref() {
-            "id_open" => {
-                file_open(handle.clone());
-            }
-            "id_save" => {
-                file_save(handle.clone());
-            }
-            "id_save_as" => {
-                file_save_as(handle.clone());
-            }
             "id_quit" => {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
@@ -158,10 +212,14 @@ pub fn run() {
             move_cue,
             renumber_cues,
             update_settings,
+            get_server_address,
+            connect_to_server,
+            disconnect_from_server,
+            start_server_discovery,
+            stop_server_discovery,
+            request_file_list,
             process_asset,
-            file_open,
-            file_save,
-            file_save_as,
+            add_empty_cue,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,97 +1,99 @@
-use sbsp_backend::{BackendHandle, asset_processor::AssetData, model::cue::CueParam};
-use tauri::Manager as _;
-use tauri_plugin_dialog::DialogExt as _;
+use std::path::PathBuf;
+
+use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam};
+use tauri::Listener;
+use tokio::sync::oneshot;
 use uuid::Uuid;
+use super::AppState;
 
 pub mod controller;
 pub mod model_manager;
+pub mod client;
 
 #[tauri::command]
 pub async fn process_asset(
-    handle: tauri::State<'_, BackendHandle>,
+    state: tauri::State<'_, AppState>,
     cue_id: Uuid,
 ) -> Result<(Uuid, AssetData), String> {
-    if let Some(cue) = handle
-        .model_handle
-        .read()
-        .await
-        .cues
-        .iter()
-        .find(|cue| cue.id == cue_id)
-        && let CueParam::Audio(params) = &cue.params
-    {
-        handle
-            .asset_processor_handle
-            .request_file_asset_data(params.target.clone())
+    if let Some(handle) = state.get_handle().await {
+        if let Some(cue) = handle
+            .model_handle
+            .read()
             .await
-            .map_err(|e| e.to_string())
-            .map(|asset_data| (cue_id, asset_data))
+            .cues
+            .iter()
+            .find(|cue| cue.id == cue_id)
+            && let CueParam::Audio(params) = &cue.params
+        {
+            handle
+                .asset_processor_handle
+                .request_file_asset_data(params.target.clone())
+                .await
+                .map_err(|e| e.to_string())
+                .map(|asset_data| (cue_id, asset_data))
+        } else {
+            Err(format!("Cue not found. id={}", cue_id))
+        }
     } else {
-        Err(format!("Cue not found. id={}", cue_id))
+        Err("Not connected.".into())
     }
 }
 
 #[tauri::command]
-pub fn file_open(app_handle: tauri::AppHandle) {
-    let model_handle = app_handle.state::<BackendHandle>().model_handle.clone();
-    app_handle.dialog().file().pick_folder(|file_path_option| {
-        if let Some(file_path) = file_path_option {
-            tauri::async_runtime::spawn(async move {
-                model_handle
-                    .load_from_file(file_path.into_path().unwrap())
-                    .await
-                    .unwrap();
-            });
-        }
-    });
-}
-
-#[tauri::command]
-pub fn file_save(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tauri::async_runtime::spawn(async move {
-        if model_handle.get_current_file_path().await.is_some() {
-            model_handle.save().await.unwrap();
-        } else {
-            file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
-                }
-            })
-        }
-    });
-}
-
-#[tauri::command]
-pub fn file_save_as(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<BackendHandle>().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tauri::async_runtime::spawn(async move {
-        if let Some(current_path) = model_handle.get_current_file_path().await {
-            file_dialog_builder
-                .set_directory(current_path.parent().unwrap())
-                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                .save_file(move |file_path_option| {
-                    if let Some(file_path) = file_path_option {
-                        let file_pathbuf = file_path.into_path().unwrap();
-                        tauri::async_runtime::spawn(async move {
-                            model_handle.save_as(file_pathbuf).await.unwrap();
-                        });
+pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>, cue_type: String, at_index: usize) -> Result<(), String> {
+    if let Some(handle) = state.get_handle().await {
+        let templates = handle.model_handle.read().await.settings.template.clone();
+        match cue_type.as_str() {
+            "audio" => {
+                let pick_file_window = tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[2]).map_err(|e| e.to_string())?.build().map_err(|e| e.to_string())?;
+                let (result_tx, result_rx) = oneshot::channel();
+                pick_file_window.once("file-select-result", |event| {
+                    let _ = result_tx.send(serde_json::from_str::<Option<Vec<PathBuf>>>(event.payload()));
+                });
+                if let Some(file_paths) = result_rx.await.unwrap().map_err(|e| e.to_string())? {
+                    if file_paths.len() == 1 {
+                        let mut new_cue = templates.audio.clone();
+                        new_cue.id = Uuid::new_v4();
+                        if let CueParam::Audio(cue_param) = &mut new_cue.params {
+                            cue_param.target = file_paths[0].clone();
+                        }
+                        handle
+                            .model_handle
+                            .add_cue(new_cue, at_index)
+                            .await
+                            .map_err(|e| e.to_string())
+                    } else {
+                        let mut new_cues = vec![];
+                        for file_path in file_paths {
+                            let mut new_cue = templates.audio.clone();
+                            new_cue.id = Uuid::new_v4();
+                            if let CueParam::Audio(cue_param) = &mut new_cue.params {
+                                cue_param.target = file_path.clone();
+                            }
+                            new_cues.push(new_cue);
+                        }
+                        handle
+                            .model_handle
+                            .add_cues(new_cues, at_index)
+                            .await
+                            .map_err(|e| e.to_string())
                     }
-                })
-        } else {
-            file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
+                } else {
+                    Ok(())
                 }
-            })
+            }
+            "wait" => {
+                let mut new_cue = templates.wait.clone();
+                new_cue.id = Uuid::new_v4();
+                handle
+                    .model_handle
+                    .add_cue(new_cue, at_index)
+                    .await
+                    .map_err(|e| e.to_string())
+            }
+            _ => Err("Invalid cue type.".into())
         }
-    });
+    } else {
+        Err("Not connected.".into())
+    }
 }

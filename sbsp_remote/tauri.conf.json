@@ -23,14 +23,24 @@
         "width": 1280,
         "height": 720,
         "dragDropEnabled": false,
-        "visible": false
+        "create": false
       },
       {
         "label": "connect",
         "title": "Connect",
+        "url": "/connect",
         "width": 1280,
         "height": 720,
         "dragDropEnabled": false
+      },
+      {
+        "label": "pick_file",
+        "title": "Select Files",
+        "url": "/pick_file",
+        "width": 1280,
+        "height": 720,
+        "dragDropEnabled": false,
+        "create": false
       }
     ],
     "security": {
