@@ -30,6 +30,7 @@ struct ApiState {
 }
 
 pub async fn start_apiserver(port: u16, backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>, discover_option: Option<String>) -> anyhow::Result<broadcast::Sender<()>> {
+    log::info!("Starting server with port: {}, discovery: {:?}", port, discover_option);
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
 
     let state = ApiState {
