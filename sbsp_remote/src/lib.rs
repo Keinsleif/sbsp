@@ -12,7 +12,7 @@ use crate::command::{
     add_empty_cue, client::{connect_to_server, disconnect_from_server, get_server_address, request_file_list, start_server_discovery, stop_server_discovery}, controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
         stop, stop_all, toggle_repeat,
-    }, model_manager::{
+    }, get_side, model_manager::{
         add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
         update_settings,
     }, process_asset
@@ -192,6 +192,7 @@ pub fn run() {
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
+            get_side,
             go,
             pause,
             resume,

@@ -126,6 +126,8 @@ invoke<ShowModel>('get_show_model')
   })
   .catch((e) => console.error(e.toString()));
 
+invoke<string>('get_side').then((side) => (uiState.side = side));
+
 const isRenumberDialogOpen = ref(false);
 
 const wakeLock = ref<WakeLockSentinel | null>(null);

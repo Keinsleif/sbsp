@@ -4,6 +4,7 @@ import { useShowModel } from './showmodel';
 
 export const useUiState = defineStore('uistate', {
   state: () => ({
+    side: null as string | null,
     selected: null as string | null,
     selectedRows: [] as string[],
     sideBarTab: 'activeCues' as 'activeCues' | 'levels',

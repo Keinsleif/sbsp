@@ -12,6 +12,13 @@
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} cues </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
+      <v-btn
+        v-if="uiState.side == 'main'"
+        :icon="mdiServer"
+        size="small"
+        variant="text"
+        @click="openServerPanel"
+      ></v-btn>
       <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleEditor"></v-btn>
       <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
       <v-btn :icon="mdiCog" size="small" variant="text" @click="openSettings"></v-btn>
@@ -20,14 +27,19 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiServer } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
+import { invoke } from '@tauri-apps/api/core';
 
 const showModel = useShowModel();
 const uiState = useUiState();
 
 const openSettings = async () => {
   uiState.isSettingsDialogOpen = true;
+};
+
+const openServerPanel = () => {
+  invoke('open_server_panel').catch((e) => console.error(e));
 };
 </script>

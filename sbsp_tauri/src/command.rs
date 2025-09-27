@@ -10,6 +10,11 @@ pub mod model_manager;
 pub mod server;
 
 #[tauri::command]
+pub fn get_side() -> String {
+    "main".into()
+}
+
+#[tauri::command]
 pub async fn process_asset(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,

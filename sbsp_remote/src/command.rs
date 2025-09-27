@@ -11,6 +11,11 @@ pub mod model_manager;
 pub mod client;
 
 #[tauri::command]
+pub fn get_side() -> String {
+    "remote".into()
+}
+
+#[tauri::command]
 pub async fn process_asset(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
@@ -50,7 +55,9 @@ pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_,
                 pick_file_window.once("file-select-result", |event| {
                     let _ = result_tx.send(serde_json::from_str::<Option<Vec<PathBuf>>>(event.payload()));
                 });
-                if let Some(file_paths) = result_rx.await.unwrap().map_err(|e| e.to_string())? {
+                let result = result_rx.await.unwrap().map_err(|e| e.to_string())?;
+                let _ = pick_file_window.close();
+                if let Some(file_paths) = result {
                     if file_paths.len() == 1 {
                         let mut new_cue = templates.audio.clone();
                         new_cue.id = Uuid::new_v4();

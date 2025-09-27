@@ -67,9 +67,9 @@ watch(text, () => {
 
 const save = () => {
   if (text.value != innerText.value) {
+    text.value = innerText.value;
     emit('update');
   }
-  text.value = innerText.value;
 };
 
 const reset = () => {

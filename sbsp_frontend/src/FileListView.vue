@@ -22,7 +22,7 @@
     </v-treeview>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
       <v-btn class="ml-auto" text="Cancel" variant="outlined" @click="returnResult(null)"></v-btn>
-      <v-btn text="Open" color="primary"></v-btn>
+      <v-btn :disabled="selected.length == 0" text="Open" color="primary" @click="returnResult(selected)"></v-btn>
     </v-footer>
   </div>
 </template>

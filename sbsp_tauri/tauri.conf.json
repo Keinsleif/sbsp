@@ -22,6 +22,15 @@
         "width": 1280,
         "height": 720,
         "dragDropEnabled": false
+      },
+      {
+        "label": "server",
+        "title": "Server Control Panel",
+        "url": "/server",
+        "width": 640,
+        "height": 360,
+        "dragDropEnabled": false,
+        "create": false
       }
     ],
     "security": {
