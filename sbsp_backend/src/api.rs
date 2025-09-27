@@ -7,13 +7,17 @@ use crate::{
 pub mod server;
 #[cfg(feature = "apiclient")]
 pub mod client;
+mod file_list;
+
+pub use file_list::FileList;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum WsFeedback {
     Event(Box<UiEvent>),
     State(ShowState),
-    AssetProcessorResult(ProcessResult)
+    AssetProcessorResult(ProcessResult),
+    AssetList(Vec<FileList>),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,6 +26,7 @@ pub enum WsCommand {
     Controll(ControllerCommand),
     Model(Box<ModelCommand>),
     AssetProcessor(AssetProcessorCommand),
+    RequestAssetList,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -398,12 +398,14 @@ impl Executor {
                     );
                 }
 
-                let mut filepath = self
+                let mut filepath = if let Some(model_path) = self
                     .model_handle
                     .get_current_file_path()
-                    .await
-                    .unwrap_or(PathBuf::new());
-                filepath.pop();
+                    .await {
+                        model_path.join("audio")
+                    } else {
+                        PathBuf::new()
+                    };
                 filepath.push(target);
 
                 let audio_command = AudioCommand::Play {

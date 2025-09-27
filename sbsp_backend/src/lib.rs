@@ -43,6 +43,15 @@ pub mod asset_processor {
 pub mod controller {
     pub mod state;
 }
+#[cfg(feature = "type_export")]
+pub mod api {
+    pub mod client {
+        mod service_entry;
+        pub use service_entry::ServiceEntry;
+    }
+    mod file_list;
+    pub use file_list::FileList;
+}
 
 #[cfg(feature = "backend")]
 #[derive(Clone)]

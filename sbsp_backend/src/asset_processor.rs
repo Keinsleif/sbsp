@@ -131,13 +131,16 @@ impl AssetProcessor {
         id: Uuid,
         path: PathBuf,
     ) {
-        let mut filepath = self
+        let mut filepath = if let Some(model_path) = self
             .model_handle
             .get_current_file_path()
-            .await
-            .unwrap_or(PathBuf::new());
-        filepath.pop();
+            .await {
+                model_path.join("audio")
+            } else {
+                PathBuf::new()
+            };
         filepath.push(&path);
+
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&filepath) {
             self.result_tx.send(ProcessResult { id, path: filepath, data: Ok(entry.data.clone()) }).unwrap();
@@ -180,17 +183,18 @@ impl AssetProcessor {
 
     async fn handle_process_all(&self) {
         let model = self.model_handle.read().await;
-        let parent = self
+        let parent = if let Some(model_path) = self
             .model_handle
             .get_current_file_path()
-            .await
-            .unwrap_or(PathBuf::new());
+            .await {
+                model_path.join("audio")
+            } else {
+                PathBuf::new()
+            };
 
         let paths = model.cues.iter().filter_map(|cue| {
             if let CueParam::Audio(param) = &cue.params {
-                let mut filepath = parent.clone();
-                filepath.pop();
-                filepath.push(param.target.clone());
+                let filepath = parent.join(param.target.clone());
 
                 Some(filepath)
             } else {

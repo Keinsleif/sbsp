@@ -31,4 +31,8 @@ impl AssetProcessorHandle {
             }
         }
     }
+
+    pub async fn request_process_all(&self) {
+        self.command_tx.send(AssetProcessorCommand::ProcessAll).await.unwrap();
+    }
 }
