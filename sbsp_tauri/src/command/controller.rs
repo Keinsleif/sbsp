@@ -1,8 +1,11 @@
-use sbsp_backend::{BackendHandle, action::{CueAction, AudioAction}};
+use sbsp_backend::{action::{CueAction, AudioAction}};
 use uuid::Uuid;
 
+use crate::AppState;
+
 #[tauri::command]
-pub async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+pub async fn go(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .go()
@@ -11,7 +14,8 @@ pub async fn go(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn load(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
+pub async fn load(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .load(cue_id)
@@ -20,7 +24,8 @@ pub async fn load(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
-pub async fn pause(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
+pub async fn pause(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .pause(cue_id)
@@ -29,7 +34,8 @@ pub async fn pause(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Res
 }
 
 #[tauri::command]
-pub async fn resume(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
+pub async fn resume(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .resume(cue_id)
@@ -38,7 +44,8 @@ pub async fn resume(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Re
 }
 
 #[tauri::command]
-pub async fn stop(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Result<(), String> {
+pub async fn stop(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .stop(cue_id)
@@ -47,7 +54,8 @@ pub async fn stop(handle: tauri::State<'_, BackendHandle>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
-pub async fn pause_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+pub async fn pause_all(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .pause_all()
@@ -56,7 +64,8 @@ pub async fn pause_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), St
 }
 
 #[tauri::command]
-pub async fn resume_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+pub async fn resume_all(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .resume_all()
@@ -65,7 +74,8 @@ pub async fn resume_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), S
 }
 
 #[tauri::command]
-pub async fn stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), String> {
+pub async fn stop_all(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .stop_all()
@@ -75,10 +85,11 @@ pub async fn stop_all(handle: tauri::State<'_, BackendHandle>) -> Result<(), Str
 
 #[tauri::command]
 pub async fn seek_to(
-    handle: tauri::State<'_, BackendHandle>,
+    state: tauri::State<'_, AppState>,
     cue_id: Uuid,
     position: f64,
 ) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .seek_to(cue_id, position)
@@ -88,10 +99,11 @@ pub async fn seek_to(
 
 #[tauri::command]
 pub async fn seek_by(
-    handle: tauri::State<'_, BackendHandle>,
+    state: tauri::State<'_, AppState>,
     cue_id: Uuid,
     amount: f64,
 ) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .seek_by(cue_id, amount)
@@ -101,9 +113,10 @@ pub async fn seek_by(
 
 #[tauri::command]
 pub async fn set_playback_cursor(
-    handle: tauri::State<'_, BackendHandle>,
+    state: tauri::State<'_, AppState>,
     cue_id: Option<Uuid>,
 ) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .set_playback_cursor(cue_id)
@@ -113,9 +126,10 @@ pub async fn set_playback_cursor(
 
 #[tauri::command]
 pub async fn toggle_repeat(
-    handle: tauri::State<'_, BackendHandle>,
+    state: tauri::State<'_, AppState>,
     cue_id: Uuid,
 ) -> Result<(), String> {
+    let handle = state.get_handle();
     handle
         .controller_handle
         .perform_action(cue_id, CueAction::Audio(AudioAction::ToggleRepeat))

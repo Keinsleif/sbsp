@@ -27,6 +27,7 @@ sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
 log = "0.4.27"
+anyhow = "1.0.100"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-window-state = "2"

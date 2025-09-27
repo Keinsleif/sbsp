@@ -1,24 +1,95 @@
 mod command;
 
-use sbsp_backend::{controller::state::ShowState, event::UiEvent, start_backend};
+use sbsp_backend::{api::server::start_apiserver, controller::state::ShowState, event::UiEvent, start_backend, BackendHandle};
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{broadcast, watch, Mutex, RwLock};
 
 use crate::command::{
-    controller::{
+    add_empty_cue, controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
         stop, stop_all, toggle_repeat,
-    },
-    file_open, file_save, file_save_as,
-    model_manager::{
+    }, file_open, file_save, file_save_as, model_manager::{
         add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
         update_settings,
-    },
-    process_asset,
+    }, process_asset, server::{get_server_port, is_server_running, set_server_port, start_server, stop_server}
 };
+
+pub struct AppState {
+    backend_handle: BackendHandle,
+    state_rx: watch::Receiver<ShowState>,
+    event_tx: broadcast::Sender<UiEvent>,
+    server_name: RwLock<Option<String>>,
+    port: RwLock<u16>,
+    shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
+}
+
+impl AppState {
+    pub fn new(backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>) -> Self {
+        Self {
+            backend_handle,
+            state_rx,
+            event_tx,
+            server_name: RwLock::new(None),
+            port: RwLock::new(5800),
+            shutdown_tx: Mutex::new(None),
+        }
+    }
+
+    pub fn get_handle(&self) -> BackendHandle {
+        self.backend_handle.clone()
+    }
+
+    pub async fn is_running(&self) -> bool {
+        self.shutdown_tx.lock().await.is_some()
+    }
+
+    pub async fn is_discoverable(&self) -> bool {
+        self.server_name.read().await.is_some()
+    }
+
+    pub async fn set_server_name(&self, new_name: Option<String>) {
+        let mut name_lock = self.server_name.write().await;
+        *name_lock = new_name;
+        drop(name_lock)
+    }
+
+    pub async fn get_server_name(&self) -> Option<String> {
+        self.server_name.read().await.clone()
+    }
+
+    pub async fn set_port(&self, port: u16) {
+        let mut port_write_lock = self.port.write().await;
+        *port_write_lock = port;
+        drop(port_write_lock);
+    }
+
+    pub async fn get_port(&self) -> u16 {
+        *self.port.read().await
+    }
+
+    pub async fn start(&self) -> anyhow::Result<()> {
+        let port_read_lock = self.port.read().await;
+        let name_lock = self.server_name.read().await;
+        let shutdown_tx = start_apiserver(*port_read_lock, self.backend_handle.clone(), self.state_rx.clone(), self.event_tx.clone(), name_lock.clone()).await?;
+        drop(port_read_lock);
+        let mut shutdown_tx_lock = self.shutdown_tx.lock().await;
+        *shutdown_tx_lock = Some(shutdown_tx);
+        drop(shutdown_tx_lock);
+        Ok(())
+    }
+
+    pub async fn stop(&self) {
+        let mut shutdown_tx_lock = self.shutdown_tx.lock().await;
+        if let Some(shutdown_tx) = &(*shutdown_tx_lock) {
+            let _ = shutdown_tx.send(());
+        }
+        *shutdown_tx_lock = None;
+        drop(shutdown_tx_lock);
+    }
+}
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -110,11 +181,11 @@ pub fn run() {
 
             tauri::async_runtime::spawn(forward_backend_state_and_event(
                 app_handle.clone(),
-                state_rx,
+                state_rx.clone(),
                 event_tx.subscribe(),
             ));
 
-            app.manage(backend_handle);
+            app.manage(AppState::new(backend_handle, state_rx, event_tx));
 
             Ok(())
         })
@@ -158,10 +229,16 @@ pub fn run() {
             move_cue,
             renumber_cues,
             update_settings,
+            is_server_running,
+            get_server_port,
+            set_server_port,
+            start_server,
+            stop_server,
             process_asset,
             file_open,
             file_save,
             file_save_as,
+            add_empty_cue,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
