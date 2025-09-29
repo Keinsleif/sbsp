@@ -337,7 +337,11 @@ impl ShowModelManager {
     }
 
     pub async fn save_to_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
-        let mut state_guard = self.write().await;
+        let mut state_guard = self.model.write().await;
+
+        if !path.is_dir() {
+            tokio::fs::create_dir_all(&path).await?;
+        }
 
         let model_path_option = self.show_model_path.read().await.clone();
         for cue in &mut state_guard.cues {
