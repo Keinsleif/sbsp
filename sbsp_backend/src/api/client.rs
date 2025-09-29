@@ -66,6 +66,14 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
                         if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
                             match ws_message {
                                 WsFeedback::Event(ui_event) => {
+                                    if let UiEvent::ShowModelLoaded{..} = *ui_event
+                                    && let Ok(response) = reqwest::get(format!("http://{}/api/show/full_state", address)).await {
+                                        let full_state = response.json::<FullShowState>()
+                                        .await.unwrap();
+                                        let mut show_model = model_clone.write().await;
+                                        *show_model = full_state.show_model;
+                                        drop(show_model);
+                                    }
                                     if event_tx_clone.send(*ui_event).is_err() {
                                         log::error!("Failed to send UiEvent to channel.");
                                         break;
