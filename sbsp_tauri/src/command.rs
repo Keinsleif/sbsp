@@ -24,6 +24,7 @@ pub async fn process_asset(
         .model_handle
         .read()
         .await
+        .clone()
         .cues
         .iter()
         .find(|cue| cue.id == cue_id)
@@ -107,8 +108,10 @@ pub fn file_save_as(handle: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>, cue_type: String, at_index: usize) -> Result<(), String> {
-    let templates = state.get_handle().model_handle.read().await.settings.template.clone();
     let handle = state.get_handle();
+    let model_lock = handle.model_handle.read().await;
+    let templates = model_lock.settings.template.clone();
+    drop(model_lock);
     match cue_type.as_str() {
         "audio" => {
             let file_paths_option = app_handle.dialog().file().add_filter("Audio", &[

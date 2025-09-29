@@ -17,7 +17,7 @@ use crate::{
     model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
     tag = "command",
     content = "params",
@@ -92,6 +92,7 @@ impl ShowModelManager {
     }
 
     async fn process_command(&self, command: ModelCommand) -> anyhow::Result<()> {
+        log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
                 let mut model = self.model.write().await;
@@ -306,6 +307,7 @@ impl ShowModelManager {
                 } else {
                     let mut show_model_path = self.show_model_path.write().await;
                     *show_model_path = Some(path.clone());
+                    drop(show_model_path);
                     UiEvent::ShowModelLoaded { path }
                 };
                 self.event_tx.send(event)?;
@@ -318,6 +320,7 @@ impl ShowModelManager {
         self.model.read().await
     }
 
+    #[cfg(test)]
     pub async fn write(&self) -> tokio::sync::RwLockWriteGuard<'_, ShowModel> {
         self.model.write().await
     }
@@ -328,7 +331,7 @@ impl ShowModelManager {
         let new_model: ShowModel =
             tokio::task::spawn_blocking(move || serde_json::from_str(&content)).await??;
 
-        let mut write_lock = self.write().await;
+        let mut write_lock = self.model.write().await;
         *write_lock = new_model;
         drop(write_lock);
 
@@ -373,6 +376,7 @@ impl ShowModelManager {
     }
 
     async fn import_asset_file(&self, asset_path: &PathBuf, model_path: &Path) -> anyhow::Result<PathBuf> {
+        log::info!("Import asset file started. file={:?}", &asset_path);
         let audio_dir = model_path.join("audio");
         if !audio_dir.exists() {
             tokio::fs::create_dir_all(&audio_dir).await?;

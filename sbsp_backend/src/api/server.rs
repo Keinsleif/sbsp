@@ -156,9 +156,6 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                             break;
                                         }
                                     },
-                                    AssetProcessorCommand::ProcessAll => {
-                                        state.backend_handle.asset_processor_handle.request_process_all().await;
-                                    },
                                 }
                             },
                             WsCommand::RequestAssetList => {

@@ -20,7 +20,7 @@ use symphonia::core::{
 use tokio::sync::{RwLock, broadcast, mpsc};
 use ebur128::EbuR128;
 
-use crate::{event::UiEvent, manager::ShowModelHandle, model::cue::CueParam};
+use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
@@ -31,7 +31,6 @@ pub enum AssetProcessorCommand {
         id: Uuid,
         path: PathBuf,
     },
-    ProcessAll,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -64,7 +63,6 @@ pub struct AssetProcessor {
     model_handle: ShowModelHandle,
 
     command_rx: mpsc::Receiver<AssetProcessorCommand>,
-    event_rx: broadcast::Receiver<UiEvent>,
     result_tx: broadcast::Sender<ProcessResult>,
     result_rx: broadcast::Receiver<ProcessResult>,
 
@@ -75,7 +73,6 @@ pub struct AssetProcessor {
 impl AssetProcessor {
     pub fn new(
         model_handle: ShowModelHandle,
-        event_rx: broadcast::Receiver<UiEvent>,
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
@@ -84,7 +81,6 @@ impl AssetProcessor {
             Self {
                 model_handle,
                 command_rx,
-                event_rx,
                 result_tx: result_tx.clone(),
                 result_rx,
                 cache: cache.clone(),
@@ -105,9 +101,6 @@ impl AssetProcessor {
                         AssetProcessorCommand::RequestFileAssetData{id, path} => {
                             self.handle_process_file(id, path).await;
                         }
-                        AssetProcessorCommand::ProcessAll => {
-                            self.handle_process_all().await;
-                        }
                     }
                 },
                 Ok(result) = self.result_rx.recv() => {
@@ -116,11 +109,6 @@ impl AssetProcessor {
                         cache.entries.insert(result.path.clone(), CacheEntry { last_modified: result.path.metadata().unwrap().modified().unwrap(), data: data.clone() });
                     }
                     self.processing.write().await.retain(|value| *value != result.path);
-                },
-                Ok(event) = self.event_rx.recv() => {
-                    if let UiEvent::ShowModelLoaded{..} = event {
-                        self.handle_process_all().await;
-                    }
                 },
             }
         }
@@ -178,52 +166,6 @@ impl AssetProcessor {
                         .unwrap();
                 });
             }
-        }
-    }
-
-    async fn handle_process_all(&self) {
-        let model = self.model_handle.read().await;
-        let parent = if let Some(model_path) = self
-            .model_handle
-            .get_current_file_path()
-            .await {
-                model_path.join("audio")
-            } else {
-                PathBuf::new()
-            };
-
-        let paths = model.cues.iter().filter_map(|cue| {
-            if let CueParam::Audio(param) = &cue.params {
-                let filepath = parent.join(param.target.clone());
-
-                Some(filepath)
-            } else {
-                None
-            }
-        });
-        let mut processing = self.processing.write().await;
-        for path in paths {
-            if self.cache.read().await.entries.contains_key(&path.clone())
-                || processing.contains(&path)
-            {
-                continue;
-            }
-            processing.push(path.clone());
-
-            let path_clone = path.clone();
-            let process_tx = self.result_tx.clone();
-            tokio::spawn(async move {
-                let asset_data = Self::process_asset(path_clone.clone())
-                    .await
-                    .map_err(|e| e.to_string());
-                process_tx
-                    .send(ProcessResult {
-                        id: Uuid::nil(),
-                        path: path_clone,
-                        data: asset_data,
-                    })
-                    .unwrap();
-            });
         }
     }
 
