@@ -65,7 +65,7 @@ listen<ShowState>('backend-state-update', (event) => {
 listen<UiEvent>('backend-event', (event) => {
   switch (event.payload.type) {
     case 'playbackCursorMoved': {
-      if (showModel.settings.general.lockCursorToSelection) {
+      if (showModel.getLockCursorToSelection()) {
         const cueId = event.payload.param.cueId;
         if (cueId != null) {
           if (uiState.selected != cueId) {
@@ -126,7 +126,7 @@ invoke<ShowModel>('get_show_model')
   })
   .catch((e) => console.error(e.toString()));
 
-invoke<string>('get_side').then((side) => (uiState.side = side));
+invoke<'remote' | 'main'>('get_side').then((side) => (uiState.side = side));
 
 const isRenumberDialogOpen = ref(false);
 

@@ -2,6 +2,7 @@
 import type { AudioSettings } from "./AudioSettings";
 import type { GeneralSettings } from "./GeneralSettings";
 import type { HotkeySettings } from "./HotkeySettings";
+import type { RemoteSettings } from "./RemoteSettings";
 import type { TemplateSettings } from "./TemplateSettings";
 
-export type ShowSettings = { general: GeneralSettings, hotkey: HotkeySettings, template: TemplateSettings, audio: AudioSettings, };
+export type ShowSettings = { general: GeneralSettings, hotkey: HotkeySettings, template: TemplateSettings, audio: AudioSettings, remote: RemoteSettings, };

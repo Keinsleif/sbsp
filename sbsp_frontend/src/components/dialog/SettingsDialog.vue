@@ -12,6 +12,7 @@
           <v-tab text="General" value="general"></v-tab>
           <v-tab text="Hotkey" value="hotkey"></v-tab>
           <v-tab text="Audio" value="audio"></v-tab>
+          <v-tab text="Remote" value="remote"></v-tab>
         </v-tabs>
         <v-tabs-window v-model="tab" class="flex-grow-1">
           <v-tabs-window-item
@@ -26,7 +27,7 @@
             <v-divider></v-divider>
             <v-checkbox
               v-model="editingSettings.general.lockCursorToSelection"
-              label="Lock Cursor to Selection"
+              label="Lock Cursor to Selection (on Main side)"
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
@@ -62,6 +63,17 @@
             reverse-transition="toggle-slide-y-reverse-transition"
           >
             <v-checkbox v-model="editingSettings.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
+          </v-tabs-window-item>
+          <v-tabs-window-item
+            value="remote"
+            class="pa-3"
+            transition="toggle-slide-y-transition"
+            reverse-transition="toggle-slide-y-reverse-transition"
+          >
+            <v-checkbox
+              v-model="editingSettings.remote.lockCursorToSelection"
+              label="Lock Cursor to Selection (on Remote side)"
+            ></v-checkbox>
           </v-tabs-window-item>
         </v-tabs-window>
       </v-sheet>

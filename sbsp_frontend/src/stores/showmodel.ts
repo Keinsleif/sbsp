@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
 import { Cue } from '../types/Cue';
+import { useUiState } from './uistate';
 
 export const useShowModel = defineStore('showmodel', {
   state: () =>
@@ -65,6 +66,9 @@ export const useShowModel = defineStore('showmodel', {
         audio: {
           monoOutput: false,
         },
+        remote: {
+          lockCursorToSelection: false,
+        },
       },
     }) as ShowModel,
   actions: {
@@ -101,6 +105,16 @@ export const useShowModel = defineStore('showmodel', {
           1,
         )[0],
       );
+    },
+    getLockCursorToSelection() {
+      const side = useUiState().side;
+      if (side == 'main') {
+        return this.settings.general.lockCursorToSelection;
+      } else if (side == 'remote') {
+        return this.settings.remote.lockCursorToSelection;
+      } else {
+        return false;
+      }
     },
   },
 });

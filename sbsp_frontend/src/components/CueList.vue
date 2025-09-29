@@ -365,7 +365,7 @@ const click = (event: MouseEvent, index: number) => {
     uiState.selectedRows = [clickedId];
     uiState.selected = clickedId;
   }
-  if (showModel.settings.general.lockCursorToSelection) {
+  if (showModel.getLockCursorToSelection()) {
     invoke('set_playback_cursor', {
       cueId: uiState.selected !== null ? uiState.selected : null,
     }).catch((e) => {
@@ -466,7 +466,7 @@ const isActive = (cue_id: string): boolean => {
 };
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!showModel.settings.general.lockCursorToSelection) {
+  if (!showModel.getLockCursorToSelection()) {
     invoke('set_playback_cursor', { cueId: cueId }).catch((e) => console.error(e));
   }
 };

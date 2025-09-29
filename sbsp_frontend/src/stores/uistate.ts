@@ -4,7 +4,7 @@ import { useShowModel } from './showmodel';
 
 export const useUiState = defineStore('uistate', {
   state: () => ({
-    side: null as string | null,
+    side: null as 'remote' | 'main' | null,
     selected: null as string | null,
     selectedRows: [] as string[],
     sideBarTab: 'activeCues' as 'activeCues' | 'levels',
@@ -19,7 +19,7 @@ export const useUiState = defineStore('uistate', {
       const shwoModel = useShowModel();
       this.selected = null;
       this.selectedRows = [];
-      if (shwoModel.settings.general.lockCursorToSelection) {
+      if (shwoModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: null,
         }).catch((e) => {
@@ -31,7 +31,7 @@ export const useUiState = defineStore('uistate', {
       const showModel = useShowModel();
       this.selected = id;
       this.selectedRows = [id];
-      if (showModel.settings.general.lockCursorToSelection) {
+      if (showModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {
@@ -45,7 +45,7 @@ export const useUiState = defineStore('uistate', {
       if (!this.selectedRows.includes(id)) {
         this.selectedRows.push(id);
       }
-      if (showModel.settings.general.lockCursorToSelection) {
+      if (showModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {
