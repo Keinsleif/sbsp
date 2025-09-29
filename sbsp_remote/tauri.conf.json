@@ -5,10 +5,10 @@
   "identifier": "com.keinsleif.sbsp",
   "build": {
     "beforeDevCommand": {
-      "script": "pnpm dev",
+      "script": "pnpm dev --port 1422",
       "cwd": "../sbsp_frontend"
     },
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:1422",
     "beforeBuildCommand": {
       "script": "pnpm build",
       "cwd": "../sbsp_frontend"
