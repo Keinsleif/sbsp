@@ -4,7 +4,7 @@ mod event;
 pub use command::ExecutorCommand;
 pub use event::ExecutorEvent;
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
@@ -333,13 +333,11 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                let mut filepath = self
-                    .model_handle
-                    .get_current_file_path()
-                    .await
-                    .unwrap_or(PathBuf::new());
-                filepath.pop();
-                filepath.push(target);
+                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await {
+                    model_path.join("audio").join(target)
+                } else {
+                    target.to_path_buf()
+                };
 
                 self.audio_tx
                     .send(AudioCommand::Load {
@@ -398,15 +396,11 @@ impl Executor {
                     );
                 }
 
-                let mut filepath = if let Some(model_path) = self
-                    .model_handle
-                    .get_current_file_path()
-                    .await {
-                        model_path.join("audio")
-                    } else {
-                        PathBuf::new()
-                    };
-                filepath.push(target);
+                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await {
+                    model_path.join("audio").join(target)
+                } else {
+                    target.to_path_buf()
+                };
 
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
