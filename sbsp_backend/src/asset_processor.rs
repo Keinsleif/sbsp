@@ -153,9 +153,8 @@ impl AssetProcessor {
 
                 let path_clone = filepath.clone();
                 let result_tx = self.result_tx.clone();
-                tokio::spawn(async move {
+                tokio::task::spawn_blocking(move || {
                     let asset_data = Self::process_asset(path_clone.clone())
-                        .await
                         .map_err(|e| e.to_string());
                     result_tx
                         .send(ProcessResult {
@@ -169,7 +168,7 @@ impl AssetProcessor {
         }
     }
 
-    async fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
+    fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
         let src: std::fs::File = std::fs::File::open(&path)?;
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
