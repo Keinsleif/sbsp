@@ -331,6 +331,26 @@ listen<string>('menu_clicked', (event) => {
     case 'id_renumber':
       isRenumberDialogOpen.value = true;
       break;
+    case 'id_audio_cue': {
+      let insertIndex;
+      if (uiState.selected) {
+        insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        insertIndex = showModel.cues.length;
+      }
+      invoke('add_empty_cue', { cueType: 'audio', atIndex: insertIndex }).catch((e) => console.error(e));
+      break;
+    }
+    case 'id_wait_cue': {
+      let insertIndex;
+      if (uiState.selected) {
+        insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        insertIndex = showModel.cues.length;
+      }
+      invoke('add_empty_cue', { cueType: 'wait', atIndex: insertIndex }).catch((e) => console.error(e));
+      break;
+    }
   }
 });
 useHotkey(

@@ -166,6 +166,10 @@ pub fn run() {
                 )?)
                 .select_all()
                 .build()?;
+            let cue_menu = SubmenuBuilder::new(app, "Cue")
+                .text("id_audio_cue","Audio Cue")
+                .text("id_wait_cue", "Wait Cue")
+                .build()?;
             let tools_menu = SubmenuBuilder::new(app, "Tools")
                 .item(&MenuItem::with_id(
                     app,
@@ -176,7 +180,7 @@ pub fn run() {
                 )?)
                 .build()?;
             let menu = MenuBuilder::new(app)
-                .items(&[&file_menu, &edit_menu, &tools_menu])
+                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu])
                 .build()?;
             app.set_menu(menu)?;
 
@@ -206,7 +210,7 @@ pub fn run() {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
             }
-            "id_delete" | "id_renumber" => {
+            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" => {
                 let _ = handle.emit("menu_clicked", event.id());
             }
             _ => {}
