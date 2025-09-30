@@ -341,12 +341,12 @@ impl ShowModelManager {
 
     pub async fn save_to_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
         let mut state_guard = self.model.write().await;
+        let model_path_option = self.show_model_path.read().await.clone();
 
         if !path.is_dir() {
             tokio::fs::create_dir_all(&path).await?;
         }
 
-        let model_path_option = self.show_model_path.read().await.clone();
         for cue in &mut state_guard.cues {
             if let CueParam::Audio(audio_param) = &mut cue.params {
                 if let Some(model_path) = &model_path_option && model_path != path {
