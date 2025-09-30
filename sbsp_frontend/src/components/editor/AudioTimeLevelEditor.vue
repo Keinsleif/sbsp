@@ -15,13 +15,23 @@
       <v-btn-group variant="tonal" divided>
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn v-bind="activatorProps" :icon="mdiSkipNext" @click="skipFirstSilence"></v-btn>
+            <v-btn
+              v-bind="activatorProps"
+              :icon="mdiSkipNext"
+              :disabled="selectedCue!.id in showState.activeCues"
+              @click="skipFirstSilence"
+            ></v-btn>
           </template>
           <span>Skip first silence</span>
         </v-tooltip>
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn v-bind="activatorProps" :icon="mdiSkipPrevious" @click="skipLastSilence"></v-btn>
+            <v-btn
+              v-bind="activatorProps"
+              :icon="mdiSkipPrevious"
+              :disabled="selectedCue!.id in showState.activeCues"
+              @click="skipLastSilence"
+            ></v-btn>
           </template>
           <span>Skip last silence</span>
         </v-tooltip>
