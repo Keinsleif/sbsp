@@ -44,6 +44,10 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'universal-apple-darwin' || '' }}
 
+      - uses: cargo-bins/cargo-binstall@main
+
+      - run: cargo binstall tauri-cli --no-confirm
+
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
