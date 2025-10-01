@@ -67,6 +67,7 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+          tauriScript: cargo tauri
 
       - run: mkdir upload && cp latest.json upload/
 
