@@ -3,5 +3,8 @@
 
 #[tokio::main]
 async fn main() {
+    #[cfg(feature = "console-subscriber")]
+    console_subscriber::init();
+
     sbsp_tauri_lib::run()
 }
