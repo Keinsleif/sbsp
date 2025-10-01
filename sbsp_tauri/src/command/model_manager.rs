@@ -1,6 +1,4 @@
-use sbsp_backend::{
-    model::{ShowModel, cue::Cue, settings::ShowSettings},
-};
+use sbsp_backend::model::{ShowModel, cue::Cue, settings::ShowSettings};
 use uuid::Uuid;
 
 use crate::AppState;
@@ -50,10 +48,7 @@ pub async fn add_cues(
 }
 
 #[tauri::command]
-pub async fn remove_cue(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .model_handle

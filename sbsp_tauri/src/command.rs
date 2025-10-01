@@ -43,7 +43,11 @@ pub async fn process_asset(
 
 #[tauri::command]
 pub fn file_open(app_handle: tauri::AppHandle) {
-    let model_handle = app_handle.state::<AppState>().get_handle().model_handle.clone();
+    let model_handle = app_handle
+        .state::<AppState>()
+        .get_handle()
+        .model_handle
+        .clone();
     app_handle.dialog().file().pick_folder(|file_path_option| {
         if let Some(file_path) = file_path_option {
             tauri::async_runtime::spawn(async move {
@@ -107,30 +111,29 @@ pub fn file_save_as(handle: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>, cue_type: String, at_index: usize) -> Result<(), String> {
+pub async fn add_empty_cue(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    cue_type: String,
+    at_index: usize,
+) -> Result<(), String> {
     let handle = state.get_handle();
     let model_lock = handle.model_handle.read().await;
     let templates = model_lock.settings.template.clone();
     drop(model_lock);
     match cue_type.as_str() {
         "audio" => {
-            let file_paths_option = app_handle.dialog().file().add_filter("Audio", &[
-                "aiff",
-                "aif",
-                "caf",
-                "mp4",
-                "m4a",
-                "mkv",
-                "mka",
-                "webm",
-                "ogg",
-                "oga",
-                "wav",
-                "aac",
-                "alac",
-                "flac",
-                "mp3",
-            ]).blocking_pick_files();
+            let file_paths_option = app_handle
+                .dialog()
+                .file()
+                .add_filter(
+                    "Audio",
+                    &[
+                        "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga",
+                        "wav", "aac", "alac", "flac", "mp3",
+                    ],
+                )
+                .blocking_pick_files();
             if let Some(file_paths) = file_paths_option {
                 if file_paths.len() == 1 {
                     let mut new_cue = templates.audio.clone();
@@ -172,6 +175,6 @@ pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_,
                 .await
                 .map_err(|e| e.to_string())
         }
-        _ => Err("Invalid cue type.".into())
+        _ => Err("Invalid cue type.".into()),
     }
 }

@@ -1,21 +1,32 @@
 mod command;
 
 use log::LevelFilter;
-use sbsp_backend::{api::server::start_apiserver, controller::state::ShowState, event::UiEvent, start_backend, BackendHandle};
+use sbsp_backend::{
+    BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
+    start_backend,
+};
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
-use tokio::sync::{broadcast, watch, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, broadcast, watch};
 
 use crate::command::{
-    add_empty_cue, controller::{
+    add_empty_cue,
+    controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
         stop, stop_all, toggle_repeat,
-    }, file_open, file_save, file_save_as, get_side, model_manager::{
+    },
+    file_open, file_save, file_save_as, get_side,
+    model_manager::{
         add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
         update_settings,
-    }, process_asset, server::{get_discovery_option, get_server_port, is_server_running, open_server_panel, set_discovery_option, set_server_port, start_server, stop_server}
+    },
+    process_asset,
+    server::{
+        get_discovery_option, get_server_port, is_server_running, open_server_panel,
+        set_discovery_option, set_server_port, start_server, stop_server,
+    },
 };
 
 pub struct AppState {
@@ -28,7 +39,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>) -> Self {
+    pub fn new(
+        backend_handle: BackendHandle,
+        state_rx: watch::Receiver<ShowState>,
+        event_tx: broadcast::Sender<UiEvent>,
+    ) -> Self {
         Self {
             backend_handle,
             state_rx,
@@ -74,7 +89,14 @@ impl AppState {
     pub async fn start(&self, app_handle: AppHandle) -> anyhow::Result<()> {
         let port_read_lock = self.port.read().await;
         let name_lock = self.discovery_option.read().await;
-        let shutdown_tx = start_apiserver(*port_read_lock, self.backend_handle.clone(), self.state_rx.clone(), self.event_tx.clone(), name_lock.clone()).await?;
+        let shutdown_tx = start_apiserver(
+            *port_read_lock,
+            self.backend_handle.clone(),
+            self.state_rx.clone(),
+            self.event_tx.clone(),
+            name_lock.clone(),
+        )
+        .await?;
         drop(port_read_lock);
         let mut shutdown_tx_lock = self.shutdown_tx.lock().await;
         *shutdown_tx_lock = Some(shutdown_tx);
@@ -116,7 +138,12 @@ async fn forward_backend_state_and_event(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().level(LevelFilter::Debug).build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(LevelFilter::Debug)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
@@ -167,7 +194,7 @@ pub fn run() {
                 .select_all()
                 .build()?;
             let cue_menu = SubmenuBuilder::new(app, "Cue")
-                .text("id_audio_cue","Audio Cue")
+                .text("id_audio_cue", "Audio Cue")
                 .text("id_wait_cue", "Wait Cue")
                 .build()?;
             let tools_menu = SubmenuBuilder::new(app, "Tools")

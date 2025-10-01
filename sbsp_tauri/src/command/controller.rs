@@ -1,4 +1,4 @@
-use sbsp_backend::{action::{CueAction, AudioAction}};
+use sbsp_backend::action::{AudioAction, CueAction};
 use uuid::Uuid;
 
 use crate::AppState;
@@ -125,10 +125,7 @@ pub async fn set_playback_cursor(
 }
 
 #[tauri::command]
-pub async fn toggle_repeat(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn toggle_repeat(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .controller_handle
