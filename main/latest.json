@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "notes": "See the assets to download this version and install.",
+  "pub_date": "2025-10-02T04:55:07.425Z",
+  "platforms": {
+    "linux-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTFiSEYwekxVZ1NCeXhNVTNaOGZjNVV3M05Wa0N1M2YvWHp5YngrWXVnU04ydjhLaXJSSEQyWUpZSHprMnFvR0t1Q1lPZFlIcHlXVXRKbC80NTIrSFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5MzgwMTc0CWZpbGU6c2JzcF90YXVyaV8wLjEuMF9hbWQ2NC5BcHBJbWFnZQp0b3ViTE82QWcyeHp0dkNPWkMxdEV4WWNQVG5sVGhpZ1lEYWpjTThCbWo4RDlsS0FNLzZtU2JnYmt6ckM1M2hkUGdHWmZKTXN3M0prVjJ0eVRkNFFBUT09Cg==",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_0.1.0_amd64.AppImage"
+    },
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTVpL0o5SUFybjk2Y1RKTXFrcGZZUzhTeEkxRTFjbmw1UFlSejZGY2pJNVIxNlZNNHRKSWxmbjFZekdUdjN1VDBkY1A3SmJQUUYvSlNqTGZwb2dFNmdFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5MzgwMzI2CWZpbGU6c2JzcF90YXVyaV8wLjEuMF94NjRfZW4tVVMubXNpClJZc2NGNmdFbjlTbCs0L1BDMlFQUFdGQWJSYjFxK3U2VUowbS9vVmg2SXdJL1Y3YlZ5QWZMOFk1Y2VqM01rVTlpWDJzMFdGV1NSWGhpa1ljMDVXVUNBPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_0.1.0_x64_en-US.msi"
+    },
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTZTKzNYakxSS0tEQTlEdDR1aDJyYVgzV1dzQlp3YmczYUVDbHNoQjU1cFdxQmZaek93a3RMSWc0NHBTMkxyTUVGa2dTS200dW1jL0RiQjlwQkVFSVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5MzgwOTAyCWZpbGU6c2JzcF90YXVyaS5hcHAudGFyLmd6CkJhVlN3SXZya0ExNldRakxwa2RhbFFPZFZkVzdOVDlXQW9raEZxMEJGL3RDdk0yQnQ5alo5NkxGdGY0Q3A1ZHF4ZitNeHVNUlNyZC95aDkrbjlkZENnPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_universal.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTZTKzNYakxSS0tEQTlEdDR1aDJyYVgzV1dzQlp3YmczYUVDbHNoQjU1cFdxQmZaek93a3RMSWc0NHBTMkxyTUVGa2dTS200dW1jL0RiQjlwQkVFSVFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5MzgwOTAyCWZpbGU6c2JzcF90YXVyaS5hcHAudGFyLmd6CkJhVlN3SXZya0ExNldRakxwa2RhbFFPZFZkVzdOVDlXQW9raEZxMEJGL3RDdk0yQnQ5alo5NkxGdGY0Q3A1ZHF4ZitNeHVNUlNyZC95aDkrbjlkZENnPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_universal.app.tar.gz"
+    }
+  }
+}
