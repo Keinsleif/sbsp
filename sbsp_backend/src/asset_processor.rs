@@ -206,7 +206,7 @@ impl AssetProcessor {
         );
 
         let sample_rate = codec_params.sample_rate.ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
-        let channel_count = codec_params.channels.map_or(1, |channels| channels.count());
+        let mut channel_count = codec_params.channels.map(|channels| channels.count());
         let total_samples = codec_params.n_frames.unwrap_or(0);
 
         let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
@@ -215,7 +215,11 @@ impl AssetProcessor {
             samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64)) / (WAVEFORM_THRESHOLD - 1) as u64;
         }
 
-        let mut ebur128 = EbuR128::new(channel_count as u32, sample_rate, ebur128::Mode::I)?;
+        let mut ebur128 = if let Some(channels) = channel_count {
+            Some(EbuR128::new(channels as u32, sample_rate, ebur128::Mode::I)?)
+        } else {
+            None
+        };
         let mut first_audio_sample = None;
         let mut last_audio_sample = None;
         let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
@@ -234,11 +238,20 @@ impl AssetProcessor {
 
             match decoder.decode(&packet) {
                 Ok(decoded) => {
-                    let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, *decoded.spec());
+                    let decoded_spec = *decoded.spec();
+                    if channel_count.is_none() {
+                        channel_count = Some(decoded_spec.channels.count())
+                    }
+                    if ebur128.is_none() {
+                        ebur128 = Some(EbuR128::new(decoded_spec.channels.count() as u32, sample_rate, ebur128::Mode::I)?);
+                    }
+                    let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
 
                     sample_buf.copy_interleaved_ref(decoded);
 
-                    ebur128.add_frames_f32(sample_buf.samples())?;
+                    if let Some(ebur) = &mut ebur128 {
+                        ebur.add_frames_f32(sample_buf.samples())?;
+                    }
 
                     for &sample in sample_buf.samples() {
                         if sample.abs() >= AUDIO_THRESHOLD {
@@ -264,13 +277,15 @@ impl AssetProcessor {
         ignore_end_of_stream_error(result)?;
         do_verification(decoder.finalize())?;
 
+        let channels = channel_count.unwrap_or(2);
+
         if sample_index % samples_per_peaks > 0 {
             waveform.push(max_in_current_peak);
         }
 
         let start_time = codec_params
             .time_base
-            .zip(first_audio_sample.map(|samples| (samples as f64 / channel_count as f64).floor() as u64))
+            .zip(first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
@@ -278,14 +293,14 @@ impl AssetProcessor {
         );
         let end_time = codec_params
             .time_base
-            .zip(last_audio_sample.map(|samples| (samples as f64 / channel_count as f64).floor() as u64))
+            .zip(last_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
             }
         );
 
-        let integrated_lufs = ebur128.loudness_global().ok();
+        let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
 
         Ok(AssetData {
             path,
