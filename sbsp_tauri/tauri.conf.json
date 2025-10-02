@@ -45,7 +45,7 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "createUpdaterArtifacts": true,
     "linux": {
       "appimage": {
