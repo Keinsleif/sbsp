@@ -60,6 +60,8 @@ jobs:
         run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
         working-directory: ./sbsp_frontend
 
+      # SBSP
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,4 +85,33 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./upload
           destination_dir: main
+          keep_files: true
+
+      - run: rm upload/latest.json && rm latest.json
+
+      # SBSP Remote
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_REMOTE }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_REMOTE }}
+        with:
+          tagName: sbsp_remote-v__VERSION__
+          releaseName: 'SBS Player Remote v__VERSION__'
+          projectPath: ./sbsp_remote
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          tauriScript: cargo tauri
+
+      - run: cp latest.json upload/
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./upload
+          destination_dir: remote
           keep_files: true

@@ -1,21 +1,34 @@
 mod command;
 
 use log::LevelFilter;
-use sbsp_backend::{api::{client::{create_remote_backend, start_discovery, FileListHandle}}, controller::state::ShowState, event::UiEvent, BackendHandle};
+use sbsp_backend::{
+    BackendHandle,
+    api::client::{FileListHandle, create_remote_backend, start_discovery},
+    controller::state::ShowState,
+    event::UiEvent,
+};
 use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
-use tokio::sync::{broadcast, mpsc, watch, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
 
 use crate::command::{
-    add_empty_cue, client::{connect_to_server, disconnect_from_server, get_server_address, request_file_list, start_server_discovery, stop_server_discovery}, controller::{
+    add_empty_cue,
+    client::{
+        connect_to_server, disconnect_from_server, get_server_address, request_file_list,
+        start_server_discovery, stop_server_discovery,
+    },
+    controller::{
         go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
         stop, stop_all, toggle_repeat,
-    }, get_side, model_manager::{
+    },
+    get_side,
+    model_manager::{
         add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
         update_settings,
-    }, process_asset
+    },
+    process_asset,
 };
 
 async fn forward_backend_state_and_event(
@@ -56,15 +69,24 @@ pub struct AppState {
 
 impl AppState {
     pub async fn get_handle(&self) -> Option<BackendHandle> {
-        self.connection_data.read().await.as_ref().map(|connection_data| connection_data.backend_handle.clone())
+        self.connection_data
+            .read()
+            .await
+            .as_ref()
+            .map(|connection_data| connection_data.backend_handle.clone())
     }
 
     pub async fn get_address(&self) -> Option<String> {
-        self.connection_data.read().await.as_ref().map(|connection_data| connection_data.address.clone())
+        self.connection_data
+            .read()
+            .await
+            .as_ref()
+            .map(|connection_data| connection_data.address.clone())
     }
 
     pub async fn connect(&self, address: String, app_handle: AppHandle) -> anyhow::Result<()> {
-        let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) = create_remote_backend(address.clone()).await?;
+        let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) =
+            create_remote_backend(address.clone()).await?;
         let mut connection_data_lock = self.connection_data.write().await;
         *connection_data_lock = Some(ConnectionData {
             backend_handle: remote_handle,
@@ -74,13 +96,25 @@ impl AppState {
         });
         drop(connection_data_lock);
 
-        tokio::spawn(forward_backend_state_and_event(app_handle.clone(), state_rx, event_tx.subscribe(), asset_list_handle));
+        tokio::spawn(forward_backend_state_and_event(
+            app_handle.clone(),
+            state_rx,
+            event_tx.subscribe(),
+            asset_list_handle,
+        ));
 
         tokio::spawn(async move {
             shutdown_tx.closed().await;
             let state = app_handle.state::<AppState>();
             state.disconnect_cleanup().await;
-            tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[1]).unwrap().build().map_err(|e| e.to_string()).unwrap();
+            tauri::WebviewWindowBuilder::from_config(
+                &app_handle,
+                &app_handle.config().app.windows[1],
+            )
+            .unwrap()
+            .build()
+            .map_err(|e| e.to_string())
+            .unwrap();
             if let Some(main_window) = app_handle.get_webview_window("main") {
                 let _ = main_window.close();
             }
@@ -138,7 +172,12 @@ impl AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().level(LevelFilter::Debug).build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(LevelFilter::Debug)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_window_state::Builder::new()
@@ -164,7 +203,7 @@ pub fn run() {
                 .select_all()
                 .build()?;
             let cue_menu = SubmenuBuilder::new(app, "Cue")
-                .text("id_audio_cue","Audio Cue")
+                .text("id_audio_cue", "Audio Cue")
                 .text("id_wait_cue", "Wait Cue")
                 .build()?;
             let tools_menu = SubmenuBuilder::new(app, "Tools")

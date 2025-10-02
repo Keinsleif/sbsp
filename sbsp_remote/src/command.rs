@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
+use super::AppState;
 use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam};
 use tauri::Listener;
 use tokio::sync::oneshot;
 use uuid::Uuid;
-use super::AppState;
 
+pub mod client;
 pub mod controller;
 pub mod model_manager;
-pub mod client;
 
 #[tauri::command]
 pub fn get_side() -> String {
@@ -45,15 +45,28 @@ pub async fn process_asset(
 }
 
 #[tauri::command]
-pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>, cue_type: String, at_index: usize) -> Result<(), String> {
+pub async fn add_empty_cue(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    cue_type: String,
+    at_index: usize,
+) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         let templates = handle.model_handle.read().await.settings.template.clone();
         match cue_type.as_str() {
             "audio" => {
-                let pick_file_window = tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[2]).map_err(|e| e.to_string())?.build().map_err(|e| e.to_string())?;
+                let pick_file_window = tauri::WebviewWindowBuilder::from_config(
+                    &app_handle,
+                    &app_handle.config().app.windows[2],
+                )
+                .map_err(|e| e.to_string())?
+                .build()
+                .map_err(|e| e.to_string())?;
                 let (result_tx, result_rx) = oneshot::channel();
                 pick_file_window.once("file-select-result", |event| {
-                    let _ = result_tx.send(serde_json::from_str::<Option<Vec<PathBuf>>>(event.payload()));
+                    let _ = result_tx.send(serde_json::from_str::<Option<Vec<PathBuf>>>(
+                        event.payload(),
+                    ));
                 });
                 let result = result_rx.await.unwrap().map_err(|e| e.to_string())?;
                 let _ = pick_file_window.close();
@@ -98,7 +111,7 @@ pub async fn add_empty_cue(app_handle: tauri::AppHandle, state: tauri::State<'_,
                     .await
                     .map_err(|e| e.to_string())
             }
-            _ => Err("Invalid cue type.".into())
+            _ => Err("Invalid cue type.".into()),
         }
     } else {
         Err("Not connected.".into())

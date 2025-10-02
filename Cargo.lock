@@ -4293,6 +4293,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-log",
+ "tauri-plugin-updater",
  "tauri-plugin-window-state",
  "tokio",
  "ts-rs",

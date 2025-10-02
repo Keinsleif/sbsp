@@ -16,10 +16,7 @@ pub async fn go(state: tauri::State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn load(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn load(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .controller_handle
@@ -32,10 +29,7 @@ pub async fn load(
 }
 
 #[tauri::command]
-pub async fn pause(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn pause(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .controller_handle
@@ -48,10 +42,7 @@ pub async fn pause(
 }
 
 #[tauri::command]
-pub async fn resume(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn resume(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .controller_handle
@@ -64,10 +55,7 @@ pub async fn resume(
 }
 
 #[tauri::command]
-pub async fn stop(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn stop(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .controller_handle
@@ -169,10 +157,7 @@ pub async fn set_playback_cursor(
 }
 
 #[tauri::command]
-pub async fn toggle_repeat(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn toggle_repeat(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .controller_handle

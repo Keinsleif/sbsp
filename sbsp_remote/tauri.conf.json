@@ -54,7 +54,7 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "createUpdaterArtifacts": true,
     "linux": {
       "appimage": {
@@ -104,5 +104,13 @@
       "wix": null
     },
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEyMkY0OTQ0RDk0NjA3MEMKUldRTUIwYlpSRWt2RXYwbkRpT0ZDTWhKcnN2ZS9zMFFDSEFyeTkxR2w3STlEY2Rrckk5cHcyc1IK",
+      "endpoints": [
+        "https://keinsleif.github.io/sbsp/remote/latest.json"
+      ]
+    }
   }
 }

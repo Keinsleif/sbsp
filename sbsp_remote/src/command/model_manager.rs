@@ -3,9 +3,7 @@ use sbsp_backend::model::{ShowModel, cue::Cue, settings::ShowSettings};
 use uuid::Uuid;
 
 #[tauri::command]
-pub async fn get_show_model(
-    state: tauri::State<'_, AppState>,
-) -> Result<ShowModel, String> {
+pub async fn get_show_model(state: tauri::State<'_, AppState>) -> Result<ShowModel, String> {
     if let Some(handle) = state.get_handle().await {
         Ok(handle.model_handle.read().await.clone())
     } else {
@@ -14,10 +12,7 @@ pub async fn get_show_model(
 }
 
 #[tauri::command]
-pub async fn update_cue(
-    state: tauri::State<'_, AppState>,
-    cue: Cue,
-) -> Result<(), String> {
+pub async fn update_cue(state: tauri::State<'_, AppState>, cue: Cue) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .model_handle
@@ -64,10 +59,7 @@ pub async fn add_cues(
 }
 
 #[tauri::command]
-pub async fn remove_cue(
-    state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(), String> {
+pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .model_handle
