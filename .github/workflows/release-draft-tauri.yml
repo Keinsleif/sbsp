@@ -83,3 +83,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./upload
           destination_dir: main
+          keep_files: true
