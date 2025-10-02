@@ -1,14 +1,14 @@
 {
   "version": "0.1.0",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2025-10-02T05:46:48.893Z",
+  "pub_date": "2025-10-02T05:48:49.294Z",
   "platforms": {
     "linux-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUStSY3JEZ2lITUdtQXZhNmJjZjlVS1ozV0FrbVJyZDVHN1NwRUxlczk3bDA5RkZvSG5RQjJRMUFibnhZREJ0OEZwL2JVMWJySk50L0t4aVd4UkJ0aGc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5Mzg0MDAzCWZpbGU6c2JzcF90YXVyaV8wLjEuMF9hbWQ2NC5BcHBJbWFnZQpIMUdQYmt4dmhDVUh6em9ETEZRbXg4QmsrMEVBWE9OTGVaVHV1VkZhU0x1akJTa1ZKTnV1aVFQWTMrS2VaMVhNeldMYkE1WnZkNCtaenZwZVovcXNBdz09Cg==",
       "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_0.1.0_amd64.AppImage"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTJyaVVpWlNNQUR2UCtlK3lUdDlaVG1jcWJ0ZlZjVXhEM3pTcU0zRzlldUJOZDBKZTVDZ1JoU0FaVUdIQTVKK2IyN2w3U2EvM1BGeWppMCt1WjVGS1FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5MzgxNjM2CWZpbGU6c2JzcF90YXVyaV8wLjEuMF94NjRfZW4tVVMubXNpClNsVVNqREZaSGd6VTRMK05WNWI3WC9UdytCaU9DUW14WEF6SEhRbXlKd3RiS0lNMC9QTmtCS2E0VVR3S1JkejFmOUU5dnRYTlJENWtidGZuZXFhdEFBPT0K",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTl1ejFhS09ma1RnV3JpZHVFN2Q1eUpqa2JBaTdSMTgyTTk5cHlaWGxoZzBoV2VscGNEbjFkY016b1RtRUhrWG1CakpDaFVzOWQwSUh6RU1RMVJyWHcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU5Mzg0MTI1CWZpbGU6c2JzcF90YXVyaV8wLjEuMF94NjRfZW4tVVMubXNpCmRmTUQ0RjczWDVRa3dyeUhFWWdsOWphOXNuVGJFamRUV2NnUitzY2dmZjZ1RmpmMWYreXVZSVIrcE9TVklUSVlNRENsK0pXZGdpd3Z3cUpIMnBFZkFBPT0K",
       "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/sbsp_tauri_0.1.0_x64_en-US.msi"
     },
     "darwin-aarch64": {
