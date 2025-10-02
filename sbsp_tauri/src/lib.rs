@@ -213,7 +213,7 @@ pub fn run() {
 
             let (backend_handle, state_rx, event_tx) = start_backend();
 
-            tauri::async_runtime::spawn(forward_backend_state_and_event(
+            tokio::spawn(forward_backend_state_and_event(
                 app_handle.clone(),
                 state_rx.clone(),
                 event_tx.subscribe(),

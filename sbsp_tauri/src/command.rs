@@ -1,6 +1,7 @@
 use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam};
 use tauri::Manager as _;
 use tauri_plugin_dialog::DialogExt as _;
+use tokio::sync::oneshot;
 use uuid::Uuid;
 
 use crate::AppState;
@@ -50,7 +51,7 @@ pub fn file_open(app_handle: tauri::AppHandle) {
         .clone();
     app_handle.dialog().file().pick_folder(|file_path_option| {
         if let Some(file_path) = file_path_option {
-            tauri::async_runtime::spawn(async move {
+            tokio::spawn(async move {
                 model_handle
                     .load_from_file(file_path.into_path().unwrap())
                     .await
@@ -64,14 +65,14 @@ pub fn file_open(app_handle: tauri::AppHandle) {
 pub fn file_save(handle: tauri::AppHandle) {
     let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
     let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         if model_handle.get_current_file_path().await.is_some() {
             model_handle.save().await.unwrap();
         } else {
             file_dialog_builder.save_file(move |file_path_option| {
                 if let Some(file_path) = file_path_option {
                     let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
+                    tokio::spawn(async move {
                         model_handle.save_as(file_pathbuf).await.unwrap();
                     });
                 }
@@ -84,7 +85,7 @@ pub fn file_save(handle: tauri::AppHandle) {
 pub fn file_save_as(handle: tauri::AppHandle) {
     let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
     let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tauri::async_runtime::spawn(async move {
+    tokio::spawn(async move {
         if let Some(current_path) = model_handle.get_current_file_path().await {
             file_dialog_builder
                 .set_directory(current_path.parent().unwrap())
@@ -92,7 +93,7 @@ pub fn file_save_as(handle: tauri::AppHandle) {
                 .save_file(move |file_path_option| {
                     if let Some(file_path) = file_path_option {
                         let file_pathbuf = file_path.into_path().unwrap();
-                        tauri::async_runtime::spawn(async move {
+                        tokio::spawn(async move {
                             model_handle.save_as(file_pathbuf).await.unwrap();
                         });
                     }
@@ -101,7 +102,7 @@ pub fn file_save_as(handle: tauri::AppHandle) {
             file_dialog_builder.save_file(move |file_path_option| {
                 if let Some(file_path) = file_path_option {
                     let file_pathbuf = file_path.into_path().unwrap();
-                    tauri::async_runtime::spawn(async move {
+                    tokio::spawn(async move {
                         model_handle.save_as(file_pathbuf).await.unwrap();
                     });
                 }
@@ -123,7 +124,8 @@ pub async fn add_empty_cue(
     drop(model_lock);
     match cue_type.as_str() {
         "audio" => {
-            let file_paths_option = app_handle
+            let (result_tx, result_rx) = oneshot::channel();
+            app_handle
                 .dialog()
                 .file()
                 .add_filter(
@@ -133,8 +135,8 @@ pub async fn add_empty_cue(
                         "wav", "aac", "alac", "flac", "mp3",
                     ],
                 )
-                .blocking_pick_files();
-            if let Some(file_paths) = file_paths_option {
+                .pick_files(|path| result_tx.send(path).unwrap());
+            if let Some(file_paths) = result_rx.await.unwrap() {
                 if file_paths.len() == 1 {
                     let mut new_cue = templates.audio.clone();
                     new_cue.id = Uuid::new_v4();
