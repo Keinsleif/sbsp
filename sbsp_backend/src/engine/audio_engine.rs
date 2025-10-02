@@ -209,8 +209,8 @@ impl AudioEngine {
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
                         AudioCommand::Stop { id } => self.handle_stop(id),
-                        AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position),
-                        AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount),
+                        AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
+                        AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
@@ -386,6 +386,8 @@ impl AudioEngine {
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                 instance_id: id,
+                position: handle.position(),
+                duration,
             }))
             .await?;
 
@@ -482,24 +484,26 @@ impl AudioEngine {
         }
     }
 
-    fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
+    async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_to(position);
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_to(position);
+            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position: loaded_handle.position(), duration: loaded_handle.duration })).await?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
         }
     }
 
-    fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
+    async fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_by(amount);
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_by(amount);
+            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position: loaded_handle.position(), duration: loaded_handle.duration })).await?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))

@@ -460,7 +460,7 @@ impl Executor {
                 drop(instances);
 
                 let playback_event = match audio_event {
-                    AudioEngineEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
+                    AudioEngineEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },
                     AudioEngineEvent::Started { initial_params, .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Audio(initial_params) },
                     AudioEngineEvent::Progress {
                         position, duration, ..
@@ -564,7 +564,7 @@ impl Executor {
                 drop(instances);
 
                 let playback_event = match wait_event {
-                    WaitEvent::Loaded { .. } => ExecutorEvent::Loaded { cue_id },
+                    WaitEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },
                     WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Wait },
                     WaitEvent::Progress {
                         position, duration, ..

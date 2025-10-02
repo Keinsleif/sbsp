@@ -64,7 +64,7 @@ pub enum UiError {
 impl From<ExecutorEvent> for UiEvent {
     fn from(value: ExecutorEvent) -> Self {
         match value {
-            ExecutorEvent::Loaded { cue_id } => UiEvent::CueLoaded { cue_id },
+            ExecutorEvent::Loaded { cue_id, .. } => UiEvent::CueLoaded { cue_id },
             ExecutorEvent::Started { cue_id, .. } => UiEvent::CueStarted { cue_id },
             ExecutorEvent::Paused { cue_id, .. } => UiEvent::CuePaused { cue_id },
             ExecutorEvent::Resumed { cue_id } => UiEvent::CueResumed { cue_id },

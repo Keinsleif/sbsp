@@ -245,16 +245,16 @@ impl CueController {
         let mut state_changed = false;
 
         match &event {
-            ExecutorEvent::Loaded { cue_id } => {
+            ExecutorEvent::Loaded { cue_id, position, duration } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    active_cue.position = 0.0;
-                    active_cue.duration = 0.0;
+                    active_cue.position = *position;
+                    active_cue.duration = *duration;
                     active_cue.status = PlaybackStatus::Loaded;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,
-                        position: 0.0,
-                        duration: 0.0,
+                        position: *position,
+                        duration: *duration,
                         status: PlaybackStatus::Loaded,
                         params: StateParam::None,
                     };

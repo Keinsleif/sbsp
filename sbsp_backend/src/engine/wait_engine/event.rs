@@ -4,6 +4,8 @@ use uuid::Uuid;
 pub enum WaitEvent {
     Loaded {
         instance_id: Uuid,
+        position: f64,
+        duration: f64,
     },
     Started {
         instance_id: Uuid,
@@ -32,7 +34,7 @@ pub enum WaitEvent {
 impl WaitEvent {
     pub fn instance_id(&self) -> Uuid {
         match self {
-            WaitEvent::Loaded { instance_id } => *instance_id,
+            WaitEvent::Loaded { instance_id, .. } => *instance_id,
             WaitEvent::Started { instance_id } => *instance_id,
             WaitEvent::Progress { instance_id, .. } => *instance_id,
             WaitEvent::Paused { instance_id, .. } => *instance_id,

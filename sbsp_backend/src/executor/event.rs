@@ -6,6 +6,8 @@ use crate::controller::state::StateParam;
 pub enum ExecutorEvent {
     Loaded {
         cue_id: Uuid,
+        position: f64,
+        duration: f64,
     },
     PreWaitStarted {
         cue_id: Uuid,

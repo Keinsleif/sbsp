@@ -81,7 +81,7 @@ impl WaitEngine {
                         WaitCommand::Load { wait_type, instance_id, duration } => {
                             if wait_type.eq(&WaitType::Wait) {
                                 self.loaded_instances.insert(instance_id, LoadedInstance { wait_type, total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
-                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id })).await {
+                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
                                     Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
                                 } else {
                                     Ok(())

@@ -6,6 +6,8 @@ use crate::controller::state::AudioStateParam;
 pub enum AudioEngineEvent {
     Loaded {
         instance_id: Uuid,
+        position: f64,
+        duration: f64,
     },
     Started {
         instance_id: Uuid,
@@ -43,7 +45,7 @@ pub enum AudioEngineEvent {
 impl AudioEngineEvent {
     pub fn instance_id(&self) -> Uuid {
         match self {
-            Self::Loaded { instance_id } => *instance_id,
+            Self::Loaded { instance_id, .. } => *instance_id,
             Self::Started { instance_id, .. } => *instance_id,
             Self::Progress { instance_id, .. } => *instance_id,
             Self::Paused { instance_id, .. } => *instance_id,
