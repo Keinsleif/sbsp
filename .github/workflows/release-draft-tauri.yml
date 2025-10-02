@@ -66,6 +66,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_MAIN }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_MAIN }}
         with:
+          tagName: sbsp-v__VERSION__
+          releaseName: 'SBS Player v__VERSION__'
           projectPath: ./sbsp_tauri
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
