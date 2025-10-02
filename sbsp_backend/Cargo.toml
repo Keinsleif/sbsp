@@ -45,7 +45,7 @@ mdns-sd = ["dep:mdns-sd"]
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.17.0", features = ["serde", "v4", "v7"] }
 log = { version = "0.4.27", optional = true }
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs"], optional = true }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs", "signal"], optional = true }
 serde_json = { version = "1.0", optional = true }
 kira = { git = "https://github.com/tesselode/kira", features = ["serde"], optional = true }
 symphonia = { version = "0.5.4", features = ["all"], optional = true }
