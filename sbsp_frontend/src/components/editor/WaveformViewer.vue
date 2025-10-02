@@ -143,7 +143,7 @@ const seek = (event: MouseEvent) => {
     return;
   }
   const activeCue = showState.activeCues[props.targetId];
-  if (activeCue == null || !(['Playing', 'Paused'] as PlaybackStatus[]).includes(activeCue.status)) {
+  if (activeCue == null || !(['Playing', 'Paused', 'Loaded'] as PlaybackStatus[]).includes(activeCue.status)) {
     return;
   }
   const position =

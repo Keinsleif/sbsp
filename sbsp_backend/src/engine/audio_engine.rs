@@ -486,6 +486,9 @@ impl AudioEngine {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_to(position);
             Ok(())
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+            loaded_handle.seek_to(position);
+            Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
         }
@@ -494,6 +497,9 @@ impl AudioEngine {
     fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_by(amount);
+            Ok(())
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+            loaded_handle.seek_by(amount);
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
@@ -506,6 +512,15 @@ impl AudioEngine {
                 if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
                     let repeat_state = playing_sound.handle.is_repeating();
                     playing_sound.handle.set_repeat(!repeat_state);
+                    self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
+                        instance_id: id,
+                        params: AudioStateParam {
+                            repeating: !repeat_state,
+                        },
+                    })).await?;
+                } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+                    let repeat_state = loaded_handle.is_repeating();
+                    loaded_handle.set_repeat(!repeat_state);
                     self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
                         instance_id: id,
                         params: AudioStateParam {
