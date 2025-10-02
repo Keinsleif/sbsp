@@ -76,7 +76,6 @@ jobs:
           tauriScript: cargo tauri
 
       - run: mkdir upload && cp latest.json upload/
-        working-directory: ./sbsp_tauri
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
