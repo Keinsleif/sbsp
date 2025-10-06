@@ -159,7 +159,6 @@ const saveEditorValue = () => {
   selectedCue.value.params.volume = volume.value;
   selectedCue.value.params.pan = panning.value;
   selectedCue.value.params.repeat = repeat.value;
-  document.body.focus();
   emit('update');
 };
 

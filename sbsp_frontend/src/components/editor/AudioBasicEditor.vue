@@ -64,8 +64,10 @@ import { ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
 import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
+import { useUiState } from '../../stores/uistate';
 
 const showState = useShowState();
+const uiState = useUiState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
@@ -125,38 +127,40 @@ const resetEditorValue = (name: string) => {
 };
 
 const pickFile = () => {
-  open({
-    multiple: false,
-    filters: [
-      {
-        name: 'Audio',
-        extensions: [
-          'aiff',
-          'aif',
-          'caf',
-          'mp4',
-          'm4a',
-          'mkv',
-          'mka',
-          'webm',
-          'ogg',
-          'oga',
-          'wav',
-          'aac',
-          'alac',
-          'flac',
-          'mp3',
-        ],
-      },
-    ],
-  }).then((value) => {
-    if (value == null) {
-      return;
-    }
-    target.value = value;
-    saveEditorValue();
-  });
   document.body.focus();
+  if (uiState.side) {
+    open({
+      multiple: false,
+      filters: [
+        {
+          name: 'Audio',
+          extensions: [
+            'aiff',
+            'aif',
+            'caf',
+            'mp4',
+            'm4a',
+            'mkv',
+            'mka',
+            'webm',
+            'ogg',
+            'oga',
+            'wav',
+            'aac',
+            'alac',
+            'flac',
+            'mp3',
+          ],
+        },
+      ],
+    }).then((value) => {
+      if (value == null) {
+        return;
+      }
+      target.value = value;
+      saveEditorValue();
+    });
+  }
 };
 </script>
 

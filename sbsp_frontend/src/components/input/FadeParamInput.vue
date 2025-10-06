@@ -2,13 +2,19 @@
   <div class="mt-3 pa-2 border-md rounded position-relative">
     <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
     <v-sheet class="d-flex flex-row align-end ga-4">
-      <v-checkbox hide-details :disabled="props.disabled" v-model="fadeEnabled"></v-checkbox>
+      <v-checkbox
+        hide-details
+        :disabled="props.disabled"
+        v-model="fadeEnabled"
+        @update:model-value="saveValues"
+      ></v-checkbox>
       <time-input
         v-model="duration"
         :disabled="!fadeEnabled || props.disabled"
         class="flex-grow-0"
         label="Duration"
         width="100px"
+        @update="saveValues"
       ></time-input>
       <v-select
         hide-details
@@ -29,6 +35,7 @@
         variant="outlined"
         density="compact"
         autocomplete="off"
+        @update:model-value="saveValues"
         @keydown.stop
       ></v-select>
       <v-number-input
@@ -43,6 +50,7 @@
         density="compact"
         variant="outlined"
         autocomplete="off"
+        @update:model-value="saveValues"
         @keydown.stop
       ></v-number-input>
       <curve-viewer
@@ -58,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref } from 'vue';
 import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
 import { curveToEasing, easingToCurve } from '../../utils';
 import CurveViewer from './CurveViewer.vue';
@@ -79,57 +87,34 @@ const props = withDefaults(
 );
 const emit = defineEmits(['update']);
 
-const fadeEnabled = computed({
-  get() {
-    return param.value != null;
-  },
-  set(newValue) {
-    if (newValue) {
+const fadeEnabled = ref<boolean>(param.value != null);
+const duration = ref<number | null>(param.value != null ? param.value.duration : null);
+const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
+  param.value != null ? easingToCurve(param.value.easing).type : null,
+);
+const easingPower = ref<number | null>(param.value != null ? easingToCurve(param.value.easing).power : null);
+
+const saveValues = () => {
+  if (fadeEnabled.value) {
+    if (param.value == null) {
       param.value = {
         duration: 3,
         easing: { type: 'linear' },
       };
     } else {
-      param.value = null;
+      if (duration.value != null) {
+        param.value.duration = duration.value;
+      }
+      if (easingType.value == 'linear') {
+        easingPower.value = null;
+      } else if (easingPower.value == null) {
+        easingPower.value = 2;
+      }
     }
-    document.body.focus();
-    emit('update');
-  },
-});
-const duration = computed({
-  get() {
-    return param.value != null ? param.value.duration : null;
-  },
-  set(newValue) {
-    if (fadeEnabled.value && param.value != null && newValue != null) {
-      param.value.duration = newValue;
-      document.body.focus();
-      emit('update');
-    }
-  },
-});
-const easingType = computed({
-  get() {
-    return param.value != null ? easingToCurve(param.value.easing).type : null;
-  },
-  set(newValue) {
-    if (fadeEnabled.value && param.value != null && newValue != null) {
-      param.value.easing = curveToEasing({ type: newValue, power: easingPower.value });
-      document.body.focus();
-      emit('update');
-    }
-  },
-});
-const easingPower = computed({
-  get() {
-    return param.value != null ? easingToCurve(param.value.easing).power : null;
-  },
-  set(newValue) {
-    if (fadeEnabled.value && param.value != null && easingType.value != null && newValue != null) {
-      param.value.easing = curveToEasing({ type: easingType.value, power: newValue });
-      document.body.focus();
-      emit('update');
-    }
-  },
-});
+    param.value.easing = curveToEasing({ type: easingType.value, power: easingPower.value });
+  } else {
+    param.value = null;
+  }
+  emit('update');
+};
 </script>

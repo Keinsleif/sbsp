@@ -11,7 +11,7 @@
     </v-tabs>
     <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
-        <basic-editor v-model="selectedCue" @update="emit('update')" />
+        <basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
         v-if="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -19,7 +19,7 @@
         reverse-transition="false"
         transition="false"
       >
-        <audio-basic-editor v-model="selectedCue" @update="emit('update')" />
+        <audio-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
         v-if="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -27,7 +27,7 @@
         reverse-transition="false"
         transition="false"
       >
-        <audio-time-level-editor v-model="selectedCue" @update="emit('update')" />
+        <audio-time-level-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
     </v-tabs-window>
   </v-sheet>
@@ -42,6 +42,11 @@ import type { Cue } from '../types/Cue';
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
+
+const edited = () => {
+  document.body.focus();
+  emit('update');
+};
 
 const editorTab = ref('basics');
 </script>

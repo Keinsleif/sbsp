@@ -105,7 +105,7 @@ export const calculateDuration = (cueParam: CueParam, totalDuration: number | nu
 };
 
 export type Curve = {
-  type: 'inPow' | 'outPow' | 'inOutPow' | 'linear';
+  type: 'inPow' | 'outPow' | 'inOutPow' | 'linear' | null;
   power: number | null;
 };
 

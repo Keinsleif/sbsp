@@ -26,6 +26,7 @@
         density="compact"
         autocomplete="off"
         @update:modelValue="saveEditorValue"
+        @keydown.stop
       ></v-select>
       <time-input
         v-model="postWait"
@@ -121,7 +122,6 @@ const saveEditorValue = () => {
     if (selectedCue.value.sequence.type == 'autoContinue') {
       selectedCue.value.sequence.postWait = 0;
     }
-    document.body.focus();
   }
   if (postWait.value != null && selectedCue.value.sequence.type == 'autoContinue') {
     selectedCue.value.sequence.postWait = postWait.value;
