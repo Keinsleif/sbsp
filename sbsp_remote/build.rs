@@ -14,12 +14,12 @@ fn main() {
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/event.rs");
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/asset_processor/data.rs");
 
-    <ShowModel as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
-    <ShowState as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
-    <UiEvent as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
-    <AssetData as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
-    <ServiceEntry as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
-    <FileList as TS>::export_all_to("../sbsp_frontend/src/types").unwrap();
+    <ShowModel as TS>::export_all().unwrap();
+    <ShowState as TS>::export_all().unwrap();
+    <UiEvent as TS>::export_all().unwrap();
+    <AssetData as TS>::export_all().unwrap();
+    <ServiceEntry as TS>::export_all().unwrap();
+    <FileList as TS>::export_all().unwrap();
 
     tauri_build::build()
 }
