@@ -41,7 +41,7 @@ const isCheckingUpdate = ref<boolean>(true);
 const currentVersion = ref<string | null>(null);
 const latestVersion = ref<string | null>(null);
 const total = ref<bigint | null>(null);
-const progress = ref<number | null>(null);
+const progress = ref<bigint | null>(null);
 
 const isUpdateDialogOpen = defineModel<boolean>({ required: true });
 
@@ -73,7 +73,11 @@ const installUpdate = () => {
         }
         break;
       case 'progress':
-        progress.value = message.data.chunkLength;
+        if (progress.value == null) {
+          progress.value = BigInt(message.data.chunkLength);
+        } else {
+          progress.value += BigInt(message.data.chunkLength);
+        }
         break;
       case 'finished':
         break;
