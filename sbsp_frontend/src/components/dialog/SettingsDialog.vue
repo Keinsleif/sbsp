@@ -34,6 +34,19 @@
               v-model="editingSettings.general.copyAssetsWhenAdd"
               label="Copy assets when adding Cue"
             ></v-checkbox>
+            <v-number-input
+              hide-details
+              inset
+              persistent-placeholder
+              v-model="editingSettings.general.seekAmount"
+              :min="0"
+              width="160px"
+              label="Seek amount"
+              density="compact"
+              variant="outlined"
+              autocomplete="off"
+              @keydown.stop
+            ></v-number-input>
           </v-tabs-window-item>
           <v-tabs-window-item
             value="hotkey"

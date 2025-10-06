@@ -10,7 +10,7 @@ export const useShowModel = defineStore('showmodel', {
       name: '',
       cues: [],
       settings: {
-        general: { lockCursorToSelection: true, advanceCursorWhenGo: true, copyAssetsWhenAdd: false },
+        general: { lockCursorToSelection: true, advanceCursorWhenGo: true, copyAssetsWhenAdd: false, seekAmount: 5.0 },
         hotkey: {
           playback: {
             go: 'Enter',
@@ -20,6 +20,8 @@ export const useShowModel = defineStore('showmodel', {
             resumeAll: ']',
             stop: 'Backspace',
             stopAll: 'Escape',
+            seekForward: 'ArrowRight',
+            seekBackward: 'ArrowLeft',
           },
           audioAction: {
             toggleRepeat: 'R',

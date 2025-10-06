@@ -221,6 +221,12 @@ const stopHotkey = computed(() =>
 const stopAllHotkey = computed(() =>
   showModel.settings.hotkey.playback.stopAll != null ? showModel.settings.hotkey.playback.stopAll : undefined,
 );
+const seekForwardHotkey = computed(() =>
+  showModel.settings.hotkey.playback.seekForward != null ? showModel.settings.hotkey.playback.seekForward : undefined,
+);
+const seekBackwardHotkey = computed(() =>
+  showModel.settings.hotkey.playback.seekBackward != null ? showModel.settings.hotkey.playback.seekBackward : undefined,
+);
 const audioToggleRepeatHotkey = computed(() =>
   showModel.settings.hotkey.audioAction.toggleRepeat != null
     ? showModel.settings.hotkey.audioAction.toggleRepeat
@@ -303,6 +309,46 @@ useHotkey(
   stopAllHotkey,
   () => {
     invoke('stop_all').catch((e) => console.error(e));
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  seekForwardHotkey,
+  () => {
+    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+      if (
+        !(['Loaded', 'Completed', 'Stopped', 'Error'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
+      ) {
+        invoke('seek_by', { cueId: uiState.selected, amount: showModel.settings.general.seekAmount }).catch((e) =>
+          console.error(e),
+        );
+      }
+    }
+  },
+  {
+    preventDefault: true,
+  },
+);
+
+useHotkey(
+  seekBackwardHotkey,
+  () => {
+    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+      if (
+        !(['Loaded', 'Completed', 'Stopped', 'Error'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
+      ) {
+        invoke('seek_by', { cueId: uiState.selected, amount: -showModel.settings.general.seekAmount }).catch((e) =>
+          console.error(e),
+        );
+      }
+    }
   },
   {
     preventDefault: true,

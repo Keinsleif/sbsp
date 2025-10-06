@@ -19,6 +19,8 @@ pub struct PlaybackHotkey {
     pub resume_all: Option<String>,
     pub stop: Option<String>,
     pub stop_all: Option<String>,
+    pub seek_forward: Option<String>,
+    pub seek_backward: Option<String>,
 }
 
 impl Default for PlaybackHotkey {
@@ -31,6 +33,8 @@ impl Default for PlaybackHotkey {
             resume_all: Some("]".to_string()),
             stop: Some("Backspace".to_string()),
             stop_all: Some("Escape".to_string()),
+            seek_forward: Some("ArrowRight".to_string()),
+            seek_backward: Some("ArrowLeft".to_string()),
         }
     }
 }

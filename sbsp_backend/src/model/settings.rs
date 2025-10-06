@@ -29,6 +29,7 @@ pub struct GeneralSettings {
     pub advance_cursor_when_go: bool,
     pub lock_cursor_to_selection: bool,
     pub copy_assets_when_add: bool,
+    pub seek_amount: f64,
 }
 
 impl Default for GeneralSettings {
@@ -37,6 +38,7 @@ impl Default for GeneralSettings {
             advance_cursor_when_go: false,
             lock_cursor_to_selection: true,
             copy_assets_when_add: false,
+            seek_amount: 5.0,
         }
     }
 }
