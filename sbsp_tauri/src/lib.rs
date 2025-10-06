@@ -1,4 +1,6 @@
 mod command;
+#[cfg(desktop)]
+pub mod update;
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -10,24 +12,6 @@ use tauri::{
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
 use tokio::sync::{Mutex, RwLock, broadcast, watch};
-
-use crate::command::{
-    add_empty_cue,
-    controller::{
-        go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
-        stop, stop_all, toggle_repeat,
-    },
-    file_open, file_save, file_save_as, get_side,
-    model_manager::{
-        add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
-        update_settings,
-    },
-    process_asset,
-    server::{
-        get_discovery_option, get_server_port, is_server_running, open_server_panel,
-        set_discovery_option, set_server_port, start_server, stop_server,
-    },
-};
 
 pub struct AppState {
     backend_handle: BackendHandle,
@@ -138,20 +122,21 @@ async fn forward_backend_state_and_event(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::new()
-                .with_denylist(&["settings"])
-                .build(),
-        )
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
             let app_handle = app.handle();
+
+            #[cfg(desktop)]
+            {
+                app_handle.plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
+                app.manage(update::PendingUpdate::default());
+            }
 
             let file_menu = SubmenuBuilder::new(app, "File")
                 .items(&[
@@ -206,8 +191,11 @@ pub fn run() {
                     Some("Ctrl+R"),
                 )?)
                 .build()?;
+            let help_menu = SubmenuBuilder::new(app, "Help")
+                .text("id_check_update", "Check for updates")
+                .build()?;
             let menu = MenuBuilder::new(app)
-                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu])
+                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu, &help_menu])
                 .build()?;
             app.set_menu(menu)?;
 
@@ -225,58 +213,62 @@ pub fn run() {
         })
         .on_menu_event(|handle, event| match event.id().as_ref() {
             "id_open" => {
-                file_open(handle.clone());
+                command::file_open(handle.clone());
             }
             "id_save" => {
-                file_save(handle.clone());
+                command::file_save(handle.clone());
             }
             "id_save_as" => {
-                file_save_as(handle.clone());
+                command::file_save_as(handle.clone());
             }
             "id_quit" => {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
             }
-            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" => {
+            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" | "id_check_update" => {
                 let _ = handle.emit("menu_clicked", event.id());
             }
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
-            get_side,
-            go,
-            pause,
-            resume,
-            stop,
-            pause_all,
-            resume_all,
-            stop_all,
-            load,
-            seek_to,
-            seek_by,
-            get_show_model,
-            set_playback_cursor,
-            toggle_repeat,
-            update_cue,
-            add_cue,
-            add_cues,
-            remove_cue,
-            move_cue,
-            renumber_cues,
-            update_settings,
-            is_server_running,
-            get_server_port,
-            set_server_port,
-            get_discovery_option,
-            set_discovery_option,
-            start_server,
-            stop_server,
-            open_server_panel,
-            process_asset,
-            file_open,
-            file_save,
-            file_save_as,
-            add_empty_cue,
+            command::get_side,
+            command::process_asset,
+            command::file_open,
+            command::file_save,
+            command::file_save_as,
+            command::add_empty_cue,
+            command::controller::go,
+            command::controller::pause,
+            command::controller::resume,
+            command::controller::stop,
+            command::controller::pause_all,
+            command::controller::resume_all,
+            command::controller::stop_all,
+            command::controller::load,
+            command::controller::seek_to,
+            command::controller::seek_by,
+            command::controller::set_playback_cursor,
+            command::controller::toggle_repeat,
+            command::model_manager::get_show_model,
+            command::model_manager::update_cue,
+            command::model_manager::add_cue,
+            command::model_manager::add_cues,
+            command::model_manager::remove_cue,
+            command::model_manager::move_cue,
+            command::model_manager::renumber_cues,
+            command::model_manager::update_settings,
+            command::server::is_server_running,
+            command::server::get_server_port,
+            command::server::set_server_port,
+            command::server::get_discovery_option,
+            command::server::set_discovery_option,
+            command::server::start_server,
+            command::server::stop_server,
+            command::server::open_server_panel,
+            #[cfg(desktop)]
+            update::fetch_update,
+            #[cfg(desktop)]
+            update::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

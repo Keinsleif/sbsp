@@ -27,6 +27,7 @@
 
     <renumber-dialog v-model="isRenumberDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
+    <update-dialog v-model="isUpdateDialogOpen"></update-dialog>
   </v-app>
 </template>
 
@@ -52,6 +53,7 @@ import { useI18n } from 'vue-i18n';
 import type { ShowState } from './types/ShowState';
 import type { UiEvent } from './types/UiEvent';
 import type { ShowModel } from './types/ShowModel';
+import UpdateDialog from './components/dialog/UpdateDialog.vue';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -129,6 +131,7 @@ invoke<ShowModel>('get_show_model')
 invoke<'remote' | 'main'>('get_side').then((side) => (uiState.side = side));
 
 const isRenumberDialogOpen = ref(false);
+const isUpdateDialogOpen = ref(false);
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -396,6 +399,9 @@ listen<string>('menu_clicked', (event) => {
       }
       invoke('add_empty_cue', { cueType: 'wait', atIndex: insertIndex }).catch((e) => console.error(e));
       break;
+    }
+    case 'id_check_update': {
+      isUpdateDialogOpen.value = true;
     }
   }
 });

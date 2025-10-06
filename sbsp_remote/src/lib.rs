@@ -1,4 +1,6 @@
 mod command;
+#[cfg(desktop)]
+pub mod update;
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -12,24 +14,6 @@ use tauri::{
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
-
-use crate::command::{
-    add_empty_cue,
-    client::{
-        connect_to_server, disconnect_from_server, get_server_address, request_file_list,
-        start_server_discovery, stop_server_discovery,
-    },
-    controller::{
-        go, load, pause, pause_all, resume, resume_all, seek_by, seek_to, set_playback_cursor,
-        stop, stop_all, toggle_repeat,
-    },
-    get_side,
-    model_manager::{
-        add_cue, add_cues, get_show_model, move_cue, remove_cue, renumber_cues, update_cue,
-        update_settings,
-    },
-    process_asset,
-};
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -172,19 +156,20 @@ impl AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::new()
-                .with_denylist(&["settings"])
-                .build(),
-        )
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            #[cfg(desktop)]
+            {
+                app.handle().plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
+                app.manage(update::PendingUpdate::default());
+            }
+
             let file_menu = SubmenuBuilder::new(app, "File")
                 .separator()
                 .text(MenuId::new("id_quit"), "Quit")
@@ -215,8 +200,11 @@ pub fn run() {
                     Some("Ctrl+R"),
                 )?)
                 .build()?;
+            let help_menu = SubmenuBuilder::new(app, "Help")
+                .text("id_check_update", "Check for updates")
+                .build()?;
             let menu = MenuBuilder::new(app)
-                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu])
+                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu, &help_menu])
                 .build()?;
             app.set_menu(menu)?;
 
@@ -229,41 +217,45 @@ pub fn run() {
                 handle.cleanup_before_exit();
                 std::process::exit(0);
             }
-            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" => {
+            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" | "id_check_update" => {
                 let _ = handle.emit("menu_clicked", event.id());
             }
             _ => {}
         })
         .invoke_handler(tauri::generate_handler![
-            get_side,
-            go,
-            pause,
-            resume,
-            stop,
-            pause_all,
-            resume_all,
-            stop_all,
-            load,
-            seek_to,
-            seek_by,
-            get_show_model,
-            set_playback_cursor,
-            toggle_repeat,
-            update_cue,
-            add_cue,
-            add_cues,
-            remove_cue,
-            move_cue,
-            renumber_cues,
-            update_settings,
-            get_server_address,
-            connect_to_server,
-            disconnect_from_server,
-            start_server_discovery,
-            stop_server_discovery,
-            request_file_list,
-            process_asset,
-            add_empty_cue,
+            command::get_side,
+            command::process_asset,
+            command::add_empty_cue,
+            command::controller::go,
+            command::controller::pause,
+            command::controller::resume,
+            command::controller::stop,
+            command::controller::pause_all,
+            command::controller::resume_all,
+            command::controller::stop_all,
+            command::controller::load,
+            command::controller::seek_to,
+            command::controller::seek_by,
+            command::controller::set_playback_cursor,
+            command::controller::toggle_repeat,
+            command::model_manager::get_show_model,
+            command::model_manager::update_cue,
+            command::model_manager::add_cue,
+            command::model_manager::add_cues,
+            command::model_manager::remove_cue,
+            command::model_manager::move_cue,
+            command::model_manager::renumber_cues,
+            command::model_manager::update_settings,
+            command::client::get_server_address,
+            command::client::connect_to_server,
+            command::client::disconnect_from_server,
+            command::client::start_server_discovery,
+            command::client::stop_server_discovery,
+            command::client::request_file_list,
+            #[cfg(desktop)]
+            update::fetch_update,
+            #[cfg(desktop)]
+            update::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
