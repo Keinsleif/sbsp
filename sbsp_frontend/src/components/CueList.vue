@@ -2,15 +2,15 @@
   <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
     <thead>
       <tr>
-        <th id="cuelist_cursor"></th>
-        <th id="cuelist_type"></th>
-        <th id="cuelist_number" class="text-center">Number</th>
+        <th id="cuelist_cursor" width="53px"></th>
+        <th id="cuelist_type" width="53px"></th>
+        <th id="cuelist_number" class="text-center" width="50px">Number</th>
         <th id="cuelist_name">Name</th>
-        <th id="cuelist_pre_wait" class="text-center">Pre-Wait</th>
-        <th id="cuelist_duration" class="text-center">Duration</th>
-        <th id="cuelist_post_wait" class="text-center">Post-Wait</th>
-        <th id="cuelist_repeat"><v-icon :icon="mdiRepeat"></v-icon></th>
-        <th id="cuelist_sequence"><v-icon :icon="mdiChevronDoubleDown" /></th>
+        <th id="cuelist_pre_wait" class="text-center" width="100px">Pre-Wait</th>
+        <th id="cuelist_duration" class="text-center" width="100px">Duration</th>
+        <th id="cuelist_post_wait" class="text-center" width="100px">Post-Wait</th>
+        <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
+        <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
     </thead>
     <tbody>
@@ -28,13 +28,13 @@
         @drop="drop($event, i)"
         @mousedown="click($event, i)"
       >
-        <td headers="cuelist_cursor" width="24px">
+        <td headers="cuelist_cursor" width="53px">
           <v-icon
             :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"
             @click="setPlaybackCursor(cue.id)"
           ></v-icon>
         </td>
-        <td headers="cuelist_type" width="24px">
+        <td headers="cuelist_type" width="53px">
           <v-icon :icon="getCueIcon(cue.params.type)" />
         </td>
         <td
@@ -175,10 +175,10 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_repeat" width="24px">
+        <td headers="cuelist_repeat" width="53px">
           <v-icon v-if="cue.params.type == 'audio' && cue.params.repeat" :icon="mdiRepeat" />
         </td>
-        <td headers="cuelist_sequence" width="24px">
+        <td headers="cuelist_sequence" width="53px">
           <v-icon v-if="cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
           <v-icon v-if="cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
