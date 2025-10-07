@@ -1,24 +1,25 @@
 import { defineStore } from 'pinia';
 import { invoke } from '@tauri-apps/api/core';
 import { useShowModel } from './showmodel';
+import { ref } from 'vue';
 
-export const useUiState = defineStore('uistate', {
-  state: () => ({
-    side: null as 'remote' | 'main' | null,
-    selected: null as string | null,
-    selectedRows: [] as string[],
-    sideBarTab: 'activeCues' as 'activeCues' | 'levels',
-    isRightSidebarOpen: true,
-    isSettingsDialogOpen: false,
-    isEditorOpen: true,
-    success_messages: [] as string[],
-    error_messages: [] as string[],
-  }),
-  actions: {
-    clearSelected() {
+export const useUiState = defineStore(
+  'uistate',
+  () => {
+    const side = ref<'remote' | 'main' | null>(null);
+    const selected = ref<string | null>(null);
+    const selectedRows = ref<string[]>([]);
+    const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
+    const isRightSidebarOpen = ref(true);
+    const isSettingsDialogOpen = ref(false);
+    const isEditorOpen = ref(true);
+    const success_messages = ref<string[]>([]);
+    const error_messages = ref<string[]>([]);
+
+    const clearSelected = () => {
       const shwoModel = useShowModel();
-      this.selected = null;
-      this.selectedRows = [];
+      selected.value = null;
+      selectedRows.value = [];
       if (shwoModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: null,
@@ -26,11 +27,11 @@ export const useUiState = defineStore('uistate', {
           console.error('Failed to set cursor. ' + e);
         });
       }
-    },
-    setSelected(id: string) {
+    };
+    const setSelected = (id: string) => {
       const showModel = useShowModel();
-      this.selected = id;
-      this.selectedRows = [id];
+      selected.value = id;
+      selectedRows.value = [id];
       if (showModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
@@ -38,12 +39,12 @@ export const useUiState = defineStore('uistate', {
           console.error('Failed to set cursor. ' + e);
         });
       }
-    },
-    addSelected(id: string) {
+    };
+    const addSelected = (id: string) => {
       const showModel = useShowModel();
-      this.selected = id;
-      if (!this.selectedRows.includes(id)) {
-        this.selectedRows.push(id);
+      selected.value = id;
+      if (!selectedRows.value.includes(id)) {
+        selectedRows.value.push(id);
       }
       if (showModel.getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
@@ -52,18 +53,42 @@ export const useUiState = defineStore('uistate', {
           console.error('Failed to set cursor. ' + e);
         });
       }
-    },
-    toggleRightSidebar() {
-      this.isRightSidebarOpen = !this.isRightSidebarOpen;
-    },
-    toggleEditor() {
-      this.isEditorOpen = !this.isEditorOpen;
-    },
-    success(message: string) {
-      this.success_messages.push(message);
-    },
-    error(message: string) {
-      this.error_messages.push(message);
+    };
+    const toggleRightSidebar = () => {
+      isRightSidebarOpen.value = !isRightSidebarOpen.value;
+    };
+    const toggleEditor = () => {
+      isEditorOpen.value = !isEditorOpen.value;
+    };
+    const success = (message: string) => {
+      success_messages.value.push(message);
+    };
+    const error = (message: string) => {
+      error_messages.value.push(message);
+    };
+
+    return {
+      side,
+      selected,
+      selectedRows,
+      sideBarTab,
+      isRightSidebarOpen,
+      isSettingsDialogOpen,
+      isEditorOpen,
+      success_messages,
+      error_messages,
+      clearSelected,
+      setSelected,
+      addSelected,
+      toggleRightSidebar,
+      toggleEditor,
+      success,
+      error,
+    };
+  },
+  {
+    persist: {
+      omit: ['side', 'selected', 'selectedRows', 'success_messages', 'error_messages'],
     },
   },
-});
+);
