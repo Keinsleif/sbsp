@@ -1,7 +1,7 @@
 <template>
   <div class="mt-3 pa-2 border-md rounded position-relative">
     <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
-    <v-sheet class="d-flex flex-row align-end ga-4">
+    <v-sheet class="d-flex flex-row align-end ga-4 mt-2">
       <v-checkbox
         hide-details
         :disabled="props.disabled"
@@ -45,7 +45,7 @@
         v-model="easingPower"
         :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
         :min="1"
-        width="160px"
+        max-width="160px"
         label="Intensity"
         density="compact"
         variant="outlined"
@@ -101,6 +101,8 @@ const saveValues = () => {
         duration: 3,
         easing: { type: 'linear' },
       };
+      duration.value = 3;
+      easingType.value = 'linear';
     } else {
       if (duration.value != null) {
         param.value.duration = duration.value;
@@ -110,8 +112,8 @@ const saveValues = () => {
       } else if (easingPower.value == null) {
         easingPower.value = 2;
       }
+      param.value.easing = curveToEasing({ type: easingType.value, power: easingPower.value });
     }
-    param.value.easing = curveToEasing({ type: easingType.value, power: easingPower.value });
   } else {
     param.value = null;
   }
