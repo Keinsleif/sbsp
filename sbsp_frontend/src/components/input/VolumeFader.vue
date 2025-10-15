@@ -37,6 +37,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useDisplay } from 'vuetify';
+
+const { smAndDown } = useDisplay();
 
 const faderToDecibels = (fader: number): number => {
   if (fader > -10) {
@@ -74,17 +77,29 @@ const faderPosition = computed({
   },
 });
 
-const tickLabels = {
-  10: '10',
-  5: '5',
-  0: '0',
-  '-5': '-5',
-  '-10': '-10',
-  '-15': '-20',
-  '-20': '-30',
-  '-25': '-40',
-  '-30': '-60',
-};
+const tickLabels = computed(() => {
+  if (smAndDown.value) {
+    return {
+      10: '10',
+      0: '0',
+      '-10': '-10',
+      '-20': '-30',
+      '-30': '-60',
+    } as Record<number, string>;
+  } else {
+    return {
+      10: '10',
+      5: '5',
+      0: '0',
+      '-5': '-5',
+      '-10': '-10',
+      '-15': '-20',
+      '-20': '-30',
+      '-25': '-40',
+      '-30': '-60',
+    } as Record<number, string>;
+  }
+});
 </script>
 
 <style lang="css" module>
