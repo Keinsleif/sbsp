@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
 import { curveToEasing, easingToCurve } from '../../utils';
 import CurveViewer from './CurveViewer.vue';
@@ -93,6 +93,21 @@ const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
   param.value != null ? easingToCurve(param.value.easing).type : null,
 );
 const easingPower = ref<number | null>(param.value != null ? easingToCurve(param.value.easing).power : null);
+
+watch(param, () => {
+  if (param.value == null) {
+    fadeEnabled.value = false;
+    duration.value = null;
+    easingType.value = null;
+    easingPower.value = null;
+  } else {
+    fadeEnabled.value = true;
+    duration.value = param.value.duration;
+    const curve = easingToCurve(param.value.easing);
+    easingType.value = curve.type;
+    easingPower.value = curve.power;
+  }
+});
 
 const saveValues = () => {
   if (fadeEnabled.value) {
