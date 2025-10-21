@@ -88,7 +88,7 @@ pub fn file_save_as(handle: tauri::AppHandle) {
     let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
     let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
     tokio::spawn(async move {
-        if let Some(current_path) = model_handle.get_current_file_path().await {
+        if let Some(current_path) = model_handle.get_current_file_path().await.as_ref() {
             let (result_tx, result_rx) = oneshot::channel();
             file_dialog_builder
                 .set_directory(current_path.parent().unwrap())

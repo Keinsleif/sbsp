@@ -95,8 +95,8 @@ impl ShowModelHandle {
             .cloned()
     }
 
-    pub async fn get_current_file_path(&self) -> Option<PathBuf> {
-        self.show_model_path.read().await.clone()
+    pub async fn get_current_file_path(&self) -> tokio::sync::RwLockReadGuard<'_, Option<PathBuf>> {
+        self.show_model_path.read().await
     }
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {

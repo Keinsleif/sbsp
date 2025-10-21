@@ -96,11 +96,11 @@ impl ShowModelManager {
         match command {
             ModelCommand::UpdateCue(cue) => {
                 let mut model = self.model.write().await;
-                let model_path_option = self.show_model_path.read().await.clone();
+                let model_path_option = self.show_model_path.read().await;
                 let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue.id) {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
-                    && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                    && let Some(model_path) = model_path_option.as_ref() && model.settings.general.copy_assets_when_add {
                         let new_target = self.import_asset_file(&audio_param.target, model_path).await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
@@ -120,7 +120,7 @@ impl ShowModelManager {
             }
             ModelCommand::AddCue { cue, at_index } => {
                 let mut model = self.model.write().await;
-                let model_path_option = self.show_model_path.read().await.clone();
+                let model_path_option = self.show_model_path.read().await;
                 let event = if model.cues.iter().any(|c| c.id == cue.id) {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
@@ -136,7 +136,7 @@ impl ShowModelManager {
                 } else {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
-                    && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                    && let Some(model_path) = model_path_option.as_ref() && model.settings.general.copy_assets_when_add {
                         let new_target = self.import_asset_file(&audio_param.target, model_path).await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
@@ -150,7 +150,7 @@ impl ShowModelManager {
             }
             ModelCommand::AddCues { cues, at_index } => {
                 let mut model = self.model.write().await;
-                let model_path_option = self.show_model_path.read().await.clone();
+                let model_path_option = self.show_model_path.read().await;
                 let mut added_cues = vec![];
                 if at_index > model.cues.len() {
                     self.event_tx.send(UiEvent::OperationFailed {
@@ -170,7 +170,7 @@ impl ShowModelManager {
                         } else {
                             let mut new_cue = cue.clone();
                             if let CueParam::Audio(audio_param) = &mut new_cue.params
-                            && let Some(model_path) = &model_path_option && model.settings.general.copy_assets_when_add {
+                            && let Some(model_path) = model_path_option.as_ref() && model.settings.general.copy_assets_when_add {
                                 let new_target = self.import_asset_file(&audio_param.target, model_path).await;
                                 if let Ok(target) = new_target {
                                     audio_param.target = target;
@@ -341,7 +341,7 @@ impl ShowModelManager {
 
     pub async fn save_to_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
         let mut state_guard = self.model.write().await;
-        let model_path_option = self.show_model_path.read().await.clone();
+        let model_path_option = self.show_model_path.read().await;
 
         if !path.is_dir() {
             tokio::fs::create_dir_all(&path).await?;
@@ -349,7 +349,7 @@ impl ShowModelManager {
 
         for cue in &mut state_guard.cues {
             if let CueParam::Audio(audio_param) = &mut cue.params {
-                if let Some(model_path) = &model_path_option && model_path != path {
+                if let Some(model_path) = model_path_option.as_ref() && model_path != path {
                     // copy exists project to another path
                     let asset_path = model_path.join("audio").join(&audio_param.target);
                     let new_path = self.import_asset_file(&asset_path, path).await?;

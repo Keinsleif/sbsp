@@ -160,7 +160,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             },
                             WsCommand::RequestAssetList => {
                                 log::info!("Asset List reqested.");
-                                if let Some(model_dir) = state.backend_handle.model_handle.get_current_file_path().await {
+                                if let Some(model_dir) = state.backend_handle.model_handle.get_current_file_path().await.as_ref() {
                                     let asset_dir = model_dir.join("audio");
                                     if let Ok(file_list) = get_dirs(asset_dir, None).await
                                         && let Ok(payload) = serde_json::to_string(&file_list) && socket.send(Message::Text(payload.into())).await.is_err() {

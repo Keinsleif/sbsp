@@ -333,7 +333,7 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await {
+                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
                     model_path.join("audio").join(target)
                 } else {
                     target.to_path_buf()
@@ -396,7 +396,7 @@ impl Executor {
                     );
                 }
 
-                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await {
+                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
                     model_path.join("audio").join(target)
                 } else {
                     target.to_path_buf()
@@ -451,13 +451,14 @@ impl Executor {
             EngineEvent::Audio(audio_event) => {
                 let instance_id = audio_event.instance_id();
 
-                let instances = self.active_instances.read().await;
-                let Some(instance) = instances.get(&instance_id) else {
-                    log::warn!("Received event for unknown instance_id: {}", instance_id);
-                    return Ok(());
+                let cue_id = {
+                    let instances = self.active_instances.read().await;
+                    let Some(instance) = instances.get(&instance_id) else {
+                        log::warn!("Received event for unknown instance_id: {}", instance_id);
+                        return Ok(());
+                    };
+                    instance.cue_id
                 };
-                let cue_id = instance.cue_id;
-                drop(instances);
 
                 let playback_event = match audio_event {
                     AudioEngineEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },
@@ -499,13 +500,14 @@ impl Executor {
             }
             EngineEvent::PreWait(wait_event) => {
                 let instance_id = wait_event.instance_id();
-                let instances = self.active_instances.read().await;
-                let Some(instance) = instances.get(&instance_id) else {
-                    log::warn!("Received event for unknown instance_id: {}", instance_id);
-                    return Ok(());
+                let cue_id = {
+                    let instances = self.active_instances.read().await;
+                    let Some(instance) = instances.get(&instance_id) else {
+                        log::warn!("Received event for unknown instance_id: {}", instance_id);
+                        return Ok(());
+                    };
+                    instance.cue_id
                 };
-                let cue_id = instance.cue_id;
-                drop(instances);
 
                 let executor_event = match wait_event {
                     WaitEvent::Loaded { .. } => unreachable!(),
@@ -555,13 +557,14 @@ impl Executor {
             EngineEvent::Wait(wait_event) => {
                 let instance_id = wait_event.instance_id();
 
-                let instances = self.active_instances.read().await;
-                let Some(instance) = instances.get(&instance_id) else {
-                    log::warn!("Received event for unknown instance_id: {}", instance_id);
-                    return Ok(());
+                let cue_id = {
+                    let instances = self.active_instances.read().await;
+                    let Some(instance) = instances.get(&instance_id) else {
+                        log::warn!("Received event for unknown instance_id: {}", instance_id);
+                        return Ok(());
+                    };
+                    instance.cue_id
                 };
-                let cue_id = instance.cue_id;
-                drop(instances);
 
                 let playback_event = match wait_event {
                     WaitEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },

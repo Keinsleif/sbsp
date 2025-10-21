@@ -122,7 +122,7 @@ impl AssetProcessor {
         let mut filepath = if let Some(model_path) = self
             .model_handle
             .get_current_file_path()
-            .await {
+            .await.as_ref() {
                 model_path.join("audio")
             } else {
                 PathBuf::new()

@@ -130,8 +130,8 @@ impl CueController {
                     .playback_cursor
                     .expect("GO: Playback Cursor is unavailable.");
                 self.handle_go(cue_id).await?;
-                let settings = self.model_handle.read().await.settings.clone();
-                if settings.general.advance_cursor_when_go {
+                let model = self.model_handle.read().await;
+                if model.settings.general.advance_cursor_when_go {
                     self.update_playback_cursor().await?;
                 }
                 Ok(())
@@ -215,14 +215,14 @@ impl CueController {
     }
 
     async fn update_playback_cursor(&self) -> Result<()> {
-        let cues = self.model_handle.read().await.cues.clone();
+        let model = self.model_handle.read().await;
         let state = self.state_tx.borrow().clone();
-        if let Some(cue_index) = cues
+        if let Some(cue_index) = model.cues
             .iter()
             .position(|cue| cue.id == state.playback_cursor.unwrap())
         {
-            let next_cue_id = if cue_index + 1 < cues.len() {
-                Some(cues[cue_index + 1].id)
+            let next_cue_id = if cue_index + 1 < model.cues.len() {
+                Some(model.cues[cue_index + 1].id)
             } else {
                 None
             };
