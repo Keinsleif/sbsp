@@ -49,14 +49,16 @@ pub fn file_open(app_handle: tauri::AppHandle) {
         .get_handle()
         .model_handle
         .clone();
-    app_handle.dialog().file().pick_folder(|file_path_option| {
-        if let Some(file_path) = file_path_option {
-            tokio::spawn(async move {
-                model_handle
-                    .load_from_file(file_path.into_path().unwrap())
-                    .await
-                    .unwrap();
-            });
+    tokio::spawn(async move {
+        let (result_tx, result_rx) = oneshot::channel();
+        app_handle.dialog().file().pick_folder(|file_path_option| {
+            result_tx.send(file_path_option).unwrap();
+        });
+        if let Ok(Some(file_path)) = result_rx.await {
+            model_handle
+                .load_from_file(file_path.into_path().unwrap())
+                .await
+                .unwrap();
         }
     });
 }
@@ -69,14 +71,14 @@ pub fn file_save(handle: tauri::AppHandle) {
         if model_handle.get_current_file_path().await.is_some() {
             model_handle.save().await.unwrap();
         } else {
+            let (result_tx, result_rx) = oneshot::channel();
             file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tokio::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
-                }
-            })
+                result_tx.send(file_path_option).unwrap();
+            });
+            if let Ok(Some(file_path)) = result_rx.await {
+                let file_pathbuf = file_path.into_path().unwrap();
+                model_handle.save_as(file_pathbuf).await.unwrap();
+            }
         }
     });
 }
@@ -87,26 +89,26 @@ pub fn file_save_as(handle: tauri::AppHandle) {
     let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
     tokio::spawn(async move {
         if let Some(current_path) = model_handle.get_current_file_path().await {
+            let (result_tx, result_rx) = oneshot::channel();
             file_dialog_builder
                 .set_directory(current_path.parent().unwrap())
                 .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
                 .save_file(move |file_path_option| {
-                    if let Some(file_path) = file_path_option {
-                        let file_pathbuf = file_path.into_path().unwrap();
-                        tokio::spawn(async move {
-                            model_handle.save_as(file_pathbuf).await.unwrap();
-                        });
-                    }
-                })
+                    result_tx.send(file_path_option).unwrap();
+                });
+            if let Ok(Some(file_path)) = result_rx.await {
+                let file_pathbuf = file_path.into_path().unwrap();
+                model_handle.save_as(file_pathbuf).await.unwrap();
+            }
         } else {
+            let (result_tx, result_rx) = oneshot::channel();
             file_dialog_builder.save_file(move |file_path_option| {
-                if let Some(file_path) = file_path_option {
-                    let file_pathbuf = file_path.into_path().unwrap();
-                    tokio::spawn(async move {
-                        model_handle.save_as(file_pathbuf).await.unwrap();
-                    });
-                }
-            })
+                result_tx.send(file_path_option).unwrap();
+            });
+            if let Ok(Some(file_path)) = result_rx.await {
+                let file_pathbuf = file_path.into_path().unwrap();
+                model_handle.save_as(file_pathbuf).await.unwrap();
+            }
         }
     });
 }
