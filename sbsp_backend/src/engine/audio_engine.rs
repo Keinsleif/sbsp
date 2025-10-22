@@ -112,7 +112,7 @@ impl PlaybackHandle {
     }
 
     fn pause(&mut self) {
-        self.handle.pause(self.fade_out_tween.unwrap_or_default());
+        self.handle.pause(Tween::default());
     }
 
     fn resume(&mut self) {
