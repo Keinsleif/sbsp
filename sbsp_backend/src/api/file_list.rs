@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 pub enum FileList {
     Dir {
         name: String,
-        files: Vec<Box<FileList>>,
+        files: Vec<FileList>,
     },
     File {
         name: String,

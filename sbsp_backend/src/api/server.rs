@@ -162,11 +162,13 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                 log::info!("Asset List reqested.");
                                 if let Some(model_dir) = state.backend_handle.model_handle.get_current_file_path().await.as_ref() {
                                     let asset_dir = model_dir.join("audio");
-                                    if let Ok(file_list) = get_dirs(asset_dir, None).await
-                                        && let Ok(payload) = serde_json::to_string(&file_list) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                    if let Ok(file_list) = get_dirs(asset_dir, None).await {
+                                        let ws_message = WsFeedback::AssetList(file_list);
+                                        if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                             log::info!("WebSocket client disconnected (send error).");
                                             break;
                                         }
+                                    }
                                 }
                             }
                         }
@@ -195,7 +197,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
 }
 
 #[async_recursion]
-async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<Box<FileList>>> {
+async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<FileList>> {
     let mut entries = tokio::fs::read_dir(root_dir).await?;
     let mut root_list = vec![];
     let parent_dir = parent.unwrap_or(PathBuf::from("."));
@@ -208,7 +210,7 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
             let entry_name = path.file_name().unwrap().to_os_string().into_string().unwrap();
             if metadata.is_dir() {
                 let file_list = get_dirs(path, Some(parent_dir.join(&entry_name))).await?;
-                root_list.push(Box::new(FileList::Dir { name: entry_name, files: file_list }));
+                root_list.push(FileList::Dir { name: entry_name, files: file_list });
                 continue;
             }
             if metadata.is_file() {
@@ -217,14 +219,14 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
                 } else {
                     "".into()
                 };
-                root_list.push(Box::new(FileList::File { name: entry_name.clone(), path: parent_dir.join(&entry_name) , extension}));
+                root_list.push(FileList::File { name: entry_name.clone(), path: parent_dir.join(&entry_name) , extension});
                 continue;
             }
 
             if let Ok(symlink) = tokio::fs::read_link(path).await {
                 if symlink.is_dir() {
                     let file_list = get_dirs(symlink, Some(parent_dir.join(&entry_name))).await?;
-                    root_list.push(Box::new(FileList::Dir { name: entry_name, files: file_list }));
+                    root_list.push(FileList::Dir { name: entry_name, files: file_list });
                 } else {
                     let extension = if let Some(ext) = symlink.extension() {
                         ext.to_os_string().into_string().unwrap()
@@ -232,7 +234,7 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
                         "".into()
                     };
                     let file_name = symlink.file_name().unwrap().to_os_string().into_string().unwrap();
-                    root_list.push(Box::new(FileList::File { name: file_name, path: parent_dir.join(&entry_name), extension }));
+                    root_list.push(FileList::File { name: file_name, path: parent_dir.join(&entry_name), extension });
                 }
             }
         } else {
