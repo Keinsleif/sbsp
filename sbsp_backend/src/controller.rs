@@ -327,9 +327,8 @@ impl CueController {
                     }
                 }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    let new_position = (position * 10.0).floor() / 10.0;
-                    if active_cue.position < new_position {
-                        active_cue.position = new_position;
+                    if (position - active_cue.position).abs() > 0.1 {
+                        active_cue.position = (position * 10.0).floor() / 10.0;
                         state_changed = true;
                     }
                     if active_cue.duration != *duration {
