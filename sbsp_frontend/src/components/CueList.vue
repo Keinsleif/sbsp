@@ -1,5 +1,5 @@
 <template>
-  <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
+  <v-table fixed-header density="compact" class="flex-grow-1" height="100%" @mousedown="resetSelection">
     <thead>
       <tr>
         <th id="cuelist_cursor" width="53px"></th>
@@ -26,7 +26,7 @@
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
         @drop="drop($event, i)"
-        @mousedown="click($event, i)"
+        @mousedown.stop="click($event, i)"
       >
         <td headers="cuelist_cursor" width="53px">
           <v-icon
@@ -372,6 +372,11 @@ const click = (event: MouseEvent, index: number) => {
       console.error('Failed to set cursor. ' + e);
     });
   }
+};
+
+const resetSelection = () => {
+  uiState.selectedRows = [];
+  uiState.selected = null;
 };
 
 const getCueIcon = (type: string): string | undefined => {
