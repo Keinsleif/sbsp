@@ -240,6 +240,14 @@ impl WaitEngine {
                                 continue;
                             }
                             wait_event = WaitEvent::Progress { instance_id: *instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
+                            let event = match waiting_instance.wait_type {
+                                WaitType::PreWait => EngineEvent::PreWait(wait_event),
+                                WaitType::Wait => EngineEvent::Wait(wait_event),
+                            };
+                            if let Err(e) = self.event_tx.try_send(event) {
+                                log::warn!("EngineEvent dropped: {:?}", e);
+                            }
+                            continue;
                         }
                         let event = match waiting_instance.wait_type {
                             WaitType::PreWait => EngineEvent::PreWait(wait_event),

@@ -243,7 +243,11 @@ impl AudioEngine {
                         let position = playing_sound.handle.position();
                         let event = match playback_state {
                             kira::sound::PlaybackState::Playing => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })
+                                let event = EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration });
+                                if let Err(e) = self.event_tx.try_send(event) {
+                                    log::warn!("EngineEvent dropped: {:?}", e);
+                                }
+                                continue;
                             },
                             kira::sound::PlaybackState::Pausing => {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })

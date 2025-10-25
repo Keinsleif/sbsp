@@ -465,11 +465,17 @@ impl Executor {
                     AudioEngineEvent::Started { initial_params, .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Audio(initial_params) },
                     AudioEngineEvent::Progress {
                         position, duration, ..
-                    } => ExecutorEvent::Progress {
-                        cue_id,
-                        position,
-                        duration,
-                    },
+                    } => {
+                        let event = ExecutorEvent::Progress {
+                            cue_id,
+                            position,
+                            duration,
+                        };
+                        if let Err(e) = self.executor_event_tx.try_send(event) {
+                            log::warn!("EngineEvent dropped: {:?}", e);
+                        }
+                        return Ok(());
+                    }
                     AudioEngineEvent::Paused {
                         position, duration, ..
                     } => ExecutorEvent::Paused {
@@ -514,11 +520,17 @@ impl Executor {
                     WaitEvent::Started { .. } => ExecutorEvent::PreWaitStarted { cue_id },
                     WaitEvent::Progress {
                         position, duration, ..
-                    } => ExecutorEvent::PreWaitProgress {
-                        cue_id,
-                        position,
-                        duration,
-                    },
+                    } => {
+                        let event = ExecutorEvent::PreWaitProgress {
+                            cue_id,
+                            position,
+                            duration,
+                        };
+                        if let Err(e) = self.executor_event_tx.try_send(event) {
+                            log::warn!("EngineEvent dropped: {:?}", e);
+                        }
+                        return Ok(());
+                    }
                     WaitEvent::Paused {
                         position, duration, ..
                     } => ExecutorEvent::PreWaitPaused {
@@ -571,11 +583,17 @@ impl Executor {
                     WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Wait },
                     WaitEvent::Progress {
                         position, duration, ..
-                    } => ExecutorEvent::Progress {
-                        cue_id,
-                        position,
-                        duration,
-                    },
+                    } => {
+                        let event = ExecutorEvent::Progress {
+                            cue_id,
+                            position,
+                            duration,
+                        };
+                        if let Err(e) = self.executor_event_tx.try_send(event) {
+                            log::warn!("EngineEvent dropped: {:?}", e);
+                        }
+                        return Ok(());
+                    }
                     WaitEvent::Paused {
                         position, duration, ..
                     } => ExecutorEvent::Paused {
