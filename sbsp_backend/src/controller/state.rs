@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use indexmap::map::IndexMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -53,14 +52,14 @@ pub struct ActiveCue {
 #[serde(rename_all = "camelCase")]
 pub struct ShowState {
     pub playback_cursor: Option<Uuid>,
-    pub active_cues: HashMap<Uuid, ActiveCue>,
+    pub active_cues: IndexMap<Uuid, ActiveCue>,
 }
 
 impl ShowState {
     pub fn new() -> Self {
         Self {
             playback_cursor: None,
-            active_cues: HashMap::new(),
+            active_cues: IndexMap::new(),
         }
     }
 }

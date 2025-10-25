@@ -395,7 +395,7 @@ impl CueController {
                         active_cue.status = PlaybackStatus::Stopped;
                     }
                 });
-                show_state.active_cues.remove(cue_id);
+                show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
             ExecutorEvent::Completed { cue_id, .. } => {
@@ -420,7 +420,7 @@ impl CueController {
                         active_cue.status = PlaybackStatus::Completed;
                     }
                 });
-                show_state.active_cues.remove(cue_id);
+                show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
             ExecutorEvent::StateParamUpdated { cue_id, params } => {
@@ -510,7 +510,7 @@ impl CueController {
                 }
             }
             ExecutorEvent::PreWaitStopped { cue_id } => {
-                show_state.active_cues.remove(cue_id);
+                show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
             ExecutorEvent::PreWaitCompleted { .. } => {}

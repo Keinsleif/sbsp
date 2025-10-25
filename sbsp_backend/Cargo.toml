@@ -18,7 +18,6 @@ backend = [
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
-    "apiserver"
 ]
 apiserver = [
     "backend",
@@ -44,6 +43,7 @@ mdns-sd = ["dep:mdns-sd"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.17.0", features = ["serde", "v4", "v7"] }
+indexmap = { version = "2.12.0", features = ["serde"] }
 log = { version = "0.4.27", optional = true }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs", "signal"], optional = true }
 serde_json = { version = "1.0", optional = true }
@@ -62,7 +62,7 @@ reqwest = { version = "0.12.23", features = ["json"], optional = true }
 reqwest-websocket = { version = "0.5.1", optional = true }
 futures-util = { version = "0.3.31",default-features = false, features = ["sink"], optional = true }
 
-ts-rs = { version = "11.0.1", features = ["uuid-impl"], optional = true }
+ts-rs = { version = "11.0.1", features = ["uuid-impl", "indexmap-impl"], optional = true }
 
 [dev-dependencies]
 tempfile = "3.22.0"
