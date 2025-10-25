@@ -21,14 +21,11 @@ pub async fn process_asset(
     cue_id: Uuid,
 ) -> Result<(Uuid, AssetData), String> {
     let handle = state.get_handle();
-    if let Some(cue) = handle
-        .model_handle
-        .read()
-        .await
-        .clone()
-        .cues
-        .iter()
-        .find(|cue| cue.id == cue_id)
+    let cue_option = {
+        let model = handle.model_handle.read().await;
+        model.cues.iter().find(|cue| cue.id == cue_id).cloned()
+    };
+    if let Some(cue) = cue_option
         && let CueParam::Audio(params) = &cue.params
     {
         handle

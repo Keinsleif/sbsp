@@ -130,8 +130,11 @@ impl CueController {
                     .playback_cursor
                     .expect("GO: Playback Cursor is unavailable.");
                 self.handle_go(cue_id).await?;
-                let model = self.model_handle.read().await;
-                if model.settings.general.advance_cursor_when_go {
+                let advance_cursor_when_go = {
+                    let model = self.model_handle.read().await;
+                    model.settings.general.advance_cursor_when_go
+                };
+                if advance_cursor_when_go {
                     self.update_playback_cursor().await?;
                 }
                 Ok(())
@@ -301,31 +304,42 @@ impl CueController {
                 duration,
                 ..
             } => {
-                let mut wait_tasks = self.wait_tasks.write().await;
-                if let Some(sequence) = wait_tasks.get(cue_id)
-                    && let CueSequence::AutoContinue {
-                        target_id,
-                        post_wait,
-                    } = sequence
-                    && position > post_wait
                 {
-                    if let Some(target) = target_id {
-                        self.handle_go(*target).await.unwrap();
-                    } else {
-                        let model = self.model_handle.read().await;
-                        if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
-                            && cue_index + 1 < model.cues.len()
-                        {
-                            self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                    let mut wait_tasks = self.wait_tasks.write().await;
+                    if let Some(sequence) = wait_tasks.get(cue_id)
+                        && let CueSequence::AutoContinue {
+                            target_id,
+                            post_wait,
+                        } = sequence
+                        && position > post_wait
+                    {
+                        if let Some(target) = target_id {
+                            self.handle_go(*target).await.unwrap();
+                        } else {
+                            let model = self.model_handle.read().await;
+                            if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
+                                && cue_index + 1 < model.cues.len()
+                            {
+                                self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                            }
                         }
+                        wait_tasks.remove(cue_id);
                     }
-                    wait_tasks.remove(cue_id);
                 }
-                drop(wait_tasks);
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    active_cue.position = *position;
-                    active_cue.duration = *duration;
-                    active_cue.status = PlaybackStatus::Playing
+                    let new_position = (position * 10.0).floor() / 10.0;
+                    if active_cue.position < new_position {
+                        active_cue.position = new_position;
+                        state_changed = true;
+                    }
+                    if active_cue.duration != *duration {
+                        active_cue.duration = *duration;
+                        state_changed = true;
+                    }
+                    if active_cue.status != PlaybackStatus::Playing {
+                        active_cue.status = PlaybackStatus::Playing;
+                        state_changed = true;
+                    }
                 } else {
                     show_state.active_cues.insert(
                         *cue_id,
@@ -337,8 +351,8 @@ impl CueController {
                             params: StateParam::None,
                         },
                     );
+                    state_changed = true;
                 }
-                state_changed = true;
             }
             ExecutorEvent::Paused {
                 cue_id,
@@ -512,7 +526,7 @@ impl CueController {
             | ExecutorEvent::Resumed { .. }
             | ExecutorEvent::Completed { .. }
             | ExecutorEvent::Error { .. } => {
-                if self.event_tx.send(UiEvent::from(event)).is_err() {
+                if state_changed && self.event_tx.send(UiEvent::from(event)).is_err() {
                     log::trace!("No UI clients are listening to playback events.");
                 }
             }
