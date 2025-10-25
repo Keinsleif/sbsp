@@ -2,6 +2,8 @@ mod command;
 #[cfg(desktop)]
 pub mod update;
 
+use std::time::SystemTime;
+
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
@@ -13,6 +15,7 @@ use tauri::{
     AppHandle, Emitter, Manager as _,
     menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
+use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
 
 async fn forward_backend_state_and_event(
@@ -159,6 +162,23 @@ pub fn run() {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
+                .format(move |out, message, record| {
+                    let color_level = ColoredLevelConfig::new()
+                        .error(Color::Red)
+                        .warn(Color::Yellow)
+                        .info(Color::Green)
+                        .debug(Color::White)
+                        .trace(Color::BrightBlack);
+                    out.finish(
+                        format_args!(
+                            "[{}][{}][{}] {}",
+                            humantime::format_rfc3339_seconds(SystemTime::now()),
+                            color_level.color(record.level()),
+                            record.target(),
+                            message
+                        ),
+                    )
+                })
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
