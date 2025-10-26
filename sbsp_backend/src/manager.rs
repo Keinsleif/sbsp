@@ -351,7 +351,7 @@ impl ShowModelManager {
             if let CueParam::Audio(audio_param) = &mut cue.params {
                 if let Some(model_path) = model_path_option.as_ref() && model_path != path {
                     // copy exists project to another path
-                    let asset_path = model_path.join("audio").join(&audio_param.target);
+                    let asset_path = model_path.join(&audio_param.target);
                     let new_path = self.import_asset_file(&asset_path, path).await?;
                     audio_param.target = new_path;
                 } else if audio_param.target.is_absolute() {
@@ -377,15 +377,19 @@ impl ShowModelManager {
 
     async fn import_asset_file(&self, asset_path: &PathBuf, model_path: &Path) -> anyhow::Result<PathBuf> {
         log::info!("Import asset file started. file={:?}", &asset_path);
+        // TODO change this directory via configuration
         let audio_dir = model_path.join("audio");
         if !audio_dir.exists() {
             tokio::fs::create_dir_all(&audio_dir).await?;
         } else if audio_dir.is_file() {
             anyhow::bail!("Failed to copy asset to library. Library is not directory");
         }
-        let dest_path = audio_dir.join(asset_path.file_name().unwrap().to_str().unwrap()).clone();
-        tokio::fs::copy(asset_path, &dest_path).await?;
-        Ok(dest_path)
+        let asset_file_name = asset_path.file_name().unwrap().to_str().unwrap();
+        let dest_path = audio_dir.join(asset_file_name);
+        if !dest_path.exists() {
+            tokio::fs::copy(asset_path, &dest_path).await?;
+        }
+        Ok([".", "audio", asset_file_name].iter().collect())
     }
 
     #[cfg(test)]
@@ -436,10 +440,11 @@ mod tests {
         let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target_after.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
         model_handle.update_cue(new_cue.clone()).await.unwrap();
 
-        let estimated_audio_target = temp_dir.path().join("audio").join(temp_target_after.path().file_name().unwrap().to_str().unwrap());
+        let estimated_audio_filename = temp_target_after.path().file_name().unwrap().to_str().unwrap();
+        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = estimated_audio_target.clone();
+            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
         }
 
         let updated_cue;
@@ -472,10 +477,11 @@ mod tests {
         let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
         model_handle.add_cue(new_cue.clone(), 0).await.unwrap();
 
-        let estimated_audio_target = temp_dir.path().join("audio").join(temp_target.path().file_name().unwrap().to_str().unwrap());
+        let estimated_audio_filename = temp_target.path().file_name().unwrap().to_str().unwrap();
+        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = estimated_audio_target.clone();
+            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
         }
 
         let added_cue;

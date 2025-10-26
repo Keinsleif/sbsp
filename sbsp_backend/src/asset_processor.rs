@@ -119,15 +119,12 @@ impl AssetProcessor {
         id: Uuid,
         path: PathBuf,
     ) {
-        let mut filepath = if let Some(model_path) = self
+        let filepath = self
             .model_handle
             .get_current_file_path()
-            .await.as_ref() {
-                model_path.join("audio")
-            } else {
-                PathBuf::new()
-            };
-        filepath.push(&path);
+            .await.as_ref().map_or(path.to_path_buf(), |model_path| {
+                model_path.join(&path)
+            });
 
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&filepath) {

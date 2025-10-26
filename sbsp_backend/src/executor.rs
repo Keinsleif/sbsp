@@ -333,11 +333,12 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
-                    model_path.join("audio").join(target)
-                } else {
-                    target.to_path_buf()
-                };
+                let filepath = self
+                    .model_handle
+                    .get_current_file_path()
+                    .await.as_ref().map_or(target.to_path_buf(), |model_path| {
+                        model_path.join(target)
+                    });
 
                 self.audio_tx
                     .send(AudioCommand::Load {
@@ -396,11 +397,13 @@ impl Executor {
                     );
                 }
 
-                let filepath = if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
-                    model_path.join("audio").join(target)
-                } else {
-                    target.to_path_buf()
-                };
+                let filepath = self
+                    .model_handle
+                    .get_current_file_path()
+                    .await.as_ref().map_or(target.to_path_buf(), |model_path| {
+                        model_path.join(target)
+                    });
+
 
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
