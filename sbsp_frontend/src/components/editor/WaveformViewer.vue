@@ -27,10 +27,14 @@
       <rect :x="nonNullEndTime * (compressedWaveform.length - 1) - 1" y="0" width="2" height="116" fill="blue"></rect>
       <rect
         v-show="position != 0"
-        :x="
-          position * ((nonNullEndTime - nonNullStartTime) * (compressedWaveform.length - 1)) +
-          nonNullStartTime * compressedWaveform.length
-        "
+        :style="{
+          transform: `translateX(${
+            position * ((nonNullEndTime - nonNullStartTime) * (compressedWaveform.length - 1)) +
+            nonNullStartTime * compressedWaveform.length
+          }px)`,
+          transition: 'transform 100ms linear',
+        }"
+        x="0"
         y="0"
         width="2"
         height="116"
