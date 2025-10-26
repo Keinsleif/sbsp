@@ -106,7 +106,7 @@ const position = computed<number>(() => {
     const activeCue = showState.activeCues[props.targetId];
     if (
       activeCue != null &&
-      (['Playing', 'Paused', 'Loaded'] as PlaybackStatus[]).includes(activeCue.status) &&
+      (['Playing', 'Paused', 'Loaded', 'Stopping'] as PlaybackStatus[]).includes(activeCue.status) &&
       activeCue.duration !== 0
     ) {
       return activeCue.position / activeCue.duration;
@@ -163,7 +163,10 @@ const seek = (event: MouseEvent) => {
     return;
   }
   const activeCue = showState.activeCues[props.targetId];
-  if (activeCue == null || !(['Playing', 'Paused', 'Loaded'] as PlaybackStatus[]).includes(activeCue.status)) {
+  if (
+    activeCue == null ||
+    !(['Playing', 'Paused', 'Loaded', 'Stopping'] as PlaybackStatus[]).includes(activeCue.status)
+  ) {
     return;
   }
   const position =

@@ -466,7 +466,7 @@ const isPreWaitActive = (cue_id: string): boolean => {
 const isActive = (cue_id: string): boolean => {
   return (
     cue_id in showState.activeCues &&
-    (['Playing', 'Paused', 'Completed'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status)
+    (['Playing', 'Paused', 'Stopping', 'Completed'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status)
   );
 };
 
