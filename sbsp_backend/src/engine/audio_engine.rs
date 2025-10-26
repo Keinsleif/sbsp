@@ -60,24 +60,28 @@ impl SoundHandle {
             Self::Streaming(handle) => handle.resume(tween),
         }
     }
+
     fn stop(&mut self, tween: Tween) {
         match self {
             Self::Static(handle) => handle.stop(tween),
             Self::Streaming(handle) => handle.stop(tween),
         }
     }
+
     fn seek_to(&mut self, position: f64) {
         match self {
             Self::Static(handle) => handle.seek_to(position),
             Self::Streaming(handle) => handle.seek_to(position),
         }
     }
+
     fn seek_by(&mut self, amount: f64) {
         match self {
             Self::Static(handle) => handle.seek_by(amount),
             Self::Streaming(handle) => handle.seek_by(amount),
         }
     }
+
     fn set_loop_region(&mut self, loop_region: impl IntoOptionalRegion) {
         match self {
             Self::Static(handle) => handle.set_loop_region(loop_region),
@@ -501,10 +505,13 @@ impl AudioEngine {
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_to(position);
+            if let Some(last_status) = &playing_sound.last_status && last_status.state.eq(&PlaybackState::Paused) {
+                self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: id, position, duration: playing_sound.handle.duration })).await?;
+            }
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_to(position);
-            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position: loaded_handle.position(), duration: loaded_handle.duration })).await?;
+            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position, duration: loaded_handle.duration })).await?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
