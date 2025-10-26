@@ -9,6 +9,7 @@ pub struct AssetData {
     pub duration: Option<f64>,
     pub waveform: Vec<f32>,
     pub integrated_lufs: Option<f64>,
+    pub peak: f32,
     pub start_time: Option<f64>,
     pub end_time: Option<f64>,
 }

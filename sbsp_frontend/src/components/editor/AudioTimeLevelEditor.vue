@@ -56,7 +56,7 @@
           saveEditorValue();
         "
       />
-      <v-btn-group variant="tonal" divided>
+      <v-btn-group variant="tonal" direction="vertical" divided>
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
@@ -69,6 +69,19 @@
             >
           </template>
           <span>Set volume to match -14LUFS</span>
+        </v-tooltip>
+        <v-tooltip target="cursor">
+          <template v-slot:activator="{ props: activatorProps }">
+            <v-btn
+              v-bind="activatorProps"
+              density="compact"
+              height="25px"
+              :disabled="selectedCue!.id in showState.activeCues"
+              @click="setVolumeToMAX"
+              >MAX</v-btn
+            >
+          </template>
+          <span>Set volume so that the audio peak is 0dBFS</span>
         </v-tooltip>
       </v-btn-group>
       <v-divider vertical inset thickness="2" />
@@ -193,6 +206,20 @@ const setVolumeToLUFS = () => {
   const integratedLufs = assetResult.results[selectedCue.value.id].integratedLufs;
   if (integratedLufs == null) return;
   volume.value = -14 - integratedLufs;
+  saveEditorValue();
+};
+
+const setVolumeToMAX = () => {
+  if (
+    selectedCue.value == null ||
+    !(selectedCue.value.id in assetResult.results) ||
+    assetResult.results[selectedCue.value.id].peak == null
+  ) {
+    return;
+  }
+  const peak = assetResult.results[selectedCue.value.id].peak;
+  if (peak == null) return;
+  volume.value = -peak;
   saveEditorValue();
 };
 </script>

@@ -219,6 +219,7 @@ impl AssetProcessor {
         };
         let mut first_audio_sample = None;
         let mut last_audio_sample = None;
+        let mut max_audio_sample: f32 = 0.0;
         let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
         let mut sample_index = 0;
         let mut max_in_current_peak: f32 = 0.0;
@@ -262,6 +263,9 @@ impl AssetProcessor {
                         sample_index += 1;
                         if sample_index % samples_per_peaks == 0 {
                             waveform.push(max_in_current_peak);
+                            if max_in_current_peak > max_audio_sample {
+                                max_audio_sample = max_in_current_peak;
+                            }
                             max_in_current_peak = 0.0;
                         }
                     }
@@ -304,6 +308,7 @@ impl AssetProcessor {
             duration,
             waveform,
             integrated_lufs,
+            peak: max_audio_sample.log10() * 20.0,
             start_time,
             end_time,
         })
