@@ -45,19 +45,28 @@
         @update="saveEditorValue"
       ></text-input>
       <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue"></text-input>
+      <v-btn
+        class="ml-auto mr-0 flex-grow-0"
+        density="compact"
+        :disabled="!(selectedCue.id in showState.activeCues)"
+        @click="insertTimestampToNote"
+        >Timestamp</v-btn
+      >
     </v-sheet>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { buildCueName, calculateDuration } from '../../utils';
+import { buildCueName, calculateDuration, secondsToFormat } from '../../utils';
 import { useAssetResult } from '../../stores/assetResult';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
 import type { Cue } from '../../types/Cue';
+import { useShowState } from '../../stores/showstate';
 
 const assetResult = useAssetResult();
+const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
@@ -138,6 +147,22 @@ const saveEditorValue = () => {
     selectedCue.value.notes = notes.value;
   }
   emit('update');
+};
+
+const insertTimestampToNote = () => {
+  if (selectedCue.value == null || !(selectedCue.value.id in showState.activeCues)) {
+    return;
+  }
+  const activeCue = showState.activeCues[selectedCue.value.id];
+  if (activeCue == null) {
+    return;
+  }
+  if (notes.value != null && (notes.value.endsWith('\n') || notes.value == '')) {
+    notes.value += `[${secondsToFormat(activeCue.position)}] `;
+  } else {
+    notes.value += `\n[${secondsToFormat(activeCue.position)}] `;
+  }
+  saveEditorValue();
 };
 </script>
 
