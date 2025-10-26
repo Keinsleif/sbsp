@@ -175,7 +175,7 @@ const seek = (event: MouseEvent) => {
 };
 
 const buildTooltipText = () => {
-  if (props.targetId == null || svgRef.value == null) {
+  if (props.targetId == null || svgRef.value == null || !(props.targetId in assetResult.results)) {
     return '--:--.-- / --:--.--';
   }
   const duration = assetResult.results[props.targetId].duration;
