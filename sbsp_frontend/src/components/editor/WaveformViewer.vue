@@ -1,9 +1,21 @@
 <template>
   <div style="height: 120px" class="w-100 border-md">
+    <v-sheet
+      v-show="!isOutside"
+      v-if="props.targetId != null && svgRef != null && parent != null"
+      :style="{
+        position: 'absolute',
+        top: `${mouseY - parent.getBoundingClientRect().top - 10}px`,
+        left: `${parent.getBoundingClientRect().right - mouseX > 150 ? mouseX - parent.getBoundingClientRect().left + 15 : mouseX - parent.getBoundingClientRect().left - 120}px`,
+      }"
+      class="pl-1 pr-1 rounded text-caption"
+    >
+      {{ buildTooltipText() }}
+    </v-sheet>
     <svg
       ref="svg"
       preserveAspectRatio="none"
-      v-if="targetId != null && targetId in assetResult.results"
+      v-if="props.targetId != null && props.targetId in assetResult.results"
       xmlns="http://www.w3.org/2000/svg"
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"
@@ -50,6 +62,8 @@ import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import type { PlaybackStatus } from '../../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
+import { useMouseInElement, useParentElement } from '@vueuse/core';
+import { secondsToFormat } from '../../utils';
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -86,6 +100,7 @@ const nonNullEndTime = computed<number>(() => {
 });
 
 const svgRef = useTemplateRef('svg');
+const parent = useParentElement();
 const position = computed<number>(() => {
   if (props.targetId != null && props.targetId in showState.activeCues) {
     const activeCue = showState.activeCues[props.targetId];
@@ -136,6 +151,7 @@ const compressedWaveform = computed<number[]>(() => {
   }
   return result;
 });
+const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef);
 
 const seek = (event: MouseEvent) => {
   if (
@@ -156,6 +172,17 @@ const seek = (event: MouseEvent) => {
   if (position > 0 && position < 1) {
     invoke('seek_to', { cueId: props.targetId, position: position * activeCue.duration });
   }
+};
+
+const buildTooltipText = () => {
+  if (props.targetId == null || svgRef.value == null) {
+    return '--:--.-- / --:--.--';
+  }
+  const duration = assetResult.results[props.targetId].duration;
+  if (duration == null) {
+    return '--:--.-- / --:--.--';
+  }
+  return `${secondsToFormat((elementX.value / svgRef.value.clientWidth) * duration)} / ${secondsToFormat(duration)}`;
 };
 </script>
 
