@@ -359,9 +359,15 @@ impl CueController {
                 duration,
             } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    if !active_cue.status.eq(&PlaybackStatus::Paused) {
+                    if active_cue.position != *position {
                         active_cue.position = *position;
+                        state_changed = true;
+                    }
+                    if active_cue.duration != *duration {
                         active_cue.duration = *duration;
+                        state_changed = true;
+                    }
+                    if !active_cue.status.eq(&PlaybackStatus::Paused) {
                         active_cue.status = PlaybackStatus::Paused;
                         state_changed = true;
                     }
