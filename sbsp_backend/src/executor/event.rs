@@ -48,6 +48,11 @@ pub enum ExecutorEvent {
     Resumed {
         cue_id: Uuid,
     },
+    Stopping {
+        cue_id: Uuid,
+        position: f64,
+        duration: f64,
+    },
     Stopped {
         cue_id: Uuid,
     },

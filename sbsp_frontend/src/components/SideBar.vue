@@ -10,8 +10,10 @@
           <v-sheet class="d-flex flex-row align-center justify-space-between pl-3 pr-3 pt-2">
             <span>{{ buildTitle(cue_id) }}</span>
             <v-icon
+              v-if="activeCue.status != 'Stopping'"
               :icon="activeCue.params.type == 'audio' && activeCue.params.repeating === true ? mdiRepeat : undefined"
             ></v-icon>
+            <v-progress-circular v-if="activeCue.status == 'Stopping'" indeterminate></v-progress-circular>
           </v-sheet>
           <v-sheet class="pa-0 d-flex flex-row justify-space-between">
             <v-list-item density="compact">
@@ -34,7 +36,7 @@
             </v-list-item>
           </v-sheet>
           <v-progress-linear
-            :color="activeCue.status == 'Paused' ? 'warning' : 'primary'"
+            :color="activeCue.status == 'Paused' || activeCue.status == 'Stopping' ? 'warning' : 'primary'"
             :model-value="activeCue != null ? (activeCue.position * 100) / activeCue.duration : 0"
             height="16"
           ></v-progress-linear>

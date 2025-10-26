@@ -387,6 +387,34 @@ impl CueController {
                     state_changed = true;
                 }
             }
+            ExecutorEvent::Stopping { cue_id, position, duration } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    if (position - active_cue.position).abs() > 0.1 {
+                        active_cue.position = (position * 10.0).floor() / 10.0;
+                        state_changed = true;
+                    }
+                    if active_cue.duration != *duration {
+                        active_cue.duration = *duration;
+                        state_changed = true;
+                    }
+                    if active_cue.status != PlaybackStatus::Stopping {
+                        active_cue.status = PlaybackStatus::Stopping;
+                        state_changed = true;
+                    }
+                } else {
+                    show_state.active_cues.insert(
+                        *cue_id,
+                        ActiveCue {
+                            cue_id: *cue_id,
+                            position: *position,
+                            duration: *duration,
+                            status: PlaybackStatus::Stopping,
+                            params: StateParam::None,
+                        },
+                    );
+                    state_changed = true;
+                }
+            }
             ExecutorEvent::Stopped { cue_id } => {
                 self.wait_tasks.write().await.remove(cue_id);
                 self.state_tx.send_modify(|state| {
@@ -458,9 +486,18 @@ impl CueController {
                 duration,
             } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    active_cue.position = *position;
-                    active_cue.duration = *duration;
-                    active_cue.status = PlaybackStatus::PreWaiting
+                    if (position - active_cue.position).abs() > 0.1 {
+                        active_cue.position = (position * 10.0).floor() / 10.0;
+                        state_changed = true;
+                    }
+                    if active_cue.duration != *duration {
+                        active_cue.duration = *duration;
+                        state_changed = true;
+                    }
+                    if active_cue.status != PlaybackStatus::PreWaiting {
+                        active_cue.status = PlaybackStatus::PreWaiting;
+                        state_changed = true;
+                    }
                 } else {
                     show_state.active_cues.insert(
                         *cue_id,
@@ -472,8 +509,8 @@ impl CueController {
                             params: StateParam::None,
                         },
                     );
+                    state_changed = true;
                 }
-                state_changed = true;
             }
             ExecutorEvent::PreWaitPaused {
                 cue_id,

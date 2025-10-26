@@ -26,6 +26,11 @@ pub enum AudioEngineEvent {
     Resumed {
         instance_id: Uuid,
     },
+    Stopping {
+        instance_id: Uuid,
+        position: f64,
+        duration: f64,
+    },
     Stopped {
         instance_id: Uuid,
     },
@@ -50,6 +55,7 @@ impl AudioEngineEvent {
             Self::Progress { instance_id, .. } => *instance_id,
             Self::Paused { instance_id, .. } => *instance_id,
             Self::Resumed { instance_id } => *instance_id,
+            Self::Stopping { instance_id , .. } => *instance_id,
             Self::Stopped { instance_id } => *instance_id,
             Self::Completed { instance_id } => *instance_id,
             Self::StateParamUpdated { instance_id, .. } => *instance_id,

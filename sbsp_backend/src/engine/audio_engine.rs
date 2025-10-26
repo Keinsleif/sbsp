@@ -266,7 +266,8 @@ impl AudioEngine {
                                 EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Stopping => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })
+                                log::debug!("Audio is stopping...");
+                                EngineEvent::Audio(AudioEngineEvent::Stopping { instance_id: *id, position, duration: playing_sound.handle.duration })
                             },
                             kira::sound::PlaybackState::Stopped => {
                                 if playing_sound.manual_stop_sent {

@@ -487,6 +487,13 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
+                    AudioEngineEvent::Stopping { position, duration, .. } => {
+                        let event = ExecutorEvent::Stopping { cue_id, position, duration };
+                        if let Err(e) = self.executor_event_tx.try_send(event) {
+                            log::warn!("EngineEvent dropped: {:?}", e);
+                        }
+                        return Ok(())
+                    }
                     AudioEngineEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Stopped { cue_id }

@@ -63,6 +63,8 @@ pub enum UiError {
 #[cfg(not(feature = "type_export"))]
 impl From<ExecutorEvent> for UiEvent {
     fn from(value: ExecutorEvent) -> Self {
+        use crate::executor::ExecutorEvent;
+
         match value {
             ExecutorEvent::Loaded { cue_id, .. } => UiEvent::CueLoaded { cue_id },
             ExecutorEvent::Started { cue_id, .. } => UiEvent::CueStarted { cue_id },
@@ -71,6 +73,7 @@ impl From<ExecutorEvent> for UiEvent {
             ExecutorEvent::Stopped { cue_id } => UiEvent::CueStopped { cue_id },
             ExecutorEvent::Completed { cue_id } => UiEvent::CueCompleted { cue_id },
             ExecutorEvent::Progress { .. } => unreachable!(),
+            ExecutorEvent::Stopping { .. } => unreachable!(),
             ExecutorEvent::StateParamUpdated { .. } => unreachable!(),
             ExecutorEvent::Error { cue_id, error } => UiEvent::CueError { cue_id, error },
             ExecutorEvent::PreWaitStarted { cue_id } => UiEvent::CuePreWaitStarted { cue_id },
