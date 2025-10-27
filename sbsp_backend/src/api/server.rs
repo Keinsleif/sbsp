@@ -161,8 +161,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             WsCommand::RequestAssetList => {
                                 log::info!("Asset List reqested.");
                                 if let Some(model_dir) = state.backend_handle.model_handle.get_current_file_path().await.as_ref() {
-                                    // TODO change this directory via configuration
-                                    let asset_dir = model_dir.join("audio");
+                                    let import_destination = {
+                                        let model = state.backend_handle.model_handle.read().await;
+                                        model.settings.general.copy_assets_destination.clone()
+                                    };
+                                    let asset_dir = model_dir.join(import_destination);
                                     if let Ok(file_list) = get_dirs(asset_dir, None).await {
                                         let ws_message = WsFeedback::AssetList(file_list);
                                         if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
