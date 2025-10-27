@@ -25,21 +25,36 @@
             <v-checkbox
               v-model="editingSettings.general.advanceCursorWhenGo"
               label="Advance cursor when GO"
+              hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
               v-model="editingSettings.general.lockCursorToSelection"
               label="Lock Cursor to Selection (on Main side)"
+              hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
               v-model="editingSettings.general.copyAssetsWhenAdd"
               label="Copy assets when adding Cue"
+              hide-details
             ></v-checkbox>
+            <text-input
+              v-model="editingSettings.general.copyAssetsDestination"
+              class="ma-2"
+              align-input="left"
+              width="500px"
+              label="Assets directory"
+              hint="Relative path to the directory for copying assets."
+              persistent-hint
+              show-details
+            ></text-input>
+            <v-divider></v-divider>
             <v-number-input
               hide-details
               inset
               persistent-placeholder
+              class="ma-2"
               v-model="editingSettings.general.seekAmount"
               :min="0"
               width="160px"
@@ -263,6 +278,7 @@ import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } fro
 import { secondsToFormat, calculateDuration } from '../../utils';
 import BottomEditor from '../BottomEditor.vue';
 import type { Cue } from '../../types/Cue';
+import TextInput from '../input/TextInput.vue';
 
 const showModel = useShowModel();
 

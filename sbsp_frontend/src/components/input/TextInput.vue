@@ -2,7 +2,7 @@
   <v-text-field
     v-if="props.type == 'single'"
     v-bind="$attrs"
-    hide-details
+    :hide-details="!props.showDetails"
     persistent-placeholder
     v-model="innerText"
     variant="outlined"
@@ -26,7 +26,7 @@
   <v-textarea
     v-if="props.type == 'area'"
     v-bind="$attrs"
-    hide-details
+    :hide-details="!props.showDetails"
     persistent-placeholder
     v-model="innerText"
     variant="outlined"
@@ -51,10 +51,12 @@ const props = withDefaults(
   defineProps<{
     type?: 'single' | 'area';
     alignInput?: 'left' | 'center' | 'right';
+    showDetails?: boolean;
   }>(),
   {
     type: 'single',
     alignInput: 'center',
+    showDetails: false,
   },
 );
 const emit = defineEmits(['update']);
