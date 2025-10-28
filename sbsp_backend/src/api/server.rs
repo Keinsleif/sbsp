@@ -15,7 +15,7 @@ use mdns_sd::{ServiceDaemon, ServiceInfo};
 use tokio::{sync::{broadcast, watch}};
 
 use crate::{
-    api::FileList, asset_processor::{AssetProcessorCommand, ProcessResult}, controller::state::ShowState, event::UiEvent, BackendHandle
+    api::FileList, asset_processor::{AssetProcessorCommand}, controller::state::ShowState, event::UiEvent, BackendHandle
 };
 use super::{
     WsCommand, WsFeedback, FullShowState
@@ -143,18 +143,8 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             },
                             WsCommand::AssetProcessor(asset_processor_command) => {
                                 match asset_processor_command {
-                                    AssetProcessorCommand::RequestFileAssetData { id, path } => {
-                                        let result = state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
-                                        let ws_message = WsFeedback::AssetProcessorResult(ProcessResult {
-                                            id,
-                                            path,
-                                            data: result,
-                                        });
-                                        if let Ok(payload) = serde_json::to_string(&ws_message)
-                                        && socket.send(Message::Text(payload.into())).await.is_err() {
-                                            log::info!("WebSocket client disconnected (send error).");
-                                            break;
-                                        }
+                                    AssetProcessorCommand::RequestFileAssetData { path } => {
+                                        state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
                                     },
                                 }
                             },

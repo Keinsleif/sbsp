@@ -54,10 +54,12 @@ import type { ShowState } from './types/ShowState';
 import type { UiEvent } from './types/UiEvent';
 import type { ShowModel } from './types/ShowModel';
 import UpdateDialog from './components/dialog/UpdateDialog.vue';
+import { useAssetResult } from './stores/assetResult';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+const assetResult = useAssetResult();
 const { t } = useI18n();
 
 listen<ShowState>('backend-state-update', (event) => {
@@ -113,6 +115,15 @@ listen<UiEvent>('backend-event', (event) => {
     case 'settingsUpdated': {
       const settings = event.payload.param.newSettings;
       showModel.$patch({ settings: settings });
+      break;
+    }
+    case 'assetResult': {
+      if ('Ok' in event.payload.param.data) {
+        assetResult.results[event.payload.param.path] = event.payload.param.data.Ok;
+      } else {
+        console.error(event.payload.param.data.Err);
+        uiState.error(event.payload.param.data.Err);
+      }
       break;
     }
     case 'operationFailed':

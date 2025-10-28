@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::{
-    asset_processor::{AssetProcessorCommand, ProcessResult}, controller::{state::ShowState, ControllerCommand}, event::UiEvent, manager::ModelCommand, model::ShowModel
+    asset_processor::AssetProcessorCommand, controller::{state::ShowState, ControllerCommand}, event::UiEvent, manager::ModelCommand, model::ShowModel
 };
 
 #[cfg(feature = "apiserver")]
@@ -16,7 +16,6 @@ pub use file_list::FileList;
 pub enum WsFeedback {
     Event(Box<UiEvent>),
     State(ShowState),
-    AssetProcessorResult(ProcessResult),
     AssetList(Vec<FileList>),
 }
 

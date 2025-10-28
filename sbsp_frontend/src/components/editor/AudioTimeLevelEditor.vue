@@ -4,7 +4,7 @@
       <time-range
         v-model="range"
         :disabled="selectedCue!.id in showState.activeCues"
-        :duration="assetResult.results[selectedCue!.id]?.duration || undefined"
+        :duration="assetResult.get(selectedCue?.id)?.duration || undefined"
         @update="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
@@ -132,7 +132,7 @@ const range = ref([
   selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
   selectedCue.value != null && selectedCue.value.params.type == 'audio'
     ? selectedCue.value.params.endTime
-    : assetResult.results[selectedCue.value!.id].duration,
+    : assetResult.get(selectedCue.value?.id)?.duration,
 ] as [number | null, number | null]);
 
 const volume = ref(
@@ -176,48 +176,40 @@ const saveEditorValue = () => {
 };
 
 const skipFirstSilence = () => {
-  if (selectedCue.value == null || !(selectedCue.value.id in assetResult.results)) {
+  if (selectedCue.value == null) {
     return;
   }
-  const startTime = assetResult.results[selectedCue.value.id].startTime;
+  const startTime = assetResult.get(selectedCue.value.id)?.startTime;
   if (startTime == null) return;
   range.value[0] = startTime;
   saveEditorValue();
 };
 
 const skipLastSilence = () => {
-  if (selectedCue.value == null || !(selectedCue.value.id in assetResult.results)) {
+  if (selectedCue.value == null) {
     return;
   }
-  const endTime = assetResult.results[selectedCue.value.id].endTime;
+  const endTime = assetResult.get(selectedCue.value.id)?.endTime;
   if (endTime == null) return;
   range.value[1] = endTime;
   saveEditorValue();
 };
 
 const setVolumeToLUFS = () => {
-  if (
-    selectedCue.value == null ||
-    !(selectedCue.value.id in assetResult.results) ||
-    assetResult.results[selectedCue.value.id].integratedLufs == null
-  ) {
+  if (selectedCue.value == null) {
     return;
   }
-  const integratedLufs = assetResult.results[selectedCue.value.id].integratedLufs;
+  const integratedLufs = assetResult.get(selectedCue.value.id)?.integratedLufs;
   if (integratedLufs == null) return;
   volume.value = -14 - integratedLufs;
   saveEditorValue();
 };
 
 const setVolumeToMAX = () => {
-  if (
-    selectedCue.value == null ||
-    !(selectedCue.value.id in assetResult.results) ||
-    assetResult.results[selectedCue.value.id].peak == null
-  ) {
+  if (selectedCue.value == null) {
     return;
   }
-  const peak = assetResult.results[selectedCue.value.id].peak;
+  const peak = assetResult.get(selectedCue.value.id)?.peak;
   if (peak == null) return;
   volume.value = -peak;
   saveEditorValue();

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use super::AppState;
-use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam};
+use sbsp_backend::model::cue::CueParam;
 use tauri::Listener;
 use tokio::sync::oneshot;
 use uuid::Uuid;
@@ -18,27 +18,14 @@ pub fn get_side() -> String {
 #[tauri::command]
 pub async fn process_asset(
     state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(Uuid, AssetData), String> {
+    path: PathBuf,
+) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
-        if let Some(cue) = handle
-            .model_handle
-            .read()
-            .await
-            .cues
-            .iter()
-            .find(|cue| cue.id == cue_id)
-            && let CueParam::Audio(params) = &cue.params
-        {
-            handle
-                .asset_processor_handle
-                .request_file_asset_data(params.target.clone())
-                .await
-                .map_err(|e| e.to_string())
-                .map(|asset_data| (cue_id, asset_data))
-        } else {
-            Err(format!("Cue not found. id={}", cue_id))
-        }
+        handle
+            .asset_processor_handle
+            .request_file_asset_data(path)
+            .await;
+        Ok(())
     } else {
         Err("Not connected.".into())
     }

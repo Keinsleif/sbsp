@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 #[cfg(not(feature = "type_export"))]
 use crate::executor::ExecutorEvent;
-use crate::model::{cue::Cue, settings::ShowSettings};
+use crate::{asset_processor::AssetData, model::{cue::Cue, settings::ShowSettings}};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -43,6 +43,12 @@ pub enum UiEvent {
     CueMoved { cue_id: Uuid, to_index: usize },
     CueListUpdated { cues: Vec<Cue> },
     SettingsUpdated { new_settings: Box<ShowSettings> },
+
+    // AssetProcessor Events
+    AssetResult{
+        path: PathBuf,
+        data: Result<AssetData, String>,
+    },
 
     OperationFailed { error: UiError },
 }

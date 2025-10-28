@@ -1,4 +1,6 @@
-use sbsp_backend::{asset_processor::AssetData, model::cue::CueParam};
+use std::path::PathBuf;
+
+use sbsp_backend::model::cue::CueParam;
 use tauri::Manager as _;
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
@@ -18,25 +20,14 @@ pub fn get_side() -> String {
 #[tauri::command]
 pub async fn process_asset(
     state: tauri::State<'_, AppState>,
-    cue_id: Uuid,
-) -> Result<(Uuid, AssetData), String> {
+    path: PathBuf,
+) -> Result<(), String> {
     let handle = state.get_handle();
-    let cue_option = {
-        let model = handle.model_handle.read().await;
-        model.cues.iter().find(|cue| cue.id == cue_id).cloned()
-    };
-    if let Some(cue) = cue_option
-        && let CueParam::Audio(params) = &cue.params
-    {
-        handle
-            .asset_processor_handle
-            .request_file_asset_data(params.target.clone())
-            .await
-            .map_err(|e| e.to_string())
-            .map(|asset_data| (cue_id, asset_data))
-    } else {
-        Err(format!("Cue not found. id={}", cue_id))
-    }
+    handle
+        .asset_processor_handle
+        .request_file_asset_data(path)
+        .await;
+    Ok(())
 }
 
 #[tauri::command]

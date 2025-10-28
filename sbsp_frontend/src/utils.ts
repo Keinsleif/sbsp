@@ -84,7 +84,7 @@ export const buildCueName = (cue: Cue | null) => {
   }
 };
 
-export const calculateDuration = (cueParam: CueParam, totalDuration: number | null): number | null => {
+export const calculateDuration = (cueParam: CueParam, totalDuration: number | null | undefined): number | null => {
   if (totalDuration == null || isNaN(totalDuration)) {
     return null;
   }

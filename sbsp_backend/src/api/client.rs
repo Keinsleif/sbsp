@@ -32,7 +32,6 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
     let (model_tx, mut model_rx) = mpsc::channel::<ModelCommand>(32);
     let (controller_tx, mut controller_rx) = mpsc::channel::<ControllerCommand>(32);
     let (asset_tx, mut asset_rx) = mpsc::channel::<AssetProcessorCommand>(32);
-    let (asset_result_tx, _) = broadcast::channel(8);
 
     let (asset_list_tx, asset_list_rx) = watch::channel(Vec::new());
     let (asset_list_command_tx, mut asset_list_command_rx) = mpsc::channel(8);
@@ -41,7 +40,6 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
 
     let model_clone = model.clone();
     let event_tx_clone = event_tx.clone();
-    let asset_result_tx_clone = asset_result_tx.clone();
     let full_state = reqwest::get(format!("http://{}/api/show/full_state", address))
         .await?
         .json::<FullShowState>()
@@ -82,12 +80,6 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
                                 WsFeedback::State(show_state) => {
                                     if state_tx.send(show_state).is_err() {
                                         log::error!("Failed to send ShowState to channel.");
-                                        break;
-                                    }
-                                },
-                                WsFeedback::AssetProcessorResult(process_result) => {
-                                    if asset_result_tx_clone.send(process_result).is_err() {
-                                        log::error!("Failed to send AssetProcessor result to channel.");
                                         break;
                                     }
                                 },
@@ -153,7 +145,6 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
                 show_model_path,
             },
             asset_processor_handle: AssetProcessorHandle {
-                result_rx_factory: asset_result_tx,
                 command_tx: asset_tx,
             },
             controller_handle: CueControllerHandle {

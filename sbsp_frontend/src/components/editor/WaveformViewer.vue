@@ -15,7 +15,7 @@
     <svg
       ref="svg"
       preserveAspectRatio="none"
-      v-if="props.targetId != null && props.targetId in assetResult.results"
+      v-if="props.targetId != null"
       xmlns="http://www.w3.org/2000/svg"
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"
@@ -62,7 +62,7 @@ import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import type { PlaybackStatus } from '../../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
-import { useMouseInElement, useParentElement } from '@vueuse/core';
+import { useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 
 const showState = useShowState();
@@ -87,7 +87,7 @@ const nonNullStartTime = computed<number>(() => {
   if (props.targetId == null) {
     return 0;
   }
-  const duration = assetResult.results[props.targetId].duration;
+  const duration = assetResult.get(props.targetId)?.duration;
   return props.startTime != null && duration != null ? props.startTime / duration : 0;
 });
 
@@ -95,11 +95,12 @@ const nonNullEndTime = computed<number>(() => {
   if (props.targetId == null) {
     return 1;
   }
-  const duration = assetResult.results[props.targetId].duration;
+  const duration = assetResult.get(props.targetId)?.duration;
   return props.endTime != null && duration != null ? props.endTime / duration : 1;
 });
 
 const svgRef = useTemplateRef('svg');
+const { width: svgWidth } = useElementSize(svgRef);
 const parent = useParentElement();
 const position = computed<number>(() => {
   if (props.targetId != null && props.targetId in showState.activeCues) {
@@ -118,18 +119,18 @@ const position = computed<number>(() => {
   }
 });
 const compressedWaveform = computed<number[]>(() => {
-  if (svgRef.value == null || svgRef.value.clientWidth < 1) {
+  if (svgWidth.value < 1) {
     return [0];
   }
-  if (props.targetId == null || !(props.targetId in assetResult.results)) {
-    return Array(svgRef.value.clientWidth).fill(0);
+  if (props.targetId == null) {
+    return Array(svgWidth.value).fill(0);
   }
   let result = [] as number[];
-  let source = assetResult.results[props.targetId].waveform;
+  let source = assetResult.get(props.targetId)?.waveform;
   if (source == null) {
-    return Array(svgRef.value.clientWidth).fill(0);
+    return Array(svgWidth.value).fill(0);
   }
-  const window = source.length / (svgRef.value.clientWidth - 1);
+  const window = source.length / (svgWidth.value - 1);
   let loop_count = 0;
   for (let i = 0; i < source.length || loop_count > 10000; i += window) {
     loop_count++;
@@ -178,10 +179,10 @@ const seek = (event: MouseEvent) => {
 };
 
 const buildTooltipText = () => {
-  if (props.targetId == null || svgRef.value == null || !(props.targetId in assetResult.results)) {
+  if (props.targetId == null || svgRef.value == null) {
     return '--:--.-- / --:--.--';
   }
-  const duration = assetResult.results[props.targetId].duration;
+  const duration = assetResult.get(props.targetId)?.duration;
   if (duration == null) {
     return '--:--.-- / --:--.--';
   }

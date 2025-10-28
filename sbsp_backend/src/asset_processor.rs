@@ -3,7 +3,6 @@ mod handle;
 
 pub use data::AssetData;
 pub use handle::AssetProcessorHandle;
-use uuid::Uuid;
 
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
@@ -20,6 +19,7 @@ use symphonia::core::{
 use tokio::sync::{RwLock, broadcast, mpsc};
 use ebur128::EbuR128;
 
+use crate::event::UiEvent;
 use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
@@ -28,14 +28,12 @@ const AUDIO_THRESHOLD: f32 = 0.001_f32;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AssetProcessorCommand {
     RequestFileAssetData {
-        id: Uuid,
         path: PathBuf,
     },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessResult {
-    pub id: Uuid,
     pub path: PathBuf,
     pub data: Result<AssetData, String>,
 }
@@ -63,8 +61,8 @@ pub struct AssetProcessor {
     model_handle: ShowModelHandle,
 
     command_rx: mpsc::Receiver<AssetProcessorCommand>,
+    event_tx: broadcast::Sender<UiEvent>,
     result_tx: broadcast::Sender<ProcessResult>,
-    result_rx: broadcast::Receiver<ProcessResult>,
 
     cache: Arc<RwLock<AssetCache>>,
     processing: Arc<RwLock<Vec<PathBuf>>>,
@@ -73,50 +71,57 @@ pub struct AssetProcessor {
 impl AssetProcessor {
     pub fn new(
         model_handle: ShowModelHandle,
+        event_tx: broadcast::Sender<UiEvent>,
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
-        let (result_tx, result_rx) = broadcast::channel(8);
+        let (result_tx, _) = broadcast::channel(32);
         (
             Self {
                 model_handle,
                 command_rx,
-                result_tx: result_tx.clone(),
-                result_rx,
+                event_tx,
+                result_tx,
                 cache: cache.clone(),
                 processing: Arc::new(RwLock::new(Vec::new())),
             },
             AssetProcessorHandle {
-                result_rx_factory: result_tx,
                 command_tx,
             },
         )
     }
 
     pub async fn run(mut self) {
+        let mut result_rx = self.result_tx.subscribe();
         loop {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     match command {
-                        AssetProcessorCommand::RequestFileAssetData{id, path} => {
-                            self.handle_process_file(id, path).await;
+                        AssetProcessorCommand::RequestFileAssetData{path} => {
+                            self.handle_process_file(path).await;
                         }
                     }
                 },
-                Ok(result) = self.result_rx.recv() => {
+                Ok(result) = result_rx.recv() => {
                     let mut cache = self.cache.write().await;
                     if let Ok(data) = &result.data {
-                        cache.entries.insert(result.path.clone(), CacheEntry { last_modified: result.path.metadata().unwrap().modified().unwrap(), data: data.clone() });
+                        if let Ok(metadata) = tokio::fs::metadata(data.path.clone()).await && let Ok(last_modified) = metadata.modified() {
+                            cache.entries.insert(data.path.clone(), CacheEntry { last_modified, data: data.clone() });
+                        } else {
+                            cache.entries.insert(data.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
+                        }
                     }
                     self.processing.write().await.retain(|value| *value != result.path);
-                },
+                    if let Err(e) = self.event_tx.send(UiEvent::AssetResult { path: result.path, data: result.data }) {
+                        log::error!("Failed to send process result to event bus. {}", e);
+                    }
+                }
             }
         }
     }
 
     async fn handle_process_file(
         &self,
-        id: Uuid,
         path: PathBuf,
     ) {
         let filepath = self
@@ -128,41 +133,26 @@ impl AssetProcessor {
 
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&filepath) {
-            self.result_tx.send(ProcessResult { id, path: filepath, data: Ok(entry.data.clone()) }).unwrap();
-        } else {
-            let mut processing = self.processing.write().await;
-
-            if processing.contains(&filepath) {
-                let mut receiver = self.result_tx.subscribe();
-                let sender = self.result_tx.clone();
-                let path_clone = filepath.clone();
-                tokio::spawn(async move {
-                    while let Ok(result) = receiver.recv().await {
-                        if result.path == path_clone {
-                            sender.send(ProcessResult { id, path: result.path, data: result.data }).unwrap();
-                            break;
-                        }
-                    }
-                });
-            } else {
-                processing.push(filepath.clone());
-                drop(processing);
-
-                let path_clone = filepath.clone();
-                let result_tx = self.result_tx.clone();
-                tokio::task::spawn_blocking(move || {
-                    let asset_data = Self::process_asset(path_clone.clone())
-                        .map_err(|e| e.to_string());
-                    result_tx
-                        .send(ProcessResult {
-                            id,
-                            path: path_clone,
-                            data: asset_data,
-                        })
-                        .unwrap();
-                });
-            }
+            self.event_tx.send(UiEvent::AssetResult{ path: filepath, data: Ok(entry.data.clone()) }).unwrap();
+            return;
         }
+        let mut processing = self.processing.write().await;
+        if !processing.contains(&filepath) {
+            processing.push(filepath.clone());
+        }
+
+        let path_clone = filepath.clone();
+        let result_tx = self.result_tx.clone();
+        tokio::task::spawn_blocking(move || {
+            let asset_data = Self::process_asset(path_clone.clone())
+                .map_err(|e| e.to_string());
+            result_tx
+            .send(ProcessResult {
+                path: path_clone,
+                data: asset_data,
+            })
+            .unwrap();
+        });
     }
 
     fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
