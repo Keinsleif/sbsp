@@ -139,10 +139,10 @@ impl AssetProcessor {
             return;
         }
         let mut processing = self.processing.write().await;
-        if !processing.contains(&actual_path) {
-            processing.push(actual_path.clone());
+        if processing.contains(&actual_path) {
             return;
         }
+        processing.push(actual_path.clone());
 
         let actual_path_clone = actual_path.clone();
         let result_tx = self.result_tx.clone();
