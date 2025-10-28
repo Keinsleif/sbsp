@@ -1,6 +1,6 @@
 <template>
   <v-app height="100vh">
-    <v-app-bar app border flat height="232">
+    <v-app-bar app border flat height="200">
       <ToolHeader />
     </v-app-bar>
 

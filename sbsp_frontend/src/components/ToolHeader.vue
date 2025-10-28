@@ -2,17 +2,17 @@
   <v-sheet class="d-flex flex-column ma-0 w-100 ga-4 pl-4 pr-4">
     <v-sheet class="d-flex flex-row ma-0 w-100 ga-4">
       <div class="d-flex align-center border" :class="hasFocus ? '' : 'bg-red'">
-        <div class="d-flex align-end pl-3 pr-3 text-center" style="font-size: 75pt; line-height: 1">
+        <div class="d-flex align-end pl-3 pr-3 text-center text-h2">
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
           >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
-          >.<span style="font-size: 50pt; line-height: 1">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
+          >.<span class="text-h3">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
         </div>
       </div>
       <div class="d-flex flex-column ma-0 flex-grow-1">
         <v-sheet class="pa-2 rounded mb-1 border-md" height="42px">
           {{ playbackCursorCueTitle }}
         </v-sheet>
-        <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto" height="96px">{{
+        <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto" height="64px">{{
           playbackCursorCue != null ? playbackCursorCue.notes : ''
         }}</v-sheet>
       </div>
@@ -78,13 +78,13 @@ import {
   mdiVolumeHigh,
 } from '@mdi/js';
 import { useShowModel } from '../stores/showmodel';
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useShowState } from '../stores/showstate';
 import { PlaybackStatus } from '../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
 import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
-import { useFullscreen, useNow, useWindowFocus } from '@vueuse/core';
+import { useFullscreen, useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -147,7 +147,18 @@ const handleReadyPauseButton = () => {
   }
 };
 
-const time = useNow();
+const time = ref(new Date());
+const ticker = ref();
+
+onMounted(() => {
+  ticker.value = setInterval(() => {
+    time.value = new Date();
+  }, 100);
+});
+
+onUnmounted(() => {
+  clearInterval(ticker.value);
+});
 </script>
 
 <style lang="css" module>
