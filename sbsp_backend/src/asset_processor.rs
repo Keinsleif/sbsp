@@ -125,36 +125,38 @@ impl AssetProcessor {
         &self,
         path: PathBuf,
     ) {
-        let filepath = self
-            .model_handle
-            .get_current_file_path()
-            .await.as_ref().map_or(path.to_path_buf(), |model_path| {
-                model_path.join(&path)
-            });
-
+        let actual_path = {
+            let model = self.model_handle.read().await;
+            if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
+                model_path.join(&model.settings.general.copy_assets_destination).join(&path)
+            } else {
+                path.clone()
+            }
+        };
         let cache = self.cache.read().await;
-        if let Some(entry) = cache.entries.get(&filepath) {
-            self.event_tx.send(UiEvent::AssetResult{ path: filepath, data: Ok(entry.data.clone()) }).unwrap();
+        if let Some(entry) = cache.entries.get(&actual_path) {
+            self.event_tx.send(UiEvent::AssetResult { path, data: Ok(entry.data.clone()) }).unwrap();
             return;
         }
         let mut processing = self.processing.write().await;
-        if !processing.contains(&filepath) {
-            processing.push(filepath.clone());
+        if !processing.contains(&actual_path) {
+            processing.push(actual_path.clone());
             return;
         }
 
-        let path_clone = filepath.clone();
+        let actual_path_clone = actual_path.clone();
         let result_tx = self.result_tx.clone();
         tokio::task::spawn_blocking(move || {
-            let asset_data = Self::process_asset(path_clone.clone())
+            let asset_data = Self::process_asset(actual_path_clone.clone())
                 .map_err(|e| e.to_string());
             result_tx
             .send(ProcessResult {
-                path: path_clone,
+                path,
                 data: asset_data,
             })
             .unwrap();
         });
+        log::info!("Asset Process started. file={:?}", actual_path);
     }
 
     fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {

@@ -119,7 +119,7 @@ listen<UiEvent>('backend-event', (event) => {
     }
     case 'assetResult': {
       if ('Ok' in event.payload.param.data) {
-        assetResult.results[event.payload.param.path] = event.payload.param.data.Ok;
+        assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
       } else {
         console.error(event.payload.param.data.Err);
         uiState.error(event.payload.param.data.Err);
