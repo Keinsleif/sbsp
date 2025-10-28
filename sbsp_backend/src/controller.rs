@@ -82,6 +82,12 @@ impl CueController {
                                     });
                                 }
                             }
+                            if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                log::error!("Failed to stop active cues before load. {}", e);
+                            }
+                            if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                log::error!("Failed to stop active cues before load. {}", e);
+                            }
                         },
                         UiEvent::CueAdded{cue, ..} => {
                             if self.state_tx.borrow().playback_cursor.is_none() {
@@ -103,10 +109,14 @@ impl CueController {
                                     });
                                 }
                             }
-                            if self.state_tx.borrow().active_cues.contains_key(&cue_id)
-                                && let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
-                                    log::error!("{}", e);
+                            if self.state_tx.borrow().active_cues.contains_key(&cue_id) {
+                                if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
+                                    log::error!("Failed to stop removed cue. {}", e);
                                 }
+                                if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
+                                    log::error!("Failed to stop removed cue. {}", e);
+                                }
+                            }
                         }
                         UiEvent::SettingsUpdated{ new_settings } => {
                             if let Err(e) = self.executor_tx.send(ExecutorCommand::ReconfigureEngines(new_settings)).await {
@@ -159,11 +169,11 @@ impl CueController {
             ControllerCommand::PauseAll
             | ControllerCommand::ResumeAll
             | ControllerCommand::StopAll => {
-                let model = self.model_handle.read().await;
+                let state = self.state_tx.borrow().clone();
 
-                for cue in &model.cues {
+                for cue_id in state.active_cues.keys() {
                     let executor_command = command
-                        .try_all_into_single_executor_command(cue.id)
+                        .try_all_into_single_executor_command(*cue_id)
                         .unwrap();
                     self.executor_tx.send(executor_command).await?;
                 }
