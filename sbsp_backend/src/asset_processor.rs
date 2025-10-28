@@ -98,6 +98,7 @@ impl AssetProcessor {
                 Some(command) = self.command_rx.recv() => {
                     match command {
                         AssetProcessorCommand::RequestFileAssetData{path} => {
+                            log::info!("Asset Process requested. file={:?}", path);
                             self.handle_process_file(path).await;
                         }
                     }
@@ -139,6 +140,7 @@ impl AssetProcessor {
         let mut processing = self.processing.write().await;
         if !processing.contains(&filepath) {
             processing.push(filepath.clone());
+            return;
         }
 
         let path_clone = filepath.clone();
