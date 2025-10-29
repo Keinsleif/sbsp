@@ -18,10 +18,7 @@ pub fn get_side() -> String {
 }
 
 #[tauri::command]
-pub async fn process_asset(
-    state: tauri::State<'_, AppState>,
-    path: PathBuf,
-) -> Result<(), String> {
+pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .asset_processor_handle

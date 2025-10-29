@@ -14,7 +14,11 @@ use uuid::Uuid;
 
 use crate::{
     event::{UiError, UiEvent},
-    model::{cue::{Cue, CueParam}, settings::ShowSettings, ShowModel},
+    model::{
+        ShowModel,
+        cue::{Cue, CueParam},
+        settings::ShowSettings,
+    },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,14 +101,21 @@ impl ShowModelManager {
             ModelCommand::UpdateCue(cue) => {
                 let (index_option, copy_assets_when_add) = {
                     let model = self.model.read().await;
-                    (model.cues.iter().position(|c| c.id == cue.id), model.settings.general.copy_assets_when_add)
+                    (
+                        model.cues.iter().position(|c| c.id == cue.id),
+                        model.settings.general.copy_assets_when_add,
+                    )
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let event = if let Some(index) = index_option {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
-                    && let Some(model_path) = model_path_option.as_ref() && copy_assets_when_add {
-                        let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                        && let Some(model_path) = model_path_option.as_ref()
+                        && copy_assets_when_add
+                    {
+                        let new_target = self
+                            .import_asset_file(&audio_param.target, model_path)
+                            .await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
@@ -127,7 +138,11 @@ impl ShowModelManager {
             ModelCommand::AddCue { cue, at_index } => {
                 let (id_exists, cuelist_length, copy_assets_when_add) = {
                     let model = self.model.read().await;
-                    (model.cues.iter().any(|c| c.id == cue.id), model.cues.len(), model.settings.general.copy_assets_when_add)
+                    (
+                        model.cues.iter().any(|c| c.id == cue.id),
+                        model.cues.len(),
+                        model.settings.general.copy_assets_when_add,
+                    )
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let event = if id_exists {
@@ -145,8 +160,12 @@ impl ShowModelManager {
                 } else {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
-                    && let Some(model_path) = model_path_option.as_ref() && copy_assets_when_add {
-                        let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                        && let Some(model_path) = model_path_option.as_ref()
+                        && copy_assets_when_add
+                    {
+                        let new_target = self
+                            .import_asset_file(&audio_param.target, model_path)
+                            .await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
@@ -155,7 +174,10 @@ impl ShowModelManager {
                         let mut model = self.model.write().await;
                         model.cues.insert(at_index, new_cue.clone());
                     }
-                    UiEvent::CueAdded { cue: new_cue, at_index }
+                    UiEvent::CueAdded {
+                        cue: new_cue,
+                        at_index,
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -163,7 +185,10 @@ impl ShowModelManager {
             ModelCommand::AddCues { cues, at_index } => {
                 let (cuelist_length, copy_assets_when_add) = {
                     let model = self.model.read().await;
-                    (model.cues.len(), model.settings.general.copy_assets_when_add)
+                    (
+                        model.cues.len(),
+                        model.settings.general.copy_assets_when_add,
+                    )
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let mut added_cues = vec![];
@@ -189,8 +214,12 @@ impl ShowModelManager {
                         } else {
                             let mut new_cue = cue.clone();
                             if let CueParam::Audio(audio_param) = &mut new_cue.params
-                            && let Some(model_path) = model_path_option.as_ref() && copy_assets_when_add {
-                                let new_target = self.import_asset_file(&audio_param.target, model_path).await;
+                                && let Some(model_path) = model_path_option.as_ref()
+                                && copy_assets_when_add
+                            {
+                                let new_target = self
+                                    .import_asset_file(&audio_param.target, model_path)
+                                    .await;
                                 if let Ok(target) = new_target {
                                     audio_param.target = target;
                                 } // ignore failed to import asset. use absolute path
@@ -374,7 +403,9 @@ impl ShowModelManager {
 
         for cue in &mut cues {
             if let CueParam::Audio(audio_param) = &mut cue.params {
-                if let Some(model_path) = model_path_option.as_ref() && model_path != path {
+                if let Some(model_path) = model_path_option.as_ref()
+                    && model_path != path
+                {
                     // copy exists project to another path
                     let asset_path = model_path.join(&audio_param.target);
                     let new_path = self.import_asset_file(&asset_path, path).await?;
@@ -403,7 +434,11 @@ impl ShowModelManager {
         Ok(())
     }
 
-    async fn import_asset_file(&self, asset_path: &PathBuf, model_path: &Path) -> anyhow::Result<PathBuf> {
+    async fn import_asset_file(
+        &self,
+        asset_path: &PathBuf,
+        model_path: &Path,
+    ) -> anyhow::Result<PathBuf> {
         log::info!("Import asset file started. file={:?}", &asset_path);
         let import_destination = {
             let model = self.model.read().await;
@@ -420,7 +455,9 @@ impl ShowModelManager {
         if !dest_path.exists() {
             tokio::fs::copy(asset_path, &dest_path).await?;
         }
-        Ok([import_destination, asset_file_name.to_string()].iter().collect())
+        Ok([import_destination, asset_file_name.to_string()]
+            .iter()
+            .collect())
     }
 
     #[cfg(test)]
@@ -434,14 +471,27 @@ impl ShowModelManager {
 mod tests {
     use std::path::PathBuf;
 
-    use tempfile::{tempdir, NamedTempFile};
+    use crate::{
+        event::UiEvent,
+        model::{
+            ShowModel,
+            cue::{
+                Cue, CueParam, CueSequence,
+                audio::{AudioCueParam, SoundType},
+            },
+            settings::{GeneralSettings, ShowSettings},
+        },
+    };
+    use tempfile::{NamedTempFile, tempdir};
     use tokio::sync::broadcast;
     use uuid::Uuid;
-    use crate::{event::UiEvent, model::{cue::{audio::{AudioCueParam, SoundType}, Cue, CueParam, CueSequence}, settings::{GeneralSettings, ShowSettings}, ShowModel}};
 
-    use super::{ShowModelManager, ShowModelHandle};
+    use super::{ShowModelHandle, ShowModelManager};
 
-    async fn setup_manager(initial_model: Option<ShowModel>, model_path: Option<PathBuf>) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
+    async fn setup_manager(
+        initial_model: Option<ShowModel>,
+        model_path: Option<PathBuf>,
+    ) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
         let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
         if let Some(inital) = initial_model {
@@ -460,18 +510,67 @@ mod tests {
         let temp_target = NamedTempFile::with_suffix(".mp3").unwrap();
         let temp_target_after = NamedTempFile::with_suffix(".wav").unwrap();
         let cue_id = Uuid::new_v4();
-        let (model_handle, mut event_rx) = setup_manager(Some(ShowModel {
-            name: "test".into(),
-            cues: vec![
-                Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) }
-            ],
-            settings: ShowSettings { general: GeneralSettings { copy_assets_when_add: true, ..Default::default() }, ..Default::default() },
-        }), Some(temp_dir.path().to_path_buf())).await;
+        let (model_handle, mut event_rx) = setup_manager(
+            Some(ShowModel {
+                name: "test".into(),
+                cues: vec![Cue {
+                    id: cue_id,
+                    number: "1".into(),
+                    name: Some("test cue".into()),
+                    notes: "note".into(),
+                    pre_wait: 0.0,
+                    sequence: CueSequence::DoNotContinue,
+                    params: CueParam::Audio(AudioCueParam {
+                        target: temp_target.path().to_path_buf(),
+                        start_time: None,
+                        fade_in_param: None,
+                        end_time: None,
+                        fade_out_param: None,
+                        volume: 0.0,
+                        pan: 0.0,
+                        repeat: false,
+                        sound_type: SoundType::Streaming,
+                    }),
+                }],
+                settings: ShowSettings {
+                    general: GeneralSettings {
+                        copy_assets_when_add: true,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            }),
+            Some(temp_dir.path().to_path_buf()),
+        )
+        .await;
 
-        let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target_after.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
+        let new_cue = Cue {
+            id: cue_id,
+            number: "1".into(),
+            name: Some("test cue".into()),
+            notes: "note".into(),
+            pre_wait: 0.0,
+            sequence: CueSequence::DoNotContinue,
+            params: CueParam::Audio(AudioCueParam {
+                target: temp_target_after.path().to_path_buf(),
+                start_time: None,
+                fade_in_param: None,
+                end_time: None,
+                fade_out_param: None,
+                volume: 0.0,
+                pan: 0.0,
+                repeat: false,
+                sound_type: SoundType::Streaming,
+            }),
+        };
         model_handle.update_cue(new_cue.clone()).await.unwrap();
 
-        let estimated_audio_filename = temp_target_after.path().file_name().unwrap().to_str().unwrap();
+        let estimated_audio_filename = temp_target_after
+            .path()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap();
         let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
@@ -499,13 +598,41 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let temp_target = NamedTempFile::with_suffix(".mp3").unwrap();
         let cue_id = Uuid::new_v4();
-        let (model_handle, mut event_rx) = setup_manager(Some(ShowModel {
-            name: "test".into(),
-            cues: vec![],
-            settings: ShowSettings { general: GeneralSettings { copy_assets_when_add: true, ..Default::default() }, ..Default::default() },
-        }), Some(temp_dir.path().to_path_buf())).await;
+        let (model_handle, mut event_rx) = setup_manager(
+            Some(ShowModel {
+                name: "test".into(),
+                cues: vec![],
+                settings: ShowSettings {
+                    general: GeneralSettings {
+                        copy_assets_when_add: true,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            }),
+            Some(temp_dir.path().to_path_buf()),
+        )
+        .await;
 
-        let new_cue = Cue { id: cue_id, number: "1".into(), name: Some("test cue".into()), notes: "note".into(), pre_wait: 0.0, sequence: CueSequence::DoNotContinue, params: CueParam::Audio(AudioCueParam{ target: temp_target.path().to_path_buf(), start_time: None, fade_in_param: None, end_time: None, fade_out_param: None, volume: 0.0, pan: 0.0, repeat: false, sound_type: SoundType::Streaming }) };
+        let new_cue = Cue {
+            id: cue_id,
+            number: "1".into(),
+            name: Some("test cue".into()),
+            notes: "note".into(),
+            pre_wait: 0.0,
+            sequence: CueSequence::DoNotContinue,
+            params: CueParam::Audio(AudioCueParam {
+                target: temp_target.path().to_path_buf(),
+                start_time: None,
+                fade_in_param: None,
+                end_time: None,
+                fade_out_param: None,
+                volume: 0.0,
+                pan: 0.0,
+                repeat: false,
+                sound_type: SoundType::Streaming,
+            }),
+        };
         model_handle.add_cue(new_cue.clone(), 0).await.unwrap();
 
         let estimated_audio_filename = temp_target.path().file_name().unwrap().to_str().unwrap();

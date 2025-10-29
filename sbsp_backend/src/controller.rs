@@ -214,7 +214,9 @@ impl CueController {
         let state = self.state_tx.borrow().clone();
 
         if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-            if let Some(active_cue) = state.active_cues.get(&cue_id) && active_cue.status != PlaybackStatus::Loaded {
+            if let Some(active_cue) = state.active_cues.get(&cue_id)
+                && active_cue.status != PlaybackStatus::Loaded
+            {
                 log::warn!("GO: Cue already executed.");
             } else {
                 self.executor_tx
@@ -230,7 +232,8 @@ impl CueController {
     async fn update_playback_cursor(&self) -> Result<()> {
         let model = self.model_handle.read().await;
         let state = self.state_tx.borrow().clone();
-        if let Some(cue_index) = model.cues
+        if let Some(cue_index) = model
+            .cues
             .iter()
             .position(|cue| cue.id == state.playback_cursor.unwrap())
         {
@@ -258,7 +261,11 @@ impl CueController {
         let mut state_changed = false;
 
         match &event {
-            ExecutorEvent::Loaded { cue_id, position, duration } => {
+            ExecutorEvent::Loaded {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     active_cue.duration = *duration;
@@ -275,7 +282,10 @@ impl CueController {
                 }
                 state_changed = true;
             }
-            ExecutorEvent::Started { cue_id, initial_params } => {
+            ExecutorEvent::Started {
+                cue_id,
+                initial_params,
+            } => {
                 let cue = self
                     .model_handle
                     .read()
@@ -327,7 +337,8 @@ impl CueController {
                             self.handle_go(*target).await.unwrap();
                         } else {
                             let model = self.model_handle.read().await;
-                            if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
+                            if let Some(cue_index) =
+                                model.cues.iter().position(|cue| cue.id == *cue_id)
                                 && cue_index + 1 < model.cues.len()
                             {
                                 self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
@@ -403,7 +414,11 @@ impl CueController {
                     state_changed = true;
                 }
             }
-            ExecutorEvent::Stopping { cue_id, position, duration } => {
+            ExecutorEvent::Stopping {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     if (position - active_cue.position).abs() > 0.1 {
                         active_cue.position = (position * 10.0).floor() / 10.0;
@@ -734,7 +749,10 @@ mod tests {
         tokio::spawn(controller.run());
 
         playback_event_tx
-            .send(ExecutorEvent::Started { cue_id, initial_params: StateParam::None })
+            .send(ExecutorEvent::Started {
+                cue_id,
+                initial_params: StateParam::None,
+            })
             .await
             .unwrap();
 

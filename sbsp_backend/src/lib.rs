@@ -16,7 +16,6 @@ use crate::{
     model::settings::AudioSettings,
 };
 
-pub mod model;
 #[cfg(feature = "backend")]
 pub mod action;
 #[cfg(feature = "backend")]
@@ -30,6 +29,7 @@ pub mod event;
 mod executor;
 #[cfg(feature = "backend")]
 pub mod manager;
+pub mod model;
 
 #[cfg(any(feature = "apiserver", feature = "apiclient"))]
 pub mod api;
@@ -97,7 +97,8 @@ pub fn start_backend() -> (
         AudioEngine::new(audio_rx, engine_event_tx.clone(), AudioSettings::default()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
-    let (asset_processor, asset_processor_handle) = AssetProcessor::new(model_handle.clone(), event_tx.clone());
+    let (asset_processor, asset_processor_handle) =
+        AssetProcessor::new(model_handle.clone(), event_tx.clone());
 
     tokio::spawn(model_manager.run());
     tokio::spawn(controller.run());

@@ -1,13 +1,17 @@
-use serde::{Deserialize, Serialize};
 use crate::{
-    asset_processor::AssetProcessorCommand, controller::{state::ShowState, ControllerCommand}, event::UiEvent, manager::ModelCommand, model::ShowModel
+    asset_processor::AssetProcessorCommand,
+    controller::{ControllerCommand, state::ShowState},
+    event::UiEvent,
+    manager::ModelCommand,
+    model::ShowModel,
 };
+use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "apiserver")]
-pub mod server;
 #[cfg(feature = "apiclient")]
 pub mod client;
 mod file_list;
+#[cfg(feature = "apiserver")]
+pub mod server;
 
 pub use file_list::FileList;
 

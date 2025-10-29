@@ -1,7 +1,7 @@
-use tokio::sync::Mutex;
 use serde::Serialize;
-use tauri::{ipc::Channel, AppHandle, State};
+use tauri::{AppHandle, State, ipc::Channel};
 use tauri_plugin_updater::{Update, UpdaterExt};
+use tokio::sync::Mutex;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -24,14 +24,15 @@ type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Serialize, ts_rs::TS)]
 #[ts(export)]
-#[serde(tag = "event", content = "data", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "event",
+    content = "data",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum DownloadEvent {
-    Started {
-        content_length: Option<u64>,
-    },
-    Progress {
-        chunk_length: usize,
-    },
+    Started { content_length: Option<u64> },
+    Progress { chunk_length: usize },
     Finished,
 }
 
@@ -48,10 +49,7 @@ pub async fn fetch_update(
     app: AppHandle,
     pending_update: State<'_, PendingUpdate>,
 ) -> Result<Option<UpdateMetadata>> {
-    let update = app
-        .updater()?
-        .check()
-        .await?;
+    let update = app.updater()?.check().await?;
 
     let update_metadata = update.as_ref().map(|update| UpdateMetadata {
         version: update.version.clone(),
@@ -64,7 +62,10 @@ pub async fn fetch_update(
 }
 
 #[tauri::command]
-pub async fn install_update(pending_update: State<'_, PendingUpdate>, on_event: Channel<DownloadEvent>) -> Result<()> {
+pub async fn install_update(
+    pending_update: State<'_, PendingUpdate>,
+    on_event: Channel<DownloadEvent>,
+) -> Result<()> {
     let Some(update) = pending_update.0.lock().await.take() else {
         return Err(Error::NoPendingUpdate);
     };

@@ -5,7 +5,14 @@ async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
 
     let (backend_handle, state_rx, event_tx) = start_backend();
-    let shutdown_tx = start_apiserver(5800, backend_handle, state_rx, event_tx, Some("SBSP API Server".into())).await?;
+    let shutdown_tx = start_apiserver(
+        5800,
+        backend_handle,
+        state_rx,
+        event_tx,
+        Some("SBSP API Server".into()),
+    )
+    .await?;
 
     shutdown_signal().await;
 

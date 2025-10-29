@@ -16,6 +16,10 @@ pub struct ShowModel {
 
 impl Default for ShowModel {
     fn default() -> Self {
-        Self { name: "Untitled".into(), cues: Vec::new(), settings: ShowSettings::default() }
+        Self {
+            name: "Untitled".into(),
+            cues: Vec::new(),
+            settings: ShowSettings::default(),
+        }
     }
 }

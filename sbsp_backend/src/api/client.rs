@@ -1,20 +1,25 @@
-mod service_entry;
 mod file_list_handler;
+mod service_entry;
 
 use std::sync::Arc;
 
 use futures_util::{SinkExt, TryStreamExt};
-use mdns_sd::{ServiceDaemon, ServiceEvent, Error};
+use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
 use reqwest::Client;
 use reqwest_websocket::{CloseCode, Message, RequestBuilderExt};
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
 
 use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
-    asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{state::ShowState, ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ShowModelHandle}, model::ShowModel, BackendHandle
+    BackendHandle,
+    asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
+    controller::{ControllerCommand, CueControllerHandle, state::ShowState},
+    event::UiEvent,
+    manager::{ModelCommand, ShowModelHandle},
+    model::ShowModel,
 };
-pub use service_entry::ServiceEntry;
 pub use file_list_handler::FileListHandle;
+pub use service_entry::ServiceEntry;
 
 type ConnectionHandles = (
     BackendHandle,

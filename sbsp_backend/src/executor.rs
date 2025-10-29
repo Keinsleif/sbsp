@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     action::CueAction,
+    controller::state::StateParam,
     engine::{
         EngineEvent, EngineType,
         audio_engine::{AudioCommand, AudioCommandData, AudioEngineEvent},
@@ -18,7 +19,6 @@ use crate::{
     },
     manager::ShowModelHandle,
     model::cue::{Cue, CueParam, audio::AudioCueParam},
-    controller::state::StateParam,
 };
 
 #[derive(Debug)]
@@ -336,9 +336,9 @@ impl Executor {
                 let filepath = self
                     .model_handle
                     .get_current_file_path()
-                    .await.as_ref().map_or(target.to_path_buf(), |model_path| {
-                        model_path.join(target)
-                    });
+                    .await
+                    .as_ref()
+                    .map_or(target.to_path_buf(), |model_path| model_path.join(target));
 
                 self.audio_tx
                     .send(AudioCommand::Load {
@@ -400,10 +400,9 @@ impl Executor {
                 let filepath = self
                     .model_handle
                     .get_current_file_path()
-                    .await.as_ref().map_or(target.to_path_buf(), |model_path| {
-                        model_path.join(target)
-                    });
-
+                    .await
+                    .as_ref()
+                    .map_or(target.to_path_buf(), |model_path| model_path.join(target));
 
                 let audio_command = AudioCommand::Play {
                     id: instance_id,
@@ -464,8 +463,17 @@ impl Executor {
                 };
 
                 let playback_event = match audio_event {
-                    AudioEngineEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },
-                    AudioEngineEvent::Started { initial_params, .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Audio(initial_params) },
+                    AudioEngineEvent::Loaded {
+                        position, duration, ..
+                    } => ExecutorEvent::Loaded {
+                        cue_id,
+                        position,
+                        duration,
+                    },
+                    AudioEngineEvent::Started { initial_params, .. } => ExecutorEvent::Started {
+                        cue_id,
+                        initial_params: StateParam::Audio(initial_params),
+                    },
                     AudioEngineEvent::Progress {
                         position, duration, ..
                     } => {
@@ -487,12 +495,18 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
-                    AudioEngineEvent::Stopping { position, duration, .. } => {
-                        let event = ExecutorEvent::Stopping { cue_id, position, duration };
+                    AudioEngineEvent::Stopping {
+                        position, duration, ..
+                    } => {
+                        let event = ExecutorEvent::Stopping {
+                            cue_id,
+                            position,
+                            duration,
+                        };
                         if let Err(e) = self.executor_event_tx.try_send(event) {
                             log::warn!("EngineEvent dropped: {:?}", e);
                         }
-                        return Ok(())
+                        return Ok(());
                     }
                     AudioEngineEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&instance_id);
@@ -502,10 +516,12 @@ impl Executor {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Completed { cue_id }
                     }
-                    AudioEngineEvent::StateParamUpdated { params, .. } => ExecutorEvent::StateParamUpdated {
-                        cue_id,
-                        params: StateParam::Audio(params),
-                    },
+                    AudioEngineEvent::StateParamUpdated { params, .. } => {
+                        ExecutorEvent::StateParamUpdated {
+                            cue_id,
+                            params: StateParam::Audio(params),
+                        }
+                    }
                     AudioEngineEvent::Error { error, .. } => {
                         self.active_instances.write().await.remove(&instance_id);
                         ExecutorEvent::Error { cue_id, error }
@@ -589,8 +605,17 @@ impl Executor {
                 };
 
                 let playback_event = match wait_event {
-                    WaitEvent::Loaded { position, duration, .. } => ExecutorEvent::Loaded { cue_id, position, duration },
-                    WaitEvent::Started { .. } => ExecutorEvent::Started { cue_id, initial_params: StateParam::Wait },
+                    WaitEvent::Loaded {
+                        position, duration, ..
+                    } => ExecutorEvent::Loaded {
+                        cue_id,
+                        position,
+                        duration,
+                    },
+                    WaitEvent::Started { .. } => ExecutorEvent::Started {
+                        cue_id,
+                        initial_params: StateParam::Wait,
+                    },
                     WaitEvent::Progress {
                         position, duration, ..
                     } => {
@@ -641,6 +666,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
+        controller::state::AudioStateParam,
         engine::audio_engine::{AudioCommand, AudioEngineEvent},
         event::UiEvent,
         manager::ShowModelManager,
@@ -648,7 +674,6 @@ mod tests {
             self,
             cue::audio::{AudioFadeParam, Easing, SoundType},
         },
-        controller::state::AudioStateParam,
     };
 
     async fn setup_executor(
@@ -790,9 +815,16 @@ mod tests {
             .unwrap();
 
         if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Started { cue_id, initial_params } = event {
+            if let ExecutorEvent::Started {
+                cue_id,
+                initial_params,
+            } = event
+            {
                 assert_eq!(cue_id, orig_cue_id);
-                assert_eq!(initial_params, StateParam::Audio(AudioStateParam::default()));
+                assert_eq!(
+                    initial_params,
+                    StateParam::Audio(AudioStateParam::default())
+                );
             } else {
                 panic!("Wrong Playback Event emitted.");
             }

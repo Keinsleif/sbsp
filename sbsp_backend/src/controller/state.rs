@@ -26,7 +26,7 @@ pub enum PlaybackStatus {
 pub enum StateParam {
     #[default]
     None,
-    Audio (AudioStateParam),
+    Audio(AudioStateParam),
     Wait,
 }
 

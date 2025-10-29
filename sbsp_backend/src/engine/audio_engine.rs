@@ -10,7 +10,7 @@ use kira::{
     AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
     clock::{ClockHandle, ClockSpeed, ClockTime},
     sound::{
-        EndPosition, FromFileError, PlaybackPosition, PlaybackState, Region, IntoOptionalRegion,
+        EndPosition, FromFileError, IntoOptionalRegion, PlaybackPosition, PlaybackState, Region,
         static_sound::{StaticSoundData, StaticSoundHandle},
         streaming::{StreamingSoundData, StreamingSoundHandle},
     },
@@ -22,8 +22,8 @@ use uuid::Uuid;
 use super::EngineEvent;
 use crate::{
     action::AudioAction,
-    model::{cue::audio::SoundType, settings::AudioSettings},
     controller::state::AudioStateParam,
+    model::{cue::audio::SoundType, settings::AudioSettings},
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -504,13 +504,27 @@ impl AudioEngine {
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_to(position);
-            if let Some(last_status) = &playing_sound.last_status && last_status.state.eq(&PlaybackState::Paused) {
-                self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: id, position, duration: playing_sound.handle.duration })).await?;
+            if let Some(last_status) = &playing_sound.last_status
+                && last_status.state.eq(&PlaybackState::Paused)
+            {
+                self.event_tx
+                    .send(EngineEvent::Audio(AudioEngineEvent::Paused {
+                        instance_id: id,
+                        position,
+                        duration: playing_sound.handle.duration,
+                    }))
+                    .await?;
             }
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_to(position);
-            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position, duration: loaded_handle.duration })).await?;
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                    instance_id: id,
+                    position,
+                    duration: loaded_handle.duration,
+                }))
+                .await?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
@@ -523,7 +537,13 @@ impl AudioEngine {
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_by(amount);
-            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Loaded { instance_id: id, position: loaded_handle.position(), duration: loaded_handle.duration })).await?;
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                    instance_id: id,
+                    position: loaded_handle.position(),
+                    duration: loaded_handle.duration,
+                }))
+                .await?;
             Ok(())
         } else {
             Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
@@ -536,21 +556,25 @@ impl AudioEngine {
                 if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
                     let repeat_state = playing_sound.handle.is_repeating();
                     playing_sound.handle.set_repeat(!repeat_state);
-                    self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
-                        instance_id: id,
-                        params: AudioStateParam {
-                            repeating: !repeat_state,
-                        },
-                    })).await?;
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
+                            instance_id: id,
+                            params: AudioStateParam {
+                                repeating: !repeat_state,
+                            },
+                        }))
+                        .await?;
                 } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
                     let repeat_state = loaded_handle.is_repeating();
                     loaded_handle.set_repeat(!repeat_state);
-                    self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated{
-                        instance_id: id,
-                        params: AudioStateParam {
-                            repeating: !repeat_state,
-                        },
-                    })).await?;
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
+                            instance_id: id,
+                            params: AudioStateParam {
+                                repeating: !repeat_state,
+                            },
+                        }))
+                        .await?;
                 } else {
                     return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
                 }

@@ -12,13 +12,12 @@ use axum::{
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
-use tokio::{sync::{broadcast, watch}};
+use tokio::sync::{broadcast, watch};
 
+use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
-    api::FileList, asset_processor::{AssetProcessorCommand}, controller::state::ShowState, event::UiEvent, BackendHandle
-};
-use super::{
-    WsCommand, WsFeedback, FullShowState
+    BackendHandle, api::FileList, asset_processor::AssetProcessorCommand,
+    controller::state::ShowState, event::UiEvent,
 };
 
 #[derive(Clone)]
@@ -29,8 +28,18 @@ struct ApiState {
     shutdown_tx: broadcast::Sender<()>,
 }
 
-pub async fn start_apiserver(port: u16, backend_handle: BackendHandle, state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>, discover_option: Option<String>) -> anyhow::Result<broadcast::Sender<()>> {
-    log::info!("Starting server with port: {}, discovery: {:?}", port, discover_option);
+pub async fn start_apiserver(
+    port: u16,
+    backend_handle: BackendHandle,
+    state_rx: watch::Receiver<ShowState>,
+    event_tx: broadcast::Sender<UiEvent>,
+    discover_option: Option<String>,
+) -> anyhow::Result<broadcast::Sender<()>> {
+    log::info!(
+        "Starting server with port: {}, discovery: {:?}",
+        port,
+        discover_option
+    );
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
 
     let state = ApiState {
@@ -56,7 +65,16 @@ pub async fn start_apiserver(port: u16, backend_handle: BackendHandle, state_rx:
 
             let properties: HashMap<String, String> = HashMap::new();
 
-            let sv_info = ServiceInfo::new("_sbsp._tcp.local.", &server_name, &hostname, "", port, properties).unwrap().enable_addr_auto();
+            let sv_info = ServiceInfo::new(
+                "_sbsp._tcp.local.",
+                &server_name,
+                &hostname,
+                "",
+                port,
+                properties,
+            )
+            .unwrap()
+            .enable_addr_auto();
             let sv_fullname = sv_info.get_fullname().to_string();
             mdns.register(sv_info).unwrap();
 
@@ -67,11 +85,12 @@ pub async fn start_apiserver(port: u16, backend_handle: BackendHandle, state_rx:
         });
     }
     // let shutdown_tx_clone = shutdown_tx.clone();
-    tokio::spawn(axum::serve(listener, app)
-        .with_graceful_shutdown(async move {
-            let _ = shutdown_rx.recv().await;
-        })
-        .into_future()
+    tokio::spawn(
+        axum::serve(listener, app)
+            .with_graceful_shutdown(async move {
+                let _ = shutdown_rx.recv().await;
+            })
+            .into_future(),
     );
     Ok(shutdown_tx)
 }
@@ -201,10 +220,18 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
             let metadata = entry.metadata().await?;
             let path = entry.path();
 
-            let entry_name = path.file_name().unwrap().to_os_string().into_string().unwrap();
+            let entry_name = path
+                .file_name()
+                .unwrap()
+                .to_os_string()
+                .into_string()
+                .unwrap();
             if metadata.is_dir() {
                 let file_list = get_dirs(path, Some(parent_dir.join(&entry_name))).await?;
-                root_list.push(FileList::Dir { name: entry_name, files: file_list });
+                root_list.push(FileList::Dir {
+                    name: entry_name,
+                    files: file_list,
+                });
                 continue;
             }
             if metadata.is_file() {
@@ -213,22 +240,38 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
                 } else {
                     "".into()
                 };
-                root_list.push(FileList::File { name: entry_name.clone(), path: parent_dir.join(&entry_name) , extension});
+                root_list.push(FileList::File {
+                    name: entry_name.clone(),
+                    path: parent_dir.join(&entry_name),
+                    extension,
+                });
                 continue;
             }
 
             if let Ok(symlink) = tokio::fs::read_link(path).await {
                 if symlink.is_dir() {
                     let file_list = get_dirs(symlink, Some(parent_dir.join(&entry_name))).await?;
-                    root_list.push(FileList::Dir { name: entry_name, files: file_list });
+                    root_list.push(FileList::Dir {
+                        name: entry_name,
+                        files: file_list,
+                    });
                 } else {
                     let extension = if let Some(ext) = symlink.extension() {
                         ext.to_os_string().into_string().unwrap()
                     } else {
                         "".into()
                     };
-                    let file_name = symlink.file_name().unwrap().to_os_string().into_string().unwrap();
-                    root_list.push(FileList::File { name: file_name, path: parent_dir.join(&entry_name), extension });
+                    let file_name = symlink
+                        .file_name()
+                        .unwrap()
+                        .to_os_string()
+                        .into_string()
+                        .unwrap();
+                    root_list.push(FileList::File {
+                        name: file_name,
+                        path: parent_dir.join(&entry_name),
+                        extension,
+                    });
                 }
             }
         } else {

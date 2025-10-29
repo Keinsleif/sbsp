@@ -5,7 +5,10 @@ use uuid::Uuid;
 
 #[cfg(not(feature = "type_export"))]
 use crate::executor::ExecutorEvent;
-use crate::{asset_processor::AssetData, model::{cue::Cue, settings::ShowSettings}};
+use crate::{
+    asset_processor::AssetData,
+    model::{cue::Cue, settings::ShowSettings},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -17,40 +20,90 @@ use crate::{asset_processor::AssetData, model::{cue::Cue, settings::ShowSettings
 )]
 pub enum UiEvent {
     // Cue Status Events
-    CueLoaded { cue_id: Uuid },
-    CuePreWaitStarted { cue_id: Uuid },
-    CuePreWaitPaused { cue_id: Uuid },
-    CuePreWaitResumed { cue_id: Uuid },
-    CuePreWaitStopped { cue_id: Uuid },
-    CuePreWaitCompleted { cue_id: Uuid },
-    CueStarted { cue_id: Uuid },
-    CuePaused { cue_id: Uuid },
-    CueResumed { cue_id: Uuid },
-    CueStopped { cue_id: Uuid },
-    CueCompleted { cue_id: Uuid },
-    CueError { cue_id: Uuid, error: String },
+    CueLoaded {
+        cue_id: Uuid,
+    },
+    CuePreWaitStarted {
+        cue_id: Uuid,
+    },
+    CuePreWaitPaused {
+        cue_id: Uuid,
+    },
+    CuePreWaitResumed {
+        cue_id: Uuid,
+    },
+    CuePreWaitStopped {
+        cue_id: Uuid,
+    },
+    CuePreWaitCompleted {
+        cue_id: Uuid,
+    },
+    CueStarted {
+        cue_id: Uuid,
+    },
+    CuePaused {
+        cue_id: Uuid,
+    },
+    CueResumed {
+        cue_id: Uuid,
+    },
+    CueStopped {
+        cue_id: Uuid,
+    },
+    CueCompleted {
+        cue_id: Uuid,
+    },
+    CueError {
+        cue_id: Uuid,
+        error: String,
+    },
 
     // System Events
-    PlaybackCursorMoved { cue_id: Option<Uuid> },
+    PlaybackCursorMoved {
+        cue_id: Option<Uuid>,
+    },
 
     // Model Events
-    ShowModelLoaded { path: PathBuf },
-    ShowModelSaved { path: PathBuf },
-    CueUpdated { cue: Cue },
-    CueAdded { cue: Cue, at_index: usize },
-    CuesAdded { cues: Vec<Cue>, at_index: usize },
-    CueRemoved { cue_id: Uuid },
-    CueMoved { cue_id: Uuid, to_index: usize },
-    CueListUpdated { cues: Vec<Cue> },
-    SettingsUpdated { new_settings: Box<ShowSettings> },
+    ShowModelLoaded {
+        path: PathBuf,
+    },
+    ShowModelSaved {
+        path: PathBuf,
+    },
+    CueUpdated {
+        cue: Cue,
+    },
+    CueAdded {
+        cue: Cue,
+        at_index: usize,
+    },
+    CuesAdded {
+        cues: Vec<Cue>,
+        at_index: usize,
+    },
+    CueRemoved {
+        cue_id: Uuid,
+    },
+    CueMoved {
+        cue_id: Uuid,
+        to_index: usize,
+    },
+    CueListUpdated {
+        cues: Vec<Cue>,
+    },
+    SettingsUpdated {
+        new_settings: Box<ShowSettings>,
+    },
 
     // AssetProcessor Events
-    AssetResult{
+    AssetResult {
         path: PathBuf,
         data: Result<AssetData, String>,
     },
 
-    OperationFailed { error: UiError },
+    OperationFailed {
+        error: UiError,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

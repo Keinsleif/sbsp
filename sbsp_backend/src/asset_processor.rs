@@ -7,6 +7,7 @@ pub use handle::AssetProcessorHandle;
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
+use ebur128::EbuR128;
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
     audio::SampleBuffer,
@@ -17,7 +18,6 @@ use symphonia::core::{
     probe::Hint,
 };
 use tokio::sync::{RwLock, broadcast, mpsc};
-use ebur128::EbuR128;
 
 use crate::event::UiEvent;
 use crate::manager::ShowModelHandle;
@@ -27,9 +27,7 @@ const AUDIO_THRESHOLD: f32 = 0.001_f32;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AssetProcessorCommand {
-    RequestFileAssetData {
-        path: PathBuf,
-    },
+    RequestFileAssetData { path: PathBuf },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -85,9 +83,7 @@ impl AssetProcessor {
                 cache: cache.clone(),
                 processing: Arc::new(RwLock::new(Vec::new())),
             },
-            AssetProcessorHandle {
-                command_tx,
-            },
+            AssetProcessorHandle { command_tx },
         )
     }
 
@@ -121,21 +117,25 @@ impl AssetProcessor {
         }
     }
 
-    async fn handle_process_file(
-        &self,
-        path: PathBuf,
-    ) {
+    async fn handle_process_file(&self, path: PathBuf) {
         let actual_path = {
             let model = self.model_handle.read().await;
             if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
-                model_path.join(&model.settings.general.copy_assets_destination).join(&path)
+                model_path
+                    .join(&model.settings.general.copy_assets_destination)
+                    .join(&path)
             } else {
                 path.clone()
             }
         };
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&actual_path) {
-            self.event_tx.send(UiEvent::AssetResult { path, data: Ok(entry.data.clone()) }).unwrap();
+            self.event_tx
+                .send(UiEvent::AssetResult {
+                    path,
+                    data: Ok(entry.data.clone()),
+                })
+                .unwrap();
             return;
         }
         let mut processing = self.processing.write().await;
@@ -147,14 +147,14 @@ impl AssetProcessor {
         let actual_path_clone = actual_path.clone();
         let result_tx = self.result_tx.clone();
         tokio::task::spawn_blocking(move || {
-            let asset_data = Self::process_asset(actual_path_clone.clone())
-                .map_err(|e| e.to_string());
+            let asset_data =
+                Self::process_asset(actual_path_clone.clone()).map_err(|e| e.to_string());
             result_tx
-            .send(ProcessResult {
-                path,
-                data: asset_data,
-            })
-            .unwrap();
+                .send(ProcessResult {
+                    path,
+                    data: asset_data,
+                })
+                .unwrap();
         });
         log::info!("Asset Process started. file={:?}", actual_path);
     }
@@ -182,8 +182,7 @@ impl AssetProcessor {
         let track = format.default_track().unwrap();
         let codec_params = track.codec_params.clone();
 
-        let mut decoder =
-            symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
+        let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
 
         let track_id = track.id;
 
@@ -193,21 +192,27 @@ impl AssetProcessor {
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
-            }
-        );
+            });
 
-        let sample_rate = codec_params.sample_rate.ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
+        let sample_rate = codec_params
+            .sample_rate
+            .ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
         let mut channel_count = codec_params.channels.map(|channels| channels.count());
         let total_samples = codec_params.n_frames.unwrap_or(0);
 
         let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
 
         if total_samples > 0 && (total_samples / samples_per_peaks) > WAVEFORM_THRESHOLD as u64 {
-            samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64)) / (WAVEFORM_THRESHOLD - 1) as u64;
+            samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64))
+                / (WAVEFORM_THRESHOLD - 1) as u64;
         }
 
         let mut ebur128 = if let Some(channels) = channel_count {
-            Some(EbuR128::new(channels as u32, sample_rate, ebur128::Mode::I)?)
+            Some(EbuR128::new(
+                channels as u32,
+                sample_rate,
+                ebur128::Mode::I,
+            )?)
         } else {
             None
         };
@@ -235,9 +240,14 @@ impl AssetProcessor {
                         channel_count = Some(decoded_spec.channels.count())
                     }
                     if ebur128.is_none() {
-                        ebur128 = Some(EbuR128::new(decoded_spec.channels.count() as u32, sample_rate, ebur128::Mode::I)?);
+                        ebur128 = Some(EbuR128::new(
+                            decoded_spec.channels.count() as u32,
+                            sample_rate,
+                            ebur128::Mode::I,
+                        )?);
                     }
-                    let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
+                    let mut sample_buf =
+                        SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
 
                     sample_buf.copy_interleaved_ref(decoded);
 
@@ -280,20 +290,20 @@ impl AssetProcessor {
 
         let start_time = codec_params
             .time_base
-            .zip(first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
+            .zip(
+                first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64),
+            )
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
-            }
-        );
+            });
         let end_time = codec_params
             .time_base
             .zip(last_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
             .map(|(base, spans)| {
                 let symphonia_time = base.calc_time(spans);
                 symphonia_time.seconds as f64 + symphonia_time.frac
-            }
-        );
+            });
 
         let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
 

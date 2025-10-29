@@ -135,15 +135,13 @@ pub fn run() {
                         .info(Color::Green)
                         .debug(Color::White)
                         .trace(Color::BrightBlack);
-                    out.finish(
-                        format_args!(
-                            "[{}][{}][{}] {}",
-                            humantime::format_rfc3339_seconds(SystemTime::now()),
-                            color_level.color(record.level()),
-                            record.target(),
-                            message
-                        ),
-                    )
+                    out.finish(format_args!(
+                        "[{}][{}][{}] {}",
+                        humantime::format_rfc3339_seconds(SystemTime::now()),
+                        color_level.color(record.level()),
+                        record.target(),
+                        message
+                    ))
                 })
                 .build(),
         )
@@ -154,7 +152,9 @@ pub fn run() {
 
             #[cfg(desktop)]
             {
-                app_handle.plugin(tauri_plugin_updater::Builder::new().build()).unwrap();
+                app_handle
+                    .plugin(tauri_plugin_updater::Builder::new().build())
+                    .unwrap();
                 app.manage(update::PendingUpdate::default());
             }
 
