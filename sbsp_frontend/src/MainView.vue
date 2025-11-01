@@ -55,11 +55,14 @@ import type { UiEvent } from './types/UiEvent';
 import type { ShowModel } from './types/ShowModel';
 import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import { useAssetResult } from './stores/assetResult';
+import { useUiSettings } from './stores/uiSettings';
+import { getLockCursorToSelection } from './utils';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
+const uiSettings = useUiSettings();
 const { t } = useI18n();
 
 listen<ShowState>('backend-state-update', (event) => {
@@ -69,7 +72,7 @@ listen<ShowState>('backend-state-update', (event) => {
 listen<UiEvent>('backend-event', (event) => {
   switch (event.payload.type) {
     case 'playbackCursorMoved': {
-      if (showModel.getLockCursorToSelection()) {
+      if (getLockCursorToSelection()) {
         const cueId = event.payload.param.cueId;
         if (cueId != null) {
           if (uiState.selected != cueId) {
@@ -213,37 +216,39 @@ useHotkey(
 );
 
 const goHotkey = computed(() =>
-  showModel.settings.hotkey.playback.go != null ? showModel.settings.hotkey.playback.go : undefined,
+  uiSettings.settings.hotkey.playback.go != null ? uiSettings.settings.hotkey.playback.go : undefined,
 );
 const loadHotkey = computed(() =>
-  showModel.settings.hotkey.playback.load != null ? showModel.settings.hotkey.playback.load : undefined,
+  uiSettings.settings.hotkey.playback.load != null ? uiSettings.settings.hotkey.playback.load : undefined,
 );
 const pauseAndResumeHotkey = computed(() =>
-  showModel.settings.hotkey.playback.pauseAndResume != null
-    ? showModel.settings.hotkey.playback.pauseAndResume
+  uiSettings.settings.hotkey.playback.pauseAndResume != null
+    ? uiSettings.settings.hotkey.playback.pauseAndResume
     : undefined,
 );
 const pauseAllHotkey = computed(() =>
-  showModel.settings.hotkey.playback.pauseAll != null ? showModel.settings.hotkey.playback.pauseAll : undefined,
+  uiSettings.settings.hotkey.playback.pauseAll != null ? uiSettings.settings.hotkey.playback.pauseAll : undefined,
 );
 const resumeAllHotkey = computed(() =>
-  showModel.settings.hotkey.playback.resumeAll != null ? showModel.settings.hotkey.playback.resumeAll : undefined,
+  uiSettings.settings.hotkey.playback.resumeAll != null ? uiSettings.settings.hotkey.playback.resumeAll : undefined,
 );
 const stopHotkey = computed(() =>
-  showModel.settings.hotkey.playback.stop != null ? showModel.settings.hotkey.playback.stop : undefined,
+  uiSettings.settings.hotkey.playback.stop != null ? uiSettings.settings.hotkey.playback.stop : undefined,
 );
 const stopAllHotkey = computed(() =>
-  showModel.settings.hotkey.playback.stopAll != null ? showModel.settings.hotkey.playback.stopAll : undefined,
+  uiSettings.settings.hotkey.playback.stopAll != null ? uiSettings.settings.hotkey.playback.stopAll : undefined,
 );
 const seekForwardHotkey = computed(() =>
-  showModel.settings.hotkey.playback.seekForward != null ? showModel.settings.hotkey.playback.seekForward : undefined,
+  uiSettings.settings.hotkey.playback.seekForward != null ? uiSettings.settings.hotkey.playback.seekForward : undefined,
 );
 const seekBackwardHotkey = computed(() =>
-  showModel.settings.hotkey.playback.seekBackward != null ? showModel.settings.hotkey.playback.seekBackward : undefined,
+  uiSettings.settings.hotkey.playback.seekBackward != null
+    ? uiSettings.settings.hotkey.playback.seekBackward
+    : undefined,
 );
 const audioToggleRepeatHotkey = computed(() =>
-  showModel.settings.hotkey.audioAction.toggleRepeat != null
-    ? showModel.settings.hotkey.audioAction.toggleRepeat
+  uiSettings.settings.hotkey.audioAction.toggleRepeat != null
+    ? uiSettings.settings.hotkey.audioAction.toggleRepeat
     : undefined,
 );
 
@@ -338,7 +343,7 @@ useHotkey(
           showState.activeCues[uiState.selected]!.status,
         )
       ) {
-        invoke('seek_by', { cueId: uiState.selected, amount: showModel.settings.general.seekAmount }).catch((e) =>
+        invoke('seek_by', { cueId: uiState.selected, amount: uiSettings.settings.general.seekAmount }).catch((e) =>
           console.error(e),
         );
       }
@@ -358,7 +363,7 @@ useHotkey(
           showState.activeCues[uiState.selected]!.status,
         )
       ) {
-        invoke('seek_by', { cueId: uiState.selected, amount: -showModel.settings.general.seekAmount }).catch((e) =>
+        invoke('seek_by', { cueId: uiState.selected, amount: -uiSettings.settings.general.seekAmount }).catch((e) =>
           console.error(e),
         );
       }

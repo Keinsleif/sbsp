@@ -217,7 +217,7 @@ import {
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
-import { buildCueName, calculateDuration, formatToSeconds, secondsToFormat } from '../utils';
+import { buildCueName, calculateDuration, formatToSeconds, getLockCursorToSelection, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
@@ -365,7 +365,7 @@ const click = (event: MouseEvent, index: number) => {
     uiState.selectedRows = [clickedId];
     uiState.selected = clickedId;
   }
-  if (showModel.getLockCursorToSelection()) {
+  if (getLockCursorToSelection()) {
     invoke('set_playback_cursor', {
       cueId: uiState.selected !== null ? uiState.selected : null,
     }).catch((e) => {
@@ -471,7 +471,7 @@ const isActive = (cue_id: string): boolean => {
 };
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!showModel.getLockCursorToSelection()) {
+  if (!getLockCursorToSelection()) {
     invoke('set_playback_cursor', { cueId: cueId }).catch((e) => console.error(e));
   }
 };

@@ -9,6 +9,7 @@ use uuid::Uuid;
 pub mod client;
 pub mod controller;
 pub mod model_manager;
+pub mod settings;
 
 #[tauri::command]
 pub fn get_side() -> String {
@@ -36,7 +37,10 @@ pub async fn add_empty_cue(
     at_index: usize,
 ) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
-        let templates = handle.model_handle.read().await.settings.template.clone();
+        let templates = {
+            let settings = state.settings_manager.read().await;
+            settings.template.clone()
+        };
         match cue_type.as_str() {
             "audio" => {
                 let pick_file_window = tauri::WebviewWindowBuilder::from_config(

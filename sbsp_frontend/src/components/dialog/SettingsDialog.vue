@@ -23,39 +23,29 @@
             reverse-transition="toggle-slide-y-reverse-transition"
           >
             <v-checkbox
-              v-model="editingSettings.general.advanceCursorWhenGo"
+              v-model="editingSettings.global.general.advanceCursorWhenGo"
               label="Advance cursor when GO"
               hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
-              v-model="editingSettings.general.lockCursorToSelection"
+              v-model="editingSettings.global.general.lockCursorToSelection"
               label="Lock Cursor to Selection (on Main side)"
               hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
-              v-model="editingSettings.general.copyAssetsWhenAdd"
+              v-model="editingSettings.global.general.copyAssetsWhenAdd"
               label="Copy assets when adding Cue"
               hide-details
             ></v-checkbox>
-            <text-input
-              v-model="editingSettings.general.copyAssetsDestination"
-              class="ma-2"
-              align-input="left"
-              width="500px"
-              label="Assets directory"
-              hint="Relative path to the directory for copying assets."
-              persistent-hint
-              show-details
-            ></text-input>
             <v-divider></v-divider>
             <v-number-input
               hide-details
               inset
               persistent-placeholder
               class="ma-2"
-              v-model="editingSettings.general.seekAmount"
+              v-model="editingSettings.global.general.seekAmount"
               :min="0"
               width="160px"
               label="Seek amount"
@@ -64,6 +54,17 @@
               autocomplete="off"
               @keydown.stop
             ></v-number-input>
+            <v-divider></v-divider>
+            <text-input
+              v-model="editingSettings.show.general.copyAssetsDestination"
+              class="ma-2"
+              align-input="left"
+              width="500px"
+              label="Assets directory"
+              hint="Relative path to the directory for copying assets. (per-show setting)"
+              persistent-hint
+              show-details
+            ></text-input>
           </v-tabs-window-item>
           <v-tabs-window-item
             value="hotkey"
@@ -72,19 +73,22 @@
             reverse-transition="toggle-slide-y-reverse-transition"
           >
             <h2>Playback</h2>
-            <hotkey-input v-model="editingSettings.hotkey.playback.go" label="Go"></hotkey-input>
-            <hotkey-input v-model="editingSettings.hotkey.playback.load" label="Load"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.go" label="Go"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.load" label="Load"></hotkey-input>
             <hotkey-input
-              v-model="editingSettings.hotkey.playback.pauseAndResume"
+              v-model="editingSettings.global.hotkey.playback.pauseAndResume"
               label="Pause & Resume"
             ></hotkey-input>
-            <hotkey-input v-model="editingSettings.hotkey.playback.pauseAll" label="Pause All"></hotkey-input>
-            <hotkey-input v-model="editingSettings.hotkey.playback.resumeAll" label="Resume All"></hotkey-input>
-            <hotkey-input v-model="editingSettings.hotkey.playback.stop" label="Stop"></hotkey-input>
-            <hotkey-input v-model="editingSettings.hotkey.playback.stopAll" label="Stop All"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.pauseAll" label="Pause All"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.resumeAll" label="Resume All"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.stop" label="Stop"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.stopAll" label="Stop All"></hotkey-input>
             <v-divider></v-divider>
             <h2>Audio Action</h2>
-            <hotkey-input v-model="editingSettings.hotkey.audioAction.toggleRepeat" label="ToggleRepeat"></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
+              label="ToggleRepeat"
+            ></hotkey-input>
           </v-tabs-window-item>
           <v-tabs-window-item
             value="template"
@@ -113,52 +117,52 @@
                   >
                     <td headers="cuelist_type" width="160px">Audio</td>
                     <td headers="cuelist_number" class="text-center" width="50px">
-                      {{ editingSettings.template.audio.number }}
+                      {{ editingSettings.global.template.audio.number }}
                     </td>
                     <td headers="cuelist_name" width="auto">
                       {{
-                        editingSettings.template.audio.name != null
-                          ? editingSettings.template.audio.name
+                        editingSettings.global.template.audio.name != null
+                          ? editingSettings.global.template.audio.name
                           : '** built from cue param **'
                       }}
                     </td>
                     <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
                       <div>
-                        {{ secondsToFormat(editingSettings.template.audio.preWait) }}
+                        {{ secondsToFormat(editingSettings.global.template.audio.preWait) }}
                       </div>
                     </td>
                     <td headers="cuelist_duration" class="text-center pa-1" width="100px">
                       <div>
-                        {{ secondsToFormat(calculateDuration(editingSettings.template.audio.params, null)) }}
+                        {{ secondsToFormat(calculateDuration(editingSettings.global.template.audio.params, null)) }}
                       </div>
                     </td>
                     <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
                       <div>
                         {{
-                          editingSettings.template.audio.sequence.type == 'doNotContinue'
+                          editingSettings.global.template.audio.sequence.type == 'doNotContinue'
                             ? '--:--.--'
-                            : editingSettings.template.audio.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.template.audio.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.template.audio.params, null))
+                            : editingSettings.global.template.audio.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.audio.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.audio.params, null))
                         }}
                       </div>
                     </td>
                     <td headers="cuelist_repeat">
                       <v-icon
                         v-if="
-                          editingSettings.template.audio.params.type == 'audio' &&
-                          editingSettings.template.audio.params.repeat
+                          editingSettings.global.template.audio.params.type == 'audio' &&
+                          editingSettings.global.template.audio.params.repeat
                         "
                         :icon="mdiRepeat"
                       />
                     </td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.template.audio.sequence.type == 'autoFollow'"
+                        v-if="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.template.audio.sequence.type == 'autoContinue'"
+                        v-if="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -169,26 +173,26 @@
                   >
                     <td headers="cuelist_type" width="160px">Wait</td>
                     <td headers="cuelist_number" class="text-center" width="50px">
-                      {{ editingSettings.template.wait.number }}
+                      {{ editingSettings.global.template.wait.number }}
                     </td>
                     <td headers="cuelist_name" width="auto">
                       {{
-                        editingSettings.template.wait.name != null
-                          ? editingSettings.template.wait.name
+                        editingSettings.global.template.wait.name != null
+                          ? editingSettings.global.template.wait.name
                           : '** built from cue param **'
                       }}
                     </td>
                     <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
                       <div>
-                        {{ secondsToFormat(editingSettings.template.wait.preWait) }}
+                        {{ secondsToFormat(editingSettings.global.template.wait.preWait) }}
                       </div>
                     </td>
                     <td headers="cuelist_duration" class="text-center pa-1" width="100px">
                       <div>
                         {{
                           secondsToFormat(
-                            editingSettings.template.wait.params.type == 'wait'
-                              ? editingSettings.template.wait.params.duration
+                            editingSettings.global.template.wait.params.type == 'wait'
+                              ? editingSettings.global.template.wait.params.duration
                               : null,
                           )
                         }}
@@ -197,30 +201,30 @@
                     <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
                       <div>
                         {{
-                          editingSettings.template.wait.sequence.type == 'doNotContinue'
+                          editingSettings.global.template.wait.sequence.type == 'doNotContinue'
                             ? '--:--.--'
-                            : editingSettings.template.wait.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.template.wait.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.template.wait.params, null))
+                            : editingSettings.global.template.wait.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.wait.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.wait.params, null))
                         }}
                       </div>
                     </td>
                     <td headers="cuelist_repeat">
                       <v-icon
                         v-if="
-                          editingSettings.template.wait.params.type == 'audio' &&
-                          editingSettings.template.wait.params.repeat
+                          editingSettings.global.template.wait.params.type == 'audio' &&
+                          editingSettings.global.template.wait.params.repeat
                         "
                         :icon="mdiRepeat"
                       />
                     </td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.template.wait.sequence.type == 'autoFollow'"
+                        v-if="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.template.wait.sequence.type == 'autoContinue'"
+                        v-if="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -238,7 +242,7 @@
             transition="toggle-slide-y-transition"
             reverse-transition="toggle-slide-y-reverse-transition"
           >
-            <v-checkbox v-model="editingSettings.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
+            <v-checkbox v-model="editingSettings.show.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
           </v-tabs-window-item>
           <v-tabs-window-item
             value="remote"
@@ -247,7 +251,7 @@
             reverse-transition="toggle-slide-y-reverse-transition"
           >
             <v-checkbox
-              v-model="editingSettings.remote.lockCursorToSelection"
+              v-model="editingSettings.show.remote.lockCursorToSelection"
               label="Lock Cursor to Selection (on Remote side)"
             ></v-checkbox>
           </v-tabs-window-item>
@@ -279,20 +283,26 @@ import { secondsToFormat, calculateDuration } from '../../utils';
 import BottomEditor from '../BottomEditor.vue';
 import type { Cue } from '../../types/Cue';
 import TextInput from '../input/TextInput.vue';
+import { useUiSettings } from '../../stores/uiSettings';
+import { GlobalSettings } from '../../types/GlobalSettings';
 
 const showModel = useShowModel();
+const uiSettings = useUiSettings();
 
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
 const tab = ref('general');
 const selectingTemplate = ref<'audio' | 'wait' | null>(null);
-const editingSettings = ref<ShowSettings>(structuredClone(toRaw(showModel.settings)));
+const editingSettings = ref<{
+  show: ShowSettings;
+  global: GlobalSettings;
+}>({ show: structuredClone(toRaw(showModel.settings)), global: structuredClone(toRaw(uiSettings.settings)) });
 
 const getSelectingCue = () => {
   if (selectingTemplate.value == 'audio') {
-    return editingSettings.value.template.audio;
+    return editingSettings.value.global.template.audio;
   } else if (selectingTemplate.value == 'wait') {
-    return editingSettings.value.template.wait;
+    return editingSettings.value.global.template.wait;
   }
   return null;
 };
@@ -309,18 +319,30 @@ watch(
 watch(
   () => showModel.settings,
   (newSettings) => {
-    editingSettings.value = structuredClone(toRaw(newSettings));
+    editingSettings.value.show = structuredClone(toRaw(newSettings));
+  },
+);
+
+watch(
+  () => uiSettings.settings,
+  (newSettings) => {
+    editingSettings.value.global = structuredClone(toRaw(newSettings));
   },
 );
 
 watch(isSettingsDialogOpen, (newState) => {
   if (newState) {
-    editingSettings.value = structuredClone(toRaw(showModel.settings));
+    editingSettings.value = {
+      show: structuredClone(toRaw(showModel.settings)),
+      global: structuredClone(toRaw(uiSettings.settings)),
+    };
   }
 });
 
 const saveSettings = () => {
-  invoke('update_settings', { newSettings: editingSettings.value }).catch((e) => console.error(e));
+  invoke('update_show_settings', { newSettings: editingSettings.value.show }).catch((e) => console.error(e));
+  uiSettings.update(editingSettings.value.global);
+  uiSettings.save();
 };
 </script>
 

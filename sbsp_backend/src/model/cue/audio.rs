@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueParam {
     pub target: PathBuf,
@@ -17,16 +17,14 @@ pub struct AudioCueParam {
     pub sound_type: SoundType,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioFadeParam {
     pub duration: f64,
     pub easing: Easing,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 #[serde(
     tag = "type",
     content = "intensity",
@@ -73,8 +71,7 @@ impl From<Easing> for kira::Easing {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,

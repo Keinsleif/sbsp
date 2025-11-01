@@ -13,7 +13,7 @@ use crate::{
     event::UiEvent,
     executor::{Executor, ExecutorCommand, ExecutorEvent},
     manager::{ShowModelHandle, ShowModelManager},
-    model::settings::AudioSettings,
+    model::settings::ShowAudioSettings,
 };
 
 #[cfg(feature = "backend")]
@@ -54,6 +54,13 @@ pub mod api {
 }
 
 #[cfg(feature = "backend")]
+#[derive(Default)]
+pub struct BackendSettings {
+    pub advance_cursor_when_go: bool,
+    pub copy_assets_when_add: bool,
+}
+
+#[cfg(feature = "backend")]
 #[derive(Clone)]
 pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
@@ -62,7 +69,7 @@ pub struct BackendHandle {
 }
 
 #[cfg(feature = "backend")]
-pub fn start_backend() -> (
+pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>) -> (
     BackendHandle,
     watch::Receiver<ShowState>,
     broadcast::Sender<UiEvent>,
@@ -75,9 +82,10 @@ pub fn start_backend() -> (
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
 
-    let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
+    let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
+        settings_rx,
         executor_command_tx,
         executor_event_rx,
         state_tx,
@@ -94,7 +102,7 @@ pub fn start_backend() -> (
     );
 
     let audio_engine =
-        AudioEngine::new(audio_rx, engine_event_tx.clone(), AudioSettings::default()).unwrap();
+        AudioEngine::new(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default()).unwrap();
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
     let (asset_processor, asset_processor_handle) =

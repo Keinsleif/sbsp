@@ -37,7 +37,7 @@ apiclient = [
     "dep:gethostname",
     "dep:serde_json",
 ]
-type_export = ["dep:ts-rs"]
+type_export = []
 mdns-sd = ["dep:mdns-sd"]
 
 [dependencies]
@@ -62,7 +62,7 @@ reqwest = { version = "0.12.23", features = ["json"], optional = true }
 reqwest-websocket = { version = "0.5.1", optional = true }
 futures-util = { version = "0.3.31",default-features = false, features = ["sink"], optional = true }
 
-ts-rs = { version = "11.0.1", features = ["uuid-impl", "indexmap-impl"], optional = true }
+ts-rs = { version = "11.0.1", features = ["uuid-impl", "indexmap-impl"] }
 
 [dev-dependencies]
 tempfile = "3.22.0"

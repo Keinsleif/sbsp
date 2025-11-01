@@ -662,10 +662,12 @@ mod tests {
     use tokio::sync::{
         broadcast,
         mpsc::{self, Receiver, Sender},
+        watch,
     };
     use uuid::Uuid;
 
     use crate::{
+        BackendSettings,
         controller::state::AudioStateParam,
         engine::audio_engine::{AudioCommand, AudioEngineEvent},
         event::UiEvent,
@@ -691,8 +693,9 @@ mod tests {
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
         let (event_tx, _) = broadcast::channel::<UiEvent>(32);
+        let (_, settings_rx) = watch::channel(BackendSettings::default());
 
-        let (manager, handle) = ShowModelManager::new(event_tx.clone());
+        let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx);
         let mut write_lock = manager.write().await;
         write_lock.name = "TestShowModel".to_string();
         write_lock.cues.push(Cue {

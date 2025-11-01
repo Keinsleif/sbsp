@@ -23,7 +23,7 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    model::{cue::audio::SoundType, settings::AudioSettings},
+    model::{cue::audio::SoundType, settings::ShowAudioSettings},
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -169,7 +169,7 @@ struct PlayingSound {
 pub struct AudioEngine {
     manager: Option<AudioManager>,
     mono_effect_handle: MonoEffectHandle,
-    settings: AudioSettings,
+    settings: ShowAudioSettings,
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     playing_sounds: HashMap<Uuid, PlayingSound>,
@@ -180,7 +180,7 @@ impl AudioEngine {
     pub fn new(
         command_rx: mpsc::Receiver<AudioCommand>,
         event_tx: mpsc::Sender<EngineEvent>,
-        settings: AudioSettings,
+        settings: ShowAudioSettings,
     ) -> Result<Self> {
         let mut audio_manager_settings = AudioManagerSettings::default();
         let mono_effect_handle = audio_manager_settings

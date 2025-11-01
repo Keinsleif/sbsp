@@ -1,4 +1,5 @@
 mod command;
+mod settings;
 #[cfg(desktop)]
 pub mod update;
 
@@ -17,6 +18,8 @@ use tauri::{
 };
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
+
+use crate::settings::manager::GlobalSettingsManager;
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
@@ -48,13 +51,21 @@ pub struct ConnectionData {
     disconnect_tx: mpsc::Sender<()>,
 }
 
-#[derive(Default)]
 pub struct AppState {
     connection_data: RwLock<Option<ConnectionData>>,
     discovery_stop_tx: Mutex<Option<mpsc::Sender<()>>>,
+    pub settings_manager: GlobalSettingsManager,
 }
 
 impl AppState {
+    pub fn new(settings_manager: GlobalSettingsManager) -> Self {
+        Self {
+            connection_data: RwLock::new(None),
+            discovery_stop_tx: Mutex::new(None),
+            settings_manager,
+        }
+    }
+
     pub async fn get_handle(&self) -> Option<BackendHandle> {
         self.connection_data
             .read()
@@ -228,7 +239,20 @@ pub fn run() {
                 .build()?;
             app.set_menu(menu)?;
 
-            app.manage(AppState::default());
+            let settings_manager = GlobalSettingsManager::new();
+
+            app.manage(AppState::new(settings_manager));
+
+            if let Ok(path) = app.path().app_config_dir() {
+                let config_path = path.join("config.json");
+                let app_handle_clone = app.handle().clone();
+                tokio::spawn(async move {
+                    let state = app_handle_clone.state::<AppState>();
+                    if let Err(e) = state.settings_manager.load_from_file(config_path.as_path()).await {
+                        log::error!("Failed to load config on startup. {}", e);
+                    }
+                });
+            }
 
             Ok(())
         })
@@ -265,13 +289,19 @@ pub fn run() {
             command::model_manager::remove_cue,
             command::model_manager::move_cue,
             command::model_manager::renumber_cues,
-            command::model_manager::update_settings,
+            command::model_manager::update_show_settings,
             command::client::get_server_address,
             command::client::connect_to_server,
             command::client::disconnect_from_server,
             command::client::start_server_discovery,
             command::client::stop_server_discovery,
             command::client::request_file_list,
+            command::settings::get_settings,
+            command::settings::set_settings,
+            command::settings::reload_settings,
+            command::settings::save_settings,
+            command::settings::import_settings_from_file,
+            command::settings::export_settings_to_file,
             #[cfg(desktop)]
             update::fetch_update,
             #[cfg(desktop)]

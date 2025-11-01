@@ -1,4 +1,5 @@
 mod command;
+mod settings;
 #[cfg(desktop)]
 pub mod update;
 
@@ -16,10 +17,13 @@ use tauri::{
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, watch};
 
+use crate::settings::manager::GlobalSettingsManager;
+
 pub struct AppState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
+    pub settings_manager: GlobalSettingsManager,
     discovery_option: RwLock<Option<String>>,
     port: RwLock<u16>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
@@ -30,11 +34,13 @@ impl AppState {
         backend_handle: BackendHandle,
         state_rx: watch::Receiver<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
+        settings_manager: GlobalSettingsManager,
     ) -> Self {
         Self {
             backend_handle,
             state_rx,
             event_tx,
+            settings_manager,
             discovery_option: RwLock::new(None),
             port: RwLock::new(5800),
             shutdown_tx: Mutex::new(None),
@@ -219,7 +225,9 @@ pub fn run() {
                 .build()?;
             app.set_menu(menu)?;
 
-            let (backend_handle, state_rx, event_tx) = start_backend();
+            let (settings_manager, settings_rx) = GlobalSettingsManager::new();
+
+            let (backend_handle, state_rx, event_tx) = start_backend(settings_rx);
 
             tokio::spawn(forward_backend_state_and_event(
                 app_handle.clone(),
@@ -227,7 +235,18 @@ pub fn run() {
                 event_tx.subscribe(),
             ));
 
-            app.manage(AppState::new(backend_handle, state_rx, event_tx));
+            app.manage(AppState::new(backend_handle, state_rx, event_tx, settings_manager));
+
+            if let Ok(path) = app.path().app_config_dir() {
+                let config_path = path.join("config.json");
+                let app_handle_clone = app_handle.clone();
+                tokio::spawn(async move {
+                    let state = app_handle_clone.state::<AppState>();
+                    if let Err(e) = state.settings_manager.load_from_file(config_path.as_path()).await {
+                        log::error!("Failed to load config on startup. file={:?}, error={}", config_path, e);
+                    }
+                });
+            }
 
             Ok(())
         })
@@ -242,8 +261,7 @@ pub fn run() {
                 command::file_save_as(handle.clone());
             }
             "id_quit" => {
-                handle.cleanup_before_exit();
-                std::process::exit(0);
+                handle.exit(0);
             }
             "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" | "id_check_update" => {
                 let _ = handle.emit("menu_clicked", event.id());
@@ -276,7 +294,7 @@ pub fn run() {
             command::model_manager::remove_cue,
             command::model_manager::move_cue,
             command::model_manager::renumber_cues,
-            command::model_manager::update_settings,
+            command::model_manager::update_show_settings,
             command::server::is_server_running,
             command::server::get_server_port,
             command::server::set_server_port,
@@ -285,6 +303,12 @@ pub fn run() {
             command::server::start_server,
             command::server::stop_server,
             command::server::open_server_panel,
+            command::settings::get_settings,
+            command::settings::set_settings,
+            command::settings::reload_settings,
+            command::settings::save_settings,
+            command::settings::import_settings_from_file,
+            command::settings::export_settings_to_file,
             #[cfg(desktop)]
             update::fetch_update,
             #[cfg(desktop)]

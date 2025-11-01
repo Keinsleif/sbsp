@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct HotkeySettings {
     playback: PlaybackHotkey,
     audio_action: AudioActionHotkey,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PlaybackHotkey {
     pub go: Option<String>,
@@ -39,8 +38,7 @@ impl Default for PlaybackHotkey {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AudioActionHotkey {
     pub toggle_repeat: Option<String>,

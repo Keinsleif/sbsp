@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { invoke } from '@tauri-apps/api/core';
-import { useShowModel } from './showmodel';
 import { ref } from 'vue';
+import { getLockCursorToSelection } from '../utils';
 
 export const useUiState = defineStore(
   'uistate',
@@ -17,10 +17,9 @@ export const useUiState = defineStore(
     const error_messages = ref<string[]>([]);
 
     const clearSelected = () => {
-      const shwoModel = useShowModel();
       selected.value = null;
       selectedRows.value = [];
-      if (shwoModel.getLockCursorToSelection()) {
+      if (getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: null,
         }).catch((e) => {
@@ -29,10 +28,9 @@ export const useUiState = defineStore(
       }
     };
     const setSelected = (id: string) => {
-      const showModel = useShowModel();
       selected.value = id;
       selectedRows.value = [id];
-      if (showModel.getLockCursorToSelection()) {
+      if (getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {
@@ -41,12 +39,11 @@ export const useUiState = defineStore(
       }
     };
     const addSelected = (id: string) => {
-      const showModel = useShowModel();
       selected.value = id;
       if (!selectedRows.value.includes(id)) {
         selectedRows.value.push(id);
       }
-      if (showModel.getLockCursorToSelection()) {
+      if (getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
         }).catch((e) => {

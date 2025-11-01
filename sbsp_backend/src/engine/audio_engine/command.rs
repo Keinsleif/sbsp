@@ -6,7 +6,7 @@ use crate::{
     action::AudioAction,
     model::{
         cue::audio::{AudioFadeParam, SoundType},
-        settings::AudioSettings,
+        settings::ShowAudioSettings,
     },
 };
 
@@ -20,7 +20,7 @@ pub enum AudioCommand {
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
     PerformAction { id: Uuid, action: AudioAction },
-    Reconfigure(AudioSettings),
+    Reconfigure(ShowAudioSettings),
 }
 
 impl AudioCommand {

@@ -107,7 +107,7 @@ pub async fn renumber_cues(
 }
 
 #[tauri::command]
-pub async fn update_settings(
+pub async fn update_show_settings(
     state: tauri::State<'_, AppState>,
     new_settings: ShowSettings,
 ) -> Result<(), String> {

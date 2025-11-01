@@ -1,12 +1,12 @@
 pub mod audio;
 
+use ts_rs::TS;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::model::cue::audio::AudioCueParam;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
@@ -18,8 +18,7 @@ pub struct Cue {
     pub params: CueParam,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -37,8 +36,7 @@ pub enum CueSequence {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",

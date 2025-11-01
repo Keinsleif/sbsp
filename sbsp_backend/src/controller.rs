@@ -12,15 +12,12 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
-    event::UiEvent,
-    executor::{ExecutorCommand, ExecutorEvent},
-    manager::ShowModelHandle,
-    model::cue::CueSequence,
+    BackendSettings, controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam}, event::UiEvent, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelHandle, model::cue::CueSequence
 };
 
 pub struct CueController {
     model_handle: ShowModelHandle,
+    settings_rx: watch::Receiver<BackendSettings>,
     executor_tx: mpsc::Sender<ExecutorCommand>,
     command_rx: mpsc::Receiver<ControllerCommand>,
 
@@ -35,6 +32,7 @@ pub struct CueController {
 impl CueController {
     pub fn new(
         model_handle: ShowModelHandle,
+        settings_rx: watch::Receiver<BackendSettings>,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         executor_event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
@@ -45,6 +43,7 @@ impl CueController {
         (
             Self {
                 model_handle,
+                settings_rx,
                 executor_tx,
                 command_rx,
                 executor_event_rx,
@@ -141,8 +140,8 @@ impl CueController {
                     .expect("GO: Playback Cursor is unavailable.");
                 self.handle_go(cue_id).await?;
                 let advance_cursor_when_go = {
-                    let model = self.model_handle.read().await;
-                    model.settings.general.advance_cursor_when_go
+                    let settings = self.settings_rx.borrow();
+                    settings.advance_cursor_when_go
                 };
                 if advance_cursor_when_go {
                     self.update_playback_cursor().await?;
@@ -609,6 +608,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
+        BackendSettings,
         manager::ShowModelManager,
         model::{
             self,
@@ -641,7 +641,12 @@ mod tests {
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
 
-        let (manager, handle) = ShowModelManager::new(event_tx.clone());
+        let (_, settings_rx) = watch::channel(BackendSettings {
+                advance_cursor_when_go: true,
+                ..Default::default()
+        });
+
+        let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx.clone());
         let mut write_lock = manager.write().await;
         write_lock.name = "TestShowModel".to_string();
         for cue_id in cue_ids {
@@ -673,6 +678,7 @@ mod tests {
         }
         let (controller, controller_handle) = CueController::new(
             handle.clone(),
+            settings_rx,
             exec_tx,
             playback_event_rx,
             state_tx,

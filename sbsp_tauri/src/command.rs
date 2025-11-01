@@ -11,6 +11,7 @@ use crate::AppState;
 pub mod controller;
 pub mod model_manager;
 pub mod server;
+pub mod settings;
 
 #[tauri::command]
 pub fn get_side() -> String {
@@ -106,9 +107,10 @@ pub async fn add_empty_cue(
     at_index: usize,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    let model_lock = handle.model_handle.read().await;
-    let templates = model_lock.settings.template.clone();
-    drop(model_lock);
+    let templates = {
+        let settings = state.settings_manager.read().await;
+        settings.template.clone()
+    };
     match cue_type.as_str() {
         "audio" => {
             let (result_tx, result_rx) = oneshot::channel();

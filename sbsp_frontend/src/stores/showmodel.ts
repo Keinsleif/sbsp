@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
 import { Cue } from '../types/Cue';
-import { useUiState } from './uistate';
 
 export const useShowModel = defineStore('showmodel', {
   state: () =>
@@ -11,65 +10,7 @@ export const useShowModel = defineStore('showmodel', {
       cues: [],
       settings: {
         general: {
-          lockCursorToSelection: true,
-          advanceCursorWhenGo: true,
-          copyAssetsWhenAdd: false,
           copyAssetsDestination: '.',
-          seekAmount: 5.0,
-        },
-        hotkey: {
-          playback: {
-            go: 'Enter',
-            load: 'L',
-            pauseAndResume: 'Space',
-            pauseAll: '[',
-            resumeAll: ']',
-            stop: 'Backspace',
-            stopAll: 'Escape',
-            seekForward: 'ArrowRight',
-            seekBackward: 'ArrowLeft',
-          },
-          audioAction: {
-            toggleRepeat: 'R',
-          },
-        },
-        template: {
-          audio: {
-            id: '00000000-0000-0000-0000-000000000000',
-            number: '',
-            name: null,
-            notes: '',
-            preWait: 0.0,
-            sequence: {
-              type: 'doNotContinue',
-            },
-            params: {
-              soundType: 'streaming',
-              type: 'audio',
-              target: '',
-              startTime: null,
-              fadeInParam: null,
-              endTime: null,
-              fadeOutParam: null,
-              volume: 0.0,
-              pan: 0.0,
-              repeat: false,
-            },
-          },
-          wait: {
-            id: '00000000-0000-0000-0000-000000000000',
-            number: '',
-            name: null,
-            notes: '',
-            preWait: 0.0,
-            sequence: {
-              type: 'doNotContinue',
-            },
-            params: {
-              type: 'wait',
-              duration: 5.0,
-            },
-          },
         },
         audio: {
           monoOutput: false,
@@ -113,16 +54,6 @@ export const useShowModel = defineStore('showmodel', {
           1,
         )[0],
       );
-    },
-    getLockCursorToSelection() {
-      const side = useUiState().side;
-      if (side == 'main') {
-        return this.settings.general.lockCursorToSelection;
-      } else if (side == 'remote') {
-        return this.settings.remote.lockCursorToSelection;
-      } else {
-        return false;
-      }
     },
   },
 });

@@ -1,3 +1,6 @@
+import { useShowModel } from './stores/showmodel';
+import { useUiSettings } from './stores/uiSettings';
+import { useUiState } from './stores/uistate';
 import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
@@ -153,5 +156,16 @@ export const curveToEasing = (curve: Curve): Easing => {
       } else {
         return { type: 'inOutPowf', intensity: curve.power };
       }
+  }
+};
+
+export const getLockCursorToSelection = () => {
+  const side = useUiState().side;
+  if (side == 'main') {
+    return useUiSettings().settings.general.lockCursorToSelection;
+  } else if (side == 'remote') {
+    return useShowModel().settings.remote.lockCursorToSelection;
+  } else {
+    return false;
   }
 };

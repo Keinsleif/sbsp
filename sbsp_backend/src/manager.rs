@@ -9,10 +9,11 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
+    BackendSettings,
     event::{UiError, UiEvent},
     model::{
         ShowModel,
@@ -61,6 +62,7 @@ pub enum ModelCommand {
 
 pub struct ShowModelManager {
     model: Arc<RwLock<ShowModel>>,
+    settings_rx: watch::Receiver<BackendSettings>,
     command_rx: mpsc::Receiver<ModelCommand>,
     event_tx: broadcast::Sender<UiEvent>,
 
@@ -68,12 +70,13 @@ pub struct ShowModelManager {
 }
 
 impl ShowModelManager {
-    pub fn new(event_tx: broadcast::Sender<UiEvent>) -> (Self, ShowModelHandle) {
+    pub fn new(event_tx: broadcast::Sender<UiEvent>, settings_rx: watch::Receiver<BackendSettings>) -> (Self, ShowModelHandle) {
         let (command_tx, command_rx) = mpsc::channel(32);
         let model = Arc::new(RwLock::new(ShowModel::default()));
         let show_model_path = Arc::new(RwLock::new(None));
         let manager = Self {
             model: model.clone(),
+            settings_rx,
             command_rx,
             event_tx,
             show_model_path: show_model_path.clone(),
@@ -99,12 +102,13 @@ impl ShowModelManager {
         log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
-                let (index_option, copy_assets_when_add) = {
+                let index_option = {
                     let model = self.model.read().await;
-                    (
-                        model.cues.iter().position(|c| c.id == cue.id),
-                        model.settings.general.copy_assets_when_add,
-                    )
+                    model.cues.iter().position(|c| c.id == cue.id)
+                };
+                let copy_assets_when_add = {
+                    let settings = self.settings_rx.borrow();
+                    settings.copy_assets_when_add
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let event = if let Some(index) = index_option {
@@ -136,13 +140,16 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::AddCue { cue, at_index } => {
-                let (id_exists, cuelist_length, copy_assets_when_add) = {
+                let (id_exists, cuelist_length) = {
                     let model = self.model.read().await;
                     (
                         model.cues.iter().any(|c| c.id == cue.id),
                         model.cues.len(),
-                        model.settings.general.copy_assets_when_add,
                     )
+                };
+                let copy_assets_when_add = {
+                    let settings = self.settings_rx.borrow();
+                    settings.copy_assets_when_add
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let event = if id_exists {
@@ -183,12 +190,13 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::AddCues { cues, at_index } => {
-                let (cuelist_length, copy_assets_when_add) = {
+                let cuelist_length = {
                     let model = self.model.read().await;
-                    (
-                        model.cues.len(),
-                        model.settings.general.copy_assets_when_add,
-                    )
+                    model.cues.len()
+                };
+                let copy_assets_when_add = {
+                    let settings = self.settings_rx.borrow();
+                    settings.copy_assets_when_add
                 };
                 let model_path_option = self.show_model_path.read().await;
                 let mut added_cues = vec![];
@@ -472,6 +480,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
+        BackendSettings,
         event::UiEvent,
         model::{
             ShowModel,
@@ -479,11 +488,11 @@ mod tests {
                 Cue, CueParam, CueSequence,
                 audio::{AudioCueParam, SoundType},
             },
-            settings::{GeneralSettings, ShowSettings},
+            settings::ShowSettings,
         },
     };
     use tempfile::{NamedTempFile, tempdir};
-    use tokio::sync::broadcast;
+    use tokio::sync::{broadcast, watch};
     use uuid::Uuid;
 
     use super::{ShowModelHandle, ShowModelManager};
@@ -493,7 +502,11 @@ mod tests {
         model_path: Option<PathBuf>,
     ) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
-        let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone());
+        let (_, settings_rx) = watch::channel(BackendSettings {
+            copy_assets_when_add: true,
+            ..Default::default()
+        });
+        let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone(), settings_rx);
         if let Some(inital) = initial_model {
             let mut model_lock = model_manager.write().await;
             *model_lock = inital;
@@ -532,13 +545,7 @@ mod tests {
                         sound_type: SoundType::Streaming,
                     }),
                 }],
-                settings: ShowSettings {
-                    general: GeneralSettings {
-                        copy_assets_when_add: true,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
+                settings: ShowSettings::default()
             }),
             Some(temp_dir.path().to_path_buf()),
         )
@@ -602,13 +609,7 @@ mod tests {
             Some(ShowModel {
                 name: "test".into(),
                 cues: vec![],
-                settings: ShowSettings {
-                    general: GeneralSettings {
-                        copy_assets_when_add: true,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
+                settings: ShowSettings::default(),
             }),
             Some(temp_dir.path().to_path_buf()),
         )
