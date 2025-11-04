@@ -481,11 +481,10 @@ impl ShowModelManager {
             if let Some(project_dir) = path.parent() {
                 if let ProjectStatus::Saved { project_type, path: saved_path } = &*project_status && *project_type == ProjectType::ProjectFolder && path != saved_path {
                     for cue in &mut cues {
-                        if let CueParam::Audio(audio_param) = &mut cue.params {
-                            let asset_path = saved_path.join(&audio_param.target);
+                        if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
+                            let asset_path = parent.join(&audio_param.target);
                             let new_path = self.import_asset_file(&asset_path, project_dir).await?;
                             audio_param.target = new_path;
-
                         }
                     }
                 } else {
@@ -518,26 +517,6 @@ impl ShowModelManager {
         tokio::fs::write(&path, content).await?;
         log::info!("Show saved to: {}", path.display());
         Ok(())
-    }
-
-    pub async fn resolve_asset_path(&self, asset_path: &Path) -> PathBuf {
-        let status = self.project_status.read().await;
-        if let ProjectStatus::Saved { project_type, path } = status.to_owned() {
-            match project_type {
-                ProjectType::SingleFile => {
-                    asset_path.to_path_buf()
-                },
-                ProjectType::ProjectFolder => {
-                    if let Some(parent) = path.parent() {
-                        parent.join(asset_path)
-                    } else {
-                        asset_path.to_path_buf()
-                    }
-                },
-            }
-        } else {
-            asset_path.to_path_buf()
-        }
     }
 
     async fn import_asset_file(

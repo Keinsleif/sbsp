@@ -119,10 +119,8 @@ impl AssetProcessor {
 
     async fn handle_process_file(&self, path: PathBuf) {
         let actual_path = {
-            let model = self.model_handle.read().await;
-            if let Some(model_path) = self.model_handle.get_current_file_path().await.as_ref() {
-                model_path
-                    .join(&model.settings.general.copy_assets_destination)
+            if let Some(model_path) = self.model_handle.get_current_file_path().await && let Some(parent) = model_path.parent() {
+                parent
                     .join(&path)
             } else {
                 path.clone()
