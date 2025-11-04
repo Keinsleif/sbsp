@@ -7,39 +7,40 @@ const side = await invoke<string>('get_side', {});
 
 const fileMenu = await Submenu.new({
   text: 'File',
-  items:
-    side == 'main'
-      ? [
-          await MenuItem.new({
-            id: 'id_open',
-            text: 'Open',
-            action: () => {
-              invoke('file_open', {}).catch((e) => console.error(e));
-            },
-          }),
-          await MenuItem.new({
-            id: 'id_save',
-            text: 'Save',
-            action: () => {
-              invoke('file_save', {}).catch((e) => console.error(e));
-            },
-          }),
-          await MenuItem.new({
-            id: 'id_save_as',
-            text: 'Save As...',
-            action: () => {
-              invoke('file_save_as', {}).catch((e) => console.error(e));
-            },
-          }),
-          await MenuItem.new({
-            id: 'id_export_to_folder',
-            text: 'Export to Folder',
-            action: () => {
-              invoke('export_to_folder', {}).catch((e) => console.error(e));
-            },
-          }),
-        ]
-      : [],
+  items: [
+    await MenuItem.new({
+      id: 'id_open',
+      text: 'Open',
+      enabled: side == 'main',
+      action: () => {
+        invoke('file_open', {}).catch((e) => console.error(e));
+      },
+    }),
+    await MenuItem.new({
+      id: 'id_save',
+      text: 'Save',
+      enabled: side == 'main',
+      action: () => {
+        invoke('file_save', {}).catch((e) => console.error(e));
+      },
+    }),
+    await MenuItem.new({
+      id: 'id_save_as',
+      text: 'Save As...',
+      enabled: side == 'main',
+      action: () => {
+        invoke('file_save_as', {}).catch((e) => console.error(e));
+      },
+    }),
+    await MenuItem.new({
+      id: 'id_export_to_folder',
+      text: 'Export to Folder',
+      enabled: side == 'main',
+      action: () => {
+        invoke('export_to_folder', {}).catch((e) => console.error(e));
+      },
+    }),
+  ],
 });
 
 const editMenu = await Submenu.new({
