@@ -95,7 +95,9 @@ listen<UiEvent>('backend-event', (event) => {
         showModel.updateAll(model);
         uiState.success(t('notification.modelLoaded'));
       });
-      getCurrentWebviewWindow().setTitle(uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ' + showModel.name);
+      getCurrentWebviewWindow().setTitle(
+        (uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name,
+      );
       break;
     case 'showModelSaved':
       uiState.success(t('notification.modelSaved'));
@@ -120,7 +122,9 @@ listen<UiEvent>('backend-event', (event) => {
       break;
     case 'modelNameUpdated':
       showModel.$patch({ name: event.payload.param.newName });
-      getCurrentWebviewWindow().setTitle(uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ' + showModel.name);
+      getCurrentWebviewWindow().setTitle(
+        (uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name,
+      );
       break;
     case 'settingsUpdated': {
       const settings = event.payload.param.newSettings;
@@ -163,7 +167,7 @@ const onVisibilityChange = () => {
 
 onMounted(() => {
   menu.setAsWindowMenu();
-  getCurrentWebviewWindow().setTitle(uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ' + showModel.name);
+  getCurrentWebviewWindow().setTitle((uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name);
   navigator.wakeLock.request('screen').then((value) => {
     wakeLock.value = value;
   });
