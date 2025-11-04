@@ -14,7 +14,6 @@ use sbsp_backend::{
 };
 use tauri::{
     AppHandle, Emitter, Manager as _,
-    menu::{MenuBuilder, MenuId, MenuItem, SubmenuBuilder},
 };
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
@@ -201,44 +200,6 @@ pub fn run() {
                 app.manage(update::PendingUpdate::default());
             }
 
-            let file_menu = SubmenuBuilder::new(app, "File")
-                .separator()
-                .text(MenuId::new("id_quit"), "Quit")
-                .build()?;
-            let edit_menu = SubmenuBuilder::new(app, "Edit")
-                .cut()
-                .copy()
-                .paste()
-                .item(&MenuItem::with_id(
-                    app,
-                    MenuId::new("id_delete"),
-                    "Delete",
-                    true,
-                    Some("Ctrl+Backspace"),
-                )?)
-                .select_all()
-                .build()?;
-            let cue_menu = SubmenuBuilder::new(app, "Cue")
-                .text("id_audio_cue", "Audio Cue")
-                .text("id_wait_cue", "Wait Cue")
-                .build()?;
-            let tools_menu = SubmenuBuilder::new(app, "Tools")
-                .item(&MenuItem::with_id(
-                    app,
-                    MenuId::new("id_renumber"),
-                    "Renumber selected cues",
-                    true,
-                    Some("Ctrl+R"),
-                )?)
-                .build()?;
-            let help_menu = SubmenuBuilder::new(app, "Help")
-                .text("id_check_update", "Check for updates")
-                .build()?;
-            let menu = MenuBuilder::new(app)
-                .items(&[&file_menu, &edit_menu, &cue_menu, &tools_menu, &help_menu])
-                .build()?;
-            app.set_menu(menu)?;
-
             let settings_manager = GlobalSettingsManager::new();
 
             app.manage(AppState::new(settings_manager));
@@ -255,16 +216,6 @@ pub fn run() {
             }
 
             Ok(())
-        })
-        .on_menu_event(|handle, event| match event.id().as_ref() {
-            "id_quit" => {
-                handle.cleanup_before_exit();
-                std::process::exit(0);
-            }
-            "id_delete" | "id_renumber" | "id_audio_cue" | "id_wait_cue" | "id_check_update" => {
-                let _ = handle.emit("menu_clicked", event.id());
-            }
-            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             command::get_side,

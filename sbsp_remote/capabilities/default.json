@@ -8,6 +8,7 @@
     "dialog:default",
     "core:webview:allow-create-webview-window",
     "core:window:allow-set-focus",
-    "core:window:allow-close"
+    "core:window:allow-close",
+    "core:window:allow-set-title"
   ]
 }

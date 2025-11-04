@@ -25,9 +25,9 @@
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
     <v-snackbar-queue v-model="uiState.error_messages" timeout="2000" color="error"></v-snackbar-queue>
 
-    <renumber-dialog v-model="isRenumberDialogOpen"></renumber-dialog>
+    <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
-    <update-dialog v-model="isUpdateDialogOpen"></update-dialog>
+    <update-dialog v-model="uiState.isUpdateDialogOpen"></update-dialog>
   </v-app>
 </template>
 
@@ -57,6 +57,8 @@ import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import { useAssetResult } from './stores/assetResult';
 import { useUiSettings } from './stores/uiSettings';
 import { getLockCursorToSelection } from './utils';
+import { menu } from './window-menu';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -93,6 +95,7 @@ listen<UiEvent>('backend-event', (event) => {
         showModel.updateAll(model);
         uiState.success(t('notification.modelLoaded'));
       });
+      getCurrentWebviewWindow().setTitle('ShowModel - ' + showModel.name);
       break;
     case 'showModelSaved':
       uiState.success(t('notification.modelSaved'));
@@ -144,9 +147,6 @@ invoke<ShowModel>('get_show_model')
 
 invoke<'remote' | 'main'>('get_side').then((side) => (uiState.side = side));
 
-const isRenumberDialogOpen = ref(false);
-const isUpdateDialogOpen = ref(false);
-
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
 const onVisibilityChange = () => {
@@ -158,6 +158,8 @@ const onVisibilityChange = () => {
 };
 
 onMounted(() => {
+  menu.setAsWindowMenu();
+  getCurrentWebviewWindow().setTitle('SBS Player - ' + showModel.name);
   navigator.wakeLock.request('screen').then((value) => {
     wakeLock.value = value;
   });
@@ -386,45 +388,10 @@ useHotkey(
   },
 );
 
-listen<string>('menu_clicked', (event) => {
-  switch (event.payload) {
-    case 'id_delete':
-      for (const row of uiState.selectedRows) {
-        invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
-      }
-      break;
-    case 'id_renumber':
-      isRenumberDialogOpen.value = true;
-      break;
-    case 'id_audio_cue': {
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = showModel.cues.length;
-      }
-      invoke('add_empty_cue', { cueType: 'audio', atIndex: insertIndex }).catch((e) => console.error(e));
-      break;
-    }
-    case 'id_wait_cue': {
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = showModel.cues.length;
-      }
-      invoke('add_empty_cue', { cueType: 'wait', atIndex: insertIndex }).catch((e) => console.error(e));
-      break;
-    }
-    case 'id_check_update': {
-      isUpdateDialogOpen.value = true;
-    }
-  }
-});
 useHotkey(
   'cmd+r',
   () => {
-    isRenumberDialogOpen.value = true;
+    uiState.isRenumberCueDialogOpen = true;
   },
   { preventDefault: true },
 );

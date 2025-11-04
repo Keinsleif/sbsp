@@ -11,6 +11,8 @@ export const useUiState = defineStore(
     const selectedRows = ref<string[]>([]);
     const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
     const isRightSidebarOpen = ref(true);
+    const isRenumberCueDialogOpen = ref(false);
+    const isUpdateDialogOpen = ref(false);
     const isSettingsDialogOpen = ref(false);
     const isEditorOpen = ref(true);
     const success_messages = ref<string[]>([]);
@@ -70,7 +72,9 @@ export const useUiState = defineStore(
       selectedRows,
       sideBarTab,
       isRightSidebarOpen,
+      isRenumberCueDialogOpen,
       isSettingsDialogOpen,
+      isUpdateDialogOpen,
       isEditorOpen,
       success_messages,
       error_messages,

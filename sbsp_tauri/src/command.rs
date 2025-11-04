@@ -37,7 +37,7 @@ pub fn file_open(app_handle: tauri::AppHandle) {
         .clone();
     tokio::spawn(async move {
         let (result_tx, result_rx) = oneshot::channel();
-        app_handle.dialog().file().pick_folder(|file_path_option| {
+        app_handle.dialog().file().add_filter("Show Model", &["sbsp"]).pick_file(|file_path_option| {
             result_tx.send(file_path_option).unwrap();
         });
         if let Ok(Some(file_path)) = result_rx.await {
@@ -99,6 +99,35 @@ pub fn file_save_as(handle: tauri::AppHandle) {
     });
 }
 
+#[tauri::command]
+pub fn export_to_folder(handle: tauri::AppHandle) {
+    let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
+    let file_dialog_builder = handle.dialog().file();
+    tokio::spawn(async move {
+        if let Some(current_path) = model_handle.get_current_file_path().await.as_ref() {
+            let (result_tx, result_rx) = oneshot::channel();
+            file_dialog_builder
+                .set_directory(current_path.parent().unwrap())
+                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
+                .pick_folder(move |file_path_option| {
+                    result_tx.send(file_path_option).unwrap();
+                });
+            if let Ok(Some(file_path)) = result_rx.await {
+                let file_pathbuf = file_path.into_path().unwrap();
+                model_handle.export_to_folder(file_pathbuf).await.unwrap();
+            }
+        } else {
+            let (result_tx, result_rx) = oneshot::channel();
+            file_dialog_builder.pick_folder(move |file_path_option| {
+                result_tx.send(file_path_option).unwrap();
+            });
+            if let Ok(Some(file_path)) = result_rx.await {
+                let file_pathbuf = file_path.into_path().unwrap();
+                model_handle.export_to_folder(file_pathbuf).await.unwrap();
+            }
+        }
+    });
+}
 #[tauri::command]
 pub async fn add_empty_cue(
     app_handle: tauri::AppHandle,

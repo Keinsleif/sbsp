@@ -377,6 +377,13 @@ const click = (event: MouseEvent, index: number) => {
 const resetSelection = () => {
   uiState.selectedRows = [];
   uiState.selected = null;
+  if (getLockCursorToSelection()) {
+    invoke('set_playback_cursor', {
+      cueId: uiState.selected !== null ? uiState.selected : null,
+    }).catch((e) => {
+      console.error('Failed to set cursor. ' + e);
+    });
+  }
 };
 
 const getCueIcon = (type: string): string | undefined => {
