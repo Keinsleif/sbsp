@@ -88,13 +88,13 @@ export const buildCueName = (cue: Cue | null) => {
 };
 
 export const calculateDuration = (cueParam: CueParam, totalDuration: number | null | undefined): number | null => {
-  if (totalDuration == null || isNaN(totalDuration)) {
-    return null;
-  }
   if (cueParam.type == 'wait') {
     return cueParam.duration;
   }
   if (cueParam.type == 'audio') {
+    if (totalDuration == null || isNaN(totalDuration)) {
+      return null;
+    }
     let duration = totalDuration;
     if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
       duration = cueParam.endTime;
