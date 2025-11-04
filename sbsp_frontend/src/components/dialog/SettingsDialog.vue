@@ -101,28 +101,52 @@
           </v-tabs-window-item>
           <v-tabs-window-item value="hotkey" class="pa-3">
             <h2 class="mb-3">Playback</h2>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.go" label="Go"></hotkey-input>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.load" label="Load"></hotkey-input>
+            <hotkey-input v-model="editingSettings.global.hotkey.playback.go" width="280px" label="Go"></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.load"
+              width="280px"
+              label="Load"
+            ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.pauseAndResume"
+              width="280px"
               label="Pause & Resume"
             ></hotkey-input>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.pauseAll" label="Pause All"></hotkey-input>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.resumeAll" label="Resume All"></hotkey-input>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.stop" label="Stop"></hotkey-input>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.stopAll" label="Stop All"></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.pauseAll"
+              width="280px"
+              label="Pause All"
+            ></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.resumeAll"
+              width="280px"
+              label="Resume All"
+            ></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.stop"
+              width="280px"
+              label="Stop"
+            ></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.stopAll"
+              width="280px"
+              label="Stop All"
+            ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.seekForward"
+              width="280px"
               label="Seek Forward"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.seekBackward"
+              width="280px"
               label="Seek Backward"
             ></hotkey-input>
             <v-divider></v-divider>
             <h2 class="mb-3 mt-3">Audio Action</h2>
             <hotkey-input
               v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
+              width="280px"
               label="ToggleRepeat"
             ></hotkey-input>
           </v-tabs-window-item>

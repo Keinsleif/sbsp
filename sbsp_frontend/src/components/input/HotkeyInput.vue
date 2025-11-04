@@ -4,6 +4,7 @@
     readonly
     clearable
     persistent-clear
+    persistent-placeholder
     variant="outlined"
     density="compact"
     @keydown.stop="keyinput($event)"
