@@ -32,8 +32,8 @@ impl Default for PlaybackHotkey {
             resume_all: Some("]".to_string()),
             stop: Some("Backspace".to_string()),
             stop_all: Some("Escape".to_string()),
-            seek_forward: Some("ArrowRight".to_string()),
-            seek_backward: Some("ArrowLeft".to_string()),
+            seek_forward: None,
+            seek_backward: None,
         }
     }
 }

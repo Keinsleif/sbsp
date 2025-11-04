@@ -87,6 +87,12 @@ pub async fn renumber_cues(
 }
 
 #[tauri::command]
+pub async fn update_model_name(state: tauri::State<'_, AppState>, new_name: String) -> Result<(), String> {
+    let handle = state.get_handle();
+    handle.model_handle.update_model_name(new_name).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn update_show_settings(
     state: tauri::State<'_, AppState>,
     new_settings: ShowSettings,

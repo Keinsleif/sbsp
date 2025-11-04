@@ -9,19 +9,63 @@
     <v-sheet class="d-flex flex-column w-100 h-100">
       <v-sheet class="flex-grow-1 d-flex flex-row w-100">
         <v-tabs v-model="tab" direction="vertical">
-          <v-tab text="General" value="general"></v-tab>
-          <v-tab text="Hotkey" value="hotkey"></v-tab>
-          <v-tab text="Template" value="template"></v-tab>
+          <v-tab text="Preset" value="preset"></v-tab>
+          <v-sheet class="pa-1 text-caption">ShowModel</v-sheet>
+          <v-tab text="General" value="showGeneral"></v-tab>
           <v-tab text="Audio" value="audio"></v-tab>
           <v-tab text="Remote" value="remote"></v-tab>
+          <v-sheet class="pa-1 text-caption">Global</v-sheet>
+          <v-tab text="General" value="globalGeneral"></v-tab>
+          <v-tab text="Hotkey" value="hotkey"></v-tab>
+          <v-tab text="Template" value="template"></v-tab>
         </v-tabs>
         <v-divider vertical opacity="0.5"></v-divider>
         <v-tabs-window v-model="tab" class="flex-grow-1 fill-height">
-          <v-tabs-window-item
-            value="general"
-            transition="toggle-slide-y-transition"
-            reverse-transition="toggle-slide-y-reverse-transition"
-          >
+          <v-tabs-window-item value="preset" class="pa-4">
+            <h2 class="mb-4">Hotkey & Cursor behavier</h2>
+            <v-sheet class="d-flex flex-row ga-3 align-center">
+              <v-btn class="text-none" width="120px" variant="flat" color="primary" @click="recallMusicBeePreset"
+                >MusicBee</v-btn
+              >
+              <span>Preset for MusicBee like controls.</span>
+            </v-sheet>
+            <v-divider class="mt-4 mb-4"></v-divider>
+            <v-sheet class="d-flex flex-row ga-3 align-center">
+              <v-btn class="text-none" width="120px" variant="flat" color="primary" @click="recallQLabPreset"
+                >QLab</v-btn
+              >
+              <span>Preset for QLab like controls.</span>
+            </v-sheet>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="showGeneral" class="pa-3">
+            <text-input
+              v-model="showModelName"
+              class="mt-4"
+              align-input="left"
+              width="500px"
+              label="Show Model name"
+            ></text-input>
+            <text-input
+              v-model="editingSettings.show.general.copyAssetsDestination"
+              align-input="left"
+              class="mt-4"
+              width="500px"
+              label="Assets directory"
+              hint="Relative path to the directory for copying assets. (per-show setting)"
+              persistent-hint
+              show-details
+            ></text-input>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="audio" class="pa-3">
+            <v-checkbox v-model="editingSettings.show.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="remote" class="pa-3">
+            <v-checkbox
+              v-model="editingSettings.show.remote.lockCursorToSelection"
+              label="Lock Cursor to Selection (on Remote side)"
+            ></v-checkbox>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="globalGeneral">
             <v-checkbox
               v-model="editingSettings.global.general.advanceCursorWhenGo"
               label="Advance cursor when GO"
@@ -44,7 +88,7 @@
               hide-details
               inset
               persistent-placeholder
-              class="ma-2"
+              class="ma-3"
               v-model="editingSettings.global.general.seekAmount"
               :min="0"
               width="160px"
@@ -54,25 +98,9 @@
               autocomplete="off"
               @keydown.stop
             ></v-number-input>
-            <v-divider></v-divider>
-            <text-input
-              v-model="editingSettings.show.general.copyAssetsDestination"
-              class="ma-2"
-              align-input="left"
-              width="500px"
-              label="Assets directory"
-              hint="Relative path to the directory for copying assets. (per-show setting)"
-              persistent-hint
-              show-details
-            ></text-input>
           </v-tabs-window-item>
-          <v-tabs-window-item
-            value="hotkey"
-            class="pa-3"
-            transition="toggle-slide-y-transition"
-            reverse-transition="toggle-slide-y-reverse-transition"
-          >
-            <h2>Playback</h2>
+          <v-tabs-window-item value="hotkey" class="pa-3">
+            <h2 class="mb-3">Playback</h2>
             <hotkey-input v-model="editingSettings.global.hotkey.playback.go" label="Go"></hotkey-input>
             <hotkey-input v-model="editingSettings.global.hotkey.playback.load" label="Load"></hotkey-input>
             <hotkey-input
@@ -83,19 +111,22 @@
             <hotkey-input v-model="editingSettings.global.hotkey.playback.resumeAll" label="Resume All"></hotkey-input>
             <hotkey-input v-model="editingSettings.global.hotkey.playback.stop" label="Stop"></hotkey-input>
             <hotkey-input v-model="editingSettings.global.hotkey.playback.stopAll" label="Stop All"></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.seekForward"
+              label="Seek Forward"
+            ></hotkey-input>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.seekBackward"
+              label="Seek Backward"
+            ></hotkey-input>
             <v-divider></v-divider>
-            <h2>Audio Action</h2>
+            <h2 class="mb-3 mt-3">Audio Action</h2>
             <hotkey-input
               v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
               label="ToggleRepeat"
             ></hotkey-input>
           </v-tabs-window-item>
-          <v-tabs-window-item
-            value="template"
-            class="fill-height"
-            transition="toggle-slide-y-transition"
-            reverse-transition="toggle-slide-y-reverse-transition"
-          >
+          <v-tabs-window-item value="template" class="fill-height">
             <v-sheet class="d-flex flex-column w-100" height="100%">
               <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
                 <thead>
@@ -236,25 +267,6 @@
               </div>
             </v-sheet>
           </v-tabs-window-item>
-          <v-tabs-window-item
-            value="audio"
-            class="pa-3"
-            transition="toggle-slide-y-transition"
-            reverse-transition="toggle-slide-y-reverse-transition"
-          >
-            <v-checkbox v-model="editingSettings.show.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
-          </v-tabs-window-item>
-          <v-tabs-window-item
-            value="remote"
-            class="pa-3"
-            transition="toggle-slide-y-transition"
-            reverse-transition="toggle-slide-y-reverse-transition"
-          >
-            <v-checkbox
-              v-model="editingSettings.show.remote.lockCursorToSelection"
-              label="Lock Cursor to Selection (on Remote side)"
-            ></v-checkbox>
-          </v-tabs-window-item>
         </v-tabs-window>
       </v-sheet>
       <v-divider thickness="1" opacity="0.5"></v-divider>
@@ -284,15 +296,16 @@ import BottomEditor from '../BottomEditor.vue';
 import type { Cue } from '../../types/Cue';
 import TextInput from '../input/TextInput.vue';
 import { useUiSettings } from '../../stores/uiSettings';
-import { GlobalSettings } from '../../types/GlobalSettings';
+import type { GlobalSettings } from '../../types/GlobalSettings';
 
 const showModel = useShowModel();
 const uiSettings = useUiSettings();
 
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
-const tab = ref('general');
+const tab = ref('showGeneral');
 const selectingTemplate = ref<'audio' | 'wait' | null>(null);
+const showModelName = ref<string>(showModel.name);
 const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalSettings;
@@ -324,6 +337,13 @@ watch(
 );
 
 watch(
+  () => showModel.name,
+  (newName) => {
+    showModelName.value = newName;
+  },
+);
+
+watch(
   () => uiSettings.settings,
   (newSettings) => {
     editingSettings.value.global = structuredClone(toRaw(newSettings));
@@ -341,8 +361,45 @@ watch(isSettingsDialogOpen, (newState) => {
 
 const saveSettings = () => {
   invoke('update_show_settings', { newSettings: editingSettings.value.show }).catch((e) => console.error(e));
+  invoke('update_model_name', { newName: showModelName.value }).catch((e) => console.error(e));
   uiSettings.update(editingSettings.value.global);
   uiSettings.save();
+};
+
+const recallMusicBeePreset = () => {
+  editingSettings.value.global.hotkey.playback = {
+    go: 'Enter',
+    load: 'L',
+    pauseAndResume: 'Space',
+    pauseAll: '[',
+    resumeAll: ']',
+    stop: 'Backspace',
+    stopAll: 'Escape',
+    seekForward: null,
+    seekBackward: null,
+  };
+  editingSettings.value.global.hotkey.audioAction = {
+    toggleRepeat: 'R',
+  };
+  editingSettings.value.global.general.advanceCursorWhenGo = false;
+};
+
+const recallQLabPreset = () => {
+  editingSettings.value.global.hotkey.playback = {
+    go: 'Space',
+    load: 'L',
+    pauseAndResume: 'P',
+    pauseAll: '[',
+    resumeAll: ']',
+    stop: 'S',
+    stopAll: 'Escape',
+    seekForward: null,
+    seekBackward: null,
+  };
+  editingSettings.value.global.hotkey.audioAction = {
+    toggleRepeat: 'R',
+  };
+  editingSettings.value.global.general.advanceCursorWhenGo = true;
 };
 </script>
 

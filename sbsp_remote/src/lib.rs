@@ -240,6 +240,7 @@ pub fn run() {
             command::model_manager::remove_cue,
             command::model_manager::move_cue,
             command::model_manager::renumber_cues,
+            command::model_manager::update_model_name,
             command::model_manager::update_show_settings,
             command::client::get_server_address,
             command::client::connect_to_server,

@@ -215,6 +215,7 @@ pub fn run() {
             command::model_manager::remove_cue,
             command::model_manager::move_cue,
             command::model_manager::renumber_cues,
+            command::model_manager::update_model_name,
             command::model_manager::update_show_settings,
             command::server::is_server_running,
             command::server::get_server_port,

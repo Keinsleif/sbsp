@@ -57,6 +57,7 @@ pub enum ModelCommand {
         increment: f64,
     },
 
+    UpdateModelName(String),
     UpdateSettings(Box<ShowSettings>),
 
     Save,
@@ -333,6 +334,12 @@ impl ShowModelManager {
                         cues: model.cues.clone(),
                     })?;
                 }
+                Ok(())
+            }
+            ModelCommand::UpdateModelName(new_name) => {
+                let mut model = self.model.write().await;
+                model.name = new_name.clone();
+                self.event_tx.send(UiEvent::ModelNameUpdated { new_name })?;
                 Ok(())
             }
             ModelCommand::UpdateSettings(new_settings) => {

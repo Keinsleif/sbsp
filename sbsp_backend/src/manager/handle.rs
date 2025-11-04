@@ -73,6 +73,11 @@ impl ShowModelHandle {
         Ok(())
     }
 
+    pub async fn update_model_name(&self, new_name: String) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::UpdateModelName(new_name)).await?;
+        Ok(())
+    }
+
     pub async fn update_settings(&self, new_settings: ShowSettings) -> anyhow::Result<()> {
         self.send_command(ModelCommand::UpdateSettings(Box::new(new_settings)))
             .await?;

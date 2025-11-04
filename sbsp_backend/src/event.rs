@@ -95,6 +95,9 @@ pub enum UiEvent {
     SettingsUpdated {
         new_settings: Box<ShowSettings>,
     },
+    ModelNameUpdated {
+        new_name: String,
+    },
 
     // AssetProcessor Events
     AssetResult {
