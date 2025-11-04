@@ -2,7 +2,7 @@ use crate::{
     asset_processor::AssetProcessorCommand,
     controller::{ControllerCommand, state::ShowState},
     event::UiEvent,
-    manager::ModelCommand,
+    manager::{ModelCommand, ProjectStatus},
     model::ShowModel,
 };
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,7 @@ pub enum WsCommand {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FullShowState {
+    pub project_status: ProjectStatus,
     pub show_model: ShowModel,
     pub show_state: ShowState,
 }

@@ -4,18 +4,26 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    manager::ModelCommand,
+    manager::{ModelCommand, ProjectStatus},
     model::{ShowModel, cue::Cue, settings::ShowSettings},
 };
 
 #[derive(Clone)]
 pub struct ShowModelHandle {
-    pub(crate) model: Arc<RwLock<ShowModel>>,
-    pub(crate) command_tx: mpsc::Sender<ModelCommand>,
-    pub(crate) show_model_path: Arc<RwLock<Option<PathBuf>>>,
+    model: Arc<RwLock<ShowModel>>,
+    command_tx: mpsc::Sender<ModelCommand>,
+    project_status: Arc<RwLock<ProjectStatus>>,
 }
 
 impl ShowModelHandle {
+    pub fn new(model: Arc<RwLock<ShowModel>>, command_tx: mpsc::Sender<ModelCommand>, project_status: Arc<RwLock<ProjectStatus>>) -> Self {
+        Self {
+            model,
+            command_tx,
+            project_status,
+        }
+    }
+
     pub async fn send_command(&self, command: ModelCommand) -> anyhow::Result<()> {
         self.command_tx.send(command).await?;
         Ok(())
@@ -81,6 +89,11 @@ impl ShowModelHandle {
         Ok(())
     }
 
+    pub async fn export_to_folder(&self, folder_path: PathBuf) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::ExportToFolder(folder_path)).await?;
+        Ok(())
+    }
+
     pub async fn load_from_file(&self, path: PathBuf) -> anyhow::Result<()> {
         self.send_command(ModelCommand::LoadFromFile(path)).await?;
         Ok(())
@@ -95,8 +108,16 @@ impl ShowModelHandle {
             .cloned()
     }
 
-    pub async fn get_current_file_path(&self) -> tokio::sync::RwLockReadGuard<'_, Option<PathBuf>> {
-        self.show_model_path.read().await
+    pub async fn get_current_file_path(&self) -> Option<PathBuf> {
+        if let ProjectStatus::Saved { path, .. } = self.project_status.read().await.to_owned() {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
+    pub async fn get_project_state(&self) -> tokio::sync::RwLockReadGuard<'_, ProjectStatus> {
+        self.project_status.read().await
     }
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {

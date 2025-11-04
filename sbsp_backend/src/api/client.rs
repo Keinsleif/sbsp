@@ -15,7 +15,7 @@ use crate::{
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle, state::ShowState},
     event::UiEvent,
-    manager::{ModelCommand, ShowModelHandle},
+    manager::{ModelCommand, ShowModelHandle, ProjectStatus},
     model::ShowModel,
 };
 pub use file_list_handler::FileListHandle;
@@ -31,7 +31,7 @@ type ConnectionHandles = (
 
 pub async fn create_remote_backend(address: String) -> anyhow::Result<ConnectionHandles> {
     let model = Arc::new(RwLock::new(ShowModel::default()));
-    let show_model_path = Arc::new(RwLock::new(None));
+    let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
     let (model_tx, mut model_rx) = mpsc::channel::<ModelCommand>(32);
@@ -44,14 +44,20 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
 
     let model_clone = model.clone();
+    let project_status_clone = project_status.clone();
     let event_tx_clone = event_tx.clone();
     let full_state = reqwest::get(format!("http://{}/api/show/full_state", address))
         .await?
         .json::<FullShowState>()
         .await?;
-    let mut show_model = model_clone.write().await;
-    *show_model = full_state.show_model;
-    drop(show_model);
+    {
+        let mut project_status_guard = project_status.write().await;
+        *project_status_guard = full_state.project_status;
+    }
+    {
+        let mut show_model = model_clone.write().await;
+        *show_model = full_state.show_model;
+    }
     state_tx.send_modify(|state| {
         *state = full_state.show_state;
     });
@@ -73,9 +79,22 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
                                     && let Ok(response) = reqwest::get(format!("http://{}/api/show/full_state", address)).await {
                                         let full_state = response.json::<FullShowState>()
                                         .await.unwrap();
-                                        let mut show_model = model_clone.write().await;
-                                        *show_model = full_state.show_model;
-                                        drop(show_model);
+                                        {
+                                            let mut show_model = model_clone.write().await;
+                                            *show_model = full_state.show_model;
+                                        }
+                                        {
+                                            let mut project_status = project_status_clone.write().await;
+                                            *project_status = full_state.project_status;
+                                        }
+                                    } else if let UiEvent::ShowModelSaved{project_type, path} = &*ui_event {
+                                        {
+                                            let mut project_status = project_status_clone.write().await;
+                                            *project_status = ProjectStatus::Saved{
+                                                project_type: project_type.clone(),
+                                                path: path.clone(),
+                                            };
+                                        }
                                     }
                                     if event_tx_clone.send(*ui_event).is_err() {
                                         log::error!("Failed to send UiEvent to channel.");
@@ -144,11 +163,11 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
 
     Ok((
         BackendHandle {
-            model_handle: ShowModelHandle {
+            model_handle: ShowModelHandle::new(
                 model,
-                command_tx: model_tx,
-                show_model_path,
-            },
+                model_tx,
+                project_status,
+            ),
             asset_processor_handle: AssetProcessorHandle {
                 command_tx: asset_tx,
             },

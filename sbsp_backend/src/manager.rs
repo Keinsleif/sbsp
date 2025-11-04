@@ -1,5 +1,6 @@
 mod handle;
 
+use anyhow::anyhow;
 pub use handle::ShowModelHandle;
 
 use std::{
@@ -17,10 +18,13 @@ use crate::{
     event::{UiError, UiEvent},
     model::{
         ShowModel,
+        ProjectType,
         cue::{Cue, CueParam},
         settings::ShowSettings,
     },
 };
+
+const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
@@ -57,7 +61,33 @@ pub enum ModelCommand {
 
     Save,
     SaveToFile(PathBuf),
+    ExportToFolder(PathBuf),
     LoadFromFile(PathBuf),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ProjectStatus {
+    Unsaved,
+    Saved{
+        project_type: ProjectType,
+        path: PathBuf,
+    },
+}
+
+impl ProjectStatus {
+    pub fn to_model_path_option(&self) -> Option<PathBuf> {
+        if let Self::Saved { path, .. } = self {
+            Some(path.to_path_buf())
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ProjectFile {
+    project_type: ProjectType,
+    model: ShowModel,
 }
 
 pub struct ShowModelManager {
@@ -66,26 +96,26 @@ pub struct ShowModelManager {
     command_rx: mpsc::Receiver<ModelCommand>,
     event_tx: broadcast::Sender<UiEvent>,
 
-    show_model_path: Arc<RwLock<Option<PathBuf>>>,
+    project_status: Arc<RwLock<ProjectStatus>>
 }
 
 impl ShowModelManager {
     pub fn new(event_tx: broadcast::Sender<UiEvent>, settings_rx: watch::Receiver<BackendSettings>) -> (Self, ShowModelHandle) {
         let (command_tx, command_rx) = mpsc::channel(32);
         let model = Arc::new(RwLock::new(ShowModel::default()));
-        let show_model_path = Arc::new(RwLock::new(None));
+        let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
         let manager = Self {
             model: model.clone(),
             settings_rx,
             command_rx,
             event_tx,
-            show_model_path: show_model_path.clone(),
+            project_status: project_status.clone(),
         };
-        let handle = ShowModelHandle {
+        let handle = ShowModelHandle::new(
             model,
             command_tx,
-            show_model_path,
-        };
+            project_status,
+        );
 
         (manager, handle)
     }
@@ -110,7 +140,7 @@ impl ShowModelManager {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
-                let model_path_option = self.show_model_path.read().await;
+                let model_path_option = self.project_status.read().await.to_model_path_option();
                 let event = if let Some(index) = index_option {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
@@ -151,7 +181,7 @@ impl ShowModelManager {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
-                let model_path_option = self.show_model_path.read().await;
+                let model_path_option = self.project_status.read().await.to_model_path_option();
                 let event = if id_exists {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
@@ -198,7 +228,7 @@ impl ShowModelManager {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
-                let model_path_option = self.show_model_path.read().await;
+                let model_path_option = self.project_status.read().await.to_model_path_option();
                 let mut added_cues = vec![];
                 if at_index > cuelist_length {
                     self.event_tx.send(UiEvent::OperationFailed {
@@ -314,8 +344,8 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::Save => {
-                let event = if let Some(path) = self.show_model_path.read().await.as_ref() {
-                    if let Err(error) = self.save_to_file(path).await {
+                let event = if let ProjectStatus::Saved { project_type, path } = &*self.project_status.read().await {
+                    if let Err(error) = self.save_to_file(path, project_type).await {
                         log::error!("Failed to save model file: {}", error);
                         UiEvent::OperationFailed {
                             error: UiError::FileSave {
@@ -325,6 +355,7 @@ impl ShowModelManager {
                         }
                     } else {
                         UiEvent::ShowModelSaved {
+                            project_type: project_type.clone(),
                             path: path.to_path_buf(),
                         }
                     }
@@ -338,7 +369,7 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::SaveToFile(path) => {
-                let event = if let Err(error) = self.save_to_file(&path).await {
+                let event = if let Err(error) = self.save_to_file(&path, &ProjectType::SingleFile).await {
                     log::error!("Failed to save model file: {}", error);
                     UiEvent::OperationFailed {
                         error: UiError::FileSave {
@@ -347,27 +378,44 @@ impl ShowModelManager {
                         },
                     }
                 } else {
-                    let mut show_model_path = self.show_model_path.write().await;
-                    *show_model_path = Some(path.clone());
-                    UiEvent::ShowModelSaved { path }
+                    let mut project_status = self.project_status.write().await;
+                    *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                    UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::LoadFromFile(path) => {
-                let event = if let Err(error) = self.load_from_file(path.as_path()).await {
-                    log::error!("Failed to load model file: {}", error);
+            ModelCommand::ExportToFolder(path) => {
+                let event = if let Err(error) = self.export_to_folder(&path).await {
+                    log::error!("Failed to export model to folder: {}", error);
                     UiEvent::OperationFailed {
-                        error: UiError::FileLoad {
+                        error: UiError::FileSave {
                             path,
                             message: error.to_string(),
                         },
                     }
                 } else {
-                    let mut show_model_path = self.show_model_path.write().await;
-                    *show_model_path = Some(path.clone());
-                    drop(show_model_path);
-                    UiEvent::ShowModelLoaded { path }
+                    let mut project_status = self.project_status.write().await;
+                    *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: path.clone() };
+                    UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path }
+                };
+                self.event_tx.send(event)?;
+                Ok(())
+            }
+            ModelCommand::LoadFromFile(path) => {
+                let event = match self.load_from_file(path.as_path()).await {
+                    Err(error) => {
+                        log::error!("Failed to load model file: {}", error);
+                        UiEvent::OperationFailed {
+                            error: UiError::FileLoad {
+                                path,
+                                message: error.to_string(),
+                            },
+                        }
+                    }
+                    Ok(project_type) => {
+                        UiEvent::ShowModelLoaded { project_type, path }
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -384,62 +432,105 @@ impl ShowModelManager {
         self.model.write().await
     }
 
-    pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
-        let content = tokio::fs::read_to_string(path.join("model.json")).await?;
+    pub async fn load_from_file(&self, path: &Path) -> Result<ProjectType, anyhow::Error> {
+        let content = tokio::fs::read_to_string(path).await?;
 
-        let new_model: ShowModel =
+        let project_file: ProjectFile =
             tokio::task::spawn_blocking(move || serde_json::from_str(&content)).await??;
 
-        let mut write_lock = self.model.write().await;
-        *write_lock = new_model;
-        drop(write_lock);
+        {
+            let mut model = self.model.write().await;
+            *model = project_file.model;
+        }
+        {
+            let mut project_status = self.project_status.write().await;
+            *project_status = ProjectStatus::Saved{project_type: project_file.project_type.clone(), path: path.to_path_buf()};
+        }
 
         log::info!("Show loaded from: {}", path.display());
-        Ok(())
+        Ok(project_file.project_type)
     }
 
-    pub async fn save_to_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn export_to_folder(&self, folder_path: &Path) -> Result<(), anyhow::Error> {
+        if folder_path.is_dir() {
+            self.save_to_file(&folder_path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME), &ProjectType::ProjectFolder).await
+        } else {
+            Err(anyhow!("path is not directory."))
+        }
+    }
+
+    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<(), anyhow::Error> {
         let mut cues = {
             let model = self.model.read().await;
             model.cues.clone()
         };
-        let model_path_option = self.show_model_path.read().await;
+        let project_status = self.project_status.read().await;
 
-        if !path.is_dir() {
-            tokio::fs::create_dir_all(&path).await?;
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent).await?;
         }
 
-        for cue in &mut cues {
-            if let CueParam::Audio(audio_param) = &mut cue.params {
-                if let Some(model_path) = model_path_option.as_ref()
-                    && model_path != path
-                {
-                    // copy exists project to another path
-                    let asset_path = model_path.join(&audio_param.target);
-                    let new_path = self.import_asset_file(&asset_path, path).await?;
-                    audio_param.target = new_path;
-                } else if audio_param.target.is_absolute() {
-                    // update exists project
-                    // create new project
-                    let new_path = self.import_asset_file(&audio_param.target, path).await?;
-                    audio_param.target = new_path;
+        if project_type == &ProjectType::ProjectFolder {
+            if let Some(project_dir) = path.parent() {
+                if let ProjectStatus::Saved { project_type, path: saved_path } = &*project_status && *project_type == ProjectType::ProjectFolder && path != saved_path {
+                    for cue in &mut cues {
+                        if let CueParam::Audio(audio_param) = &mut cue.params {
+                            let asset_path = saved_path.join(&audio_param.target);
+                            let new_path = self.import_asset_file(&asset_path, project_dir).await?;
+                            audio_param.target = new_path;
+
+                        }
+                    }
+                } else {
+                    for cue in &mut cues {
+                        if let CueParam::Audio(audio_param) = &mut cue.params
+                        && audio_param.target.is_absolute() {
+                            let new_path = self.import_asset_file(&audio_param.target, project_dir).await?;
+                            audio_param.target = new_path;
+                        }
+                    }
                 }
+            } else {
+                return Err(anyhow!("Invalid project folder path."));
             }
         }
 
-        let model_clone = {
+        let project_file = {
             let mut model = self.model.write().await;
             model.cues = cues;
-            model.clone()
+            ProjectFile {
+                project_type: ProjectType::SingleFile,
+                model: model.clone()
+            }
         };
 
         let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&model_clone))
+            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&project_file))
                 .await??;
 
-        tokio::fs::write(path.join("model.json"), content).await?;
+        tokio::fs::write(&path, content).await?;
         log::info!("Show saved to: {}", path.display());
         Ok(())
+    }
+
+    pub async fn resolve_asset_path(&self, asset_path: &Path) -> PathBuf {
+        let status = self.project_status.read().await;
+        if let ProjectStatus::Saved { project_type, path } = status.to_owned() {
+            match project_type {
+                ProjectType::SingleFile => {
+                    asset_path.to_path_buf()
+                },
+                ProjectType::ProjectFolder => {
+                    if let Some(parent) = path.parent() {
+                        parent.join(asset_path)
+                    } else {
+                        asset_path.to_path_buf()
+                    }
+                },
+            }
+        } else {
+            asset_path.to_path_buf()
+        }
     }
 
     async fn import_asset_file(
@@ -469,27 +560,23 @@ impl ShowModelManager {
     }
 
     #[cfg(test)]
-    pub async fn set_show_model_path(&self, path_option: Option<PathBuf>) {
-        let mut write_lock = self.show_model_path.write().await;
-        *write_lock = path_option;
+    pub async fn set_project_status(&self, new_project_status: ProjectStatus) {
+        let mut project_status = self.project_status.write().await;
+        *project_status = new_project_status;
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use crate::{
-        BackendSettings,
-        event::UiEvent,
-        model::{
+        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType}, model::{
             ShowModel,
             cue::{
                 Cue, CueParam, CueSequence,
                 audio::{AudioCueParam, SoundType},
             },
             settings::ShowSettings,
-        },
+        }
     };
     use tempfile::{NamedTempFile, tempdir};
     use tokio::sync::{broadcast, watch};
@@ -499,7 +586,7 @@ mod tests {
 
     async fn setup_manager(
         initial_model: Option<ShowModel>,
-        model_path: Option<PathBuf>,
+        project_status: ProjectStatus,
     ) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
         let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
         let (_, settings_rx) = watch::channel(BackendSettings {
@@ -512,7 +599,7 @@ mod tests {
             *model_lock = inital;
             drop(model_lock);
         }
-        model_manager.set_show_model_path(model_path).await;
+        model_manager.set_project_status(project_status).await;
         tokio::spawn(model_manager.run());
         (model_handle, event_rx)
     }
@@ -547,7 +634,7 @@ mod tests {
                 }],
                 settings: ShowSettings::default()
             }),
-            Some(temp_dir.path().to_path_buf()),
+            ProjectStatus::Saved {project_type: ProjectType::ProjectFolder, path: temp_dir.path().to_path_buf()},
         )
         .await;
 
@@ -611,7 +698,7 @@ mod tests {
                 cues: vec![],
                 settings: ShowSettings::default(),
             }),
-            Some(temp_dir.path().to_path_buf()),
+            ProjectStatus::Saved {project_type: ProjectType::ProjectFolder, path: temp_dir.path().to_path_buf()},
         )
         .await;
 

@@ -96,10 +96,12 @@ pub async fn start_apiserver(
 }
 
 async fn get_full_state_handler(State(state): State<ApiState>) -> axum::Json<FullShowState> {
+    let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
     let show_model = state.backend_handle.model_handle.read().await.clone();
     let show_state = state.state_rx.borrow().clone();
 
     let full_state = FullShowState {
+        project_status,
         show_model,
         show_state,
     };
