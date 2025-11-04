@@ -34,6 +34,7 @@
         width="480px"
         @update="invoke('set_discovery_option', { discoveryOption: server_name }).catch((e) => console.error(e))"
       ></text-input>
+      <v-snackbar-queue v-model="error_messages" timeout="2000" color="error"></v-snackbar-queue>
     </div>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 mt-auto ga-3">
       <v-btn
@@ -58,6 +59,7 @@ const isRunning = ref<boolean | null>(null);
 const server_port = ref<string>('');
 const is_discoverable = ref<boolean | null>(null);
 const server_name = ref<string>('');
+const error_messages = ref<string[]>([]);
 
 watch(
   () => server_name.value,
@@ -75,9 +77,15 @@ const close = () => {
 
 const toggleServer = () => {
   if (isRunning.value) {
-    invoke('stop_server').catch((e) => console.error(e));
+    invoke('stop_server').catch((e) => {
+      console.error(e);
+      error_messages.value.push(e);
+    });
   } else {
-    invoke('start_server').catch((e) => console.error(e));
+    invoke('start_server').catch((e) => {
+      console.error(e);
+      error_messages.value.push(e);
+    });
   }
 };
 
