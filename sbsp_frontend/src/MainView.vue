@@ -118,6 +118,10 @@ listen<UiEvent>('backend-event', (event) => {
     case 'cueListUpdated':
       showModel.$patch({ cues: event.payload.param.cues });
       break;
+    case 'modelNameUpdated':
+      showModel.$patch({ name: event.payload.param.newName });
+      getCurrentWebviewWindow().setTitle(event.payload.param.newName);
+      break;
     case 'settingsUpdated': {
       const settings = event.payload.param.newSettings;
       showModel.$patch({ settings: settings });
