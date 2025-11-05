@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2025-11-05T04:50:42.044Z",
+  "pub_date": "2025-11-05T04:55:32.744Z",
   "platforms": {
     "linux-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTRZeWF1RkxLWjF6a1lLOTUrd2tjS2hXYnJtckl3SXZyZlNXMXV4L3VsSENKSE9FTGZPanlUVHFsdUZZcmY4bHRGM2dtMCtPOER1M0lZdHpCU25qQkE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4MjM0CWZpbGU6U0JTIFBsYXllcl8wLjEuMF9hbWQ2NC5BcHBJbWFnZQo1dEZMdUxBT1FuVkliaEdJVnFRSTdzOVdhVURNRVkySVNBckxpcHZRVVdVS3crVXp1V2FVbW51QytIanoydHBwdmFJdzZscW5RWVAycXE4eENVMHhCQT09Cg==",
@@ -30,6 +30,14 @@
     "linux-x86_64-rpm": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUXhuTFUxbks5T1NzYi9EOS9EWE95SjlNVVlWZ0ZIVFNxTGRtOWR2N2w2blZKeEJVQzNxemRRMko0Wk9xVVowM3VEQkdqVlpFMHlEN05mWTc1WDJLU2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4MjM0CWZpbGU6U0JTIFBsYXllci0wLjEuMC0xLng4Nl82NC5ycG0KNGc3MXNZc1RjdVhhK2xma0FpaWlNcjB0bFd3SEJpR1pyR3BrTGJNbURqOGlDZEY2RGVxOUczSEpvYUxvRjU2RlRTZUJRS3Q5YWlyamhGM3lEb1hmQWc9PQo=",
       "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/SBS.Player-0.1.0-1.x86_64_linux.rpm"
+    },
+    "darwin-aarch64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUXdIOThLRmVMVUtmdnFRWmpQSFdkR1l3Unh3Mk5yQUo4UVlCMDZGTk93Sks1cFJvamc1SE5zby9qOHFDQ0tzYUNoYU9EcTVmYlk3V1ZlUVQzbVNsYkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4NTI4CWZpbGU6U0JTIFBsYXllci5hcHAudGFyLmd6ClRNUG12d1NTcS9wTjlUNHROSlRZNjI5NXJZZzVyTVdlTUNsZHZrUDkyOG1UZmZJYmNVY0FFa0pxQ1orZDRBeVRBRHlMazdtaEZVYWtuUW50ZnpNaUJBPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/SBS.Player_darwin_universal.app.tar.gz"
+    },
+    "darwin-x86_64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUXdIOThLRmVMVUtmdnFRWmpQSFdkR1l3Unh3Mk5yQUo4UVlCMDZGTk93Sks1cFJvamc1SE5zby9qOHFDQ0tzYUNoYU9EcTVmYlk3V1ZlUVQzbVNsYkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4NTI4CWZpbGU6U0JTIFBsYXllci5hcHAudGFyLmd6ClRNUG12d1NTcS9wTjlUNHROSlRZNjI5NXJZZzVyTVdlTUNsZHZrUDkyOG1UZmZJYmNVY0FFa0pxQ1orZDRBeVRBRHlMazdtaEZVYWtuUW50ZnpNaUJBPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v0.1.0/SBS.Player_darwin_universal.app.tar.gz"
     }
   }
 }
