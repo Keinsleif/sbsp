@@ -1,7 +1,7 @@
 {
   "version": "0.1.0",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2025-11-05T04:54:36.026Z",
+  "pub_date": "2025-11-05T05:04:05.558Z",
   "platforms": {
     "linux-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWk1ZUMrZTMwQmh3OTBad1lmV3Z4Mytvczd4d25VZW5YRmlibkdTOE1pc282UlYwNmR6Vnd2ZjZOS256NG93SWEzYTZPYVZUQnBVUEYyemh6TmV4MVFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4NDY4CWZpbGU6U0JTUCBSZW1vdGVfMC4xLjBfYW1kNjQuQXBwSW1hZ2UKRk1JY0p1UnZ1QVEvSEM3MWJoVnRSV1JnMkQxRUozVWd5aWJoQ0YzYTB6N05HRmpBLzRtaVoxZ0tmTVU1L05SbEN0MUZqSGpHTEMxZzU5ZDNtNzY2QXc9PQo=",
@@ -30,6 +30,14 @@
     "linux-x86_64-rpm": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RW5hRjA5RmVWZ242TEc4a293cTRJK2NoaUg1WDVuVFc1ZHpLQ0E4WitCVDk3TXNHNmdodms0dkNkeFM4M2JheUZKVWF6WlZvOHVOTmZwNUIzbG90NlFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE4NDY4CWZpbGU6U0JTUCBSZW1vdGUtMC4xLjAtMS54ODZfNjQucnBtCjNyTjZ0c3drRmFRdVI2Z2FJVXhZWHVDTjVCTE5NeS9nUEhqc2U3aUNxYWJ4VE5vK2ltQzZSL0MwWUFqa2kvU1g5ZEREd1AyM1RHUmlpcXF2Q1plNkRnPT0K",
       "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.0/SBSP.Remote-0.1.0-1.x86_64_linux.rpm"
+    },
+    "darwin-aarch64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RW1LSGlza05GczBSbGJjZllzcVJMMVR0RFFEKzBOV2I4b280ckdzMG9ENm1CMzRVd0IrSFoxUUtpUUM5bWxLZS8xR01ma2M2ckVjS0ZmaW1CUEM3SHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE5MDQwCWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negpheDd1d0tRcjlQNEhQZ09GdElFeFo2bXRCT3BhSmdpRG1UUTJkekpOMDE3TUFsbnRzNEpGSk5hcEdsdUwwQVd5ZnI3RElVZEVlM20vaG90QlBKTkVCZz09Cg==",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.0/SBSP.Remote_darwin_universal.app.tar.gz"
+    },
+    "darwin-x86_64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RW1LSGlza05GczBSbGJjZllzcVJMMVR0RFFEKzBOV2I4b280ckdzMG9ENm1CMzRVd0IrSFoxUUtpUUM5bWxLZS8xR01ma2M2ckVjS0ZmaW1CUEM3SHdJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMzE5MDQwCWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negpheDd1d0tRcjlQNEhQZ09GdElFeFo2bXRCT3BhSmdpRG1UUTJkekpOMDE3TUFsbnRzNEpGSk5hcEdsdUwwQVd5ZnI3RElVZEVlM20vaG90QlBKTkVCZz09Cg==",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.0/SBSP.Remote_darwin_universal.app.tar.gz"
     }
   }
 }
