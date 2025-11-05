@@ -36,5 +36,6 @@ export default defineConfig(async () => ({
         },
       },
     },
+    target: ['es2022', 'chrome89', 'safari15'],
   },
 }));
