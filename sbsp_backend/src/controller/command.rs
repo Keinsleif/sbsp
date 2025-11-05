@@ -26,30 +26,30 @@ pub enum ControllerCommand {
 }
 
 impl ControllerCommand {
-    pub(super) fn try_into_executor_command(&self) -> Option<ExecutorCommand> {
+    pub(super) fn into_executor_command(self) -> ExecutorCommand {
         match self {
-            Self::Pause(uuid) => Some(ExecutorCommand::Pause(*uuid)),
-            Self::Resume(uuid) => Some(ExecutorCommand::Resume(*uuid)),
-            Self::Stop(uuid) => Some(ExecutorCommand::Stop(*uuid)),
-            Self::Load(uuid) => Some(ExecutorCommand::Load(*uuid)),
-            Self::SeekTo(uuid, position) => Some(ExecutorCommand::SeekTo(*uuid, *position)),
-            Self::SeekBy(uuid, amount) => Some(ExecutorCommand::SeekBy(*uuid, *amount)),
+            Self::Pause(uuid) => ExecutorCommand::Pause(uuid),
+            Self::Resume(uuid) => ExecutorCommand::Resume(uuid),
+            Self::Stop(uuid) => ExecutorCommand::Stop(uuid),
+            Self::Load(uuid) => ExecutorCommand::Load(uuid),
+            Self::SeekTo(uuid, position) => ExecutorCommand::SeekTo(uuid, position),
+            Self::SeekBy(uuid, amount) => ExecutorCommand::SeekBy(uuid, amount),
             Self::PerformAction(uuid, action) => {
-                Some(ExecutorCommand::PerformAction(*uuid, *action))
+                ExecutorCommand::PerformAction(uuid, action)
             }
-            _ => None,
+            _ => unreachable!(),
         }
     }
 
     pub(super) fn try_all_into_single_executor_command(
         &self,
         cue_id: Uuid,
-    ) -> Option<ExecutorCommand> {
+    ) -> ExecutorCommand {
         match self {
-            Self::PauseAll => Some(ExecutorCommand::Pause(cue_id)),
-            Self::ResumeAll => Some(ExecutorCommand::Resume(cue_id)),
-            Self::StopAll => Some(ExecutorCommand::Stop(cue_id)),
-            _ => None,
+            Self::PauseAll => ExecutorCommand::Pause(cue_id),
+            Self::ResumeAll => ExecutorCommand::Resume(cue_id),
+            Self::StopAll => ExecutorCommand::Stop(cue_id),
+            _ => unreachable!(),
         }
     }
 }

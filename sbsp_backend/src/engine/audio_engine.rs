@@ -232,7 +232,9 @@ impl AudioEngine {
                         },
                     };
                     if let Err(e) = result {
-                        self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();
+                        if self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
+                        }
                         log::error!("Error processing audio_engine command: {:?}", e);
                     }
                 },
@@ -240,7 +242,6 @@ impl AudioEngine {
                     let keys = self.playing_sounds.keys().clone();
                     for id in keys {
                         let Some(playing_sound) = self.playing_sounds.get(id) else {
-                            log::warn!("Received event for unknown instance_id: {}", id);
                             continue;
                         };
                         let playback_state = playing_sound.handle.state();
@@ -282,8 +283,8 @@ impl AudioEngine {
                                 }
                             },
                         };
-                        if let Err(e) = self.event_tx.send(event).await {
-                            log::error!("Error polling Sound status: {:?}", e);
+                        if self.event_tx.send(event).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
                         }
                     }
                     for playing_sound in self.playing_sounds.values_mut() {
@@ -302,8 +303,8 @@ impl AudioEngine {
     }
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
-        let manager = self.manager.as_mut().unwrap();
-        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
+        let manager = self.manager.as_mut().ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
+        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).map_err(|e| anyhow::anyhow!("Failed to create clock {}", e))?;
 
         let filepath_clone = data.filepath.clone();
 
@@ -426,7 +427,7 @@ impl AudioEngine {
             self.handle_load(id, data.clone()).await?;
         }
 
-        let mut handle = self.loaded_sounds.remove(&id).unwrap();
+        let mut handle = self.loaded_sounds.remove(&id).ok_or_else(|| anyhow::anyhow!("Failed to get loaded sound."))?;
         handle.start();
 
         log::info!("PLAY: id={}, file={}", id, data.filepath.display());
@@ -463,7 +464,7 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for pause.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -484,10 +485,7 @@ impl AudioEngine {
             }
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Sound with ID {} not found for resume.",
-                id
-            ))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -497,7 +495,7 @@ impl AudioEngine {
             playing_sound.manual_stop_sent = true;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -527,7 +525,7 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -546,7 +544,7 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -576,7 +574,7 @@ impl AudioEngine {
                         }))
                         .await?;
                 } else {
-                    return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
+                    anyhow::bail!("unknown instance_id. id={}", id);
                 }
             }
         }

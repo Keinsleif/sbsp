@@ -135,7 +135,7 @@ impl Executor {
                         self.execute_cue(&cue, instance_id).await?;
                     }
                 } else {
-                    log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
+                    anyhow::bail!("EXECUTE: cue not found. cue_id={}", cue_id);
                 }
             }
             ExecutorCommand::Pause(cue_id) => {
@@ -448,7 +448,6 @@ impl Executor {
                     .await?;
             }
         }
-
         Ok(())
     }
 
@@ -460,8 +459,7 @@ impl Executor {
                 let cue_id = {
                     let instances = self.active_instances.read().await;
                     let Some(instance) = instances.get(&instance_id) else {
-                        log::warn!("Received event for unknown instance_id: {}", instance_id);
-                        return Ok(());
+                        anyhow::bail!("unknown instance_id id={}", instance_id);
                     };
                     instance.cue_id
                 };
@@ -539,8 +537,7 @@ impl Executor {
                 let cue_id = {
                     let instances = self.active_instances.read().await;
                     let Some(instance) = instances.get(&instance_id) else {
-                        log::warn!("Received event for unknown instance_id: {}", instance_id);
-                        return Ok(());
+                        anyhow::bail!("unknown instance_id id={}", instance_id);
                     };
                     instance.cue_id
                 };
@@ -578,8 +575,6 @@ impl Executor {
                             .is_some()
                         {
                             log::info!("PreWaitStopped cue_id={}", cue_id);
-                        } else {
-                            log::error!("Cue with id '{}' not found.", cue_id);
                         }
                         ExecutorEvent::PreWaitStopped { cue_id }
                     }
@@ -588,7 +583,7 @@ impl Executor {
                             log::info!("PreWaitCompleted cue_id={}", cue.id);
                             self.execute_cue(&cue, instance_id).await?;
                         } else {
-                            log::error!("Cannot execute cue: Cue with id '{}' not found.", cue_id);
+                            anyhow::bail!("PreWait: cue to execute not found. id={}", cue_id);
                         }
                         ExecutorEvent::PreWaitCompleted { cue_id }
                     }
@@ -602,8 +597,7 @@ impl Executor {
                 let cue_id = {
                     let instances = self.active_instances.read().await;
                     let Some(instance) = instances.get(&instance_id) else {
-                        log::warn!("Received event for unknown instance_id: {}", instance_id);
-                        return Ok(());
+                        anyhow::bail!("unknown instance_id. id={}", instance_id);
                     };
                     instance.cue_id
                 };

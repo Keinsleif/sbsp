@@ -62,12 +62,12 @@ impl CueController {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     if let Err(e) = self.handle_command(command).await {
-                        log::error!("Error handling controller command: {:?}", e);
+                        log::error!("Error handling controller command: {}", e);
                     }
                 },
                 Some(event) = self.executor_event_rx.recv() => {
                     if let Err(e) = self.handle_executor_event(event).await {
-                        log::error!("Error handling playback event: {:?}", e);
+                        log::error!("Error handling playback event: {}", e);
                     }
                 },
                 Ok(event) = self.event_rx.recv() => {
@@ -135,9 +135,11 @@ impl CueController {
         match command {
             ControllerCommand::Go => {
                 let state = self.state_tx.borrow().clone();
-                let cue_id = state
-                    .playback_cursor
-                    .expect("GO: Playback Cursor is unavailable.");
+                let cue_id = if let Some(cursor) = state.playback_cursor {
+                    cursor
+                } else {
+                    return Err(anyhow::anyhow!("GO: Playback Cursor is unavailable."))
+                };
                 self.handle_go(cue_id).await?;
                 let advance_cursor_when_go = {
                     let settings = self.settings_rx.borrow();
@@ -158,10 +160,10 @@ impl CueController {
                 let model = self.model_handle.read().await;
 
                 if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
-                    let executor_command = command.try_into_executor_command().unwrap();
+                    let executor_command = command.into_executor_command();
                     self.executor_tx.send(executor_command).await?;
                 } else {
-                    log::warn!("DIRECT: Cue not found. cue_id={}", cue_id);
+                    anyhow::bail!("DIRECT: Cue not found. cue_id={}", cue_id);
                 }
                 Ok(())
             }
@@ -172,8 +174,7 @@ impl CueController {
 
                 for cue_id in state.active_cues.keys() {
                     let executor_command = command
-                        .try_all_into_single_executor_command(*cue_id)
-                        .unwrap();
+                        .try_all_into_single_executor_command(*cue_id);
                     self.executor_tx.send(executor_command).await?;
                 }
                 Ok(())
@@ -186,10 +187,10 @@ impl CueController {
                         .await
                         .is_none()
                 {
-                    return Err(anyhow::anyhow!(
+                    anyhow::bail!(
                         "Invalid playback cursor destination cue_id. cue_id = {}",
                         cursor_cue_id
-                    ));
+                    );
                 }
                 self.state_tx.send_modify(|state| {
                     if state.playback_cursor.ne(&cue_id) {
@@ -216,14 +217,14 @@ impl CueController {
             if let Some(active_cue) = state.active_cues.get(&cue_id)
                 && active_cue.status != PlaybackStatus::Loaded
             {
-                log::warn!("GO: Cue already executed.");
+                log::warn!("GO: cue already executed.");
             } else {
                 self.executor_tx
                     .send(ExecutorCommand::Execute(cue_id))
                     .await?;
             };
         } else {
-            log::warn!("GO: Invalid cue id.");
+            anyhow::bail!("invalid cue id. cue_id={}", cue_id);
         }
         Ok(())
     }
@@ -231,10 +232,15 @@ impl CueController {
     async fn update_playback_cursor(&self) -> Result<()> {
         let model = self.model_handle.read().await;
         let state = self.state_tx.borrow().clone();
+        let playback_cursor = if let Some(cursor) = state.playback_cursor {
+            cursor
+        } else {
+            anyhow::bail!("Playback cursor unavailable.");
+        };
         if let Some(cue_index) = model
             .cues
             .iter()
-            .position(|cue| cue.id == state.playback_cursor.unwrap())
+            .position(|cue| cue.id == playback_cursor)
         {
             let next_cue_id = if cue_index + 1 < model.cues.len() {
                 Some(model.cues[cue_index + 1].id)
@@ -285,20 +291,21 @@ impl CueController {
                 cue_id,
                 initial_params,
             } => {
-                let cue = self
+                if let Some(cue) = self
                     .model_handle
                     .read()
                     .await
                     .cues
                     .iter()
-                    .find(|cue| cue.id == *cue_id)
-                    .unwrap()
-                    .clone();
-                if !matches!(cue.sequence, CueSequence::DoNotContinue) {
-                    self.wait_tasks
-                        .write()
-                        .await
-                        .insert(*cue_id, cue.sequence.clone());
+                    .find(|cue| cue.id == *cue_id) {
+                    if !matches!(cue.sequence, CueSequence::DoNotContinue) {
+                        self.wait_tasks
+                            .write()
+                            .await
+                            .insert(*cue_id, cue.sequence.clone());
+                    }
+                } else {
+                    log::warn!("Unknown cue started. model may be broken. cue_id={}", cue_id);
                 }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = 0.0;
@@ -333,14 +340,16 @@ impl CueController {
                         && position > post_wait
                     {
                         if let Some(target) = target_id {
-                            self.handle_go(*target).await.unwrap();
+                            if let Err(e) = self.handle_go(*target).await {
+                                log::error!("Failed to perform cue sequence. ignoring. error={}", e);
+                            }
                         } else {
                             let model = self.model_handle.read().await;
                             if let Some(cue_index) =
-                                model.cues.iter().position(|cue| cue.id == *cue_id)
-                                && cue_index + 1 < model.cues.len()
-                            {
-                                self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                            model.cues.iter().position(|cue| cue.id == *cue_id)
+                            && cue_index + 1 < model.cues.len()
+                            && let Err(e) = self.handle_go(model.cues[cue_index + 1].id).await {
+                                log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                             }
                         }
                         wait_tasks.remove(cue_id);
@@ -461,13 +470,15 @@ impl CueController {
                     && let CueSequence::AutoFollow { target_id } = sequence
                 {
                     if let Some(target) = target_id {
-                        self.handle_go(target).await.unwrap();
+                        if let Err(e) = self.handle_go(target).await {
+                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
+                        }
                     } else {
                         let model = self.model_handle.read().await;
                         if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
-                            && cue_index + 1 < model.cues.len()
-                        {
-                            self.handle_go(model.cues[cue_index + 1].id).await.unwrap();
+                        && cue_index + 1 < model.cues.len()
+                        && let Err(e) = self.handle_go(model.cues[cue_index + 1].id).await {
+                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                         }
                     }
                 }
