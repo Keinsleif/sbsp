@@ -51,12 +51,6 @@
         <v-btn :icon="mdiTimerSandEmpty" @click="addEmptyCue('wait')"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
-        <v-btn :icon="mdiPlayCircleOutline"></v-btn>
-        <v-btn :icon="mdiStopCircleOutline"></v-btn>
-        <v-btn :icon="mdiPauseCircleOutline"></v-btn>
-        <v-btn :icon="mdiCheckCircleOutline"></v-btn>
-      </v-btn-group>
-      <v-btn-group variant="tonal" divided>
         <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggle"></v-btn>
       </v-btn-group>
     </v-sheet>
@@ -65,15 +59,11 @@
 
 <script setup lang="ts">
 import {
-  mdiCheckCircleOutline,
   mdiFullscreen,
   mdiFullscreenExit,
   mdiPause,
-  mdiPauseCircleOutline,
   mdiPlay,
-  mdiPlayCircleOutline,
   mdiStop,
-  mdiStopCircleOutline,
   mdiTimerSandEmpty,
   mdiVolumeHigh,
 } from '@mdi/js';
