@@ -506,6 +506,9 @@ impl AudioEngine {
             playing_sound.handle.stop();
             playing_sound.manual_stop_sent = true;
             Ok(())
+        } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
+            loaded_sound.stop();
+            Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
         }
