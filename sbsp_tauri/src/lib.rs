@@ -195,7 +195,7 @@ pub fn run() {
             command::file_save,
             command::file_save_as,
             command::export_to_folder,
-            command::add_empty_cue,
+            command::pick_audio_assets,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,

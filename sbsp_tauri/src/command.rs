@@ -1,10 +1,8 @@
 use std::path::PathBuf;
 
-use sbsp_backend::model::cue::CueParam;
 use tauri::Manager as _;
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
-use uuid::Uuid;
 
 use crate::AppState;
 
@@ -128,73 +126,29 @@ pub fn export_to_folder(handle: tauri::AppHandle) {
         }
     });
 }
+
 #[tauri::command]
-pub async fn add_empty_cue(
+pub async fn pick_audio_assets(
     app_handle: tauri::AppHandle,
-    state: tauri::State<'_, AppState>,
-    cue_type: String,
-    at_index: usize,
-) -> Result<(), String> {
-    let handle = state.get_handle();
-    let templates = {
-        let settings = state.settings_manager.read().await;
-        settings.template.clone()
-    };
-    match cue_type.as_str() {
-        "audio" => {
-            let (result_tx, result_rx) = oneshot::channel();
-            app_handle
-                .dialog()
-                .file()
-                .add_filter(
-                    "Audio",
-                    &[
-                        "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga",
-                        "wav", "aac", "alac", "flac", "mp3",
-                    ],
-                )
-                .pick_files(|path| result_tx.send(path).unwrap());
-            if let Some(file_paths) = result_rx.await.unwrap() {
-                if file_paths.len() == 1 {
-                    let mut new_cue = templates.audio.clone();
-                    new_cue.id = Uuid::new_v4();
-                    if let CueParam::Audio(cue_param) = &mut new_cue.params {
-                        cue_param.target = file_paths[0].clone().into_path().unwrap();
-                    }
-                    handle
-                        .model_handle
-                        .add_cue(new_cue, at_index)
-                        .await
-                        .map_err(|e| e.to_string())
-                } else {
-                    let mut new_cues = vec![];
-                    for file_path in file_paths {
-                        let mut new_cue = templates.audio.clone();
-                        new_cue.id = Uuid::new_v4();
-                        if let CueParam::Audio(cue_param) = &mut new_cue.params {
-                            cue_param.target = file_path.clone().into_path().unwrap();
-                        }
-                        new_cues.push(new_cue);
-                    }
-                    handle
-                        .model_handle
-                        .add_cues(new_cues, at_index)
-                        .await
-                        .map_err(|e| e.to_string())
-                }
-            } else {
-                Ok(())
-            }
-        }
-        "wait" => {
-            let mut new_cue = templates.wait.clone();
-            new_cue.id = Uuid::new_v4();
-            handle
-                .model_handle
-                .add_cue(new_cue, at_index)
-                .await
-                .map_err(|e| e.to_string())
-        }
-        _ => Err("Invalid cue type.".into()),
+) -> Result<Vec<PathBuf>, String> {
+    let (result_tx, result_rx) = oneshot::channel();
+    app_handle
+        .dialog()
+        .file()
+        .add_filter(
+            "Audio",
+            &[
+                "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga",
+                "wav", "aac", "alac", "flac", "mp3",
+            ],
+        )
+        .pick_files(|path| {
+            let filepath_vec = path.unwrap_or(vec![]);
+            let path_vec: Vec<PathBuf> = filepath_vec.into_iter().map_while(|item| item.into_path().ok()).collect();
+            result_tx.send(path_vec).unwrap()
+        });
+    match result_rx.await {
+        Ok(result) => Ok(result),
+        Err(e) => Err(e.to_string()),
     }
 }

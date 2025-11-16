@@ -64,6 +64,28 @@ export const useUiSettings = defineStore('uiSettings', () => {
           duration: 5.0,
         },
       },
+      fade: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'fade',
+          target: '00000000-0000-0000-0000-000000000000',
+          volume: 0.0,
+          fadeParam: {
+            duration: 3.0,
+            easing: {
+              type: 'inOutPowi',
+              intensity: 2,
+            },
+          },
+        },
+      },
     },
   });
 

@@ -4,7 +4,8 @@
     <v-sheet class="d-flex flex-row align-end ga-4 mt-2">
       <v-checkbox
         hide-details
-        :disabled="props.disabled"
+        v-show="!props.disableToggle"
+        :disabled="props.disabled || props.disableToggle"
         v-model="fadeEnabled"
         @update:model-value="saveValues"
       ></v-checkbox>
@@ -57,7 +58,16 @@
         :disabled="!fadeEnabled || props.disabled"
         class="border-md"
         width="80px"
-        :type="props.condition"
+        :type="props.condition != 'out' ? 'in' : 'out'"
+        :curve="easingType"
+        :power="easingPower"
+      ></curve-viewer>
+      <curve-viewer
+        :disabled="!fadeEnabled || props.disabled"
+        v-if="props.condition == 'both'"
+        class="border-md"
+        width="80px"
+        type="out"
         :curve="easingType"
         :power="easingPower"
       ></curve-viewer>
@@ -76,18 +86,20 @@ const param = defineModel<AudioCueFadeParam | null>({ required: true });
 const props = withDefaults(
   defineProps<{
     label?: string;
-    condition?: 'in' | 'out';
+    condition?: 'in' | 'out' | 'both';
+    disableToggle?: boolean;
     disabled?: boolean;
   }>(),
   {
     label: '',
     condition: 'in',
+    disableToggle: false,
     disabled: false,
   },
 );
 const emit = defineEmits(['update']);
 
-const fadeEnabled = ref<boolean>(param.value != null);
+const fadeEnabled = ref<boolean>(param.value != null || props.disableToggle);
 const duration = ref<number | null>(param.value != null ? param.value.duration : null);
 const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
   param.value != null ? easingToCurve(param.value.easing).type : null,
@@ -114,10 +126,11 @@ const saveValues = () => {
     if (param.value == null) {
       param.value = {
         duration: 3,
-        easing: { type: 'linear' },
+        easing: { type: 'inOutPowi', intensity: 2 },
       };
       duration.value = 3;
-      easingType.value = 'linear';
+      easingType.value = 'inOutPow';
+      easingPower.value = 2;
     } else {
       if (duration.value != null) {
         param.value.duration = duration.value;
