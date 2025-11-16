@@ -136,6 +136,12 @@
     },
     "fileSelector": {
       "title": "Select Files"
+    },
+    "connect": {
+      "remoteName": "Name",
+      "remoteHost": "Host",
+      "remotePort": "Port",
+      "connect": "Connect"
     }
   }
 }

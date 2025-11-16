@@ -3,9 +3,9 @@
     <v-table fixed-header density="compact" class="flex-grow-1" height="100%" striped="even">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Host</th>
-          <th>Port</th>
+          <th>{{ t('view.connect.remoteName') }}</th>
+          <th>{{ t('view.connect.remoteHost') }}</th>
+          <th>{{ t('view.connect.remotePort') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -26,11 +26,17 @@
       </tbody>
     </v-table>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
-      <text-input class="flex-grow-0" v-model="host" label="Host" width="400px" align-input="left"></text-input>
-      <text-input class="flex-grow-0" v-model="port" label="Port" width="100px"></text-input>
+      <text-input
+        class="flex-grow-0"
+        v-model="host"
+        :label="t('view.connect.remoteHost')"
+        width="400px"
+        align-input="left"
+      ></text-input>
+      <text-input class="flex-grow-0" v-model="port" :label="t('view.connect.remotePort')" width="100px"></text-input>
       <v-btn
         class="ml-auto"
-        text="Connect"
+        :text="t('view.connect.connect')"
         color="primary"
         :disabled="host == '' || port == ''"
         @click="connect(host + ':' + port)"
@@ -45,6 +51,9 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import TextInput from './components/input/TextInput.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const host = ref('');
 const port = ref('');
