@@ -2,6 +2,11 @@ import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
 import { Cue } from '../types/Cue';
+import { useUiState } from './uistate';
+import { invoke } from '@tauri-apps/api/core';
+import { useUiSettings } from './uiSettings';
+import { v4 } from 'uuid';
+import { toRaw } from 'vue';
 
 export const useShowModel = defineStore('showmodel', {
   state: () =>
@@ -54,6 +59,71 @@ export const useShowModel = defineStore('showmodel', {
           1,
         )[0],
       );
+    },
+    addEmptyAudioCue() {
+      const uiState = useUiState();
+      const uiSettings = useUiSettings();
+      let insertIndex;
+      if (uiState.selected) {
+        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        insertIndex = this.cues.length;
+      }
+      invoke<string[]>('pick_audio_assets', {})
+        .then((assets) => {
+          if (assets.length == 1) {
+            const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
+            newCue.id = v4();
+            if (newCue.params.type == 'audio') {
+              newCue.params.target = assets[0];
+            }
+            invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+          } else if (assets.length > 1) {
+            const newCues = [] as Cue[];
+            for (const asset_path of assets) {
+              const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
+              newCue.id = v4();
+              if (newCue.params.type == 'audio') {
+                newCue.params.target = asset_path;
+              }
+              newCues.push(newCue);
+            }
+            invoke('add_cues', { cues: newCues, atIndex: insertIndex }).catch((e) => console.error(e));
+          }
+        })
+        .catch((e) => console.error(e));
+    },
+    addEmptyWaitCue() {
+      const uiState = useUiState();
+      const uiSettings = useUiSettings();
+      let insertIndex;
+      if (uiState.selected) {
+        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        insertIndex = this.cues.length;
+      }
+      const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
+      newCue.id = v4();
+      invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+    },
+    addEmptyFadeCue() {
+      const uiState = useUiState();
+      const uiSettings = useUiSettings();
+      let insertIndex;
+      if (uiState.selected) {
+        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        insertIndex = this.cues.length;
+      }
+      const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
+      newCue.id = v4();
+      if (newCue.params.type == 'fade' && uiState.selected != null) {
+        const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
+        if (targetCue != null && targetCue.params.type == 'audio') {
+          newCue.params.target = uiState.selected;
+          invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+        }
+      }
     },
   },
 });

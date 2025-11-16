@@ -625,7 +625,7 @@ mod tests {
             self,
             cue::{
                 Cue,
-                audio::{AudioCueParam, AudioFadeParam, Easing, SoundType},
+                audio::{AudioCueParam, FadeParam, Easing, SoundType},
             },
         },
     };
@@ -671,12 +671,12 @@ mod tests {
                 params: model::cue::CueParam::Audio(AudioCueParam {
                     target: PathBuf::from("./I.G.Y.flac"),
                     start_time: Some(5.0),
-                    fade_in_param: Some(AudioFadeParam {
+                    fade_in_param: Some(FadeParam {
                         duration: 2.0,
                         easing: Easing::Linear,
                     }),
                     end_time: Some(50.0),
-                    fade_out_param: Some(AudioFadeParam {
+                    fade_out_param: Some(FadeParam {
                         duration: 5.0,
                         easing: Easing::InPowi(2),
                     }),

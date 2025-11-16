@@ -76,20 +76,39 @@ const secondsToHMR = (source_seconds: number): string => {
   return time;
 };
 
-export const buildCueName = (cue: Cue | null) => {
+export const buildCueName = (cue: Cue | null): string => {
   if (cue == null) {
     return '';
   }
   if (cue.params.type == 'audio') {
     return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
-  } else {
+  } else if (cue.params.type == 'wait') {
     return `Wait ${secondsToHMR(cue.params.duration)}`;
+  } else if (cue.params.type == 'fade') {
+    const showModel = useShowModel();
+    const targetCue = showModel.cues.find((target) => {
+      if (cue.params.type != 'fade') {
+        return false;
+      } else {
+        return target.id == cue.params.target;
+      }
+    });
+    if (targetCue != null) {
+      return `Fade ${buildCueName(targetCue)}`;
+    } else {
+      return 'Fade';
+    }
+  } else {
+    return '';
   }
 };
 
 export const calculateDuration = (cueParam: CueParam, totalDuration: number | null | undefined): number | null => {
   if (cueParam.type == 'wait') {
     return cueParam.duration;
+  }
+  if (cueParam.type == 'fade') {
+    return cueParam.fadeParam.duration;
   }
   if (cueParam.type == 'audio') {
     if (totalDuration == null || isNaN(totalDuration)) {
@@ -130,7 +149,7 @@ export const easingToCurve = (easing: Easing): Curve => {
 
 export const curveToEasing = (curve: Curve): Easing => {
   if (curve.type == null) {
-    return { type: 'linear' };
+    curve.type = 'inOutPow';
   }
   if (curve.power == null) {
     curve.power = 2;
