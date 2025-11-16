@@ -180,6 +180,14 @@
         "targetCue": "Target Cue",
         "targetVolume": "Target Volume",
         "fadeParameter": "Fade Parameter"
+      },
+      "input": {
+        "curve": "Curve",
+        "linear": "Linear",
+        "easeIn": "EaseIn",
+        "easeOut": "EaseOut",
+        "easeInOut": "EaseInOut",
+        "intensity": "Intensity"
       }
     },
     "number": "Number",
