@@ -120,7 +120,8 @@
   "general": {
     "cancel": "Cancel",
     "done": "Done",
-    "close": "Close"
+    "close": "Close",
+    "open": "Open"
   },
   "view": {
     "server": {
@@ -132,6 +133,9 @@
       "serverName": "Server Name",
       "stop": "Stop",
       "start": "Start"
+    },
+    "fileSelector": {
+      "title": "Select Files"
     }
   }
 }
