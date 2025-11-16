@@ -18,19 +18,7 @@
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
     </template>
     <template v-slot:append>
-      <v-number-input
-        v-model="volume"
-        :min="-60"
-        :max="10"
-        suffix="dB"
-        density="compact"
-        :precision="2"
-        variant="outlined"
-        control-variant="hidden"
-        hide-details
-        width="100px"
-        @dblclick.stop
-      ></v-number-input>
+      <volume-input v-model="volume" @mousedown.stop @mouseup.stop @dblclick.stop></volume-input>
     </template>
   </v-slider>
 </template>
@@ -38,6 +26,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useDisplay } from 'vuetify';
+import VolumeInput from './VolumeInput.vue';
 
 const { smAndDown } = useDisplay();
 

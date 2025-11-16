@@ -220,7 +220,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             command::get_side,
             command::process_asset,
-            command::add_empty_cue,
+            command::pick_audio_assets,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,

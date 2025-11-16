@@ -23,7 +23,7 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    model::{cue::audio::SoundType, settings::ShowAudioSettings},
+    model::{cue::audio::{FadeParam, SoundType}, settings::ShowAudioSettings},
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -88,6 +88,13 @@ impl SoundHandle {
             Self::Streaming(handle) => handle.set_loop_region(loop_region),
         }
     }
+
+    fn set_volume(&mut self, volume: f32, tween: Tween) {
+        match self {
+            Self::Static(handle) => handle.set_volume(volume, tween),
+            Self::Streaming(handle) => handle.set_volume(volume, tween),
+        }
+    }
 }
 
 struct PlaybackHandle {
@@ -150,6 +157,10 @@ impl PlaybackHandle {
             self.handle.set_loop_region(None);
         }
         self.repeat = repeat;
+    }
+
+    fn set_volume(&mut self, volume: f32, tween: Tween) {
+        self.handle.set_volume(volume, tween);
     }
 }
 
@@ -222,6 +233,7 @@ impl AudioEngine {
                         AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
+                        AudioCommand::SetVolume { id, volume, fade_param } => self.handle_set_volume(id, volume, fade_param).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
@@ -232,7 +244,9 @@ impl AudioEngine {
                         },
                     };
                     if let Err(e) = result {
-                        self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.unwrap();
+                        if self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Error { instance_id, error: format!("{}",e) })).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
+                        }
                         log::error!("Error processing audio_engine command: {:?}", e);
                     }
                 },
@@ -240,7 +254,6 @@ impl AudioEngine {
                     let keys = self.playing_sounds.keys().clone();
                     for id in keys {
                         let Some(playing_sound) = self.playing_sounds.get(id) else {
-                            log::warn!("Received event for unknown instance_id: {}", id);
                             continue;
                         };
                         let playback_state = playing_sound.handle.state();
@@ -282,8 +295,8 @@ impl AudioEngine {
                                 }
                             },
                         };
-                        if let Err(e) = self.event_tx.send(event).await {
-                            log::error!("Error polling Sound status: {:?}", e);
+                        if self.event_tx.send(event).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
                         }
                     }
                     for playing_sound in self.playing_sounds.values_mut() {
@@ -302,8 +315,8 @@ impl AudioEngine {
     }
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
-        let manager = self.manager.as_mut().unwrap();
-        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).unwrap();
+        let manager = self.manager.as_mut().ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
+        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).map_err(|e| anyhow::anyhow!("Failed to create clock {}", e))?;
 
         let filepath_clone = data.filepath.clone();
 
@@ -426,7 +439,7 @@ impl AudioEngine {
             self.handle_load(id, data.clone()).await?;
         }
 
-        let mut handle = self.loaded_sounds.remove(&id).unwrap();
+        let mut handle = self.loaded_sounds.remove(&id).ok_or_else(|| anyhow::anyhow!("Failed to get loaded sound."))?;
         handle.start();
 
         log::info!("PLAY: id={}, file={}", id, data.filepath.display());
@@ -463,7 +476,7 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for pause.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -484,10 +497,7 @@ impl AudioEngine {
             }
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Sound with ID {} not found for resume.",
-                id
-            ))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -496,8 +506,11 @@ impl AudioEngine {
             playing_sound.handle.stop();
             playing_sound.manual_stop_sent = true;
             Ok(())
+        } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
+            loaded_sound.stop();
+            Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for stop.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -527,7 +540,7 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -546,7 +559,34 @@ impl AudioEngine {
                 .await?;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id))
+            anyhow::bail!("unknown instance_id. id={}", id);
+        }
+    }
+
+    async fn handle_set_volume(&mut self, id: Uuid, volume: f32, param: FadeParam) -> Result<()> {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            playing_sound.handle.set_volume(volume, Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(param.duration),
+                easing: param.easing.into(),
+            });
+            Ok(())
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+            loaded_handle.set_volume(volume, Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(param.duration),
+                easing: param.easing.into(),
+            });
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                    instance_id: id,
+                    position: loaded_handle.position(),
+                    duration: loaded_handle.duration,
+                }))
+                .await?;
+            Ok(())
+        } else {
+            anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
@@ -576,7 +616,7 @@ impl AudioEngine {
                         }))
                         .await?;
                 } else {
-                    return Err(anyhow::anyhow!("Sound with ID {} not found for seek.", id));
+                    anyhow::bail!("unknown instance_id. id={}", id);
                 }
             }
         }
