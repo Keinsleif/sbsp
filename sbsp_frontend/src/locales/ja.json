@@ -1,0 +1,14 @@
+{
+  "menu": {
+    "file": {
+      "open": "開く",
+      "save": "保存",
+      "saveAs": "名前をつけて保存",
+      "exportToFolder": "フォルダにエクスポート"
+    }
+  },
+  "notification": {
+    "modelLoaded": "正常にロードされました",
+    "modelSaved": "正常に保存されました"
+  }
+}
