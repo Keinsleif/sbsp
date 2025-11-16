@@ -1,5 +1,8 @@
 import { createI18n } from 'vue-i18n';
-import { en, ja } from 'vuetify/locale';
+import { en as vuetifyEn, ja as vuetifyJa } from 'vuetify/locale';
+
+import en from './locales/en.json';
+import ja from './locales/ja.json';
 
 export const i18n = createI18n({
   legacy: false,
@@ -8,21 +11,15 @@ export const i18n = createI18n({
   messages: {
     en: {
       $vuetify: {
-        ...en,
+        ...vuetifyEn,
       },
-      notification: {
-        modelLoaded: 'Show model loaded.',
-        modelSaved: 'Show model saved.',
-      },
+      ...en,
     },
     ja: {
       $vuetify: {
-        ...ja,
+        ...vuetifyJa,
       },
-      notification: {
-        modelLoaded: '正常にロードされました',
-        modelSaved: '正常に保存されました',
-      },
+      ...ja,
     },
   },
 });
