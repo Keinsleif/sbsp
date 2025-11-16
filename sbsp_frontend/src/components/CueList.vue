@@ -209,6 +209,7 @@ import {
   mdiArrowDown,
   mdiArrowExpandDown,
   mdiArrowRightBold,
+  mdiChartBellCurveCumulative,
   mdiChevronDoubleDown,
   mdiRepeat,
   mdiTimerSandEmpty,
@@ -392,6 +393,8 @@ const getCueIcon = (type: string): string | undefined => {
       return mdiVolumeHigh;
     case 'wait':
       return mdiTimerSandEmpty;
+    case 'fade':
+      return mdiChartBellCurveCumulative;
   }
 };
 
@@ -440,9 +443,12 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
         break;
       }
       case 'cuelist_duration': {
-        if (newCue.params.type != 'audio') {
+        if (newCue.params.type == 'wait') {
           let newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
+        } else if (newCue.params.type == 'fade') {
+          let newDuration = formatToSeconds(target.innerText, false);
+          newCue.params.fadeParam.duration = newDuration;
         }
         break;
       }
