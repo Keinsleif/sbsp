@@ -57,7 +57,7 @@ import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import { useAssetResult } from './stores/assetResult';
 import { useUiSettings } from './stores/uiSettings';
 import { getLockCursorToSelection } from './utils';
-import { menu } from './window-menu';
+import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const showModel = useShowModel();
@@ -164,7 +164,9 @@ const onVisibilityChange = () => {
 };
 
 onMounted(() => {
-  menu.setAsWindowMenu();
+  createWindowMenu().then((menu) => {
+    menu.setAsWindowMenu();
+  });
   invoke<'remote' | 'main'>('get_side').then((side) => {
     uiState.side = side;
     getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name);
