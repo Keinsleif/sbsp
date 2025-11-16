@@ -4,11 +4,11 @@
       <tr>
         <th id="cuelist_cursor" width="53px"></th>
         <th id="cuelist_type" width="53px"></th>
-        <th id="cuelist_number" class="text-center" width="50px">{{ t('main.cueList.number') }}</th>
-        <th id="cuelist_name">{{ t('main.cueList.name') }}</th>
-        <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.cueList.preWait') }}</th>
-        <th id="cuelist_duration" class="text-center" width="100px">{{ t('main.cueList.duration') }}</th>
-        <th id="cuelist_post_wait" class="text-center" width="100px">{{ t('main.cueList.postWait') }}</th>
+        <th id="cuelist_number" class="text-center" width="50px">{{ t('main.number') }}</th>
+        <th id="cuelist_name">{{ t('main.name') }}</th>
+        <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.preWait') }}</th>
+        <th id="cuelist_duration" class="text-center" width="100px">{{ t('main.duration') }}</th>
+        <th id="cuelist_post_wait" class="text-center" width="100px">{{ t('main.postWait') }}</th>
         <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
         <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>

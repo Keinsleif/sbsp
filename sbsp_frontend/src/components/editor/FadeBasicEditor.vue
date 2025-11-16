@@ -3,7 +3,7 @@
     <cue-select
       v-model="target"
       class="flex-grow-0"
-      label="Target Cue"
+      :label="t('main.bottomEditor.fade.targetCue')"
       cue-type="audio"
       :disabled="selectedCue!.id in showState.activeCues"
       @update="saveEditorValue"
@@ -11,7 +11,7 @@
     <volume-fader
       class="mt-4"
       v-model="volume"
-      label="Volume"
+      :label="t('main.bottomEditor.fade.targetVolume')"
       :disabled="selectedCue!.id in showState.activeCues"
       @update:model-value="saveEditorValue"
       @mousedown="sliderChanging = true"
@@ -23,7 +23,7 @@
     <fade-param-input
       class="align-self-start"
       v-model="fadeParam"
-      label="Fade Parameter"
+      :label="t('main.bottomEditor.fade.fadeParameter')"
       condition="both"
       disable-toggle
       :disabled="selectedCue!.id in showState.activeCues"
@@ -41,7 +41,9 @@ import { FadeParam } from '../../types/FadeParam';
 import CueSelect from '../input/CueSelect.vue';
 import VolumeFader from '../input/VolumeFader.vue';
 import { NIL } from 'uuid';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();

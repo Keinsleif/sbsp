@@ -121,7 +121,8 @@
     "cancel": "Cancel",
     "done": "Done",
     "close": "Close",
-    "open": "Open"
+    "open": "Open",
+    "forExpertWarning": "Change this only if you know what you're doing."
   },
   "view": {
     "server": {
@@ -145,18 +146,53 @@
     }
   },
   "main": {
-    "cueList": {
-      "number": "Number",
-      "name": "Name",
-      "preWait": "Pre-Wait",
-      "duration": "Duration",
-      "postWait": "Post-Wait"
-    },
+    "cueList": {},
     "footBar": {
       "cueCountSuffix": "cues"
     },
     "sideBar": {
       "activeCues": "Active Cues"
-    }
+    },
+    "bottomEditor": {
+      "basics": {
+        "title": "Basics",
+        "timestamp": "Timestamp"
+      },
+      "audio": {
+        "title": "Audio",
+        "targetFile": "Target File",
+        "loadEntireFileOnMemory": "Load entire file on memory",
+        "fadeIn": "Fade In",
+        "fadeOut": "Fade Out"
+      },
+      "timeLevels": {
+        "title": "Time & Levels",
+        "skipFirstSilence": "Skip first silence",
+        "skipLastSilence": "Skip last silence",
+        "volume": "Volume",
+        "lufsDescription": "Set volume to match -14LUFS",
+        "peakDescription": "Set volume so that the audio peak is 0dBFS",
+        "pan": "Pan",
+        "repeat": "Repeat"
+      },
+      "fade": {
+        "title": "Fade",
+        "targetCue": "Target Cue",
+        "targetVolume": "Target Volume",
+        "fadeParameter": "Fade Parameter"
+      }
+    },
+    "number": "Number",
+    "name": "Name",
+    "preWait": "Pre-Wait",
+    "duration": "Duration",
+    "postWait": "Post-Wait",
+    "continueMode": {
+      "title": "Continue Mode",
+      "doNotContinue": "DoNotContinue",
+      "autoContinue": "Auto-Continue",
+      "autoFollow": "Auto-Follow"
+    },
+    "notes": "Notes"
   }
 }
