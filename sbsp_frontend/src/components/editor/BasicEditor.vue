@@ -80,6 +80,8 @@ const getDuration = (): number | null => {
       return selectedCue.value.params.duration;
     case 'audio':
       return calculateDuration(selectedCue.value.params, assetResult.get(selectedCue.value.id)?.duration);
+    case 'fade':
+      return selectedCue.value.params.fadeParam.duration;
   }
 };
 

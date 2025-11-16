@@ -78,30 +78,24 @@ const cueMenu = await Submenu.new({
       id: 'id_audio_cue',
       text: 'Audio Cue',
       action: () => {
-        const uiState = useUiState();
         const showModel = useShowModel();
-        let insertIndex;
-        if (uiState.selected) {
-          insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-        } else {
-          insertIndex = showModel.cues.length;
-        }
-        invoke('add_empty_cue', { cueType: 'audio', atIndex: insertIndex }).catch((e) => console.error(e));
+        showModel.addEmptyAudioCue();
       },
     }),
     await MenuItem.new({
       id: 'id_wait_cue',
       text: 'Wait Cue',
       action: () => {
-        const uiState = useUiState();
         const showModel = useShowModel();
-        let insertIndex;
-        if (uiState.selected) {
-          insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-        } else {
-          insertIndex = showModel.cues.length;
-        }
-        invoke('add_empty_cue', { cueType: 'wait', atIndex: insertIndex }).catch((e) => console.error(e));
+        showModel.addEmptyWaitCue();
+      },
+    }),
+    await MenuItem.new({
+      id: 'id_fade_cue',
+      text: 'Fade Cue',
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyFadeCue();
       },
     }),
   ],
