@@ -4,25 +4,30 @@
       "open": "Open",
       "save": "Save",
       "saveAs": "Save As...",
-      "exportToFolder": "Export to Folder"
+      "exportToFolder": "Export to Folder",
+      "title": "File"
     },
     "edit": {
       "cut": "Cut",
       "delete": "Delete",
       "copy": "Copy",
       "paste": "Paste",
-      "selectAll": "Select All"
+      "selectAll": "Select All",
+      "title": "Edit"
     },
     "cue": {
       "audio": "Audio Cue",
       "wait": "Wait Cue",
-      "fade": "Fade Cue"
+      "fade": "Fade Cue",
+      "title": "Cue"
     },
     "tools": {
-      "renumber": "Renumber selected cues"
+      "renumber": "Renumber selected cues",
+      "title": "Tools"
     },
     "help": {
-      "checkUpdate": "Check for updates"
+      "checkUpdate": "Check for updates",
+      "title": "Help"
     }
   },
   "notification": {
@@ -39,8 +44,8 @@
       "tab": {
         "preset": "Preset",
         "category": {
-          "showModel": "ShowModel",
-          "global": "Global"
+          "global": "Global",
+          "inThisShowModel": "In this ShowModel"
         },
         "general": "General",
         "audio": "Audio",
@@ -91,8 +96,8 @@
             "resumeAll": "Resume All",
             "stop": "Stop",
             "stopAll": "Stop All",
-            "seekForward": "Seek Forward",
-            "seekBackward": "Seek Backward"
+            "seekForward": "Seek Forward (seconds set in General Settings)",
+            "seekBackward": "Seek Backward (seconds set in General Settings)"
           },
           "audio": {
             "title": "Audio Action",
@@ -101,10 +106,10 @@
         },
         "template": {
           "type": "Type",
-          "audio": "Audio",
+          "audio": "Audio Cue",
           "builtFromCueParam": "** built from cue param **",
-          "wait": "Wait",
-          "fade": "Fade"
+          "wait": "Wait Cue",
+          "fade": "Fade Cue"
         }
       }
     },

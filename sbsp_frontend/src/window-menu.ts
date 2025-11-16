@@ -9,7 +9,7 @@ export const createWindowMenu = async () => {
   const side = await invoke<string>('get_side', {});
 
   const fileMenu = await Submenu.new({
-    text: 'File',
+    text: t('menu.file.title'),
     items: [
       await MenuItem.new({
         id: 'id_open',
@@ -47,7 +47,7 @@ export const createWindowMenu = async () => {
   });
 
   const editMenu = await Submenu.new({
-    text: 'Edit',
+    text: t('menu.edit.title'),
     items: [
       await PredefinedMenuItem.new({
         item: 'Cut',
@@ -79,7 +79,7 @@ export const createWindowMenu = async () => {
   });
 
   const cueMenu = await Submenu.new({
-    text: 'Cue',
+    text: t('menu.cue.title'),
     items: [
       await MenuItem.new({
         id: 'id_audio_cue',
@@ -109,7 +109,7 @@ export const createWindowMenu = async () => {
   });
 
   const toolsMenu = await Submenu.new({
-    text: 'Tools',
+    text: t('menu.tools.title'),
     items: [
       await MenuItem.new({
         id: 'id_renumber',
@@ -123,7 +123,7 @@ export const createWindowMenu = async () => {
   });
 
   const helpMenu = await Submenu.new({
-    text: 'Help',
+    text: t('menu.help.title'),
     items: [
       await MenuItem.new({
         id: 'id_check_update',
