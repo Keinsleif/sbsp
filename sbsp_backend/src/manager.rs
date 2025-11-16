@@ -505,7 +505,7 @@ impl ShowModelManager {
             let mut model = self.model.write().await;
             model.cues = cues;
             ProjectFile {
-                project_type: ProjectType::SingleFile,
+                project_type: ProjectType::ProjectFolder,
                 model: model.clone()
             }
         };
