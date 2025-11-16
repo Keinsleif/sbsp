@@ -9,32 +9,32 @@
     <v-sheet class="d-flex flex-column w-100 h-100">
       <v-sheet class="flex-grow-1 d-flex flex-row w-100">
         <v-tabs v-model="tab" direction="vertical">
-          <v-tab text="Preset" value="preset"></v-tab>
-          <v-sheet class="pa-1 text-caption">ShowModel</v-sheet>
-          <v-tab text="General" value="showGeneral"></v-tab>
-          <v-tab text="Audio" value="audio"></v-tab>
-          <v-tab text="Remote" value="remote"></v-tab>
-          <v-sheet class="pa-1 text-caption">Global</v-sheet>
-          <v-tab text="General" value="globalGeneral"></v-tab>
-          <v-tab text="Hotkey" value="hotkey"></v-tab>
-          <v-tab text="Template" value="template"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.preset')" value="preset"></v-tab>
+          <v-sheet class="pa-1 text-caption">{{ t('dialog.settings.tab.category.showModel') }}</v-sheet>
+          <v-tab :text="t('dialog.settings.tab.general')" value="showGeneral"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.audio')" value="audio"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.remote')" value="remote"></v-tab>
+          <v-sheet class="pa-1 text-caption">{{ t('dialog.settings.tab.category.global') }}</v-sheet>
+          <v-tab :text="t('dialog.settings.tab.general')" value="globalGeneral"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.hotkey')" value="hotkey"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.template')" value="template"></v-tab>
         </v-tabs>
         <v-divider vertical opacity="0.5"></v-divider>
         <v-tabs-window v-model="tab" class="flex-grow-1 fill-height">
           <v-tabs-window-item value="preset" class="pa-4">
-            <h2 class="mb-4">Hotkey & Cursor behavier</h2>
+            <h2 class="mb-4">{{ t('dialog.settings.preset.hotkeyCursor.title') }}</h2>
             <v-sheet class="d-flex flex-row ga-3 align-center">
               <v-btn class="text-none" width="120px" variant="flat" color="primary" @click="recallMusicBeePreset"
                 >MusicBee</v-btn
               >
-              <span>Preset for MusicBee like controls.</span>
+              <span>{{ t('dialog.settings.preset.hotkeyCursor.musicBee.description') }}</span>
             </v-sheet>
             <v-divider class="mt-4 mb-4"></v-divider>
             <v-sheet class="d-flex flex-row ga-3 align-center">
               <v-btn class="text-none" width="120px" variant="flat" color="primary" @click="recallQLabPreset"
                 >QLab</v-btn
               >
-              <span>Preset for QLab like controls.</span>
+              <span>{{ t('dialog.settings.preset.hotkeyCursor.qLab.description') }}</span>
             </v-sheet>
           </v-tabs-window-item>
           <v-tabs-window-item value="showGeneral" class="pa-3">
@@ -43,44 +43,47 @@
               class="mt-4"
               align-input="left"
               width="500px"
-              label="Show Model name"
+              :label="t('dialog.settings.show.general.showModelName')"
             ></text-input>
             <text-input
               v-model="editingSettings.show.general.copyAssetsDestination"
               align-input="left"
               class="mt-4"
               width="500px"
-              label="Assets directory"
-              hint="Relative path to the directory for copying assets. (per-show setting)"
+              :label="t('dialog.settings.show.general.assetsDirectory.title')"
+              :hint="t('dialog.settings.show.general.assetsDirectory.description')"
               persistent-hint
               show-details
             ></text-input>
           </v-tabs-window-item>
           <v-tabs-window-item value="audio" class="pa-3">
-            <v-checkbox v-model="editingSettings.show.audio.monoOutput" label="Downmix stereo to mono"></v-checkbox>
+            <v-checkbox
+              v-model="editingSettings.show.audio.monoOutput"
+              :label="t('dialog.settings.show.audio.monoOutput')"
+            ></v-checkbox>
           </v-tabs-window-item>
           <v-tabs-window-item value="remote" class="pa-3">
             <v-checkbox
               v-model="editingSettings.show.remote.lockCursorToSelection"
-              label="Lock Cursor to Selection (on Remote side)"
+              :label="t('dialog.settings.show.remote.lockCursorToSelection')"
             ></v-checkbox>
           </v-tabs-window-item>
           <v-tabs-window-item value="globalGeneral">
             <v-checkbox
               v-model="editingSettings.global.general.advanceCursorWhenGo"
-              label="Advance cursor when GO"
+              :label="t('dialog.settings.global.general.advanceCursorWhenGo')"
               hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
               v-model="editingSettings.global.general.lockCursorToSelection"
-              label="Lock Cursor to Selection (on Main side)"
+              :label="t('dialog.settings.global.general.lockCursorToSelection')"
               hide-details
             ></v-checkbox>
             <v-divider></v-divider>
             <v-checkbox
               v-model="editingSettings.global.general.copyAssetsWhenAdd"
-              label="Copy assets when adding Cue"
+              :label="t('dialog.settings.global.general.copyAssetsWhenAdd')"
               hide-details
             ></v-checkbox>
             <v-divider></v-divider>
@@ -92,7 +95,7 @@
               v-model="editingSettings.global.general.seekAmount"
               :min="0"
               width="160px"
-              label="Seek amount"
+              :label="t('dialog.settings.global.general.seekAmount')"
               density="compact"
               variant="outlined"
               autocomplete="off"
@@ -100,54 +103,58 @@
             ></v-number-input>
           </v-tabs-window-item>
           <v-tabs-window-item value="hotkey" class="pa-3">
-            <h2 class="mb-3">Playback</h2>
-            <hotkey-input v-model="editingSettings.global.hotkey.playback.go" width="280px" label="Go"></hotkey-input>
+            <h2 class="mb-3">{{ t('dialog.settings.global.hotkey.playback.title') }}</h2>
+            <hotkey-input
+              v-model="editingSettings.global.hotkey.playback.go"
+              width="280px"
+              :label="t('dialog.settings.global.hotkey.playback.go')"
+            ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.load"
               width="280px"
-              label="Load"
+              :label="t('dialog.settings.global.hotkey.playback.load')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.pauseAndResume"
               width="280px"
-              label="Pause & Resume"
+              :label="t('dialog.settings.global.hotkey.playback.pauseAndResume')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.pauseAll"
               width="280px"
-              label="Pause All"
+              :label="t('dialog.settings.global.hotkey.playback.pauseAll')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.resumeAll"
               width="280px"
-              label="Resume All"
+              :label="t('dialog.settings.global.hotkey.playback.resumeAll')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.stop"
               width="280px"
-              label="Stop"
+              :label="t('dialog.settings.global.hotkey.playback.stop')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.stopAll"
               width="280px"
-              label="Stop All"
+              :label="t('dialog.settings.global.hotkey.playback.stopAll')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.seekForward"
               width="280px"
-              label="Seek Forward"
+              :label="t('dialog.settings.global.hotkey.playback.seekForward')"
             ></hotkey-input>
             <hotkey-input
               v-model="editingSettings.global.hotkey.playback.seekBackward"
               width="280px"
-              label="Seek Backward"
+              :label="t('dialog.settings.global.hotkey.playback.seekBackward')"
             ></hotkey-input>
             <v-divider></v-divider>
-            <h2 class="mb-3 mt-3">Audio Action</h2>
+            <h2 class="mb-3 mt-3">{{ t('dialog.settings.global.hotkey.audio.title') }}</h2>
             <hotkey-input
               v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
               width="280px"
-              label="ToggleRepeat"
+              :label="t('dialog.settings.global.hotkey.audio.toggleRepeat')"
             ></hotkey-input>
           </v-tabs-window-item>
           <v-tabs-window-item value="template" class="fill-height">
@@ -155,7 +162,7 @@
               <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
                 <thead>
                   <tr>
-                    <th id="cuelist_type">Type</th>
+                    <th id="cuelist_type">{{ t('dialog.settings.global.template.type') }}</th>
                     <th id="cuelist_number">Number</th>
                     <th id="cuelist_name">Name</th>
                     <th id="cuelist_pre_wait" class="text-center">Pre-Wait</th>
@@ -170,7 +177,7 @@
                     :class="[selectingTemplate == 'audio' ? $style['selected-row'] : '']"
                     @mousedown="selectingTemplate = 'audio'"
                   >
-                    <td headers="cuelist_type" width="160px">Audio</td>
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.audio') }}</td>
                     <td headers="cuelist_number" class="text-center" width="50px">
                       {{ editingSettings.global.template.audio.number }}
                     </td>
@@ -178,7 +185,7 @@
                       {{
                         editingSettings.global.template.audio.name != null
                           ? editingSettings.global.template.audio.name
-                          : '** built from cue param **'
+                          : t('dialog.settings.global.template.builtFromCueParam')
                       }}
                     </td>
                     <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
@@ -226,7 +233,7 @@
                     :class="[selectingTemplate == 'wait' ? $style['selected-row'] : '']"
                     @mousedown="selectingTemplate = 'wait'"
                   >
-                    <td headers="cuelist_type" width="160px">Wait</td>
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.wait') }}</td>
                     <td headers="cuelist_number" class="text-center" width="50px">
                       {{ editingSettings.global.template.wait.number }}
                     </td>
@@ -234,7 +241,7 @@
                       {{
                         editingSettings.global.template.wait.name != null
                           ? editingSettings.global.template.wait.name
-                          : '** built from cue param **'
+                          : t('dialog.settings.global.template.builtFromCueParam')
                       }}
                     </td>
                     <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
@@ -280,7 +287,7 @@
                     :class="[selectingTemplate == 'fade' ? $style['selected-row'] : '']"
                     @mousedown="selectingTemplate = 'fade'"
                   >
-                    <td headers="cuelist_type" width="160px">Fade</td>
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.fade') }}</td>
                     <td headers="cuelist_number" class="text-center" width="50px">
                       {{ editingSettings.global.template.fade.number }}
                     </td>
@@ -288,7 +295,7 @@
                       {{
                         editingSettings.global.template.fade.name != null
                           ? editingSettings.global.template.fade.name
-                          : '** built from cue param **'
+                          : t('dialog.settings.global.template.builtFromCueParam')
                       }}
                     </td>
                     <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
@@ -341,9 +348,9 @@
       </v-sheet>
       <v-divider thickness="1" opacity="0.5"></v-divider>
       <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100">
-        <v-btn class="ml-auto" text="Cancel" @click="isSettingsDialogOpen = false"></v-btn>
+        <v-btn class="ml-auto" :text="t('general.cancel')" @click="isSettingsDialogOpen = false"></v-btn>
         <v-btn
-          text="Done"
+          :text="t('general.done')"
           @click="
             saveSettings();
             isSettingsDialogOpen = false;
@@ -367,7 +374,9 @@ import type { Cue } from '../../types/Cue';
 import TextInput from '../input/TextInput.vue';
 import { useUiSettings } from '../../stores/uiSettings';
 import type { GlobalSettings } from '../../types/GlobalSettings';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const showModel = useShowModel();
 const uiSettings = useUiSettings();
 
