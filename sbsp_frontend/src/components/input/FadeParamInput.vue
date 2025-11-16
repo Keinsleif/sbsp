@@ -13,7 +13,7 @@
         v-model="duration"
         :disabled="!fadeEnabled || props.disabled"
         class="flex-grow-0"
-        label="Duration"
+        :label="t('main.duration')"
         width="100px"
         @update="saveValues"
       ></time-input>
@@ -21,14 +21,14 @@
         hide-details
         persistent-placeholder
         v-model="easingType"
-        label="Curve"
+        :label="t('main.bottomEditor.input.curve')"
         class="flex-grow-0"
         width="135px"
         :items="[
-          { value: 'linear', name: 'Linear' },
-          { value: 'inPow', name: 'InPow' },
-          { value: 'outPow', name: 'OutPow' },
-          { value: 'inOutPow', name: 'InOutPow' },
+          { value: 'linear', name: t('main.bottomEditor.input.linear') },
+          { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },
+          { value: 'outPow', name: t('main.bottomEditor.input.easeOut') },
+          { value: 'inOutPow', name: t('main.bottomEditor.input.easeInOut') },
         ]"
         :disabled="!fadeEnabled || props.disabled"
         item-value="value"
@@ -47,7 +47,7 @@
         :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
         :min="1"
         max-width="160px"
-        label="Intensity"
+        :label="t('main.bottomEditor.input.intensity')"
         density="compact"
         variant="outlined"
         autocomplete="off"
@@ -81,6 +81,9 @@ import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
 import { curveToEasing, easingToCurve } from '../../utils';
 import CurveViewer from './CurveViewer.vue';
 import TimeInput from './TimeInput.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const param = defineModel<AudioCueFadeParam | null>({ required: true });
 const props = withDefaults(

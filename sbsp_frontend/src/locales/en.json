@@ -1,0 +1,211 @@
+{
+  "menu": {
+    "file": {
+      "open": "Open",
+      "save": "Save",
+      "saveAs": "Save As...",
+      "exportToFolder": "Export to Folder",
+      "title": "File"
+    },
+    "edit": {
+      "cut": "Cut",
+      "delete": "Delete",
+      "copy": "Copy",
+      "paste": "Paste",
+      "selectAll": "Select All",
+      "title": "Edit"
+    },
+    "cue": {
+      "audio": "Audio Cue",
+      "wait": "Wait Cue",
+      "fade": "Fade Cue",
+      "title": "Cue"
+    },
+    "tools": {
+      "renumber": "Renumber selected cues",
+      "title": "Tools"
+    },
+    "help": {
+      "checkUpdate": "Check for updates",
+      "title": "Help"
+    }
+  },
+  "notification": {
+    "modelLoaded": "Show model loaded.",
+    "modelSaved": "Show model saved."
+  },
+  "dialog": {
+    "renumber": {
+      "title": "Renumber Cues",
+      "startNumber": "Start Number",
+      "increment": "Increment"
+    },
+    "settings": {
+      "tab": {
+        "preset": "Preset",
+        "category": {
+          "global": "Global",
+          "inThisShowModel": "In this ShowModel"
+        },
+        "general": "General",
+        "audio": "Audio",
+        "remote": "Remote",
+        "hotkey": "Hotkey",
+        "template": "Template"
+      },
+      "preset": {
+        "hotkeyCursor": {
+          "title": "Hotkey & Cursor behavier",
+          "musicBee": {
+            "description": "Preset for MusicBee like controls."
+          },
+          "qLab": {
+            "description": "Preset for QLab like controls."
+          }
+        }
+      },
+      "show": {
+        "general": {
+          "showModelName": "Show Model name",
+          "assetsDirectory": {
+            "title": "Assets directory",
+            "description": "Relative path to the directory for copying assets. (per-show setting)"
+          }
+        },
+        "audio": {
+          "monoOutput": "Downmix stereo to mono"
+        },
+        "remote": {
+          "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
+        }
+      },
+      "global": {
+        "general": {
+          "advanceCursorWhenGo": "Advance cursor when GO",
+          "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
+          "copyAssetsWhenAdd": "Copy assets when adding Cue",
+          "seekAmount": "Seek amount"
+        },
+        "hotkey": {
+          "playback": {
+            "title": "Playback",
+            "go": "Go",
+            "load": "Load",
+            "pauseAndResume": "Pause & Resume",
+            "pauseAll": "Pause All",
+            "resumeAll": "Resume All",
+            "stop": "Stop",
+            "stopAll": "Stop All",
+            "seekForward": "Seek Forward (seconds set in General Settings)",
+            "seekBackward": "Seek Backward (seconds set in General Settings)"
+          },
+          "audio": {
+            "title": "Audio Action",
+            "toggleRepeat": "ToggleRepeat"
+          }
+        },
+        "template": {
+          "type": "Type",
+          "audio": "Audio Cue",
+          "builtFromCueParam": "** built from cue param **",
+          "wait": "Wait Cue",
+          "fade": "Fade Cue"
+        }
+      }
+    },
+    "update": {
+      "title": "Check for updates",
+      "noUpdates": "No updates available.",
+      "updatesAvailable": "New updates available.",
+      "installUpdate": "Install update",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version"
+    }
+  },
+  "general": {
+    "cancel": "Cancel",
+    "done": "Done",
+    "close": "Close",
+    "open": "Open",
+    "forExpertWarning": "Change this only if you know what you're doing."
+  },
+  "view": {
+    "server": {
+      "status": "Status",
+      "running": "Running",
+      "stopped": "Stopped",
+      "port": "Port",
+      "discoverable": "Discoverable",
+      "serverName": "Server Name",
+      "stop": "Stop",
+      "start": "Start"
+    },
+    "fileSelector": {
+      "title": "Select Files"
+    },
+    "connect": {
+      "remoteName": "Name",
+      "remoteHost": "Host",
+      "remotePort": "Port",
+      "connect": "Connect"
+    }
+  },
+  "main": {
+    "cueList": {},
+    "footBar": {
+      "cueCountSuffix": "cues"
+    },
+    "sideBar": {
+      "activeCues": "Active Cues"
+    },
+    "bottomEditor": {
+      "basics": {
+        "title": "Basics",
+        "timestamp": "Timestamp"
+      },
+      "audio": {
+        "title": "Audio",
+        "targetFile": "Target File",
+        "loadEntireFileOnMemory": "Load entire file on memory",
+        "fadeIn": "Fade In",
+        "fadeOut": "Fade Out"
+      },
+      "timeLevels": {
+        "title": "Time & Levels",
+        "skipFirstSilence": "Skip first silence",
+        "skipLastSilence": "Skip last silence",
+        "volume": "Volume",
+        "lufsDescription": "Set volume to match -14LUFS",
+        "peakDescription": "Set volume so that the audio peak is 0dBFS",
+        "pan": "Pan",
+        "repeat": "Repeat"
+      },
+      "fade": {
+        "title": "Fade",
+        "targetCue": "Target Cue",
+        "targetVolume": "Target Volume",
+        "fadeParameter": "Fade Parameter"
+      },
+      "input": {
+        "curve": "Curve",
+        "linear": "Linear",
+        "easeIn": "EaseIn",
+        "easeOut": "EaseOut",
+        "easeInOut": "EaseInOut",
+        "intensity": "Intensity"
+      }
+    },
+    "number": "Number",
+    "name": "Name",
+    "preWait": "Pre-Wait",
+    "duration": "Duration",
+    "postWait": "Post-Wait",
+    "continueMode": {
+      "title": "Continue Mode",
+      "doNotContinue": "DoNotContinue",
+      "autoContinue": "Auto-Continue",
+      "autoFollow": "Auto-Follow"
+    },
+    "notes": "Notes"
+  }
+}

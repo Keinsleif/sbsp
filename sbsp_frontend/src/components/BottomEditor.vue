@@ -1,14 +1,16 @@
 <template>
   <v-sheet class="overflow-hidden">
     <v-tabs v-model="editorTab" density="compact">
-      <v-tab density="compact" value="basics">Basics</v-tab>
-      <v-tab density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
-        >Audio</v-tab
-      >
-      <v-tab density="compact" value="time" v-if="selectedCue != null && selectedCue.params.type == 'audio'"
-        >Time & Levels</v-tab
-      >
-      <v-tab density="compact" value="fade" v-if="selectedCue != null && selectedCue.params.type == 'fade'">Fade</v-tab>
+      <v-tab density="compact" value="basics">{{ t('main.bottomEditor.basics.title') }}</v-tab>
+      <v-tab density="compact" value="audio" v-if="selectedCue != null && selectedCue.params.type == 'audio'">
+        {{ t('main.bottomEditor.audio.title') }}
+      </v-tab>
+      <v-tab density="compact" value="time" v-if="selectedCue != null && selectedCue.params.type == 'audio'">
+        {{ t('main.bottomEditor.timeLevels.title') }}
+      </v-tab>
+      <v-tab density="compact" value="fade" v-if="selectedCue != null && selectedCue.params.type == 'fade'">
+        {{ t('main.bottomEditor.fade.title') }}
+      </v-tab>
     </v-tabs>
     <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
@@ -49,7 +51,9 @@ import AudioTimeLevelEditor from './editor/AudioTimeLevelEditor.vue';
 import AudioBasicEditor from './editor/AudioBasicEditor.vue';
 import type { Cue } from '../types/Cue';
 import FadeBasicEditor from './editor/FadeBasicEditor.vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
