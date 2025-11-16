@@ -1,24 +1,24 @@
 <template>
   <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
     <v-sheet flat class="d-flex flex-column ga-2" width="175px">
-      <text-input v-model="number" label="Number" @update="saveEditorValue"></text-input>
+      <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
         :disabled="selectedCue.params.type == 'audio'"
-        label="Duration"
+        :label="t('main.duration')"
         @update="saveEditorValue"
       ></time-input>
-      <time-input v-model="preWait" label="Pre-Wait" @update="saveEditorValue"></time-input>
+      <time-input v-model="preWait" :label="t('main.preWait')" @update="saveEditorValue"></time-input>
       <v-select
         hide-details
         persistent-placeholder
         v-model="sequence"
-        label="ContinueMode"
+        :label="t('main.continueMode.title')"
         ref="cue_sequence"
         :items="[
-          { value: 'doNotContinue', name: 'DoNotContinue' },
-          { value: 'autoContinue', name: 'Auto-Continue' },
-          { value: 'autoFollow', name: 'Auto-Follow' },
+          { value: 'doNotContinue', name: t('main.continueMode.doNotContinue') },
+          { value: 'autoContinue', name: t('main.continueMode.autoContinue') },
+          { value: 'autoFollow', name: t('main.continueMode.autoFollow') },
         ]"
         item-value="value"
         item-title="name"
@@ -31,7 +31,7 @@
       <time-input
         v-model="postWait"
         :disabled="sequence != 'autoContinue'"
-        label="Post-Wait"
+        :label="t('main.postWait')"
         @update="saveEditorValue"
       ></time-input>
     </v-sheet>
@@ -39,18 +39,18 @@
       <text-input
         :placeholder="buildCueName(selectedCue)"
         v-model="name"
-        label="Name"
+        :label="t('main.name')"
         alignInput="left"
         class="flex-grow-0"
         @update="saveEditorValue"
       ></text-input>
-      <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue"></text-input>
+      <text-input v-model="notes" :label="t('main.notes')" type="area" @update="saveEditorValue"></text-input>
       <v-btn
         class="ml-auto mr-0 flex-grow-0"
         density="compact"
         :disabled="!(selectedCue.id in showState.activeCues)"
         @click="insertTimestampToNote"
-        >Timestamp</v-btn
+        >{{ t('main.bottomEditor.basics.timestamp') }}</v-btn
       >
     </v-sheet>
   </v-sheet>
@@ -64,6 +64,9 @@ import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
 import type { Cue } from '../../types/Cue';
 import { useShowState } from '../../stores/showstate';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const assetResult = useAssetResult();
 const showState = useShowState();

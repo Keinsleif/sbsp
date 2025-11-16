@@ -22,7 +22,7 @@
               @click="skipFirstSilence"
             ></v-btn>
           </template>
-          <span>Skip first silence</span>
+          <span>{{ t('main.bottomEditor.timeLevels.skipFirstSilence') }}</span>
         </v-tooltip>
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
@@ -33,7 +33,7 @@
               @click="skipLastSilence"
             ></v-btn>
           </template>
-          <span>Skip last silence</span>
+          <span>{{ t('main.bottomEditor.timeLevels.skipLastSilence') }}</span>
         </v-tooltip>
       </v-btn-group>
     </v-sheet>
@@ -47,7 +47,7 @@
       <volume-fader
         class="mt-4"
         v-model="volume"
-        label="Volume"
+        :label="t('main.bottomEditor.timeLevels.volume')"
         :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
@@ -68,7 +68,7 @@
               >LUFS</v-btn
             >
           </template>
-          <span>Set volume to match -14LUFS</span>
+          <span>{{ t('main.bottomEditor.timeLevels.lufsDescription') }}</span>
         </v-tooltip>
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
@@ -81,13 +81,13 @@
               >MAX</v-btn
             >
           </template>
-          <span>Set volume so that the audio peak is 0dBFS</span>
+          <span>{{ t('main.bottomEditor.timeLevels.peakDescription') }}</span>
         </v-tooltip>
       </v-btn-group>
       <v-divider vertical inset thickness="2" />
       <panning-fader
         class="mt-4"
-        label="Pan"
+        :label="t('main.bottomEditor.timeLevels.pan')"
         :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
@@ -101,7 +101,7 @@
         v-model="repeat"
         hide-details
         density="compact"
-        label="Repeat"
+        :label="t('main.bottomEditor.timeLevels.repeat')"
         :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue"
       ></v-checkbox>
@@ -119,6 +119,9 @@ import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showState = useShowState();
 const assetResult = useAssetResult();

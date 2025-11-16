@@ -2,14 +2,20 @@
   <v-dialog v-model="isUpdateDialogOpen" width="auto" @keydown.stop @afterEnter="checkUpdate">
     <v-sheet class="d-flex flex-column ga-4 pa-3" width="400px">
       <div class="d-flex flex-row align-center ga-4">
-        <h2>Check for updates</h2>
+        <h2>{{ t('dialog.update.title') }}</h2>
         <v-progress-circular v-show="isCheckingUpdate" size="24" indeterminate></v-progress-circular>
       </div>
       <span :class="latestVersion == null ? 'text-red' : 'text-green'">
-        {{ isCheckingUpdate ? '' : latestVersion == null ? 'No updates available.' : 'New updates available.' }}
+        {{
+          isCheckingUpdate
+            ? ''
+            : latestVersion == null
+              ? t('dialog.update.noUpdates')
+              : t('dialog.update.updatesAvailable')
+        }}
       </span>
-      <span>Current Version: {{ currentVersion != null ? currentVersion : '--' }}</span>
-      <span>Latest Version: {{ latestVersion != null ? latestVersion : '--' }}</span>
+      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
+      <span>{{ t('dialog.update.latestVersion') }}: {{ latestVersion != null ? latestVersion : '--' }}</span>
       <v-progress-linear
         height="8"
         color="primary"
@@ -17,13 +23,13 @@
         :indeterminate="total === 0n"
       ></v-progress-linear>
       <v-sheet class="mt-3 d-flex flex-row justify-end ga-2">
-        <v-btn @click="isUpdateDialogOpen = false">Close</v-btn>
+        <v-btn @click="isUpdateDialogOpen = false">{{ t('general.close') }}</v-btn>
         <v-btn
           :disabled="latestVersion == null"
           :loading="progress != null && calculateProgress() == 100"
           color="primary"
           @click="installUpdate"
-          >Install update</v-btn
+          >{{ t('dialog.update.installUpdate') }}</v-btn
         >
       </v-sheet>
     </v-sheet>
@@ -36,6 +42,9 @@ import { UpdateMetadata } from '../../types/UpdateMetadata';
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { DownloadEvent } from '../../types/DownloadEvent';
 import { getVersion } from '@tauri-apps/api/app';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const isCheckingUpdate = ref<boolean>(true);
 const currentVersion = ref<string | null>(null);
