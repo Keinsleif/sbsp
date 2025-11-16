@@ -121,5 +121,17 @@
     "cancel": "Cancel",
     "done": "Done",
     "close": "Close"
+  },
+  "view": {
+    "server": {
+      "status": "Status",
+      "running": "Running",
+      "stopped": "Stopped",
+      "port": "Port",
+      "discoverable": "Discoverable",
+      "serverName": "Server Name",
+      "stop": "Stop",
+      "start": "Start"
+    }
   }
 }
