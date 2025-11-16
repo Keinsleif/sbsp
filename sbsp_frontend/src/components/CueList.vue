@@ -4,7 +4,7 @@
       <tr>
         <th id="cuelist_cursor" width="53px"></th>
         <th id="cuelist_type" width="53px"></th>
-        <th id="cuelist_number" class="text-center" width="50px">{{ t('main.number') }}</th>
+        <th id="cuelist_number" class="text-center" width="60px">{{ t('main.number') }}</th>
         <th id="cuelist_name">{{ t('main.name') }}</th>
         <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.preWait') }}</th>
         <th id="cuelist_duration" class="text-center" width="100px">{{ t('main.duration') }}</th>

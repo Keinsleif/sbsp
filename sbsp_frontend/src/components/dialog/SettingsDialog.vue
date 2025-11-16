@@ -10,7 +10,7 @@
       <v-sheet class="flex-grow-1 d-flex flex-row w-100">
         <v-tabs v-model="tab" direction="vertical">
           <v-tab :text="t('dialog.settings.tab.preset')" value="preset"></v-tab>
-          <v-sheet class="pa-1 text-caption">{{ t('dialog.settings.tab.category.showModel') }}</v-sheet>
+          <v-sheet class="pa-1 text-caption">{{ t('dialog.settings.tab.category.inThisShowModel') }}</v-sheet>
           <v-tab :text="t('dialog.settings.tab.general')" value="showGeneral"></v-tab>
           <v-tab :text="t('dialog.settings.tab.audio')" value="audio"></v-tab>
           <v-tab :text="t('dialog.settings.tab.remote')" value="remote"></v-tab>
@@ -163,13 +163,13 @@
                 <thead>
                   <tr>
                     <th id="cuelist_type">{{ t('dialog.settings.global.template.type') }}</th>
-                    <th id="cuelist_number">Number</th>
-                    <th id="cuelist_name">Name</th>
-                    <th id="cuelist_pre_wait" class="text-center">Pre-Wait</th>
-                    <th id="cuelist_duration" class="text-center">Duration</th>
-                    <th id="cuelist_post_wait" class="text-center">Post-Wait</th>
-                    <th id="cuelist_repeat"><v-icon :icon="mdiRepeat"></v-icon></th>
-                    <th id="cuelist_sequence"><v-icon :icon="mdiChevronDoubleDown" /></th>
+                    <th id="cuelist_number" width="60px">{{ t('main.number') }}</th>
+                    <th id="cuelist_name">{{ t('main.name') }}</th>
+                    <th id="cuelist_pre_wait" class="text-center">{{ t('main.preWait') }}</th>
+                    <th id="cuelist_duration" class="text-center">{{ t('main.duration') }}</th>
+                    <th id="cuelist_post_wait" class="text-center">{{ t('main.postWait') }}</th>
+                    <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
+                    <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -350,6 +350,7 @@
       <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100">
         <v-btn class="ml-auto" :text="t('general.cancel')" @click="isSettingsDialogOpen = false"></v-btn>
         <v-btn
+          color="primary"
           :text="t('general.done')"
           @click="
             saveSettings();
