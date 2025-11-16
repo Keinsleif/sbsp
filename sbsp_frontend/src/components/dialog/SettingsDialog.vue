@@ -264,15 +264,7 @@
                         }}
                       </div>
                     </td>
-                    <td headers="cuelist_repeat">
-                      <v-icon
-                        v-if="
-                          editingSettings.global.template.wait.params.type == 'audio' &&
-                          editingSettings.global.template.wait.params.repeat
-                        "
-                        :icon="mdiRepeat"
-                      />
-                    </td>
+                    <td headers="cuelist_repeat"></td>
                     <td headers="cuelist_sequence">
                       <v-icon
                         v-if="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
@@ -280,6 +272,60 @@
                       />
                       <v-icon
                         v-if="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'fade' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'fade'"
+                  >
+                    <td headers="cuelist_type" width="160px">Fade</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.fade.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.fade.name != null
+                          ? editingSettings.global.template.fade.name
+                          : '** built from cue param **'
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.fade.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          secondsToFormat(
+                            editingSettings.global.template.fade.params.type == 'fade'
+                              ? editingSettings.global.template.fade.params.fadeParam.duration
+                              : null,
+                          )
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.fade.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.fade.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.fade.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.fade.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-if="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-if="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -328,7 +374,7 @@ const uiSettings = useUiSettings();
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
 const tab = ref('showGeneral');
-const selectingTemplate = ref<'audio' | 'wait' | null>(null);
+const selectingTemplate = ref<'audio' | 'wait' | 'fade' | null>(null);
 const showModelName = ref<string>(showModel.name);
 const editingSettings = ref<{
   show: ShowSettings;
@@ -340,6 +386,8 @@ const getSelectingCue = () => {
     return editingSettings.value.global.template.audio;
   } else if (selectingTemplate.value == 'wait') {
     return editingSettings.value.global.template.wait;
+  } else if (selectingTemplate.value == 'fade') {
+    return editingSettings.value.global.template.fade;
   }
   return null;
 };

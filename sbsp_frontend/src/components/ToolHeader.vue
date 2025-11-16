@@ -47,14 +47,9 @@
         ></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
-        <v-btn :icon="mdiVolumeHigh" @click="addEmptyCue('audio')"></v-btn>
-        <v-btn :icon="mdiTimerSandEmpty" @click="addEmptyCue('wait')"></v-btn>
-      </v-btn-group>
-      <v-btn-group variant="tonal" divided>
-        <v-btn :icon="mdiPlayCircleOutline"></v-btn>
-        <v-btn :icon="mdiStopCircleOutline"></v-btn>
-        <v-btn :icon="mdiPauseCircleOutline"></v-btn>
-        <v-btn :icon="mdiCheckCircleOutline"></v-btn>
+        <v-btn :icon="mdiVolumeHigh" @click="showModel.addEmptyAudioCue()"></v-btn>
+        <v-btn :icon="mdiTimerSandEmpty" @click="showModel.addEmptyWaitCue()"></v-btn>
+        <v-btn :icon="mdiChartBellCurveCumulative" @click="showModel.addEmptyFadeCue()"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
         <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggle"></v-btn>
@@ -65,15 +60,12 @@
 
 <script setup lang="ts">
 import {
-  mdiCheckCircleOutline,
   mdiFullscreen,
   mdiFullscreenExit,
   mdiPause,
-  mdiPauseCircleOutline,
   mdiPlay,
-  mdiPlayCircleOutline,
   mdiStop,
-  mdiStopCircleOutline,
+  mdiChartBellCurveCumulative,
   mdiTimerSandEmpty,
   mdiVolumeHigh,
 } from '@mdi/js';
@@ -82,13 +74,11 @@ import { computed } from 'vue';
 import { useShowState } from '../stores/showstate';
 import { PlaybackStatus } from '../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
-import { useUiState } from '../stores/uistate';
 import { buildCueName } from '../utils';
 import { useFullscreen, useNow, useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
 const showState = useShowState();
-const uiState = useUiState();
 
 const { isFullscreen, toggle } = useFullscreen();
 
@@ -114,16 +104,6 @@ const isCueStatus = (status: PlaybackStatus) => {
     }
   }
   return false;
-};
-
-const addEmptyCue = (cueType: 'audio' | 'wait') => {
-  let insertIndex;
-  if (uiState.selected) {
-    insertIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-  } else {
-    insertIndex = showModel.cues.length;
-  }
-  invoke('add_empty_cue', { cueType: cueType, atIndex: insertIndex }).catch((e) => console.error(e));
 };
 
 const handleReadyPauseButton = () => {

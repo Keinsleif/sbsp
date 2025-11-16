@@ -8,9 +8,9 @@ use ts_rs::TS;
 pub struct AudioCueParam {
     pub target: PathBuf,
     pub start_time: Option<f64>,
-    pub fade_in_param: Option<AudioFadeParam>,
+    pub fade_in_param: Option<FadeParam>,
     pub end_time: Option<f64>,
-    pub fade_out_param: Option<AudioFadeParam>,
+    pub fade_out_param: Option<FadeParam>,
     pub volume: f32,
     pub pan: f32,
     pub repeat: bool,
@@ -19,9 +19,18 @@ pub struct AudioCueParam {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct AudioFadeParam {
+pub struct FadeParam {
     pub duration: f64,
     pub easing: Easing,
+}
+
+impl Default for FadeParam {
+    fn default() -> Self {
+        Self {
+            duration: 3.0,
+            easing: Easing::InOutPowi(2)
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]

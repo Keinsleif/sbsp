@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use sbsp_backend::{BackendSettings , model::cue::{Cue, CueParam, CueSequence, audio::{AudioCueParam, SoundType}}};
+use sbsp_backend::{BackendSettings , model::cue::{Cue, CueParam, CueSequence, audio::{AudioCueParam, Easing, FadeParam, SoundType}}};
 use hotkey::HotkeySettings;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
@@ -61,6 +61,7 @@ impl Default for GeneralSettings {
 pub struct TemplateSettings {
     pub audio: Cue,
     pub wait: Cue,
+    pub fade: Cue,
 }
 
 impl Default for TemplateSettings {
@@ -94,6 +95,15 @@ impl Default for TemplateSettings {
                 sequence: CueSequence::DoNotContinue,
                 params: CueParam::Wait { duration: 5.0 },
             },
+            fade: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Fade { target: Uuid::nil(), volume: 0.0, fade_param: FadeParam { duration: 3.0, easing: Easing::InOutPowi(2) } }
+            }
         }
     }
 }
