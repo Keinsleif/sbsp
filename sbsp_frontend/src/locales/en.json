@@ -151,6 +151,9 @@
       "preWait": "Pre-Wait",
       "duration": "Duration",
       "postWait": "Post-Wait"
+    },
+    "footBar": {
+      "cueCountSuffix": "cues"
     }
   }
 }

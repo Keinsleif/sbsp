@@ -10,7 +10,7 @@
         v-model="showModel.settings.general.lockCursorToSelection"
       ></v-switch> -->
     </v-sheet>
-    <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} cues </v-sheet>
+    <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
       <v-btn
         v-if="uiState.side == 'main'"
@@ -31,6 +31,9 @@ import { mdiCog, mdiDockBottom, mdiDockRight, mdiServer } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showModel = useShowModel();
 const uiState = useUiState();
