@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     action::AudioAction,
     model::{
-        cue::audio::{AudioFadeParam, SoundType},
+        cue::audio::{FadeParam, SoundType},
         settings::ShowAudioSettings,
     },
 };
@@ -19,6 +19,7 @@ pub enum AudioCommand {
     Stop { id: Uuid },
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
+    SetVolume { id: Uuid, volume: f32, fade_param: FadeParam },
     PerformAction { id: Uuid, action: AudioAction },
     Reconfigure(ShowAudioSettings),
 }
@@ -46,8 +47,8 @@ pub struct AudioCommandData {
     pub volume: f32,
     pub pan: f32,
     pub start_time: Option<f64>,
-    pub fade_in_param: Option<AudioFadeParam>,
+    pub fade_in_param: Option<FadeParam>,
     pub end_time: Option<f64>,
-    pub fade_out_param: Option<AudioFadeParam>,
+    pub fade_out_param: Option<FadeParam>,
     pub repeat: bool,
 }

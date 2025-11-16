@@ -23,7 +23,7 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    model::{cue::audio::SoundType, settings::ShowAudioSettings},
+    model::{cue::audio::{FadeParam, SoundType}, settings::ShowAudioSettings},
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -88,6 +88,13 @@ impl SoundHandle {
             Self::Streaming(handle) => handle.set_loop_region(loop_region),
         }
     }
+
+    fn set_volume(&mut self, volume: f32, tween: Tween) {
+        match self {
+            Self::Static(handle) => handle.set_volume(volume, tween),
+            Self::Streaming(handle) => handle.set_volume(volume, tween),
+        }
+    }
 }
 
 struct PlaybackHandle {
@@ -150,6 +157,10 @@ impl PlaybackHandle {
             self.handle.set_loop_region(None);
         }
         self.repeat = repeat;
+    }
+
+    fn set_volume(&mut self, volume: f32, tween: Tween) {
+        self.handle.set_volume(volume, tween);
     }
 }
 
@@ -222,6 +233,7 @@ impl AudioEngine {
                         AudioCommand::Stop { id } => self.handle_stop(id),
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
+                        AudioCommand::SetVolume { id, volume, fade_param } => self.handle_set_volume(id, volume, fade_param).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
@@ -535,6 +547,33 @@ impl AudioEngine {
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_by(amount);
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                    instance_id: id,
+                    position: loaded_handle.position(),
+                    duration: loaded_handle.duration,
+                }))
+                .await?;
+            Ok(())
+        } else {
+            anyhow::bail!("unknown instance_id. id={}", id);
+        }
+    }
+
+    async fn handle_set_volume(&mut self, id: Uuid, volume: f32, param: FadeParam) -> Result<()> {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            playing_sound.handle.set_volume(volume, Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(param.duration),
+                easing: param.easing.into(),
+            });
+            Ok(())
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+            loaded_handle.set_volume(volume, Tween {
+                start_time: StartTime::Immediate,
+                duration: Duration::from_secs_f64(param.duration),
+                easing: param.easing.into(),
+            });
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,

@@ -163,6 +163,9 @@ impl Executor {
                                 })
                                 .await?;
                         }
+                        EngineType::Fade => {
+                            log::warn!("Pause command is not available for Fade cue. ignoring...");
+                        }
                     }
                 }
             }
@@ -190,6 +193,9 @@ impl Executor {
                                     instance_id: *instance_id,
                                 })
                                 .await?;
+                        }
+                        EngineType::Fade => {
+                            log::warn!("Resume command is not available for Fade cue. ignoring...");
                         }
                     }
                 }
@@ -221,6 +227,9 @@ impl Executor {
                                     instance_id: *instance_id,
                                 })
                                 .await?;
+                        }
+                        EngineType::Fade => {
+                            log::warn!("Stop command is not available for Fade cue. ignoring...");
                         }
                     }
                 }
@@ -255,6 +264,9 @@ impl Executor {
                                 })
                                 .await?;
                         }
+                        EngineType::Fade => {
+                            log::warn!("SeekTo command is not available for Fade cue. ignoring...");
+                        }
                     }
                 }
             }
@@ -287,6 +299,9 @@ impl Executor {
                                     amount,
                                 })
                                 .await?;
+                        }
+                        EngineType::Fade => {
+                            log::warn!("SeekBy is not available for Fade cue. ignoring...");
                         }
                     }
                 }
@@ -368,11 +383,39 @@ impl Executor {
                     })
                     .await?;
             }
+            CueParam::Fade { fade_param, .. } => {
+                self.wait_tx
+                    .send(WaitCommand::Load {
+                        wait_type: WaitType::FadeWait,
+                        instance_id,
+                        duration: fade_param.duration,
+                    })
+                    .await?;
+            }
         }
         Ok(())
     }
 
     async fn execute_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
+        let engine_type = match &cue.params {
+            CueParam::Audio(..) => EngineType::Audio,
+            CueParam::Wait { .. } => EngineType::Wait,
+            CueParam::Fade { .. } => EngineType::Fade,
+        };
+        if let Some(active_instance) =
+            self.active_instances.write().await.get_mut(&instance_id)
+        {
+            active_instance.engine_type = engine_type;
+        } else {
+            self.active_instances.write().await.insert(
+                instance_id,
+                ActiveInstance {
+                    cue_id: cue.id,
+                    engine_type,
+                },
+            );
+        }
+
         match &cue.params {
             CueParam::Audio(AudioCueParam {
                 target,
@@ -385,20 +428,6 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                if let Some(active_instance) =
-                    self.active_instances.write().await.get_mut(&instance_id)
-                {
-                    active_instance.engine_type = EngineType::Audio;
-                } else {
-                    self.active_instances.write().await.insert(
-                        instance_id,
-                        ActiveInstance {
-                            cue_id: cue.id,
-                            engine_type: EngineType::Audio,
-                        },
-                    );
-                }
-
                 let filepath = if let Some(model_path) = self
                     .model_handle
                     .get_current_file_path()
@@ -425,25 +454,25 @@ impl Executor {
                 self.audio_tx.send(audio_command).await?;
             }
             CueParam::Wait { duration } => {
-                if let Some(active_instance) =
-                    self.active_instances.write().await.get_mut(&instance_id)
-                {
-                    active_instance.engine_type = EngineType::Wait;
-                } else {
-                    self.active_instances.write().await.insert(
-                        instance_id,
-                        ActiveInstance {
-                            cue_id: cue.id,
-                            engine_type: EngineType::Wait,
-                        },
-                    );
-                }
-
                 self.wait_tx
                     .send(WaitCommand::Start {
                         wait_type: WaitType::Wait,
                         instance_id,
                         duration: *duration,
+                    })
+                    .await?;
+            }
+            CueParam::Fade { target, volume, fade_param } => {
+                if let Some((target_id, _)) = self.active_instances.read().await.iter().find(|(_, instance)| instance.cue_id == *target && instance.engine_type == EngineType::Audio) 
+                && self.audio_tx.send(AudioCommand::SetVolume { id: *target_id, volume: *volume, fade_param: *fade_param }).await.is_err() {
+                    anyhow::bail!("cannot send AudioCommand");
+                }
+
+                self.wait_tx
+                    .send(WaitCommand::Start {
+                        wait_type: WaitType::FadeWait,
+                        instance_id,
+                        duration: fade_param.duration,
                     })
                     .await?;
             }
@@ -591,7 +620,8 @@ impl Executor {
 
                 self.executor_event_tx.send(executor_event).await?;
             }
-            EngineEvent::Wait(wait_event) => {
+            EngineEvent::Wait(wait_event) |
+            EngineEvent::Fade(wait_event) => {
                 let instance_id = wait_event.instance_id();
 
                 let cue_id = {
@@ -672,7 +702,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::audio::{AudioFadeParam, Easing, SoundType},
+            cue::audio::{FadeParam, Easing, SoundType},
         },
     };
 
@@ -706,12 +736,12 @@ mod tests {
             params: model::cue::CueParam::Audio(AudioCueParam {
                 target: PathBuf::from("./I.G.Y.flac"),
                 start_time: Some(5.0),
-                fade_in_param: Some(AudioFadeParam {
+                fade_in_param: Some(FadeParam {
                     duration: 2.0,
                     easing: Easing::Linear,
                 }),
                 end_time: Some(50.0),
-                fade_out_param: Some(AudioFadeParam {
+                fade_out_param: Some(FadeParam {
                     duration: 5.0,
                     easing: Easing::InPowi(2),
                 }),
@@ -768,7 +798,7 @@ mod tests {
             assert_eq!(data.start_time, Some(5.0));
             assert_eq!(
                 data.fade_in_param,
-                Some(AudioFadeParam {
+                Some(FadeParam {
                     duration: 2.0,
                     easing: Easing::Linear
                 })
@@ -776,7 +806,7 @@ mod tests {
             assert_eq!(data.end_time, Some(50.0));
             assert_eq!(
                 data.fade_out_param,
-                Some(AudioFadeParam {
+                Some(FadeParam {
                     duration: 5.0,
                     easing: Easing::InPowi(2)
                 })

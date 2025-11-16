@@ -8,11 +8,13 @@ pub enum EngineEvent {
     Audio(AudioEngineEvent),
     Wait(WaitEvent),
     PreWait(WaitEvent),
+    Fade(WaitEvent),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EngineType {
     PreWait,
     Audio,
     Wait,
+    Fade,
 }
