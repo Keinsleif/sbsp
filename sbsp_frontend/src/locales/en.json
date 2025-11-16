@@ -143,5 +143,14 @@
       "remotePort": "Port",
       "connect": "Connect"
     }
+  },
+  "main": {
+    "cueList": {
+      "number": "Number",
+      "name": "Name",
+      "preWait": "Pre-Wait",
+      "duration": "Duration",
+      "postWait": "Post-Wait"
+    }
   }
 }
