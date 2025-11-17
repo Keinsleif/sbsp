@@ -52,6 +52,12 @@
         <v-btn :icon="mdiChartBellCurveCumulative" @click="showModel.addEmptyFadeCue()"></v-btn>
       </v-btn-group>
       <v-btn-group variant="tonal" divided>
+        <v-btn :icon="mdiPlayCircleOutline" @click="showModel.addEmptyPlaybackCue('start')"></v-btn>
+        <v-btn :icon="mdiStopCircleOutline" @click="showModel.addEmptyPlaybackCue('stop')"></v-btn>
+        <v-btn :icon="mdiPauseCircleOutline" @click="showModel.addEmptyPlaybackCue('pause')"></v-btn>
+        <v-btn :icon="mdiUploadCircleOutline" @click="showModel.addEmptyPlaybackCue('load')"></v-btn>
+      </v-btn-group>
+      <v-btn-group variant="tonal" divided>
         <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggle"></v-btn>
       </v-btn-group>
     </v-sheet>
@@ -68,6 +74,10 @@ import {
   mdiChartBellCurveCumulative,
   mdiTimerSandEmpty,
   mdiVolumeHigh,
+  mdiPlayCircleOutline,
+  mdiStopCircleOutline,
+  mdiPauseCircleOutline,
+  mdiUploadCircleOutline,
 } from '@mdi/js';
 import { useShowModel } from '../stores/showmodel';
 import { computed } from 'vue';

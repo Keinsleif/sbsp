@@ -19,7 +19,11 @@
       "audio": "Audio Cue",
       "wait": "Wait Cue",
       "fade": "Fade Cue",
-      "title": "Cue"
+      "title": "Cue",
+      "start": "Start Cue",
+      "stop": "Stop Cue",
+      "pause": "Pause Cue",
+      "load": "Load Cue"
     },
     "tools": {
       "renumber": "Renumber selected cues",
@@ -182,7 +186,6 @@
       },
       "fade": {
         "title": "Fade",
-        "targetCue": "Target Cue",
         "targetVolume": "Target Volume",
         "fadeParameter": "Fade Parameter"
       },
@@ -193,6 +196,10 @@
         "easeOut": "EaseOut",
         "easeInOut": "EaseInOut",
         "intensity": "Intensity"
+      },
+      "targetCue": "Target Cue",
+      "playback": {
+        "title": "Playback"
       }
     },
     "number": "Number",
