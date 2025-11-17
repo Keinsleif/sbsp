@@ -5,7 +5,8 @@
       "save": "Save",
       "saveAs": "Save As...",
       "exportToFolder": "Export to Folder",
-      "title": "File"
+      "title": "File",
+      "disconnect": "Disconnect"
     },
     "edit": {
       "cut": "Cut",

@@ -8,6 +8,22 @@ export const createWindowMenu = async () => {
   const { t } = useI18n();
   const side = await invoke<string>('get_side', {});
 
+  let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];
+  if (side == 'remote') {
+    remoteFileMenuItem = [
+      await PredefinedMenuItem.new({
+        item: 'Separator',
+      }),
+      await MenuItem.new({
+        id: 'id_disconnect',
+        text: t('menu.file.disconnect'),
+        action: () => {
+          invoke('disconnect_from_server', {}).catch((e) => console.error(e));
+        },
+      }),
+    ];
+  }
+
   const fileMenu = await Submenu.new({
     text: t('menu.file.title'),
     items: [
@@ -43,6 +59,7 @@ export const createWindowMenu = async () => {
           invoke('export_to_folder', {}).catch((e) => console.error(e));
         },
       }),
+      ...remoteFileMenuItem,
     ],
   });
 

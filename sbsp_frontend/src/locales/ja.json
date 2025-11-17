@@ -5,7 +5,8 @@
       "save": "保存",
       "saveAs": "名前をつけて保存",
       "exportToFolder": "フォルダにエクスポート",
-      "title": "ファイル"
+      "title": "ファイル",
+      "disconnect": "サーバーから切断"
     },
     "edit": {
       "cut": "切り取り",
