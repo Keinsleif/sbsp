@@ -15,24 +15,24 @@
         class="flex-grow-0"
         :label="t('view.server.port')"
         width="100px"
-        @update="invoke('set_server_port', { port: parseInt(server_port) }).catch((e) => console.error(e))"
+        @update="savePort"
       ></text-input>
       <v-checkbox
-        v-model="is_discoverable"
+        v-model="isDiscoverable"
         :disabled="isRunning"
         :label="t('view.server.discoverable')"
         density="compact"
         hide-details
-        @update="invoke('set_discovery_option', { discoveryOption: server_name }).catch((e) => console.error(e))"
+        @update:model-value="saveDiscoveryOpt"
       ></v-checkbox>
       <text-input
         v-model="server_name"
-        :disabled="!is_discoverable || isRunning"
+        :disabled="!isDiscoverable || isRunning"
         align-input="left"
         class="flex-grow-0"
         :label="t('view.server.serverName')"
         width="480px"
-        @update="invoke('set_discovery_option', { discoveryOption: server_name }).catch((e) => console.error(e))"
+        @update:model-value="saveDiscoveryOpt"
       ></text-input>
       <v-snackbar-queue v-model="error_messages" timeout="2000" color="error"></v-snackbar-queue>
     </div>
@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import TextInput from './components/input/TextInput.vue';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
@@ -60,16 +60,9 @@ const { t } = useI18n();
 
 const isRunning = ref<boolean | null>(null);
 const server_port = ref<string>('');
-const is_discoverable = ref<boolean | null>(null);
-const server_name = ref<string>('');
+const isDiscoverable = ref<boolean | null>(null);
+const server_name = ref<string>('Untitled SBSP Server');
 const error_messages = ref<string[]>([]);
-
-watch(
-  () => server_name.value,
-  () => {
-    console.log(server_name.value);
-  },
-);
 
 let unlisten: UnlistenFn | null = null;
 
@@ -92,6 +85,21 @@ const toggleServer = () => {
   }
 };
 
+const savePort = () => {
+  const newPort = parseInt(server_port.value);
+  if (!isNaN(newPort)) {
+    invoke('set_server_port', { port: newPort }).catch((e) => console.error(e));
+  }
+};
+
+const saveDiscoveryOpt = () => {
+  if (isDiscoverable.value) {
+    invoke('set_discovery_option', { discoveryOption: server_name.value }).catch((e) => console.error(e));
+  } else {
+    invoke('set_discovery_option', { discoveryOption: null }).catch((e) => console.error(e));
+  }
+};
+
 onMounted(() => {
   invoke<number>('get_server_port')
     .then((port) => (server_port.value = port.toString()))
@@ -99,10 +107,10 @@ onMounted(() => {
   invoke<string>('get_discovery_option')
     .then((name) => {
       if (name != null) {
-        is_discoverable.value = true;
+        isDiscoverable.value = true;
         server_name.value = name;
       } else {
-        is_discoverable.value = false;
+        isDiscoverable.value = false;
       }
     })
     .catch((e) => console.error(e));
