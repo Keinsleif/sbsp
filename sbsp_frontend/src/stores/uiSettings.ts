@@ -86,6 +86,62 @@ export const useUiSettings = defineStore('uiSettings', () => {
           },
         },
       },
+      start: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'start',
+          target: '00000000-0000-0000-0000-000000000000',
+        },
+      },
+      stop: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'stop',
+          target: '00000000-0000-0000-0000-000000000000',
+        },
+      },
+      pause: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'pause',
+          target: '00000000-0000-0000-0000-000000000000',
+        },
+      },
+      load: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'load',
+          target: '00000000-0000-0000-0000-000000000000',
+        },
+      },
     },
   });
 
