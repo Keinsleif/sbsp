@@ -26,6 +26,7 @@ use crate::{
 pub struct ActiveInstance {
     cue_id: Uuid,
     engine_type: EngineType,
+    executed: bool,
 }
 
 pub struct Executor {
@@ -84,7 +85,9 @@ impl Executor {
     async fn process_command(&self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
             ExecutorCommand::Load(cue_id) => {
-                if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id) {
+                    log::warn!("Cue already loaded or executed. cue_id={}", cue_id);
+                } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let instance_id = Uuid::now_v7();
                     self.load_cue(&cue, instance_id).await?;
                     self.active_instances.write().await.insert(
@@ -92,12 +95,15 @@ impl Executor {
                         ActiveInstance {
                             cue_id,
                             engine_type: EngineType::Audio,
+                            executed: false,
                         },
                     );
                 }
             }
             ExecutorCommand::Execute(cue_id) => {
-                if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id && !instance.executed) {
+                    log::warn!("Cue already executed. cue_id={}", cue_id);
+                } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let mut instance_id = Uuid::now_v7();
                     let mut active_instances = self.active_instances.write().await;
                     if cue.pre_wait > 0.0 {
@@ -114,6 +120,7 @@ impl Executor {
                                 ActiveInstance {
                                     cue_id,
                                     engine_type: EngineType::PreWait,
+                                    executed: true,
                                 },
                             );
                             self.load_cue(&cue, instance_id).await?;
@@ -262,6 +269,7 @@ impl Executor {
                     ActiveInstance {
                         cue_id: cue.id,
                         engine_type,
+                        executed: true,
                     },
                 );
             }
@@ -328,7 +336,7 @@ impl Executor {
                     .await?;
             }
             CueParam::Start { target } => {
-                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == *target) {
+                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == *target && instance.executed) {
                     self.process_command(ExecutorCommand::Resume(*target)).await?;
                 } else {
                     self.process_command(ExecutorCommand::Execute(*target)).await?;
