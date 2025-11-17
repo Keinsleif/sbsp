@@ -19,7 +19,11 @@
       "audio": "音声キュー",
       "wait": "待機キュー",
       "fade": "フェードキュー",
-      "title": "キュー"
+      "title": "キュー",
+      "start": "開始キュー",
+      "stop": "停止キュー",
+      "load": "読み込みキュー",
+      "pause": "一時停止キュー"
     },
     "tools": {
       "renumber": "キュー番号の振り直し",
@@ -58,7 +62,6 @@
         "title": "基本"
       },
       "fade": {
-        "targetCue": "対象キュー",
         "targetVolume": "目標音量",
         "fadeParameter": "フェードパラメーター",
         "title": "フェード"
@@ -70,7 +73,8 @@
         "easeOut": "EaseOut",
         "easeInOut": "EaseInOut",
         "intensity": "強度"
-      }
+      },
+      "targetCue": "対象キュー"
     },
     "number": "番号",
     "duration": "長さ",
