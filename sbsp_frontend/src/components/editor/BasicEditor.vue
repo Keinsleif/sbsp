@@ -44,14 +44,33 @@
         class="flex-grow-0"
         @update="saveEditorValue"
       ></text-input>
-      <text-input v-model="notes" :label="t('main.notes')" type="area" @update="saveEditorValue"></text-input>
-      <v-btn
-        class="ml-auto mr-0 flex-grow-0"
-        density="compact"
-        :disabled="!(selectedCue.id in showState.activeCues)"
-        @click="insertTimestampToNote"
-        >{{ t('main.bottomEditor.basics.timestamp') }}</v-btn
-      >
+      <text-input
+        class="flex-grow-1"
+        v-model="notes"
+        :label="t('main.notes')"
+        type="area"
+        @update="saveEditorValue"
+      ></text-input>
+      <v-sheet flat class="d-flex flex-row">
+        <cue-select
+          v-model="target"
+          class="flex-grow-0"
+          :label="t('main.bottomEditor.continueTargetCue')"
+          cue-type="all"
+          :exclude="selectedCue.id"
+          null-text="Next Cue"
+          width="640px"
+          :disabled="sequence == 'doNotContinue'"
+          @update="saveEditorValue"
+        />
+        <v-btn
+          class="ml-auto mr-0 flex-grow-0"
+          density="compact"
+          :disabled="!(selectedCue.id in showState.activeCues)"
+          @click="insertTimestampToNote"
+          >{{ t('main.bottomEditor.basics.timestamp') }}</v-btn
+        >
+      </v-sheet>
     </v-sheet>
   </v-sheet>
 </template>
@@ -64,6 +83,8 @@ import TimeInput from '../input/TimeInput.vue';
 import type { Cue } from '../../types/Cue';
 import { useShowState } from '../../stores/showstate';
 import { useI18n } from 'vue-i18n';
+import { NIL } from 'uuid';
+import CueSelect from '../input/CueSelect.vue';
 
 const { t } = useI18n();
 
@@ -85,6 +106,13 @@ const postWait = ref(
 );
 const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
+const target = ref(
+  selectedCue.value != null &&
+    selectedCue.value.sequence.type != 'doNotContinue' &&
+    selectedCue.value.sequence.targetId != NIL
+    ? selectedCue.value.sequence.targetId
+    : '',
+);
 
 watch(selectedCue, () => {
   number.value = selectedCue.value != null ? selectedCue.value.number : null;
@@ -99,6 +127,12 @@ watch(selectedCue, () => {
       : null;
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
+  target.value =
+    selectedCue.value != null &&
+    selectedCue.value.sequence.type != 'doNotContinue' &&
+    selectedCue.value.sequence.targetId != NIL
+      ? selectedCue.value.sequence.targetId
+      : null;
 });
 
 watch(
@@ -137,6 +171,9 @@ const saveEditorValue = () => {
   }
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
+  }
+  if (target.value != null && selectedCue.value.sequence.type != 'doNotContinue') {
+    selectedCue.value.sequence.targetId = target.value;
   }
   emit('update');
 };
