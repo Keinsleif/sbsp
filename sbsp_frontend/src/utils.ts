@@ -1,3 +1,4 @@
+import { useAssetResult } from './stores/assetResult';
 import { useShowModel } from './stores/showmodel';
 import { useUiSettings } from './stores/uiSettings';
 import { useUiState } from './stores/uistate';
@@ -80,50 +81,118 @@ export const buildCueName = (cue: Cue | null): string => {
   if (cue == null) {
     return '';
   }
-  if (cue.params.type == 'audio') {
-    return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
-  } else if (cue.params.type == 'wait') {
-    return `Wait ${secondsToHMR(cue.params.duration)}`;
-  } else if (cue.params.type == 'fade') {
-    const showModel = useShowModel();
-    const targetCue = showModel.cues.find((target) => {
-      if (cue.params.type != 'fade') {
-        return false;
+  switch (cue.params.type) {
+    case 'audio':
+      return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
+    case 'wait':
+      return `Wait ${secondsToHMR(cue.params.duration)}`;
+    case 'fade': {
+      const showModel = useShowModel();
+      const targetCue = showModel.cues.find((target) => {
+        if (cue.params.type != 'fade') {
+          return false;
+        } else {
+          return target.id == cue.params.target;
+        }
+      });
+      if (targetCue != null) {
+        return `Fade ${buildCueName(targetCue)}`;
       } else {
-        return target.id == cue.params.target;
+        return 'Fade';
       }
-    });
-    if (targetCue != null) {
-      return `Fade ${buildCueName(targetCue)}`;
-    } else {
-      return 'Fade';
     }
-  } else {
-    return '';
+    case 'start': {
+      const showModel = useShowModel();
+      const targetCue = showModel.cues.find((target) => {
+        if (cue.params.type != 'start') {
+          return false;
+        } else {
+          return target.id == cue.params.target;
+        }
+      });
+      if (targetCue != null) {
+        return `Start ${buildCueName(targetCue)}`;
+      } else {
+        return 'Start';
+      }
+    }
+    case 'stop': {
+      const showModel = useShowModel();
+      const targetCue = showModel.cues.find((target) => {
+        if (cue.params.type != 'stop') {
+          return false;
+        } else {
+          return target.id == cue.params.target;
+        }
+      });
+      if (targetCue != null) {
+        return `Stop ${buildCueName(targetCue)}`;
+      } else {
+        return 'Stop';
+      }
+    }
+    case 'pause': {
+      const showModel = useShowModel();
+      const targetCue = showModel.cues.find((target) => {
+        if (cue.params.type != 'pause') {
+          return false;
+        } else {
+          return target.id == cue.params.target;
+        }
+      });
+      if (targetCue != null) {
+        return `Pause ${buildCueName(targetCue)}`;
+      } else {
+        return 'Pause';
+      }
+    }
+    case 'load': {
+      const showModel = useShowModel();
+      const targetCue = showModel.cues.find((target) => {
+        if (cue.params.type != 'load') {
+          return false;
+        } else {
+          return target.id == cue.params.target;
+        }
+      });
+      if (targetCue != null) {
+        return `Load ${buildCueName(targetCue)}`;
+      } else {
+        return 'Load';
+      }
+    }
+    default:
+      return '';
   }
 };
 
 export const calculateDuration = (cueParam: CueParam, totalDuration: number | null | undefined): number | null => {
-  if (cueParam.type == 'wait') {
-    return cueParam.duration;
-  }
-  if (cueParam.type == 'fade') {
-    return cueParam.fadeParam.duration;
-  }
-  if (cueParam.type == 'audio') {
-    if (totalDuration == null || isNaN(totalDuration)) {
+  switch (cueParam.type) {
+    case 'audio': {
+      if (totalDuration == null || isNaN(totalDuration)) {
+        return null;
+      }
+      let duration = totalDuration;
+      if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
+        duration = cueParam.endTime;
+      }
+      if (cueParam.startTime != null) {
+        duration -= cueParam.startTime;
+      }
+      return duration;
+    }
+    case 'wait':
+      return cueParam.duration;
+    case 'fade':
+      return cueParam.fadeParam.duration;
+    case 'start':
+    case 'stop':
+    case 'pause':
+    case 'load':
+      return 0;
+    default:
       return null;
-    }
-    let duration = totalDuration;
-    if (cueParam.endTime != null && cueParam.endTime < totalDuration) {
-      duration = cueParam.endTime;
-    }
-    if (cueParam.startTime != null) {
-      duration -= cueParam.startTime;
-    }
-    return duration;
   }
-  return null;
 };
 
 export type Curve = {
@@ -186,5 +255,25 @@ export const getLockCursorToSelection = () => {
     return useShowModel().settings.remote.lockCursorToSelection;
   } else {
     return false;
+  }
+};
+
+export const getDuration = (cue: Cue | null | undefined): number | null => {
+  const assetResult = useAssetResult();
+  if (cue == null) {
+    return null;
+  }
+  switch (cue.params.type) {
+    case 'wait':
+      return cue.params.duration;
+    case 'audio':
+      return calculateDuration(cue.params, assetResult.get(cue.id)?.duration);
+    case 'fade':
+      return cue.params.fadeParam.duration;
+    case 'start':
+    case 'stop':
+    case 'pause':
+    case 'load':
+      return 0;
   }
 };

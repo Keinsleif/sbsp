@@ -1,7 +1,6 @@
 <template>
   <v-tabs grow fixed-tabs v-model="uiState.sideBarTab" density="compact">
-    <v-tab border density="compact" value="activeCues">Active Cues</v-tab>
-    <v-tab border density="compact" value="levels">Levels</v-tab>
+    <v-tab border density="compact" value="activeCues">{{ t('main.sideBar.activeCues') }}</v-tab>
   </v-tabs>
   <v-tabs-window v-model="uiState.sideBarTab">
     <v-tabs-window-item value="activeCues" class="overflow-y-auto" transition="false" reverse-transition="false">
@@ -53,7 +52,9 @@ import { useShowState } from '../stores/showstate';
 import { useUiState } from '../stores/uistate';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { buildCueName, secondsToFormat } from '../utils';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();

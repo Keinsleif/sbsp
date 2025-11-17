@@ -1,24 +1,24 @@
 <template>
   <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
     <v-sheet flat class="d-flex flex-column ga-2" width="175px">
-      <text-input v-model="number" label="Number" @update="saveEditorValue"></text-input>
+      <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
-        :disabled="selectedCue.params.type == 'audio'"
-        label="Duration"
+        :disabled="selectedCue.params.type != 'wait' && selectedCue.params.type != 'fade'"
+        :label="t('main.duration')"
         @update="saveEditorValue"
       ></time-input>
-      <time-input v-model="preWait" label="Pre-Wait" @update="saveEditorValue"></time-input>
+      <time-input v-model="preWait" :label="t('main.preWait')" @update="saveEditorValue"></time-input>
       <v-select
         hide-details
         persistent-placeholder
         v-model="sequence"
-        label="ContinueMode"
+        :label="t('main.continueMode.title')"
         ref="cue_sequence"
         :items="[
-          { value: 'doNotContinue', name: 'DoNotContinue' },
-          { value: 'autoContinue', name: 'Auto-Continue' },
-          { value: 'autoFollow', name: 'Auto-Follow' },
+          { value: 'doNotContinue', name: t('main.continueMode.doNotContinue') },
+          { value: 'autoContinue', name: t('main.continueMode.autoContinue') },
+          { value: 'autoFollow', name: t('main.continueMode.autoFollow') },
         ]"
         item-value="value"
         item-title="name"
@@ -31,7 +31,7 @@
       <time-input
         v-model="postWait"
         :disabled="sequence != 'autoContinue'"
-        label="Post-Wait"
+        :label="t('main.postWait')"
         @update="saveEditorValue"
       ></time-input>
     </v-sheet>
@@ -39,84 +39,108 @@
       <text-input
         :placeholder="buildCueName(selectedCue)"
         v-model="name"
-        label="Name"
+        :label="t('main.name')"
         alignInput="left"
         class="flex-grow-0"
         @update="saveEditorValue"
       ></text-input>
-      <text-input v-model="notes" label="Notes" type="area" @update="saveEditorValue"></text-input>
-      <v-btn
-        class="ml-auto mr-0 flex-grow-0"
-        density="compact"
-        :disabled="!(selectedCue.id in showState.activeCues)"
-        @click="insertTimestampToNote"
-        >Timestamp</v-btn
-      >
+      <text-input
+        class="flex-grow-1"
+        v-model="notes"
+        :label="t('main.notes')"
+        type="area"
+        @update="saveEditorValue"
+      ></text-input>
+      <v-sheet flat class="d-flex flex-row">
+        <cue-select
+          v-model="target"
+          class="flex-grow-0"
+          :label="t('main.bottomEditor.continueTargetCue')"
+          cue-type="all"
+          :exclude="selectedCue.id"
+          null-text="Next Cue"
+          width="640px"
+          :disabled="sequence == 'doNotContinue'"
+          @update="saveEditorValue"
+        />
+        <v-btn
+          class="ml-auto mr-0 flex-grow-0"
+          density="compact"
+          :disabled="!(selectedCue.id in showState.activeCues)"
+          @click="insertTimestampToNote"
+          >{{ t('main.bottomEditor.basics.timestamp') }}</v-btn
+        >
+      </v-sheet>
     </v-sheet>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { buildCueName, calculateDuration, secondsToFormat } from '../../utils';
-import { useAssetResult } from '../../stores/assetResult';
+import { buildCueName, getDuration, secondsToFormat } from '../../utils';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
 import type { Cue } from '../../types/Cue';
 import { useShowState } from '../../stores/showstate';
+import { useI18n } from 'vue-i18n';
+import { NIL } from 'uuid';
+import CueSelect from '../input/CueSelect.vue';
 
-const assetResult = useAssetResult();
+const { t } = useI18n();
+
 const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
-const getDuration = (): number | null => {
-  if (selectedCue.value == null) {
-    return null;
-  }
-  switch (selectedCue.value.params.type) {
-    case 'wait':
-      return selectedCue.value.params.duration;
-    case 'audio':
-      return calculateDuration(selectedCue.value.params, assetResult.get(selectedCue.value.id)?.duration);
-    case 'fade':
-      return selectedCue.value.params.fadeParam.duration;
-  }
-};
-
 const number = ref(selectedCue.value != null ? selectedCue.value.number : null);
-const duration = ref(getDuration());
+const duration = ref(getDuration(selectedCue.value));
 const preWait = ref(selectedCue.value != null ? selectedCue.value.preWait : null);
 const sequence = ref(selectedCue.value != null ? selectedCue.value.sequence.type : null);
 const postWait = ref(
   selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
     ? selectedCue.value.sequence.type == 'autoContinue'
       ? selectedCue.value.sequence.postWait
-      : getDuration()
+      : getDuration(selectedCue.value)
     : null,
 );
 const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
+const target = ref(
+  selectedCue.value != null &&
+    selectedCue.value.sequence.type != 'doNotContinue' &&
+    selectedCue.value.sequence.targetId != NIL
+    ? selectedCue.value.sequence.targetId
+    : '',
+);
 
 watch(selectedCue, () => {
   number.value = selectedCue.value != null ? selectedCue.value.number : null;
-  duration.value = getDuration();
+  duration.value = getDuration(selectedCue.value);
   preWait.value = selectedCue.value != null ? selectedCue.value.preWait : null;
   sequence.value = selectedCue.value != null ? selectedCue.value.sequence.type : null;
   postWait.value =
     selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
       ? selectedCue.value.sequence.type == 'autoContinue'
         ? selectedCue.value.sequence.postWait
-        : getDuration()
+        : getDuration(selectedCue.value)
       : null;
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
+  target.value =
+    selectedCue.value != null &&
+    selectedCue.value.sequence.type != 'doNotContinue' &&
+    selectedCue.value.sequence.targetId != NIL
+      ? selectedCue.value.sequence.targetId
+      : null;
 });
 
-watch(getDuration, () => {
-  duration.value = getDuration();
-});
+watch(
+  () => getDuration(selectedCue.value),
+  () => {
+    duration.value = getDuration(selectedCue.value);
+  },
+);
 
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
@@ -147,6 +171,9 @@ const saveEditorValue = () => {
   }
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
+  }
+  if (target.value != null && selectedCue.value.sequence.type != 'doNotContinue') {
+    selectedCue.value.sequence.targetId = target.value;
   }
   emit('update');
 };

@@ -49,5 +49,17 @@ pub enum CueParam {
         target: Uuid,
         volume: f32,
         fade_param: FadeParam,
-    }
+    },
+    Start {
+        target: Uuid,
+    },
+    Stop {
+        target: Uuid,
+    },
+    Pause {
+        target: Uuid,
+    },
+    Load {
+        target: Uuid,
+    },
 }

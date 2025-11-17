@@ -62,6 +62,10 @@ pub struct TemplateSettings {
     pub audio: Cue,
     pub wait: Cue,
     pub fade: Cue,
+    pub start: Cue,
+    pub stop: Cue,
+    pub pause: Cue,
+    pub load: Cue,
 }
 
 impl Default for TemplateSettings {
@@ -103,6 +107,42 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
                 params: CueParam::Fade { target: Uuid::nil(), volume: 0.0, fade_param: FadeParam { duration: 3.0, easing: Easing::InOutPowi(2) } }
+            },
+            start: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Start { target: Uuid::nil() }
+            },
+            stop: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Stop { target: Uuid::nil() }
+            },
+            pause: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Pause { target: Uuid::nil() }
+            },
+            load: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Load { target: Uuid::nil() }
             },
         }
     }

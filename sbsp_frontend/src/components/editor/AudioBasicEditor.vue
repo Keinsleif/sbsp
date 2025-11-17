@@ -4,7 +4,7 @@
       hide-details
       persistent-placeholder
       v-model="target"
-      label="Target"
+      :label="t('main.bottomEditor.audio.targetFile')"
       variant="outlined"
       density="compact"
       :disabled="selectedCue!.id in showState.activeCues"
@@ -32,23 +32,23 @@
         v-model="soundType"
         :disabled="selectedCue!.id in showState.activeCues"
         density="compact"
-        label="Load entire file on memory"
+        :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
         @update:model-value="saveEditorValue"
       >
-        <v-tooltip activator="parent" location="end">Change this only if you know what you're doing.</v-tooltip>
+        <v-tooltip activator="parent" location="end">{{ t('general.forExpertWarning') }}</v-tooltip>
       </v-checkbox>
     </v-sheet>
     <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
       <fade-param-input
         v-model="fadeInParam"
-        label="Fade In"
+        :label="t('main.bottomEditor.audio.fadeIn')"
         condition="in"
         :disabled="selectedCue!.id in showState.activeCues"
         @update="saveEditorValue"
       ></fade-param-input>
       <fade-param-input
         v-model="fadeOutParam"
-        label="Fade Out"
+        :label="t('main.bottomEditor.audio.fadeOut')"
         condition="out"
         :disabled="selectedCue!.id in showState.activeCues"
         @update="saveEditorValue"
@@ -65,6 +65,9 @@ import FadeParamInput from '../input/FadeParamInput.vue';
 import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
 import { useUiState } from '../../stores/uistate';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showState = useShowState();
 const uiState = useUiState();

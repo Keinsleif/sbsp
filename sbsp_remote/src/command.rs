@@ -45,9 +45,10 @@ pub async fn pick_audio_assets(
         ).unwrap().unwrap_or_default();
         let _ = result_tx.send(path_vec);
     });
+    let result = result_rx.await;
     let _ = pick_file_window.close();
-    match result_rx.await {
-        Ok(result) => Ok(result),
+    match result {
+        Ok(file_list) => Ok(file_list),
         Err(e) => Err(e.to_string()),
     }
 }

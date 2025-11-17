@@ -4,7 +4,7 @@
     persistent-placeholder
     v-model="selectedId"
     :label="props.label"
-    :items="showModel.cues.filter(filterCue).map((cue) => ({ value: cue.id, name: buildCueName(cue) }))"
+    :items="cueList"
     item-value="value"
     item-title="name"
     variant="outlined"
@@ -16,6 +16,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import type { Cue } from '../../types/Cue';
 import { buildCueName } from '../../utils';
@@ -26,16 +27,33 @@ const selectedId = defineModel<string | null>();
 const props = withDefaults(
   defineProps<{
     label?: string;
-    cueType: 'audio' | 'wait' | 'all';
+    cueType?: 'audio' | 'wait' | 'all';
+    exclude?: string;
+    nullText?: string | null;
   }>(),
   {
     label: '',
     cueType: 'all',
+    exclude: '',
+    nullText: null,
   },
 );
 const emit = defineEmits(['update']);
 
+const cueList = computed(() => {
+  const list: { value: string | null; name: string }[] = showModel.cues
+    .filter(filterCue)
+    .map((cue) => ({ value: cue.id, name: buildCueName(cue) }));
+  if (props.nullText != null) {
+    list.unshift({ value: null, name: props.nullText });
+  }
+  return list;
+});
+
 const filterCue = (cue: Cue): boolean => {
+  if (cue.id == props.exclude) {
+    return false;
+  }
   if (props.cueType == 'all') {
     return true;
   } else {
