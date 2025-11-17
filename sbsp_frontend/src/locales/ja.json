@@ -74,7 +74,11 @@
         "easeInOut": "EaseInOut",
         "intensity": "強度"
       },
-      "targetCue": "対象キュー"
+      "targetCue": "対象キュー",
+      "continueTargetCue": "連鎖対象キュー",
+      "playback": {
+        "title": "再生"
+      }
     },
     "number": "番号",
     "duration": "長さ",
@@ -187,7 +191,8 @@
     "cancel": "キャンセル",
     "done": "完了",
     "forExpertWarning": "何をしているのか理解している場合のみ、これを変更してください。",
-    "close": "閉じる"
+    "close": "閉じる",
+    "open": "開く"
   },
   "view": {
     "connect": {
