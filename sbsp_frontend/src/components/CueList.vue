@@ -211,8 +211,12 @@ import {
   mdiArrowRightBold,
   mdiChartBellCurveCumulative,
   mdiChevronDoubleDown,
+  mdiPauseCircleOutline,
+  mdiPlayCircleOutline,
   mdiRepeat,
+  mdiStopCircleOutline,
   mdiTimerSandEmpty,
+  mdiUploadCircleOutline,
   mdiVolumeHigh,
 } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
@@ -398,6 +402,14 @@ const getCueIcon = (type: string): string | undefined => {
       return mdiTimerSandEmpty;
     case 'fade':
       return mdiChartBellCurveCumulative;
+    case 'start':
+      return mdiPlayCircleOutline;
+    case 'stop':
+      return mdiStopCircleOutline;
+    case 'pause':
+      return mdiPauseCircleOutline;
+    case 'load':
+      return mdiUploadCircleOutline;
   }
 };
 
