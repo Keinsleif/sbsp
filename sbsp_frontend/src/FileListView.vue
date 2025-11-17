@@ -21,8 +21,13 @@
       </template>
     </v-treeview>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
-      <v-btn class="ml-auto" text="Cancel" variant="outlined" @click="returnResult(null)"></v-btn>
-      <v-btn :disabled="selected.length == 0" text="Open" color="primary" @click="returnResult(selected)"></v-btn>
+      <v-btn class="ml-auto" :text="t('general.cancel')" variant="outlined" @click="returnResult(null)"></v-btn>
+      <v-btn
+        :disabled="selected.length == 0"
+        :text="t('general.open')"
+        color="primary"
+        @click="returnResult(selected)"
+      ></v-btn>
     </v-footer>
   </div>
 </template>
@@ -33,6 +38,9 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { onMounted, onUnmounted, ref } from 'vue';
 import type { FileList } from './types/FileList.ts';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const extList = [
   'aiff',
@@ -63,6 +71,7 @@ const returnResult = (path: string[] | null) => {
 let unlisten: UnlistenFn | null = null;
 
 onMounted(() => {
+  getCurrentWebviewWindow().setTitle(t('view.fileSelector.title'));
   listen<FileList[]>('asset-list-update', (event) => {
     fileList.value = event.payload;
   }).then((unlisten_func) => {

@@ -17,7 +17,7 @@ use tokio::sync::{broadcast, watch};
 use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle, api::FileList, asset_processor::AssetProcessorCommand,
-    controller::state::ShowState, event::UiEvent,
+    controller::state::ShowState, event::UiEvent, manager::ProjectStatus, model::ProjectType,
 };
 
 #[derive(Clone)]
@@ -171,8 +171,10 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             },
                             WsCommand::RequestAssetList => {
                                 log::info!("Asset List reqested.");
-                                if let Some(model_dir) = state.backend_handle.model_handle.get_current_file_path().await
-                                && let Ok(file_list) = get_dirs(model_dir, None).await {
+                                if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
+                                && project_type == ProjectType::ProjectFolder
+                                && let Some(parent) = path.parent()
+                                && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
                                     let ws_message = WsFeedback::AssetList(file_list);
                                     if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                         log::info!("WebSocket client disconnected (send error).");

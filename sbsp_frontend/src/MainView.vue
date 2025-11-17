@@ -57,7 +57,7 @@ import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import { useAssetResult } from './stores/assetResult';
 import { useUiSettings } from './stores/uiSettings';
 import { getLockCursorToSelection } from './utils';
-import { menu } from './window-menu';
+import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const showModel = useShowModel();
@@ -153,8 +153,6 @@ invoke<ShowModel>('get_show_model')
   })
   .catch((e) => console.error(e.toString()));
 
-invoke<'remote' | 'main'>('get_side').then((side) => (uiState.side = side));
-
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
 const onVisibilityChange = () => {
@@ -166,8 +164,13 @@ const onVisibilityChange = () => {
 };
 
 onMounted(() => {
-  menu.setAsWindowMenu();
-  getCurrentWebviewWindow().setTitle((uiState.side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name);
+  createWindowMenu().then((menu) => {
+    menu.setAsWindowMenu();
+  });
+  invoke<'remote' | 'main'>('get_side').then((side) => {
+    uiState.side = side;
+    getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBSP Remote - ') + showModel.name);
+  });
   navigator.wakeLock.request('screen').then((value) => {
     wakeLock.value = value;
   });

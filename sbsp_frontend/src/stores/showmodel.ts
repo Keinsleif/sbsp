@@ -125,5 +125,42 @@ export const useShowModel = defineStore('showmodel', {
         }
       }
     },
+    addEmptyPlaybackCue(type: 'start' | 'stop' | 'pause' | 'load') {
+      const uiSettings = useUiSettings();
+      const uiState = useUiState();
+      let insertIndex;
+      if (uiState.selected != null) {
+        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+      } else {
+        return;
+      }
+      let newCue;
+      switch (type) {
+        case 'start':
+          newCue = structuredClone(toRaw(uiSettings.settings.template.start)) as Cue;
+          break;
+        case 'stop':
+          newCue = structuredClone(toRaw(uiSettings.settings.template.stop)) as Cue;
+          break;
+        case 'pause':
+          newCue = structuredClone(toRaw(uiSettings.settings.template.pause)) as Cue;
+          break;
+        case 'load':
+          newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
+          break;
+      }
+      newCue.id = v4();
+      const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
+      if (
+        targetCue != null &&
+        (newCue.params.type == 'start' ||
+          newCue.params.type == 'stop' ||
+          newCue.params.type == 'pause' ||
+          newCue.params.type == 'load')
+      ) {
+        newCue.params.target = uiState.selected;
+        invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+      }
+    },
   },
 });

@@ -1,6 +1,6 @@
 [package]
 name = "sbsp_backend"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 license = "Apache-2.0"
 
@@ -19,6 +19,7 @@ backend = [
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
+    "dep:async-recursion"
 ]
 apiserver = [
     "backend",
@@ -27,7 +28,6 @@ apiserver = [
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
-    "dep:async-recursion"
 ]
 apiclient = [
     "backend",

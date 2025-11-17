@@ -1,0 +1,9 @@
+{
+    "i18n-ally.enabledFrameworks": [
+        "vue"
+    ],
+    "i18n-ally.localesPaths": [
+        "sbsp_frontend/src/locales"
+    ],
+    "i18n-ally.keystyle": "nested"
+}

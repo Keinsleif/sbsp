@@ -4,11 +4,11 @@
       <tr>
         <th id="cuelist_cursor" width="53px"></th>
         <th id="cuelist_type" width="53px"></th>
-        <th id="cuelist_number" class="text-center" width="50px">Number</th>
-        <th id="cuelist_name">Name</th>
-        <th id="cuelist_pre_wait" class="text-center" width="100px">Pre-Wait</th>
-        <th id="cuelist_duration" class="text-center" width="100px">Duration</th>
-        <th id="cuelist_post_wait" class="text-center" width="100px">Post-Wait</th>
+        <th id="cuelist_number" class="text-center" width="60px">{{ t('main.number') }}</th>
+        <th id="cuelist_name">{{ t('main.name') }}</th>
+        <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.preWait') }}</th>
+        <th id="cuelist_duration" class="text-center" width="100px">{{ t('main.duration') }}</th>
+        <th id="cuelist_post_wait" class="text-center" width="100px">{{ t('main.postWait') }}</th>
         <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
         <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
@@ -211,8 +211,12 @@ import {
   mdiArrowRightBold,
   mdiChartBellCurveCumulative,
   mdiChevronDoubleDown,
+  mdiPauseCircleOutline,
+  mdiPlayCircleOutline,
   mdiRepeat,
+  mdiStopCircleOutline,
   mdiTimerSandEmpty,
+  mdiUploadCircleOutline,
   mdiVolumeHigh,
 } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
@@ -223,6 +227,9 @@ import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
 import { debounce } from 'vuetify/lib/util/helpers.mjs';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -395,6 +402,14 @@ const getCueIcon = (type: string): string | undefined => {
       return mdiTimerSandEmpty;
     case 'fade':
       return mdiChartBellCurveCumulative;
+    case 'start':
+      return mdiPlayCircleOutline;
+    case 'stop':
+      return mdiStopCircleOutline;
+    case 'pause':
+      return mdiPauseCircleOutline;
+    case 'load':
+      return mdiUploadCircleOutline;
   }
 };
 

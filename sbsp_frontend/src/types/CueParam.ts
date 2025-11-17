@@ -2,4 +2,4 @@
 import type { AudioCueParam } from "./AudioCueParam";
 import type { FadeParam } from "./FadeParam";
 
-export type CueParam = { "type": "audio" } & AudioCueParam | { "type": "wait", duration: number, } | { "type": "fade", target: string, volume: number, fadeParam: FadeParam, };
+export type CueParam = { "type": "audio" } & AudioCueParam | { "type": "wait", duration: number, } | { "type": "fade", target: string, volume: number, fadeParam: FadeParam, } | { "type": "start", target: string, } | { "type": "stop", target: string, } | { "type": "pause", target: string, } | { "type": "load", target: string, };
