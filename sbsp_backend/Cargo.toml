@@ -19,6 +19,7 @@ backend = [
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
+    "dep:async-recursion"
 ]
 apiserver = [
     "backend",
@@ -27,7 +28,6 @@ apiserver = [
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
-    "dep:async-recursion"
 ]
 apiclient = [
     "backend",
