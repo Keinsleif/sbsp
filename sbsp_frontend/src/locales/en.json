@@ -200,7 +200,8 @@
       "targetCue": "Target Cue",
       "playback": {
         "title": "Playback"
-      }
+      },
+      "continueTargetCue": "Continue Target Cue"
     },
     "number": "Number",
     "name": "Name",
