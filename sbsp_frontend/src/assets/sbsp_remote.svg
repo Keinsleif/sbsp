@@ -11,7 +11,7 @@
   <rect x="145" y="60" width="8" height="40" rx="2" fill="#D264F7"/>
   <rect x="115" y="70" width="8" height="20" rx="2" fill="#D264F7"/>
 
-  <text x="80" y="40" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#333333" text-anchor="middle">SBSP</text>
+  <text x="80" y="40" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#333333" text-anchor="middle">SBS</text>
 
   <text x="80" y="145" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#333333" text-anchor="middle">Remote</text>
 </svg>
