@@ -11,6 +11,19 @@
       <v-tab density="compact" value="fade" v-if="selectedCue != null && selectedCue.params.type == 'fade'">
         {{ t('main.bottomEditor.fade.title') }}
       </v-tab>
+      <v-tab
+        density="compact"
+        value="fade"
+        v-if="
+          selectedCue != null &&
+          (selectedCue.params.type == 'start' ||
+            selectedCue.params.type == 'stop' ||
+            selectedCue.params.type == 'pause' ||
+            selectedCue.params.type == 'load')
+        "
+      >
+        {{ t('main.bottomEditor.playback.title') }}
+      </v-tab>
     </v-tabs>
     <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
@@ -40,6 +53,20 @@
       >
         <fade-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
+      <v-tabs-window-item
+        v-if="
+          selectedCue != null &&
+          (selectedCue.params.type == 'start' ||
+            selectedCue.params.type == 'stop' ||
+            selectedCue.params.type == 'pause' ||
+            selectedCue.params.type == 'load')
+        "
+        value="fade"
+        reverse-transition="false"
+        transition="false"
+      >
+        <playback-basic-editor v-model="selectedCue" @update="edited" />
+      </v-tabs-window-item>
     </v-tabs-window>
   </v-sheet>
 </template>
@@ -52,6 +79,7 @@ import AudioBasicEditor from './editor/AudioBasicEditor.vue';
 import type { Cue } from '../types/Cue';
 import FadeBasicEditor from './editor/FadeBasicEditor.vue';
 import { useI18n } from 'vue-i18n';
+import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();

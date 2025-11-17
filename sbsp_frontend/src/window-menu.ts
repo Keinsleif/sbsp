@@ -105,6 +105,38 @@ export const createWindowMenu = async () => {
           showModel.addEmptyFadeCue();
         },
       }),
+      await MenuItem.new({
+        id: 'id_start_cue',
+        text: t('menu.cue.start'),
+        action: () => {
+          const showModel = useShowModel();
+          showModel.addEmptyPlaybackCue('start');
+        },
+      }),
+      await MenuItem.new({
+        id: 'id_stop_cue',
+        text: t('menu.cue.stop'),
+        action: () => {
+          const showModel = useShowModel();
+          showModel.addEmptyPlaybackCue('stop');
+        },
+      }),
+      await MenuItem.new({
+        id: 'id_pause_cue',
+        text: t('menu.cue.pause'),
+        action: () => {
+          const showModel = useShowModel();
+          showModel.addEmptyPlaybackCue('pause');
+        },
+      }),
+      await MenuItem.new({
+        id: 'id_load_cue',
+        text: t('menu.cue.load'),
+        action: () => {
+          const showModel = useShowModel();
+          showModel.addEmptyPlaybackCue('load');
+        },
+      }),
     ],
   });
 

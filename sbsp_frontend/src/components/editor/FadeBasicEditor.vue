@@ -3,7 +3,7 @@
     <cue-select
       v-model="target"
       class="flex-grow-0"
-      :label="t('main.bottomEditor.fade.targetCue')"
+      :label="t('main.bottomEditor.targetCue')"
       cue-type="audio"
       :disabled="selectedCue!.id in showState.activeCues"
       @update="saveEditorValue"
