@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [[bin]]
 name = "apiserver"
 path = "src/main.rs"
-required-features = ["backend", "apiserver"]
+required-features = ["backend", "apiserver", "dep:env_logger"]
 
 [features]
 default = ["backend"]
@@ -24,7 +24,6 @@ backend = [
 apiserver = [
     "backend",
     "dep:axum",
-    "dep:env_logger",
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
@@ -39,7 +38,6 @@ apiclient = [
     "dep:serde_json",
 ]
 type_export = []
-mdns-sd = ["dep:mdns-sd"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -52,12 +50,13 @@ kira = { version = "0.11.0", features = ["serde"], optional = true }
 symphonia = { version = "0.5.4", features = ["all"], optional = true }
 anyhow = { version = "1.0.98", optional = true }
 ebur128 = { version = "0.1.10", optional = true }
+async-recursion = { version = "1.1.1", optional = true }
 
 env_logger = { version = "0.11.8", optional = true }
+
 axum = { version = "0.8.4", features = ["ws"], optional = true }
 mdns-sd = { version = "0.15.1", optional = true, default-features = false, features = ["async"]}
 gethostname = { version = "1.0.2", optional = true }
-async-recursion = { version = "1.1.1", optional = true }
 
 reqwest = { version = "0.12.23", features = ["json"], optional = true }
 reqwest-websocket = { version = "0.5.1", optional = true }
