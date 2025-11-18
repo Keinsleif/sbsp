@@ -2,7 +2,7 @@
 name = "sbsp_backend"
 version = "0.1.2"
 edition = "2024"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [[bin]]
 name = "apiserver"
