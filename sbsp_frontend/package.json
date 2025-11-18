@@ -23,14 +23,14 @@
     "vue": "^3.5.24",
     "vue-i18n": "^11.1.12",
     "vue-router": "^4.6.3",
-    "vuetify": "^3.10.9"
+    "vuetify": "^3.10.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@intlify/unplugin-vue-i18n": "^11.0.1",
     "@mdi/js": "^7.4.47",
     "@tauri-apps/cli": "^2.9.4",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-prettier": "^10.2.0",
     "eslint": "^9.39.1",
