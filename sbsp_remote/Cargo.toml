@@ -4,7 +4,7 @@ version = "0.1.2"
 description = "A SBS Player Remote Control App powered by tauri."
 authors = ["Keinsleif"]
 edition = "2024"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
