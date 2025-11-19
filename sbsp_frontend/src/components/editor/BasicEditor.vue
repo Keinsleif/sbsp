@@ -58,7 +58,7 @@
           :label="t('main.bottomEditor.continueTargetCue')"
           cue-type="all"
           :exclude="selectedCue.id"
-          null-text="Next Cue"
+          :null-text="t('main.bottomEditor.basics.nextCue')"
           width="640px"
           :disabled="sequence == 'doNotContinue'"
           @update="saveEditorValue"
