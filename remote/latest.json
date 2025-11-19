@@ -1,51 +1,23 @@
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2025-11-17T14:27:11.516Z",
+  "pub_date": "2025-11-19T15:30:44.334Z",
   "platforms": {
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWdSYzl4N24xSCtmNmJaa2ppcm9FMVliNS9YZEViTHFWWkk2SmFNbFBoUkZ0aXhSbUY4K0NoTEQwODZKR1Bka1dVLzQ2SFpzTGh2ZDdFUVBlM0syR3dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MTI3CWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfYW1kNjQuQXBwSW1hZ2UKdm1uYWMyM2VsQ3F5N28xL3VCMU1TVkhRUkNITnpzeXp2RmNqbkdieVJHNTY0Vkhob25xMXZ5aEdkM3pxZkRSbm56MHlnbHNrTWFMTTQwOXNIYUlhQ3c9PQo=",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXFER1lUZU5jKzFBYmJpN1lpb2lZdGJ0MzNPV2NBL0I2VWJyYUFRMk5tTERvZFhYbEQ5V20vdXR2Y0hENzNFb0VDTnFvZTNBNzdSOXF5M1ZLUGxMa3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzNTY2MjM3CWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMC4xLjNfYW1kNjQuQXBwSW1hZ2UKZzZDUmZvM0Z4MnJJa0p4ek9nRlBHSDcyT3FJRkdxSm9YU2EzV0JXNFRIUWFFL2tjS1dRS1pGMWptNngxNmkwY2RadGxSR3Bpb3dBSi9EYUR0bUpPQkE9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.3/SBS.Player.Remote_0.1.3_amd64.AppImage"
     },
     "linux-x86_64-appimage": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWdSYzl4N24xSCtmNmJaa2ppcm9FMVliNS9YZEViTHFWWkk2SmFNbFBoUkZ0aXhSbUY4K0NoTEQwODZKR1Bka1dVLzQ2SFpzTGh2ZDdFUVBlM0syR3dJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MTI3CWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfYW1kNjQuQXBwSW1hZ2UKdm1uYWMyM2VsQ3F5N28xL3VCMU1TVkhRUkNITnpzeXp2RmNqbkdieVJHNTY0Vkhob25xMXZ5aEdkM3pxZkRSbm56MHlnbHNrTWFMTTQwOXNIYUlhQ3c9PQo=",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXFER1lUZU5jKzFBYmJpN1lpb2lZdGJ0MzNPV2NBL0I2VWJyYUFRMk5tTERvZFhYbEQ5V20vdXR2Y0hENzNFb0VDTnFvZTNBNzdSOXF5M1ZLUGxMa3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzNTY2MjM3CWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMC4xLjNfYW1kNjQuQXBwSW1hZ2UKZzZDUmZvM0Z4MnJJa0p4ek9nRlBHSDcyT3FJRkdxSm9YU2EzV0JXNFRIUWFFL2tjS1dRS1pGMWptNngxNmkwY2RadGxSR3Bpb3dBSi9EYUR0bUpPQkE9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.3/SBS.Player.Remote_0.1.3_amd64.AppImage"
     },
     "linux-x86_64-deb": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXQrbVRaWmJxQTE0c0dXV1VndWFsSGRuWXNUbnNsdGpaSUtHbUMrUldmUTR4enpRYis4VURET2l4YWZJMUprK3FkdExqTW5pV2RQQTZ0SkdKbTNZMGdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MTI3CWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfYW1kNjQuZGViCjlJUlduZTE4RGhlWnlrUjN0K0ZCTjNoU29DUlNSLzZOUU95RE1xTHdsYmNjdGdNZVRUb05pdS9VYVFHMTJMcTlvMVdJaitVbWw0SFRVTXBYQko2eEJRPT0K",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_amd64.deb"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWdvaENYOGN2SmZzR2lITEZqZXRYaEE1WkNjazBFOVJKV1R3S2RQa3Uwb1daallPNHhpeWhlMmNyWm5XSCtLN1FUQzZUOTJ6SlMyWURKSE5icllCSkFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzNTY2MjM3CWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMC4xLjNfYW1kNjQuZGViCmRhNUNBdWtoY3p5T1B0d0ZyeWEwUHM5U3ZpZFlndk5renN2K0FXZ1FXNmVXVE8ybXloQVZobTRQWXNTNGRCU2RYSHBGZkpVakpYcXRpYzJXSk1jTENnPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.3/SBS.Player.Remote_0.1.3_amd64.deb"
     },
     "linux-x86_64-rpm": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWpDNzRjUEpzc3gxMS9mNW91b01ZeFNsaWs3U2FhazhtcHJWemFEY2hNeDdja0k3ZVdGZDgrL2ZzSzRuUklBNmJsT05DSWZLV0t6VVFwT285eUgxU0FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MTI3CWZpbGU6U0JTUCBSZW1vdGUtMC4xLjItMS54ODZfNjQucnBtClBtOCs3TC9oci9kaS9FOWZ4SU96bERPVHpyZzhnSVVnY1ZyQTM3N05QMUZqOEVSVFFRaDJ1VzRvZE44WFA4cnVsd3VaaURVSGI2M3krSXp2ejhyZ0JBPT0K",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote-0.1.2-1.x86_64.rpm"
-    },
-    "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWgzRXc5QmpnekdWOWxrWmNlWlVBTzkwUDVpS3hncnNnNjZ0WE9idXlISUpIZ3ZFcHA1ZDdMdlNGYTNraHJIcXpoclZ4SitIbHc1MmlReW55alJ4dGdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MjUyCWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfeDY0X2VuLVVTLm1zaQpBeGhjcWhsYVlvUVpyUElUelNYL3pvQTUrWW4yTXZ0MXp6ZXVPcDc1QW5sM1dCVUVRQ0R1bS8rQUd6ZW0rNXl2WmFTbUNkOXNkeEJ1eTUzekt5dU5Bdz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_x64_en-US.msi"
-    },
-    "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWgzRXc5QmpnekdWOWxrWmNlWlVBTzkwUDVpS3hncnNnNjZ0WE9idXlISUpIZ3ZFcHA1ZDdMdlNGYTNraHJIcXpoclZ4SitIbHc1MmlReW55alJ4dGdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MjUyCWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfeDY0X2VuLVVTLm1zaQpBeGhjcWhsYVlvUVpyUElUelNYL3pvQTUrWW4yTXZ0MXp6ZXVPcDc1QW5sM1dCVUVRQ0R1bS8rQUd6ZW0rNXl2WmFTbUNkOXNkeEJ1eTUzekt5dU5Bdz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_x64_en-US.msi"
-    },
-    "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXBrRVAwM1QvMTcvQzl4V1pPZ0dTMWxhcXJSV3djTWIzY2dKVWoxRVUyeUx5dC9NSE1POCtzeWE3bFgrQmxPMjZJM3JtZTQvakI3dnA4QWVMbnh4UVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5MjUyCWZpbGU6U0JTUCBSZW1vdGVfMC4xLjJfeDY0LXNldHVwLmV4ZQpDNjZRVHQyNlZlWW5UaVhiK0Vnc21lVzUzQ0xNcXdOTCs4TVg3RHN0bDVyeGpKbitwTjVZNFE0YUdDQ1lRNlQrSGVJQ0ZhRXd3N3R3bTZFODNEWG9Edz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_0.1.2_x64-setup.exe"
-    },
-    "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWxwNHVSNWdZSDlTQU9ML0piS3Y4VXFYVFp6OEx4WTlucHhzVHNjUE53ald0OTBQYmNaSm83WVlTcGZacWl2azFndDV5MHNuMmZkeitvcmcveVpOekEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5NjI2CWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negplTHAzVEVpSUtvS1VkZ1hab1hMYWEzOVprZ1Q4ZFZwSmZVdHJ0VERRR08vQndDeDYvZzVWcWxGZFlXQVduajJLN24zS2xJSG5yMlZacE41TExJOUREZz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_universal.app.tar.gz"
-    },
-    "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWxwNHVSNWdZSDlTQU9ML0piS3Y4VXFYVFp6OEx4WTlucHhzVHNjUE53ald0OTBQYmNaSm83WVlTcGZacWl2azFndDV5MHNuMmZkeitvcmcveVpOekEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5NjI2CWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negplTHAzVEVpSUtvS1VkZ1hab1hMYWEzOVprZ1Q4ZFZwSmZVdHJ0VERRR08vQndDeDYvZzVWcWxGZFlXQVduajJLN24zS2xJSG5yMlZacE41TExJOUREZz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_universal.app.tar.gz"
-    },
-    "darwin-aarch64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWxwNHVSNWdZSDlTQU9ML0piS3Y4VXFYVFp6OEx4WTlucHhzVHNjUE53ald0OTBQYmNaSm83WVlTcGZacWl2azFndDV5MHNuMmZkeitvcmcveVpOekEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5NjI2CWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negplTHAzVEVpSUtvS1VkZ1hab1hMYWEzOVprZ1Q4ZFZwSmZVdHJ0VERRR08vQndDeDYvZzVWcWxGZFlXQVduajJLN24zS2xJSG5yMlZacE41TExJOUREZz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_universal.app.tar.gz"
-    },
-    "darwin-x86_64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWxwNHVSNWdZSDlTQU9ML0piS3Y4VXFYVFp6OEx4WTlucHhzVHNjUE53ald0OTBQYmNaSm83WVlTcGZacWl2azFndDV5MHNuMmZkeitvcmcveVpOekEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzMzg5NjI2CWZpbGU6U0JTUCBSZW1vdGUuYXBwLnRhci5negplTHAzVEVpSUtvS1VkZ1hab1hMYWEzOVprZ1Q4ZFZwSmZVdHJ0VERRR08vQndDeDYvZzVWcWxGZFlXQVduajJLN24zS2xJSG5yMlZacE41TExJOUREZz09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.2/SBSP.Remote_universal.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWpDMVhLVFJHdnlHdnJzcXB5V1B3UXFnTUF2TzU4RjFaMzloaFI4ZkNBK0Q5eVlVUnlvTjhCbzFCMVNtUEt6N2c3VGhVdUJOb28zUUZYVWUzWG95THdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYzNTY2MjM3CWZpbGU6U0JTIFBsYXllciBSZW1vdGUtMC4xLjMtMS54ODZfNjQucnBtCjIzeWlJcFIrR1FWbytpMi8xOTdMMDBxU1VHeGdlRHNUaTFKM1RObGFhZXBuakpsSklCTElVbitVU0kwcVFnQ1lTckV5ZnlhWHFJdHBSRFVyK1BHT0RRPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v0.1.3/SBS.Player.Remote-0.1.3-1.x86_64.rpm"
     }
   }
 }
