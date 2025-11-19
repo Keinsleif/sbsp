@@ -60,7 +60,8 @@
       },
       "basics": {
         "timestamp": "タイムスタンプ",
-        "title": "基本"
+        "title": "基本",
+        "nextCue": "次のキュー"
       },
       "fade": {
         "targetVolume": "目標音量",
