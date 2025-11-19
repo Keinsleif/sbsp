@@ -12,7 +12,7 @@ async fn main() -> Result<(), anyhow::Error> {
         backend_handle,
         state_rx,
         event_tx,
-        Some("SBSP API Server".into()),
+        Some("SBS Player API Server".into()),
     )
     .await?;
 

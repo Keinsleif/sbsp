@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-2 ga-2">
+  <v-sheet flat class="d-flex flex-column pa-2 ga-3">
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
@@ -45,10 +45,10 @@
     ></waveform-viewer>
     <div class="d-flex flex-row ga-4 align-end">
       <volume-fader
-        class="mt-4"
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
         :disabled="selectedCue!.id in showState.activeCues"
+        :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
@@ -57,7 +57,7 @@
         "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
-        <v-tooltip target="cursor">
+        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.lufsDescription')">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
@@ -68,9 +68,8 @@
               >LUFS</v-btn
             >
           </template>
-          <span>{{ t('main.bottomEditor.timeLevels.lufsDescription') }}</span>
         </v-tooltip>
-        <v-tooltip target="cursor">
+        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
@@ -81,12 +80,10 @@
               >MAX</v-btn
             >
           </template>
-          <span>{{ t('main.bottomEditor.timeLevels.peakDescription') }}</span>
         </v-tooltip>
       </v-btn-group>
       <v-divider vertical inset thickness="2" />
       <panning-fader
-        class="mt-4"
         :label="t('main.bottomEditor.timeLevels.pan')"
         :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue"
@@ -120,8 +117,10 @@ import { useShowState } from '../../stores/showstate';
 import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 
 const { t } = useI18n();
+const { smAndDown, width } = useDisplay();
 
 const showState = useShowState();
 const assetResult = useAssetResult();

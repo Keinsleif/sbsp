@@ -1,6 +1,6 @@
 <template>
   <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
-    <v-sheet flat class="d-flex flex-column ga-2" width="175px">
+    <v-sheet flat class="d-flex flex-column ga-2 flex-shrink-0" width="175px">
       <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
@@ -35,7 +35,7 @@
         @update="saveEditorValue"
       ></time-input>
     </v-sheet>
-    <v-sheet flat class="d-flex flex-grow-1 flex-column ga-2 justify-start">
+    <v-sheet flat class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2 justify-start">
       <text-input
         :placeholder="buildCueName(selectedCue)"
         v-model="name"
@@ -58,8 +58,8 @@
           :label="t('main.bottomEditor.continueTargetCue')"
           cue-type="all"
           :exclude="selectedCue.id"
-          null-text="Next Cue"
-          width="640px"
+          :null-text="t('main.bottomEditor.basics.nextCue')"
+          max-width="640px"
           :disabled="sequence == 'doNotContinue'"
           @update="saveEditorValue"
         />
@@ -111,7 +111,7 @@ const target = ref(
     selectedCue.value.sequence.type != 'doNotContinue' &&
     selectedCue.value.sequence.targetId != NIL
     ? selectedCue.value.sequence.targetId
-    : '',
+    : null,
 );
 
 watch(selectedCue, () => {
@@ -128,9 +128,7 @@ watch(selectedCue, () => {
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   target.value =
-    selectedCue.value != null &&
-    selectedCue.value.sequence.type != 'doNotContinue' &&
-    selectedCue.value.sequence.targetId != NIL
+    selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
       ? selectedCue.value.sequence.targetId
       : null;
 });
@@ -138,7 +136,11 @@ watch(selectedCue, () => {
 watch(
   () => getDuration(selectedCue.value),
   () => {
-    duration.value = getDuration(selectedCue.value);
+    const cueDuration = getDuration(selectedCue.value);
+    duration.value = cueDuration;
+    if (sequence.value == 'autoFollow') {
+      postWait.value = cueDuration;
+    }
   },
 );
 
@@ -154,12 +156,22 @@ const saveEditorValue = () => {
   }
   if (sequence.value != null) {
     selectedCue.value.sequence.type = sequence.value;
-    if (selectedCue.value.sequence.type == 'autoContinue') {
-      selectedCue.value.sequence.postWait = 0;
+    if (selectedCue.value.sequence.type == 'doNotContinue') {
+      target.value = null;
+      postWait.value = null;
+    } else {
+      selectedCue.value.sequence.targetId = target.value != null ? target.value : null;
+      if (selectedCue.value.sequence.type == 'autoContinue') {
+        if (postWait.value != null) {
+          selectedCue.value.sequence.postWait = postWait.value;
+        } else {
+          postWait.value = 0;
+          selectedCue.value.sequence.postWait = 0;
+        }
+      } else {
+        postWait.value = getDuration(selectedCue.value);
+      }
     }
-  }
-  if (postWait.value != null && selectedCue.value.sequence.type == 'autoContinue') {
-    selectedCue.value.sequence.postWait = postWait.value;
   }
   if (name.value != null) {
     const newName = name.value.trim();
@@ -171,9 +183,6 @@ const saveEditorValue = () => {
   }
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
-  }
-  if (target.value != null && selectedCue.value.sequence.type != 'doNotContinue') {
-    selectedCue.value.sequence.targetId = target.value;
   }
   emit('update');
 };

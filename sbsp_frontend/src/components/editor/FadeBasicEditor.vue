@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-4 ga-2">
+  <v-sheet flat class="d-flex flex-column pa-4 ga-4">
     <cue-select
       v-model="target"
       class="flex-grow-0"
@@ -9,10 +9,10 @@
       @update="saveEditorValue"
     />
     <volume-fader
-      class="mt-4"
       v-model="volume"
       :label="t('main.bottomEditor.fade.targetVolume')"
       :disabled="selectedCue!.id in showState.activeCues"
+      :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
       @update:model-value="saveEditorValue"
       @mousedown="sliderChanging = true"
       @mouseup="
@@ -42,8 +42,10 @@ import CueSelect from '../input/CueSelect.vue';
 import VolumeFader from '../input/VolumeFader.vue';
 import { NIL } from 'uuid';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 
 const { t } = useI18n();
+const { smAndDown, xs } = useDisplay();
 const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();

@@ -166,7 +166,8 @@
     "bottomEditor": {
       "basics": {
         "title": "Basics",
-        "timestamp": "Timestamp"
+        "timestamp": "Timestamp",
+        "nextCue": "Next Cue"
       },
       "audio": {
         "title": "Audio",

@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-3 pa-2 border-md rounded position-relative">
+  <div class="pa-2 border-md rounded position-relative">
     <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
     <v-sheet class="d-flex flex-row align-end ga-4 mt-2">
       <v-checkbox
@@ -23,7 +23,7 @@
         v-model="easingType"
         :label="t('main.bottomEditor.input.curve')"
         class="flex-grow-0"
-        width="135px"
+        width="160px"
         :items="[
           { value: 'linear', name: t('main.bottomEditor.input.linear') },
           { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },

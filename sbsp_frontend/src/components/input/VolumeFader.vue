@@ -2,7 +2,7 @@
   <v-slider
     hide-details
     v-model="faderPosition"
-    :class="props.direction == 'vertical' ? $style['vertical-fader'] : ''"
+    :class="props.direction == 'vertical' ? $style['vertical-fader'] : 'mb-2'"
     thumb-label
     show-ticks="always"
     step="0.05"
@@ -18,17 +18,20 @@
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
     </template>
     <template v-slot:append>
-      <volume-input v-model="volume" @mousedown.stop @mouseup.stop @dblclick.stop></volume-input>
+      <volume-input
+        v-show="!props.hideInput"
+        v-model="volume"
+        @mousedown.stop
+        @mouseup.stop
+        @dblclick.stop
+      ></volume-input>
     </template>
   </v-slider>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useDisplay } from 'vuetify';
 import VolumeInput from './VolumeInput.vue';
-
-const { smAndDown } = useDisplay();
 
 const faderToDecibels = (fader: number): number => {
   if (fader > -10) {
@@ -50,10 +53,19 @@ const decibelsToFader = (decibels: number): number => {
   }
 };
 
-const props = defineProps<{
-  label?: string;
-  direction?: 'horizontal' | 'vertical';
-}>();
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    direction?: 'horizontal' | 'vertical';
+    hideInput?: boolean;
+    thumbAmount?: 'full' | 'decreased' | 'baseOnly';
+  }>(),
+  {
+    direction: 'horizontal',
+    hideInput: false,
+    thumbAmount: 'full',
+  },
+);
 
 const volume = defineModel<number>({ default: 0 });
 
@@ -67,13 +79,16 @@ const faderPosition = computed({
 });
 
 const tickLabels = computed(() => {
-  if (smAndDown.value) {
+  if (props.thumbAmount == 'decreased') {
     return {
       10: '10',
       0: '0',
       '-10': '-10',
-      '-20': '-30',
       '-30': '-60',
+    } as Record<number, string>;
+  } else if (props.thumbAmount == 'baseOnly') {
+    return {
+      0: '0',
     } as Record<number, string>;
   } else {
     return {
