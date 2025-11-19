@@ -38,7 +38,7 @@
         <v-tooltip activator="parent" location="end">{{ t('general.forExpertWarning') }}</v-tooltip>
       </v-checkbox>
     </v-sheet>
-    <v-sheet flat class="d-flex flex-row ga-4 justify-space-evenly">
+    <v-sheet flat class="d-flex ga-4 justify-space-evenly" :class="mdAndDown ? 'flex-column' : 'flex-row'">
       <fade-param-input
         v-model="fadeInParam"
         :label="t('main.bottomEditor.audio.fadeIn')"
@@ -66,8 +66,10 @@ import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
 import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 
 const { t } = useI18n();
+const { mdAndDown } = useDisplay();
 
 const showState = useShowState();
 const uiState = useUiState();

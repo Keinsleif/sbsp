@@ -61,7 +61,7 @@ const { t } = useI18n();
 const isRunning = ref<boolean | null>(null);
 const server_port = ref<string>('');
 const isDiscoverable = ref<boolean | null>(null);
-const server_name = ref<string>('Untitled SBSP Server');
+const server_name = ref<string>('Untitled SBS Player Server');
 const error_messages = ref<string[]>([]);
 
 let unlisten: UnlistenFn | null = null;

@@ -101,7 +101,7 @@ impl Executor {
                 }
             }
             ExecutorCommand::Execute(cue_id) => {
-                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id && !instance.executed) {
+                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id && instance.executed) {
                     log::warn!("Cue already executed. cue_id={}", cue_id);
                 } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                     let mut instance_id = Uuid::now_v7();
