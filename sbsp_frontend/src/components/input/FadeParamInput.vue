@@ -23,7 +23,7 @@
         v-model="easingType"
         :label="t('main.bottomEditor.input.curve')"
         class="flex-grow-0"
-        width="135px"
+        width="160px"
         :items="[
           { value: 'linear', name: t('main.bottomEditor.input.linear') },
           { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },
