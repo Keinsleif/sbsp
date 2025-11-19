@@ -111,7 +111,7 @@ const target = ref(
     selectedCue.value.sequence.type != 'doNotContinue' &&
     selectedCue.value.sequence.targetId != NIL
     ? selectedCue.value.sequence.targetId
-    : '',
+    : null,
 );
 
 watch(selectedCue, () => {
@@ -128,9 +128,7 @@ watch(selectedCue, () => {
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   target.value =
-    selectedCue.value != null &&
-    selectedCue.value.sequence.type != 'doNotContinue' &&
-    selectedCue.value.sequence.targetId != NIL
+    selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
       ? selectedCue.value.sequence.targetId
       : null;
 });
@@ -138,7 +136,11 @@ watch(selectedCue, () => {
 watch(
   () => getDuration(selectedCue.value),
   () => {
-    duration.value = getDuration(selectedCue.value);
+    const cueDuration = getDuration(selectedCue.value);
+    duration.value = cueDuration;
+    if (sequence.value == 'autoFollow') {
+      postWait.value = cueDuration;
+    }
   },
 );
 
@@ -154,12 +156,22 @@ const saveEditorValue = () => {
   }
   if (sequence.value != null) {
     selectedCue.value.sequence.type = sequence.value;
-    if (selectedCue.value.sequence.type == 'autoContinue') {
-      selectedCue.value.sequence.postWait = 0;
+    if (selectedCue.value.sequence.type == 'doNotContinue') {
+      target.value = null;
+      postWait.value = null;
+    } else {
+      selectedCue.value.sequence.targetId = target.value != null ? target.value : null;
+      if (selectedCue.value.sequence.type == 'autoContinue') {
+        if (postWait.value != null) {
+          selectedCue.value.sequence.postWait = postWait.value;
+        } else {
+          postWait.value = 0;
+          selectedCue.value.sequence.postWait = 0;
+        }
+      } else {
+        postWait.value = getDuration(selectedCue.value);
+      }
     }
-  }
-  if (postWait.value != null && selectedCue.value.sequence.type == 'autoContinue') {
-    selectedCue.value.sequence.postWait = postWait.value;
   }
   if (name.value != null) {
     const newName = name.value.trim();
@@ -171,9 +183,6 @@ const saveEditorValue = () => {
   }
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
-  }
-  if (target.value != null && selectedCue.value.sequence.type != 'doNotContinue') {
-    selectedCue.value.sequence.targetId = target.value;
   }
   emit('update');
 };
