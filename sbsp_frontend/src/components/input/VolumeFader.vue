@@ -2,7 +2,7 @@
   <v-slider
     hide-details
     v-model="faderPosition"
-    :class="props.direction == 'vertical' ? $style['vertical-fader'] : ''"
+    :class="props.direction == 'vertical' ? $style['vertical-fader'] : 'mb-2'"
     thumb-label
     show-ticks="always"
     step="0.05"
