@@ -56,7 +56,7 @@
         "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
-        <v-tooltip target="cursor">
+        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.lufsDescription')">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
@@ -67,9 +67,8 @@
               >LUFS</v-btn
             >
           </template>
-          <span>{{ t('main.bottomEditor.timeLevels.lufsDescription') }}</span>
         </v-tooltip>
-        <v-tooltip target="cursor">
+        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
@@ -80,7 +79,6 @@
               >MAX</v-btn
             >
           </template>
-          <span>{{ t('main.bottomEditor.timeLevels.peakDescription') }}</span>
         </v-tooltip>
       </v-btn-group>
       <v-divider vertical inset thickness="2" />
