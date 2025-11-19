@@ -1,6 +1,7 @@
 <template>
   <v-slider
     hide-details
+    class="mb-2"
     v-model="faderPosition"
     thumb-label
     show-ticks="always"

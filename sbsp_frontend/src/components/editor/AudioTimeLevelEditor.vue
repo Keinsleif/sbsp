@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-2 ga-2">
+  <v-sheet flat class="d-flex flex-column pa-2 ga-3">
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
@@ -45,7 +45,6 @@
     ></waveform-viewer>
     <div class="d-flex flex-row ga-4 align-end">
       <volume-fader
-        class="mt-4"
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
         :disabled="selectedCue!.id in showState.activeCues"
@@ -86,7 +85,6 @@
       </v-btn-group>
       <v-divider vertical inset thickness="2" />
       <panning-fader
-        class="mt-4"
         :label="t('main.bottomEditor.timeLevels.pan')"
         :disabled="selectedCue!.id in showState.activeCues"
         @update:model-value="saveEditorValue"
