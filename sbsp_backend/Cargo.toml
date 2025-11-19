@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [[bin]]
 name = "apiserver"
 path = "src/main.rs"
-required-features = ["backend", "apiserver", "dep:env_logger"]
+required-features = ["backend", "apiserver", "cli"]
 
 [features]
 default = ["backend"]
@@ -37,6 +37,7 @@ apiclient = [
     "dep:gethostname",
     "dep:serde_json",
 ]
+cli = ["dep:env_logger"]
 type_export = []
 
 [dependencies]
