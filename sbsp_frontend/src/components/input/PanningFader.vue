@@ -19,6 +19,7 @@
     </template>
     <template v-slot:append>
       <v-number-input
+        v-show="!props.hideInput"
         v-model="panning"
         :min="-1"
         :max="1"
@@ -39,10 +40,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps<{
-  label?: string;
-  direction?: 'horizontal' | 'vertical';
-}>();
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    direction?: 'horizontal' | 'vertical';
+    hideInput?: boolean;
+  }>(),
+  {
+    direction: 'horizontal',
+    hideInput: false,
+  },
+);
 
 const panning = defineModel<number>({ default: 0 });
 

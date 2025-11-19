@@ -1,6 +1,6 @@
 <template>
   <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
-    <v-sheet flat class="d-flex flex-column ga-2" width="175px">
+    <v-sheet flat class="d-flex flex-column ga-2 flex-shrink-0" width="175px">
       <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
@@ -35,7 +35,7 @@
         @update="saveEditorValue"
       ></time-input>
     </v-sheet>
-    <v-sheet flat class="d-flex flex-grow-1 flex-column ga-2 justify-start">
+    <v-sheet flat class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2 justify-start">
       <text-input
         :placeholder="buildCueName(selectedCue)"
         v-model="name"
@@ -59,7 +59,7 @@
           cue-type="all"
           :exclude="selectedCue.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
-          width="640px"
+          max-width="640px"
           :disabled="sequence == 'doNotContinue'"
           @update="saveEditorValue"
         />

@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-3 pa-2 border-md rounded position-relative">
+  <div class="pa-2 border-md rounded position-relative">
     <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
     <v-sheet class="d-flex flex-row align-end ga-4 mt-2">
       <v-checkbox

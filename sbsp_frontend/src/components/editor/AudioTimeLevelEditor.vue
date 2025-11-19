@@ -48,6 +48,7 @@
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
         :disabled="selectedCue!.id in showState.activeCues"
+        :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
@@ -116,8 +117,10 @@ import { useShowState } from '../../stores/showstate';
 import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 
 const { t } = useI18n();
+const { smAndDown, width } = useDisplay();
 
 const showState = useShowState();
 const assetResult = useAssetResult();
