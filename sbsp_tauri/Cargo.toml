@@ -1,6 +1,6 @@
 [package]
 name = "sbsp_tauri"
-version = "0.1.2"
+version = "0.1.3"
 description = "A SBS Player Frontend App powered by tauri."
 authors = ["Keinsleif"]
 edition = "2024"
