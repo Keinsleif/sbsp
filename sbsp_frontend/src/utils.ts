@@ -84,7 +84,7 @@ export const buildCueName = (cue: Cue | null): string => {
   }
   switch (cue.params.type) {
     case 'audio':
-      return `Play ${cue.params.target.replace(/^.*[\\/]/, '')}`;
+      return `${cue.params.target.replace(/^.*[\\/]/, '')}`;
     case 'wait':
       return `Wait ${secondsToHMR(cue.params.duration)}`;
     case 'fade': {
