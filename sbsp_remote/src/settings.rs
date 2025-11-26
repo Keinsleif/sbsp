@@ -14,6 +14,7 @@ use hotkey::HotkeySettings;
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalSettings {
     pub general: GeneralSettings,
+    pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
 }
@@ -54,6 +55,22 @@ impl Default for GeneralSettings {
             seek_amount: 5.0,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AppearanceSettings {
+    pub language: Option<String>,
+    pub dark_mode: DarkMode,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[serde(rename_all = "camelCase")]
+pub enum DarkMode {
+    #[default]
+    Dark,
+    Light,
+    System,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

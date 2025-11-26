@@ -16,6 +16,7 @@
           <v-tab :text="t('dialog.settings.tab.remote')" value="remote"></v-tab>
           <v-sheet class="pa-1 text-caption">{{ t('dialog.settings.tab.category.global') }}</v-sheet>
           <v-tab :text="t('dialog.settings.tab.general')" value="globalGeneral"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.appearance')" value="appearance"></v-tab>
           <v-tab :text="t('dialog.settings.tab.hotkey')" value="hotkey"></v-tab>
           <v-tab :text="t('dialog.settings.tab.template')" value="template"></v-tab>
         </v-tabs>
@@ -101,6 +102,44 @@
               autocomplete="off"
               @keydown.stop
             ></v-number-input>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="appearance" class="pa-4">
+            <v-sheet class="d-flex flex-column ga-4">
+              <v-select
+                hide-details
+                persistent-placeholder
+                v-model="editingSettings.global.appearance.language"
+                :label="t('dialog.settings.global.appearance.language')"
+                :items="[
+                  { value: null, name: t('dialog.settings.global.appearance.systemLanguage') },
+                  { value: 'en', name: 'English' },
+                  { value: 'ja', name: '日本語' },
+                ]"
+                item-value="value"
+                item-title="name"
+                variant="outlined"
+                density="compact"
+                autocomplete="off"
+                @keydown.stop
+              ></v-select>
+              <v-select
+                hide-details
+                persistent-placeholder
+                v-model="editingSettings.global.appearance.darkMode"
+                :label="t('dialog.settings.global.appearance.darkMode')"
+                :items="[
+                  { value: 'system', name: t('dialog.settings.global.appearance.systemSettings') },
+                  { value: 'dark', name: 'Dark' },
+                  { value: 'light', name: 'Light' },
+                ]"
+                item-value="value"
+                item-title="name"
+                variant="outlined"
+                density="compact"
+                autocomplete="off"
+                @keydown.stop
+              ></v-select>
+            </v-sheet>
           </v-tabs-window-item>
           <v-tabs-window-item value="hotkey" class="pa-3">
             <h2 class="mb-3">{{ t('dialog.settings.global.hotkey.playback.title') }}</h2>

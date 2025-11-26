@@ -2,10 +2,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
-import { useI18n } from 'vue-i18n';
+import { i18n } from './i18n';
 
 export const createWindowMenu = async () => {
-  const { t } = useI18n();
+  const { t } = i18n.global;
   const side = await invoke<string>('get_side', {});
 
   let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];

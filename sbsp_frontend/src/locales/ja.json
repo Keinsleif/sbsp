@@ -118,7 +118,8 @@
         "audio": "音声",
         "remote": "リモート操作",
         "hotkey": "ホットキー",
-        "template": "テンプレート"
+        "template": "テンプレート",
+        "appearance": "外観"
       },
       "preset": {
         "hotkeyCursor": {
@@ -177,6 +178,12 @@
           "wait": "待機キュー",
           "builtFromCueParam": "** キューのパラメータから自動作成 **",
           "fade": "フェードキュー"
+        },
+        "appearance": {
+          "darkMode": "ダークモード",
+          "language": "言語",
+          "systemLanguage": "システムの言語",
+          "systemSettings": "システムの設定"
         }
       }
     },
