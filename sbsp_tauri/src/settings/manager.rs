@@ -1,8 +1,8 @@
 use std::path::Path;
 use tokio::sync::{RwLock, watch};
 
-use sbsp_backend::BackendSettings;
 use super::GlobalSettings;
+use sbsp_backend::BackendSettings;
 
 pub struct GlobalSettingsManager {
     settings: RwLock<GlobalSettings>,
@@ -43,7 +43,9 @@ impl GlobalSettingsManager {
     pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
-        let new_settings = tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalSettings>(&content)).await??;
+        let new_settings =
+            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalSettings>(&content))
+                .await??;
 
         self.update(new_settings).await;
 
@@ -55,8 +57,7 @@ impl GlobalSettingsManager {
         let settings = self.settings.read().await.clone();
 
         let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
-                .await??;
+            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
 
         if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent).await?;
