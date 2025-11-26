@@ -203,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw, watch } from 'vue';
+import { ref, toRaw } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import {
   mdiArrowDown,
@@ -226,7 +226,6 @@ import { buildCueName, calculateDuration, formatToSeconds, getLockCursorToSelect
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
-import { debounce } from 'vuetify/lib/util/helpers.mjs';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -235,14 +234,6 @@ const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
-
-watch(
-  () => showModel.cues,
-  debounce(() => {
-    assetResult.updateAssetData();
-  }, 500),
-  { deep: true },
-);
 
 const onArrowUp = (e: KeyboardEvent) => {
   if (uiState.selected != null) {

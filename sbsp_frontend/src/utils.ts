@@ -1,3 +1,4 @@
+import { MaybeRef, unref } from 'vue';
 import { useAssetResult } from './stores/assetResult';
 import { useShowModel } from './stores/showmodel';
 import { useUiSettings } from './stores/uiSettings';
@@ -277,3 +278,21 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
       return 0;
   }
 };
+
+export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
+  let timeoutId: NodeJS.Timeout;
+  const wrap = function (...args: unknown[]) {
+    wrap.debouncing = true;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn(...args);
+      wrap.debouncing = false;
+    }, unref(delay));
+  };
+  wrap.debouncing = false;
+  wrap.clear = () => {
+    clearTimeout(timeoutId);
+  };
+  wrap.immediate = fn;
+  return wrap;
+}
