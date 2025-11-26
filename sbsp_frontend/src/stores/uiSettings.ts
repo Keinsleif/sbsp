@@ -11,6 +11,10 @@ export const useUiSettings = defineStore('uiSettings', () => {
       copyAssetsWhenAdd: false,
       seekAmount: 5.0,
     },
+    appearance: {
+      language: null,
+      darkMode: 'dark',
+    },
     hotkey: {
       playback: {
         go: 'Enter',
