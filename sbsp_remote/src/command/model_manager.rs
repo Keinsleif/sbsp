@@ -107,9 +107,16 @@ pub async fn renumber_cues(
 }
 
 #[tauri::command]
-pub async fn update_model_name(state: tauri::State<'_, AppState>, new_name: String) -> Result<(), String> {
+pub async fn update_model_name(
+    state: tauri::State<'_, AppState>,
+    new_name: String,
+) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
-        handle.model_handle.update_model_name(new_name).await.map_err(|e| e.to_string())
+        handle
+            .model_handle
+            .update_model_name(new_name)
+            .await
+            .map_err(|e| e.to_string())
     } else {
         Err("Not connected.".into())
     }

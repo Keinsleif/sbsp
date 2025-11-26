@@ -10,9 +10,7 @@ use sbsp_backend::{
     BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
-use tauri::{
-    AppHandle, Emitter, Manager as _,
-};
+use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, watch};
 
@@ -130,6 +128,7 @@ async fn forward_backend_state_and_event(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
@@ -173,15 +172,28 @@ pub fn run() {
                 event_tx.subscribe(),
             ));
 
-            app.manage(AppState::new(backend_handle, state_rx, event_tx, settings_manager));
+            app.manage(AppState::new(
+                backend_handle,
+                state_rx,
+                event_tx,
+                settings_manager,
+            ));
 
             if let Ok(path) = app.path().app_config_dir() {
                 let config_path = path.join("config.json");
                 let app_handle_clone = app_handle.clone();
                 tokio::spawn(async move {
                     let state = app_handle_clone.state::<AppState>();
-                    if let Err(e) = state.settings_manager.load_from_file(config_path.as_path()).await {
-                        log::error!("Failed to load config on startup. file={:?}, error={}", config_path, e);
+                    if let Err(e) = state
+                        .settings_manager
+                        .load_from_file(config_path.as_path())
+                        .await
+                    {
+                        log::error!(
+                            "Failed to load config on startup. file={:?}, error={}",
+                            config_path,
+                            e
+                        );
                     }
                 });
             }
