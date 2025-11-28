@@ -130,7 +130,12 @@ export const useShowModel = defineStore('showmodel', {
       const uiState = useUiState();
       let insertIndex;
       if (uiState.selected != null) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
+        const selectedIndex = this.cues.findIndex((cue) => cue.id == uiState.selected);
+        if (type == 'load' || type == 'start') {
+          insertIndex = selectedIndex;
+        } else {
+          insertIndex = selectedIndex + 1;
+        }
       } else {
         return;
       }

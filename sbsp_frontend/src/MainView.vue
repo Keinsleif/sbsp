@@ -48,7 +48,7 @@ import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
 import type { Cue } from './types/Cue';
-import { debounce } from 'vuetify/lib/util/helpers.mjs';
+import { debounce } from './utils';
 import { useI18n } from 'vue-i18n';
 import type { ShowState } from './types/ShowState';
 import type { UiEvent } from './types/UiEvent';
@@ -65,7 +65,7 @@ const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
-const { t } = useI18n();
+const { t, locale } = useI18n({ useScope: 'global' });
 
 listen<ShowState>('backend-state-update', (event) => {
   showState.update(event.payload);
@@ -193,8 +193,22 @@ const selectedCue = ref<Cue | null>(
 watch(
   () => uiState.selected,
   () => {
+    if (onCueEdited.debouncing) {
+      onCueEdited.clear();
+      onCueEdited.immediate();
+    }
     selectedCue.value = uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null;
   },
+);
+
+watch(
+  locale,
+  () => {
+    createWindowMenu().then((menu) => {
+      menu.setAsWindowMenu();
+    });
+  },
+  { flush: 'post' },
 );
 
 const onCueEdited = debounce(() => {

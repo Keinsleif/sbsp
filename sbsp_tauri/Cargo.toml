@@ -24,6 +24,7 @@ ts-rs = { version = "11.0.1" }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = { version = "2", features = ["colored"] }
+tauri-plugin-os = "2"
 humantime = "2.3.0"
 sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "fs"] }

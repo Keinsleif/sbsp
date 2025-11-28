@@ -1,19 +1,26 @@
 pub mod hotkey;
 pub mod manager;
 
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use sbsp_backend::{BackendSettings , model::cue::{Cue, CueParam, CueSequence, audio::{AudioCueParam, Easing, FadeParam, SoundType}}};
 use hotkey::HotkeySettings;
+use sbsp_backend::{
+    BackendSettings,
+    model::cue::{
+        Cue, CueParam, CueSequence,
+        audio::{AudioCueParam, Easing, FadeParam, SoundType},
+    },
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalSettings {
     pub general: GeneralSettings,
+    pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
 }
@@ -29,7 +36,9 @@ impl From<GlobalSettings> for BackendSettings {
 
 impl PartialEq<BackendSettings> for GlobalSettings {
     fn eq(&self, other: &BackendSettings) -> bool {
-        if self.general.advance_cursor_when_go == other.advance_cursor_when_go && self.general.copy_assets_when_add == other.copy_assets_when_add {
+        if self.general.advance_cursor_when_go == other.advance_cursor_when_go
+            && self.general.copy_assets_when_add == other.copy_assets_when_add
+        {
             return true;
         }
         false
@@ -54,6 +63,22 @@ impl Default for GeneralSettings {
             seek_amount: 5.0,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AppearanceSettings {
+    pub language: Option<String>,
+    pub dark_mode: DarkMode,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[serde(rename_all = "camelCase")]
+pub enum DarkMode {
+    #[default]
+    Dark,
+    Light,
+    System,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
@@ -106,7 +131,14 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Fade { target: Uuid::nil(), volume: 0.0, fade_param: FadeParam { duration: 3.0, easing: Easing::InOutPowi(2) } }
+                params: CueParam::Fade {
+                    target: Uuid::nil(),
+                    volume: 0.0,
+                    fade_param: FadeParam {
+                        duration: 3.0,
+                        easing: Easing::InOutPowi(2),
+                    },
+                },
             },
             start: Cue {
                 id: Uuid::nil(),
@@ -115,7 +147,9 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Start { target: Uuid::nil() }
+                params: CueParam::Start {
+                    target: Uuid::nil(),
+                },
             },
             stop: Cue {
                 id: Uuid::nil(),
@@ -124,7 +158,9 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Stop { target: Uuid::nil() }
+                params: CueParam::Stop {
+                    target: Uuid::nil(),
+                },
             },
             pause: Cue {
                 id: Uuid::nil(),
@@ -133,7 +169,9 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Pause { target: Uuid::nil() }
+                params: CueParam::Pause {
+                    target: Uuid::nil(),
+                },
             },
             load: Cue {
                 id: Uuid::nil(),
@@ -142,7 +180,9 @@ impl Default for TemplateSettings {
                 notes: "".to_string(),
                 pre_wait: 0.0,
                 sequence: CueSequence::DoNotContinue,
-                params: CueParam::Load { target: Uuid::nil() }
+                params: CueParam::Load {
+                    target: Uuid::nil(),
+                },
             },
         }
     }

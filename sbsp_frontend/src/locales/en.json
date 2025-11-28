@@ -56,7 +56,8 @@
         "audio": "Audio",
         "remote": "Remote",
         "hotkey": "Hotkey",
-        "template": "Template"
+        "template": "Template",
+        "appearance": "Appearance"
       },
       "preset": {
         "hotkeyCursor": {
@@ -115,6 +116,12 @@
           "builtFromCueParam": "** built from cue param **",
           "wait": "Wait Cue",
           "fade": "Fade Cue"
+        },
+        "appearance": {
+          "language": "Language",
+          "systemLanguage": "System Language",
+          "darkMode": "Dark Mode",
+          "systemSettings": "System Settings"
         }
       }
     },
@@ -161,7 +168,10 @@
       "cueCountSuffix": "cues"
     },
     "sideBar": {
-      "activeCues": "Active Cues"
+      "activeCues": "Active Cues",
+      "levels": {
+        "title": "Levels"
+      }
     },
     "bottomEditor": {
       "basics": {

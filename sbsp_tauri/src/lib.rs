@@ -3,18 +3,16 @@ mod settings;
 #[cfg(desktop)]
 pub mod update;
 
-use std::time::SystemTime;
+use std::time::{SystemTime, Duration};
 
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
-use tauri::{
-    AppHandle, Emitter, Manager as _,
-};
+use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
-use tokio::sync::{Mutex, RwLock, broadcast, watch};
+use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
 
 use crate::settings::manager::GlobalSettingsManager;
 
@@ -26,6 +24,7 @@ pub struct AppState {
     discovery_option: RwLock<Option<String>>,
     port: RwLock<u16>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
+    level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>
 }
 
 impl AppState {
@@ -34,6 +33,7 @@ impl AppState {
         state_rx: watch::Receiver<ShowState>,
         event_tx: broadcast::Sender<UiEvent>,
         settings_manager: GlobalSettingsManager,
+        level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
     ) -> Self {
         Self {
             backend_handle,
@@ -43,6 +43,7 @@ impl AppState {
             discovery_option: RwLock::new(None),
             port: RwLock::new(5800),
             shutdown_tx: Mutex::new(None),
+            level_meter_tx,
         }
     }
 
@@ -130,6 +131,7 @@ async fn forward_backend_state_and_event(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
@@ -165,7 +167,8 @@ pub fn run() {
 
             let (settings_manager, settings_rx) = GlobalSettingsManager::new();
 
-            let (backend_handle, state_rx, event_tx) = start_backend(settings_rx);
+            let (backend_handle, state_rx, event_tx) = start_backend(settings_rx, true);
+            let (level_meter_tx, level_meter_rx) = watch::channel::<Option<Channel<(f32,f32)>>>(None);
 
             tokio::spawn(forward_backend_state_and_event(
                 app_handle.clone(),
@@ -173,19 +176,50 @@ pub fn run() {
                 event_tx.subscribe(),
             ));
 
-            app.manage(AppState::new(backend_handle, state_rx, event_tx, settings_manager));
+            app.manage(AppState::new(
+                backend_handle,
+                state_rx,
+                event_tx,
+                settings_manager,
+                level_meter_tx,
+            ));
 
             if let Ok(path) = app.path().app_config_dir() {
                 let config_path = path.join("config.json");
                 let app_handle_clone = app_handle.clone();
                 tokio::spawn(async move {
                     let state = app_handle_clone.state::<AppState>();
-                    if let Err(e) = state.settings_manager.load_from_file(config_path.as_path()).await {
-                        log::error!("Failed to load config on startup. file={:?}, error={}", config_path, e);
+                    if let Err(e) = state
+                        .settings_manager
+                        .load_from_file(config_path.as_path())
+                        .await
+                    {
+                        log::error!(
+                            "Failed to load config on startup. file={:?}, error={}",
+                            config_path,
+                            e
+                        );
                     }
                 });
             }
 
+            let app_handle_clone = app_handle.clone();
+            tokio::spawn(async move {
+                let mut ticker = interval(Duration::from_millis(33)); // about 30fps
+                if let Some(shared_level) = app_handle_clone.state::<AppState>().get_handle().level_meter {
+                    loop {
+                        ticker.tick().await;
+                        if let Some(level_meter) = level_meter_rx.borrow().as_ref() {
+                            let (l, r) = shared_level.get();
+                            if l > 0.001 && r > 0.001 {
+                                level_meter.send((l, r)).ok();
+                            }
+                        }
+                    }
+                } else {
+                    log::warn!("Level meter is not available.");
+                }
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -196,6 +230,7 @@ pub fn run() {
             command::file_save_as,
             command::export_to_folder,
             command::pick_audio_assets,
+            command::listen_level_meter,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,
