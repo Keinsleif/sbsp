@@ -168,7 +168,10 @@
       "cueCountSuffix": "cues"
     },
     "sideBar": {
-      "activeCues": "Active Cues"
+      "activeCues": "Active Cues",
+      "levels": {
+        "title": "Levels"
+      }
     },
     "bottomEditor": {
       "basics": {
