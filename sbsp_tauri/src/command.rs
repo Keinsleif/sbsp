@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::Manager as _;
+use tauri::{Manager as _, ipc::Channel};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
 
@@ -156,4 +156,12 @@ pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathB
         Ok(result) => Ok(result),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[tauri::command]
+pub async fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<(f32, f32)>) -> Result<(), String> {
+    state.level_meter_tx.send_modify(|channel| {
+        *channel = Some(level_listener);
+    });
+    Ok(())
 }

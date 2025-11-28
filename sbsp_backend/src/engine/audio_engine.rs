@@ -1,19 +1,18 @@
 mod command;
 mod event;
 mod mono_effect;
+pub mod level_meter;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
-    clock::{ClockHandle, ClockSpeed, ClockTime},
-    sound::{
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween, clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
         EndPosition, FromFileError, IntoOptionalRegion, PlaybackPosition, PlaybackState, Region,
         static_sound::{StaticSoundData, StaticSoundHandle},
         streaming::{StreamingSoundData, StreamingSoundHandle},
-    },
+    }
 };
 use std::{collections::HashMap, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -21,9 +20,7 @@ use uuid::Uuid;
 
 use super::EngineEvent;
 use crate::{
-    action::AudioAction,
-    controller::state::AudioStateParam,
-    model::{cue::audio::{FadeParam, SoundType}, settings::ShowAudioSettings},
+    action::AudioAction, controller::state::AudioStateParam, engine::audio_engine::level_meter::{LevelMeterEffect, SharedLevel}, model::{cue::audio::{FadeParam, SoundType}, settings::ShowAudioSettings}
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -209,6 +206,31 @@ impl AudioEngine {
             playing_sounds: HashMap::new(),
             loaded_sounds: HashMap::new(),
         })
+    }
+
+    pub fn new_with_level_meter(
+        command_rx: mpsc::Receiver<AudioCommand>,
+        event_tx: mpsc::Sender<EngineEvent>,
+        settings: ShowAudioSettings,
+    ) -> Result<(Self, SharedLevel)> {
+        let shared_level = SharedLevel::default();
+        let mut audio_manager_settings = AudioManagerSettings::default();
+        let mono_effect_handle = audio_manager_settings
+            .main_track_builder
+            .add_effect(MonoEffectBuilder::new(settings.mono_output));
+        audio_manager_settings.main_track_builder.add_built_effect(Box::new(LevelMeterEffect::new(shared_level.clone())));
+        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)
+            .context("Failed to initialize AudioManager")?;
+
+        Ok((Self {
+            manager: Some(manager),
+            mono_effect_handle,
+            settings,
+            command_rx,
+            event_tx,
+            playing_sounds: HashMap::new(),
+            loaded_sounds: HashMap::new(),
+        }, shared_level))
     }
 
     pub async fn run(mut self) {

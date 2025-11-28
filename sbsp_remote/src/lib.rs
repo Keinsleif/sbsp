@@ -224,6 +224,7 @@ pub fn run() {
             command::get_side,
             command::process_asset,
             command::pick_audio_assets,
+            command::listen_level_meter,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,
