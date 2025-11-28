@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 use super::AppState;
-use tauri::Listener;
-use tokio::sync::oneshot;
+use tauri::{Listener, ipc::Channel};
+use tokio::{sync::oneshot, time::interval};
 
 pub mod client;
 pub mod controller;
@@ -47,4 +47,9 @@ pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathB
         Ok(file_list) => Ok(file_list),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[tauri::command]
+pub async fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<(f32, f32)>) -> Result<(), String> {
+    Err("Level Meter is not implemented on remote.".into())
 }
