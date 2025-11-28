@@ -12,9 +12,7 @@ use sbsp_backend::{
     controller::state::ShowState,
     event::UiEvent,
 };
-use tauri::{
-    AppHandle, Emitter, Manager as _,
-};
+use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
 
@@ -169,6 +167,7 @@ impl AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)
@@ -209,7 +208,11 @@ pub fn run() {
                 let app_handle_clone = app.handle().clone();
                 tokio::spawn(async move {
                     let state = app_handle_clone.state::<AppState>();
-                    if let Err(e) = state.settings_manager.load_from_file(config_path.as_path()).await {
+                    if let Err(e) = state
+                        .settings_manager
+                        .load_from_file(config_path.as_path())
+                        .await
+                    {
                         log::error!("Failed to load config on startup. {}", e);
                     }
                 });
@@ -221,6 +224,7 @@ pub fn run() {
             command::get_side,
             command::process_asset,
             command::pick_audio_assets,
+            command::listen_level_meter,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,

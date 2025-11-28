@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::Manager as _;
+use tauri::{Manager as _, ipc::Channel};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
 
@@ -35,9 +35,13 @@ pub fn file_open(app_handle: tauri::AppHandle) {
         .clone();
     tokio::spawn(async move {
         let (result_tx, result_rx) = oneshot::channel();
-        app_handle.dialog().file().add_filter("Show Model", &["sbsp"]).pick_file(|file_path_option| {
-            result_tx.send(file_path_option).unwrap();
-        });
+        app_handle
+            .dialog()
+            .file()
+            .add_filter("Show Model", &["sbsp"])
+            .pick_file(|file_path_option| {
+                result_tx.send(file_path_option).unwrap();
+            });
         if let Ok(Some(file_path)) = result_rx.await {
             model_handle
                 .load_from_file(file_path.into_path().unwrap())
@@ -128,9 +132,7 @@ pub fn export_to_folder(handle: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn pick_audio_assets(
-    app_handle: tauri::AppHandle,
-) -> Result<Vec<PathBuf>, String> {
+pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathBuf>, String> {
     let (result_tx, result_rx) = oneshot::channel();
     app_handle
         .dialog()
@@ -138,17 +140,28 @@ pub async fn pick_audio_assets(
         .add_filter(
             "Audio",
             &[
-                "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga",
-                "wav", "aac", "alac", "flac", "mp3",
+                "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga", "wav",
+                "aac", "alac", "flac", "mp3",
             ],
         )
         .pick_files(|path| {
             let filepath_vec = path.unwrap_or(vec![]);
-            let path_vec: Vec<PathBuf> = filepath_vec.into_iter().map_while(|item| item.into_path().ok()).collect();
+            let path_vec: Vec<PathBuf> = filepath_vec
+                .into_iter()
+                .map_while(|item| item.into_path().ok())
+                .collect();
             result_tx.send(path_vec).unwrap()
         });
     match result_rx.await {
         Ok(result) => Ok(result),
         Err(e) => Err(e.to_string()),
     }
+}
+
+#[tauri::command]
+pub async fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<(f32, f32)>) -> Result<(), String> {
+    state.level_meter_tx.send_modify(|channel| {
+        *channel = Some(level_listener);
+    });
+    Ok(())
 }

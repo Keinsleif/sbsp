@@ -46,7 +46,7 @@
           @keydown.enter.stop="closeEditable($event.target, true, i)"
           @keydown.esc.stop="closeEditable($event.target, false, i)"
         >
-          <span class="cue-number mr-2">{{ cue.number }}</span>
+          {{ cue.number }}
         </td>
         <td
           headers="cuelist_name"
@@ -61,9 +61,8 @@
         <td
           headers="cuelist_pre_wait"
           class="text-center pa-1"
-          :style="{ pointerEvents: isPreWaitActive(cue.id) ? 'none' : 'auto' }"
           width="100px"
-          @dblclick="openEditable($event)"
+          @dblclick="if (isPreWaitActive(cue.id)) openEditable($event);"
           @blur="closeEditable($event.target, true, i)"
           @keydown.enter.stop="closeEditable($event.target, true, i)"
           @keydown.esc.stop="closeEditable($event.target, false, i)"
@@ -78,7 +77,6 @@
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
                   '%) no-repeat'
                 : '',
-              pointerEvents: 'none',
             }"
           >
             {{
@@ -91,9 +89,8 @@
         <td
           headers="cuelist_duration"
           class="text-center pa-1"
-          :style="{ pointerEvents: isActive(cue.id) ? 'none' : 'auto' }"
           width="100px"
-          @dblclick="openEditable($event)"
+          @dblclick="if (isActive(cue.id)) openEditable($event);"
           @blur="closeEditable($event.target, true, i)"
           @keydown.enter.stop="closeEditable($event.target, true, i)"
           @keydown.esc.stop="closeEditable($event.target, false, i)"
@@ -108,7 +105,6 @@
                   Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
                   '%) no-repeat'
                 : '',
-              pointerEvents: 'none',
             }"
           >
             {{
@@ -122,7 +118,7 @@
           headers="cuelist_post_wait"
           class="text-center pa-1"
           width="100px"
-          @dblclick="openEditable($event)"
+          @dblclick="if (isActive(cue.id)) openEditable($event);"
           @blur="closeEditable($event.target, true, i)"
           @keydown.enter.stop="closeEditable($event.target, true, i)"
           @keydown.esc.stop="closeEditable($event.target, false, i)"
@@ -157,7 +153,6 @@
                     ) +
                     '%) no-repeat'
                   : '',
-              pointerEvents: 'none',
             }"
           >
             {{
@@ -203,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw, watch } from 'vue';
+import { ref, toRaw } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import {
   mdiArrowDown,
@@ -226,7 +221,6 @@ import { buildCueName, calculateDuration, formatToSeconds, getLockCursorToSelect
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
-import { debounce } from 'vuetify/lib/util/helpers.mjs';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -235,14 +229,6 @@ const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
-
-watch(
-  () => showModel.cues,
-  debounce(() => {
-    assetResult.updateAssetData();
-  }, 500),
-  { deep: true },
-);
 
 const onArrowUp = (e: KeyboardEvent) => {
   if (uiState.selected != null) {

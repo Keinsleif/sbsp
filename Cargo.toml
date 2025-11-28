@@ -56,4 +56,3 @@ opt-level = 3
 
 [profile.dev.package.symphonia-codec-vorbis]
 opt-level = 3
-

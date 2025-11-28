@@ -7,7 +7,7 @@ use crate::{
     controller::{CueController, CueControllerHandle, state::ShowState},
     engine::{
         EngineEvent,
-        audio_engine::{AudioCommand, AudioEngine},
+        audio_engine::{AudioCommand, AudioEngine, level_meter::SharedLevel},
         wait_engine::{WaitCommand, WaitEngine},
     },
     event::UiEvent,
@@ -66,10 +66,11 @@ pub struct BackendHandle {
     pub model_handle: ShowModelHandle,
     pub asset_processor_handle: AssetProcessorHandle,
     pub controller_handle: CueControllerHandle,
+    pub level_meter: Option<SharedLevel>,
 }
 
 #[cfg(feature = "backend")]
-pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>) -> (
+pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>, enable_metering: bool) -> (
     BackendHandle,
     watch::Receiver<ShowState>,
     broadcast::Sender<UiEvent>,
@@ -101,8 +102,13 @@ pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>) -> (
         engine_event_rx,
     );
 
-    let audio_engine =
-        AudioEngine::new(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default()).unwrap();
+    let (audio_engine, level_meter) = if enable_metering {
+        let (engine, shared_level) = AudioEngine::new_with_level_meter(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default()).unwrap();
+        (engine, Some(shared_level))
+    } else {
+        let engine = AudioEngine::new(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default()).unwrap();
+        (engine, None)
+    };
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);
 
     let (asset_processor, asset_processor_handle) =
@@ -120,6 +126,7 @@ pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>) -> (
             model_handle,
             asset_processor_handle,
             controller_handle,
+            level_meter,
         },
         state_rx,
         event_tx,

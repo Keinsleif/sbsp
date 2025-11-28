@@ -174,6 +174,7 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
             controller_handle: CueControllerHandle {
                 command_tx: controller_tx,
             },
+            level_meter: None
         },
         state_rx,
         event_tx,
