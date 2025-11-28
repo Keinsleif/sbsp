@@ -98,7 +98,10 @@
       "cueCountSuffix": "キュー"
     },
     "sideBar": {
-      "activeCues": "実行中のキュー"
+      "activeCues": "実行中のキュー",
+      "levels": {
+        "title": "レベル"
+      }
     }
   },
   "dialog": {

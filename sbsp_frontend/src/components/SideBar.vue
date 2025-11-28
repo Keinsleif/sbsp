@@ -1,6 +1,7 @@
 <template>
   <v-tabs grow fixed-tabs v-model="uiState.sideBarTab" density="compact">
     <v-tab border density="compact" value="activeCues">{{ t('main.sideBar.activeCues') }}</v-tab>
+    <v-tab border density="compact" value="levels">{{ t('main.sideBar.levels.title') }}</v-tab>
   </v-tabs>
   <v-tabs-window v-model="uiState.sideBarTab">
     <v-tabs-window-item value="activeCues" class="overflow-y-auto" transition="false" reverse-transition="false">
@@ -42,6 +43,9 @@
         </v-sheet>
       </template>
     </v-tabs-window-item>
+    <v-tabs-window-item value="levels" transition="false" reverse-transition="false">
+      <level-meter kind="master" height="480px"></level-meter>
+    </v-tabs-window-item>
   </v-tabs-window>
 </template>
 
@@ -53,6 +57,7 @@ import { useUiState } from '../stores/uistate';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { buildCueName, secondsToFormat } from '../utils';
 import { useI18n } from 'vue-i18n';
+import LevelMeter from './input/LevelMeter.vue';
 
 const { t } = useI18n();
 const showModel = useShowModel();
