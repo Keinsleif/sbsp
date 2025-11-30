@@ -224,6 +224,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             command::get_side,
+            command::get_third_party_notices,
             command::process_asset,
             command::file_open,
             command::file_save,

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use super::AppState;
-use tauri::{Listener, ipc::Channel};
+use tauri::{Manager, Listener, ipc::Channel, path::BaseDirectory};
 use tokio::sync::oneshot;
 
 pub mod client;
@@ -12,6 +12,12 @@ pub mod settings;
 #[tauri::command]
 pub fn get_side() -> String {
     "remote".into()
+}
+
+#[tauri::command]
+pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let resource_path = app_handle.path().resolve("THIRD_PARTY_NOTICES.md", BaseDirectory::Resource).map_err(|e| e.to_string())?;
+    tokio::fs::read_to_string(&resource_path).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
