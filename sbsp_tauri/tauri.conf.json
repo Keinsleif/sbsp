@@ -47,6 +47,9 @@
   },
   "bundle": {
     "active": true,
+    "resources": {
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
+    },
     "createUpdaterArtifacts": true,
     "linux": {
       "appimage": {
