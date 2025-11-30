@@ -1,10 +1,12 @@
 [package]
 name = "sbsp_tauri"
-version = "0.1.4"
 description = "A SBS Player Frontend App powered by tauri."
-authors = ["Keinsleif"]
-edition = "2024"
-license = "MIT OR Apache-2.0"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+license-file.workspace = true
+publish.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
