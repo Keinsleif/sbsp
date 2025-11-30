@@ -7,7 +7,7 @@ cargo about generate about.hbs -o THIRD_PARTY_NOTICES.md
 
 cd sbsp_frontend
 
-npx license-checker --json > "$(dirname "$0")/tmp.json"
-cd "$(dirname "$0")"
+npx license-checker --json > "../scripts/tmp.json"
+cd ../scripts
 node notice_json2md.js
 rm tmp.json
