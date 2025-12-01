@@ -1,8 +1,8 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use super::AppState;
-use tauri::{Listener, ipc::Channel};
-use tokio::{sync::oneshot, time::interval};
+use tauri::{Manager, Listener, ipc::Channel, path::BaseDirectory};
+use tokio::sync::oneshot;
 
 pub mod client;
 pub mod controller;
@@ -12,6 +12,12 @@ pub mod settings;
 #[tauri::command]
 pub fn get_side() -> String {
     "remote".into()
+}
+
+#[tauri::command]
+pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let resource_path = app_handle.path().resolve("THIRD_PARTY_NOTICES.md", BaseDirectory::Resource).map_err(|e| e.to_string())?;
+    tokio::fs::read_to_string(&resource_path).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -50,6 +56,6 @@ pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathB
 }
 
 #[tauri::command]
-pub async fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<(f32, f32)>) -> Result<(), String> {
+pub async fn listen_level_meter(_state: tauri::State<'_, AppState>, _level_listener: Channel<(f32, f32)>) -> Result<(), String> {
     Err("Level Meter is not implemented on remote.".into())
 }

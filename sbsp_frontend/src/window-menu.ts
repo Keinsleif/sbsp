@@ -178,6 +178,14 @@ export const createWindowMenu = async () => {
     text: t('menu.help.title'),
     items: [
       await MenuItem.new({
+        id: 'id_license',
+        text: 'Licenses',
+        action: () => {
+          const uiState = useUiState();
+          uiState.isThirdPartyNoticesDialogOpen = true;
+        },
+      }),
+      await MenuItem.new({
         id: 'id_check_update',
         text: t('menu.help.checkUpdate'),
         action: () => {

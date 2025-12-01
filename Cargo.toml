@@ -6,6 +6,13 @@ members = [
     "sbsp_remote",
 ]
 
+[workspace.package]
+authors = ["Keinsleif"]
+version = "0.1.4"
+edition = "2024"
+license = "Elastic-2.0"
+publish = false
+
 [profile.dev.package.kira]
 opt-level = 3
 
