@@ -32,7 +32,9 @@
     },
     "help": {
       "checkUpdate": "Check for updates",
-      "title": "Help"
+      "title": "Help",
+      "credits": "Credits",
+      "activateLicense": "Activate License"
     }
   },
   "notification": {

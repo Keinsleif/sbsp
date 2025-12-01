@@ -174,12 +174,25 @@ export const createWindowMenu = async () => {
     ],
   });
 
+  let mainHelpMenu: MenuItem[] = [];
+  if (side == 'main') {
+    mainHelpMenu = [
+      await MenuItem.new({
+        id: 'id_activate',
+        text: t('menu.help.activateLicense'),
+        action: () => {
+          invoke('activate_license').catch((e) => console.error(e));
+        },
+      }),
+    ];
+  }
+
   const helpMenu = await Submenu.new({
     text: t('menu.help.title'),
     items: [
       await MenuItem.new({
-        id: 'id_license',
-        text: 'Licenses',
+        id: 'id_credits',
+        text: t('menu.help.credits'),
         action: () => {
           const uiState = useUiState();
           uiState.isThirdPartyNoticesDialogOpen = true;
@@ -193,6 +206,7 @@ export const createWindowMenu = async () => {
           uiState.isUpdateDialogOpen = true;
         },
       }),
+      ...mainHelpMenu,
     ],
   });
 

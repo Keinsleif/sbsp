@@ -32,7 +32,9 @@
     },
     "help": {
       "checkUpdate": "アップデートを確認",
-      "title": "ヘルプ"
+      "title": "ヘルプ",
+      "credits": "クレジット",
+      "activateLicense": "ライセンスを有効化"
     }
   },
   "notification": {
