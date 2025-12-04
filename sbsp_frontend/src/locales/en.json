@@ -34,7 +34,7 @@
       "checkUpdate": "Check for updates",
       "title": "Help",
       "credits": "Credits",
-      "activateLicense": "Activate License"
+      "license": "License"
     }
   },
   "notification": {
@@ -134,6 +134,17 @@
       "installUpdate": "Install update",
       "currentVersion": "Current Version",
       "latestVersion": "Latest Version"
+    },
+    "license": {
+      "success": {
+        "message": "The license file has been successfully imported into the application.\nPlease delete the original license file or store it in a safe place.\n\n* You can re-download the license file from the store page.",
+        "title": "License Activation success!"
+      },
+      "title": "License",
+      "edition": "Edition",
+      "owner": "Owner",
+      "issuedDate": "Issued Date",
+      "activateLicense": "Activate License"
     }
   },
   "general": {

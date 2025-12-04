@@ -20,6 +20,7 @@ use crate::settings::manager::GlobalSettingsManager;
 const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
 -----END PUBLIC KEY-----";
+
 pub struct AppState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
@@ -207,6 +208,11 @@ pub fn run() {
                         );
                     }
                 });
+                let license_path = path.join("license.json");
+                if license_path.exists() {
+                    let license_manager = app_handle.state::<LicenseManager>();
+                    let _ = license_manager.activate_by_file(license_path);
+                }
             }
 
             let app_handle_clone = app_handle.clone();
@@ -274,6 +280,7 @@ pub fn run() {
             command::settings::import_settings_from_file,
             command::settings::export_settings_to_file,
             command::license::activate_license,
+            command::license::get_license_info,
             #[cfg(desktop)]
             update::fetch_update,
             #[cfg(desktop)]

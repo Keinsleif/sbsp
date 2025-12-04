@@ -34,7 +34,7 @@
       "checkUpdate": "アップデートを確認",
       "title": "ヘルプ",
       "credits": "クレジット",
-      "activateLicense": "ライセンスを有効化"
+      "license": "ライセンス"
     }
   },
   "notification": {
@@ -199,6 +199,17 @@
       "currentVersion": "現在のバージョン",
       "latestVersion": "最新バージョン",
       "installUpdate": "更新をインストール"
+    },
+    "license": {
+      "activateLicense": "ライセンスを有効化",
+      "edition": "エディション",
+      "issuedDate": "発行日時",
+      "owner": "所有者",
+      "success": {
+        "message": "ライセンスファイルは正常にアプリケーションにインポートされました。\n元のライセンスファイルは削除するか安全な場所に保管してください。\n\n※ライセンスファイルはストアページから再度ダウンロードできます。",
+        "title": "ライセンスの有効化に成功しました"
+      },
+      "title": "ライセンス"
     }
   },
   "general": {

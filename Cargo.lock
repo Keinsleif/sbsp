@@ -4222,6 +4222,7 @@ dependencies = [
  "ed25519-dalek",
  "serde",
  "serde_json",
+ "ts-rs",
  "uuid",
 ]
 
