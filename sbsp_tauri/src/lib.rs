@@ -10,11 +10,16 @@ use sbsp_backend::{
     BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
+use sbsp_license::LicenseManager;
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
 
 use crate::settings::manager::GlobalSettingsManager;
+
+const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
+-----END PUBLIC KEY-----";
 
 pub struct AppState {
     backend_handle: BackendHandle,
@@ -184,6 +189,8 @@ pub fn run() {
                 level_meter_tx,
             ));
 
+            app.manage(LicenseManager::new_from_pem(PUBLIC_KEY_PEM));
+
             if let Ok(path) = app.path().app_config_dir() {
                 let config_path = path.join("config.json");
                 let app_handle_clone = app_handle.clone();
@@ -201,6 +208,11 @@ pub fn run() {
                         );
                     }
                 });
+                let license_path = path.join("license.json");
+                if license_path.exists() {
+                    let license_manager = app_handle.state::<LicenseManager>();
+                    let _ = license_manager.activate_by_file(license_path);
+                }
             }
 
             let app_handle_clone = app_handle.clone();
@@ -267,6 +279,8 @@ pub fn run() {
             command::settings::save_settings,
             command::settings::import_settings_from_file,
             command::settings::export_settings_to_file,
+            command::license::activate_license,
+            command::license::get_license_info,
             #[cfg(desktop)]
             update::fetch_update,
             #[cfg(desktop)]

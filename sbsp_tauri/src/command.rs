@@ -10,6 +10,7 @@ pub mod controller;
 pub mod model_manager;
 pub mod server;
 pub mod settings;
+pub mod license;
 
 #[tauri::command]
 pub fn get_side() -> String {
