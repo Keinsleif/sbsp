@@ -28,7 +28,8 @@
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
     <update-dialog v-model="uiState.isUpdateDialogOpen"></update-dialog>
-    <credits-dialog v-model="uiState.isThirdPartyNoticesDialogOpen"></credits-dialog>
+    <credits-dialog v-model="uiState.isCreditsDialogOpen"></credits-dialog>
+    <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
   </v-app>
 </template>
 
@@ -61,6 +62,7 @@ import { getLockCursorToSelection } from './utils';
 import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import CreditsDialog from './components/dialog/CreditsDialog.vue';
+import LicenseDialog from './components/dialog/LicenseDialog.vue';
 
 const showModel = useShowModel();
 const showState = useShowState();

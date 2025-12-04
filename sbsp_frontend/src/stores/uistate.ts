@@ -14,7 +14,8 @@ export const useUiState = defineStore(
     const isRenumberCueDialogOpen = ref(false);
     const isUpdateDialogOpen = ref(false);
     const isSettingsDialogOpen = ref(false);
-    const isThirdPartyNoticesDialogOpen = ref(false);
+    const isCreditsDialogOpen = ref(false);
+    const isLicenseDialogOpen = ref(false);
     const isEditorOpen = ref(true);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
@@ -76,7 +77,8 @@ export const useUiState = defineStore(
       isRenumberCueDialogOpen,
       isSettingsDialogOpen,
       isUpdateDialogOpen,
-      isThirdPartyNoticesDialogOpen,
+      isCreditsDialogOpen,
+      isLicenseDialogOpen,
       isEditorOpen,
       success_messages,
       error_messages,
