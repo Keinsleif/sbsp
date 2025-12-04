@@ -11,7 +11,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-dialog": "~2.3.3",
     "@tauri-apps/plugin-log": "~2.6.0",
     "@tauri-apps/plugin-os": "^2.3.2",
@@ -26,13 +26,13 @@
     "vue": "^3.5.25",
     "vue-i18n": "^11.2.2",
     "vue-router": "^4.6.3",
-    "vuetify": "^3.11.0"
+    "vuetify": "^3.11.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@intlify/unplugin-vue-i18n": "^11.0.1",
     "@mdi/js": "^7.4.47",
-    "@tauri-apps/cli": "^2.9.4",
+    "@tauri-apps/cli": "^2.9.5",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/eslint-config-prettier": "^10.2.0",
@@ -41,9 +41,9 @@
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
     "license-checker": "^25.0.1",
-    "prettier": "^3.7.2",
+    "prettier": "^3.7.4",
     "typescript": "~5.6.3",
-    "typescript-eslint": "^8.48.0",
+    "typescript-eslint": "^8.48.1",
     "vite": "^6.4.1",
     "vite-plugin-vuetify": "^2.1.2",
     "vue-tsc": "^2.2.12"
