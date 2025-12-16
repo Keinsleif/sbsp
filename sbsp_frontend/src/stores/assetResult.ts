@@ -10,14 +10,6 @@ export const useAssetResult = defineStore(
     const results = ref<{ [path: string]: AssetData }>({});
     const processing = ref<string[]>([]);
 
-    const updateAssetData = () => {
-      const showModel = useShowModel();
-      for (const cue of showModel.cues) {
-        if (cue.params.type == 'audio') {
-          invoke<[string, AssetData]>('process_asset', { path: cue.params.target }).catch((e) => console.error(e));
-        }
-      }
-    };
     const add = (path: string, data: AssetData) => {
       results.value[path] = data;
       processing.value.splice(processing.value.indexOf(path), 1);
@@ -27,7 +19,7 @@ export const useAssetResult = defineStore(
         return null;
       }
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((cue) => cue.id == cueId);
+      const targetCue = showModel.getCueById(cueId);
       if (targetCue != null && targetCue.params.type == 'audio') {
         if (targetCue.params.target in results.value) {
           return results.value[targetCue.params.target];
@@ -46,7 +38,6 @@ export const useAssetResult = defineStore(
     return {
       results,
       processing,
-      updateAssetData,
       add,
       get,
     };

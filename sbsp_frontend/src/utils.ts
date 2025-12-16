@@ -89,13 +89,7 @@ export const buildCueName = (cue: Cue | null): string => {
       return `Wait ${secondsToHMR(cue.params.duration)}`;
     case 'fade': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'fade') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
-      });
+      const targetCue = showModel.getCueById(cue.params.target);
       if (targetCue != null) {
         return `Fade ${buildCueName(targetCue)}`;
       } else {
@@ -104,13 +98,7 @@ export const buildCueName = (cue: Cue | null): string => {
     }
     case 'start': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'start') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
-      });
+      const targetCue = showModel.getCueById(cue.params.target);
       if (targetCue != null) {
         return `Start ${buildCueName(targetCue)}`;
       } else {
@@ -119,13 +107,7 @@ export const buildCueName = (cue: Cue | null): string => {
     }
     case 'stop': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'stop') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
-      });
+      const targetCue = showModel.getCueById(cue.params.target);
       if (targetCue != null) {
         return `Stop ${buildCueName(targetCue)}`;
       } else {
@@ -134,13 +116,7 @@ export const buildCueName = (cue: Cue | null): string => {
     }
     case 'pause': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'pause') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
-      });
+      const targetCue = showModel.getCueById(cue.params.target);
       if (targetCue != null) {
         return `Pause ${buildCueName(targetCue)}`;
       } else {
@@ -149,18 +125,15 @@ export const buildCueName = (cue: Cue | null): string => {
     }
     case 'load': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'load') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
-      });
+      const targetCue = showModel.getCueById(cue.params.target);
       if (targetCue != null) {
         return `Load ${buildCueName(targetCue)}`;
       } else {
         return 'Load';
       }
+    }
+    case 'group': {
+      return 'Group';
     }
     default:
       return '';

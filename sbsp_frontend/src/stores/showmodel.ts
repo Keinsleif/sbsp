@@ -25,6 +25,26 @@ export const useShowModel = defineStore('showmodel', {
         },
       },
     }) as ShowModel,
+  getters: {
+    getCueById() {
+      return (cue_id: string): Cue | undefined => {
+        const queue = [];
+        let cuelist: Cue[] | undefined = this.cues;
+        while (cuelist != undefined) {
+          for (const cue of cuelist) {
+            if (cue.id == cue_id) {
+              return cue;
+            }
+
+            if (cue.params.type == 'group') {
+              queue.push(cue.params.children);
+            }
+          }
+          cuelist = queue.shift();
+        }
+      };
+    },
+  },
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;

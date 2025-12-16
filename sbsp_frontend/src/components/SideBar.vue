@@ -65,7 +65,7 @@ const showState = useShowState();
 const uiState = useUiState();
 
 const buildTitle = (cue_id: string) => {
-  const activeCue = showModel.cues.find((cue) => cue.id == cue_id);
+  const activeCue = showModel.getCueById(cue_id);
   if (activeCue == null) return;
   let result = '';
   if (activeCue.number.trim() != '') {

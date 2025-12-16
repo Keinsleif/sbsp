@@ -190,9 +190,7 @@ onUnmounted(() => {
   }
 });
 
-const selectedCue = ref<Cue | null>(
-  uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null,
-);
+const selectedCue = ref<Cue | null>(uiState.selected != null ? showModel.getCueById(uiState.selected)! : null);
 
 watch(
   () => uiState.selected,

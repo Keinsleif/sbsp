@@ -95,7 +95,7 @@ const { isFullscreen, toggle } = useFullscreen();
 const hasFocus = useWindowFocus();
 
 const playbackCursorCue = computed(() => {
-  return showState.playbackCursor != null ? showModel.cues.find((cue) => cue.id == showState.playbackCursor) : null;
+  return showState.playbackCursor != null ? showModel.getCueById(showState.playbackCursor) : null;
 });
 
 const playbackCursorCueTitle = computed(() => {
