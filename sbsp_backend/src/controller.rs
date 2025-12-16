@@ -157,9 +157,7 @@ impl CueController {
             | ControllerCommand::Resume(cue_id)
             | ControllerCommand::Stop(cue_id)
             | ControllerCommand::PerformAction(cue_id, ..) => {
-                let model = self.model_handle.read().await;
-
-                if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
+                if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
                     let executor_command = command.into_executor_command();
                     self.executor_tx.send(executor_command).await?;
                 } else {
@@ -210,10 +208,9 @@ impl CueController {
     }
 
     async fn handle_go(&self, cue_id: Uuid) -> Result<()> {
-        let model = self.model_handle.read().await;
         let state = self.state_tx.borrow().clone();
 
-        if model.cues.iter().any(|cue| cue.id.eq(&cue_id)) {
+        if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
             if let Some(active_cue) = state.active_cues.get(&cue_id)
                 && active_cue.status != PlaybackStatus::Loaded
             {
@@ -230,25 +227,13 @@ impl CueController {
     }
 
     async fn update_playback_cursor(&self) -> Result<()> {
-        let model = self.model_handle.read().await;
         let state = self.state_tx.borrow().clone();
         let playback_cursor = if let Some(cursor) = state.playback_cursor {
             cursor
         } else {
             anyhow::bail!("Playback cursor unavailable.");
         };
-        if let Some(cue_index) = model
-            .cues
-            .iter()
-            .position(|cue| cue.id == playback_cursor)
-        {
-            let next_cue_id = if cue_index + 1 < model.cues.len() {
-                Some(model.cues[cue_index + 1].id)
-            } else {
-                None
-            };
-            self.set_playback_cursor(next_cue_id).await?;
-        }
+        self.set_playback_cursor(self.model_handle.get_next_cue_id_by_id(&playback_cursor).await).await?;
         Ok(())
     }
 
@@ -291,18 +276,12 @@ impl CueController {
                 cue_id,
                 initial_params,
             } => {
-                if let Some(cue) = self
-                    .model_handle
-                    .read()
-                    .await
-                    .cues
-                    .iter()
-                    .find(|cue| cue.id == *cue_id) {
-                    if !matches!(cue.sequence, CueSequence::DoNotContinue) {
+                if let Some(cue_sequence) = self.model_handle.get_cue_sequence_by_id(cue_id).await {
+                    if !matches!(cue_sequence, CueSequence::DoNotContinue) {
                         self.wait_tasks
                             .write()
                             .await
-                            .insert(*cue_id, cue.sequence.clone());
+                            .insert(*cue_id, cue_sequence.clone());
                     }
                 } else {
                     log::warn!("Unknown cue started. model may be broken. cue_id={}", cue_id);
@@ -473,13 +452,9 @@ impl CueController {
                         if let Err(e) = self.handle_go(target).await {
                             log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                         }
-                    } else {
-                        let model = self.model_handle.read().await;
-                        if let Some(cue_index) = model.cues.iter().position(|cue| cue.id == *cue_id)
-                        && cue_index + 1 < model.cues.len()
-                        && let Err(e) = self.handle_go(model.cues[cue_index + 1].id).await {
-                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
-                        }
+                    } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(cue_id).await
+                    && let Err(e) = self.handle_go(next_id).await {
+                        log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                     }
                 }
                 drop(wait_tasks);
