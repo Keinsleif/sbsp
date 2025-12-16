@@ -163,7 +163,8 @@ export const calculateDuration = (cueParam: CueParam, totalDuration: number | nu
     case 'stop':
     case 'pause':
     case 'load':
-      return 0;
+    case 'group':
+      return null;
     default:
       return null;
   }
@@ -248,7 +249,8 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
     case 'stop':
     case 'pause':
     case 'load':
-      return 0;
+    case 'group':
+      return null;
   }
 };
 

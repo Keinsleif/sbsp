@@ -9,6 +9,7 @@ export const useUiState = defineStore(
     const side = ref<'remote' | 'main' | null>(null);
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
+    const expandedRows = ref<string[]>([]);
     const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
@@ -55,6 +56,18 @@ export const useUiState = defineStore(
         });
       }
     };
+
+    const toggleExpand = (id: string) => {
+      if (expandedRows.value.includes(id)) {
+        expandedRows.value.splice(
+          expandedRows.value.findIndex((value) => value == id),
+          1,
+        );
+      } else {
+        expandedRows.value.push(id);
+      }
+    };
+
     const toggleRightSidebar = () => {
       isRightSidebarOpen.value = !isRightSidebarOpen.value;
     };
@@ -72,6 +85,7 @@ export const useUiState = defineStore(
       side,
       selected,
       selectedRows,
+      expandedRows,
       sideBarTab,
       isRightSidebarOpen,
       isRenumberCueDialogOpen,
@@ -85,6 +99,7 @@ export const useUiState = defineStore(
       clearSelected,
       setSelected,
       addSelected,
+      toggleExpand,
       toggleRightSidebar,
       toggleEditor,
       success,
