@@ -777,18 +777,14 @@ impl Executor {
         while let Some(target_id) = stack.pop_back() {
             if let Some((_, Some(parent))) = self.model_handle.get_cue_and_parent_by_id(&target_id).await {
                 let mut active_instances = self.active_instances.write().await;
-                if !active_instances.contains_key(&parent.id)
-                && let Some((_cue, parent)) = self.model_handle.get_cue_and_parent_by_id(&parent.id).await {
-                    active_instances.insert(target_id, ActiveInstance { engine_type: EngineType::Group, executed: true });
+                if !active_instances.contains_key(&parent.id) {
+                    active_instances.insert(parent.id, ActiveInstance { engine_type: EngineType::Group, executed: true });
 
-                    self.executor_event_tx.send(ExecutorEvent::Started { cue_id: target_id, initial_params: StateParam::None }).await?;
+                    self.executor_event_tx.send(ExecutorEvent::Started { cue_id: parent.id, initial_params: StateParam::None }).await?;
 
-                    if let Some(parent_cue) = &parent {
-                        stack.push_back(parent_cue.id);
-                    }
+                    stack.push_back(parent.id);
                 }
             }
-
         }
         Ok(())
     }
