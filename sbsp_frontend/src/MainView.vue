@@ -199,7 +199,7 @@ watch(
       onCueEdited.clear();
       onCueEdited.immediate();
     }
-    selectedCue.value = uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null;
+    selectedCue.value = uiState.selected != null ? showModel.getCueById(uiState.selected)! : null;
   },
 );
 
