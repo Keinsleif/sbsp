@@ -1,11 +1,11 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::VecDeque, path::PathBuf, sync::Arc};
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
     manager::{ModelCommand, ProjectStatus},
-    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    model::{ShowModel, cue::{Cue, CueParam, CueSequence, group::GroupMode}, settings::ShowSettings},
 };
 
 #[derive(Clone)]
@@ -105,12 +105,96 @@ impl ShowModelHandle {
     }
 
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
-        self.read()
-            .await
-            .cues
-            .iter()
-            .find(|c| c.id.eq(cue_id))
-            .cloned()
+        let model = self.read().await;
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if cue.id == *cue_id {
+                return Some(cue.clone())
+            }
+
+            if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        None
+    }
+
+    pub async fn get_cue_and_parent_by_id(&self, cue_id: &Uuid) -> Option<(Cue, Option<Cue>)> {
+        let model = self.read().await;
+        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
+
+        while let Some((cues, parent)) = queue.pop_front() {
+            for cue in cues {
+                if cue.id == *cue_id {
+                    return Some((cue.clone(), parent.cloned()));
+                }
+
+                if let CueParam::Group { children, .. } = &cue.params {
+                    queue.push_back((children, Some(cue)));
+                }
+            }
+        }
+        None
+    }
+
+    pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
+        let model = self.read().await;
+        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
+
+        while let Some((cues, _parent)) = queue.pop_front() {
+            for (index, cue) in cues.iter().enumerate() {
+                if cue.id == *cue_id {
+                    if index + 1 < cues.len() {
+                        return Some(cues[index + 1].id);
+                    } else {
+                        return None;
+                    }
+                }
+
+                if let CueParam::Group { children, .. } = &cue.params {
+                    queue.push_back((children, Some(cue)));
+                }
+            }
+        }
+        None
+    }
+
+    pub async fn get_cue_sequence_by_id(&self, cue_id: &Uuid) -> Option<CueSequence> {
+        let model = self.read().await;
+        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
+
+        while let Some((cues, parent)) = queue.pop_front() {
+            for (index, cue) in cues.iter().enumerate() {
+                if cue.id == *cue_id {
+                    if let Some(parent_cue) = parent {
+                        if let CueParam::Group { mode, .. } = &parent_cue.params {
+                            match mode {
+                                GroupMode::Playlist => {
+                                    if (index + 1) == cues.len() && let Some(first_cue) = cues.first() {
+                                        return Some(CueSequence::AutoFollow { target_id: Some(first_cue.id) });
+                                    } else {
+                                        return Some(CueSequence::AutoFollow { target_id: None })
+                                    }
+                                }
+                                GroupMode::Concurrency => {
+                                    return Some(CueSequence::DoNotContinue);
+                                }
+                            }
+                        }
+                    } else {
+                        return Some(cue.sequence.clone())
+                    }
+                }
+
+                if let CueParam::Group { children, .. } = &cue.params {
+                    queue.push_back((children, Some(cue)));
+                }
+            }
+        }
+        None
     }
 
     pub async fn get_current_file_path(&self) -> Option<PathBuf> {
