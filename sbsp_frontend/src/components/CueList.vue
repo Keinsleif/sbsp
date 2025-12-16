@@ -15,13 +15,15 @@
     </thead>
     <tbody>
       <tr
-        v-for="(item, i) in flatCueList"
+        v-for="(item, i) in showModel.flatCueList"
         v-show="!item.isHidden"
+        ref="cuelistItem"
         :key="item.cue.id"
         :class="[
           dragOverIndex == i ? $style['drag-over-row'] : '',
           uiState.selectedRows.includes(item.cue.id) ? $style['selected-row'] : '',
         ]"
+        style="scroll-margin-top: 40px"
         draggable="true"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
@@ -186,9 +188,9 @@
         </td>
       </tr>
       <tr
-        :class="dragOverIndex == flatCueList.length ? $style['drag-over-row'] : ''"
-        @dragover="dragOver($event, flatCueList.length)"
-        @drop="drop($event, flatCueList.length)"
+        :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
+        @dragover="dragOver($event, showModel.flatCueList.length)"
+        @drop="drop($event, showModel.flatCueList.length)"
       >
         <td headers="cuelist_cursor"></td>
         <td headers="cuelist_type"></td>
@@ -205,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRaw } from 'vue';
+import { ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import {
   mdiArrowDown,
@@ -232,7 +234,6 @@ import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
 import { useI18n } from 'vue-i18n';
-import { Cue } from '../types/Cue';
 
 const { t } = useI18n();
 
@@ -241,58 +242,33 @@ const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
 
-const flatCueList = computed(() => {
-  return recursiveCueCheck(showModel.cues);
-});
+const cueListItemRefs = useTemplateRef('cuelistItem');
 
-type FlatCueEntry = {
-  cue: Cue;
-  level: number;
-  parent: null | string;
-  innerIndex: number;
-  isHidden: boolean;
-  isGroup: boolean;
-};
-
-const recursiveCueCheck = (list: Cue[], level = 0, isHidden = false, parent: null | string = null) => {
-  let cuelist: FlatCueEntry[] = [];
-
-  list.forEach((cue, index) => {
-    cuelist.push({
-      cue: cue,
-      level: level,
-      parent: parent,
-      innerIndex: index,
-      isHidden: isHidden,
-      isGroup: cue.params.type == 'group',
-    });
-
-    if (cue.params.type == 'group') {
-      const isExpanded = uiState.expandedRows.includes(cue.id);
-      cuelist.push(...recursiveCueCheck(cue.params.children, level + 1, !isExpanded || isHidden, cue.id));
-    }
-  });
-
-  return cuelist;
+const scrollIntoIndex = (inddex: number) => {
+  if (cueListItemRefs.value != null) {
+    cueListItemRefs.value[inddex].scrollIntoView({ block: 'nearest' });
+  }
 };
 
 const onArrowUp = (e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = flatCueList.value.findIndex((item) => item.cue.id == uiState.selected) - 1;
+    let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) - 1;
     if (cursorIndex < 0) return;
-    while (flatCueList.value[cursorIndex].isHidden) {
+    while (showModel.flatCueList[cursorIndex].isHidden) {
       cursorIndex--;
       if (cursorIndex < 0) {
         return;
       }
     }
     if (e.shiftKey) {
-      uiState.addSelected(flatCueList.value[cursorIndex].cue.id);
+      uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
     } else {
-      uiState.setSelected(flatCueList.value[cursorIndex].cue.id);
+      uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
     }
-  } else if (flatCueList.value.length > 0) {
-    uiState.setSelected(flatCueList.value[0].cue.id);
+    scrollIntoIndex(cursorIndex);
+  } else if (showModel.flatCueList.length > 0) {
+    uiState.setSelected(showModel.flatCueList[0].cue.id);
+    scrollIntoIndex(0);
   }
 };
 
@@ -301,21 +277,23 @@ useHotkey('shift+arrowup', onArrowUp);
 
 const onArrowDown = (e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = flatCueList.value.findIndex((item) => item.cue.id == uiState.selected) + 1;
-    if (cursorIndex >= flatCueList.value.length) return;
-    while (flatCueList.value[cursorIndex].isHidden) {
-      if (cursorIndex >= flatCueList.value.length) {
+    let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) + 1;
+    if (cursorIndex >= showModel.flatCueList.length) return;
+    while (showModel.flatCueList[cursorIndex].isHidden) {
+      if (cursorIndex >= showModel.flatCueList.length) {
         return;
       }
       cursorIndex++;
     }
     if (e.shiftKey) {
-      uiState.addSelected(flatCueList.value[cursorIndex].cue.id);
+      uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
     } else {
-      uiState.setSelected(flatCueList.value[cursorIndex].cue.id);
+      uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
     }
-  } else if (flatCueList.value.length > 0) {
-    uiState.setSelected(flatCueList.value[flatCueList.value.length - 1].cue.id);
+    scrollIntoIndex(cursorIndex);
+  } else if (showModel.flatCueList.length > 0) {
+    uiState.setSelected(showModel.flatCueList[showModel.flatCueList.length - 1].cue.id);
+    scrollIntoIndex(showModel.flatCueList.length - 1);
   }
 };
 
@@ -323,7 +301,7 @@ useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
-  uiState.selectedRows = flatCueList.value.filter((item) => !item.isHidden).map((item) => item.cue.id);
+  uiState.selectedRows = showModel.flatCueList.filter((item) => !item.isHidden).map((item) => item.cue.id);
 });
 
 useHotkey('cmd+backspace', () => {
@@ -355,7 +333,7 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    const cueId = flatCueList.value[fromIndex].cue.id;
+    const cueId = showModel.flatCueList[fromIndex].cue.id;
     if (fromIndex === index) {
       return;
     }
@@ -368,18 +346,18 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
-  const clickedId = flatCueList.value[index].cue.id;
+  const clickedId = showModel.flatCueList[index].cue.id;
   if (event.shiftKey) {
     if (uiState.selected != null) {
       uiState.selectedRows = [];
-      const prevIndex = flatCueList.value.findIndex((item) => item.cue.id === uiState.selected);
+      const prevIndex = showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected);
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
-          uiState.selectedRows.push(flatCueList.value[i].cue.id);
+          uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
         }
       } else {
         for (let i = index; i <= prevIndex; i++) {
-          uiState.selectedRows.push(flatCueList.value[i].cue.id);
+          uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
         }
       }
     } else {
@@ -395,8 +373,8 @@ const click = (event: MouseEvent, index: number) => {
         );
         if (uiState.selectedRows.length === 0) {
           uiState.selected = null;
-        } else if (index === flatCueList.value.findIndex((item) => item.cue.id == showState.playbackCursor)) {
-          const findIdx = (x: string): number => flatCueList.value.findIndex((item) => item.cue.id === x);
+        } else if (index === showModel.flatCueList.findIndex((item) => item.cue.id == showState.playbackCursor)) {
+          const findIdx = (x: string): number => showModel.flatCueList.findIndex((item) => item.cue.id === x);
           uiState.selected = uiState.selectedRows.reduce((a, b) => {
             return findIdx(a) > findIdx(b) ? a : b;
           });
@@ -460,13 +438,13 @@ const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
     return;
   }
   if (editType == 'cuelist_duration') {
-    const cueType = flatCueList.value[rowIndex].cue.params.type;
+    const cueType = showModel.flatCueList[rowIndex].cue.params.type;
     if (cueType != 'wait' && cueType != 'fade') {
       return;
     }
   }
   if (editType == 'cuelist_post_wait') {
-    if (flatCueList.value[rowIndex].cue.sequence.type != 'autoContinue') {
+    if (showModel.flatCueList[rowIndex].cue.sequence.type != 'autoContinue') {
       return;
     }
   }
@@ -491,7 +469,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
   target.contentEditable = 'false';
   target.classList.remove('inEdit');
   if (needSave) {
-    const newCue = structuredClone(toRaw(flatCueList.value[rowIndex].cue));
+    const newCue = structuredClone(toRaw(showModel.flatCueList[rowIndex].cue));
     switch (editType) {
       case 'cuelist_number':
         newCue.number = target.innerText;

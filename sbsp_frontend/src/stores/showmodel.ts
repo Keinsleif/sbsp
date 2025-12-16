@@ -8,6 +8,43 @@ import { useUiSettings } from './uiSettings';
 import { v4 } from 'uuid';
 import { toRaw } from 'vue';
 
+type FlatCueEntry = {
+  cue: Cue;
+  level: number;
+  parent: null | string;
+  innerIndex: number;
+  isHidden: boolean;
+  isGroup: boolean;
+};
+
+const recursiveCueCheck = (
+  list: Cue[],
+  expandedRows: string[],
+  level = 0,
+  isHidden = false,
+  parent: null | string = null,
+): FlatCueEntry[] => {
+  const cuelist: FlatCueEntry[] = [];
+
+  list.forEach((cue, index) => {
+    cuelist.push({
+      cue: cue,
+      level: level,
+      parent: parent,
+      innerIndex: index,
+      isHidden: isHidden,
+      isGroup: cue.params.type == 'group',
+    });
+
+    if (cue.params.type == 'group') {
+      const isExpanded = expandedRows.includes(cue.id);
+      cuelist.push(...recursiveCueCheck(cue.params.children, expandedRows, level + 1, !isExpanded || isHidden, cue.id));
+    }
+  });
+
+  return cuelist;
+};
+
 export const useShowModel = defineStore('showmodel', {
   state: () =>
     ({
@@ -43,6 +80,25 @@ export const useShowModel = defineStore('showmodel', {
           cuelist = queue.shift();
         }
       };
+    },
+    flatCueList(state) {
+      const uiState = useUiState();
+      return recursiveCueCheck(state.cues, uiState.expandedRows);
+    },
+    cueCount() {
+      const queue = [];
+      let cuelist: Cue[] | undefined = this.cues;
+      let cueCount = 0;
+      while (cuelist != undefined) {
+        cueCount += cuelist.length;
+        for (const cue of cuelist) {
+          if (cue.params.type == 'group') {
+            queue.push(cue.params.children);
+          }
+        }
+        cuelist = queue.shift();
+      }
+      return cueCount;
     },
   },
   actions: {
