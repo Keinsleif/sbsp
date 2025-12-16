@@ -10,7 +10,7 @@
         v-model="showModel.settings.general.lockCursorToSelection"
       ></v-switch> -->
     </v-sheet>
-    <v-sheet class="ml-auto mr-auto"> {{ showModel.cues.length }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
+    <v-sheet class="ml-auto mr-auto"> {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
       <v-btn
         v-if="uiState.side == 'main'"
