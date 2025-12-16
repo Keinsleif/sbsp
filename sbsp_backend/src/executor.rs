@@ -4,7 +4,7 @@ mod event;
 pub use command::ExecutorCommand;
 pub use event::ExecutorEvent;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::{HashMap, VecDeque}, sync::Arc};
 
 use async_recursion::async_recursion;
 use tokio::sync::{RwLock, mpsc};
@@ -19,12 +19,11 @@ use crate::{
         wait_engine::{WaitCommand, WaitEvent, WaitType},
     },
     manager::ShowModelHandle,
-    model::cue::{Cue, CueParam, audio::AudioCueParam},
+    model::cue::{Cue, CueParam, audio::AudioCueParam, group::GroupMode},
 };
 
 #[derive(Debug)]
 pub struct ActiveInstance {
-    cue_id: Uuid,
     engine_type: EngineType,
     executed: bool,
 }
@@ -85,15 +84,13 @@ impl Executor {
     async fn process_command(&self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
             ExecutorCommand::Load(cue_id) => {
-                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id) {
+                if self.active_instances.read().await.contains_key(&cue_id) {
                     log::warn!("Cue already loaded or executed. cue_id={}", cue_id);
                 } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
-                    let instance_id = Uuid::now_v7();
-                    self.load_cue(&cue, instance_id).await?;
+                    self.load_cue(&cue).await?;
                     self.active_instances.write().await.insert(
-                        instance_id,
+                        cue_id,
                         ActiveInstance {
-                            cue_id,
                             engine_type: EngineType::Audio,
                             executed: false,
                         },
@@ -101,47 +98,60 @@ impl Executor {
                 }
             }
             ExecutorCommand::Execute(cue_id) => {
-                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == cue_id && instance.executed) {
+                if let Some(active_instance) = self.active_instances.read().await.get(&cue_id) && active_instance.executed {
                     log::warn!("Cue already executed. cue_id={}", cue_id);
                 } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
-                    let mut instance_id = Uuid::now_v7();
                     let mut active_instances = self.active_instances.write().await;
                     if cue.pre_wait > 0.0 {
-                        if let Some(loaded_instance) = active_instances
-                            .iter_mut()
-                            .find(|cue| cue.1.cue_id == cue_id)
-                        {
+                        if let Some(loaded_instance) = active_instances.get_mut(&cue_id) {
                             log::debug!("EXECUTE: loaded cue found");
-                            instance_id = *loaded_instance.0;
-                            loaded_instance.1.engine_type = EngineType::PreWait;
+                            loaded_instance.engine_type = EngineType::PreWait;
                         } else {
                             active_instances.insert(
-                                instance_id,
+                                cue_id,
                                 ActiveInstance {
-                                    cue_id,
                                     engine_type: EngineType::PreWait,
                                     executed: true,
                                 },
                             );
-                            self.load_cue(&cue, instance_id).await?;
+                            self.load_cue(&cue).await?;
                         }
                         self.wait_tx
                             .send(WaitCommand::Start {
                                 wait_type: WaitType::PreWait,
-                                instance_id,
+                                instance_id: cue_id,
                                 duration: cue.pre_wait,
                             })
                             .await?;
                     } else {
-                        if let Some(loaded_instance) = active_instances
-                            .iter_mut()
-                            .find(|cue| cue.1.cue_id == cue_id)
-                        {
-                            log::debug!("EXECUTE: loaded cue found");
-                            instance_id = *loaded_instance.0;
+                        let engine_type = match &cue.params {
+                            CueParam::Audio(..) => EngineType::Audio,
+                            CueParam::Wait { .. } => EngineType::Wait,
+                            CueParam::Fade { .. } => EngineType::Fade,
+                            CueParam::Start { .. } |
+                            CueParam::Stop { .. } |
+                            CueParam::Pause { .. } |
+                            CueParam::Load { .. } => EngineType::Playback,
+                            CueParam::Group { .. } => EngineType::Group,
+                        };
+                        if engine_type != EngineType::Playback {
+                            if let Some(active_instance) =
+                                active_instances.get_mut(&cue.id)
+                            {
+                                active_instance.engine_type = engine_type;
+                            } else {
+                                active_instances.insert(
+                                    cue.id,
+                                    ActiveInstance {
+                                        engine_type,
+                                        executed: true,
+                                    },
+                                );
+                            }
                         }
+
                         drop(active_instances);
-                        self.execute_cue(&cue, instance_id).await?;
+                        self.execute_cue(&cue).await?;
                     }
                 } else {
                     anyhow::bail!("EXECUTE: cue not found. cue_id={}", cue_id);
@@ -154,14 +164,12 @@ impl Executor {
             ExecutorCommand::SeekBy(cue_id, amount) => self.seek_by_cue(cue_id, amount).await?,
             ExecutorCommand::PerformAction(cue_id, action) => {
                 let active_instances = self.active_instances.read().await;
-                if let Some((instance_id, active_instance)) =
-                    active_instances.iter().find(|map| map.1.cue_id == cue_id)
-                {
+                if let Some(active_instance) = active_instances.get(&cue_id) {
                     match (action, active_instance.engine_type) {
                         (CueAction::Audio(audio_action), EngineType::Audio) => {
                             self.audio_tx
                                 .send(AudioCommand::PerformAction {
-                                    id: *instance_id,
+                                    id: cue_id,
                                     action: audio_action,
                                 })
                                 .await?;
@@ -181,7 +189,7 @@ impl Executor {
         Ok(())
     }
 
-    async fn load_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
+    async fn load_cue(&self, cue: &Cue) -> Result<(), anyhow::Error> {
         match &cue.params {
             CueParam::Audio(AudioCueParam {
                 target,
@@ -205,7 +213,7 @@ impl Executor {
 
                 self.audio_tx
                     .send(AudioCommand::Load {
-                        id: instance_id,
+                        id: cue.id,
                         data: AudioCommandData {
                             filepath,
                             volume: *volume,
@@ -224,7 +232,7 @@ impl Executor {
                 self.wait_tx
                     .send(WaitCommand::Load {
                         wait_type: WaitType::Wait,
-                        instance_id,
+                        instance_id: cue.id,
                         duration: *duration,
                     })
                     .await?;
@@ -233,7 +241,7 @@ impl Executor {
                 self.wait_tx
                     .send(WaitCommand::Load {
                         wait_type: WaitType::FadeWait,
-                        instance_id,
+                        instance_id: cue.id,
                         duration: fade_param.duration,
                     })
                     .await?;
@@ -244,37 +252,28 @@ impl Executor {
             CueParam::Load { .. } => {
                 log::warn!("Loading transport cues is not available. ignoring...");
             }
+            CueParam::Group { mode, children } => {
+                match mode {
+                    GroupMode::Playlist => {
+                        if let Some(first_cue) = children.first() {
+                            self.process_command(ExecutorCommand::Load(first_cue.id)).await?;
+                        }
+                    },
+                    GroupMode::Concurrency => {
+                        if !children.is_empty() {
+                            for cue in children.iter() {
+                                self.process_command(ExecutorCommand::Load(cue.id)).await?;
+                            }
+                        }
+                    },
+                }
+            }
         }
         Ok(())
     }
 
-    async fn execute_cue(&self, cue: &Cue, instance_id: Uuid) -> Result<(), anyhow::Error> {
-        let engine_type = match &cue.params {
-            CueParam::Audio(..) => EngineType::Audio,
-            CueParam::Wait { .. } => EngineType::Wait,
-            CueParam::Fade { .. } => EngineType::Fade,
-            CueParam::Start { .. } |
-            CueParam::Stop { .. } |
-            CueParam::Pause { .. } |
-            CueParam::Load { .. } => EngineType::Playback,
-        };
-        if engine_type != EngineType::Playback {
-            if let Some(active_instance) =
-                self.active_instances.write().await.get_mut(&instance_id)
-            {
-                active_instance.engine_type = engine_type;
-            } else {
-                self.active_instances.write().await.insert(
-                    instance_id,
-                    ActiveInstance {
-                        cue_id: cue.id,
-                        engine_type,
-                        executed: true,
-                    },
-                );
-            }
-        }
-
+    async fn execute_cue(&self, cue: &Cue) -> Result<(), anyhow::Error> {
+        self.check_and_start_parents(cue.id).await?;
         match &cue.params {
             CueParam::Audio(AudioCueParam {
                 target,
@@ -297,7 +296,7 @@ impl Executor {
                     };
 
                 let audio_command = AudioCommand::Play {
-                    id: instance_id,
+                    id: cue.id,
                     data: AudioCommandData {
                         filepath,
                         volume: *volume,
@@ -316,27 +315,26 @@ impl Executor {
                 self.wait_tx
                     .send(WaitCommand::Start {
                         wait_type: WaitType::Wait,
-                        instance_id,
+                        instance_id: cue.id,
                         duration: *duration,
                     })
                     .await?;
             }
             CueParam::Fade { target, volume, fade_param } => {
-                if let Some((target_id, _)) = self.active_instances.read().await.iter().find(|(_, instance)| instance.cue_id == *target && instance.engine_type == EngineType::Audio) 
-                && self.audio_tx.send(AudioCommand::SetVolume { id: *target_id, volume: *volume, fade_param: *fade_param }).await.is_err() {
+                if self.audio_tx.send(AudioCommand::SetVolume { id: *target, volume: *volume, fade_param: *fade_param }).await.is_err() {
                     anyhow::bail!("cannot send AudioCommand");
                 }
 
                 self.wait_tx
                     .send(WaitCommand::Start {
                         wait_type: WaitType::FadeWait,
-                        instance_id,
+                        instance_id: cue.id,
                         duration: fade_param.duration,
                     })
                     .await?;
             }
             CueParam::Start { target } => {
-                if self.active_instances.read().await.iter().any(|(_, instance)| instance.cue_id == *target && instance.executed) {
+                if let Some(instance) = self.active_instances.read().await.get(&cue.id) && instance.executed {
                     self.process_command(ExecutorCommand::Resume(*target)).await?;
                 } else {
                     self.process_command(ExecutorCommand::Execute(*target)).await?;
@@ -351,32 +349,46 @@ impl Executor {
             CueParam::Load { target } => {
                 self.process_command(ExecutorCommand::Load(*target)).await?;
             }
+            CueParam::Group { mode, children } => {
+                match mode {
+                    GroupMode::Playlist => {
+                        if let Some(first_cue) = children.first() {
+                            self.process_command(ExecutorCommand::Execute(first_cue.id)).await?;
+                        }
+                    },
+                    GroupMode::Concurrency => {
+                        if !children.is_empty() {
+                            for cue in children.iter() {
+                                self.process_command(ExecutorCommand::Execute(cue.id)).await?;
+                            }
+                        }
+                    },
+                }
+            }
         }
         Ok(())
     }
 
     async fn pause_cue(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         let active_instances = self.active_instances.read().await;
-        if let Some((instance_id, active_instance)) =
-            active_instances.iter().find(|map| map.1.cue_id == cue_id)
-        {
+        if let Some(active_instance) = active_instances.get(&cue_id) {
             match active_instance.engine_type {
                 EngineType::PreWait => {
                     self.wait_tx
                         .send(WaitCommand::Pause {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                 }
                 EngineType::Audio => {
                     self.audio_tx
-                        .send(AudioCommand::Pause { id: *instance_id })
+                        .send(AudioCommand::Pause { id: cue_id })
                         .await?;
                 }
                 EngineType::Wait => {
                     self.wait_tx
                         .send(WaitCommand::Pause {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                 }
@@ -386,6 +398,16 @@ impl Executor {
                 EngineType::Playback => {
                     log::warn!("Pause command is not available for Transport cues. ignoring...");
                 }
+                EngineType::Group => {
+                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
+                    && let CueParam::Group { children, .. } = cue.params {
+                        for child in children.iter() {
+                            if active_instances.contains_key(&child.id) {
+                                self.process_command(ExecutorCommand::Pause(child.id)).await?;
+                            }
+                        }
+                    }
+                }
             }
         }
         Ok(())
@@ -393,26 +415,24 @@ impl Executor {
 
     async fn resume_cue(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         let active_instances = self.active_instances.read().await;
-        if let Some((instance_id, active_instance)) =
-            active_instances.iter().find(|map| map.1.cue_id == cue_id)
-        {
+        if let Some(active_instance) = active_instances.get(&cue_id) {
             match active_instance.engine_type {
                 EngineType::PreWait => {
                     self.wait_tx
                         .send(WaitCommand::Resume {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                 }
                 EngineType::Audio => {
                     self.audio_tx
-                        .send(AudioCommand::Resume { id: *instance_id })
+                        .send(AudioCommand::Resume { id: cue_id })
                         .await?;
                 }
                 EngineType::Wait => {
                     self.wait_tx
                         .send(WaitCommand::Resume {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                 }
@@ -422,6 +442,16 @@ impl Executor {
                 EngineType::Playback => {
                     log::warn!("Resume command is not available for Transport cues. ignoring...");
                 }
+                EngineType::Group => {
+                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
+                    && let CueParam::Group { children, .. } = cue.params {
+                        for child in children.iter() {
+                            if active_instances.contains_key(&child.id) {
+                                self.process_command(ExecutorCommand::Resume(child.id)).await?;
+                            }
+                        }
+                    }
+                }
             }
         }
         Ok(())
@@ -429,14 +459,12 @@ impl Executor {
 
     async fn stop_cue(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         let active_instances = self.active_instances.read().await;
-        if let Some((instance_id, active_instance)) =
-            active_instances.iter().find(|map| map.1.cue_id == cue_id)
-        {
+        if let Some(active_instance) = active_instances.get(&cue_id) {
             match active_instance.engine_type {
                 EngineType::PreWait => {
                     self.wait_tx
                         .send(WaitCommand::Stop {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                     self.executor_event_tx
@@ -445,13 +473,13 @@ impl Executor {
                 }
                 EngineType::Audio => {
                     self.audio_tx
-                        .send(AudioCommand::Stop { id: *instance_id })
+                        .send(AudioCommand::Stop { id: cue_id })
                         .await?;
                 }
                 EngineType::Wait => {
                     self.wait_tx
                         .send(WaitCommand::Stop {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                         })
                         .await?;
                 }
@@ -461,6 +489,16 @@ impl Executor {
                 EngineType::Playback => {
                     log::warn!("Stop command is not available for Transport cues. ignoring...");
                 }
+                EngineType::Group => {
+                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
+                    && let CueParam::Group { children, .. } = cue.params {
+                        for child in children.iter() {
+                            if active_instances.contains_key(&child.id) {
+                                self.process_command(ExecutorCommand::Stop(child.id)).await?;
+                            }
+                        }
+                    }
+                }
             }
         }
         Ok(())
@@ -468,14 +506,12 @@ impl Executor {
 
     async fn seek_to_cue(&self, cue_id: Uuid, position: f64) -> Result<(), anyhow::Error> {
         let active_instances = self.active_instances.read().await;
-        if let Some((instance_id, active_instance)) =
-            active_instances.iter().find(|map| map.1.cue_id == cue_id)
-        {
+        if let Some(active_instance) = active_instances.get(&cue_id) {
             match active_instance.engine_type {
                 EngineType::PreWait => {
                     self.wait_tx
                         .send(WaitCommand::SeekTo {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                             position,
                         })
                         .await?;
@@ -483,7 +519,7 @@ impl Executor {
                 EngineType::Audio => {
                     self.audio_tx
                         .send(AudioCommand::SeekTo {
-                            id: *instance_id,
+                            id: cue_id,
                             position,
                         })
                         .await?;
@@ -491,7 +527,7 @@ impl Executor {
                 EngineType::Wait => {
                     self.wait_tx
                         .send(WaitCommand::SeekTo {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                             position,
                         })
                         .await?;
@@ -502,6 +538,9 @@ impl Executor {
                 EngineType::Playback => {
                     log::warn!("SeekTo command is not available for Transport cues. ignoring...");
                 }
+                EngineType::Group => {
+                    log::warn!("SeekTo command is not available for Group cues. ignoring...");
+                }
             }
         }
         Ok(())
@@ -509,14 +548,12 @@ impl Executor {
 
     async fn seek_by_cue(&self, cue_id: Uuid, amount: f64) -> Result<(), anyhow::Error> {
         let active_instances = self.active_instances.read().await;
-        if let Some((instance_id, active_instance)) =
-            active_instances.iter().find(|map| map.1.cue_id == cue_id)
-        {
+        if let Some(active_instance) = active_instances.get(&cue_id) {
             match active_instance.engine_type {
                 EngineType::PreWait => {
                     self.wait_tx
                         .send(WaitCommand::SeekBy {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                             amount,
                         })
                         .await?;
@@ -524,7 +561,7 @@ impl Executor {
                 EngineType::Audio => {
                     self.audio_tx
                         .send(AudioCommand::SeekBy {
-                            id: *instance_id,
+                            id: cue_id,
                             amount,
                         })
                         .await?;
@@ -532,7 +569,7 @@ impl Executor {
                 EngineType::Wait => {
                     self.wait_tx
                         .send(WaitCommand::SeekBy {
-                            instance_id: *instance_id,
+                            instance_id: cue_id,
                             amount,
                         })
                         .await?;
@@ -543,6 +580,9 @@ impl Executor {
                 EngineType::Playback => {
                     log::warn!("SeekBy command is not available for Transport cues. ignoring...");
                 }
+                EngineType::Group => {
+                    log::warn!("SeekTo command is not available for Group cues. ignoring...");
+                }
             }
         }
         Ok(())
@@ -551,15 +591,7 @@ impl Executor {
     async fn handle_engine_event(&self, event: EngineEvent) -> Result<(), anyhow::Error> {
         match event {
             EngineEvent::Audio(audio_event) => {
-                let instance_id = audio_event.instance_id();
-
-                let cue_id = {
-                    let instances = self.active_instances.read().await;
-                    let Some(instance) = instances.get(&instance_id) else {
-                        anyhow::bail!("unknown instance_id id={}", instance_id);
-                    };
-                    instance.cue_id
-                };
+                let cue_id = audio_event.id();
 
                 let playback_event = match audio_event {
                     AudioEngineEvent::Loaded {
@@ -608,11 +640,13 @@ impl Executor {
                         return Ok(());
                     }
                     AudioEngineEvent::Stopped { .. } => {
-                        self.active_instances.write().await.remove(&instance_id);
+                        self.active_instances.write().await.remove(&cue_id);
+                        self.check_and_stop_parents(cue_id, false).await?;
                         ExecutorEvent::Stopped { cue_id }
                     }
                     AudioEngineEvent::Completed { .. } => {
-                        self.active_instances.write().await.remove(&instance_id);
+                        self.active_instances.write().await.remove(&cue_id);
+                        self.check_and_stop_parents(cue_id, true).await?;
                         ExecutorEvent::Completed { cue_id }
                     }
                     AudioEngineEvent::StateParamUpdated { params, .. } => {
@@ -622,7 +656,8 @@ impl Executor {
                         }
                     }
                     AudioEngineEvent::Error { error, .. } => {
-                        self.active_instances.write().await.remove(&instance_id);
+                        self.active_instances.write().await.remove(&cue_id);
+                        self.check_and_stop_parents(cue_id, false).await?;
                         ExecutorEvent::Error { cue_id, error }
                     }
                 };
@@ -630,14 +665,7 @@ impl Executor {
                 self.executor_event_tx.send(playback_event).await?;
             }
             EngineEvent::PreWait(wait_event) => {
-                let instance_id = wait_event.instance_id();
-                let cue_id = {
-                    let instances = self.active_instances.read().await;
-                    let Some(instance) = instances.get(&instance_id) else {
-                        anyhow::bail!("unknown instance_id id={}", instance_id);
-                    };
-                    instance.cue_id
-                };
+                let cue_id = wait_event.id();
 
                 let executor_event = match wait_event {
                     WaitEvent::Loaded { .. } => unreachable!(),
@@ -675,10 +703,10 @@ impl Executor {
                         }
                         ExecutorEvent::PreWaitStopped { cue_id }
                     }
-                    WaitEvent::Completed { instance_id } => {
+                    WaitEvent::Completed { .. } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             log::info!("PreWaitCompleted cue_id={}", cue.id);
-                            self.execute_cue(&cue, instance_id).await?;
+                            self.execute_cue(&cue).await?;
                         } else {
                             anyhow::bail!("PreWait: cue to execute not found. id={}", cue_id);
                         }
@@ -690,15 +718,7 @@ impl Executor {
             }
             EngineEvent::Wait(wait_event) |
             EngineEvent::Fade(wait_event) => {
-                let instance_id = wait_event.instance_id();
-
-                let cue_id = {
-                    let instances = self.active_instances.read().await;
-                    let Some(instance) = instances.get(&instance_id) else {
-                        anyhow::bail!("unknown instance_id. id={}", instance_id);
-                    };
-                    instance.cue_id
-                };
+                let cue_id = wait_event.id();
 
                 let playback_event = match wait_event {
                     WaitEvent::Loaded {
@@ -734,16 +754,66 @@ impl Executor {
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
                     WaitEvent::Stopped { .. } => {
-                        self.active_instances.write().await.remove(&instance_id);
+                        self.active_instances.write().await.remove(&cue_id);
+                        self.check_and_stop_parents(cue_id, false).await?;
                         ExecutorEvent::Stopped { cue_id }
                     }
                     WaitEvent::Completed { .. } => {
-                        self.active_instances.write().await.remove(&instance_id);
+                        self.active_instances.write().await.remove(&cue_id);
+                        self.check_and_stop_parents(cue_id, true).await?;
                         ExecutorEvent::Completed { cue_id }
                     }
                 };
 
                 self.executor_event_tx.send(playback_event).await?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn check_and_start_parents(&self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+        let mut stack = VecDeque::from([cue_id]);
+
+        while let Some(target_id) = stack.pop_back() {
+            if let Some((_, Some(parent))) = self.model_handle.get_cue_and_parent_by_id(&target_id).await {
+                let mut active_instances = self.active_instances.write().await;
+                if !active_instances.contains_key(&parent.id)
+                && let Some((_cue, parent)) = self.model_handle.get_cue_and_parent_by_id(&parent.id).await {
+                    active_instances.insert(target_id, ActiveInstance { engine_type: EngineType::Group, executed: true });
+
+                    self.executor_event_tx.send(ExecutorEvent::Started { cue_id: target_id, initial_params: StateParam::None }).await?;
+
+                    if let Some(parent_cue) = &parent {
+                        stack.push_back(parent_cue.id);
+                    }
+                }
+            }
+
+        }
+        Ok(())
+    }
+
+    async fn check_and_stop_parents(&self, cue_id: Uuid, is_completed: bool) -> Result<(), anyhow::Error> {
+        let mut stack = VecDeque::from([cue_id]);
+
+        while let Some(target_id) = stack.pop_back() {
+            if let Some((_, Some(parent))) = self.model_handle.get_cue_and_parent_by_id(&target_id).await && let CueParam::Group { children, .. } = parent.params {
+                let need_to_stop_parent = {
+                    let active_instances = self.active_instances.read().await;
+                    !children.iter().any(|cue| active_instances.contains_key(&cue.id)) && active_instances.contains_key(&parent.id)
+                };
+
+                if need_to_stop_parent {
+                    self.active_instances.write().await.remove(&parent.id);
+                    if is_completed {
+                        self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: parent.id }).await?;
+                    } else {
+                        self.executor_event_tx.send(ExecutorEvent::Stopped { cue_id: parent.id }).await?;
+                    }
+
+                    stack.push_back(parent.id);
+                }
+                
             }
         }
         Ok(())

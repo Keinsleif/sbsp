@@ -48,7 +48,7 @@ pub enum AudioEngineEvent {
 }
 
 impl AudioEngineEvent {
-    pub fn instance_id(&self) -> Uuid {
+    pub fn id(&self) -> Uuid {
         match self {
             Self::Loaded { instance_id, .. } => *instance_id,
             Self::Started { instance_id, .. } => *instance_id,
