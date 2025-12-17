@@ -4,7 +4,7 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    manager::{ModelCommand, ProjectStatus},
+    manager::{ModelCommand, ProjectStatus, command::InsertPosition},
     model::{ShowModel, cue::{Cue, CueParam, CueSequence, group::GroupMode}, settings::ShowSettings},
 };
 
@@ -34,14 +34,14 @@ impl ShowModelHandle {
         Ok(())
     }
 
-    pub async fn add_cue(&self, cue: Cue, at_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::AddCue { cue, at_index })
+    pub async fn add_cue(&self, cue: Cue, position: InsertPosition) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::AddCue { cue, position })
             .await?;
         Ok(())
     }
 
-    pub async fn add_cues(&self, cues: Vec<Cue>, at_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::AddCues { cues, at_index })
+    pub async fn add_cues(&self, cues: Vec<Cue>, position: InsertPosition) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::AddCues { cues, position })
             .await?;
         Ok(())
     }
@@ -52,8 +52,8 @@ impl ShowModelHandle {
         Ok(())
     }
 
-    pub async fn move_cue(&self, cue_id: Uuid, to_index: usize) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::MoveCue { cue_id, to_index })
+    pub async fn move_cue(&self, cue_id: Uuid, position: InsertPosition) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::MoveCue { cue_id, position })
             .await?;
         Ok(())
     }

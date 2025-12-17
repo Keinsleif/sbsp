@@ -1,10 +1,13 @@
 mod handle;
+mod command;
 
 use anyhow::anyhow;
 pub use handle::ShowModelHandle;
+pub use command::ModelCommand;
+pub use command::InsertPosition;
 
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -14,57 +17,12 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings,
-    event::{UiError, UiEvent},
-    model::{
-        ShowModel,
-        ProjectType,
-        cue::{Cue, CueParam},
-        settings::ShowSettings,
-    },
+    BackendSettings, event::{UiError, UiEvent}, model::{
+        ProjectType, ShowModel, cue::{Cue, CueParam}
+    }
 };
 
 const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(
-    tag = "command",
-    content = "params",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum ModelCommand {
-    UpdateCue(Cue),
-    AddCue {
-        cue: Cue,
-        at_index: usize,
-    },
-    AddCues {
-        cues: Vec<Cue>,
-        at_index: usize,
-    },
-    RemoveCue {
-        cue_id: Uuid,
-    },
-    MoveCue {
-        cue_id: Uuid,
-        to_index: usize,
-    },
-
-    RenumberCues {
-        cues: Vec<Uuid>,
-        start_from: f64,
-        increment: f64,
-    },
-
-    UpdateModelName(String),
-    UpdateSettings(Box<ShowSettings>),
-
-    Save,
-    SaveToFile(PathBuf),
-    ExportToFolder(PathBuf),
-    LoadFromFile(PathBuf),
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ProjectStatus {
@@ -170,13 +128,10 @@ impl ShowModelManager {
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::AddCue { cue, at_index } => {
-                let (id_exists, cuelist_length) = {
+            ModelCommand::AddCue { cue, position } => {
+                let id_exists = {
                     let model = self.model.read().await;
-                    (
-                        model.cues.iter().any(|c| c.id == cue.id),
-                        model.cues.len(),
-                    )
+                    model.cues.iter().any(|c| c.id == cue.id)
                 };
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
@@ -187,12 +142,6 @@ impl ShowModelManager {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
                             message: format!("Cue already exist: cue_id={}", cue.id),
-                        },
-                    }
-                } else if at_index > cuelist_length {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
                         },
                     }
                 } else {
@@ -208,74 +157,61 @@ impl ShowModelManager {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
                     }
-                    {
-                        let mut model = self.model.write().await;
-                        model.cues.insert(at_index, new_cue.clone());
-                    }
-                    UiEvent::CueAdded {
-                        cue: new_cue,
-                        at_index,
+                    if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
+                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } }
+                    } else {
+                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::AddCues { cues, at_index } => {
-                let cuelist_length = {
-                    let model = self.model.read().await;
-                    model.cues.len()
-                };
+            ModelCommand::AddCues { cues, position } => {
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut added_cues = vec![];
-                if at_index > cuelist_length {
-                    self.event_tx.send(UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
-                        },
-                    })?;
-                } else {
-                    let mut insert_index = 0;
-                    for cue in cues.iter() {
-                        let id_exists = {
-                            let model = self.model.read().await;
-                            model.cues.iter().any(|c| c.id == cue.id)
-                        };
-                        if id_exists {
-                            self.event_tx.send(UiEvent::OperationFailed {
-                                error: UiError::CueEdit {
-                                    message: format!("Cue already exist. cue_id={}", cue.id),
-                                },
-                            })?;
+                let mut added_cues: Vec<Cue> = Vec::new();
+                for cue in cues.iter() {
+                    let id_exists = {
+                        let model = self.model.read().await;
+                        model.cues.iter().any(|c| c.id == cue.id)
+                    };
+                    if id_exists {
+                        self.event_tx.send(UiEvent::OperationFailed {
+                            error: UiError::CueEdit {
+                                message: format!("Cue already exist. cue_id={}", cue.id),
+                            },
+                        })?;
+                    } else {
+                        let mut new_cue = cue.clone();
+                        if let CueParam::Audio(audio_param) = &mut new_cue.params
+                            && let Some(model_path) = model_path_option.as_ref()
+                            && copy_assets_when_add
+                        {
+                            let new_target = self
+                                .import_asset_file(&audio_param.target, model_path)
+                                .await;
+                            if let Ok(target) = new_target {
+                                audio_param.target = target;
+                            } // ignore failed to import asset. use absolute path
+                        }
+
+                        let result = if added_cues.is_empty() {
+                            self.insert_cue_at_position(new_cue.clone(), position.clone()).await
                         } else {
-                            let mut new_cue = cue.clone();
-                            if let CueParam::Audio(audio_param) = &mut new_cue.params
-                                && let Some(model_path) = model_path_option.as_ref()
-                                && copy_assets_when_add
-                            {
-                                let new_target = self
-                                    .import_asset_file(&audio_param.target, model_path)
-                                    .await;
-                                if let Ok(target) = new_target {
-                                    audio_param.target = target;
-                                } // ignore failed to import asset. use absolute path
-                            }
-                            {
-                                let mut model = self.model.write().await;
-                                model.cues.insert(at_index + insert_index, new_cue.clone());
-                            }
+                            self.insert_cue_at_position(new_cue.clone(), InsertPosition::After { target: added_cues.last().unwrap().id }).await
+                        };
+
+                        if let Err(e) = result {
+                            let _ = self.event_tx.send(UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } });
+                        } else {
                             added_cues.push(new_cue.clone());
-                            insert_index += 1;
                         }
                     }
-                    self.event_tx.send(UiEvent::CuesAdded {
-                        cues: added_cues,
-                        at_index,
-                    })?;
                 }
+                self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() })?;
                 Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
@@ -293,17 +229,12 @@ impl ShowModelManager {
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::MoveCue { cue_id, to_index } => {
-                let mut model = self.model.write().await;
-                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
-                    let cue = model.cues.remove(index);
-                    model.cues.insert(to_index, cue.clone());
-                    UiEvent::CueMoved { cue_id, to_index }
-                } else if to_index > model.cues.len() {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
-                        },
+            ModelCommand::MoveCue { cue_id, position } => {
+                let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
+                    if let Err(e) = self.insert_cue_at_position(cue, position).await {
+                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to mov cue. {}", e) } }
+                    } else {
+                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 } else {
                     UiEvent::OperationFailed {
@@ -439,6 +370,102 @@ impl ShowModelManager {
         self.model.write().await
     }
 
+    async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
+        let mut model = self.model.write().await;
+        let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+        while let Some(cues) = queue.pop_front() {
+            for (index, cue) in cues.iter().enumerate() {
+                if cue.id == *cue_id {
+                    return Some(cues.remove(index));
+                }
+            }
+
+            for cue in cues.iter_mut() {
+                if let CueParam::Group { children, .. } = &mut cue.params {
+                    queue.push_back(children);
+                }
+            }
+        }
+        None
+    }
+
+    async fn insert_cue_at_position(&self, insert_cue: Cue, position: InsertPosition) -> Result<(), String> {
+        let mut model = self.model.write().await;
+        match position {
+            InsertPosition::Before { target } => {
+                let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                while let Some(cues) = queue.pop_front() {
+                    for (index, cue) in cues.iter().enumerate() {
+                        if cue.id == target {
+                            cues.insert(index, insert_cue);
+                            return Ok(())
+                        }
+                    }
+
+                    for cue in cues.iter_mut() {
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            queue.push_back(children);
+                        }
+                    }
+                }
+                Err("target id not found.".into())
+            }
+            InsertPosition::After { target } => {
+                let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                while let Some(cues) = queue.pop_front() {
+                    for (index, cue) in cues.iter().enumerate() {
+                        if cue.id == target {
+                            cues.insert(index + 1, insert_cue);
+                            return Ok(());
+                        }
+                    }
+
+                    for cue in cues.iter_mut() {
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            queue.push_back(children);
+                        }
+                    }
+                }
+                Err("target id not found.".into())
+            },
+            InsertPosition::Inside { target, index } => {
+                if let Some(parent_id) = target {
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                if cue.id == parent_id {
+                                    if index <= children.len() {
+                                        children.insert(index, insert_cue);
+                                        return Ok(());
+                                    } else {
+                                        return Err("insert index out of range.".into());
+                                    }
+                                } else {
+                                    queue.push_back(children);
+                                }
+                            }
+                        }
+                    }
+                    Err("target id not found.".into())
+                } else if index <= model.cues.len() {
+                    model.cues.insert(index, insert_cue);
+                    Ok(())
+                } else {
+                    Err("insert index out of range.".into())
+                }
+            },
+            InsertPosition::Last => {
+                model.cues.push(insert_cue);
+                Ok(())
+            }
+        }
+    }
+
     pub async fn load_from_file(&self, path: &Path) -> Result<ProjectType, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
@@ -555,7 +582,7 @@ impl ShowModelManager {
 #[cfg(test)]
 mod tests {
     use crate::{
-        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType}, model::{
+        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType, command::InsertPosition}, model::{
             ShowModel,
             cue::{
                 Cue, CueParam, CueSequence,
@@ -651,10 +678,10 @@ mod tests {
             .unwrap()
             .to_str()
             .unwrap();
-        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
+        let estimated_audio_target = temp_dir.path().join(".").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
+            audio_param.target = [".", estimated_audio_filename].iter().collect();
         }
 
         let updated_cue;
@@ -707,26 +734,23 @@ mod tests {
                 sound_type: SoundType::Streaming,
             }),
         };
-        model_handle.add_cue(new_cue.clone(), 0).await.unwrap();
+        model_handle.add_cue(new_cue.clone(), InsertPosition::Inside { target: None, index: 0 }).await.unwrap();
 
         let estimated_audio_filename = temp_target.path().file_name().unwrap().to_str().unwrap();
-        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
+        let estimated_audio_target = temp_dir.path().join(".").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
+            audio_param.target = [".", estimated_audio_filename].iter().collect();
         }
 
         let added_cue;
-        let added_at_index;
         loop {
-            if let Ok(UiEvent::CueAdded { cue, at_index }) = event_rx.recv().await {
-                added_cue = cue;
-                added_at_index = at_index;
+            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+                added_cue = cues[0].clone();
                 break;
             }
         }
         assert_eq!(added_cue, estimated_new_cue);
-        assert_eq!(added_at_index, 0);
 
         let model = model_handle.read().await;
         assert_eq!(model.cues[0], estimated_new_cue);
