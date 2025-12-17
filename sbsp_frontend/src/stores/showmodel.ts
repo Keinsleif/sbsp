@@ -139,12 +139,6 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyAudioCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       invoke<string[]>('pick_audio_assets', {})
         .then((assets) => {
           if (assets.length == 1) {
@@ -153,7 +147,9 @@ export const useShowModel = defineStore('showmodel', {
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0];
             }
-            invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+            invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) =>
+              console.error(e),
+            );
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -164,7 +160,9 @@ export const useShowModel = defineStore('showmodel', {
               }
               newCues.push(newCue);
             }
-            invoke('add_cues', { cues: newCues, atIndex: insertIndex }).catch((e) => console.error(e));
+            invoke('add_cues', { cues: newCues, targetId: uiState.selected, toBefore: false }).catch((e) =>
+              console.error(e),
+            );
           }
         })
         .catch((e) => console.error(e));
@@ -172,32 +170,22 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyWaitCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
       newCue.id = v4();
-      invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+      invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
       newCue.id = v4();
       if (newCue.params.type == 'fade' && uiState.selected != null) {
-        const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
+        const targetCue = this.getCueById(uiState.selected);
         if (targetCue != null && targetCue.params.type == 'audio') {
           newCue.params.target = uiState.selected;
-          invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+          invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) =>
+            console.error(e),
+          );
         }
       }
     },
@@ -205,14 +193,7 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const uiState = useUiState();
       let insertIndex;
-      if (uiState.selected != null) {
-        const selectedIndex = this.cues.findIndex((cue) => cue.id == uiState.selected);
-        if (type == 'load' || type == 'start') {
-          insertIndex = selectedIndex;
-        } else {
-          insertIndex = selectedIndex + 1;
-        }
-      } else {
+      if (uiState.selected == null) {
         return;
       }
       let newCue;
@@ -240,7 +221,9 @@ export const useShowModel = defineStore('showmodel', {
           newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
-        invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+        invoke('add_cue', { cue: newCue, atIndex: insertIndex, toBefore: type == 'load' || type == 'start' }).catch(
+          (e) => console.error(e),
+        );
       }
     },
   },

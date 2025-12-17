@@ -333,12 +333,12 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    const cueId = showModel.flatCueList[fromIndex].cue.id;
     if (fromIndex === index) {
       return;
     }
-    const newIndex = index < fromIndex ? index : index - 1;
-    invoke('move_cue', { cueId: cueId, toIndex: newIndex }).catch((e) => {
+    const cueId = showModel.flatCueList[fromIndex].cue.id;
+    const targetId = showModel.flatCueList[index].cue.id;
+    invoke('move_cue', { cueId: cueId, targetId: targetId }).catch((e) => {
       console.log('Failed to move cue. ' + e);
     });
     // showModel.moveCue(cue_id, newIndex);

@@ -109,17 +109,8 @@ listen<UiEvent>('backend-event', (event) => {
     case 'cueUpdated':
       showModel.updateCue(event.payload.param.cue);
       break;
-    case 'cueAdded':
-      showModel.addCue(event.payload.param.cue, event.payload.param.atIndex);
-      break;
-    case 'cuesAdded':
-      showModel.addCues(event.payload.param.cues, event.payload.param.atIndex);
-      break;
     case 'cueRemoved':
       showModel.removeCue(event.payload.param.cueId);
-      break;
-    case 'cueMoved':
-      showModel.moveCue(event.payload.param.cueId, event.payload.param.toIndex);
       break;
     case 'cueListUpdated':
       showModel.$patch({ cues: event.payload.param.cues });
