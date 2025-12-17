@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { readonly, ref } from 'vue';
+import { readonly, ref, toRaw } from 'vue';
 import { GlobalSettings } from '../types/GlobalSettings';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -172,10 +172,15 @@ export const useUiSettings = defineStore('uiSettings', () => {
     invoke('save_settings', {}).catch((e) => console.error(e));
   };
 
+  const clone = () => {
+    return structuredClone(toRaw(settings.value));
+  };
+
   return {
     settings: readonly(settings),
     update,
     reload,
     save,
+    clone,
   };
 });

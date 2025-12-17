@@ -48,12 +48,12 @@
         <v-tab density="compact" value="basics">{{ t('main.bottomEditor.basics.title') }}</v-tab>
       </v-tabs>
     </div>
-    <v-tabs-window class="border-t-sm" v-if="selectedCue != null" v-model="editorTab">
+    <v-tabs-window class="border-t-sm" v-show="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
         <basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
-        v-if="selectedCue != null && selectedCue.params.type == 'audio'"
+        v-show="selectedCue != null && selectedCue.params.type == 'audio'"
         value="audio"
         reverse-transition="false"
         transition="false"
@@ -61,7 +61,7 @@
         <audio-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
-        v-if="selectedCue != null && selectedCue.params.type == 'audio'"
+        v-show="selectedCue != null && selectedCue.params.type == 'audio'"
         value="time"
         reverse-transition="false"
         transition="false"
@@ -69,7 +69,7 @@
         <audio-time-level-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
-        v-if="selectedCue != null && selectedCue.params.type == 'fade'"
+        v-show="selectedCue != null && selectedCue.params.type == 'fade'"
         value="fade"
         reverse-transition="false"
         transition="false"
@@ -77,7 +77,7 @@
         <fade-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
-        v-if="
+        v-show="
           selectedCue != null &&
           (selectedCue.params.type == 'start' ||
             selectedCue.params.type == 'stop' ||
@@ -91,7 +91,7 @@
         <playback-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
-        v-if="selectedCue != null && selectedCue.params.type == 'group'"
+        v-show="selectedCue != null && selectedCue.params.type == 'group'"
         value="group"
         reverse-transition="false"
         transition="false"

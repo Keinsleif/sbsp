@@ -180,11 +180,11 @@
           </div>
         </td>
         <td headers="cuelist_repeat" width="53px">
-          <v-icon v-if="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
+          <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
         </td>
         <td headers="cuelist_sequence" width="53px">
-          <v-icon v-if="item.cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
-          <v-icon v-if="item.cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
+          <v-icon v-show="item.cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
+          <v-icon v-show="item.cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
       </tr>
       <tr

@@ -250,7 +250,7 @@
                     </td>
                     <td headers="cuelist_repeat">
                       <v-icon
-                        v-if="
+                        v-show="
                           editingSettings.global.template.audio.params.type == 'audio' &&
                           editingSettings.global.template.audio.params.repeat
                         "
@@ -259,11 +259,11 @@
                     </td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -313,11 +313,11 @@
                     <td headers="cuelist_repeat"></td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -367,11 +367,11 @@
                     <td headers="cuelist_repeat"></td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -428,7 +428,7 @@ const showModelName = ref<string>(showModel.name);
 const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalSettings;
-}>({ show: structuredClone(toRaw(showModel.settings)), global: structuredClone(toRaw(uiSettings.settings)) });
+}>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 
 const getSelectingCue = () => {
   if (selectingTemplate.value == 'audio') {
@@ -466,8 +466,8 @@ watch(
 
 watch(
   () => uiSettings.settings,
-  (newSettings) => {
-    editingSettings.value.global = structuredClone(toRaw(newSettings));
+  () => {
+    editingSettings.value.global = uiSettings.clone();
   },
 );
 
@@ -475,7 +475,7 @@ watch(isSettingsDialogOpen, (newState) => {
   if (newState) {
     editingSettings.value = {
       show: structuredClone(toRaw(showModel.settings)),
-      global: structuredClone(toRaw(uiSettings.settings)),
+      global: uiSettings.clone(),
     };
   }
 });
