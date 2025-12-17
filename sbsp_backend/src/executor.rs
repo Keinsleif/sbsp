@@ -4,7 +4,7 @@ mod event;
 pub use command::ExecutorCommand;
 pub use event::ExecutorEvent;
 
-use std::{collections::{HashMap, VecDeque}, sync::Arc};
+use std::{collections::{HashMap, VecDeque, hash_map::Entry}, sync::Arc};
 
 use async_recursion::async_recursion;
 use tokio::sync::{RwLock, mpsc};
@@ -777,9 +777,9 @@ impl Executor {
         while let Some(target_id) = stack.pop_back() {
             if let Some((_, Some(parent))) = self.model_handle.get_cue_and_parent_by_id(&target_id).await {
                 let mut active_instances = self.active_instances.write().await;
-                if !active_instances.contains_key(&parent.id) {
-                    active_instances.insert(parent.id, ActiveInstance { engine_type: EngineType::Group, executed: true });
+                if let Entry::Vacant(entry) = active_instances.entry(parent.id) {
 
+                    entry.insert(ActiveInstance { engine_type: EngineType::Group, executed: true });
                     self.executor_event_tx.send(ExecutorEvent::Started { cue_id: parent.id, initial_params: StateParam::None }).await?;
 
                     stack.push_back(parent.id);
