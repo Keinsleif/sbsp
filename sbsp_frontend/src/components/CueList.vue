@@ -234,6 +234,7 @@ import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
 import { useI18n } from 'vue-i18n';
+import { throttle } from 'vuetify/lib/util/throttle.mjs';
 
 const { t } = useI18n();
 
@@ -250,7 +251,7 @@ const scrollIntoIndex = (inddex: number) => {
   }
 };
 
-const onArrowUp = (e: KeyboardEvent) => {
+const onArrowUp = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
     let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) - 1;
     if (cursorIndex < 0) return;
@@ -270,12 +271,12 @@ const onArrowUp = (e: KeyboardEvent) => {
     uiState.setSelected(showModel.flatCueList[0].cue.id);
     scrollIntoIndex(0);
   }
-};
+}, 100);
 
 useHotkey('arrowup', onArrowUp);
 useHotkey('shift+arrowup', onArrowUp);
 
-const onArrowDown = (e: KeyboardEvent) => {
+const onArrowDown = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
     let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) + 1;
     if (cursorIndex >= showModel.flatCueList.length) return;
@@ -295,7 +296,7 @@ const onArrowDown = (e: KeyboardEvent) => {
     uiState.setSelected(showModel.flatCueList[showModel.flatCueList.length - 1].cue.id);
     scrollIntoIndex(showModel.flatCueList.length - 1);
   }
-};
+}, 100);
 
 useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
@@ -542,6 +543,5 @@ const setPlaybackCursor = (cueId: string) => {
 }
 .selected-row > td {
   background-color: rgb(var(--v-theme-primary), 0.2);
-  color: rgb(var(--v-theme-on-background));
 }
 </style>
