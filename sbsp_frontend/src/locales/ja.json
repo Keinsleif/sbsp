@@ -82,6 +82,14 @@
       "continueTargetCue": "連鎖対象キュー",
       "playback": {
         "title": "再生"
+      },
+      "group": {
+        "mode": {
+          "concurrency": "同時実行",
+          "label": "グループ実行モード",
+          "playlist": "プレイリスト"
+        },
+        "title": "グループ"
       }
     },
     "number": "番号",

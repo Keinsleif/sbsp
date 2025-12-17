@@ -226,7 +226,15 @@
       "playback": {
         "title": "Playback"
       },
-      "continueTargetCue": "Continue Target Cue"
+      "continueTargetCue": "Continue Target Cue",
+      "group": {
+        "title": "Group",
+        "mode": {
+          "label": "Group Mode",
+          "playlist": "Playlist",
+          "concurrency": "Concurrency"
+        }
+      }
     },
     "number": "Number",
     "name": "Name",
