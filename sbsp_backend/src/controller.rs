@@ -88,13 +88,6 @@ impl CueController {
                                 log::error!("Failed to stop active cues before load. {}", e);
                             }
                         },
-                        UiEvent::CueAdded{cue, ..} => {
-                            if self.state_tx.borrow().playback_cursor.is_none() {
-                                self.state_tx.send_modify(|state| {
-                                    state.playback_cursor = Some(cue.id);
-                                });
-                            }
-                        },
                         UiEvent::CueRemoved{cue_id} => {
                             if self.state_tx.borrow().playback_cursor.eq(&Some(cue_id)) {
                                 let model = self.model_handle.read().await;

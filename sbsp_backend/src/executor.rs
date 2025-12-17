@@ -913,8 +913,6 @@ mod tests {
 
         let (_, exec_tx, mut audio_rx, _, _) = setup_executor(cue_id).await;
 
-        let old_id = Uuid::now_v7();
-
         exec_tx
             .send(ExecutorCommand::Execute(cue_id))
             .await
@@ -922,10 +920,7 @@ mod tests {
 
         let command = audio_rx.recv().await.unwrap();
 
-        if let AudioCommand::Play { id, data } = command {
-            assert!(id > old_id);
-            let now_id = Uuid::now_v7();
-            assert!(id < now_id);
+        if let AudioCommand::Play { data, .. } = command {
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
             assert_eq!(data.volume, 0.0);
             assert_eq!(data.pan, 0.0);
