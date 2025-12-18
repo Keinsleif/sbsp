@@ -106,12 +106,6 @@ listen<UiEvent>('backend-event', (event) => {
     case 'showModelSaved':
       uiState.success(t('notification.modelSaved'));
       break;
-    case 'cueUpdated':
-      showModel.updateCue(event.payload.param.cue);
-      break;
-    case 'cueRemoved':
-      showModel.removeCue(event.payload.param.cueId);
-      break;
     case 'cueListUpdated':
       showModel.$patch({ cues: event.payload.param.cues });
       break;

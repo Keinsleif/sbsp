@@ -91,39 +91,31 @@ impl ShowModelManager {
         log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
-                let index_option = {
-                    let model = self.model.read().await;
-                    model.cues.iter().position(|c| c.id == cue.id)
-                };
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let event = if let Some(index) = index_option {
-                    let mut new_cue = cue.clone();
-                    if let CueParam::Audio(audio_param) = &mut new_cue.params
-                        && let Some(model_path) = model_path_option.as_ref()
-                        && copy_assets_when_add
-                    {
-                        let new_target = self
-                            .import_asset_file(&audio_param.target, model_path)
-                            .await;
-                        if let Ok(target) = new_target {
-                            audio_param.target = target;
-                        } // ignore failed to import asset. use absolute path
-                    }
-                    {
-                        let mut model = self.model.write().await;
-                        model.cues[index] = new_cue.clone();
-                    }
-                    UiEvent::CueUpdated { cue: new_cue }
-                } else {
+                let mut new_cue = cue.clone();
+                if let CueParam::Audio(audio_param) = &mut new_cue.params
+                    && let Some(model_path) = model_path_option.as_ref()
+                    && copy_assets_when_add
+                {
+                    let new_target = self
+                        .import_asset_file(&audio_param.target, model_path)
+                        .await;
+                    if let Ok(target) = new_target {
+                        audio_param.target = target;
+                    } // ignore failed to import asset. use absolute path
+                }
+                let event = if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            message: format!("Cue doesn't exist: cue_id={}", cue.id),
+                            message: format!("Failed to update cue. {}", e),
                         },
                     }
+                } else {
+                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -215,16 +207,11 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
-                let mut model = self.model.write().await;
-                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
-                    model.cues.remove(index);
-                    UiEvent::CueRemoved { cue_id }
+                let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
+                    UiEvent::OperationFailed { error: UiError::CueEdit { message: "Failed to remove cue. id not found.".into() } }
                 } else {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: format!("Cue already exist: cue_id={}", cue_id),
-                        },
-                    }
+                    self.event_tx.send(UiEvent::CueRemoved { cue_id })?;
+                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -388,6 +375,27 @@ impl ShowModelManager {
             }
         }
         None
+    }
+
+    async fn update_cue_by_id(&self, cue_id: &Uuid, new_cue: Cue) -> Result<(), String> {
+        let mut model = self.model.write().await;
+        let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+        while let Some(cues) = queue.pop_front() {
+            for cue in cues.iter_mut() {
+                if cue.id == *cue_id {
+                    *cue = new_cue;
+                    return Ok(());
+                }
+            }
+
+            for cue in cues.iter_mut() {
+                if let CueParam::Group { children, .. } = &mut cue.params {
+                    queue.push_back(children);
+                }
+            }
+        }
+        Err(format!("cue not found. id={}", cue_id))
     }
 
     async fn insert_cue_at_position(&self, insert_cue: Cue, position: InsertPosition) -> Result<(), String> {
@@ -686,8 +694,8 @@ mod tests {
 
         let updated_cue;
         loop {
-            if let Ok(UiEvent::CueUpdated { cue }) = event_rx.recv().await {
-                updated_cue = cue;
+            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+                updated_cue = cues[0].clone();
                 break;
             }
         }

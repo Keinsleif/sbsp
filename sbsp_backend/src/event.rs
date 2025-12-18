@@ -71,9 +71,6 @@ pub enum UiEvent {
         project_type: ProjectType,
         path: PathBuf,
     },
-    CueUpdated {
-        cue: Cue,
-    },
     CueRemoved {
         cue_id: Uuid,
     },
