@@ -24,7 +24,8 @@
       "start": "Start Cue",
       "stop": "Stop Cue",
       "pause": "Pause Cue",
-      "load": "Load Cue"
+      "load": "Load Cue",
+      "group": "Group Cue"
     },
     "tools": {
       "renumber": "Renumber selected cues",

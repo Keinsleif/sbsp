@@ -202,7 +202,7 @@ export const useShowModel = defineStore('showmodel', {
       newCue.id = v4();
       if (newCue.params.type == 'fade' && uiState.selected != null) {
         const targetCue = this.getCueById(uiState.selected);
-        if (targetCue != null && targetCue.params.type == 'audio') {
+        if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
           newCue.params.target = uiState.selected;
           invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) =>
             console.error(e),
@@ -246,6 +246,24 @@ export const useShowModel = defineStore('showmodel', {
           targetId: uiState.selected,
           toBefore: type == 'load' || type == 'start',
         }).catch((e) => console.error(e));
+      }
+    },
+    addEmptyGroupCue() {
+      const uiState = useUiState();
+      const uiSettings = useUiSettings();
+      const showModel = useShowModel();
+      const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
+      newCue.id = v4();
+      if (newCue.params.type == 'group') {
+        for (const item of showModel.flatCueList) {
+          if (uiState.selectedRows.includes(item.cue.id)) {
+            newCue.params.children.push(item.cue);
+          }
+        }
+        for (const cue of newCue.params.children) {
+          invoke('remove_cue', { cueId: cue.id }).catch((e) => console.error(e));
+        }
+        invoke('add_cue', { cue: newCue, toBefore: false }).catch((e) => console.error(e));
       }
     },
   },
