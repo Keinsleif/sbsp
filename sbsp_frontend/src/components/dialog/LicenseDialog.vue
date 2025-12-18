@@ -24,6 +24,7 @@
       ></text-input>
     </v-sheet>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 pa-3 ga-3">
+      <v-btn :icon="mdiReload" density="comfortable" @click="loadLicense"></v-btn>
       <v-btn
         class="ml-auto"
         :text="t('dialog.license.activateLicense')"
@@ -47,7 +48,8 @@
       @keydown.stop
     >
       <v-card>
-        <v-card-title class="pa-4">
+        <v-card-title class="d-flex flex-row text-success pa-4">
+          <v-icon :icon="mdiCheckCircleOutline"></v-icon>
           <span class="font-weight-black">{{ t('dialog.license.success.title') }}</span>
         </v-card-title>
         <v-card-text class="bg-surface-light" style="white-space: pre-line">
@@ -66,7 +68,7 @@ import { computed, onMounted, ref } from 'vue';
 import { LicenseInformation } from '../../types/LicenseInformation';
 import { invoke } from '@tauri-apps/api/core';
 import TextInput from '../input/TextInput.vue';
-import { mdiContentCopy } from '@mdi/js';
+import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
 import { useI18n } from 'vue-i18n';
 
 const { t, locale } = useI18n({ useScope: 'global' });
@@ -93,9 +95,13 @@ const onCopyId = () => {
   }
 };
 
-onMounted(() => {
+const loadLicense = () => {
   invoke<LicenseInformation | null>('get_license_info')
     .then((value) => (licenseInfo.value = value))
     .catch((e) => console.error(e));
+};
+
+onMounted(() => {
+  loadLicense();
 });
 </script>
