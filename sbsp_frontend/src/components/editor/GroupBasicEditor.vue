@@ -19,6 +19,14 @@
       @update:modelValue="saveEditorValue"
       @keydown.stop
     ></v-select>
+    <v-checkbox
+      v-model="repeat"
+      hide-details
+      density="compact"
+      :label="'Repeat'"
+      :disabled="selectedCue!.id in showState.activeCues || mode != 'playlist'"
+      @update:model-value="saveEditorValue"
+    ></v-checkbox>
   </v-sheet>
 </template>
 
@@ -35,14 +43,23 @@ const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
 const mode = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'group' ? selectedCue.value.params.mode : null,
+  selectedCue.value != null && selectedCue.value.params.type == 'group' ? selectedCue.value.params.mode.type : null,
+);
+
+const repeat = ref(
+  selectedCue.value != null &&
+    selectedCue.value.params.type == 'group' &&
+    selectedCue.value.params.mode.type == 'playlist'
+    ? selectedCue.value.params.mode.repeat
+    : null,
 );
 
 watch(selectedCue, () => {
   if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
     return;
   }
-  mode.value = selectedCue.value.params.mode;
+  mode.value = selectedCue.value.params.mode.type;
+  repeat.value = selectedCue.value.params.mode.type == 'playlist' ? selectedCue.value.params.mode.repeat : null;
 });
 
 const saveEditorValue = () => {
@@ -50,7 +67,19 @@ const saveEditorValue = () => {
     return;
   }
   if (mode.value != null) {
-    selectedCue.value.params.mode = mode.value;
+    if (mode.value != selectedCue.value.params.mode.type) {
+      selectedCue.value.params.mode.type = mode.value;
+      if (selectedCue.value.params.mode.type == 'playlist') {
+        selectedCue.value.params.mode.repeat = true;
+      }
+    }
+    if (
+      selectedCue.value.params.mode.type == 'playlist' &&
+      repeat.value != null &&
+      repeat.value != selectedCue.value.params.mode.repeat
+    ) {
+      selectedCue.value.params.mode.repeat = repeat.value;
+    }
   }
   emit('update');
 };

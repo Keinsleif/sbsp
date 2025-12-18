@@ -254,7 +254,7 @@ impl Executor {
             }
             CueParam::Group { mode, children } => {
                 match mode {
-                    GroupMode::Playlist => {
+                    GroupMode::Playlist { .. } => {
                         if let Some(first_cue) = children.first() {
                             self.process_command(ExecutorCommand::Load(first_cue.id)).await?;
                         }
@@ -367,7 +367,7 @@ impl Executor {
             }
             CueParam::Group { mode, children } => {
                 match mode {
-                    GroupMode::Playlist => {
+                    GroupMode::Playlist { .. } => {
                         if let Some(first_cue) = children.first() {
                             self.process_command(ExecutorCommand::Execute(first_cue.id)).await?;
                         }

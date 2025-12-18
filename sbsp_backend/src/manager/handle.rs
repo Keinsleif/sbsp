@@ -190,9 +190,13 @@ impl ShowModelHandle {
                     if let Some(parent_cue) = parent {
                         if let CueParam::Group { mode, .. } = &parent_cue.params {
                             match mode {
-                                GroupMode::Playlist => {
+                                GroupMode::Playlist { repeat } => {
                                     if (index + 1) == cues.len() && let Some(first_cue) = cues.first() {
-                                        return Some(CueSequence::AutoFollow { target_id: Some(first_cue.id) });
+                                        if *repeat {
+                                            return Some(CueSequence::AutoFollow { target_id: Some(first_cue.id) });
+                                        } else {
+                                            return Some(CueSequence::DoNotContinue);
+                                        }
                                     } else {
                                         return Some(CueSequence::AutoFollow { target_id: None })
                                     }
