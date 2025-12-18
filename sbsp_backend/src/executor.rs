@@ -267,6 +267,7 @@ impl Executor {
                         }
                     },
                 }
+                self.executor_event_tx.send(ExecutorEvent::Loaded { cue_id: cue.id, position: 0.0, duration: 0.0 }).await?;
             }
         }
         Ok(())
@@ -380,6 +381,7 @@ impl Executor {
                         }
                     },
                 }
+                self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, initial_params: StateParam::None }).await?;
             }
         }
         Ok(())
@@ -514,6 +516,7 @@ impl Executor {
                             }
                         }
                     }
+                    self.executor_event_tx.send(ExecutorEvent::Stopping { cue_id, position: 0.0, duration: 0.0 }).await?;
                 }
             }
         }
