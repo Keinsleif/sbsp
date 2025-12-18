@@ -41,9 +41,9 @@ const props = withDefaults(
 const emit = defineEmits(['update']);
 
 const cueList = computed(() => {
-  const list: { value: string | null; name: string }[] = showModel.cues
-    .filter(filterCue)
-    .map((cue) => ({ value: cue.id, name: buildCueName(cue) }));
+  const list: { value: string | null; name: string }[] = showModel.flatCueList
+    .filter((item) => filterCue(item.cue))
+    .map((item) => ({ value: item.cue.id, name: buildCueName(item.cue) }));
   if (props.nullText != null) {
     list.unshift({ value: null, name: props.nullText });
   }

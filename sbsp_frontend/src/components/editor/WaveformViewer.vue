@@ -15,7 +15,7 @@
     <svg
       ref="svg"
       preserveAspectRatio="none"
-      v-if="props.targetId != null"
+      v-show="props.targetId != null"
       xmlns="http://www.w3.org/2000/svg"
       :viewBox="`0 0 ${compressedWaveform.length} 116`"
       width="100%"

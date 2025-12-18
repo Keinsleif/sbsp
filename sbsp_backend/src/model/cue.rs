@@ -1,10 +1,11 @@
 pub mod audio;
+pub mod group;
 
 use ts_rs::TS;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::model::cue::audio::{AudioCueParam, FadeParam};
+use crate::model::cue::{audio::{AudioCueParam, FadeParam}, group::GroupMode};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
 #[serde(rename_all = "camelCase")]
@@ -61,5 +62,9 @@ pub enum CueParam {
     },
     Load {
         target: Uuid,
+    },
+    Group {
+        mode: GroupMode,
+        children: Box<Vec<Cue>>,
     },
 }

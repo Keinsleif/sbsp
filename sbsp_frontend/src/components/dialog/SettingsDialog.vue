@@ -19,6 +19,7 @@
           <v-tab :text="t('dialog.settings.tab.appearance')" value="appearance"></v-tab>
           <v-tab :text="t('dialog.settings.tab.hotkey')" value="hotkey"></v-tab>
           <v-tab :text="t('dialog.settings.tab.template')" value="template"></v-tab>
+          <v-tab :text="t('dialog.settings.tab.nameFormat')" value="nameFormat"></v-tab>
         </v-tabs>
         <v-divider vertical opacity="0.5"></v-divider>
         <v-tabs-window v-model="tab" class="flex-grow-1 fill-height">
@@ -250,7 +251,7 @@
                     </td>
                     <td headers="cuelist_repeat">
                       <v-icon
-                        v-if="
+                        v-show="
                           editingSettings.global.template.audio.params.type == 'audio' &&
                           editingSettings.global.template.audio.params.repeat
                         "
@@ -259,11 +260,11 @@
                     </td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -313,11 +314,11 @@
                     <td headers="cuelist_repeat"></td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -367,11 +368,251 @@
                     <td headers="cuelist_repeat"></td>
                     <td headers="cuelist_sequence">
                       <v-icon
-                        v-if="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-if="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'start' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'start'"
+                  >
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.start') }}</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.start.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.fade.name != null
+                          ? editingSettings.global.template.fade.name
+                          : t('dialog.settings.global.template.builtFromCueParam')
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.start.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(null) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.start.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.start.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.start.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.start.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-show="editingSettings.global.template.start.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-show="editingSettings.global.template.start.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'stop' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'stop'"
+                  >
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.stop') }}</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.stop.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.stop.name != null
+                          ? editingSettings.global.template.stop.name
+                          : t('dialog.settings.global.template.builtFromCueParam')
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.stop.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(null) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.stop.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.stop.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.stop.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.stop.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-show="editingSettings.global.template.stop.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-show="editingSettings.global.template.stop.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'pause' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'pause'"
+                  >
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.pause') }}</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.pause.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.pause.name != null
+                          ? editingSettings.global.template.pause.name
+                          : t('dialog.settings.global.template.builtFromCueParam')
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.pause.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(null) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.pause.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.pause.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.pause.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.pause.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-show="editingSettings.global.template.pause.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-show="editingSettings.global.template.pause.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'load' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'load'"
+                  >
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.load') }}</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.load.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.load.name != null
+                          ? editingSettings.global.template.load.name
+                          : t('dialog.settings.global.template.builtFromCueParam')
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.load.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(null) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.load.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.load.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.load.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.load.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-show="editingSettings.global.template.load.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-show="editingSettings.global.template.load.sequence.type == 'autoContinue'"
+                        :icon="mdiArrowDown"
+                      />
+                    </td>
+                  </tr>
+                  <tr
+                    :class="[selectingTemplate == 'group' ? $style['selected-row'] : '']"
+                    @mousedown="selectingTemplate = 'group'"
+                  >
+                    <td headers="cuelist_type" width="160px">{{ t('dialog.settings.global.template.group') }}</td>
+                    <td headers="cuelist_number" class="text-center" width="50px">
+                      {{ editingSettings.global.template.group.number }}
+                    </td>
+                    <td headers="cuelist_name" width="auto">
+                      {{
+                        editingSettings.global.template.group.name != null
+                          ? editingSettings.global.template.group.name
+                          : t('dialog.settings.global.template.builtFromCueParam')
+                      }}
+                    </td>
+                    <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(editingSettings.global.template.group.preWait) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+                      <div>
+                        {{ secondsToFormat(null) }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+                      <div>
+                        {{
+                          editingSettings.global.template.group.sequence.type == 'doNotContinue'
+                            ? '--:--.--'
+                            : editingSettings.global.template.group.sequence.type == 'autoContinue'
+                              ? secondsToFormat(editingSettings.global.template.group.sequence.postWait)
+                              : secondsToFormat(calculateDuration(editingSettings.global.template.group.params, null))
+                        }}
+                      </div>
+                    </td>
+                    <td headers="cuelist_repeat"></td>
+                    <td headers="cuelist_sequence">
+                      <v-icon
+                        v-show="editingSettings.global.template.group.sequence.type == 'autoFollow'"
+                        :icon="mdiArrowExpandDown"
+                      />
+                      <v-icon
+                        v-show="editingSettings.global.template.group.sequence.type == 'autoContinue'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -381,6 +622,87 @@
               <div style="height: 302px" class="flex-grow-0 mb-0">
                 <bottom-editor v-model="selectingCue"></bottom-editor>
               </div>
+            </v-sheet>
+          </v-tabs-window-item>
+          <v-tabs-window-item value="nameFormat" class="fill-height">
+            <v-sheet flat class="d-flex flex-column pa-4 ga-4">
+              <text-input
+                v-model="editingSettings.global.nameFormat.audio"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.audio.title')"
+                :hint="t('dialog.settings.global.nameFormat.audio.description')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.wait"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.wait.title')"
+                :hint="t('dialog.settings.global.nameFormat.wait.description')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.fade"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.fade.title')"
+                :hint="t('dialog.settings.global.nameFormat.fade.description')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.start"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.start.title')"
+                :hint="t('dialog.settings.global.nameFormat.playbackDescription')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.stop"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.stop.title')"
+                :hint="t('dialog.settings.global.nameFormat.playbackDescription')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.pause"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.pause.title')"
+                :hint="t('dialog.settings.global.nameFormat.playbackDescription')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.load"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.load.title')"
+                :hint="t('dialog.settings.global.nameFormat.playbackDescription')"
+                persistent-hint
+                show-details
+              ></text-input>
+              <text-input
+                v-model="editingSettings.global.nameFormat.group"
+                align-input="left"
+                class="mt-4"
+                width="500px"
+                :label="t('dialog.settings.global.nameFormat.group.title')"
+              ></text-input>
             </v-sheet>
           </v-tabs-window-item>
         </v-tabs-window>
@@ -423,12 +745,12 @@ const uiSettings = useUiSettings();
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
 const tab = ref('showGeneral');
-const selectingTemplate = ref<'audio' | 'wait' | 'fade' | null>(null);
+const selectingTemplate = ref<'audio' | 'wait' | 'fade' | 'start' | 'stop' | 'pause' | 'load' | 'group' | null>(null);
 const showModelName = ref<string>(showModel.name);
 const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalSettings;
-}>({ show: structuredClone(toRaw(showModel.settings)), global: structuredClone(toRaw(uiSettings.settings)) });
+}>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 
 const getSelectingCue = () => {
   if (selectingTemplate.value == 'audio') {
@@ -437,6 +759,16 @@ const getSelectingCue = () => {
     return editingSettings.value.global.template.wait;
   } else if (selectingTemplate.value == 'fade') {
     return editingSettings.value.global.template.fade;
+  } else if (selectingTemplate.value == 'start') {
+    return editingSettings.value.global.template.start;
+  } else if (selectingTemplate.value == 'stop') {
+    return editingSettings.value.global.template.stop;
+  } else if (selectingTemplate.value == 'pause') {
+    return editingSettings.value.global.template.pause;
+  } else if (selectingTemplate.value == 'load') {
+    return editingSettings.value.global.template.load;
+  } else if (selectingTemplate.value == 'group') {
+    return editingSettings.value.global.template.group;
   }
   return null;
 };
@@ -466,8 +798,8 @@ watch(
 
 watch(
   () => uiSettings.settings,
-  (newSettings) => {
-    editingSettings.value.global = structuredClone(toRaw(newSettings));
+  () => {
+    editingSettings.value.global = uiSettings.clone();
   },
 );
 
@@ -475,7 +807,7 @@ watch(isSettingsDialogOpen, (newState) => {
   if (newState) {
     editingSettings.value = {
       show: structuredClone(toRaw(showModel.settings)),
-      global: structuredClone(toRaw(uiSettings.settings)),
+      global: uiSettings.clone(),
     };
   }
 });

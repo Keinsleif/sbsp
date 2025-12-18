@@ -19,7 +19,7 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
-      <BottomEditor v-model="selectedCue" @update="onCueEdited" />
+      <BottomEditor v-model="selectedCue" @update="onCueEdited" :sequence-override="selectedCueSequenceOverride" />
     </v-navigation-drawer>
 
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
@@ -106,21 +106,6 @@ listen<UiEvent>('backend-event', (event) => {
     case 'showModelSaved':
       uiState.success(t('notification.modelSaved'));
       break;
-    case 'cueUpdated':
-      showModel.updateCue(event.payload.param.cue);
-      break;
-    case 'cueAdded':
-      showModel.addCue(event.payload.param.cue, event.payload.param.atIndex);
-      break;
-    case 'cuesAdded':
-      showModel.addCues(event.payload.param.cues, event.payload.param.atIndex);
-      break;
-    case 'cueRemoved':
-      showModel.removeCue(event.payload.param.cueId);
-      break;
-    case 'cueMoved':
-      showModel.moveCue(event.payload.param.cueId, event.payload.param.toIndex);
-      break;
     case 'cueListUpdated':
       showModel.$patch({ cues: event.payload.param.cues });
       break;
@@ -190,9 +175,21 @@ onUnmounted(() => {
   }
 });
 
-const selectedCue = ref<Cue | null>(
-  uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null,
-);
+const selectedCue = ref<Cue | null>(uiState.selected != null ? showModel.getCueById(uiState.selected)! : null);
+const selectedCueSequenceOverride = computed(() => {
+  if (selectedCue.value == null) {
+    return null;
+  }
+  const flatEntry = showModel.flatCueList.find((item) => item.cue.id == selectedCue.value!.id);
+  if (flatEntry == null) {
+    return null;
+  }
+  if (flatEntry.isSequenceOverrided) {
+    return flatEntry.sequence;
+  } else {
+    return null;
+  }
+});
 
 watch(
   () => uiState.selected,
@@ -201,7 +198,7 @@ watch(
       onCueEdited.clear();
       onCueEdited.immediate();
     }
-    selectedCue.value = uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null;
+    selectedCue.value = uiState.selected != null ? showModel.getCueById(uiState.selected)! : null;
   },
 );
 

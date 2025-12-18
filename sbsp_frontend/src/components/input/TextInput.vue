@@ -24,7 +24,7 @@
     @keydown.stop
   ></v-text-field>
   <v-textarea
-    v-if="props.type == 'area'"
+    v-else-if="props.type == 'area'"
     v-bind="$attrs"
     :hide-details="!props.showDetails"
     persistent-placeholder

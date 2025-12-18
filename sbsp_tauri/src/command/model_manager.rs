@@ -1,4 +1,4 @@
-use sbsp_backend::model::{ShowModel, cue::Cue, settings::ShowSettings};
+use sbsp_backend::{manager::InsertPosition, model::{ShowModel, cue::Cue, settings::ShowSettings}};
 use uuid::Uuid;
 
 use crate::AppState;
@@ -23,28 +23,62 @@ pub async fn update_cue(state: tauri::State<'_, AppState>, cue: Cue) -> Result<(
 pub async fn add_cue(
     state: tauri::State<'_, AppState>,
     cue: Cue,
-    at_index: usize,
+    target_id: Option<Uuid>,
+    to_before: bool,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    handle
-        .model_handle
-        .add_cue(cue, at_index)
-        .await
-        .map_err(|e| e.to_string())
+    if let Some(target) = target_id {
+        if to_before {
+            handle
+                .model_handle
+                .add_cue(cue, InsertPosition::Before { target })
+                .await
+                .map_err(|e| e.to_string())
+        } else {
+            handle
+                .model_handle
+                .add_cue(cue, InsertPosition::After { target })
+                .await
+                .map_err(|e| e.to_string())
+        }
+    } else {
+        handle
+            .model_handle
+            .add_cue(cue, InsertPosition::Last)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
 pub async fn add_cues(
     state: tauri::State<'_, AppState>,
     cues: Vec<Cue>,
-    at_index: usize,
+    target_id: Option<Uuid>,
+    to_before: bool,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    handle
-        .model_handle
-        .add_cues(cues, at_index)
-        .await
-        .map_err(|e| e.to_string())
+    if let Some(target) = target_id {
+        if to_before {
+            handle
+                .model_handle
+                .add_cues(cues, InsertPosition::Before { target })
+                .await
+                .map_err(|e| e.to_string())
+        } else {
+            handle
+                .model_handle
+                .add_cues(cues, InsertPosition::After { target })
+                .await
+                .map_err(|e| e.to_string())
+        }
+    } else {
+        handle
+            .model_handle
+            .add_cues(cues, InsertPosition::Last)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
@@ -61,12 +95,12 @@ pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Resu
 pub async fn move_cue(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
-    to_index: usize,
+    target_id: Uuid,
 ) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .model_handle
-        .move_cue(cue_id, to_index)
+        .move_cue(cue_id, InsertPosition::Before { target: target_id })
         .await
         .map_err(|e| e.to_string())
 }

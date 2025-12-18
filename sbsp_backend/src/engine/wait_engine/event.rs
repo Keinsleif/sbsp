@@ -32,7 +32,7 @@ pub enum WaitEvent {
 }
 
 impl WaitEvent {
-    pub fn instance_id(&self) -> Uuid {
+    pub fn id(&self) -> Uuid {
         match self {
             WaitEvent::Loaded { instance_id, .. } => *instance_id,
             WaitEvent::Started { instance_id } => *instance_id,

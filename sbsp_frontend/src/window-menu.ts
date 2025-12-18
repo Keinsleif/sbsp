@@ -157,6 +157,14 @@ export const createWindowMenu = async () => {
           showModel.addEmptyPlaybackCue('load');
         },
       }),
+      await MenuItem.new({
+        id: 'id_group_cue',
+        text: t('menu.cue.group'),
+        action: () => {
+          const showModel = useShowModel();
+          showModel.addEmptyGroupCue();
+        },
+      }),
     ],
   });
 

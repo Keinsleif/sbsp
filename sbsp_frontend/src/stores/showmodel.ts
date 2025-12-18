@@ -1,12 +1,70 @@
 import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
-import { Cue } from '../types/Cue';
+import type { Cue } from '../types/Cue';
 import { useUiState } from './uistate';
 import { invoke } from '@tauri-apps/api/core';
 import { useUiSettings } from './uiSettings';
 import { v4 } from 'uuid';
 import { toRaw } from 'vue';
+import type { CueSequence } from '../types/CueSequence';
+
+type FlatCueEntry = {
+  cue: Cue;
+  level: number;
+  parent: null | string;
+  innerIndex: number;
+  isHidden: boolean;
+  isGroup: boolean;
+  sequence: CueSequence;
+  isSequenceOverrided: boolean;
+};
+
+const recursiveCueCheck = (
+  list: Cue[],
+  expandedRows: string[],
+  level = 0,
+  isHidden = false,
+  parent: null | Cue = null,
+): FlatCueEntry[] => {
+  const cuelist: FlatCueEntry[] = [];
+
+  list.forEach((cue, index) => {
+    let sequence: CueSequence | null = null;
+    if (parent?.params.type == 'group') {
+      if (parent.params.mode.type == 'playlist') {
+        if (index + 1 == list.length) {
+          if (parent.params.mode.repeat) {
+            sequence = { type: 'autoFollow', targetId: list[0].id };
+          } else {
+            sequence = { type: 'doNotContinue' };
+          }
+        } else {
+          sequence = { type: 'autoFollow', targetId: null };
+        }
+      } else if (parent.params.mode.type == 'concurrency') {
+        sequence = { type: 'doNotContinue' };
+      }
+    }
+    cuelist.push({
+      cue: cue,
+      level: level,
+      parent: parent != null ? parent.id : null,
+      innerIndex: index,
+      isHidden: isHidden,
+      isGroup: cue.params.type == 'group',
+      sequence: sequence != null ? sequence : cue.sequence,
+      isSequenceOverrided: sequence != null,
+    });
+
+    if (cue.params.type == 'group') {
+      const isExpanded = expandedRows.includes(cue.id);
+      cuelist.push(...recursiveCueCheck(cue.params.children, expandedRows, level + 1, !isExpanded || isHidden, cue));
+    }
+  });
+
+  return cuelist;
+};
 
 export const useShowModel = defineStore('showmodel', {
   state: () =>
@@ -25,50 +83,54 @@ export const useShowModel = defineStore('showmodel', {
         },
       },
     }) as ShowModel,
+  getters: {
+    getCueById() {
+      return (cue_id: string): Cue | undefined => {
+        const queue = [];
+        let cuelist: Cue[] | undefined = this.cues;
+        while (cuelist != undefined) {
+          for (const cue of cuelist) {
+            if (cue.id == cue_id) {
+              return cue;
+            }
+
+            if (cue.params.type == 'group') {
+              queue.push(cue.params.children);
+            }
+          }
+          cuelist = queue.shift();
+        }
+      };
+    },
+    flatCueList(state) {
+      const uiState = useUiState();
+      return recursiveCueCheck(state.cues, uiState.expandedRows);
+    },
+    cueCount() {
+      const queue = [];
+      let cuelist: Cue[] | undefined = this.cues;
+      let cueCount = 0;
+      while (cuelist != undefined) {
+        cueCount += cuelist.length;
+        for (const cue of cuelist) {
+          if (cue.params.type == 'group') {
+            queue.push(cue.params.children);
+          }
+        }
+        cuelist = queue.shift();
+      }
+      return cueCount;
+    },
+  },
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;
       this.cues = newModel.cues;
       this.settings = newModel.settings;
     },
-    updateCue(newCue: Cue) {
-      this.cues.splice(
-        this.cues.findIndex((cue) => cue.id == newCue.id),
-        1,
-        newCue,
-      );
-    },
-    addCue(cue: Cue, atIndex: number) {
-      this.cues.splice(atIndex, 0, cue);
-    },
-    addCues(cues: Cue[], atIndex: number) {
-      this.cues.splice(atIndex, 0, ...cues);
-    },
-    removeCue(cueId: string) {
-      this.cues.splice(
-        this.cues.findIndex((cue) => cue.id == cueId),
-        1,
-      );
-    },
-    moveCue(cueId: string, toIndex: number) {
-      this.cues.splice(
-        toIndex,
-        0,
-        this.cues.splice(
-          this.cues.findIndex((cue) => cue.id == cueId),
-          1,
-        )[0],
-      );
-    },
     addEmptyAudioCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       invoke<string[]>('pick_audio_assets', {})
         .then((assets) => {
           if (assets.length == 1) {
@@ -77,7 +139,9 @@ export const useShowModel = defineStore('showmodel', {
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0];
             }
-            invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+            invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) =>
+              console.error(e),
+            );
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -88,7 +152,9 @@ export const useShowModel = defineStore('showmodel', {
               }
               newCues.push(newCue);
             }
-            invoke('add_cues', { cues: newCues, atIndex: insertIndex }).catch((e) => console.error(e));
+            invoke('add_cues', { cues: newCues, targetId: uiState.selected, toBefore: false }).catch((e) =>
+              console.error(e),
+            );
           }
         })
         .catch((e) => console.error(e));
@@ -96,47 +162,29 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyWaitCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
       newCue.id = v4();
-      invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+      invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      let insertIndex;
-      if (uiState.selected) {
-        insertIndex = this.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-      } else {
-        insertIndex = this.cues.length;
-      }
       const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
       newCue.id = v4();
       if (newCue.params.type == 'fade' && uiState.selected != null) {
-        const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
-        if (targetCue != null && targetCue.params.type == 'audio') {
+        const targetCue = this.getCueById(uiState.selected);
+        if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
           newCue.params.target = uiState.selected;
-          invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+          invoke('add_cue', { cue: newCue, targetId: uiState.selected, toBefore: false }).catch((e) =>
+            console.error(e),
+          );
         }
       }
     },
     addEmptyPlaybackCue(type: 'start' | 'stop' | 'pause' | 'load') {
       const uiSettings = useUiSettings();
       const uiState = useUiState();
-      let insertIndex;
-      if (uiState.selected != null) {
-        const selectedIndex = this.cues.findIndex((cue) => cue.id == uiState.selected);
-        if (type == 'load' || type == 'start') {
-          insertIndex = selectedIndex;
-        } else {
-          insertIndex = selectedIndex + 1;
-        }
-      } else {
+      if (uiState.selected == null) {
         return;
       }
       let newCue;
@@ -164,7 +212,29 @@ export const useShowModel = defineStore('showmodel', {
           newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
-        invoke('add_cue', { cue: newCue, atIndex: insertIndex }).catch((e) => console.error(e));
+        invoke('add_cue', {
+          cue: newCue,
+          targetId: uiState.selected,
+          toBefore: type == 'load' || type == 'start',
+        }).catch((e) => console.error(e));
+      }
+    },
+    addEmptyGroupCue() {
+      const uiState = useUiState();
+      const uiSettings = useUiSettings();
+      const showModel = useShowModel();
+      const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
+      newCue.id = v4();
+      if (newCue.params.type == 'group') {
+        for (const item of showModel.flatCueList) {
+          if (uiState.selectedRows.includes(item.cue.id)) {
+            newCue.params.children.push(item.cue);
+          }
+        }
+        for (const cue of newCue.params.children) {
+          invoke('remove_cue', { cueId: cue.id }).catch((e) => console.error(e));
+        }
+        invoke('add_cue', { cue: newCue, toBefore: false }).catch((e) => console.error(e));
       }
     },
   },

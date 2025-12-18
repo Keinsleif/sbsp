@@ -15,12 +15,15 @@
     </thead>
     <tbody>
       <tr
-        v-for="(cue, i) in showModel.cues"
-        :key="cue.id"
+        v-for="(item, i) in showModel.flatCueList"
+        v-show="!item.isHidden"
+        ref="cuelistItem"
+        :key="item.cue.id"
         :class="[
           dragOverIndex == i ? $style['drag-over-row'] : '',
-          uiState.selectedRows.includes(cue.id) ? $style['selected-row'] : '',
+          uiState.selectedRows.includes(item.cue.id) ? $style['selected-row'] : '',
         ]"
+        style="scroll-margin-top: 40px"
         draggable="true"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
@@ -30,158 +33,164 @@
       >
         <td headers="cuelist_cursor" width="53px">
           <v-icon
-            :icon="showState.playbackCursor == cue.id ? mdiArrowRightBold : undefined"
-            @click="setPlaybackCursor(cue.id)"
+            :icon="showState.playbackCursor == item.cue.id ? mdiArrowRightBold : undefined"
+            @click="setPlaybackCursor(item.cue.id)"
           ></v-icon>
         </td>
         <td headers="cuelist_type" width="53px">
-          <v-icon :icon="getCueIcon(cue.params.type)" />
+          <v-icon :icon="getCueIcon(item.cue.params.type)" />
         </td>
         <td
           headers="cuelist_number"
           class="text-center"
           width="50px"
-          @dblclick="openEditable($event)"
-          @blur="closeEditable($event.target, true, i)"
-          @keydown.enter.stop="closeEditable($event.target, true, i)"
-          @keydown.esc.stop="closeEditable($event.target, false, i)"
+          @dblclick="openEditable($event, i, 'cuelist_number')"
+          @blur="closeEditable($event.target, true, i, 'cuelist_number')"
+          @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_number')"
+          @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_number')"
         >
-          {{ cue.number }}
+          {{ item.cue.number }}
         </td>
         <td
           headers="cuelist_name"
           width="auto"
-          @dblclick="openEditable($event)"
-          @blur="closeEditable($event.target, true, i)"
-          @keydown.enter.stop="closeEditable($event.target, true, i)"
-          @keydown.esc.stop="closeEditable($event.target, false, i)"
+          :style="{
+            paddingLeft: `${item.level}em`,
+          }"
+          @dblclick="openEditable($event, i, 'cuelist_name')"
+          @blur="closeEditable($event.target, true, i, 'cuelist_name')"
+          @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_name')"
+          @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_name')"
         >
-          {{ cue.name != null ? cue.name : buildCueName(cue) }}
+          <v-icon
+            :icon="item.isGroup ? (uiState.expandedRows.includes(item.cue.id) ? mdiMenuDown : mdiMenuRight) : undefined"
+            @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
+            @mousedown.stop
+          ></v-icon>
+          {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
         </td>
-        <td
-          headers="cuelist_pre_wait"
-          class="text-center pa-1"
-          width="100px"
-          @dblclick="if (isPreWaitActive(cue.id)) openEditable($event);"
-          @blur="closeEditable($event.target, true, i)"
-          @keydown.enter.stop="closeEditable($event.target, true, i)"
-          @keydown.esc.stop="closeEditable($event.target, false, i)"
-        >
+        <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
           <div
-            :class="[isPreWaitActive(cue.id) ? 'border-md border-primary' : '']"
+            :class="[isPreWaitActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
-              background: isPreWaitActive(cue.id)
+              background: isPreWaitActive(item.cue.id)
                 ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                  Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
+                  Math.floor(
+                    (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration,
+                  ) +
                   '%, transparent ' +
-                  Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
+                  Math.floor(
+                    (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration,
+                  ) +
                   '%) no-repeat'
                 : '',
             }"
+            @dblclick="if (!isPreWaitActive(item.cue.id)) openEditable($event, i, 'cuelist_pre_wait');"
+            @blur="closeEditable($event.target, true, i, 'cuelist_pre_wait')"
+            @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_pre_wait')"
+            @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_pre_wait')"
           >
             {{
-              isPreWaitActive(cue.id)
-                ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : secondsToFormat(cue.preWait)
+              isPreWaitActive(item.cue.id)
+                ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                : secondsToFormat(item.cue.preWait == 0.0 ? null : item.cue.preWait)
             }}
           </div>
         </td>
-        <td
-          headers="cuelist_duration"
-          class="text-center pa-1"
-          width="100px"
-          @dblclick="if (isActive(cue.id)) openEditable($event);"
-          @blur="closeEditable($event.target, true, i)"
-          @keydown.enter.stop="closeEditable($event.target, true, i)"
-          @keydown.esc.stop="closeEditable($event.target, false, i)"
-        >
+        <td headers="cuelist_duration" class="text-center pa-1" width="100px">
           <div
-            :class="[isActive(cue.id) ? 'border-md border-primary' : '']"
+            :class="[isActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
-              background: isActive(cue.id)
+              background: isActive(item.cue.id)
                 ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                  Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
+                  Math.floor(
+                    (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration,
+                  ) +
                   '%, transparent ' +
-                  Math.floor((showState.activeCues[cue.id]!.position * 100) / showState.activeCues[cue.id]!.duration) +
+                  Math.floor(
+                    (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration,
+                  ) +
                   '%) no-repeat'
                 : '',
             }"
+            @dblclick="if (!isActive(item.cue.id)) openEditable($event, i, 'cuelist_duration');"
+            @blur="closeEditable($event.target, true, i, 'cuelist_duration')"
+            @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_duration')"
+            @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_duration')"
           >
             {{
-              isActive(cue.id)
-                ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                : secondsToFormat(calculateDuration(cue.params, assetResult.get(cue.id)?.duration))
+              isActive(item.cue.id)
+                ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
             }}
           </div>
         </td>
-        <td
-          headers="cuelist_post_wait"
-          class="text-center pa-1"
-          width="100px"
-          @dblclick="if (isActive(cue.id)) openEditable($event);"
-          @blur="closeEditable($event.target, true, i)"
-          @keydown.enter.stop="closeEditable($event.target, true, i)"
-          @keydown.esc.stop="closeEditable($event.target, false, i)"
-        >
+        <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
           <div
             :class="
-              isActive(cue.id) &&
-              cue.sequence.type == 'autoContinue' &&
-              showState.activeCues[cue.id]!.position < cue.sequence.postWait
+              isActive(item.cue.id) &&
+              item.sequence.type == 'autoContinue' &&
+              showState.activeCues[item.cue.id]!.position < item.sequence.postWait
                 ? 'border-md border-primary'
                 : ''
             "
             :style="{
               background:
-                cue.sequence.type != 'doNotContinue' &&
-                isActive(cue.id) &&
-                showState.activeCues[cue.id]!.position <
-                  (cue.sequence.type == 'autoContinue' ? cue.sequence.postWait : showState.activeCues[cue.id]!.duration)
+                item.sequence.type != 'doNotContinue' &&
+                isActive(item.cue.id) &&
+                showState.activeCues[item.cue.id]!.position <
+                  (item.sequence.type == 'autoContinue'
+                    ? item.sequence.postWait
+                    : showState.activeCues[item.cue.id]!.duration)
                   ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
                     Math.floor(
-                      (showState.activeCues[cue.id]!.position * 100) /
-                        (cue.sequence.type == 'autoContinue'
-                          ? cue.sequence.postWait
-                          : showState.activeCues[cue.id]!.duration),
+                      (showState.activeCues[item.cue.id]!.position * 100) /
+                        (item.sequence.type == 'autoContinue'
+                          ? item.sequence.postWait
+                          : showState.activeCues[item.cue.id]!.duration),
                     ) +
                     '%, transparent ' +
                     Math.floor(
-                      (showState.activeCues[cue.id]!.position * 100) /
-                        (cue.sequence.type == 'autoContinue'
-                          ? cue.sequence.postWait
-                          : showState.activeCues[cue.id]!.duration),
+                      (showState.activeCues[item.cue.id]!.position * 100) /
+                        (item.sequence.type == 'autoContinue'
+                          ? item.sequence.postWait
+                          : showState.activeCues[item.cue.id]!.duration),
                     ) +
                     '%) no-repeat'
                   : '',
             }"
+            @dblclick="if (!isActive(item.cue.id)) openEditable($event, i, 'cuelist_post_wait');"
+            @blur="closeEditable($event.target, true, i, 'cuelist_post_wait')"
+            @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_post_wait')"
+            @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_post_wait')"
           >
             {{
-              cue.sequence.type == 'doNotContinue'
+              item.sequence.type == 'doNotContinue'
                 ? '--:--.--'
-                : isActive(cue.id) &&
-                    showState.activeCues[cue.id]!.position <
-                      (cue.sequence.type == 'autoContinue'
-                        ? cue.sequence.postWait
-                        : showState.activeCues[cue.id]!.duration)
-                  ? secondsToFormat(showState.activeCues[cue.id]!.position)
-                  : cue.sequence.type == 'autoContinue'
-                    ? secondsToFormat(cue.sequence.postWait)
-                    : secondsToFormat(calculateDuration(cue.params, assetResult.get(cue.id)?.duration))
+                : isActive(item.cue.id) &&
+                    showState.activeCues[item.cue.id]!.position <
+                      (item.sequence.type == 'autoContinue'
+                        ? item.sequence.postWait
+                        : showState.activeCues[item.cue.id]!.duration)
+                  ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                  : item.sequence.type == 'autoContinue'
+                    ? secondsToFormat(item.sequence.postWait)
+                    : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
             }}
           </div>
         </td>
         <td headers="cuelist_repeat" width="53px">
-          <v-icon v-if="cue.params.type == 'audio' && cue.params.repeat" :icon="mdiRepeat" />
+          <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
         </td>
         <td headers="cuelist_sequence" width="53px">
-          <v-icon v-if="cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
-          <v-icon v-if="cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
+          <v-icon v-show="item.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
+          <v-icon v-show="item.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
       </tr>
       <tr
-        :class="dragOverIndex == showModel.cues.length ? $style['drag-over-row'] : ''"
-        @dragover="dragOver($event, showModel.cues.length)"
-        @drop="drop($event, showModel.cues.length)"
+        :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
+        @dragover="dragOver($event, showModel.flatCueList.length)"
+        @drop="drop($event, showModel.flatCueList.length)"
       >
         <td headers="cuelist_cursor"></td>
         <td headers="cuelist_type"></td>
@@ -198,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw } from 'vue';
+import { ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import {
   mdiArrowDown,
@@ -206,6 +215,9 @@ import {
   mdiArrowRightBold,
   mdiChartBellCurveCumulative,
   mdiChevronDoubleDown,
+  mdiGroup,
+  mdiMenuDown,
+  mdiMenuRight,
   mdiPauseCircleOutline,
   mdiPlayCircleOutline,
   mdiRepeat,
@@ -222,6 +234,7 @@ import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
 import { useI18n } from 'vue-i18n';
+import { throttle } from 'vuetify/lib/util/throttle.mjs';
 
 const { t } = useI18n();
 
@@ -230,46 +243,66 @@ const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
 
-const onArrowUp = (e: KeyboardEvent) => {
-  if (uiState.selected != null) {
-    let cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) - 1;
-    if (cursorIndex < 0) {
-      cursorIndex++;
-    }
-    if (e.shiftKey) {
-      uiState.addSelected(showModel.cues[cursorIndex].id);
-    } else {
-      uiState.setSelected(showModel.cues[cursorIndex].id);
-    }
-  } else if (showModel.cues.length > 0) {
-    uiState.setSelected(showModel.cues[0].id);
+const cueListItemRefs = useTemplateRef('cuelistItem');
+
+const scrollIntoIndex = (inddex: number) => {
+  if (cueListItemRefs.value != null) {
+    cueListItemRefs.value[inddex].scrollIntoView({ block: 'nearest' });
   }
 };
+
+const onArrowUp = throttle((e: KeyboardEvent) => {
+  if (uiState.selected != null) {
+    let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) - 1;
+    if (cursorIndex < 0) return;
+    while (showModel.flatCueList[cursorIndex].isHidden) {
+      cursorIndex--;
+      if (cursorIndex < 0) {
+        return;
+      }
+    }
+    if (e.shiftKey) {
+      uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
+    } else {
+      uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
+    }
+    scrollIntoIndex(cursorIndex);
+  } else if (showModel.flatCueList.length > 0) {
+    uiState.setSelected(showModel.flatCueList[0].cue.id);
+    scrollIntoIndex(0);
+  }
+}, 100);
 
 useHotkey('arrowup', onArrowUp);
 useHotkey('shift+arrowup', onArrowUp);
 
-const onArrowDown = (e: KeyboardEvent) => {
+const onArrowDown = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.cues.findIndex((cue) => cue.id == uiState.selected) + 1;
-    if (cursorIndex >= showModel.cues.length) {
-      cursorIndex--;
+    let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) + 1;
+    if (cursorIndex >= showModel.flatCueList.length) return;
+    while (showModel.flatCueList[cursorIndex].isHidden) {
+      if (cursorIndex >= showModel.flatCueList.length) {
+        return;
+      }
+      cursorIndex++;
     }
     if (e.shiftKey) {
-      uiState.addSelected(showModel.cues[cursorIndex].id);
+      uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
     } else {
-      uiState.setSelected(showModel.cues[cursorIndex].id);
+      uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
     }
-  } else if (showModel.cues.length > 0) {
-    uiState.setSelected(showModel.cues[showModel.cues.length - 1].id);
+    scrollIntoIndex(cursorIndex);
+  } else if (showModel.flatCueList.length > 0) {
+    uiState.setSelected(showModel.flatCueList[showModel.flatCueList.length - 1].cue.id);
+    scrollIntoIndex(showModel.flatCueList.length - 1);
   }
-};
+}, 100);
 
 useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
-  uiState.selectedRows = showModel.cues.map((cue) => cue.id);
+  uiState.selectedRows = showModel.flatCueList.filter((item) => !item.isHidden).map((item) => item.cue.id);
 });
 
 useHotkey('cmd+backspace', () => {
@@ -301,12 +334,12 @@ const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
     const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    const cueId = showModel.cues[fromIndex].id;
     if (fromIndex === index) {
       return;
     }
-    const newIndex = index < fromIndex ? index : index - 1;
-    invoke('move_cue', { cueId: cueId, toIndex: newIndex }).catch((e) => {
+    const cueId = showModel.flatCueList[fromIndex].cue.id;
+    const targetId = showModel.flatCueList[index].cue.id;
+    invoke('move_cue', { cueId: cueId, targetId: targetId }).catch((e) => {
       console.log('Failed to move cue. ' + e);
     });
     // showModel.moveCue(cue_id, newIndex);
@@ -314,18 +347,18 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
-  const clickedId = showModel.cues[index].id;
+  const clickedId = showModel.flatCueList[index].cue.id;
   if (event.shiftKey) {
     if (uiState.selected != null) {
       uiState.selectedRows = [];
-      const prevIndex = showModel.cues.findIndex((cue) => cue.id === uiState.selected);
+      const prevIndex = showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected);
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
-          uiState.selectedRows.push(showModel.cues[i].id);
+          uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
         }
       } else {
         for (let i = index; i <= prevIndex; i++) {
-          uiState.selectedRows.push(showModel.cues[i].id);
+          uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
         }
       }
     } else {
@@ -341,8 +374,8 @@ const click = (event: MouseEvent, index: number) => {
         );
         if (uiState.selectedRows.length === 0) {
           uiState.selected = null;
-        } else if (index === showModel.cues.findIndex((cue) => cue.id == showState.playbackCursor)) {
-          const findIdx = (x: string): number => showModel.cues.findIndex((cue) => cue.id === x);
+        } else if (index === showModel.flatCueList.findIndex((item) => item.cue.id == showState.playbackCursor)) {
+          const findIdx = (x: string): number => showModel.flatCueList.findIndex((item) => item.cue.id === x);
           uiState.selected = uiState.selectedRows.reduce((a, b) => {
             return findIdx(a) > findIdx(b) ? a : b;
           });
@@ -396,12 +429,28 @@ const getCueIcon = (type: string): string | undefined => {
       return mdiPauseCircleOutline;
     case 'load':
       return mdiUploadCircleOutline;
+    case 'group':
+      return mdiGroup;
   }
 };
 
-const openEditable = (e: MouseEvent) => {
-  if (e.target == null || !(e.target instanceof HTMLTableCellElement) || e.target.contentEditable === 'true') {
+const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
+  if (e.target == null || !(e.target instanceof HTMLElement) || e.target.contentEditable === 'true') {
     return;
+  }
+  if (editType == 'cuelist_duration') {
+    const cueType = showModel.flatCueList[rowIndex].cue.params.type;
+    if (cueType != 'wait' && cueType != 'fade') {
+      return;
+    }
+  }
+  if (editType == 'cuelist_post_wait') {
+    if (showModel.flatCueList[rowIndex].isSequenceOverrided) {
+      return;
+    }
+    if (showModel.flatCueList[rowIndex].sequence.type != 'autoContinue') {
+      return;
+    }
   }
   e.target.contentEditable = 'true';
   e.target.classList.add('inEdit');
@@ -417,15 +466,15 @@ const openEditable = (e: MouseEvent) => {
   }
 };
 
-const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: number) => {
-  if (target == null || !(target instanceof HTMLTableCellElement) || target.contentEditable === 'false') {
+const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: number, editType: string) => {
+  if (target == null || !(target instanceof HTMLElement) || target.contentEditable === 'false') {
     return;
   }
   target.contentEditable = 'false';
   target.classList.remove('inEdit');
   if (needSave) {
-    const newCue = structuredClone(toRaw(showModel.cues[rowIndex]));
-    switch (target.headers) {
+    const newCue = structuredClone(toRaw(showModel.flatCueList[rowIndex].cue));
+    switch (editType) {
       case 'cuelist_number':
         newCue.number = target.innerText;
         break;
@@ -497,6 +546,5 @@ const setPlaybackCursor = (cueId: string) => {
 }
 .selected-row > td {
   background-color: rgb(var(--v-theme-primary), 0.2);
-  color: rgb(var(--v-theme-on-background));
 }
 </style>

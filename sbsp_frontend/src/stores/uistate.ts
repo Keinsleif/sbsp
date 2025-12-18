@@ -9,6 +9,7 @@ export const useUiState = defineStore(
     const side = ref<'remote' | 'main' | null>(null);
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
+    const expandedRows = ref<string[]>([]);
     const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
@@ -20,20 +21,7 @@ export const useUiState = defineStore(
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
-    const clearSelected = () => {
-      selected.value = null;
-      selectedRows.value = [];
-      if (getLockCursorToSelection()) {
-        invoke('set_playback_cursor', {
-          cueId: null,
-        }).catch((e) => {
-          console.error('Failed to set cursor. ' + e);
-        });
-      }
-    };
-    const setSelected = (id: string) => {
-      selected.value = id;
-      selectedRows.value = [id];
+    const setPlaybackCursor = (id: string | null) => {
       if (getLockCursorToSelection()) {
         invoke('set_playback_cursor', {
           cueId: id,
@@ -41,20 +29,37 @@ export const useUiState = defineStore(
           console.error('Failed to set cursor. ' + e);
         });
       }
+    };
+
+    const clearSelected = () => {
+      selected.value = null;
+      selectedRows.value = [];
+      setPlaybackCursor(null);
+    };
+    const setSelected = (id: string) => {
+      selected.value = id;
+      selectedRows.value = [id];
+      setPlaybackCursor(id);
     };
     const addSelected = (id: string) => {
       selected.value = id;
       if (!selectedRows.value.includes(id)) {
         selectedRows.value.push(id);
       }
-      if (getLockCursorToSelection()) {
-        invoke('set_playback_cursor', {
-          cueId: id,
-        }).catch((e) => {
-          console.error('Failed to set cursor. ' + e);
-        });
+      setPlaybackCursor(id);
+    };
+
+    const toggleExpand = (id: string) => {
+      if (expandedRows.value.includes(id)) {
+        expandedRows.value.splice(
+          expandedRows.value.findIndex((value) => value == id),
+          1,
+        );
+      } else {
+        expandedRows.value.push(id);
       }
     };
+
     const toggleRightSidebar = () => {
       isRightSidebarOpen.value = !isRightSidebarOpen.value;
     };
@@ -72,6 +77,7 @@ export const useUiState = defineStore(
       side,
       selected,
       selectedRows,
+      expandedRows,
       sideBarTab,
       isRightSidebarOpen,
       isRenumberCueDialogOpen,
@@ -85,6 +91,7 @@ export const useUiState = defineStore(
       clearSelected,
       setSelected,
       addSelected,
+      toggleExpand,
       toggleRightSidebar,
       toggleEditor,
       success,

@@ -24,7 +24,8 @@
       "start": "開始キュー",
       "stop": "停止キュー",
       "load": "読み込みキュー",
-      "pause": "一時停止キュー"
+      "pause": "一時停止キュー",
+      "group": "グループキュー"
     },
     "tools": {
       "renumber": "キュー番号の振り直し",
@@ -82,6 +83,14 @@
       "continueTargetCue": "連鎖対象キュー",
       "playback": {
         "title": "再生"
+      },
+      "group": {
+        "mode": {
+          "concurrency": "同時実行",
+          "label": "グループ実行モード",
+          "playlist": "プレイリスト"
+        },
+        "title": "グループ"
       }
     },
     "number": "番号",
@@ -124,7 +133,8 @@
         "remote": "リモート操作",
         "hotkey": "ホットキー",
         "template": "テンプレート",
-        "appearance": "外観"
+        "appearance": "外観",
+        "nameFormat": "名前フォーマット"
       },
       "preset": {
         "hotkeyCursor": {
@@ -182,13 +192,48 @@
           "audio": "音声キュー",
           "wait": "待機キュー",
           "builtFromCueParam": "** キューのパラメータから自動作成 **",
-          "fade": "フェードキュー"
+          "fade": "フェードキュー",
+          "group": "グループキュー",
+          "load": "読み込みキュー",
+          "pause": "一時停止キュー",
+          "start": "開始キュー",
+          "stop": "停止キュー"
         },
         "appearance": {
           "darkMode": "ダークモード",
           "language": "言語",
           "systemLanguage": "システムの言語",
           "systemSettings": "システムの設定"
+        },
+        "nameFormat": {
+          "audio": {
+            "description": "{filename} はターゲットのファイル名に置き換えられます",
+            "title": "音声キュー"
+          },
+          "fade": {
+            "description": "{targetName} はターゲットのキュー名に置き換えられます",
+            "title": "フェードキュー"
+          },
+          "group": {
+            "title": "グループキュー"
+          },
+          "load": {
+            "title": "読み込みキュー"
+          },
+          "pause": {
+            "title": "一時停止キュー"
+          },
+          "playbackDescription": "{targetName} はターゲットのキュー名に置き換えられます",
+          "start": {
+            "title": "開始キュー"
+          },
+          "stop": {
+            "title": "停止キュー"
+          },
+          "wait": {
+            "description": "{duration} は待機する時間に置き換えられます",
+            "title": "待機キュー"
+          }
         }
       }
     },

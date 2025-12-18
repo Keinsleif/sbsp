@@ -1,10 +1,13 @@
 mod handle;
+mod command;
 
 use anyhow::anyhow;
 pub use handle::ShowModelHandle;
+pub use command::ModelCommand;
+pub use command::InsertPosition;
 
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -14,57 +17,12 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings,
-    event::{UiError, UiEvent},
-    model::{
-        ShowModel,
-        ProjectType,
-        cue::{Cue, CueParam},
-        settings::ShowSettings,
-    },
+    BackendSettings, event::{UiError, UiEvent}, model::{
+        ProjectType, ShowModel, cue::{Cue, CueParam}
+    }
 };
 
 const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(
-    tag = "command",
-    content = "params",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum ModelCommand {
-    UpdateCue(Cue),
-    AddCue {
-        cue: Cue,
-        at_index: usize,
-    },
-    AddCues {
-        cues: Vec<Cue>,
-        at_index: usize,
-    },
-    RemoveCue {
-        cue_id: Uuid,
-    },
-    MoveCue {
-        cue_id: Uuid,
-        to_index: usize,
-    },
-
-    RenumberCues {
-        cues: Vec<Uuid>,
-        start_from: f64,
-        increment: f64,
-    },
-
-    UpdateModelName(String),
-    UpdateSettings(Box<ShowSettings>),
-
-    Save,
-    SaveToFile(PathBuf),
-    ExportToFolder(PathBuf),
-    LoadFromFile(PathBuf),
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ProjectStatus {
@@ -133,50 +91,43 @@ impl ShowModelManager {
         log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
-                let index_option = {
-                    let model = self.model.read().await;
-                    model.cues.iter().position(|c| c.id == cue.id)
-                };
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let event = if let Some(index) = index_option {
-                    let mut new_cue = cue.clone();
-                    if let CueParam::Audio(audio_param) = &mut new_cue.params
-                        && let Some(model_path) = model_path_option.as_ref()
-                        && copy_assets_when_add
-                    {
-                        let new_target = self
-                            .import_asset_file(&audio_param.target, model_path)
-                            .await;
-                        if let Ok(target) = new_target {
-                            audio_param.target = target;
-                        } // ignore failed to import asset. use absolute path
-                    }
-                    {
-                        let mut model = self.model.write().await;
-                        model.cues[index] = new_cue.clone();
-                    }
-                    UiEvent::CueUpdated { cue: new_cue }
-                } else {
+                let mut new_cue = cue.clone();
+                if let CueParam::Audio(audio_param) = &mut new_cue.params
+                    && let Some(model_path) = model_path_option.as_ref()
+                    && copy_assets_when_add
+                {
+                    let import_destination = {
+                        let model = self.model.read().await;
+                        model.settings.general.copy_assets_destination.clone()
+                    };
+
+                    let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
+                        .await;
+                    if let Ok(target) = new_target {
+                        audio_param.target = target;
+                    } // ignore failed to import asset. use absolute path
+                }
+                let event = if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
                     UiEvent::OperationFailed {
                         error: UiError::CueEdit {
-                            message: format!("Cue doesn't exist: cue_id={}", cue.id),
+                            message: format!("Failed to update cue. {}", e),
                         },
                     }
+                } else {
+                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::AddCue { cue, at_index } => {
-                let (id_exists, cuelist_length) = {
+            ModelCommand::AddCue { cue, position } => {
+                let id_exists = {
                     let model = self.model.read().await;
-                    (
-                        model.cues.iter().any(|c| c.id == cue.id),
-                        model.cues.len(),
-                    )
+                    model.cues.iter().any(|c| c.id == cue.id)
                 };
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
@@ -189,121 +140,98 @@ impl ShowModelManager {
                             message: format!("Cue already exist: cue_id={}", cue.id),
                         },
                     }
-                } else if at_index > cuelist_length {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
-                        },
-                    }
                 } else {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
                         && let Some(model_path) = model_path_option.as_ref()
                         && copy_assets_when_add
                     {
-                        let new_target = self
-                            .import_asset_file(&audio_param.target, model_path)
+                        let import_destination = {
+                            let model = self.model.read().await;
+                            model.settings.general.copy_assets_destination.clone()
+                        };
+                        let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
                             .await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
                     }
-                    {
-                        let mut model = self.model.write().await;
-                        model.cues.insert(at_index, new_cue.clone());
-                    }
-                    UiEvent::CueAdded {
-                        cue: new_cue,
-                        at_index,
+                    if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
+                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } }
+                    } else {
+                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::AddCues { cues, at_index } => {
-                let cuelist_length = {
-                    let model = self.model.read().await;
-                    model.cues.len()
-                };
+            ModelCommand::AddCues { cues, position } => {
                 let copy_assets_when_add = {
                     let settings = self.settings_rx.borrow();
                     settings.copy_assets_when_add
                 };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut added_cues = vec![];
-                if at_index > cuelist_length {
-                    self.event_tx.send(UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
-                        },
-                    })?;
-                } else {
-                    let mut insert_index = 0;
-                    for cue in cues.iter() {
-                        let id_exists = {
-                            let model = self.model.read().await;
-                            model.cues.iter().any(|c| c.id == cue.id)
-                        };
-                        if id_exists {
-                            self.event_tx.send(UiEvent::OperationFailed {
-                                error: UiError::CueEdit {
-                                    message: format!("Cue already exist. cue_id={}", cue.id),
-                                },
-                            })?;
+                let mut added_cues: Vec<Cue> = Vec::new();
+                for cue in cues.iter() {
+                    let id_exists = {
+                        let model = self.model.read().await;
+                        model.cues.iter().any(|c| c.id == cue.id)
+                    };
+                    if id_exists {
+                        self.event_tx.send(UiEvent::OperationFailed {
+                            error: UiError::CueEdit {
+                                message: format!("Cue already exist. cue_id={}", cue.id),
+                            },
+                        })?;
+                    } else {
+                        let mut new_cue = cue.clone();
+                        if let CueParam::Audio(audio_param) = &mut new_cue.params
+                            && let Some(model_path) = model_path_option.as_ref()
+                            && copy_assets_when_add
+                        {
+                            let import_destination = {
+                                let model = self.model.read().await;
+                                model.settings.general.copy_assets_destination.clone()
+                            };
+                            let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
+                                .await;
+                            if let Ok(target) = new_target {
+                                audio_param.target = target;
+                            } // ignore failed to import asset. use absolute path
+                        }
+
+                        let result = if added_cues.is_empty() {
+                            self.insert_cue_at_position(new_cue.clone(), position.clone()).await
                         } else {
-                            let mut new_cue = cue.clone();
-                            if let CueParam::Audio(audio_param) = &mut new_cue.params
-                                && let Some(model_path) = model_path_option.as_ref()
-                                && copy_assets_when_add
-                            {
-                                let new_target = self
-                                    .import_asset_file(&audio_param.target, model_path)
-                                    .await;
-                                if let Ok(target) = new_target {
-                                    audio_param.target = target;
-                                } // ignore failed to import asset. use absolute path
-                            }
-                            {
-                                let mut model = self.model.write().await;
-                                model.cues.insert(at_index + insert_index, new_cue.clone());
-                            }
+                            self.insert_cue_at_position(new_cue.clone(), InsertPosition::After { target: added_cues.last().unwrap().id }).await
+                        };
+
+                        if let Err(e) = result {
+                            let _ = self.event_tx.send(UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } });
+                        } else {
                             added_cues.push(new_cue.clone());
-                            insert_index += 1;
                         }
                     }
-                    self.event_tx.send(UiEvent::CuesAdded {
-                        cues: added_cues,
-                        at_index,
-                    })?;
                 }
+                self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() })?;
                 Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
-                let mut model = self.model.write().await;
-                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
-                    model.cues.remove(index);
-                    UiEvent::CueRemoved { cue_id }
+                let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
+                    UiEvent::OperationFailed { error: UiError::CueEdit { message: "Failed to remove cue. id not found.".into() } }
                 } else {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: format!("Cue already exist: cue_id={}", cue_id),
-                        },
-                    }
+                    self.event_tx.send(UiEvent::CueRemoved { cue_id })?;
+                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
-            ModelCommand::MoveCue { cue_id, to_index } => {
-                let mut model = self.model.write().await;
-                let event = if let Some(index) = model.cues.iter().position(|c| c.id == cue_id) {
-                    let cue = model.cues.remove(index);
-                    model.cues.insert(to_index, cue.clone());
-                    UiEvent::CueMoved { cue_id, to_index }
-                } else if to_index > model.cues.len() {
-                    UiEvent::OperationFailed {
-                        error: UiError::CueEdit {
-                            message: "Insert index is out of list.".to_string(),
-                        },
+            ModelCommand::MoveCue { cue_id, position } => {
+                let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
+                    if let Err(e) = self.insert_cue_at_position(cue, position).await {
+                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to mov cue. {}", e) } }
+                    } else {
+                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 } else {
                     UiEvent::OperationFailed {
@@ -352,18 +280,24 @@ impl ShowModelManager {
             }
             ModelCommand::Save => {
                 let event = if let ProjectStatus::Saved { project_type, path } = &*self.project_status.read().await {
-                    if let Err(error) = self.save_to_file(path, project_type).await {
-                        log::error!("Failed to save model file: {}", error);
-                        UiEvent::OperationFailed {
-                            error: UiError::FileSave {
-                                path: path.to_path_buf(),
-                                message: error.to_string(),
-                            },
+                    match self.save_to_file(path, project_type).await {
+                        Err(error) => {
+                            log::error!("Failed to save model file: {}", error);
+                            UiEvent::OperationFailed {
+                                error: UiError::FileSave {
+                                    path: path.to_path_buf(),
+                                    message: error.to_string(),
+                                },
+                            }
                         }
-                    } else {
-                        UiEvent::ShowModelSaved {
-                            project_type: project_type.clone(),
-                            path: path.to_path_buf(),
+                        Ok(modified) => {
+                            if modified {
+                                let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                            }
+                            UiEvent::ShowModelSaved {
+                                project_type: project_type.clone(),
+                                path: path.to_path_buf(),
+                            }
                         }
                     }
                 } else {
@@ -376,35 +310,51 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::SaveToFile(path) => {
-                let event = if let Err(error) = self.save_to_file(&path, &ProjectType::SingleFile).await {
-                    log::error!("Failed to save model file: {}", error);
-                    UiEvent::OperationFailed {
-                        error: UiError::FileSave {
-                            path,
-                            message: error.to_string(),
-                        },
+                let event = match self.save_to_file(&path, &ProjectType::SingleFile).await {
+                    Err(error) => {
+                        log::error!("Failed to save model file: {}", error);
+                        UiEvent::OperationFailed {
+                            error: UiError::FileSave {
+                                path,
+                                message: error.to_string(),
+                            },
+                        }
                     }
-                } else {
-                    let mut project_status = self.project_status.write().await;
-                    *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
-                    UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
+                    Ok(modified) => {
+                        if modified {
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                        }
+                        let mut project_status = self.project_status.write().await;
+                        *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                        UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
             ModelCommand::ExportToFolder(path) => {
-                let event = if let Err(error) = self.export_to_folder(&path).await {
-                    log::error!("Failed to export model to folder: {}", error);
-                    UiEvent::OperationFailed {
-                        error: UiError::FileSave {
-                            path,
-                            message: error.to_string(),
-                        },
+                if !path.is_dir() {
+                    anyhow::bail!("Failed to export to folder. path is not directory.");
+                }
+                let model_file_path = path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME);
+                let event = match self.save_to_file(&model_file_path, &ProjectType::ProjectFolder).await {
+                    Err(error) => {
+                        log::error!("Failed to export model to folder: {}", error);
+                        UiEvent::OperationFailed {
+                            error: UiError::FileSave {
+                                path: model_file_path.clone(),
+                                message: error.to_string(),
+                            },
+                        }
                     }
-                } else {
-                    let mut project_status = self.project_status.write().await;
-                    *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: path.clone() };
-                    UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path }
+                    Ok(modified) => {
+                        if modified {
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                        }
+                        let mut project_status = self.project_status.write().await;
+                        *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
+                        UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path: model_file_path }
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -439,6 +389,123 @@ impl ShowModelManager {
         self.model.write().await
     }
 
+    async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
+        let mut model = self.model.write().await;
+        let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+        while let Some(cues) = queue.pop_front() {
+            for (index, cue) in cues.iter().enumerate() {
+                if cue.id == *cue_id {
+                    return Some(cues.remove(index));
+                }
+            }
+
+            for cue in cues.iter_mut() {
+                if let CueParam::Group { children, .. } = &mut cue.params {
+                    queue.push_back(children);
+                }
+            }
+        }
+        None
+    }
+
+    async fn update_cue_by_id(&self, cue_id: &Uuid, new_cue: Cue) -> Result<(), String> {
+        let mut model = self.model.write().await;
+        let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+        while let Some(cues) = queue.pop_front() {
+            for cue in cues.iter_mut() {
+                if cue.id == *cue_id {
+                    *cue = new_cue;
+                    return Ok(());
+                }
+            }
+
+            for cue in cues.iter_mut() {
+                if let CueParam::Group { children, .. } = &mut cue.params {
+                    queue.push_back(children);
+                }
+            }
+        }
+        Err(format!("cue not found. id={}", cue_id))
+    }
+
+    async fn insert_cue_at_position(&self, insert_cue: Cue, position: InsertPosition) -> Result<(), String> {
+        let mut model = self.model.write().await;
+        match position {
+            InsertPosition::Before { target } => {
+                let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                while let Some(cues) = queue.pop_front() {
+                    for (index, cue) in cues.iter().enumerate() {
+                        if cue.id == target {
+                            cues.insert(index, insert_cue);
+                            return Ok(())
+                        }
+                    }
+
+                    for cue in cues.iter_mut() {
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            queue.push_back(children);
+                        }
+                    }
+                }
+                Err("target id not found.".into())
+            }
+            InsertPosition::After { target } => {
+                let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                while let Some(cues) = queue.pop_front() {
+                    for (index, cue) in cues.iter().enumerate() {
+                        if cue.id == target {
+                            cues.insert(index + 1, insert_cue);
+                            return Ok(());
+                        }
+                    }
+
+                    for cue in cues.iter_mut() {
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            queue.push_back(children);
+                        }
+                    }
+                }
+                Err("target id not found.".into())
+            },
+            InsertPosition::Inside { target, index } => {
+                if let Some(parent_id) = target {
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                if cue.id == parent_id {
+                                    if index <= children.len() {
+                                        children.insert(index, insert_cue);
+                                        return Ok(());
+                                    } else {
+                                        return Err("insert index out of range.".into());
+                                    }
+                                } else {
+                                    queue.push_back(children);
+                                }
+                            }
+                        }
+                    }
+                    Err("target id not found.".into())
+                } else if index <= model.cues.len() {
+                    model.cues.insert(index, insert_cue);
+                    Ok(())
+                } else {
+                    Err("insert index out of range.".into())
+                }
+            },
+            InsertPosition::Last => {
+                model.cues.push(insert_cue);
+                Ok(())
+            }
+        }
+    }
+
     pub async fn load_from_file(&self, path: &Path) -> Result<ProjectType, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
@@ -458,7 +525,7 @@ impl ShowModelManager {
         Ok(project_file.project_type)
     }
 
-    pub async fn export_to_folder(&self, folder_path: &Path) -> Result<(), anyhow::Error> {
+    pub async fn export_to_folder(&self, folder_path: &Path) -> Result<bool, anyhow::Error> {
         if folder_path.is_dir() {
             self.save_to_file(&folder_path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME), &ProjectType::ProjectFolder).await
         } else {
@@ -466,11 +533,8 @@ impl ShowModelManager {
         }
     }
 
-    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<(), anyhow::Error> {
-        let mut cues = {
-            let model = self.model.read().await;
-            model.cues.clone()
-        };
+    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<bool, anyhow::Error> {
+        let mut model_modified = false;
         let project_status = self.project_status.read().await;
 
         if let Some(parent) = path.parent() {
@@ -479,31 +543,52 @@ impl ShowModelManager {
 
         if project_type == &ProjectType::ProjectFolder {
             if let Some(project_dir) = path.parent() {
+                let import_destination = {
+                    let model = self.model.read().await;
+                    model.settings.general.copy_assets_destination.clone()
+                };
+
                 if let ProjectStatus::Saved { project_type, path: saved_path } = &*project_status && *project_type == ProjectType::ProjectFolder && path != saved_path {
-                    for cue in &mut cues {
-                        if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
-                            let asset_path = parent.join(&audio_param.target);
-                            let new_path = self.import_asset_file(&asset_path, project_dir).await?;
-                            audio_param.target = new_path;
+                    let mut model = self.model.write().await;
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
+                                let asset_path = parent.join(&audio_param.target);
+                                let new_path = Self::import_asset_file(&asset_path, project_dir, &import_destination).await?;
+                                audio_param.target = new_path;
+                            }
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                queue.push_back(children);
+                            }
                         }
                     }
                 } else {
-                    for cue in &mut cues {
-                        if let CueParam::Audio(audio_param) = &mut cue.params
-                        && audio_param.target.is_absolute() {
-                            let new_path = self.import_asset_file(&audio_param.target, project_dir).await?;
-                            audio_param.target = new_path;
+                    let mut model = self.model.write().await;
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Audio(audio_param) = &mut cue.params
+                            && audio_param.target.is_absolute() {
+                                let new_path = Self::import_asset_file(&audio_param.target, project_dir, &import_destination).await?;
+                                audio_param.target = new_path;
+                            }
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                queue.push_back(children);
+                            }
                         }
                     }
                 }
+                model_modified = true;
             } else {
                 return Err(anyhow!("Invalid project folder path."));
             }
         }
 
         let project_file = {
-            let mut model = self.model.write().await;
-            model.cues = cues;
+            let model = self.model.read().await;
             ProjectFile {
                 project_type: ProjectType::ProjectFolder,
                 model: model.clone()
@@ -516,31 +601,27 @@ impl ShowModelManager {
 
         tokio::fs::write(&path, content).await?;
         log::info!("Show saved to: {}", path.display());
-        Ok(())
+        Ok(model_modified)
     }
 
     async fn import_asset_file(
-        &self,
         asset_path: &PathBuf,
         model_path: &Path,
+        import_destination: &String,
     ) -> anyhow::Result<PathBuf> {
-        log::info!("Import asset file started. file={:?}", &asset_path);
-        let import_destination = {
-            let model = self.model.read().await;
-            model.settings.general.copy_assets_destination.clone()
-        };
-        let audio_dir = model_path.join(&import_destination);
+        log::info!("Import asset file started. file={:?}", asset_path);
+        let audio_dir = model_path.join(import_destination);
         if !audio_dir.exists() {
             tokio::fs::create_dir_all(&audio_dir).await?;
         } else if audio_dir.is_file() {
-            anyhow::bail!("Failed to copy asset to library. Library is not directory");
+            anyhow::bail!("Failed to copy asset to destination. destination is not directory");
         }
         let asset_file_name = asset_path.file_name().unwrap().to_str().unwrap();
         let dest_path = audio_dir.join(asset_file_name);
         if !dest_path.exists() {
             tokio::fs::copy(asset_path, &dest_path).await?;
         }
-        Ok([import_destination, asset_file_name.to_string()]
+        Ok([import_destination.clone(), asset_file_name.to_string()]
             .iter()
             .collect())
     }
@@ -555,7 +636,7 @@ impl ShowModelManager {
 #[cfg(test)]
 mod tests {
     use crate::{
-        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType}, model::{
+        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType, command::InsertPosition}, model::{
             ShowModel,
             cue::{
                 Cue, CueParam, CueSequence,
@@ -651,16 +732,16 @@ mod tests {
             .unwrap()
             .to_str()
             .unwrap();
-        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
+        let estimated_audio_target = temp_dir.path().join(".").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
+            audio_param.target = [".", estimated_audio_filename].iter().collect();
         }
 
         let updated_cue;
         loop {
-            if let Ok(UiEvent::CueUpdated { cue }) = event_rx.recv().await {
-                updated_cue = cue;
+            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+                updated_cue = cues[0].clone();
                 break;
             }
         }
@@ -707,26 +788,23 @@ mod tests {
                 sound_type: SoundType::Streaming,
             }),
         };
-        model_handle.add_cue(new_cue.clone(), 0).await.unwrap();
+        model_handle.add_cue(new_cue.clone(), InsertPosition::Inside { target: None, index: 0 }).await.unwrap();
 
         let estimated_audio_filename = temp_target.path().file_name().unwrap().to_str().unwrap();
-        let estimated_audio_target = temp_dir.path().join("audio").join(estimated_audio_filename);
+        let estimated_audio_target = temp_dir.path().join(".").join(estimated_audio_filename);
         let mut estimated_new_cue = new_cue.clone();
         if let CueParam::Audio(audio_param) = &mut estimated_new_cue.params {
-            audio_param.target = [".", "audio", estimated_audio_filename].iter().collect();
+            audio_param.target = [".", estimated_audio_filename].iter().collect();
         }
 
         let added_cue;
-        let added_at_index;
         loop {
-            if let Ok(UiEvent::CueAdded { cue, at_index }) = event_rx.recv().await {
-                added_cue = cue;
-                added_at_index = at_index;
+            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+                added_cue = cues[0].clone();
                 break;
             }
         }
         assert_eq!(added_cue, estimated_new_cue);
-        assert_eq!(added_at_index, 0);
 
         let model = model_handle.read().await;
         assert_eq!(model.cues[0], estimated_new_cue);
