@@ -315,14 +315,9 @@ impl CueController {
                             if let Err(e) = self.handle_go(*target).await {
                                 log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                             }
-                        } else {
-                            let model = self.model_handle.read().await;
-                            if let Some(cue_index) =
-                            model.cues.iter().position(|cue| cue.id == *cue_id)
-                            && cue_index + 1 < model.cues.len()
-                            && let Err(e) = self.handle_go(model.cues[cue_index + 1].id).await {
-                                log::error!("Failed to perform cue sequence. ignoring. error={}", e);
-                            }
+                        } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(cue_id).await
+                        && let Err(e) = self.handle_go(next_id).await {
+                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                         }
                         wait_tasks.remove(cue_id);
                     }
