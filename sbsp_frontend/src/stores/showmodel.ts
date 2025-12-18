@@ -213,7 +213,6 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyPlaybackCue(type: 'start' | 'stop' | 'pause' | 'load') {
       const uiSettings = useUiSettings();
       const uiState = useUiState();
-      let insertIndex;
       if (uiState.selected == null) {
         return;
       }
@@ -242,9 +241,11 @@ export const useShowModel = defineStore('showmodel', {
           newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
-        invoke('add_cue', { cue: newCue, atIndex: insertIndex, toBefore: type == 'load' || type == 'start' }).catch(
-          (e) => console.error(e),
-        );
+        invoke('add_cue', {
+          cue: newCue,
+          targetId: uiState.selected,
+          toBefore: type == 'load' || type == 'start',
+        }).catch((e) => console.error(e));
       }
     },
   },
