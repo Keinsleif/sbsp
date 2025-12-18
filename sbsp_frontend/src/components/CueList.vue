@@ -129,31 +129,31 @@
           <div
             :class="
               isActive(item.cue.id) &&
-              item.cue.sequence.type == 'autoContinue' &&
-              showState.activeCues[item.cue.id]!.position < item.cue.sequence.postWait
+              item.sequence.type == 'autoContinue' &&
+              showState.activeCues[item.cue.id]!.position < item.sequence.postWait
                 ? 'border-md border-primary'
                 : ''
             "
             :style="{
               background:
-                item.cue.sequence.type != 'doNotContinue' &&
+                item.sequence.type != 'doNotContinue' &&
                 isActive(item.cue.id) &&
                 showState.activeCues[item.cue.id]!.position <
-                  (item.cue.sequence.type == 'autoContinue'
-                    ? item.cue.sequence.postWait
+                  (item.sequence.type == 'autoContinue'
+                    ? item.sequence.postWait
                     : showState.activeCues[item.cue.id]!.duration)
                   ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
                     Math.floor(
                       (showState.activeCues[item.cue.id]!.position * 100) /
-                        (item.cue.sequence.type == 'autoContinue'
-                          ? item.cue.sequence.postWait
+                        (item.sequence.type == 'autoContinue'
+                          ? item.sequence.postWait
                           : showState.activeCues[item.cue.id]!.duration),
                     ) +
                     '%, transparent ' +
                     Math.floor(
                       (showState.activeCues[item.cue.id]!.position * 100) /
-                        (item.cue.sequence.type == 'autoContinue'
-                          ? item.cue.sequence.postWait
+                        (item.sequence.type == 'autoContinue'
+                          ? item.sequence.postWait
                           : showState.activeCues[item.cue.id]!.duration),
                     ) +
                     '%) no-repeat'
@@ -165,16 +165,16 @@
             @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_post_wait')"
           >
             {{
-              item.cue.sequence.type == 'doNotContinue'
+              item.sequence.type == 'doNotContinue'
                 ? '--:--.--'
                 : isActive(item.cue.id) &&
                     showState.activeCues[item.cue.id]!.position <
-                      (item.cue.sequence.type == 'autoContinue'
-                        ? item.cue.sequence.postWait
+                      (item.sequence.type == 'autoContinue'
+                        ? item.sequence.postWait
                         : showState.activeCues[item.cue.id]!.duration)
                   ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
-                  : item.cue.sequence.type == 'autoContinue'
-                    ? secondsToFormat(item.cue.sequence.postWait)
+                  : item.sequence.type == 'autoContinue'
+                    ? secondsToFormat(item.sequence.postWait)
                     : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
             }}
           </div>
@@ -183,8 +183,8 @@
           <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
         </td>
         <td headers="cuelist_sequence" width="53px">
-          <v-icon v-show="item.cue.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
-          <v-icon v-show="item.cue.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
+          <v-icon v-show="item.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
+          <v-icon v-show="item.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
       </tr>
       <tr
@@ -445,7 +445,10 @@ const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
     }
   }
   if (editType == 'cuelist_post_wait') {
-    if (showModel.flatCueList[rowIndex].cue.sequence.type != 'autoContinue') {
+    if (showModel.flatCueList[rowIndex].isSequenceOverrided) {
+      return;
+    }
+    if (showModel.flatCueList[rowIndex].sequence.type != 'autoContinue') {
       return;
     }
   }

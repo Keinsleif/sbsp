@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
-import { Cue } from '../types/Cue';
+import type { Cue } from '../types/Cue';
 import { useUiState } from './uistate';
 import { invoke } from '@tauri-apps/api/core';
 import { useUiSettings } from './uiSettings';
 import { v4 } from 'uuid';
 import { toRaw } from 'vue';
+import type { CueSequence } from '../types/CueSequence';
 
 type FlatCueEntry = {
   cue: Cue;
@@ -15,6 +16,8 @@ type FlatCueEntry = {
   innerIndex: number;
   isHidden: boolean;
   isGroup: boolean;
+  sequence: CueSequence;
+  isSequenceOverrided: boolean;
 };
 
 const recursiveCueCheck = (
@@ -22,23 +25,41 @@ const recursiveCueCheck = (
   expandedRows: string[],
   level = 0,
   isHidden = false,
-  parent: null | string = null,
+  parent: null | Cue = null,
 ): FlatCueEntry[] => {
   const cuelist: FlatCueEntry[] = [];
 
   list.forEach((cue, index) => {
+    let sequence: CueSequence | null = null;
+    if (parent?.params.type == 'group') {
+      if (parent.params.mode.type == 'playlist') {
+        if (index + 1 == list.length) {
+          if (parent.params.mode.repeat) {
+            sequence = { type: 'autoFollow', targetId: list[0].id };
+          } else {
+            sequence = { type: 'doNotContinue' };
+          }
+        } else {
+          sequence = { type: 'autoFollow', targetId: null };
+        }
+      } else if (parent.params.mode.type == 'concurrency') {
+        sequence = { type: 'doNotContinue' };
+      }
+    }
     cuelist.push({
       cue: cue,
       level: level,
-      parent: parent,
+      parent: parent != null ? parent.id : null,
       innerIndex: index,
       isHidden: isHidden,
       isGroup: cue.params.type == 'group',
+      sequence: sequence != null ? sequence : cue.sequence,
+      isSequenceOverrided: sequence != null,
     });
 
     if (cue.params.type == 'group') {
       const isExpanded = expandedRows.includes(cue.id);
-      cuelist.push(...recursiveCueCheck(cue.params.children, expandedRows, level + 1, !isExpanded || isHidden, cue.id));
+      cuelist.push(...recursiveCueCheck(cue.params.children, expandedRows, level + 1, !isExpanded || isHidden, cue));
     }
   });
 

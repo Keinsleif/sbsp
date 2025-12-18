@@ -14,6 +14,7 @@
         persistent-placeholder
         v-model="sequence"
         :label="t('main.continueMode.title')"
+        :disabled="props.sequenceOverride != null"
         ref="cue_sequence"
         :items="[
           { value: 'doNotContinue', name: t('main.continueMode.doNotContinue') },
@@ -30,7 +31,7 @@
       ></v-select>
       <time-input
         v-model="postWait"
-        :disabled="sequence != 'autoContinue'"
+        :disabled="sequence != 'autoContinue' || props.sequenceOverride != null"
         :label="t('main.postWait')"
         @update="saveEditorValue"
       ></time-input>
@@ -60,7 +61,7 @@
           :exclude="selectedCue.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"
-          :disabled="sequence == 'doNotContinue'"
+          :disabled="sequence == 'doNotContinue' || props.sequenceOverride != null"
           @update="saveEditorValue"
         />
         <v-btn
@@ -76,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { buildCueName, getDuration, secondsToFormat } from '../../utils';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
@@ -85,32 +86,49 @@ import { useShowState } from '../../stores/showstate';
 import { useI18n } from 'vue-i18n';
 import { NIL } from 'uuid';
 import CueSelect from '../input/CueSelect.vue';
+import type { CueSequence } from '../../types/CueSequence';
 
 const { t } = useI18n();
 
 const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
+const props = withDefaults(
+  defineProps<{
+    sequenceOverride?: CueSequence | null;
+  }>(),
+  {
+    sequenceOverride: null,
+  },
+);
 const emit = defineEmits(['update']);
+
+const overridedSequence = computed(() =>
+  props.sequenceOverride != null
+    ? props.sequenceOverride
+    : selectedCue.value != null
+      ? selectedCue.value.sequence
+      : null,
+);
 
 const number = ref(selectedCue.value != null ? selectedCue.value.number : null);
 const duration = ref(getDuration(selectedCue.value));
 const preWait = ref(selectedCue.value != null ? selectedCue.value.preWait : null);
-const sequence = ref(selectedCue.value != null ? selectedCue.value.sequence.type : null);
+const sequence = ref(overridedSequence.value != null ? overridedSequence.value.type : null);
 const postWait = ref(
-  selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
-    ? selectedCue.value.sequence.type == 'autoContinue'
-      ? selectedCue.value.sequence.postWait
+  overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
+    ? overridedSequence.value.type == 'autoContinue'
+      ? overridedSequence.value.postWait
       : getDuration(selectedCue.value)
     : null,
 );
 const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 const target = ref(
-  selectedCue.value != null &&
-    selectedCue.value.sequence.type != 'doNotContinue' &&
-    selectedCue.value.sequence.targetId != NIL
-    ? selectedCue.value.sequence.targetId
+  overridedSequence.value != null &&
+    overridedSequence.value.type != 'doNotContinue' &&
+    overridedSequence.value.targetId != NIL
+    ? overridedSequence.value.targetId
     : null,
 );
 
@@ -118,18 +136,18 @@ watch(selectedCue, () => {
   number.value = selectedCue.value != null ? selectedCue.value.number : null;
   duration.value = getDuration(selectedCue.value);
   preWait.value = selectedCue.value != null ? selectedCue.value.preWait : null;
-  sequence.value = selectedCue.value != null ? selectedCue.value.sequence.type : null;
+  sequence.value = overridedSequence.value != null ? overridedSequence.value.type : null;
   postWait.value =
-    selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
-      ? selectedCue.value.sequence.type == 'autoContinue'
-        ? selectedCue.value.sequence.postWait
+    overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
+      ? overridedSequence.value.type == 'autoContinue'
+        ? overridedSequence.value.postWait
         : getDuration(selectedCue.value)
       : null;
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   target.value =
-    selectedCue.value != null && selectedCue.value.sequence.type != 'doNotContinue'
-      ? selectedCue.value.sequence.targetId
+    overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
+      ? overridedSequence.value.targetId
       : null;
 });
 
@@ -154,7 +172,7 @@ const saveEditorValue = () => {
   if (preWait.value != null) {
     selectedCue.value.preWait = preWait.value;
   }
-  if (sequence.value != null) {
+  if (sequence.value != null && props.sequenceOverride == null) {
     selectedCue.value.sequence.type = sequence.value;
     if (selectedCue.value.sequence.type == 'doNotContinue') {
       target.value = null;

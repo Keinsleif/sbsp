@@ -50,7 +50,7 @@
     </div>
     <v-tabs-window class="border-t-sm" v-show="selectedCue != null" v-model="editorTab">
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
-        <basic-editor v-model="selectedCue" @update="edited" />
+        <basic-editor v-model="selectedCue" :sequence-override="props.sequenceOverride" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item
         v-show="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -112,9 +112,18 @@ import FadeBasicEditor from './editor/FadeBasicEditor.vue';
 import { useI18n } from 'vue-i18n';
 import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
 import GroupBasicEditor from './editor/GroupBasicEditor.vue';
+import type { CueSequence } from '../types/CueSequence';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();
+const props = withDefaults(
+  defineProps<{
+    sequenceOverride?: CueSequence | null;
+  }>(),
+  {
+    sequenceOverride: null,
+  },
+);
 const emit = defineEmits(['update']);
 
 const edited = () => {
