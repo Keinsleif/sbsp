@@ -202,11 +202,11 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                let filepath = if let Some(model_path) = self
+                let filepath = if let Some(asset_folder) = self
                     .model_handle
-                    .get_current_file_path()
-                    .await && let Some(parent) = model_path.parent() {
-                        parent.join(target)
+                    .get_asset_folder_path()
+                    .await {
+                        asset_folder.join(target)
                     } else {
                         target.clone()
                     };
@@ -286,11 +286,11 @@ impl Executor {
                 repeat,
                 sound_type,
             }) => {
-                let filepath = if let Some(model_path) = self
+                let filepath = if let Some(asset_folder) = self
                     .model_handle
-                    .get_current_file_path()
-                    .await && let Some(parent) = model_path.parent() {
-                        parent.join(target)
+                    .get_asset_folder_path()
+                    .await {
+                        asset_folder.join(target)
                     } else {
                         target.clone()
                     };

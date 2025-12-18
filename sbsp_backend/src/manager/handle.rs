@@ -227,6 +227,15 @@ impl ShowModelHandle {
         }
     }
 
+    pub async fn get_asset_folder_path(&self) -> Option<PathBuf> {
+        if let ProjectStatus::Saved { path, .. } = self.project_status.read().await.to_owned() {
+            let asset_dir = self.model.read().await.settings.general.copy_assets_destination.clone();
+            path.parent().map(|path| path.to_path_buf().join(asset_dir))
+        } else {
+            None
+        }
+    }
+
     pub async fn get_project_state(&self) -> tokio::sync::RwLockReadGuard<'_, ProjectStatus> {
         self.project_status.read().await
     }

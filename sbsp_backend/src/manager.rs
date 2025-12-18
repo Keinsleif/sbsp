@@ -101,8 +101,12 @@ impl ShowModelManager {
                     && let Some(model_path) = model_path_option.as_ref()
                     && copy_assets_when_add
                 {
-                    let new_target = self
-                        .import_asset_file(&audio_param.target, model_path)
+                    let import_destination = {
+                        let model = self.model.read().await;
+                        model.settings.general.copy_assets_destination.clone()
+                    };
+
+                    let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
                         .await;
                     if let Ok(target) = new_target {
                         audio_param.target = target;
@@ -142,8 +146,11 @@ impl ShowModelManager {
                         && let Some(model_path) = model_path_option.as_ref()
                         && copy_assets_when_add
                     {
-                        let new_target = self
-                            .import_asset_file(&audio_param.target, model_path)
+                        let import_destination = {
+                            let model = self.model.read().await;
+                            model.settings.general.copy_assets_destination.clone()
+                        };
+                        let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
                             .await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
@@ -182,8 +189,11 @@ impl ShowModelManager {
                             && let Some(model_path) = model_path_option.as_ref()
                             && copy_assets_when_add
                         {
-                            let new_target = self
-                                .import_asset_file(&audio_param.target, model_path)
+                            let import_destination = {
+                                let model = self.model.read().await;
+                                model.settings.general.copy_assets_destination.clone()
+                            };
+                            let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
                                 .await;
                             if let Ok(target) = new_target {
                                 audio_param.target = target;
@@ -270,18 +280,24 @@ impl ShowModelManager {
             }
             ModelCommand::Save => {
                 let event = if let ProjectStatus::Saved { project_type, path } = &*self.project_status.read().await {
-                    if let Err(error) = self.save_to_file(path, project_type).await {
-                        log::error!("Failed to save model file: {}", error);
-                        UiEvent::OperationFailed {
-                            error: UiError::FileSave {
-                                path: path.to_path_buf(),
-                                message: error.to_string(),
-                            },
+                    match self.save_to_file(path, project_type).await {
+                        Err(error) => {
+                            log::error!("Failed to save model file: {}", error);
+                            UiEvent::OperationFailed {
+                                error: UiError::FileSave {
+                                    path: path.to_path_buf(),
+                                    message: error.to_string(),
+                                },
+                            }
                         }
-                    } else {
-                        UiEvent::ShowModelSaved {
-                            project_type: project_type.clone(),
-                            path: path.to_path_buf(),
+                        Ok(modified) => {
+                            if modified {
+                                let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                            }
+                            UiEvent::ShowModelSaved {
+                                project_type: project_type.clone(),
+                                path: path.to_path_buf(),
+                            }
                         }
                     }
                 } else {
@@ -294,35 +310,51 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::SaveToFile(path) => {
-                let event = if let Err(error) = self.save_to_file(&path, &ProjectType::SingleFile).await {
-                    log::error!("Failed to save model file: {}", error);
-                    UiEvent::OperationFailed {
-                        error: UiError::FileSave {
-                            path,
-                            message: error.to_string(),
-                        },
+                let event = match self.save_to_file(&path, &ProjectType::SingleFile).await {
+                    Err(error) => {
+                        log::error!("Failed to save model file: {}", error);
+                        UiEvent::OperationFailed {
+                            error: UiError::FileSave {
+                                path,
+                                message: error.to_string(),
+                            },
+                        }
                     }
-                } else {
-                    let mut project_status = self.project_status.write().await;
-                    *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
-                    UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
+                    Ok(modified) => {
+                        if modified {
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                        }
+                        let mut project_status = self.project_status.write().await;
+                        *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                        UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
             }
             ModelCommand::ExportToFolder(path) => {
-                let event = if let Err(error) = self.export_to_folder(&path).await {
-                    log::error!("Failed to export model to folder: {}", error);
-                    UiEvent::OperationFailed {
-                        error: UiError::FileSave {
-                            path,
-                            message: error.to_string(),
-                        },
+                if !path.is_dir() {
+                    anyhow::bail!("Failed to export to folder. path is not directory.");
+                }
+                let model_file_path = path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME);
+                let event = match self.save_to_file(&model_file_path, &ProjectType::ProjectFolder).await {
+                    Err(error) => {
+                        log::error!("Failed to export model to folder: {}", error);
+                        UiEvent::OperationFailed {
+                            error: UiError::FileSave {
+                                path: model_file_path.clone(),
+                                message: error.to_string(),
+                            },
+                        }
                     }
-                } else {
-                    let mut project_status = self.project_status.write().await;
-                    *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: path.clone() };
-                    UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path }
+                    Ok(modified) => {
+                        if modified {
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                        }
+                        let mut project_status = self.project_status.write().await;
+                        *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
+                        UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path: model_file_path }
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -493,7 +525,7 @@ impl ShowModelManager {
         Ok(project_file.project_type)
     }
 
-    pub async fn export_to_folder(&self, folder_path: &Path) -> Result<(), anyhow::Error> {
+    pub async fn export_to_folder(&self, folder_path: &Path) -> Result<bool, anyhow::Error> {
         if folder_path.is_dir() {
             self.save_to_file(&folder_path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME), &ProjectType::ProjectFolder).await
         } else {
@@ -501,11 +533,8 @@ impl ShowModelManager {
         }
     }
 
-    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<(), anyhow::Error> {
-        let mut cues = {
-            let model = self.model.read().await;
-            model.cues.clone()
-        };
+    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<bool, anyhow::Error> {
+        let mut model_modified = false;
         let project_status = self.project_status.read().await;
 
         if let Some(parent) = path.parent() {
@@ -514,31 +543,52 @@ impl ShowModelManager {
 
         if project_type == &ProjectType::ProjectFolder {
             if let Some(project_dir) = path.parent() {
+                let import_destination = {
+                    let model = self.model.read().await;
+                    model.settings.general.copy_assets_destination.clone()
+                };
+
                 if let ProjectStatus::Saved { project_type, path: saved_path } = &*project_status && *project_type == ProjectType::ProjectFolder && path != saved_path {
-                    for cue in &mut cues {
-                        if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
-                            let asset_path = parent.join(&audio_param.target);
-                            let new_path = self.import_asset_file(&asset_path, project_dir).await?;
-                            audio_param.target = new_path;
+                    let mut model = self.model.write().await;
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
+                                let asset_path = parent.join(&audio_param.target);
+                                let new_path = Self::import_asset_file(&asset_path, project_dir, &import_destination).await?;
+                                audio_param.target = new_path;
+                            }
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                queue.push_back(children);
+                            }
                         }
                     }
                 } else {
-                    for cue in &mut cues {
-                        if let CueParam::Audio(audio_param) = &mut cue.params
-                        && audio_param.target.is_absolute() {
-                            let new_path = self.import_asset_file(&audio_param.target, project_dir).await?;
-                            audio_param.target = new_path;
+                    let mut model = self.model.write().await;
+                    let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                    while let Some(cues) = queue.pop_front() {
+                        for cue in cues.iter_mut() {
+                            if let CueParam::Audio(audio_param) = &mut cue.params
+                            && audio_param.target.is_absolute() {
+                                let new_path = Self::import_asset_file(&audio_param.target, project_dir, &import_destination).await?;
+                                audio_param.target = new_path;
+                            }
+                            if let CueParam::Group { children, .. } = &mut cue.params {
+                                queue.push_back(children);
+                            }
                         }
                     }
                 }
+                model_modified = true;
             } else {
                 return Err(anyhow!("Invalid project folder path."));
             }
         }
 
         let project_file = {
-            let mut model = self.model.write().await;
-            model.cues = cues;
+            let model = self.model.read().await;
             ProjectFile {
                 project_type: ProjectType::ProjectFolder,
                 model: model.clone()
@@ -551,31 +601,27 @@ impl ShowModelManager {
 
         tokio::fs::write(&path, content).await?;
         log::info!("Show saved to: {}", path.display());
-        Ok(())
+        Ok(model_modified)
     }
 
     async fn import_asset_file(
-        &self,
         asset_path: &PathBuf,
         model_path: &Path,
+        import_destination: &String,
     ) -> anyhow::Result<PathBuf> {
-        log::info!("Import asset file started. file={:?}", &asset_path);
-        let import_destination = {
-            let model = self.model.read().await;
-            model.settings.general.copy_assets_destination.clone()
-        };
-        let audio_dir = model_path.join(&import_destination);
+        log::info!("Import asset file started. file={:?}", asset_path);
+        let audio_dir = model_path.join(import_destination);
         if !audio_dir.exists() {
             tokio::fs::create_dir_all(&audio_dir).await?;
         } else if audio_dir.is_file() {
-            anyhow::bail!("Failed to copy asset to library. Library is not directory");
+            anyhow::bail!("Failed to copy asset to destination. destination is not directory");
         }
         let asset_file_name = asset_path.file_name().unwrap().to_str().unwrap();
         let dest_path = audio_dir.join(asset_file_name);
         if !dest_path.exists() {
             tokio::fs::copy(asset_path, &dest_path).await?;
         }
-        Ok([import_destination, asset_file_name.to_string()]
+        Ok([import_destination.clone(), asset_file_name.to_string()]
             .iter()
             .collect())
     }
