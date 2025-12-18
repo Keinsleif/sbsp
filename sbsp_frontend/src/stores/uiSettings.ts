@@ -146,6 +146,34 @@ export const useUiSettings = defineStore('uiSettings', () => {
           target: '00000000-0000-0000-0000-000000000000',
         },
       },
+      group: {
+        id: '00000000-0000-0000-0000-000000000000',
+        number: '',
+        name: null,
+        notes: '',
+        preWait: 0.0,
+        sequence: {
+          type: 'doNotContinue',
+        },
+        params: {
+          type: 'group',
+          mode: {
+            type: 'playlist',
+            repeat: true,
+          },
+          children: [],
+        },
+      },
+    },
+    nameFormat: {
+      audio: '{filename}',
+      wait: 'Wait {duration}',
+      fade: 'Fade {targetName}',
+      start: 'Start {targetName}',
+      stop: 'Stop {targetName}',
+      pause: 'Pause {targetName}',
+      load: 'Load {targetName}',
+      group: 'Group',
     },
   });
 

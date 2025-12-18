@@ -2,6 +2,7 @@
 import type { AppearanceSettings } from "./AppearanceSettings";
 import type { GeneralSettings } from "./GeneralSettings";
 import type { HotkeySettings } from "./HotkeySettings";
+import type { NameFormatSettings } from "./NameFormatSettings";
 import type { TemplateSettings } from "./TemplateSettings";
 
-export type GlobalSettings = { general: GeneralSettings, appearance: AppearanceSettings, hotkey: HotkeySettings, template: TemplateSettings, };
+export type GlobalSettings = { general: GeneralSettings, appearance: AppearanceSettings, hotkey: HotkeySettings, template: TemplateSettings, nameFormat: NameFormatSettings, };

@@ -78,62 +78,67 @@ const secondsToHMR = (source_seconds: number): string => {
   return time;
 };
 
+export const format = (str: string, obj: { [key: string]: string }): string => {
+  return str.replace(/\{\{|\}\}|\{((\w|\s)+)\}/g, (match, key) => {
+    if (match === '{{') return '{';
+    if (match === '}}') return '}';
+
+    return typeof obj[key.trim()] !== 'undefined' ? obj[key.trim()] : match;
+  });
+};
+
 export const buildCueName = (cue: Cue | null): string => {
   if (cue == null) {
     return '';
   }
+  const uiSettings = useUiSettings();
+  const nameFormat = uiSettings.settings.nameFormat;
   switch (cue.params.type) {
     case 'audio':
-      return `${cue.params.target.replace(/^.*[\\/]/, '')}`;
+      return format(nameFormat.audio, {
+        filename: cue.params.target.replace(/^.*[\\/]/, ''),
+      });
     case 'wait':
-      return `Wait ${secondsToHMR(cue.params.duration)}`;
+      return format(nameFormat.wait, {
+        duration: secondsToHMR(cue.params.duration),
+      });
     case 'fade': {
       const showModel = useShowModel();
       const targetCue = showModel.getCueById(cue.params.target);
-      if (targetCue != null) {
-        return `Fade ${buildCueName(targetCue)}`;
-      } else {
-        return 'Fade';
-      }
+      return format(nameFormat.fade, {
+        targetName: buildCueName(targetCue ?? null),
+      });
     }
     case 'start': {
       const showModel = useShowModel();
       const targetCue = showModel.getCueById(cue.params.target);
-      if (targetCue != null) {
-        return `Start ${buildCueName(targetCue)}`;
-      } else {
-        return 'Start';
-      }
+      return format(nameFormat.start, {
+        targetName: buildCueName(targetCue ?? null),
+      });
     }
     case 'stop': {
       const showModel = useShowModel();
       const targetCue = showModel.getCueById(cue.params.target);
-      if (targetCue != null) {
-        return `Stop ${buildCueName(targetCue)}`;
-      } else {
-        return 'Stop';
-      }
+      return format(nameFormat.stop, {
+        targetName: buildCueName(targetCue ?? null),
+      });
     }
     case 'pause': {
       const showModel = useShowModel();
       const targetCue = showModel.getCueById(cue.params.target);
-      if (targetCue != null) {
-        return `Pause ${buildCueName(targetCue)}`;
-      } else {
-        return 'Pause';
-      }
+      return format(nameFormat.pause, {
+        targetName: buildCueName(targetCue ?? null),
+      });
     }
     case 'load': {
       const showModel = useShowModel();
       const targetCue = showModel.getCueById(cue.params.target);
-      if (targetCue != null) {
-        return `Load ${buildCueName(targetCue)}`;
-      } else {
-        return 'Load';
-      }
+      return format(nameFormat.load, {
+        targetName: buildCueName(targetCue ?? null),
+      });
     }
     case 'group': {
-      return 'Group';
+      return nameFormat.group;
     }
     default:
       return '';

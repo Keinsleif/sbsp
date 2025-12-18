@@ -59,7 +59,8 @@
         "remote": "Remote",
         "hotkey": "Hotkey",
         "template": "Template",
-        "appearance": "Appearance"
+        "appearance": "Appearance",
+        "nameFormat": "Name Format"
       },
       "preset": {
         "hotkeyCursor": {
@@ -117,13 +118,48 @@
           "audio": "Audio Cue",
           "builtFromCueParam": "** built from cue param **",
           "wait": "Wait Cue",
-          "fade": "Fade Cue"
+          "fade": "Fade Cue",
+          "start": "Start Cue",
+          "stop": "Stop Cue",
+          "pause": "Pause Cue",
+          "load": "Load Cue",
+          "group": "Group Cue"
         },
         "appearance": {
           "language": "Language",
           "systemLanguage": "System Language",
           "darkMode": "Dark Mode",
           "systemSettings": "System Settings"
+        },
+        "nameFormat": {
+          "audio": {
+            "title": "Audio Cue",
+            "description": "{filename} replaced with target audio filename"
+          },
+          "wait": {
+            "title": "Wait Cue",
+            "description": "{duration} replaced with wait duration"
+          },
+          "fade": {
+            "title": "Fade Cue",
+            "description": "{targetName} replaced with target cue name"
+          },
+          "start": {
+            "title": "Start Cue"
+          },
+          "playbackDescription": "{targetName} replaced with target cue name",
+          "stop": {
+            "title": "Stop Cue"
+          },
+          "pause": {
+            "title": "Pause Cue"
+          },
+          "load": {
+            "title": "Load Cue"
+          },
+          "group": {
+            "title": "Group Cue"
+          }
         }
       }
     },

@@ -11,7 +11,7 @@ use sbsp_backend::{
     BackendSettings,
     model::cue::{
         Cue, CueParam, CueSequence,
-        audio::{AudioCueParam, Easing, FadeParam, SoundType},
+        audio::{AudioCueParam, Easing, FadeParam, SoundType}, group::GroupMode,
     },
 };
 
@@ -23,6 +23,7 @@ pub struct GlobalSettings {
     pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
+    pub name_format: NameFormatSettings,
 }
 
 impl From<&GlobalSettings> for BackendSettings {
@@ -91,6 +92,7 @@ pub struct TemplateSettings {
     pub stop: Cue,
     pub pause: Cue,
     pub load: Cue,
+    pub group: Cue,
 }
 
 impl Default for TemplateSettings {
@@ -184,6 +186,46 @@ impl Default for TemplateSettings {
                     target: Uuid::nil(),
                 },
             },
+            group: Cue {
+                id: Uuid::nil(),
+                number: "".to_string(),
+                name: None,
+                notes: "".to_string(),
+                pre_wait: 0.0,
+                sequence: CueSequence::DoNotContinue,
+                params: CueParam::Group {
+                    mode: GroupMode::Playlist { repeat: true },
+                    children: Box::new(Vec::new()),
+                },
+            },
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase", default)]
+pub struct NameFormatSettings {
+    pub audio: String,
+    pub wait: String,
+    pub fade: String,
+    pub start: String,
+    pub stop: String,
+    pub pause: String,
+    pub load: String,
+    pub group: String,
+}
+
+impl Default for NameFormatSettings {
+    fn default() -> Self {
+        Self {
+            audio: "{filename}".into(),
+            wait: "Wait {duration}".into(),
+            fade: "Fade {targetName}".into(),
+            start: "Start {targetName}".into(),
+            stop: "Stop {targetName}".into(),
+            pause: "Pause {targetName}".into(),
+            load: "Load {targetName}".into(),
+            group: "Group".into(),
         }
     }
 }
