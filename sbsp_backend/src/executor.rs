@@ -321,8 +321,24 @@ impl Executor {
                     .await?;
             }
             CueParam::Fade { target, volume, fade_param } => {
-                if self.audio_tx.send(AudioCommand::SetVolume { id: *target, volume: *volume, fade_param: *fade_param }).await.is_err() {
-                    anyhow::bail!("cannot send AudioCommand");
+                if let Some(cue) = self.model_handle.get_cue_by_id(target).await {
+                    match cue.params {
+                        CueParam::Audio(_) => {
+                            if self.audio_tx.send(AudioCommand::SetVolume { id: *target, volume: *volume, fade_param: *fade_param }).await.is_err() {
+                                anyhow::bail!("cannot send AudioCommand");
+                            }
+                        },
+                        CueParam::Group { .. } => {
+                            let children = self.model_handle.get_all_children_by_id(target).await;
+                            for cue in children {
+                                if let CueParam::Audio(_) = cue.params
+                                && self.audio_tx.send(AudioCommand::SetVolume { id: cue.id, volume: *volume, fade_param: *fade_param }).await.is_err() {
+                                    anyhow::bail!("cannot send AudioCommand");
+                                }
+                            }
+                        },
+                        _ => {},
+                    }
                 }
 
                 self.wait_tx

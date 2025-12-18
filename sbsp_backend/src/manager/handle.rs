@@ -140,6 +140,24 @@ impl ShowModelHandle {
         None
     }
 
+    pub async fn get_all_children_by_id(&self, cue_id: &Uuid) -> Vec<Cue> {
+        let mut result = Vec::new();
+        let target_cue = self.get_cue_by_id(cue_id).await;
+        if let Some(target) = target_cue && let CueParam::Group { children, .. } = &target.params {
+            let mut queue: VecDeque<&Vec<Cue>> = VecDeque::from([children.as_ref()]);
+            while let Some(cues) = queue.pop_front() {
+                for cue in cues {
+                    if let CueParam::Group { children, .. } = &cue.params {
+                        queue.push_back(children);
+                    } else {
+                        result.push(cue.clone());
+                    }
+                }
+            }
+        }
+        result
+    }
+
     pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
         let model = self.read().await;
         let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
