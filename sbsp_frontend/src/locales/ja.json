@@ -207,11 +207,11 @@
         },
         "nameFormat": {
           "audio": {
-            "description": "{filename} はターゲットのファイル名に置き換えられます",
+            "description": "{'{'}filename{'}'} はターゲットのファイル名に置き換えられます",
             "title": "音声キュー"
           },
           "fade": {
-            "description": "{targetName} はターゲットのキュー名に置き換えられます",
+            "description": "{'{'}targetName{'}'} はターゲットのキュー名に置き換えられます",
             "title": "フェードキュー"
           },
           "group": {
@@ -223,7 +223,7 @@
           "pause": {
             "title": "一時停止キュー"
           },
-          "playbackDescription": "{targetName} はターゲットのキュー名に置き換えられます",
+          "playbackDescription": "{'{'}targetName{'}'} はターゲットのキュー名に置き換えられます",
           "start": {
             "title": "開始キュー"
           },
@@ -231,7 +231,7 @@
             "title": "停止キュー"
           },
           "wait": {
-            "description": "{duration} は待機する時間に置き換えられます",
+            "description": "{'{'}duration{'}'} は待機する時間に置き換えられます",
             "title": "待機キュー"
           }
         }

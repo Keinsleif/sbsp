@@ -135,20 +135,20 @@
         "nameFormat": {
           "audio": {
             "title": "Audio Cue",
-            "description": "{filename} replaced with target audio filename"
+            "description": "{'{'}filename{'}'} replaced with target audio filename"
           },
           "wait": {
             "title": "Wait Cue",
-            "description": "{duration} replaced with wait duration"
+            "description": "{'{'}duration{'}'} replaced with wait duration"
           },
           "fade": {
             "title": "Fade Cue",
-            "description": "{targetName} replaced with target cue name"
+            "description": "{'{'}targetName{'}'} replaced with target cue name"
           },
           "start": {
             "title": "Start Cue"
           },
-          "playbackDescription": "{targetName} replaced with target cue name",
+          "playbackDescription": "{'{'}targetName{'}'} replaced with target cue name",
           "stop": {
             "title": "Stop Cue"
           },
