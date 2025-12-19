@@ -11,7 +11,7 @@ use sbsp_backend::{
     start_backend,
 };
 use sbsp_license::LicenseManager;
-use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
+use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
 
@@ -257,6 +257,7 @@ pub fn run() {
             command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
             command::model_manager::get_show_model,
+            command::model_manager::is_modified,
             command::model_manager::update_cue,
             command::model_manager::add_cue,
             command::model_manager::add_cues,

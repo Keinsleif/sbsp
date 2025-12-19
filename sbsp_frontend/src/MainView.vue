@@ -45,7 +45,7 @@ import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import { useShowState } from './stores/showstate';
-import { listen } from '@tauri-apps/api/event';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
@@ -63,6 +63,7 @@ import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import CreditsDialog from './components/dialog/CreditsDialog.vue';
 import LicenseDialog from './components/dialog/LicenseDialog.vue';
+import { message } from '@tauri-apps/plugin-dialog';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -70,77 +71,6 @@ const uiState = useUiState();
 const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t, locale } = useI18n({ useScope: 'global' });
-
-listen<ShowState>('backend-state-update', (event) => {
-  showState.update(event.payload);
-});
-
-listen<UiEvent>('backend-event', (event) => {
-  switch (event.payload.type) {
-    case 'playbackCursorMoved': {
-      if (getLockCursorToSelection()) {
-        const cueId = event.payload.param.cueId;
-        if (cueId != null) {
-          if (uiState.selected != cueId) {
-            uiState.selected = cueId;
-            if (!uiState.selectedRows.includes(cueId)) {
-              uiState.selectedRows = [cueId];
-            }
-          }
-        } else {
-          uiState.selectedRows = [];
-          uiState.selected = null;
-        }
-      }
-      break;
-    }
-    case 'showModelLoaded':
-      invoke<ShowModel>('get_show_model').then((model) => {
-        showModel.updateAll(model);
-        uiState.success(t('notification.modelLoaded'));
-      });
-      getCurrentWebviewWindow().setTitle(
-        (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-      );
-      break;
-    case 'showModelSaved':
-      uiState.success(t('notification.modelSaved'));
-      break;
-    case 'cueListUpdated':
-      showModel.$patch({ cues: event.payload.param.cues });
-      break;
-    case 'modelNameUpdated':
-      showModel.$patch({ name: event.payload.param.newName });
-      getCurrentWebviewWindow().setTitle(
-        (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-      );
-      break;
-    case 'settingsUpdated': {
-      const settings = event.payload.param.newSettings;
-      showModel.$patch({ settings: settings });
-      break;
-    }
-    case 'assetResult': {
-      if ('Ok' in event.payload.param.data) {
-        assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
-      } else {
-        console.error(event.payload.param.data.Err);
-        uiState.error(event.payload.param.data.Err);
-      }
-      break;
-    }
-    case 'operationFailed':
-      console.error(event.payload.param.error);
-      uiState.error(event.payload.param.error.message);
-      break;
-  }
-});
-
-invoke<ShowModel>('get_show_model')
-  .then((model) => {
-    showModel.updateAll(model);
-  })
-  .catch((e) => console.error(e.toString()));
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -152,14 +82,109 @@ const onVisibilityChange = () => {
   }
 };
 
+const unlistenFuncs: UnlistenFn[] = [];
+
 onMounted(() => {
-  createWindowMenu().then((menu) => {
-    menu.setAsWindowMenu();
-  });
   invoke<'remote' | 'main'>('get_side').then((side) => {
     uiState.side = side;
     getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
   });
+
+  listen<ShowState>('backend-state-update', (event) => {
+    showState.update(event.payload);
+  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+
+  listen<UiEvent>('backend-event', (event) => {
+    switch (event.payload.type) {
+      case 'playbackCursorMoved': {
+        if (getLockCursorToSelection()) {
+          const cueId = event.payload.param.cueId;
+          if (cueId != null) {
+            if (uiState.selected != cueId) {
+              uiState.selected = cueId;
+              if (!uiState.selectedRows.includes(cueId)) {
+                uiState.selectedRows = [cueId];
+              }
+            }
+          } else {
+            uiState.selectedRows = [];
+            uiState.selected = null;
+          }
+        }
+        break;
+      }
+      case 'showModelLoaded':
+        invoke<ShowModel>('get_show_model').then((model) => {
+          showModel.updateAll(model);
+          uiState.success(t('notification.modelLoaded'));
+        });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
+      case 'showModelSaved':
+        uiState.success(t('notification.modelSaved'));
+        break;
+      case 'cueListUpdated':
+        showModel.$patch({ cues: event.payload.param.cues });
+        break;
+      case 'modelNameUpdated':
+        showModel.$patch({ name: event.payload.param.newName });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
+      case 'settingsUpdated': {
+        const settings = event.payload.param.newSettings;
+        showModel.$patch({ settings: settings });
+        break;
+      }
+      case 'assetResult': {
+        if ('Ok' in event.payload.param.data) {
+          assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
+        } else {
+          console.error(event.payload.param.data.Err);
+          uiState.error(event.payload.param.data.Err);
+        }
+        break;
+      }
+      case 'operationFailed':
+        console.error(event.payload.param.error);
+        uiState.error(event.payload.param.error.message);
+        break;
+    }
+  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+
+  getCurrentWebviewWindow()
+    .onCloseRequested(async (event) => {
+      if (uiState.side == 'main') {
+        const isModified = await invoke<boolean>('is_modified');
+        if (isModified) {
+          const result = await message('Do you want to save this ShowModel before exit?', {
+            buttons: { yes: 'Save', no: "Don't save", cancel: 'Cancel' },
+          }).catch((e) => console.error(e));
+          switch (result) {
+            case 'Save':
+              await invoke('file_save');
+              break;
+            case "Don't save":
+              break;
+            case 'Cancel':
+              event.preventDefault();
+              break;
+          }
+        }
+      }
+    })
+    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+  createWindowMenu().then((menu) => {
+    menu.setAsWindowMenu();
+  });
+  invoke<ShowModel>('get_show_model')
+    .then((model) => {
+      showModel.updateAll(model);
+    })
+    .catch((e) => console.error(e.toString()));
   navigator.wakeLock.request('screen').then((value) => {
     wakeLock.value = value;
   });
@@ -167,6 +192,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  unlistenFuncs.forEach((unlistenFn) => unlistenFn());
   document.removeEventListener('visibilitychange', onVisibilityChange);
   if (wakeLock.value != null) {
     wakeLock.value.release().then(() => {

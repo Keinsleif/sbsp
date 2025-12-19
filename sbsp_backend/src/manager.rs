@@ -6,6 +6,8 @@ pub use handle::ShowModelHandle;
 pub use command::ModelCommand;
 pub use command::InsertPosition;
 
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::{
     collections::{HashSet, VecDeque},
     path::{Path, PathBuf},
@@ -55,7 +57,8 @@ pub struct ShowModelManager {
     command_rx: mpsc::Receiver<ModelCommand>,
     event_tx: broadcast::Sender<UiEvent>,
 
-    project_status: Arc<RwLock<ProjectStatus>>
+    project_status: Arc<RwLock<ProjectStatus>>,
+    modify_status: Arc<AtomicBool>,
 }
 
 impl ShowModelManager {
@@ -63,17 +66,20 @@ impl ShowModelManager {
         let (command_tx, command_rx) = mpsc::channel(32);
         let model = Arc::new(RwLock::new(ShowModel::default()));
         let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
+        let modify_status = Arc::new(AtomicBool::new(false));
         let manager = Self {
             model: model.clone(),
             settings_rx,
             command_rx,
             event_tx,
             project_status: project_status.clone(),
+            modify_status: modify_status.clone(),
         };
         let handle = ShowModelHandle::new(
             model,
             command_tx,
             project_status,
+            modify_status,
         );
 
         (manager, handle)
@@ -119,6 +125,7 @@ impl ShowModelManager {
                         },
                     }
                 } else {
+                    self.modify_status.store(true, Ordering::Release);
                     UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
@@ -159,6 +166,7 @@ impl ShowModelManager {
                     if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
                         UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } }
                     } else {
+                        self.modify_status.store(true, Ordering::Release);
                         UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 };
@@ -213,7 +221,10 @@ impl ShowModelManager {
                         }
                     }
                 }
-                self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() })?;
+                if !added_cues.is_empty() {
+                    self.modify_status.store(true, Ordering::Release);
+                    self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() })?;
+                }
                 Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
@@ -221,6 +232,7 @@ impl ShowModelManager {
                     UiEvent::OperationFailed { error: UiError::CueEdit { message: "Failed to remove cue. id not found.".into() } }
                 } else {
                     self.event_tx.send(UiEvent::CueRemoved { cue_id })?;
+                    self.modify_status.store(true, Ordering::Release);
                     UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                 };
                 self.event_tx.send(event)?;
@@ -231,6 +243,7 @@ impl ShowModelManager {
                     if let Err(e) = self.insert_cue_at_position(cue, position).await {
                         UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to mov cue. {}", e) } }
                     } else {
+                        self.modify_status.store(true, Ordering::Release);
                         UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
                     }
                 } else {
@@ -258,6 +271,7 @@ impl ShowModelManager {
                     }
                 }
                 if number != start_from {
+                    self.modify_status.store(true, Ordering::Release);
                     self.event_tx.send(UiEvent::CueListUpdated {
                         cues: model.cues.clone(),
                     })?;
@@ -267,6 +281,7 @@ impl ShowModelManager {
             ModelCommand::UpdateModelName(new_name) => {
                 let mut model = self.model.write().await;
                 model.name = new_name.clone();
+                self.modify_status.store(true, Ordering::Release);
                 self.event_tx.send(UiEvent::ModelNameUpdated { new_name })?;
                 Ok(())
             }
@@ -274,6 +289,7 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 // TODO setting validation
                 model.settings = *new_settings.clone();
+                self.modify_status.store(true, Ordering::Release);
                 self.event_tx
                     .send(UiEvent::SettingsUpdated { new_settings })?;
                 Ok(())
@@ -294,6 +310,7 @@ impl ShowModelManager {
                             if modified {
                                 let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
                             }
+                            self.modify_status.store(false, Ordering::Release);
                             UiEvent::ShowModelSaved {
                                 project_type: project_type.clone(),
                                 path: path.to_path_buf(),
@@ -324,6 +341,7 @@ impl ShowModelManager {
                         if modified {
                             let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
                         }
+                        self.modify_status.store(false, Ordering::Release);
                         let mut project_status = self.project_status.write().await;
                         *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
                         UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
@@ -351,6 +369,7 @@ impl ShowModelManager {
                         if modified {
                             let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
                         }
+                        self.modify_status.store(false, Ordering::Release);
                         let mut project_status = self.project_status.write().await;
                         *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
                         UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path: model_file_path }
@@ -371,6 +390,7 @@ impl ShowModelManager {
                         }
                     }
                     Ok(project_type) => {
+                        self.modify_status.store(false, Ordering::Release);
                         UiEvent::ShowModelLoaded { project_type, path }
                     }
                 };

@@ -10,6 +10,11 @@ pub async fn get_show_model(state: tauri::State<'_, AppState>) -> Result<ShowMod
 }
 
 #[tauri::command]
+pub fn is_modified(state: tauri::State<'_, AppState>) -> bool {
+    state.get_handle().model_handle.is_modified()
+}
+
+#[tauri::command]
 pub async fn update_cue(state: tauri::State<'_, AppState>, cue: Cue) -> Result<(), String> {
     let handle = state.get_handle();
     handle

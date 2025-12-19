@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, path::PathBuf, sync::Arc};
+use std::{collections::VecDeque, path::PathBuf, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
@@ -13,14 +13,16 @@ pub struct ShowModelHandle {
     model: Arc<RwLock<ShowModel>>,
     command_tx: mpsc::Sender<ModelCommand>,
     project_status: Arc<RwLock<ProjectStatus>>,
+    modify_status: Arc<AtomicBool>,
 }
 
 impl ShowModelHandle {
-    pub fn new(model: Arc<RwLock<ShowModel>>, command_tx: mpsc::Sender<ModelCommand>, project_status: Arc<RwLock<ProjectStatus>>) -> Self {
+    pub fn new(model: Arc<RwLock<ShowModel>>, command_tx: mpsc::Sender<ModelCommand>, project_status: Arc<RwLock<ProjectStatus>>, modify_status: Arc<AtomicBool>) -> Self {
         Self {
             model,
             command_tx,
             project_status,
+            modify_status,
         }
     }
 
@@ -238,6 +240,10 @@ impl ShowModelHandle {
 
     pub async fn get_project_state(&self) -> tokio::sync::RwLockReadGuard<'_, ProjectStatus> {
         self.project_status.read().await
+    }
+
+    pub fn is_modified(&self) -> bool {
+        self.modify_status.load(Ordering::Acquire)
     }
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {
