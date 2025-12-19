@@ -14,9 +14,42 @@
         <th id="cuelist_type" width="37px"></th>
         <th id="cuelist_number" class="text-center" width="60px">{{ t('main.number') }}</th>
         <th id="cuelist_name">{{ t('main.name') }}</th>
-        <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.preWait') }}</th>
-        <th id="cuelist_duration" class="text-center" width="100px">{{ t('main.duration') }}</th>
-        <th id="cuelist_post_wait" class="text-center" width="100px">{{ t('main.postWait') }}</th>
+        <th id="cuelist_pre_wait" class="text-center" width="120px">
+          <div class="d-flex flex-row justify-center ga-1">
+            {{ t('main.preWait') }}
+            <v-icon
+              class="mt-auto mb-auto"
+              :icon="preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="
+                preWaitDisplayMode == 'elapsed' ? (preWaitDisplayMode = 'remain') : (preWaitDisplayMode = 'elapsed')
+              "
+            ></v-icon>
+          </div>
+        </th>
+        <th id="cuelist_duration" class="text-center" width="120px">
+          <div class="d-flex flex-row justify-center ga-1">
+            {{ t('main.duration') }}
+            <v-icon
+              class="mt-auto mb-auto"
+              :icon="durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="
+                durationDisplayMode == 'elapsed' ? (durationDisplayMode = 'remain') : (durationDisplayMode = 'elapsed')
+              "
+            ></v-icon>
+          </div>
+        </th>
+        <th id="cuelist_post_wait" class="text-center" width="120px">
+          <div class="d-flex flex-row justify-center ga-1">
+            {{ t('main.postWait') }}
+            <v-icon
+              class="mt-auto mb-auto"
+              :icon="postWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="
+                postWaitDisplayMode == 'elapsed' ? (postWaitDisplayMode = 'remain') : (postWaitDisplayMode = 'elapsed')
+              "
+            ></v-icon>
+          </div>
+        </th>
         <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
         <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
@@ -119,7 +152,11 @@
           >
             {{
               isPreWaitActive(item.cue.id)
-                ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                ? secondsToFormat(
+                    preWaitDisplayMode == 'elapsed'
+                      ? showState.activeCues[item.cue.id]!.position
+                      : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
+                  )
                 : secondsToFormat(item.cue.preWait == 0.0 ? null : item.cue.preWait)
             }}
           </div>
@@ -147,7 +184,11 @@
           >
             {{
               isActive(item.cue.id)
-                ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                ? secondsToFormat(
+                    durationDisplayMode == 'elapsed'
+                      ? showState.activeCues[item.cue.id]!.position
+                      : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
+                  )
                 : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
             }}
           </div>
@@ -156,8 +197,9 @@
           <div
             :class="
               isActive(item.cue.id) &&
-              item.sequence.type == 'autoContinue' &&
-              showState.activeCues[item.cue.id]!.position < item.sequence.postWait
+              (item.sequence.type == 'autoFollow' ||
+                (item.sequence.type == 'autoContinue' &&
+                  showState.activeCues[item.cue.id]!.position < item.sequence.postWait))
                 ? 'border-md border-primary'
                 : ''
             "
@@ -199,7 +241,11 @@
                       (item.sequence.type == 'autoContinue'
                         ? item.sequence.postWait
                         : showState.activeCues[item.cue.id]!.duration)
-                  ? secondsToFormat(showState.activeCues[item.cue.id]!.position)
+                  ? secondsToFormat(
+                      postWaitDisplayMode == 'elapsed'
+                        ? showState.activeCues[item.cue.id]!.position
+                        : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
+                    )
                   : item.sequence.type == 'autoContinue'
                     ? secondsToFormat(item.sequence.postWait)
                     : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
@@ -238,6 +284,8 @@
 import { ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel } from '../stores/showmodel';
 import {
+  mdiAlphaEBoxOutline,
+  mdiAlphaRBoxOutline,
   mdiArrowDown,
   mdiArrowExpandDown,
   mdiArrowRightBold,
@@ -274,6 +322,9 @@ const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
 
+const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
+const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
+const postWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
 const scrollIntoIndex = (inddex: number) => {
