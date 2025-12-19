@@ -725,6 +725,32 @@ impl Executor {
                     WaitEvent::Completed { .. } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
                             log::info!("PreWaitCompleted cue_id={}", cue.id);
+                            let engine_type = match &cue.params {
+                                CueParam::Audio(..) => EngineType::Audio,
+                                CueParam::Wait { .. } => EngineType::Wait,
+                                CueParam::Fade { .. } => EngineType::Fade,
+                                CueParam::Start { .. } |
+                                CueParam::Stop { .. } |
+                                CueParam::Pause { .. } |
+                                CueParam::Load { .. } => EngineType::Playback,
+                                CueParam::Group { .. } => EngineType::Group,
+                            };
+                            if engine_type != EngineType::Playback {
+                                let mut active_instances = self.active_instances.write().await;
+                                if let Some(active_instance) =
+                                    active_instances.get_mut(&cue.id)
+                                {
+                                    active_instance.engine_type = engine_type;
+                                } else {
+                                    active_instances.insert(
+                                        cue.id,
+                                        ActiveInstance {
+                                            engine_type,
+                                            executed: true,
+                                        },
+                                    );
+                                }
+                            }
                             self.execute_cue(&cue).await?;
                         } else {
                             anyhow::bail!("PreWait: cue to execute not found. id={}", cue_id);
