@@ -1,9 +1,17 @@
 <template>
-  <v-table fixed-header density="compact" class="flex-grow-1" height="100%" @mousedown="resetSelection">
+  <v-table
+    fixed-header
+    density="compact"
+    class="flex-grow-1"
+    :class="$style['cuelist']"
+    height="100%"
+    @mousedown="resetSelection"
+  >
     <thead>
       <tr>
-        <th id="cuelist_cursor" width="53px"></th>
-        <th id="cuelist_type" width="53px"></th>
+        <th id="cuelist_cursor" width="37px"></th>
+        <th id="cuelist_status" width="32px"></th>
+        <th id="cuelist_type" width="37px"></th>
         <th id="cuelist_number" class="text-center" width="60px">{{ t('main.number') }}</th>
         <th id="cuelist_name">{{ t('main.name') }}</th>
         <th id="cuelist_pre_wait" class="text-center" width="100px">{{ t('main.preWait') }}</th>
@@ -31,13 +39,32 @@
         @drop="drop($event, i)"
         @mousedown.stop="click($event, i)"
       >
-        <td headers="cuelist_cursor" width="53px">
+        <td headers="cuelist_cursor" style="padding-left: 16px; padding-right: 0px">
           <v-icon
             :icon="showState.playbackCursor == item.cue.id ? mdiArrowRightBold : undefined"
             @click="setPlaybackCursor(item.cue.id)"
           ></v-icon>
         </td>
-        <td headers="cuelist_type" width="53px">
+        <td headers="cuelist_status" style="padding-left: 6px">
+          <v-icon
+            v-show="['Playing', 'PreWaiting'].includes(getStatus(item.cue.id))"
+            :icon="mdiPlay"
+            color="success"
+          ></v-icon>
+          <v-icon
+            v-show="['Paused', 'PreWaitPaused'].includes(getStatus(item.cue.id))"
+            :icon="mdiPause"
+            color="warning"
+          ></v-icon>
+          <v-icon v-show="getStatus(item.cue.id) == 'Loaded'" :icon="mdiUpload" color="warning"></v-icon>
+          <v-progress-circular
+            v-show="getStatus(item.cue.id) == 'Stopping'"
+            indeterminate
+            size="21"
+            color="warning"
+          ></v-progress-circular>
+        </td>
+        <td headers="cuelist_type" style="padding-left: 0px; padding-right: 16px">
           <v-icon :icon="getCueIcon(item.cue.params.type)" />
         </td>
         <td
@@ -193,6 +220,7 @@
         @drop="drop($event, showModel.flatCueList.length)"
       >
         <td headers="cuelist_cursor"></td>
+        <td headers="cuelist_status"></td>
         <td headers="cuelist_type"></td>
         <td headers="cuelist_number"></td>
         <td headers="cuelist_name"></td>
@@ -218,11 +246,14 @@ import {
   mdiGroup,
   mdiMenuDown,
   mdiMenuRight,
+  mdiPause,
   mdiPauseCircleOutline,
+  mdiPlay,
   mdiPlayCircleOutline,
   mdiRepeat,
   mdiStopCircleOutline,
   mdiTimerSandEmpty,
+  mdiUpload,
   mdiUploadCircleOutline,
   mdiVolumeHigh,
 } from '@mdi/js';
@@ -434,6 +465,13 @@ const getCueIcon = (type: string): string | undefined => {
   }
 };
 
+const getStatus = (id: string) => {
+  if (showState.activeCues[id] == undefined) {
+    return '';
+  }
+  return showState.activeCues[id].status;
+};
+
 const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
   if (e.target == null || !(e.target instanceof HTMLElement) || e.target.contentEditable === 'true') {
     return;
@@ -541,6 +579,9 @@ const setPlaybackCursor = (cueId: string) => {
 </script>
 
 <style lang="css" module>
+.cuelist table {
+  table-layout: fixed;
+}
 .drag-over-row > td {
   border-top: 2px solid rgb(var(--v-theme-primary)) !important;
 }
