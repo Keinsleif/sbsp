@@ -10,6 +10,9 @@ export const useUiState = defineStore(
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
     const expandedRows = ref<string[]>([]);
+    const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
+    const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
+    const postWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
@@ -60,6 +63,18 @@ export const useUiState = defineStore(
       }
     };
 
+    const togglePreWaitDisplayMode = () => {
+      preWaitDisplayMode.value = preWaitDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
+    };
+
+    const toggleDurationDisplayMode = () => {
+      durationDisplayMode.value = durationDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
+    };
+
+    const togglePostWaitDisplayMode = () => {
+      postWaitDisplayMode.value = postWaitDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
+    };
+
     const toggleRightSidebar = () => {
       isRightSidebarOpen.value = !isRightSidebarOpen.value;
     };
@@ -78,6 +93,9 @@ export const useUiState = defineStore(
       selected,
       selectedRows,
       expandedRows,
+      preWaitDisplayMode,
+      durationDisplayMode,
+      postWaitDisplayMode,
       sideBarTab,
       isRightSidebarOpen,
       isRenumberCueDialogOpen,
@@ -92,6 +110,9 @@ export const useUiState = defineStore(
       setSelected,
       addSelected,
       toggleExpand,
+      togglePreWaitDisplayMode,
+      toggleDurationDisplayMode,
+      togglePostWaitDisplayMode,
       toggleRightSidebar,
       toggleEditor,
       success,

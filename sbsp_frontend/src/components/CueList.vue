@@ -19,10 +19,8 @@
             {{ t('main.preWait') }}
             <v-icon
               class="mt-auto mb-auto"
-              :icon="preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="
-                preWaitDisplayMode == 'elapsed' ? (preWaitDisplayMode = 'remain') : (preWaitDisplayMode = 'elapsed')
-              "
+              :icon="uiState.preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="uiState.togglePreWaitDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -31,10 +29,8 @@
             {{ t('main.duration') }}
             <v-icon
               class="mt-auto mb-auto"
-              :icon="durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="
-                durationDisplayMode == 'elapsed' ? (durationDisplayMode = 'remain') : (durationDisplayMode = 'elapsed')
-              "
+              :icon="uiState.durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="uiState.toggleDurationDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -43,10 +39,8 @@
             {{ t('main.postWait') }}
             <v-icon
               class="mt-auto mb-auto"
-              :icon="postWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="
-                postWaitDisplayMode == 'elapsed' ? (postWaitDisplayMode = 'remain') : (postWaitDisplayMode = 'elapsed')
-              "
+              :icon="uiState.postWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+              @click="uiState.togglePostWaitDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -153,7 +147,7 @@
             {{
               isPreWaitActive(item.cue.id)
                 ? secondsToFormat(
-                    preWaitDisplayMode == 'elapsed'
+                    uiState.preWaitDisplayMode == 'elapsed'
                       ? showState.activeCues[item.cue.id]!.position
                       : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
                   )
@@ -185,7 +179,7 @@
             {{
               isActive(item.cue.id)
                 ? secondsToFormat(
-                    durationDisplayMode == 'elapsed'
+                    uiState.durationDisplayMode == 'elapsed'
                       ? showState.activeCues[item.cue.id]!.position
                       : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
                   )
@@ -242,7 +236,7 @@
                         ? item.sequence.postWait
                         : showState.activeCues[item.cue.id]!.duration)
                   ? secondsToFormat(
-                      postWaitDisplayMode == 'elapsed'
+                      uiState.postWaitDisplayMode == 'elapsed'
                         ? showState.activeCues[item.cue.id]!.position
                         : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
                     )
@@ -322,9 +316,6 @@ const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
 
-const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
-const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
-const postWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
 const scrollIntoIndex = (inddex: number) => {
