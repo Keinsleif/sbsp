@@ -238,6 +238,7 @@ pub fn run() {
             command::controller::seek_by,
             command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
+            command::controller::set_volume,
             command::model_manager::get_show_model,
             command::model_manager::update_cue,
             command::model_manager::add_cue,

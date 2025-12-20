@@ -100,6 +100,7 @@ struct PlaybackHandle {
     duration: f64,
     fade_out_tween: Option<Tween>,
     repeat: bool,
+    volume: f32,
 }
 
 impl PlaybackHandle {
@@ -109,6 +110,10 @@ impl PlaybackHandle {
 
     fn is_repeating(&self) -> bool {
         self.repeat
+    }
+
+    fn get_volume(&self) -> f32 {
+        self.volume
     }
 
     fn position(&self) -> f64 {
@@ -157,6 +162,7 @@ impl PlaybackHandle {
     }
 
     fn set_volume(&mut self, volume: f32, tween: Tween) {
+        self.volume = volume;
         self.handle.set_volume(volume, tween);
     }
 }
@@ -450,6 +456,7 @@ impl AudioEngine {
                 clock,
                 duration,
                 repeat: data.repeat,
+                volume: data.volume,
                 fade_out_tween,
             },
         );
@@ -471,6 +478,7 @@ impl AudioEngine {
                 instance_id: id,
                 initial_params: AudioStateParam {
                     repeating: data.repeat,
+                    volume: data.volume,
                 },
             }))
             .await?;
@@ -618,22 +626,55 @@ impl AudioEngine {
                 if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
                     let repeat_state = playing_sound.handle.is_repeating();
                     playing_sound.handle.set_repeat(!repeat_state);
+                    let volume = playing_sound.handle.get_volume();
                     self.event_tx
                         .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
                             instance_id: id,
                             params: AudioStateParam {
                                 repeating: !repeat_state,
+                                volume,
                             },
                         }))
                         .await?;
                 } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
                     let repeat_state = loaded_handle.is_repeating();
                     loaded_handle.set_repeat(!repeat_state);
+                    let volume = loaded_handle.get_volume();
                     self.event_tx
                         .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
                             instance_id: id,
                             params: AudioStateParam {
                                 repeating: !repeat_state,
+                                volume,
+                            },
+                        }))
+                        .await?;
+                } else {
+                    anyhow::bail!("unknown instance_id. id={}", id);
+                }
+            }
+            AudioAction::SetVolume(volume) => {
+                if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+                    let repeat_state = playing_sound.handle.is_repeating();
+                    playing_sound.handle.set_volume(volume, Tween::default());
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
+                            instance_id: id,
+                            params: AudioStateParam {
+                                repeating: repeat_state,
+                                volume,
+                            },
+                        }))
+                        .await?;
+                } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+                    let repeat_state = loaded_handle.is_repeating();
+                    loaded_handle.set_volume(volume, Tween::default());
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::StateParamUpdated {
+                            instance_id: id,
+                            params: AudioStateParam {
+                                repeating: repeat_state,
+                                volume,
                             },
                         }))
                         .await?;

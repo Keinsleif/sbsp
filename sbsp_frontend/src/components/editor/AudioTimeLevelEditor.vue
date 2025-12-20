@@ -47,13 +47,13 @@
       <volume-fader
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
-        :disabled="selectedCue!.id in showState.activeCues"
         :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
           sliderChanging = false;
           saveEditorValue();
+          changeActiveCueVolume();
         "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
@@ -118,6 +118,7 @@ import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
+import { invoke } from '@tauri-apps/api/core';
 
 const { t } = useI18n();
 const { smAndDown, width } = useDisplay();
@@ -175,6 +176,14 @@ const saveEditorValue = () => {
   selectedCue.value.params.pan = panning.value;
   selectedCue.value.params.repeat = repeat.value;
   emit('update');
+};
+
+const changeActiveCueVolume = () => {
+  if (selectedCue.value == null) return;
+  const activeCue = showState.activeCues[selectedCue.value.id];
+  if (activeCue != null) {
+    invoke('set_volume', { cueId: activeCue.cueId, volume: volume.value });
+  }
 };
 
 const skipFirstSilence = () => {
