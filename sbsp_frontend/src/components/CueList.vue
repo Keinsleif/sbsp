@@ -411,10 +411,16 @@ const drop = (event: DragEvent, index: number) => {
       return;
     }
     const cueId = showModel.flatCueList[fromIndex].cue.id;
-    const targetId = showModel.flatCueList[index].cue.id;
-    invoke('move_cue', { cueId: cueId, targetId: targetId }).catch((e) => {
-      console.log('Failed to move cue. ' + e);
-    });
+    if (index < showModel.flatCueList.length) {
+      const targetId = showModel.flatCueList[index].cue.id;
+      invoke('move_cue', { cueId: cueId, targetId: targetId }).catch((e) => {
+        console.log('Failed to move cue. ' + e);
+      });
+    } else {
+      invoke('move_cue', { cueId: cueId, targetId: null }).catch((e) => {
+        console.log('Failed to move cue. ' + e);
+      });
+    }
     // showModel.moveCue(cue_id, newIndex);
   }
 };

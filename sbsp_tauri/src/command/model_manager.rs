@@ -100,14 +100,22 @@ pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Resu
 pub async fn move_cue(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
-    target_id: Uuid,
+    target_id: Option<Uuid>,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    handle
-        .model_handle
-        .move_cue(cue_id, InsertPosition::Before { target: target_id })
-        .await
-        .map_err(|e| e.to_string())
+    if let Some(target) = target_id {
+        handle
+            .model_handle
+            .move_cue(cue_id, InsertPosition::Before { target })
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        handle
+            .model_handle
+            .move_cue(cue_id, InsertPosition::Last)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
