@@ -244,7 +244,9 @@
         "lufsDescription": "Set volume to match -14LUFS",
         "peakDescription": "Set volume so that the audio peak is 0dBFS",
         "pan": "Pan",
-        "repeat": "Repeat"
+        "repeat": "Repeat",
+        "startTime": "Start Time",
+        "endTime": "End Time"
       },
       "fade": {
         "title": "Fade",

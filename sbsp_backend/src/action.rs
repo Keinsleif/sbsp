@@ -18,4 +18,5 @@ pub enum CueAction {
 )]
 pub enum AudioAction {
     ToggleRepeat,
+    SetVolume(f32),
 }

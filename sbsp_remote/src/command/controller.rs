@@ -168,3 +168,16 @@ pub async fn toggle_repeat(state: tauri::State<'_, AppState>, cue_id: Uuid) -> R
         Err("Not connected.".into())
     }
 }
+
+#[tauri::command]
+pub async fn set_volume(state: tauri::State<'_, AppState>, cue_id: Uuid, volume: f32) -> Result<(), String> {
+    if let Some(handle) = state.get_handle().await {
+        handle
+            .controller_handle
+            .perform_action(cue_id, CueAction::Audio(AudioAction::SetVolume(volume)))
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Err("Not connected.".into())
+    }
+}

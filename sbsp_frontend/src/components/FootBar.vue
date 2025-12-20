@@ -1,14 +1,15 @@
 <template>
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="ml-0 mr-auto d-flex align-center">
-      <!-- <v-switch
+      <v-switch
         inset
         hide-details
-        color="primary"
-        :true-icon="mdiLock"
-        :false-icon="mdiLockOpen"
-        v-model="showModel.settings.general.lockCursorToSelection"
-      ></v-switch> -->
+        :true-icon="mdiPencil"
+        :false-icon="mdiEye"
+        v-model="uiState.mode"
+        true-value="edit"
+        false-value="run"
+      ></v-switch>
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
@@ -27,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiServer } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';

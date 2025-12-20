@@ -8,10 +8,20 @@
     @keydown.stop
   >
     <template v-slot:prepend>
-      <time-input v-model="range[0]" width="100px" @update="emit('update')"></time-input>
+      <time-input
+        v-model="range[0]"
+        width="100px"
+        :label="t('main.bottomEditor.timeLevels.startTime')"
+        @update="emit('update')"
+      ></time-input>
     </template>
     <template v-slot:append>
-      <time-input v-model="range[1]" width="100px" @update="emit('update')"></time-input>
+      <time-input
+        v-model="range[1]"
+        width="100px"
+        :label="t('main.bottomEditor.timeLevels.endTime')"
+        @update="emit('update')"
+      ></time-input>
     </template>
   </v-range-slider>
 </template>
@@ -19,6 +29,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import TimeInput from './TimeInput.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const range = defineModel<[number | null, number | null]>({ required: true });
 const props = withDefaults(

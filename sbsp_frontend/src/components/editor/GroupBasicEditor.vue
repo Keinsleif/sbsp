@@ -12,7 +12,6 @@
       ]"
       item-value="value"
       item-title="name"
-      :disabled="selectedCue!.id in showState.activeCues"
       variant="outlined"
       density="compact"
       autocomplete="off"
@@ -24,7 +23,7 @@
       hide-details
       density="compact"
       :label="'Repeat'"
-      :disabled="selectedCue!.id in showState.activeCues || mode != 'playlist'"
+      :disabled="selectedCue != null && mode != 'playlist'"
       @update:model-value="saveEditorValue"
     ></v-checkbox>
   </v-sheet>
@@ -32,12 +31,10 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
-const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);

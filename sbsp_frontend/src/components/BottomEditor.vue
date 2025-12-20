@@ -43,59 +43,32 @@
         </v-tab>
       </v-tabs>
     </div>
-    <div v-show="selectedCue == null || selectedCue.params.type == 'wait'">
+    <div v-show="selectedCue != null && selectedCue.params.type == 'wait'">
       <v-tabs v-model="otherEditorTab" density="compact">
         <v-tab density="compact" value="basics">{{ t('main.bottomEditor.basics.title') }}</v-tab>
       </v-tabs>
     </div>
-    <v-tabs-window class="border-t-sm" v-show="selectedCue != null" v-model="editorTab">
+    <div v-show="selectedCue == null"></div>
+    <v-tabs-window class="border-t-sm" v-model="editorTab">
+      <v-tabs-window-item value="blank" reverse-transition="false" transition="false">
+        <div style="margin: auto; width: fit-content">No Selection</div>
+      </v-tabs-window-item>
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
         <basic-editor v-model="selectedCue" :sequence-override="props.sequenceOverride" @update="edited" />
       </v-tabs-window-item>
-      <v-tabs-window-item
-        v-show="selectedCue != null && selectedCue.params.type == 'audio'"
-        value="audio"
-        reverse-transition="false"
-        transition="false"
-      >
+      <v-tabs-window-item value="audio" reverse-transition="false" transition="false">
         <audio-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
-      <v-tabs-window-item
-        v-show="selectedCue != null && selectedCue.params.type == 'audio'"
-        value="time"
-        reverse-transition="false"
-        transition="false"
-      >
+      <v-tabs-window-item value="time" reverse-transition="false" transition="false">
         <audio-time-level-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
-      <v-tabs-window-item
-        v-show="selectedCue != null && selectedCue.params.type == 'fade'"
-        value="fade"
-        reverse-transition="false"
-        transition="false"
-      >
+      <v-tabs-window-item value="fade" reverse-transition="false" transition="false">
         <fade-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
-      <v-tabs-window-item
-        v-show="
-          selectedCue != null &&
-          (selectedCue.params.type == 'start' ||
-            selectedCue.params.type == 'stop' ||
-            selectedCue.params.type == 'pause' ||
-            selectedCue.params.type == 'load')
-        "
-        value="playback"
-        reverse-transition="false"
-        transition="false"
-      >
+      <v-tabs-window-item value="playback" reverse-transition="false" transition="false">
         <playback-basic-editor v-model="selectedCue" @update="edited" />
       </v-tabs-window-item>
-      <v-tabs-window-item
-        v-show="selectedCue != null && selectedCue.params.type == 'group'"
-        value="group"
-        reverse-transition="false"
-        transition="false"
-      >
+      <v-tabs-window-item value="group" reverse-transition="false" transition="false">
         <group-basic-editor v-model="selectedCue" @update="edited"></group-basic-editor>
       </v-tabs-window-item>
     </v-tabs-window>
@@ -138,7 +111,10 @@ const groupEditorTab = ref('basics');
 const otherEditorTab = ref('basics');
 
 const editorTab = computed(() => {
-  switch (selectedCue.value?.params.type) {
+  if (selectedCue.value == null) {
+    return 'blank';
+  }
+  switch (selectedCue.value.params.type) {
     case 'audio':
       return audioEditorTab.value;
     case 'fade':

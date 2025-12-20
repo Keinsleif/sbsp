@@ -18,7 +18,13 @@
       <SideBar />
     </v-navigation-drawer>
 
-    <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
+    <v-navigation-drawer
+      :model-value="uiState.isEditorOpen && uiState.mode == 'edit'"
+      app
+      permanent
+      location="bottom"
+      width="302"
+    >
       <BottomEditor v-model="selectedCue" @update="onCueEdited" :sequence-override="selectedCueSequenceOverride" />
     </v-navigation-drawer>
 
@@ -443,7 +449,9 @@ useHotkey(
 useHotkey(
   'cmd+r',
   () => {
-    uiState.isRenumberCueDialogOpen = true;
+    if (uiState.mode == 'edit') {
+      uiState.isRenumberCueDialogOpen = true;
+    }
   },
   { preventDefault: true },
 );
