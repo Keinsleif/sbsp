@@ -7,6 +7,7 @@ export const useUiState = defineStore(
   'uistate',
   () => {
     const side = ref<'remote' | 'main' | null>(null);
+    const mode = ref<'edit' | 'run' | 'view'>('edit');
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
     const expandedRows = ref<string[]>([]);
@@ -90,6 +91,7 @@ export const useUiState = defineStore(
 
     return {
       side,
+      mode,
       selected,
       selectedRows,
       expandedRows,

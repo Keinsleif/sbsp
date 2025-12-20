@@ -61,7 +61,7 @@
           uiState.selectedRows.includes(item.cue.id) ? $style['selected-row'] : '',
         ]"
         style="scroll-margin-top: 40px"
-        draggable="true"
+        :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
@@ -380,8 +380,10 @@ useHotkey('cmd+a', () => {
 });
 
 useHotkey('cmd+backspace', () => {
-  for (const row of uiState.selectedRows) {
-    invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+  if (uiState.mode == 'edit') {
+    for (const row of uiState.selectedRows) {
+      invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+    }
   }
 });
 
@@ -514,7 +516,7 @@ const getCueIcon = (type: string): string | undefined => {
   }
 };
 
-const getStatus = (id: string) => {
+const getStatus = (id: string): string => {
   if (showState.activeCues[id] == undefined) {
     return '';
   }
@@ -522,6 +524,9 @@ const getStatus = (id: string) => {
 };
 
 const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
+  if (uiState.mode != 'edit') {
+    return;
+  }
   if (e.target == null || !(e.target instanceof HTMLElement) || e.target.contentEditable === 'true') {
     return;
   }
