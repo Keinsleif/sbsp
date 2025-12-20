@@ -7,7 +7,7 @@
       :label="t('main.bottomEditor.audio.targetFile')"
       variant="outlined"
       density="compact"
-      :disabled="selectedCue!.id in showState.activeCues"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       :class="$style['centered-input']"
       @blur="saveEditorValue"
       @keydown.enter="$event.target.blur()"
@@ -20,7 +20,7 @@
         <v-btn
           :active="false"
           density="compact"
-          :disabled="selectedCue!.id in showState.activeCues"
+          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
           :icon="mdiFileMusic"
           @click="pickFile"
         ></v-btn>
@@ -30,7 +30,7 @@
       <v-checkbox
         hide-details
         v-model="soundType"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         density="compact"
         :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
         @update:model-value="saveEditorValue"
@@ -43,14 +43,14 @@
         v-model="fadeInParam"
         :label="t('main.bottomEditor.audio.fadeIn')"
         condition="in"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update="saveEditorValue"
       ></fade-param-input>
       <fade-param-input
         v-model="fadeOutParam"
         :label="t('main.bottomEditor.audio.fadeOut')"
         condition="out"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update="saveEditorValue"
       ></fade-param-input>
     </v-sheet>

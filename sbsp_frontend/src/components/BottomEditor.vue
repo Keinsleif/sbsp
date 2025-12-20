@@ -49,7 +49,10 @@
       </v-tabs>
     </div>
     <div v-show="selectedCue == null"></div>
-    <v-tabs-window class="border-t-sm" v-show="selectedCue != null" v-model="editorTab">
+    <v-tabs-window class="border-t-sm" v-model="editorTab">
+      <v-tabs-window-item value="blank" reverse-transition="false" transition="false">
+        <div style="margin: auto; width: fit-content">No Selection</div>
+      </v-tabs-window-item>
       <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
         <basic-editor v-model="selectedCue" :sequence-override="props.sequenceOverride" @update="edited" />
       </v-tabs-window-item>
@@ -108,7 +111,10 @@ const groupEditorTab = ref('basics');
 const otherEditorTab = ref('basics');
 
 const editorTab = computed(() => {
-  switch (selectedCue.value?.params.type) {
+  if (selectedCue.value == null) {
+    return 'blank';
+  }
+  switch (selectedCue.value.params.type) {
     case 'audio':
       return audioEditorTab.value;
     case 'fade':
@@ -120,8 +126,6 @@ const editorTab = computed(() => {
       return playbackEditorTab.value;
     case 'group':
       return groupEditorTab.value;
-    case undefined:
-      return undefined;
     default:
       return otherEditorTab.value;
   }

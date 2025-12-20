@@ -3,7 +3,7 @@
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         :duration="assetResult.get(selectedCue?.id)?.duration || undefined"
         @update="saveEditorValue"
         @mousedown="sliderChanging = true"
@@ -18,7 +18,7 @@
             <v-btn
               v-bind="activatorProps"
               :icon="mdiSkipNext"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="skipFirstSilence"
             ></v-btn>
           </template>
@@ -29,7 +29,7 @@
             <v-btn
               v-bind="activatorProps"
               :icon="mdiSkipPrevious"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="skipLastSilence"
             ></v-btn>
           </template>
@@ -63,7 +63,7 @@
               v-bind="activatorProps"
               density="compact"
               height="25px"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="setVolumeToLUFS"
               >LUFS</v-btn
             >
@@ -75,7 +75,7 @@
               v-bind="activatorProps"
               density="compact"
               height="25px"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="setVolumeToMAX"
               >MAX</v-btn
             >
@@ -85,7 +85,7 @@
       <v-divider vertical inset thickness="2" />
       <panning-fader
         :label="t('main.bottomEditor.timeLevels.pan')"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
@@ -99,7 +99,7 @@
         hide-details
         density="compact"
         :label="t('main.bottomEditor.timeLevels.repeat')"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update:model-value="saveEditorValue"
       ></v-checkbox>
     </div>

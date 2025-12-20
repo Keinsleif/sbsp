@@ -1,10 +1,10 @@
 <template>
-  <v-sheet v-if="selectedCue != null" flat class="d-flex flex-row pa-4 ga-4">
+  <v-sheet flat class="d-flex flex-row pa-4 ga-4">
     <v-sheet flat class="d-flex flex-column ga-2 flex-shrink-0" width="175px">
       <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
         v-model="duration"
-        :disabled="selectedCue.params.type != 'wait' && selectedCue.params.type != 'fade'"
+        :disabled="selectedCue != null && selectedCue.params.type != 'wait' && selectedCue.params.type != 'fade'"
         :label="t('main.duration')"
         @update="saveEditorValue"
       ></time-input>
@@ -14,7 +14,7 @@
         persistent-placeholder
         v-model="sequence"
         :label="t('main.continueMode.title')"
-        :disabled="props.sequenceOverride != null"
+        :disabled="(selectedCue != null && selectedCue.id in showState.activeCues) || props.sequenceOverride != null"
         ref="cue_sequence"
         :items="[
           { value: 'doNotContinue', name: t('main.continueMode.doNotContinue') },
@@ -31,14 +31,17 @@
       ></v-select>
       <time-input
         v-model="postWait"
-        :disabled="sequence != 'autoContinue' || props.sequenceOverride != null"
+        :disabled="
+          (selectedCue != null && selectedCue.id in showState.activeCues && sequence != 'autoContinue') ||
+          props.sequenceOverride != null
+        "
         :label="t('main.postWait')"
         @update="saveEditorValue"
       ></time-input>
     </v-sheet>
     <v-sheet flat class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2 justify-start">
       <text-input
-        :placeholder="buildCueName(selectedCue)"
+        :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
         v-model="name"
         :label="t('main.name')"
         alignInput="left"
@@ -58,16 +61,19 @@
           class="flex-grow-0"
           :label="t('main.bottomEditor.continueTargetCue')"
           cue-type="all"
-          :exclude="selectedCue.id"
+          :exclude="selectedCue?.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"
-          :disabled="sequence == 'doNotContinue' || props.sequenceOverride != null"
+          :disabled="
+            (selectedCue != null && selectedCue.id in showState.activeCues && sequence == 'doNotContinue') ||
+            props.sequenceOverride != null
+          "
           @update="saveEditorValue"
         />
         <v-btn
           class="ml-auto mr-0 flex-grow-0"
           density="compact"
-          :disabled="!(selectedCue.id in showState.activeCues)"
+          :disabled="selectedCue != null && !(selectedCue.id in showState.activeCues)"
           @click="insertTimestampToNote"
           >{{ t('main.bottomEditor.basics.timestamp') }}</v-btn
         >

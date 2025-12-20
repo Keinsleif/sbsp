@@ -5,13 +5,13 @@
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
       cue-type="audio"
-      :disabled="selectedCue!.id in showState.activeCues"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update="saveEditorValue"
     />
     <volume-fader
       v-model="volume"
       :label="t('main.bottomEditor.fade.targetVolume')"
-      :disabled="selectedCue!.id in showState.activeCues"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
       @update:model-value="saveEditorValue"
       @mousedown="sliderChanging = true"
@@ -26,7 +26,7 @@
       :label="t('main.bottomEditor.fade.fadeParameter')"
       condition="both"
       disable-toggle
-      :disabled="selectedCue!.id in showState.activeCues"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update="saveEditorValue"
     ></fade-param-input>
   </v-sheet>
