@@ -7,11 +7,11 @@ import { platform } from '@tauri-apps/plugin-os';
 
 export const createWindowMenu = async () => {
   const { t } = i18n.global;
-  const side = await invoke<string>('get_side', {});
+  const uiState = useUiState();
   const currentPlatform = platform();
 
   let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];
-  if (side == 'remote') {
+  if (uiState.side == 'remote') {
     remoteFileMenuItem = [
       await PredefinedMenuItem.new({
         item: 'Separator',
@@ -32,7 +32,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_open',
         text: t('menu.file.open'),
-        enabled: side == 'main',
+        enabled: uiState.side == 'main',
         action: () => {
           invoke('file_open', {}).catch((e) => console.error(e));
         },
@@ -40,7 +40,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_save',
         text: t('menu.file.save'),
-        enabled: side == 'main',
+        enabled: uiState.side == 'main',
         action: () => {
           invoke('file_save', {}).catch((e) => console.error(e));
         },
@@ -48,7 +48,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_save_as',
         text: t('menu.file.saveAs'),
-        enabled: side == 'main',
+        enabled: uiState.side == 'main',
         action: () => {
           invoke('file_save_as', {}).catch((e) => console.error(e));
         },
@@ -56,7 +56,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_export_to_folder',
         text: t('menu.file.exportToFolder'),
-        enabled: side == 'main',
+        enabled: uiState.side == 'main',
         action: () => {
           invoke('export_to_folder', {}).catch((e) => console.error(e));
         },
@@ -83,6 +83,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_delete',
         text: t('menu.edit.delete'),
+        enabled: uiState.mode == 'edit',
         accelerator: currentPlatform == 'macos' ? '⌘ + Delete' : 'Ctrl + Backspace',
         action: () => {
           const uiState = useUiState();
@@ -104,6 +105,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_audio_cue',
         text: t('menu.cue.audio'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyAudioCue();
@@ -112,6 +114,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_wait_cue',
         text: t('menu.cue.wait'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyWaitCue();
@@ -120,6 +123,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_fade_cue',
         text: t('menu.cue.fade'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyFadeCue();
@@ -128,6 +132,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_start_cue',
         text: t('menu.cue.start'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyPlaybackCue('start');
@@ -136,6 +141,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_stop_cue',
         text: t('menu.cue.stop'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyPlaybackCue('stop');
@@ -144,6 +150,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_pause_cue',
         text: t('menu.cue.pause'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyPlaybackCue('pause');
@@ -152,6 +159,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_load_cue',
         text: t('menu.cue.load'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyPlaybackCue('load');
@@ -160,6 +168,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_group_cue',
         text: t('menu.cue.group'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const showModel = useShowModel();
           showModel.addEmptyGroupCue();
@@ -174,6 +183,7 @@ export const createWindowMenu = async () => {
       await MenuItem.new({
         id: 'id_renumber',
         text: t('menu.tools.renumber'),
+        enabled: uiState.mode == 'edit',
         action: () => {
           const uiState = useUiState();
           uiState.isRenumberCueDialogOpen = true;
@@ -183,7 +193,7 @@ export const createWindowMenu = async () => {
   });
 
   let mainHelpMenu: MenuItem[] = [];
-  if (side == 'main') {
+  if (uiState.side == 'main') {
     mainHelpMenu = [
       await MenuItem.new({
         id: 'id_license',
