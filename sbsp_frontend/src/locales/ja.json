@@ -52,7 +52,9 @@
         "peakDescription": "音声のPeakが 0dBFS になるように音量を設定",
         "pan": "Pan",
         "repeat": "リピート",
-        "title": "時間と音量"
+        "title": "時間と音量",
+        "endTime": "終了時間",
+        "startTime": "開始時間"
       },
       "audio": {
         "targetFile": "対象ファイル",
