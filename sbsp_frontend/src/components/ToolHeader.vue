@@ -60,17 +60,12 @@
         <v-btn :icon="mdiPauseCircleOutline" @click="showModel.addEmptyPlaybackCue('pause')"></v-btn>
         <v-btn :icon="mdiUploadCircleOutline" @click="showModel.addEmptyPlaybackCue('load')"></v-btn>
       </v-btn-group>
-      <v-btn-group variant="tonal" divided>
-        <v-btn :icon="isFullscreen ? mdiFullscreenExit : mdiFullscreen" @click="toggle"></v-btn>
-      </v-btn-group>
     </v-sheet>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
 import {
-  mdiFullscreen,
-  mdiFullscreenExit,
   mdiPause,
   mdiPlay,
   mdiStop,
@@ -89,12 +84,10 @@ import { useShowState } from '../stores/showstate';
 import { PlaybackStatus } from '../types/PlaybackStatus';
 import { invoke } from '@tauri-apps/api/core';
 import { buildCueName } from '../utils';
-import { useFullscreen, useNow, useWindowFocus } from '@vueuse/core';
+import { useNow, useWindowFocus } from '@vueuse/core';
 
 const showModel = useShowModel();
 const showState = useShowState();
-
-const { isFullscreen, toggle } = useFullscreen();
 
 const hasFocus = useWindowFocus();
 
