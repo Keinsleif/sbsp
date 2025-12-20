@@ -21,8 +21,10 @@
       <v-btn-group variant="flat" divided border class="ml-0 mr-auto">
         <v-btn
           :icon="mdiStop"
-          active-color="error"
+          :active="isCueStatus('Stopping')"
+          active-color="red"
           :disabled="showState.playbackCursor == null"
+          :class="[isCueStatus('Stopping') ? $style['blink'] : '']"
           @click="
             if (showState.playbackCursor != null) {
               invoke('stop', { cueId: showState.playbackCursor }).catch((e) => console.log(e.toString()));
@@ -33,15 +35,21 @@
           :icon="mdiPlay"
           :active="isCueStatus('Playing') || isCueStatus('PreWaiting')"
           :disabled="showState.playbackCursor == null"
-          active-color="success"
+          active-color="green"
           :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']"
-          @click="invoke('go').catch((e) => console.log(e.toString()))"
+          @click="
+            if (isCueStatus('Paused') || isCueStatus('PreWaitPaused')) {
+              invoke('resume', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
+            } else {
+              invoke('go').catch((e) => console.log(e.toString()));
+            }
+          "
         ></v-btn>
         <v-btn
           :icon="mdiPause"
           :active="isCueStatus('Paused') || isCueStatus('Loaded')"
           :disabled="showState.playbackCursor == null"
-          active-color="warning"
+          active-color="orange"
           :class="[isCueStatus('Loaded') ? $style['blink'] : '']"
           @click="handleReadyPauseButton"
         ></v-btn>
