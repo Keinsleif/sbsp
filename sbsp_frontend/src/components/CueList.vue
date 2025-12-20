@@ -9,12 +9,14 @@
   >
     <thead>
       <tr>
-        <th id="cuelist_cursor" width="37px"></th>
+        <th id="cuelist_cursor" width="32px"></th>
         <th id="cuelist_status" width="32px"></th>
-        <th id="cuelist_type" width="37px"></th>
-        <th id="cuelist_number" class="text-center" width="60px">{{ t('main.number') }}</th>
-        <th id="cuelist_name">{{ t('main.name') }}</th>
-        <th id="cuelist_pre_wait" class="text-center" width="120px">
+        <th id="cuelist_type" width="24px"></th>
+        <th id="cuelist_number" class="text-center border-s" width="54px" style="padding: 0">#</th>
+        <th id="cuelist_name" class="border overflow-hidden text-no-wrap" style="padding-left: 24px">
+          {{ t('main.name') }}
+        </th>
+        <th id="cuelist_pre_wait" class="text-center" width="104px" style="padding: 0px 8px">
           <div class="d-flex flex-row justify-center ga-1">
             {{ t('main.preWait') }}
             <v-icon
@@ -24,7 +26,7 @@
             ></v-icon>
           </div>
         </th>
-        <th id="cuelist_duration" class="text-center" width="120px">
+        <th id="cuelist_duration" class="text-center" width="104px" style="padding: 0px 8px">
           <div class="d-flex flex-row justify-center ga-1">
             {{ t('main.duration') }}
             <v-icon
@@ -34,7 +36,7 @@
             ></v-icon>
           </div>
         </th>
-        <th id="cuelist_post_wait" class="text-center" width="120px">
+        <th id="cuelist_post_wait" class="text-center" width="104px" style="padding: 0px 8px">
           <div class="d-flex flex-row justify-center ga-1">
             {{ t('main.postWait') }}
             <v-icon
@@ -44,8 +46,8 @@
             ></v-icon>
           </div>
         </th>
-        <th id="cuelist_repeat" width="53px"><v-icon :icon="mdiRepeat"></v-icon></th>
-        <th id="cuelist_sequence" width="53px"><v-icon :icon="mdiChevronDoubleDown" /></th>
+        <th id="cuelist_repeat" width="32px"><v-icon :icon="mdiRepeat"></v-icon></th>
+        <th id="cuelist_sequence" width="54px"><v-icon :icon="mdiChevronDoubleDown" /></th>
       </tr>
     </thead>
     <tbody>
@@ -66,7 +68,7 @@
         @drop="drop($event, i)"
         @mousedown.stop="click($event, i)"
       >
-        <td headers="cuelist_cursor" style="padding-left: 16px; padding-right: 0px">
+        <td headers="cuelist_cursor" style="padding-left: 12px; padding-right: 0px">
           <v-icon
             :icon="showState.playbackCursor == item.cue.id ? mdiArrowRightBold : undefined"
             @click="setPlaybackCursor(item.cue.id)"
@@ -91,13 +93,12 @@
             color="warning"
           ></v-progress-circular>
         </td>
-        <td headers="cuelist_type" style="padding-left: 0px; padding-right: 16px">
+        <td headers="cuelist_type" class="text-center" style="padding: 0px">
           <v-icon :icon="getCueIcon(item.cue.params.type)" />
         </td>
         <td
           headers="cuelist_number"
           class="text-center"
-          width="50px"
           @dblclick="openEditable($event, i, 'cuelist_number')"
           @blur="closeEditable($event.target, true, i, 'cuelist_number')"
           @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_number')"
@@ -107,7 +108,7 @@
         </td>
         <td
           headers="cuelist_name"
-          width="auto"
+          class="overflow-hidden text-no-wrap"
           :style="{
             paddingLeft: `${item.level}em`,
           }"
@@ -123,7 +124,7 @@
           ></v-icon>
           {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
         </td>
-        <td headers="cuelist_pre_wait" class="text-center pa-1" width="100px">
+        <td headers="cuelist_pre_wait" class="text-center pa-1">
           <div
             :class="[isPreWaitActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
@@ -155,7 +156,7 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_duration" class="text-center pa-1" width="100px">
+        <td headers="cuelist_duration" class="text-center pa-1">
           <div
             :class="[isActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
@@ -187,7 +188,7 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_post_wait" class="text-center pa-1" width="100px">
+        <td headers="cuelist_post_wait" class="text-center pa-1">
           <div
             :class="
               isActive(item.cue.id) &&
@@ -246,10 +247,10 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_repeat" width="53px">
+        <td headers="cuelist_repeat">
           <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
         </td>
-        <td headers="cuelist_sequence" width="53px">
+        <td headers="cuelist_sequence">
           <v-icon v-show="item.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
           <v-icon v-show="item.sequence.type == 'autoContinue'" :icon="mdiArrowDown" />
         </td>
