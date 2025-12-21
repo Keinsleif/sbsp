@@ -218,10 +218,16 @@ pub fn run() {
                 });
             }
 
+            #[cfg(debug_assertions)]
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             command::get_side,
+            command::get_third_party_notices,
             command::process_asset,
             command::pick_audio_assets,
             command::listen_level_meter,
@@ -237,6 +243,7 @@ pub fn run() {
             command::controller::seek_by,
             command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
+            command::controller::set_volume,
             command::model_manager::get_show_model,
             command::model_manager::update_cue,
             command::model_manager::add_cue,

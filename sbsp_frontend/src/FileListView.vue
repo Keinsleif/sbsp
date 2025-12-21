@@ -15,7 +15,7 @@
     >
       <template v-slot:item="props">
         <v-treeview-item
-          v-if="props.internalItem.raw.type == 'file' ? extList.includes(props.internalItem.raw.extension) : false"
+          v-show="props.internalItem.raw.type == 'file' ? extList.includes(props.internalItem.raw.extension) : false"
           v-bind="props.props"
         ></v-treeview-item>
       </template>

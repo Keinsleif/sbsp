@@ -24,11 +24,21 @@ impl Default for ShowGeneralSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct ShowAudioSettings {
     pub mono_output: bool,
+    pub lufs_target: f64,
+}
+
+impl Default for ShowAudioSettings {
+    fn default() -> Self {
+        Self {
+            mono_output: false,
+            lufs_target: -14.0,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]

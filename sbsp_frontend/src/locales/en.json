@@ -24,7 +24,8 @@
       "start": "Start Cue",
       "stop": "Stop Cue",
       "pause": "Pause Cue",
-      "load": "Load Cue"
+      "load": "Load Cue",
+      "group": "Group Cue"
     },
     "tools": {
       "renumber": "Renumber selected cues",
@@ -32,7 +33,9 @@
     },
     "help": {
       "checkUpdate": "Check for updates",
-      "title": "Help"
+      "title": "Help",
+      "credits": "Credits",
+      "license": "License"
     }
   },
   "notification": {
@@ -57,7 +60,8 @@
         "remote": "Remote",
         "hotkey": "Hotkey",
         "template": "Template",
-        "appearance": "Appearance"
+        "appearance": "Appearance",
+        "nameFormat": "Name Format"
       },
       "preset": {
         "hotkeyCursor": {
@@ -79,7 +83,8 @@
           }
         },
         "audio": {
-          "monoOutput": "Downmix stereo to mono"
+          "monoOutput": "Downmix stereo to mono",
+          "targetLufs": "Target LUFS"
         },
         "remote": {
           "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
@@ -115,13 +120,48 @@
           "audio": "Audio Cue",
           "builtFromCueParam": "** built from cue param **",
           "wait": "Wait Cue",
-          "fade": "Fade Cue"
+          "fade": "Fade Cue",
+          "start": "Start Cue",
+          "stop": "Stop Cue",
+          "pause": "Pause Cue",
+          "load": "Load Cue",
+          "group": "Group Cue"
         },
         "appearance": {
           "language": "Language",
           "systemLanguage": "System Language",
           "darkMode": "Dark Mode",
           "systemSettings": "System Settings"
+        },
+        "nameFormat": {
+          "audio": {
+            "title": "Audio Cue",
+            "description": "{'{'}filename{'}'} replaced with target audio filename"
+          },
+          "wait": {
+            "title": "Wait Cue",
+            "description": "{'{'}duration{'}'} replaced with wait duration"
+          },
+          "fade": {
+            "title": "Fade Cue",
+            "description": "{'{'}targetName{'}'} replaced with target cue name"
+          },
+          "start": {
+            "title": "Start Cue"
+          },
+          "playbackDescription": "{'{'}targetName{'}'} replaced with target cue name",
+          "stop": {
+            "title": "Stop Cue"
+          },
+          "pause": {
+            "title": "Pause Cue"
+          },
+          "load": {
+            "title": "Load Cue"
+          },
+          "group": {
+            "title": "Group Cue"
+          }
         }
       }
     },
@@ -132,6 +172,23 @@
       "installUpdate": "Install update",
       "currentVersion": "Current Version",
       "latestVersion": "Latest Version"
+    },
+    "license": {
+      "success": {
+        "message": "The license file has been successfully imported into the application.\nPlease delete the original license file or store it in a safe place.\n\n* You can re-download the license file from the store page.",
+        "title": "License Activation success!"
+      },
+      "title": "License",
+      "edition": "Edition",
+      "owner": "Owner",
+      "issuedDate": "Issued Date",
+      "activateLicense": "Activate License"
+    },
+    "saveConfirm": {
+      "content": "Save changes on this ShowModel?",
+      "save": "Save",
+      "dontSave": "Don't save",
+      "cancel": "Cancel"
     }
   },
   "general": {
@@ -191,10 +248,12 @@
         "skipFirstSilence": "Skip first silence",
         "skipLastSilence": "Skip last silence",
         "volume": "Volume",
-        "lufsDescription": "Set volume to match -14LUFS",
+        "lufsDescription": "Set volume to match {targetLUFS}LUFS",
         "peakDescription": "Set volume so that the audio peak is 0dBFS",
         "pan": "Pan",
-        "repeat": "Repeat"
+        "repeat": "Repeat",
+        "startTime": "Start Time",
+        "endTime": "End Time"
       },
       "fade": {
         "title": "Fade",
@@ -213,7 +272,15 @@
       "playback": {
         "title": "Playback"
       },
-      "continueTargetCue": "Continue Target Cue"
+      "continueTargetCue": "Continue Target Cue",
+      "group": {
+        "title": "Group",
+        "mode": {
+          "label": "Group Mode",
+          "playlist": "Playlist",
+          "concurrency": "Concurrency"
+        }
+      }
     },
     "number": "Number",
     "name": "Name",

@@ -10,10 +10,10 @@
           <v-sheet class="d-flex flex-row align-center justify-space-between pl-3 pr-3 pt-2">
             <span>{{ buildTitle(cue_id) }}</span>
             <v-icon
-              v-if="activeCue.status != 'Stopping'"
+              v-show="activeCue.status != 'Stopping'"
               :icon="activeCue.params.type == 'audio' && activeCue.params.repeating === true ? mdiRepeat : undefined"
             ></v-icon>
-            <v-progress-circular v-if="activeCue.status == 'Stopping'" indeterminate></v-progress-circular>
+            <v-progress-circular v-show="activeCue.status == 'Stopping'" indeterminate></v-progress-circular>
           </v-sheet>
           <v-sheet class="pa-0 d-flex flex-row justify-space-between">
             <v-list-item density="compact">
@@ -65,7 +65,7 @@ const showState = useShowState();
 const uiState = useUiState();
 
 const buildTitle = (cue_id: string) => {
-  const activeCue = showModel.cues.find((cue) => cue.id == cue_id);
+  const activeCue = showModel.getCueById(cue_id);
   if (activeCue == null) return;
   let result = '';
   if (activeCue.number.trim() != '') {

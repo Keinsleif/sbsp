@@ -71,23 +71,9 @@ pub enum UiEvent {
         project_type: ProjectType,
         path: PathBuf,
     },
-    CueUpdated {
-        cue: Cue,
-    },
-    CueAdded {
-        cue: Cue,
-        at_index: usize,
-    },
-    CuesAdded {
-        cues: Vec<Cue>,
-        at_index: usize,
-    },
+    ShowModelReset,
     CueRemoved {
         cue_id: Uuid,
-    },
-    CueMoved {
-        cue_id: Uuid,
-        to_index: usize,
     },
     CueListUpdated {
         cues: Vec<Cue>,

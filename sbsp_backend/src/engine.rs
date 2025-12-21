@@ -18,4 +18,5 @@ pub enum EngineType {
     Wait,
     Fade,
     Playback,
+    Group,
 }

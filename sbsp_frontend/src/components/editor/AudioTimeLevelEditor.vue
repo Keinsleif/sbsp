@@ -3,7 +3,7 @@
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         :duration="assetResult.get(selectedCue?.id)?.duration || undefined"
         @update="saveEditorValue"
         @mousedown="sliderChanging = true"
@@ -18,7 +18,7 @@
             <v-btn
               v-bind="activatorProps"
               :icon="mdiSkipNext"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="skipFirstSilence"
             ></v-btn>
           </template>
@@ -29,7 +29,7 @@
             <v-btn
               v-bind="activatorProps"
               :icon="mdiSkipPrevious"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="skipLastSilence"
             ></v-btn>
           </template>
@@ -47,23 +47,26 @@
       <volume-fader
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
-        :disabled="selectedCue!.id in showState.activeCues"
         :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
           sliderChanging = false;
           saveEditorValue();
+          changeActiveCueVolume();
         "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
-        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.lufsDescription')">
+        <v-tooltip
+          target="cursor"
+          :text="t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })"
+        >
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
               density="compact"
               height="25px"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="setVolumeToLUFS"
               >LUFS</v-btn
             >
@@ -75,7 +78,7 @@
               v-bind="activatorProps"
               density="compact"
               height="25px"
-              :disabled="selectedCue!.id in showState.activeCues"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
               @click="setVolumeToMAX"
               >MAX</v-btn
             >
@@ -85,7 +88,7 @@
       <v-divider vertical inset thickness="2" />
       <panning-fader
         :label="t('main.bottomEditor.timeLevels.pan')"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update:model-value="saveEditorValue"
         @mousedown="sliderChanging = true"
         @mouseup="
@@ -99,7 +102,7 @@
         hide-details
         density="compact"
         :label="t('main.bottomEditor.timeLevels.repeat')"
-        :disabled="selectedCue!.id in showState.activeCues"
+        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         @update:model-value="saveEditorValue"
       ></v-checkbox>
     </div>
@@ -118,12 +121,15 @@ import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
+import { invoke } from '@tauri-apps/api/core';
+import { useShowModel } from '../../stores/showmodel';
 
 const { t } = useI18n();
 const { smAndDown, width } = useDisplay();
 
 const showState = useShowState();
 const assetResult = useAssetResult();
+const showModel = useShowModel();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
@@ -177,6 +183,14 @@ const saveEditorValue = () => {
   emit('update');
 };
 
+const changeActiveCueVolume = () => {
+  if (selectedCue.value == null) return;
+  const activeCue = showState.activeCues[selectedCue.value.id];
+  if (activeCue != null) {
+    invoke('set_volume', { cueId: activeCue.cueId, volume: volume.value });
+  }
+};
+
 const skipFirstSilence = () => {
   if (selectedCue.value == null) {
     return;
@@ -203,7 +217,7 @@ const setVolumeToLUFS = () => {
   }
   const integratedLufs = assetResult.get(selectedCue.value.id)?.integratedLufs;
   if (integratedLufs == null) return;
-  volume.value = -14 - integratedLufs;
+  volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
   saveEditorValue();
 };
 

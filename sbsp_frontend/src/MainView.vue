@@ -1,5 +1,5 @@
 <template>
-  <v-app height="100vh">
+  <v-app height="100vh" @contextmenu.prevent>
     <v-app-bar app border flat height="200">
       <ToolHeader />
     </v-app-bar>
@@ -18,8 +18,14 @@
       <SideBar />
     </v-navigation-drawer>
 
-    <v-navigation-drawer v-model="uiState.isEditorOpen" app permanent location="bottom" width="302">
-      <BottomEditor v-model="selectedCue" @update="onCueEdited" />
+    <v-navigation-drawer
+      :model-value="uiState.isEditorOpen && uiState.mode == 'edit'"
+      app
+      permanent
+      location="bottom"
+      width="302"
+    >
+      <BottomEditor v-model="selectedCue" @update="onCueEdited" :sequence-override="selectedCueSequenceOverride" />
     </v-navigation-drawer>
 
     <v-snackbar-queue v-model="uiState.success_messages" timeout="2000" color="success"></v-snackbar-queue>
@@ -28,6 +34,8 @@
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
     <update-dialog v-model="uiState.isUpdateDialogOpen"></update-dialog>
+    <credits-dialog v-model="uiState.isCreditsDialogOpen"></credits-dialog>
+    <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
   </v-app>
 </template>
 
@@ -43,7 +51,7 @@ import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import { useShowState } from './stores/showstate';
-import { listen } from '@tauri-apps/api/event';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
@@ -59,6 +67,9 @@ import { useUiSettings } from './stores/uiSettings';
 import { getLockCursorToSelection } from './utils';
 import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import CreditsDialog from './components/dialog/CreditsDialog.vue';
+import LicenseDialog from './components/dialog/LicenseDialog.vue';
+import { message } from '@tauri-apps/plugin-dialog';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -66,92 +77,6 @@ const uiState = useUiState();
 const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t, locale } = useI18n({ useScope: 'global' });
-
-listen<ShowState>('backend-state-update', (event) => {
-  showState.update(event.payload);
-});
-
-listen<UiEvent>('backend-event', (event) => {
-  switch (event.payload.type) {
-    case 'playbackCursorMoved': {
-      if (getLockCursorToSelection()) {
-        const cueId = event.payload.param.cueId;
-        if (cueId != null) {
-          if (uiState.selected != cueId) {
-            uiState.selected = cueId;
-            if (!uiState.selectedRows.includes(cueId)) {
-              uiState.selectedRows = [cueId];
-            }
-          }
-        } else {
-          uiState.selectedRows = [];
-          uiState.selected = null;
-        }
-      }
-      break;
-    }
-    case 'showModelLoaded':
-      invoke<ShowModel>('get_show_model').then((model) => {
-        showModel.updateAll(model);
-        uiState.success(t('notification.modelLoaded'));
-      });
-      getCurrentWebviewWindow().setTitle(
-        (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-      );
-      break;
-    case 'showModelSaved':
-      uiState.success(t('notification.modelSaved'));
-      break;
-    case 'cueUpdated':
-      showModel.updateCue(event.payload.param.cue);
-      break;
-    case 'cueAdded':
-      showModel.addCue(event.payload.param.cue, event.payload.param.atIndex);
-      break;
-    case 'cuesAdded':
-      showModel.addCues(event.payload.param.cues, event.payload.param.atIndex);
-      break;
-    case 'cueRemoved':
-      showModel.removeCue(event.payload.param.cueId);
-      break;
-    case 'cueMoved':
-      showModel.moveCue(event.payload.param.cueId, event.payload.param.toIndex);
-      break;
-    case 'cueListUpdated':
-      showModel.$patch({ cues: event.payload.param.cues });
-      break;
-    case 'modelNameUpdated':
-      showModel.$patch({ name: event.payload.param.newName });
-      getCurrentWebviewWindow().setTitle(
-        (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-      );
-      break;
-    case 'settingsUpdated': {
-      const settings = event.payload.param.newSettings;
-      showModel.$patch({ settings: settings });
-      break;
-    }
-    case 'assetResult': {
-      if ('Ok' in event.payload.param.data) {
-        assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
-      } else {
-        console.error(event.payload.param.data.Err);
-        uiState.error(event.payload.param.data.Err);
-      }
-      break;
-    }
-    case 'operationFailed':
-      console.error(event.payload.param.error);
-      uiState.error(event.payload.param.error.message);
-      break;
-  }
-});
-
-invoke<ShowModel>('get_show_model')
-  .then((model) => {
-    showModel.updateAll(model);
-  })
-  .catch((e) => console.error(e.toString()));
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -163,14 +88,126 @@ const onVisibilityChange = () => {
   }
 };
 
+const unlistenFuncs: UnlistenFn[] = [];
+
 onMounted(() => {
-  createWindowMenu().then((menu) => {
-    menu.setAsWindowMenu();
-  });
   invoke<'remote' | 'main'>('get_side').then((side) => {
     uiState.side = side;
+    createWindowMenu(side).then((menu) => {
+      menu.setAsWindowMenu();
+    });
     getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
   });
+
+  listen<ShowState>('backend-state-update', (event) => {
+    showState.update(event.payload);
+  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+
+  listen<UiEvent>('backend-event', (event) => {
+    switch (event.payload.type) {
+      case 'playbackCursorMoved': {
+        if (getLockCursorToSelection()) {
+          const cueId = event.payload.param.cueId;
+          if (cueId != null) {
+            if (uiState.selected != cueId) {
+              uiState.selected = cueId;
+              if (!uiState.selectedRows.includes(cueId)) {
+                uiState.selectedRows = [cueId];
+              }
+            }
+          } else {
+            uiState.selectedRows = [];
+            uiState.selected = null;
+          }
+        }
+        break;
+      }
+      case 'showModelLoaded':
+        invoke<ShowModel>('get_show_model').then((model) => {
+          showModel.updateAll(model);
+          uiState.success(t('notification.modelLoaded'));
+        });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
+      case 'showModelSaved':
+        uiState.success(t('notification.modelSaved'));
+        break;
+      case 'showModelReset':
+        invoke<ShowModel>('get_show_model').then((model) => {
+          showModel.updateAll(model);
+        });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
+      case 'cueRemoved':
+        if (uiState.selectedRows.includes(event.payload.param.cueId)) {
+          uiState.removeFromSelected(event.payload.param.cueId);
+        }
+        break;
+      case 'cueListUpdated':
+        showModel.$patch({ cues: event.payload.param.cues });
+        break;
+      case 'modelNameUpdated':
+        showModel.$patch({ name: event.payload.param.newName });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
+      case 'settingsUpdated': {
+        const settings = event.payload.param.newSettings;
+        showModel.$patch({ settings: settings });
+        break;
+      }
+      case 'assetResult': {
+        if ('Ok' in event.payload.param.data) {
+          assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
+        } else {
+          console.error(event.payload.param.data.Err);
+          uiState.error(event.payload.param.data.Err);
+        }
+        break;
+      }
+      case 'operationFailed':
+        console.error(event.payload.param.error);
+        uiState.error(event.payload.param.error.message);
+        break;
+    }
+  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+
+  getCurrentWebviewWindow()
+    .onCloseRequested(async (event) => {
+      if (uiState.side == 'main') {
+        const isModified = await invoke<boolean>('is_modified');
+        if (isModified) {
+          const result = await message(t('dialog.saveConfirm.content'), {
+            buttons: {
+              yes: t('dialog.saveConfirm.save'),
+              no: t('dialog.saveConfirm.dontSave'),
+              cancel: t('dialog.saveConfirm.cancel'),
+            },
+          }).catch((e) => console.error(e));
+          switch (result) {
+            case t('dialog.saveConfirm.save'):
+              await invoke('file_save');
+              break;
+            case t('dialog.saveConfirm.dontSave'):
+              break;
+            case t('dialog.saveConfirm.cancel'):
+              event.preventDefault();
+              break;
+          }
+        }
+      }
+    })
+    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+  invoke<ShowModel>('get_show_model')
+    .then((model) => {
+      showModel.updateAll(model);
+    })
+    .catch((e) => console.error(e.toString()));
   navigator.wakeLock.request('screen').then((value) => {
     wakeLock.value = value;
   });
@@ -178,6 +215,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  unlistenFuncs.forEach((unlistenFn) => unlistenFn());
   document.removeEventListener('visibilitychange', onVisibilityChange);
   if (wakeLock.value != null) {
     wakeLock.value.release().then(() => {
@@ -186,9 +224,21 @@ onUnmounted(() => {
   }
 });
 
-const selectedCue = ref<Cue | null>(
-  uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null,
-);
+const selectedCue = ref<Cue | null>(uiState.selected != null ? showModel.getCueById(uiState.selected)! : null);
+const selectedCueSequenceOverride = computed(() => {
+  if (selectedCue.value == null) {
+    return null;
+  }
+  const flatEntry = showModel.flatCueList.find((item) => item.cue.id == selectedCue.value!.id);
+  if (flatEntry == null) {
+    return null;
+  }
+  if (flatEntry.isSequenceOverrided) {
+    return flatEntry.sequence;
+  } else {
+    return null;
+  }
+});
 
 watch(
   () => uiState.selected,
@@ -197,16 +247,18 @@ watch(
       onCueEdited.clear();
       onCueEdited.immediate();
     }
-    selectedCue.value = uiState.selected != null ? showModel.cues.find((cue) => cue.id == uiState.selected)! : null;
+    selectedCue.value = uiState.selected != null ? showModel.getCueById(uiState.selected)! : null;
   },
 );
 
 watch(
   locale,
   () => {
-    createWindowMenu().then((menu) => {
-      menu.setAsWindowMenu();
-    });
+    if (uiState.side != null) {
+      createWindowMenu(uiState.side).then((menu) => {
+        menu.setAsWindowMenu();
+      });
+    }
   },
   { flush: 'post' },
 );
@@ -221,7 +273,7 @@ const onCueEdited = debounce(() => {
 useHotkey(
   'cmd+o',
   () => {
-    invoke('file_open');
+    invoke('file_open', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );
@@ -229,7 +281,7 @@ useHotkey(
 useHotkey(
   'cmd+s',
   () => {
-    invoke('file_save');
+    invoke('file_save', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );
@@ -237,7 +289,7 @@ useHotkey(
 useHotkey(
   'cmd+shift+a',
   () => {
-    invoke('file_save_as');
+    invoke('file_save_as', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );
@@ -416,7 +468,9 @@ useHotkey(
 useHotkey(
   'cmd+r',
   () => {
-    uiState.isRenumberCueDialogOpen = true;
+    if (uiState.mode == 'edit') {
+      uiState.isRenumberCueDialogOpen = true;
+    }
   },
   { preventDefault: true },
 );

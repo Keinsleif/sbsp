@@ -35,6 +35,7 @@ pub enum StateParam {
 #[serde(rename_all = "camelCase")]
 pub struct AudioStateParam {
     pub repeating: bool,
+    pub volume: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

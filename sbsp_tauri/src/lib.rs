@@ -10,11 +10,17 @@ use sbsp_backend::{
     BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
-use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
+use sbsp_license::LicenseManager;
+use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
+use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
 
 use crate::settings::manager::GlobalSettingsManager;
+
+const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
+-----END PUBLIC KEY-----";
 
 pub struct AppState {
     backend_handle: BackendHandle,
@@ -167,7 +173,17 @@ pub fn run() {
 
             let (settings_manager, settings_rx) = GlobalSettingsManager::new();
 
-            let (backend_handle, state_rx, event_tx) = start_backend(settings_rx, true);
+            let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, true) {
+                Ok(backends) => backends,
+                Err(e) => {
+                    app.dialog()
+                        .message(e.to_string())
+                        .kind(MessageDialogKind::Error)
+                        .title("Failed to start backend")
+                        .blocking_show();
+                    return Err(e.into());
+                }
+            };
             let (level_meter_tx, level_meter_rx) = watch::channel::<Option<Channel<(f32,f32)>>>(None);
 
             tokio::spawn(forward_backend_state_and_event(
@@ -183,6 +199,8 @@ pub fn run() {
                 settings_manager,
                 level_meter_tx,
             ));
+
+            app.manage(LicenseManager::new_from_pem(PUBLIC_KEY_PEM));
 
             if let Ok(path) = app.path().app_config_dir() {
                 let config_path = path.join("config.json");
@@ -201,6 +219,11 @@ pub fn run() {
                         );
                     }
                 });
+                let license_path = path.join("license.json");
+                if license_path.exists() {
+                    let license_manager = app_handle.state::<LicenseManager>();
+                    let _ = license_manager.activate_by_file(license_path);
+                }
             }
 
             let app_handle_clone = app_handle.clone();
@@ -220,11 +243,19 @@ pub fn run() {
                     log::warn!("Level meter is not available.");
                 }
             });
+
+            #[cfg(debug_assertions)]
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             command::get_side,
+            command::get_third_party_notices,
             command::process_asset,
+            command::file_new,
             command::file_open,
             command::file_save,
             command::file_save_as,
@@ -243,7 +274,9 @@ pub fn run() {
             command::controller::seek_by,
             command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
+            command::controller::set_volume,
             command::model_manager::get_show_model,
+            command::model_manager::is_modified,
             command::model_manager::update_cue,
             command::model_manager::add_cue,
             command::model_manager::add_cues,
@@ -266,6 +299,8 @@ pub fn run() {
             command::settings::save_settings,
             command::settings::import_settings_from_file,
             command::settings::export_settings_to_file,
+            command::license::activate_license,
+            command::license::get_license_info,
             #[cfg(desktop)]
             update::fetch_update,
             #[cfg(desktop)]

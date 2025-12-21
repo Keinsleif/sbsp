@@ -1,7 +1,7 @@
 mod file_list_handler;
 mod service_entry;
 
-use std::sync::Arc;
+use std::sync::{Arc, atomic::AtomicBool};
 
 use futures_util::{SinkExt, TryStreamExt};
 use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
@@ -167,6 +167,7 @@ pub async fn create_remote_backend(address: String) -> anyhow::Result<Connection
                 model,
                 model_tx,
                 project_status,
+                Arc::new(AtomicBool::new(false)), // Behave as saved in client
             ),
             asset_processor_handle: AssetProcessorHandle {
                 command_tx: asset_tx,

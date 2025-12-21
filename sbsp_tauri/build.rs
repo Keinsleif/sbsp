@@ -1,6 +1,7 @@
 use sbsp_backend::{
     asset_processor::AssetData, controller::state::ShowState, event::UiEvent, model::ShowModel,
 };
+use sbsp_license::data::LicenseInformation;
 use ts_rs::TS;
 
 fn main() {
@@ -14,6 +15,7 @@ fn main() {
     <ShowState as TS>::export_all().unwrap();
     <UiEvent as TS>::export_all().unwrap();
     <AssetData as TS>::export_all().unwrap();
+    <LicenseInformation as TS>::export_all().unwrap();
 
     tauri_build::build()
 }

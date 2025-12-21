@@ -5,7 +5,6 @@
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
       cue-type="all"
-      :disabled="selectedCue!.id in showState.activeCues"
       @update="saveEditorValue"
     />
   </v-sheet>
@@ -13,14 +12,12 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
 import CueSelect from '../input/CueSelect.vue';
 import { NIL } from 'uuid';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
-const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);

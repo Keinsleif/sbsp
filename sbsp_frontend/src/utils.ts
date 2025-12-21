@@ -78,89 +78,67 @@ const secondsToHMR = (source_seconds: number): string => {
   return time;
 };
 
+export const format = (str: string, obj: { [key: string]: string }): string => {
+  return str.replace(/\{\{|\}\}|\{((\w|\s)+)\}/g, (match, key) => {
+    if (match === '{{') return '{';
+    if (match === '}}') return '}';
+
+    return typeof obj[key.trim()] !== 'undefined' ? obj[key.trim()] : match;
+  });
+};
+
 export const buildCueName = (cue: Cue | null): string => {
   if (cue == null) {
     return '';
   }
+  const uiSettings = useUiSettings();
+  const nameFormat = uiSettings.settings.nameFormat;
   switch (cue.params.type) {
     case 'audio':
-      return `${cue.params.target.replace(/^.*[\\/]/, '')}`;
+      return format(nameFormat.audio, {
+        filename: cue.params.target.replace(/^.*[\\/]/, ''),
+      });
     case 'wait':
-      return `Wait ${secondsToHMR(cue.params.duration)}`;
+      return format(nameFormat.wait, {
+        duration: secondsToHMR(cue.params.duration),
+      });
     case 'fade': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'fade') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
+      const targetCue = showModel.getCueById(cue.params.target);
+      return format(nameFormat.fade, {
+        targetName: buildCueName(targetCue ?? null),
       });
-      if (targetCue != null) {
-        return `Fade ${buildCueName(targetCue)}`;
-      } else {
-        return 'Fade';
-      }
     }
     case 'start': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'start') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
+      const targetCue = showModel.getCueById(cue.params.target);
+      return format(nameFormat.start, {
+        targetName: buildCueName(targetCue ?? null),
       });
-      if (targetCue != null) {
-        return `Start ${buildCueName(targetCue)}`;
-      } else {
-        return 'Start';
-      }
     }
     case 'stop': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'stop') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
+      const targetCue = showModel.getCueById(cue.params.target);
+      return format(nameFormat.stop, {
+        targetName: buildCueName(targetCue ?? null),
       });
-      if (targetCue != null) {
-        return `Stop ${buildCueName(targetCue)}`;
-      } else {
-        return 'Stop';
-      }
     }
     case 'pause': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'pause') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
+      const targetCue = showModel.getCueById(cue.params.target);
+      return format(nameFormat.pause, {
+        targetName: buildCueName(targetCue ?? null),
       });
-      if (targetCue != null) {
-        return `Pause ${buildCueName(targetCue)}`;
-      } else {
-        return 'Pause';
-      }
     }
     case 'load': {
       const showModel = useShowModel();
-      const targetCue = showModel.cues.find((target) => {
-        if (cue.params.type != 'load') {
-          return false;
-        } else {
-          return target.id == cue.params.target;
-        }
+      const targetCue = showModel.getCueById(cue.params.target);
+      return format(nameFormat.load, {
+        targetName: buildCueName(targetCue ?? null),
       });
-      if (targetCue != null) {
-        return `Load ${buildCueName(targetCue)}`;
-      } else {
-        return 'Load';
-      }
+    }
+    case 'group': {
+      return nameFormat.group;
     }
     default:
       return '';
@@ -190,7 +168,8 @@ export const calculateDuration = (cueParam: CueParam, totalDuration: number | nu
     case 'stop':
     case 'pause':
     case 'load':
-      return 0;
+    case 'group':
+      return null;
     default:
       return null;
   }
@@ -275,7 +254,8 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
     case 'stop':
     case 'pause':
     case 'load':
-      return 0;
+    case 'group':
+      return null;
   }
 };
 

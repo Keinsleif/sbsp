@@ -6,7 +6,13 @@ async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
     let (_, settings_rx) = watch::channel(BackendSettings::default());
 
-    let (backend_handle, state_rx, event_tx) = start_backend(settings_rx);
+    let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, false) {
+        Ok(backends) => backends,
+        Err(e) => {
+            log::error!("{}", e);
+            return Err(anyhow::anyhow!("{}", e));
+        }
+    };
     let shutdown_tx = start_apiserver(
         5800,
         backend_handle,
