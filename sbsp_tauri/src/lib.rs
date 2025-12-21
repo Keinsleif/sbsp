@@ -13,6 +13,7 @@ use sbsp_backend::{
 use sbsp_license::LicenseManager;
 use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
+use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
 
 use crate::settings::manager::GlobalSettingsManager;
@@ -172,7 +173,17 @@ pub fn run() {
 
             let (settings_manager, settings_rx) = GlobalSettingsManager::new();
 
-            let (backend_handle, state_rx, event_tx) = start_backend(settings_rx, true);
+            let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, true) {
+                Ok(backends) => backends,
+                Err(e) => {
+                    app.dialog()
+                        .message(e.to_string())
+                        .kind(MessageDialogKind::Error)
+                        .title("Failed to start backend")
+                        .blocking_show();
+                    return Err(e.into());
+                }
+            };
             let (level_meter_tx, level_meter_rx) = watch::channel::<Option<Channel<(f32,f32)>>>(None);
 
             tokio::spawn(forward_backend_state_and_event(
@@ -232,6 +243,12 @@ pub fn run() {
                     log::warn!("Level meter is not available.");
                 }
             });
+
+            #[cfg(debug_assertions)]
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -200,8 +200,7 @@ impl AudioEngine {
         let mono_effect_handle = audio_manager_settings
             .main_track_builder
             .add_effect(MonoEffectBuilder::new(settings.mono_output));
-        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)
-            .context("Failed to initialize AudioManager")?;
+        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)?;
 
         Ok(Self {
             manager: Some(manager),
@@ -225,8 +224,7 @@ impl AudioEngine {
             .main_track_builder
             .add_effect(MonoEffectBuilder::new(settings.mono_output));
         audio_manager_settings.main_track_builder.add_built_effect(Box::new(LevelMeterEffect::new(shared_level.clone())));
-        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)
-            .context("Failed to initialize AudioManager")?;
+        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)?;
 
         Ok((Self {
             manager: Some(manager),
