@@ -44,7 +44,7 @@
             position * ((nonNullEndTime - nonNullStartTime) * (compressedWaveform.length - 1)) +
             nonNullStartTime * compressedWaveform.length
           }px)`,
-          transition: 'transform 100ms linear',
+          transition: 'transform 120ms linear',
         }"
         x="0"
         y="0"
