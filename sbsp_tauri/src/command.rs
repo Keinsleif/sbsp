@@ -59,83 +59,99 @@ pub fn file_open(app_handle: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub fn file_save(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tokio::spawn(async move {
-        if model_handle.get_current_file_path().await.is_some() {
-            model_handle.save().await.unwrap();
-        } else {
-            let (result_tx, result_rx) = oneshot::channel();
-            file_dialog_builder.save_file(move |file_path_option| {
-                result_tx.send(file_path_option).unwrap();
-            });
-            if let Ok(Some(file_path)) = result_rx.await {
-                let file_pathbuf = file_path.into_path().unwrap();
-                model_handle.save_as(file_pathbuf).await.unwrap();
-            }
-        }
-    });
+pub async fn file_new(handle: tauri::AppHandle) -> Result<(), String> {
+    let handle = handle.state::<AppState>().get_handle();
+    handle.model_handle.reset().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn file_save_as(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file().add_filter("Show Model", &["sbsp"]);
-    tokio::spawn(async move {
-        if let Some(current_path) = model_handle.get_current_file_path().await.as_ref() {
-            let (result_tx, result_rx) = oneshot::channel();
-            file_dialog_builder
-                .set_directory(current_path.parent().unwrap())
-                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                .save_file(move |file_path_option| {
-                    result_tx.send(file_path_option).unwrap();
-                });
-            if let Ok(Some(file_path)) = result_rx.await {
-                let file_pathbuf = file_path.into_path().unwrap();
-                model_handle.save_as(file_pathbuf).await.unwrap();
-            }
+pub async fn file_save(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let handle = state.get_handle();
+    let file_dialog_builder = app_handle.dialog().file().add_filter("Show Model", &["sbsp"]);
+    if handle.model_handle.get_current_file_path().await.is_some() {
+        handle.model_handle.save().await.map_err(|e| e.to_string())?;
+        Ok(true)
+    } else {
+        let (result_tx, result_rx) = oneshot::channel();
+        file_dialog_builder.save_file(move |file_path_option| {
+            let _ = result_tx.send(file_path_option);
+        });
+        if let Ok(Some(file_path)) = result_rx.await {
+            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            Ok(true)
         } else {
-            let (result_tx, result_rx) = oneshot::channel();
-            file_dialog_builder.save_file(move |file_path_option| {
-                result_tx.send(file_path_option).unwrap();
-            });
-            if let Ok(Some(file_path)) = result_rx.await {
-                let file_pathbuf = file_path.into_path().unwrap();
-                model_handle.save_as(file_pathbuf).await.unwrap();
-            }
+            Ok(false)
         }
-    });
+    }
 }
 
 #[tauri::command]
-pub fn export_to_folder(handle: tauri::AppHandle) {
-    let model_handle = handle.state::<AppState>().get_handle().model_handle.clone();
-    let file_dialog_builder = handle.dialog().file();
-    tokio::spawn(async move {
-        if let Some(current_path) = model_handle.get_current_file_path().await.as_ref() {
-            let (result_tx, result_rx) = oneshot::channel();
-            file_dialog_builder
-                .set_directory(current_path.parent().unwrap())
-                .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-                .pick_folder(move |file_path_option| {
-                    result_tx.send(file_path_option).unwrap();
-                });
-            if let Ok(Some(file_path)) = result_rx.await {
-                let file_pathbuf = file_path.into_path().unwrap();
-                model_handle.export_to_folder(file_pathbuf).await.unwrap();
-            }
-        } else {
-            let (result_tx, result_rx) = oneshot::channel();
-            file_dialog_builder.pick_folder(move |file_path_option| {
+pub async fn file_save_as(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let handle = state.get_handle();
+    let file_dialog_builder = app_handle.dialog().file().add_filter("Show Model", &["sbsp"]);
+    if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
+        let (result_tx, result_rx) = oneshot::channel();
+        file_dialog_builder
+            .set_directory(current_path.parent().unwrap())
+            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
+            .save_file(move |file_path_option| {
                 result_tx.send(file_path_option).unwrap();
             });
-            if let Ok(Some(file_path)) = result_rx.await {
-                let file_pathbuf = file_path.into_path().unwrap();
-                model_handle.export_to_folder(file_pathbuf).await.unwrap();
-            }
+        if let Ok(Some(file_path)) = result_rx.await {
+            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
-    });
+    } else {
+        let (result_tx, result_rx) = oneshot::channel();
+        file_dialog_builder.save_file(move |file_path_option| {
+            result_tx.send(file_path_option).unwrap();
+        });
+        if let Ok(Some(file_path)) = result_rx.await {
+            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let handle = state.get_handle();
+    let file_dialog_builder = app_handle.dialog().file();
+    if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
+        let (result_tx, result_rx) = oneshot::channel();
+        file_dialog_builder
+            .set_directory(current_path.parent().unwrap())
+            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
+            .pick_folder(move |file_path_option| {
+                result_tx.send(file_path_option).unwrap();
+            });
+        if let Ok(Some(file_path)) = result_rx.await {
+            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+            handle.model_handle.export_to_folder(file_pathbuf).await.map_err(|e| e.to_string())?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    } else {
+        let (result_tx, result_rx) = oneshot::channel();
+        file_dialog_builder.pick_folder(move |file_path_option| {
+            result_tx.send(file_path_option).unwrap();
+        });
+        if let Ok(Some(file_path)) = result_rx.await {
+            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+            handle.model_handle.export_to_folder(file_pathbuf).await.map_err(|e| e.to_string())?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
 }
 
 #[tauri::command]

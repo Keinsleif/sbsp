@@ -257,6 +257,12 @@
         "title": "ライセンスの有効化に成功しました"
       },
       "title": "ライセンス"
+    },
+    "saveConfirm": {
+      "cancel": "キャンセル",
+      "content": "ShowModelへの変更を保存しますか？",
+      "dontSave": "保存しない",
+      "save": "保存"
     }
   },
   "general": {

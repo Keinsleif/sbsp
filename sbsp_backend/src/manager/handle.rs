@@ -86,6 +86,11 @@ impl ShowModelHandle {
         Ok(())
     }
 
+    pub async fn reset(&self) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::Reset).await?;
+        Ok(())
+    }
+
     pub async fn save(&self) -> anyhow::Result<()> {
         self.send_command(ModelCommand::Save).await?;
         Ok(())

@@ -59,6 +59,7 @@ pub enum ModelCommand {
     UpdateModelName(String),
     UpdateSettings(Box<ShowSettings>),
 
+    Reset,
     Save,
     SaveToFile(PathBuf),
     ExportToFolder(PathBuf),

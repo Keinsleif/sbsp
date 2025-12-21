@@ -1,5 +1,5 @@
 <template>
-  <v-app height="100vh">
+  <v-app height="100vh" @contextmenu.prevent>
     <v-app-bar app border flat height="200">
       <ToolHeader />
     </v-app-bar>
@@ -93,6 +93,9 @@ const unlistenFuncs: UnlistenFn[] = [];
 onMounted(() => {
   invoke<'remote' | 'main'>('get_side').then((side) => {
     uiState.side = side;
+    createWindowMenu(side).then((menu) => {
+      menu.setAsWindowMenu();
+    });
     getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
   });
 
@@ -131,6 +134,14 @@ onMounted(() => {
       case 'showModelSaved':
         uiState.success(t('notification.modelSaved'));
         break;
+      case 'showModelReset':
+        invoke<ShowModel>('get_show_model').then((model) => {
+          showModel.updateAll(model);
+        });
+        getCurrentWebviewWindow().setTitle(
+          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
+        );
+        break;
       case 'cueListUpdated':
         showModel.$patch({ cues: event.payload.param.cues });
         break;
@@ -166,16 +177,20 @@ onMounted(() => {
       if (uiState.side == 'main') {
         const isModified = await invoke<boolean>('is_modified');
         if (isModified) {
-          const result = await message('Do you want to save this ShowModel before exit?', {
-            buttons: { yes: 'Save', no: "Don't save", cancel: 'Cancel' },
+          const result = await message(t('dialog.saveConfirm.content'), {
+            buttons: {
+              yes: t('dialog.saveConfirm.save'),
+              no: t('dialog.saveConfirm.dontSave'),
+              cancel: t('dialog.saveConfirm.cancel'),
+            },
           }).catch((e) => console.error(e));
           switch (result) {
-            case 'Save':
+            case t('dialog.saveConfirm.save'):
               await invoke('file_save');
               break;
-            case "Don't save":
+            case t('dialog.saveConfirm.dontSave'):
               break;
-            case 'Cancel':
+            case t('dialog.saveConfirm.cancel'):
               event.preventDefault();
               break;
           }
@@ -183,9 +198,6 @@ onMounted(() => {
       }
     })
     .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
-  createWindowMenu().then((menu) => {
-    menu.setAsWindowMenu();
-  });
   invoke<ShowModel>('get_show_model')
     .then((model) => {
       showModel.updateAll(model);
@@ -237,9 +249,11 @@ watch(
 watch(
   locale,
   () => {
-    createWindowMenu().then((menu) => {
-      menu.setAsWindowMenu();
-    });
+    if (uiState.side != null) {
+      createWindowMenu(uiState.side).then((menu) => {
+        menu.setAsWindowMenu();
+      });
+    }
   },
   { flush: 'post' },
 );
@@ -254,7 +268,7 @@ const onCueEdited = debounce(() => {
 useHotkey(
   'cmd+o',
   () => {
-    invoke('file_open');
+    invoke('file_open', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );
@@ -262,7 +276,7 @@ useHotkey(
 useHotkey(
   'cmd+s',
   () => {
-    invoke('file_save');
+    invoke('file_save', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );
@@ -270,7 +284,7 @@ useHotkey(
 useHotkey(
   'cmd+shift+a',
   () => {
-    invoke('file_save_as');
+    invoke('file_save_as', {}).catch((e) => console.error(e));
   },
   { preventDefault: true },
 );

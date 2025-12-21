@@ -182,6 +182,12 @@
       "owner": "Owner",
       "issuedDate": "Issued Date",
       "activateLicense": "Activate License"
+    },
+    "saveConfirm": {
+      "content": "Save changes on this ShowModel?",
+      "save": "Save",
+      "dontSave": "Don't save",
+      "cancel": "Cancel"
     }
   },
   "general": {

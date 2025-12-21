@@ -255,6 +255,7 @@ pub fn run() {
             command::get_side,
             command::get_third_party_notices,
             command::process_asset,
+            command::file_new,
             command::file_open,
             command::file_save,
             command::file_save_as,

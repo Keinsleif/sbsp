@@ -71,6 +71,7 @@ pub enum UiEvent {
         project_type: ProjectType,
         path: PathBuf,
     },
+    ShowModelReset,
     CueRemoved {
         cue_id: Uuid,
     },

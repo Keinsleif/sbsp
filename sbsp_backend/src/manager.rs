@@ -294,6 +294,13 @@ impl ShowModelManager {
                     .send(UiEvent::SettingsUpdated { new_settings })?;
                 Ok(())
             }
+            ModelCommand::Reset => {
+                let mut model = self.model.write().await;
+                *model = ShowModel::default();
+                self.modify_status.store(false, Ordering::Release);
+                self.event_tx.send(UiEvent::ShowModelReset)?;
+                Ok(())
+            }
             ModelCommand::Save => {
                 let event = if let ProjectStatus::Saved { project_type, path } = &*self.project_status.read().await {
                     match self.save_to_file(path, project_type).await {
