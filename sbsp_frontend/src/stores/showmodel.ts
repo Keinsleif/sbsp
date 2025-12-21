@@ -77,6 +77,7 @@ export const useShowModel = defineStore('showmodel', {
         },
         audio: {
           monoOutput: false,
+          lufsTarget: -14,
         },
         remote: {
           lockCursorToSelection: false,

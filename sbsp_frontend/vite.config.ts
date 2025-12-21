@@ -2,12 +2,13 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue(), vuetify(), VueI18nPlugin()],
+  plugins: [vue(), vuetify(), VueI18nPlugin(), visualizer()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -31,7 +32,13 @@ export default defineConfig(async () => ({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            return id.toString().split('node_modules/')[1].split('/')[0].toString();
+            if (id.includes('vuetify')) {
+              return 'vendor-vuetify';
+            }
+            if (id.includes('markdown-it')) {
+              return 'vendor-markdown-it';
+            }
+            return 'vendor';
           }
         },
       },
