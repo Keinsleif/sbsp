@@ -142,6 +142,11 @@ onMounted(() => {
           (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
         );
         break;
+      case 'cueRemoved':
+        if (uiState.selectedRows.includes(event.payload.param.cueId)) {
+          uiState.removeFromSelected(event.payload.param.cueId);
+        }
+        break;
       case 'cueListUpdated':
         showModel.$patch({ cues: event.payload.param.cues });
         break;

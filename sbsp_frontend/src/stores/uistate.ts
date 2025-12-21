@@ -52,6 +52,16 @@ export const useUiState = defineStore(
       }
       setPlaybackCursor(id);
     };
+    const removeFromSelected = (id: string) => {
+      if (selectedRows.value.includes(id)) {
+        selectedRows.value = selectedRows.value.filter((selected) => selected != id);
+        if (selectedRows.value.length > 0) {
+          selected.value = selectedRows.value[selectedRows.value.length - 1];
+        } else {
+          selected.value = null;
+        }
+      }
+    };
 
     const toggleExpand = (id: string) => {
       if (expandedRows.value.includes(id)) {
@@ -111,6 +121,7 @@ export const useUiState = defineStore(
       clearSelected,
       setSelected,
       addSelected,
+      removeFromSelected,
       toggleExpand,
       togglePreWaitDisplayMode,
       toggleDurationDisplayMode,
