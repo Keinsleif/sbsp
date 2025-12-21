@@ -57,7 +57,10 @@
         "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
-        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.lufsDescription')">
+        <v-tooltip
+          target="cursor"
+          :text="t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })"
+        >
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
               v-bind="activatorProps"
@@ -119,12 +122,14 @@ import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
 import { invoke } from '@tauri-apps/api/core';
+import { useShowModel } from '../../stores/showmodel';
 
 const { t } = useI18n();
 const { smAndDown, width } = useDisplay();
 
 const showState = useShowState();
 const assetResult = useAssetResult();
+const showModel = useShowModel();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
@@ -212,7 +217,7 @@ const setVolumeToLUFS = () => {
   }
   const integratedLufs = assetResult.get(selectedCue.value.id)?.integratedLufs;
   if (integratedLufs == null) return;
-  volume.value = -14 - integratedLufs;
+  volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
   saveEditorValue();
 };
 

@@ -45,7 +45,7 @@
   "main": {
     "bottomEditor": {
       "timeLevels": {
-        "lufsDescription": "-14LUFS になるように音量を設定",
+        "lufsDescription": "{targetLUFS}LUFS になるように音量を設定",
         "skipFirstSilence": "開始前の無音をスキップ",
         "skipLastSilence": "終了後の無音をスキップ",
         "volume": "音量",
@@ -158,7 +158,8 @@
           }
         },
         "audio": {
-          "monoOutput": "ステレオをモノラルにダウンミックス"
+          "monoOutput": "ステレオをモノラルにダウンミックス",
+          "targetLufs": "目標 LUFS"
         },
         "remote": {
           "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"

@@ -58,11 +58,23 @@
               show-details
             ></text-input>
           </v-tabs-window-item>
-          <v-tabs-window-item value="audio" class="pa-3">
+          <v-tabs-window-item value="audio" class="pa-4">
             <v-checkbox
               v-model="editingSettings.show.audio.monoOutput"
               :label="t('dialog.settings.show.audio.monoOutput')"
+              hide-details
             ></v-checkbox>
+            <v-number-input
+              class="mt-4"
+              v-model="editingSettings.show.audio.lufsTarget"
+              :label="t('dialog.settings.show.audio.targetLufs')"
+              suffix="LUFS"
+              density="compact"
+              variant="outlined"
+              hide-details
+              width="200px"
+              autocomplete="off"
+            ></v-number-input>
           </v-tabs-window-item>
           <v-tabs-window-item value="remote" class="pa-3">
             <v-checkbox

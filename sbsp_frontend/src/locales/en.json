@@ -83,7 +83,8 @@
           }
         },
         "audio": {
-          "monoOutput": "Downmix stereo to mono"
+          "monoOutput": "Downmix stereo to mono",
+          "targetLufs": "Target LUFS"
         },
         "remote": {
           "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
@@ -247,7 +248,7 @@
         "skipFirstSilence": "Skip first silence",
         "skipLastSilence": "Skip last silence",
         "volume": "Volume",
-        "lufsDescription": "Set volume to match -14LUFS",
+        "lufsDescription": "Set volume to match {targetLUFS}LUFS",
         "peakDescription": "Set volume so that the audio peak is 0dBFS",
         "pan": "Pan",
         "repeat": "Repeat",
