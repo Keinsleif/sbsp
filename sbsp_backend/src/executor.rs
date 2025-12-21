@@ -257,6 +257,7 @@ impl Executor {
                     GroupMode::Playlist { .. } => {
                         if let Some(first_cue) = children.first() {
                             self.process_command(ExecutorCommand::Load(first_cue.id)).await?;
+                            self.executor_event_tx.send(ExecutorEvent::Loaded { cue_id: cue.id, position: 0.0, duration: 0.0 }).await?;
                         }
                     },
                     GroupMode::Concurrency => {
@@ -264,10 +265,10 @@ impl Executor {
                             for cue in children.iter() {
                                 self.process_command(ExecutorCommand::Load(cue.id)).await?;
                             }
+                            self.executor_event_tx.send(ExecutorEvent::Loaded { cue_id: cue.id, position: 0.0, duration: 0.0 }).await?;
                         }
                     },
                 }
-                self.executor_event_tx.send(ExecutorEvent::Loaded { cue_id: cue.id, position: 0.0, duration: 0.0 }).await?;
             }
         }
         Ok(())
@@ -371,6 +372,7 @@ impl Executor {
                     GroupMode::Playlist { .. } => {
                         if let Some(first_cue) = children.first() {
                             self.process_command(ExecutorCommand::Execute(first_cue.id)).await?;
+                            self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, initial_params: StateParam::None }).await?;
                         }
                     },
                     GroupMode::Concurrency => {
@@ -378,10 +380,10 @@ impl Executor {
                             for cue in children.iter() {
                                 self.process_command(ExecutorCommand::Execute(cue.id)).await?;
                             }
+                            self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, initial_params: StateParam::None }).await?;
                         }
                     },
                 }
-                self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, initial_params: StateParam::None }).await?;
             }
         }
         Ok(())
@@ -508,15 +510,21 @@ impl Executor {
                     log::warn!("Stop command is not available for Transport cues. ignoring...");
                 }
                 EngineType::Group => {
+                    let mut stop_sent = false;
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                     && let CueParam::Group { children, .. } = cue.params {
                         for child in children.iter() {
                             if active_instances.contains_key(&child.id) {
                                 self.process_command(ExecutorCommand::Stop(child.id)).await?;
+                                stop_sent = true;
                             }
                         }
                     }
-                    self.executor_event_tx.send(ExecutorEvent::Stopping { cue_id, position: 0.0, duration: 0.0 }).await?;
+                    if stop_sent {
+                        self.executor_event_tx.send(ExecutorEvent::Stopping { cue_id, position: 0.0, duration: 0.0 }).await?;
+                    } else {
+                        self.executor_event_tx.send(ExecutorEvent::Stopped { cue_id }).await?;
+                    }
                 }
             }
         }
