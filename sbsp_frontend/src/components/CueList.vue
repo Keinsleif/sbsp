@@ -5,7 +5,7 @@
     class="flex-grow-1"
     :class="$style['cuelist']"
     height="100%"
-    @mousedown="resetSelection"
+    @mousedown="resetSelection($event)"
   >
     <thead>
       <tr>
@@ -429,6 +429,9 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
+  if (event.button != 0) {
+    return;
+  }
   const clickedId = showModel.flatCueList[index].cue.id;
   if (event.shiftKey) {
     if (uiState.selected != null) {
@@ -483,7 +486,10 @@ const click = (event: MouseEvent, index: number) => {
   }
 };
 
-const resetSelection = () => {
+const resetSelection = (event: MouseEvent) => {
+  if (event.button != 0) {
+    return;
+  }
   uiState.selectedRows = [];
   uiState.selected = null;
   if (getLockCursorToSelection()) {
