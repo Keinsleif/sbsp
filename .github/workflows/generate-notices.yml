@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'Cargo.lock'
+      - 'sbsp_frontend/pnpm-lock.yaml'
+      - 'about.hbs'
+      - 'about.toml'
   workflow_dispatch:
 
 jobs:
