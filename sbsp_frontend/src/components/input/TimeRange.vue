@@ -13,6 +13,8 @@
         width="100px"
         :label="t('main.bottomEditor.timeLevels.startTime')"
         @update="emit('update')"
+        @mousedown.stop
+        @mouseup.stop
       ></time-input>
     </template>
     <template v-slot:append>
@@ -21,6 +23,8 @@
         width="100px"
         :label="t('main.bottomEditor.timeLevels.endTime')"
         @update="emit('update')"
+        @mousedown.stop
+        @mouseup.stop
       ></time-input>
     </template>
   </v-range-slider>

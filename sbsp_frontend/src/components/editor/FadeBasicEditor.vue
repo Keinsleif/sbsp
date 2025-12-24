@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-4 ga-4">
+  <v-sheet flat class="d-flex flex-column pa-3 ga-2">
     <cue-select
       v-model="target"
       class="flex-grow-0"

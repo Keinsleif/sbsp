@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-4">
+  <v-sheet flat class="d-flex flex-column pa-4 ga-2">
     <v-text-field
       hide-details
       persistent-placeholder
@@ -26,19 +26,17 @@
         ></v-btn>
       </template>
     </v-text-field>
-    <v-sheet flat class="d-flex flex-row ga-4 mt-4">
-      <v-checkbox
-        hide-details
-        v-model="soundType"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        density="compact"
-        :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
-        @update:model-value="saveEditorValue"
-      >
-        <v-tooltip activator="parent" location="end">{{ t('general.forExpertWarning') }}</v-tooltip>
-      </v-checkbox>
-    </v-sheet>
-    <v-sheet flat class="d-flex ga-4 justify-space-evenly" :class="mdAndDown ? 'flex-column' : 'flex-row'">
+    <v-checkbox
+      hide-details
+      v-model="soundType"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      density="compact"
+      :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
+      @update:model-value="saveEditorValue"
+    >
+      <v-tooltip activator="parent" location="end">{{ t('general.forExpertWarning') }}</v-tooltip>
+    </v-checkbox>
+    <v-sheet flat class="d-flex justify-space-evenly" :class="mdAndDown ? 'flex-column' : 'flex-row'">
       <fade-param-input
         v-model="fadeInParam"
         :label="t('main.bottomEditor.audio.fadeIn')"

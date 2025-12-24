@@ -32,6 +32,7 @@
     variant="outlined"
     density="compact"
     autocomplete="off"
+    rows="0"
     no-resize
     @blur="save"
     @keydown.esc="
