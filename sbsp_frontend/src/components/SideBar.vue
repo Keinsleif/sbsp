@@ -50,7 +50,7 @@
       </template>
     </v-tabs-window-item>
     <v-tabs-window-item value="levels" transition="false" reverse-transition="false">
-      <level-meter kind="master" height="400px"></level-meter>
+      <level-meter v-if="uiState.sideBarTab == 'levels'" kind="master" height="400px"></level-meter>
     </v-tabs-window-item>
   </v-tabs-window>
 </template>
