@@ -2,7 +2,7 @@
   "name": "sbsp_frontend",
   "private": true,
   "license": "Elastic-2.0",
-  "version": "0.1.4",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
