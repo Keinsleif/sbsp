@@ -89,6 +89,7 @@ const onVisibilityChange = () => {
 };
 
 const unlistenFuncs: UnlistenFn[] = [];
+let rafNumber: number | null = null;
 
 onMounted(() => {
   invoke<'remote' | 'main'>('get_side').then((side) => {
@@ -108,9 +109,9 @@ onMounted(() => {
       showState.update(latestState);
       latestState = null;
     }
-    requestAnimationFrame(updateLoop);
+    rafNumber = requestAnimationFrame(updateLoop);
   };
-  requestAnimationFrame(updateLoop);
+  rafNumber = requestAnimationFrame(updateLoop);
 
   listen<UiEvent>('backend-event', (event) => {
     switch (event.payload.type) {
@@ -230,6 +231,9 @@ onUnmounted(() => {
     wakeLock.value.release().then(() => {
       wakeLock.value = null;
     });
+  }
+  if (rafNumber != null) {
+    cancelAnimationFrame(rafNumber);
   }
 });
 
