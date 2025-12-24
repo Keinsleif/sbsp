@@ -31,7 +31,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
     items: [
       await MenuItem.new({
         id: 'id_new',
-        text: 'New',
+        text: t('menu.file.new'),
         enabled: side == 'main',
         action: () => {
           invoke<boolean>('is_modified').then((isModified) => {
