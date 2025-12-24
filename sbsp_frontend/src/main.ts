@@ -21,6 +21,7 @@ const vuetify = createVuetify({
     },
   },
   theme: {
+    cspNonce: 'aYxPbxuXswGq0ST6rvQ2AA==',
     defaultTheme: 'system',
   },
   locale: {
