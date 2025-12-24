@@ -1,0 +1,8 @@
+@use 'vuetify/settings' with (
+    $button-icon-font-size: 0.8rem,
+    $table-header-height: 50px,
+    $table-row-height: 45px,
+    $tabs-height: 44px,
+    $slider-label-margin-end: 0px,
+    $input-affix-margin-inside: 16px,
+);
