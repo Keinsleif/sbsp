@@ -3,7 +3,7 @@ mod settings;
 #[cfg(desktop)]
 pub mod update;
 
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -14,21 +14,24 @@ use sbsp_backend::{
 };
 use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
-use tokio::sync::{Mutex, RwLock, broadcast, mpsc, watch};
+use tokio::{sync::{Mutex, RwLock, broadcast, mpsc, watch}, time::interval};
 
 use crate::settings::manager::GlobalSettingsManager;
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
-    mut state_rx: watch::Receiver<ShowState>,
+    state_rx: watch::Receiver<ShowState>,
     mut event_rx: broadcast::Receiver<UiEvent>,
     mut asset_list_handle: FileListHandle,
 ) {
+    let mut poll_timer = interval(Duration::from_millis(32));
     loop {
         tokio::select! {
-            Ok(_) = state_rx.changed() => {
-                let state = state_rx.borrow().clone();
-                app_handle.emit("backend-state-update", state).ok();
+            _ = poll_timer.tick() => {
+                if let Ok(changed) = state_rx.has_changed() && changed {
+                    let state = state_rx.borrow().clone();
+                    app_handle.emit("backend-state-update", state).ok();
+                }
             },
             Ok(event) = event_rx.recv() => {
                 app_handle.emit("backend-event", event).ok();
