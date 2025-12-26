@@ -117,14 +117,17 @@ impl AppState {
 
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
-    mut state_rx: watch::Receiver<ShowState>,
+    state_rx: watch::Receiver<ShowState>,
     mut event_rx: broadcast::Receiver<UiEvent>,
 ) {
+    let mut poll_timer = interval(Duration::from_millis(32));
     loop {
         tokio::select! {
-            Ok(_) = state_rx.changed() => {
-                let state = state_rx.borrow().clone();
-                app_handle.emit("backend-state-update", state).ok();
+            _ = poll_timer.tick() => {
+                if let Ok(changed) = state_rx.has_changed() && changed {
+                    let state = state_rx.borrow().clone();
+                    app_handle.emit("backend-state-update", state).ok();
+                }
             },
             Ok(event) = event_rx.recv() => {
                 app_handle.emit("backend-event", event).ok();

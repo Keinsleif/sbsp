@@ -8,7 +8,16 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue(), vuetify(), VueI18nPlugin(), visualizer()],
+  plugins: [
+    vue(),
+    vuetify({
+      styles: {
+        configFile: 'src/styles/settings.scss',
+      },
+    }),
+    VueI18nPlugin(),
+    visualizer(),
+  ],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

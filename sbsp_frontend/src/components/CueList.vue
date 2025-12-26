@@ -22,7 +22,7 @@
             <v-icon
               class="mt-auto mb-auto"
               :icon="uiState.preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="uiState.togglePreWaitDisplayMode"
+              @click.stop="uiState.togglePreWaitDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -32,7 +32,7 @@
             <v-icon
               class="mt-auto mb-auto"
               :icon="uiState.durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="uiState.toggleDurationDisplayMode"
+              @click.stop="uiState.toggleDurationDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -42,7 +42,7 @@
             <v-icon
               class="mt-auto mb-auto"
               :icon="uiState.postWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click="uiState.togglePostWaitDisplayMode"
+              @click.stop="uiState.togglePostWaitDisplayMode"
             ></v-icon>
           </div>
         </th>
@@ -60,7 +60,6 @@
           dragOverIndex == i ? $style['drag-over-row'] : '',
           uiState.selectedRows.includes(item.cue.id) ? $style['selected-row'] : '',
         ]"
-        style="scroll-margin-top: 40px"
         :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
         @dragstart="dragStart($event, i)"
         @dragover="dragOver($event, i)"
@@ -124,7 +123,7 @@
           ></v-icon>
           {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
         </td>
-        <td headers="cuelist_pre_wait" class="text-center pa-1">
+        <td headers="cuelist_pre_wait" class="text-center" style="padding: 0px 4px">
           <div
             :class="[isPreWaitActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
@@ -156,7 +155,7 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_duration" class="text-center pa-1">
+        <td headers="cuelist_duration" class="text-center" style="padding: 0px 4px">
           <div
             :class="[isActive(item.cue.id) ? 'border-md border-primary' : '']"
             :style="{
@@ -188,7 +187,7 @@
             }}
           </div>
         </td>
-        <td headers="cuelist_post_wait" class="text-center pa-1">
+        <td headers="cuelist_post_wait" class="text-center" style="padding: 0px 4px">
           <div
             :class="
               isActive(item.cue.id) &&
@@ -319,9 +318,9 @@ const assetResult = useAssetResult();
 
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
-const scrollIntoIndex = (inddex: number) => {
+const scrollIntoIndex = (index: number) => {
   if (cueListItemRefs.value != null) {
-    cueListItemRefs.value[inddex].scrollIntoView({ block: 'nearest' });
+    cueListItemRefs.value[index].scrollIntoView({ block: 'nearest' });
   }
 };
 
@@ -639,8 +638,14 @@ const setPlaybackCursor = (cueId: string) => {
 </script>
 
 <style lang="css" module>
-.cuelist table {
-  table-layout: fixed;
+.cuelist {
+  table {
+    table-layout: fixed;
+    font-size: 0.9em;
+  }
+  > div {
+    scroll-padding-top: 34px;
+  }
 }
 .drag-over-row > td {
   border-top: 2px solid rgb(var(--v-theme-primary)) !important;

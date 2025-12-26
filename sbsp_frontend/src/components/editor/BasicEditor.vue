@@ -1,15 +1,22 @@
 <template>
   <v-sheet flat class="d-flex flex-row pa-4 ga-4">
-    <v-sheet flat class="d-flex flex-column ga-2 flex-shrink-0" width="175px">
-      <text-input v-model="number" :label="t('main.number')" @update="saveEditorValue"></text-input>
+    <v-sheet flat class="d-flex flex-column ga-2 flex-grow-0 flex-shrink-0" width="175px">
+      <text-input v-model="number" class="flex-grow-0" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input
+        class="flex-grow-0"
         v-model="duration"
         :disabled="selectedCue != null && selectedCue.params.type != 'wait' && selectedCue.params.type != 'fade'"
         :label="t('main.duration')"
         @update="saveEditorValue"
       ></time-input>
-      <time-input v-model="preWait" :label="t('main.preWait')" @update="saveEditorValue"></time-input>
+      <time-input
+        v-model="preWait"
+        class="flex-grow-0"
+        :label="t('main.preWait')"
+        @update="saveEditorValue"
+      ></time-input>
       <v-select
+        class="flex-grow-0"
         hide-details
         persistent-placeholder
         v-model="sequence"
@@ -29,17 +36,8 @@
         @update:modelValue="saveEditorValue"
         @keydown.stop
       ></v-select>
-      <time-input
-        v-model="postWait"
-        :disabled="
-          (selectedCue != null && selectedCue.id in showState.activeCues && sequence != 'autoContinue') ||
-          props.sequenceOverride != null
-        "
-        :label="t('main.postWait')"
-        @update="saveEditorValue"
-      ></time-input>
     </v-sheet>
-    <v-sheet flat class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2 justify-start">
+    <v-sheet flat class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2">
       <text-input
         :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
         v-model="name"
@@ -49,13 +47,24 @@
         @update="saveEditorValue"
       ></text-input>
       <text-input
-        class="flex-grow-1"
+        class="flex-grow-1 flex-shrink-1"
         v-model="notes"
         :label="t('main.notes')"
         type="area"
         @update="saveEditorValue"
       ></text-input>
-      <v-sheet flat class="d-flex flex-row">
+      <v-sheet flat class="d-flex flex-row flex-grow-0 flex-shrink-0 ga-3">
+        <time-input
+          width="175px"
+          v-model="postWait"
+          class="flex-grow-0"
+          :disabled="
+            (selectedCue != null && selectedCue.id in showState.activeCues && sequence != 'autoContinue') ||
+            props.sequenceOverride != null
+          "
+          :label="t('main.postWait')"
+          @update="saveEditorValue"
+        ></time-input>
         <cue-select
           v-model="target"
           class="flex-grow-0"

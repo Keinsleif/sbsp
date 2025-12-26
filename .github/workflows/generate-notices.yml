@@ -1,0 +1,72 @@
+name: 'publish'
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'Cargo.lock'
+      - 'sbsp_frontend/pnpm-lock.yaml'
+      - 'about.hbs'
+      - 'about.toml'
+  workflow_dispatch:
+
+jobs:
+  gen-notices:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: cargo-bins/cargo-binstall@main
+
+      - run: cargo binstall cargo-about --no-confirm
+
+      - name: install dependencies (ubuntu only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: install frontend dependencies
+        run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
+        working-directory: ./sbsp_frontend
+
+      - name: Generate Rust notices
+        run: cargo about generate about.hbs -o THIRD_PARTY_NOTICES.md
+        working-directory: ./
+
+      - name: Generate JS notices
+        run: npx license-checker --json > "../scripts/tmp.json"
+        working-directory: ./sbsp_frontend
+
+      - name: Combine notices
+        run: |
+          node notice_json2md.js
+          rm ./tmp.json
+        working-directory: ./scripts
+
+      - name: setup git
+        run: |
+          git config --local user.email "mountaindull@gmail.com"
+          git config --local user.name "Keinsleif (Github Actions)"
+
+      - name: commit
+        run: |
+          git add THIRD_PARTY_NOTICES.md
+          git diff-index --quiet HEAD || (git commit -m "[update] THIRD_PARTY_NOTICES.md" && git pull && git push origin master)

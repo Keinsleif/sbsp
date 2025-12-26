@@ -49,7 +49,8 @@
         "connect-src": "ipc: http://ipc.localhost",
         "font-src": ["https://fonts.gstatic.com"],
         "img-src": "'self' asset: http://asset.localhost blob: data:",
-        "style-src": "'unsafe-inline' 'self' https://fonts.googleapis.com"
+        "script-src": "'self' 'nonce-aYxPbxuXswGq0ST6rvQ2AA==",
+        "style-src": "'unsafe-inline' 'self' https://fonts.googleapis.com 'nonce-aYxPbxuXswGq0ST6rvQ2AA=="
       }
     }
   },

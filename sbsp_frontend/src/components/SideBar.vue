@@ -4,7 +4,13 @@
     <v-tab border density="compact" value="levels">{{ t('main.sideBar.levels.title') }}</v-tab>
   </v-tabs>
   <v-tabs-window v-model="uiState.sideBarTab">
-    <v-tabs-window-item value="activeCues" class="overflow-y-auto" transition="false" reverse-transition="false">
+    <v-tabs-window-item
+      value="activeCues"
+      class="overflow-y-auto"
+      style="font-size: 0.9em"
+      transition="false"
+      reverse-transition="false"
+    >
       <template v-for="(activeCue, cue_id) in showState.activeCues" :key="cue_id">
         <v-sheet v-if="activeCue != null" class="d-flex flex-column border">
           <v-sheet class="d-flex flex-row align-center justify-space-between pl-3 pr-3 pt-2">
@@ -44,7 +50,7 @@
       </template>
     </v-tabs-window-item>
     <v-tabs-window-item value="levels" transition="false" reverse-transition="false">
-      <level-meter kind="master" height="480px"></level-meter>
+      <level-meter v-if="uiState.sideBarTab == 'levels'" kind="master" height="400px"></level-meter>
     </v-tabs-window-item>
   </v-tabs-window>
 </template>

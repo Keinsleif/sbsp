@@ -1,7 +1,9 @@
 <template>
   <div class="pa-2 border-md rounded position-relative">
-    <span class="position-absolute text-subtitle-1 text-medium-emphasis" style="left: 16px">{{ props.label }}</span>
-    <v-sheet class="d-flex flex-row align-end ga-4 mt-2">
+    <span class="position-absolute text-subtitle-2 text-medium-emphasis" style="top: 8px; left: 8px">
+      {{ props.label }}
+    </span>
+    <v-sheet class="d-flex flex-row align-end ga-2">
       <v-checkbox
         hide-details
         v-show="!props.disableToggle"
@@ -46,7 +48,7 @@
         v-model="easingPower"
         :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
         :min="1"
-        max-width="160px"
+        max-width="150px"
         :label="t('main.bottomEditor.input.intensity')"
         density="compact"
         variant="outlined"
@@ -57,7 +59,7 @@
       <curve-viewer
         :disabled="!fadeEnabled || props.disabled"
         class="border-md"
-        width="80px"
+        width="68px"
         :type="props.condition != 'out' ? 'in' : 'out'"
         :curve="easingType"
         :power="easingPower"
@@ -66,7 +68,7 @@
         :disabled="!fadeEnabled || props.disabled"
         v-if="props.condition == 'both'"
         class="border-md"
-        width="80px"
+        width="68px"
         type="out"
         :curve="easingType"
         :power="easingPower"

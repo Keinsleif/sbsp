@@ -2,13 +2,13 @@
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="ml-0 mr-auto d-flex align-center">
       <v-switch
-        inset
         hide-details
         :true-icon="mdiPencil"
         :false-icon="mdiEye"
         v-model="uiState.mode"
         true-value="edit"
         false-value="run"
+        density="compact"
       ></v-switch>
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>

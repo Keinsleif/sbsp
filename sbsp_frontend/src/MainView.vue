@@ -14,7 +14,7 @@
       <FootBar />
     </v-footer>
 
-    <v-navigation-drawer v-model="uiState.isRightSidebarOpen" app permanent location="right" width="300">
+    <v-navigation-drawer v-model="uiState.isRightSidebarOpen" app permanent location="right" width="260">
       <SideBar />
     </v-navigation-drawer>
 
@@ -23,7 +23,7 @@
       app
       permanent
       location="bottom"
-      width="302"
+      width="250"
     >
       <BottomEditor v-model="selectedCue" @update="onCueEdited" :sequence-override="selectedCueSequenceOverride" />
     </v-navigation-drawer>
@@ -89,6 +89,7 @@ const onVisibilityChange = () => {
 };
 
 const unlistenFuncs: UnlistenFn[] = [];
+let rafNumber: number | null = null;
 
 onMounted(() => {
   invoke<'remote' | 'main'>('get_side').then((side) => {
@@ -99,9 +100,18 @@ onMounted(() => {
     getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
   });
 
+  let latestState: ShowState | null = null;
   listen<ShowState>('backend-state-update', (event) => {
-    showState.update(event.payload);
+    latestState = event.payload;
   }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+  const updateLoop = () => {
+    if (latestState != null) {
+      showState.update(latestState);
+      latestState = null;
+    }
+    rafNumber = requestAnimationFrame(updateLoop);
+  };
+  rafNumber = requestAnimationFrame(updateLoop);
 
   listen<UiEvent>('backend-event', (event) => {
     switch (event.payload.type) {
@@ -221,6 +231,9 @@ onUnmounted(() => {
     wakeLock.value.release().then(() => {
       wakeLock.value = null;
     });
+  }
+  if (rafNumber != null) {
+    cancelAnimationFrame(rafNumber);
   }
 });
 

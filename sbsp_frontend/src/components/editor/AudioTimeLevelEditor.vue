@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-column pa-2 ga-3">
+  <v-sheet flat class="d-flex flex-column pa-3 ga-3">
     <v-sheet flat class="d-flex flex-row ga-2">
       <time-range
         v-model="range"
@@ -12,7 +12,7 @@
           saveEditorValue();
         "
       ></time-range>
-      <v-btn-group variant="tonal" divided>
+      <v-btn-group variant="tonal" divided density="compact">
         <v-tooltip target="cursor">
           <template v-slot:activator="{ props: activatorProps }">
             <v-btn
@@ -43,7 +43,7 @@
       :start-time="range[0]"
       :end-time="range[1]"
     ></waveform-viewer>
-    <div class="d-flex flex-row ga-4 align-end">
+    <div class="d-flex flex-row ga-3 align-end">
       <volume-fader
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
