@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-tauri:
+  gen-notices:
     permissions:
       contents: write
 
@@ -69,6 +69,4 @@ jobs:
       - name: commit
         run: |
           git add THIRD_PARTY_NOTICES.md
-          git commit -m "[update] THIRD_PARTY_NOTICES.md"
-          git pull
-          git push origin master
+          git diff-index --quiet HEAD || (git commit -m "[update] THIRD_PARTY_NOTICES.md" && git pull && git push origin master)
