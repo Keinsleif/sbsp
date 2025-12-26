@@ -4,7 +4,7 @@
       v-model="target"
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
-      cue-type="all"
+      cueTypes="all"
       @update="saveEditorValue"
     />
   </v-sheet>
