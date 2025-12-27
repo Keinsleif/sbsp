@@ -465,7 +465,7 @@ const click = (event: MouseEvent, index: number) => {
   }
 };
 
-const resetSelection = (event: MouseEvent) => {
+const resetSelection = (event: MouseEvent): void => {
   if (event.button != 0) {
     return;
   }
@@ -614,6 +614,7 @@ const setPlaybackCursor = (cueId: string) => {
   table {
     table-layout: fixed;
     font-size: 0.9em;
+    min-width: 920px;
   }
   > div {
     scroll-padding-top: 34px;
