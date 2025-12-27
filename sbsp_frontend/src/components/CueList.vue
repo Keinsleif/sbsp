@@ -87,7 +87,7 @@
           <v-icon v-show="getStatus(item.cue.id) == 'Loaded'" :icon="mdiUpload" color="warning"></v-icon>
           <v-progress-circular
             v-show="getStatus(item.cue.id) == 'Stopping'"
-            indeterminate
+            indeterminate="disable-shrink"
             size="21"
             color="warning"
           ></v-progress-circular>

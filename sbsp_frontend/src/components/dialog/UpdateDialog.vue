@@ -3,7 +3,7 @@
     <v-sheet class="d-flex flex-column ga-4 pa-3" width="400px">
       <div class="d-flex flex-row align-center ga-4">
         <h2>{{ t('dialog.update.title') }}</h2>
-        <v-progress-circular v-show="isCheckingUpdate" size="24" indeterminate></v-progress-circular>
+        <v-progress-circular v-show="isCheckingUpdate" size="24" indeterminate="disable-shrink"></v-progress-circular>
       </div>
       <span :class="latestVersion == null ? 'text-red' : 'text-green'">
         {{
