@@ -13,7 +13,8 @@
       "script": "pnpm build",
       "cwd": "../sbsp_frontend"
     },
-    "frontendDist": "../sbsp_frontend/dist"
+    "frontendDist": "../sbsp_frontend/dist",
+    "removeUnusedCommands": true
   },
   "app": {
     "windows": [
