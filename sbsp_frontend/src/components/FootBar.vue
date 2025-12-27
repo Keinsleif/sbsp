@@ -20,7 +20,7 @@
         variant="text"
         @click="openServerPanel"
       ></v-btn>
-      <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleEditor"></v-btn>
+      <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleBottomTab"></v-btn>
       <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
       <v-btn :icon="mdiCog" size="small" variant="text" @click="openSettings"></v-btn>
     </v-sheet>

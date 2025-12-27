@@ -20,6 +20,7 @@
     >
       <rect :class="$style.waveform" x="0" :y="contentHeight / 2" height="1" :width="svgWidth"></rect>
       <path
+        v-if="waveformPath != null"
         :d="waveformPath"
         :transform="`scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight * 0.125})`"
         :class="$style.waveform"
@@ -48,7 +49,7 @@ import { computed, StyleValue, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
-import { useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
+import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 
 const showState = useShowState();
@@ -104,7 +105,7 @@ const currentPlayPos = computed(() => {
   return (nonNullStartTime.value + position.value * range) * (svgWidth.value - 1);
 });
 
-const waveformPath = computed<string>(() => {
+const waveformPath = computedAsync(async () => {
   if (svgWidth.value < 1) {
     return '';
   }
@@ -133,7 +134,8 @@ const waveformPath = computed<string>(() => {
     }
   }
   return result;
-});
+}, null);
+
 const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef);
 
 const seek = (event: MouseEvent) => {

@@ -19,7 +19,7 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer
-      :model-value="uiState.isEditorOpen && uiState.mode == 'edit'"
+      :model-value="uiState.isBottomTabOpen && uiState.mode == 'edit'"
       app
       permanent
       location="bottom"
