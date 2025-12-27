@@ -22,6 +22,7 @@ export const useUiState = defineStore(
     const isCreditsDialogOpen = ref(false);
     const isLicenseDialogOpen = ref(false);
     const isBottomTabOpen = ref(true);
+    const scaleWaveform = ref(true);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
@@ -117,6 +118,7 @@ export const useUiState = defineStore(
       isCreditsDialogOpen,
       isLicenseDialogOpen,
       isBottomTabOpen,
+      scaleWaveform,
       success_messages,
       error_messages,
       setPlaybackCursor,

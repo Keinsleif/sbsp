@@ -1,5 +1,12 @@
 <template>
-  <div :style="{ height: `${props.heightPx}px` }" class="w-100 border-md">
+  <div
+    :style="{ height: `${props.heightPx}px` }"
+    class="w-100 border-md"
+    @contextmenu.prevent="
+      contextMenuPosition = [$event.clientX, $event.clientY];
+      isContextMenuOpen = true;
+    "
+  >
     <v-sheet
       v-show="!isOutside"
       v-if="props.targetId != null && svgRef != null && parent != null"
@@ -8,6 +15,19 @@
     >
       {{ tooltipText }}
     </v-sheet>
+    <v-menu v-model="isContextMenuOpen" :target="contextMenuPosition || undefined" density="compact">
+      <v-list density="compact" class="pa-0 border" @contextmenu.prevent>
+        <v-list-item height="40px" density="compact">
+          <v-checkbox
+            v-model="uiState.scaleWaveform"
+            style="font-size: 0.8em"
+            :label="t('main.bottomEditor.timeLevels.scaleWaveform')"
+            density="compact"
+            hide-details
+          ></v-checkbox>
+        </v-list-item>
+      </v-list>
+    </v-menu>
     <svg
       ref="svg"
       preserveAspectRatio="none"
@@ -22,7 +42,7 @@
       <path
         v-if="waveformPath != null"
         :d="waveformPath"
-        :transform="`scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight * 0.125})`"
+        :transform="waveformTransform"
         :class="$style.waveform"
         transform-origin="center"
       />
@@ -45,15 +65,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, StyleValue, useTemplateRef } from 'vue';
+import { computed, ref, StyleValue, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import { invoke } from '@tauri-apps/api/core';
 import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
+import { useUiState } from '../../stores/uistate';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showState = useShowState();
 const assetResult = useAssetResult();
+const uiState = useUiState();
+
+const isContextMenuOpen = ref(false);
+const contextMenuPosition = ref<[number, number] | null>(null);
 
 const props = withDefaults(
   defineProps<{
@@ -136,10 +164,18 @@ const waveformPath = computedAsync(async () => {
   return result;
 }, null);
 
+const waveformTransform = computed(() => {
+  if (uiState.scaleWaveform) {
+    return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
+  } else {
+    return `translate(0, ${contentHeight.value * 0.125})`;
+  }
+});
+
 const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef);
 
 const seek = (event: MouseEvent) => {
-  if (props.targetId == null) {
+  if (props.targetId == null || event.button != 0) {
     return;
   }
   const activeCue = showState.activeCues[props.targetId];

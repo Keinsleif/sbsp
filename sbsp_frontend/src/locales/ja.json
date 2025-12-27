@@ -55,7 +55,8 @@
         "repeat": "リピート",
         "title": "時間と音量",
         "endTime": "終了時間",
-        "startTime": "開始時間"
+        "startTime": "開始時間",
+        "scaleWaveform": "音量に応じて波形を拡大/縮小"
       },
       "audio": {
         "targetFile": "対象ファイル",

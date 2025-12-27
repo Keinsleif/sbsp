@@ -254,7 +254,8 @@
         "pan": "Pan",
         "repeat": "Repeat",
         "startTime": "Start Time",
-        "endTime": "End Time"
+        "endTime": "End Time",
+        "scaleWaveform": "Scale waveform by volume"
       },
       "fade": {
         "title": "Fade",
