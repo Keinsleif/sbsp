@@ -21,7 +21,7 @@ export const useUiState = defineStore(
     const isSettingsDialogOpen = ref(false);
     const isCreditsDialogOpen = ref(false);
     const isLicenseDialogOpen = ref(false);
-    const isEditorOpen = ref(true);
+    const isBottomTabOpen = ref(true);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
@@ -60,6 +60,7 @@ export const useUiState = defineStore(
         } else {
           selected.value = null;
         }
+        setPlaybackCursor(selected.value);
       }
     };
 
@@ -89,8 +90,8 @@ export const useUiState = defineStore(
     const toggleRightSidebar = () => {
       isRightSidebarOpen.value = !isRightSidebarOpen.value;
     };
-    const toggleEditor = () => {
-      isEditorOpen.value = !isEditorOpen.value;
+    const toggleBottomTab = () => {
+      isBottomTabOpen.value = !isBottomTabOpen.value;
     };
     const success = (message: string) => {
       success_messages.value.push(message);
@@ -115,9 +116,10 @@ export const useUiState = defineStore(
       isUpdateDialogOpen,
       isCreditsDialogOpen,
       isLicenseDialogOpen,
-      isEditorOpen,
+      isBottomTabOpen,
       success_messages,
       error_messages,
+      setPlaybackCursor,
       clearSelected,
       setSelected,
       addSelected,
@@ -127,7 +129,7 @@ export const useUiState = defineStore(
       toggleDurationDisplayMode,
       togglePostWaitDisplayMode,
       toggleRightSidebar,
-      toggleEditor,
+      toggleBottomTab,
       success,
       error,
     };
