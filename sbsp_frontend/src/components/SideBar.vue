@@ -22,6 +22,7 @@
             <v-progress-circular
               v-show="activeCue.status == 'Stopping'"
               indeterminate="disable-shrink"
+              size="21"
             ></v-progress-circular>
           </v-sheet>
           <v-sheet class="pa-0 d-flex flex-row justify-space-between">

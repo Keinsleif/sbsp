@@ -88,7 +88,7 @@
           <v-progress-circular
             v-show="getStatus(item.cue.id) == 'Stopping'"
             indeterminate="disable-shrink"
-            size="21"
+            size="16"
             color="warning"
           ></v-progress-circular>
         </td>
