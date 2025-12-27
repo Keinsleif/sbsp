@@ -5,6 +5,7 @@
     fullscreen
     @keydown.esc.stop="isSettingsDialogOpen = false"
     @keydown.stop
+    @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column w-100 h-100">
       <v-sheet class="flex-grow-1 d-flex flex-row w-100">

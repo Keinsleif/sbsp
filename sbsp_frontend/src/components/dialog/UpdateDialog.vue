@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isUpdateDialogOpen" width="auto" @keydown.stop @afterEnter="checkUpdate">
+  <v-dialog v-model="isUpdateDialogOpen" width="auto" @keydown.stop @afterEnter="checkUpdate" @contextmenu.prevent>
     <v-sheet class="d-flex flex-column ga-4 pa-3" width="400px">
       <div class="d-flex flex-row align-center ga-4">
         <h2>{{ t('dialog.update.title') }}</h2>

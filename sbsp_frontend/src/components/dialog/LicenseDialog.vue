@@ -1,5 +1,11 @@
 <template>
-  <v-dialog v-model="isLicenseDialogOpen" width="auto" @keydown.esc.stop="isLicenseDialogOpen = false" @keydown.stop>
+  <v-dialog
+    v-model="isLicenseDialogOpen"
+    width="auto"
+    @keydown.esc.stop="isLicenseDialogOpen = false"
+    @keydown.stop
+    @contextmenu.prevent
+  >
     <v-sheet class="d-flex flex-column pa-4 ga-3" width="450px">
       <h2>{{ t('dialog.license.title') }}</h2>
       <div>

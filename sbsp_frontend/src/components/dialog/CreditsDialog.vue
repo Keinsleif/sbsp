@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isThirdPartyNoticesDialogOpen">
+  <v-dialog v-model="isThirdPartyNoticesDialogOpen" @contextmenu.prevent>
     <v-sheet class="pa-10">
       <div :class="$style['markdown']" v-html="notices"></div>
     </v-sheet>

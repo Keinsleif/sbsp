@@ -5,6 +5,7 @@
     @keydown.enter.stop="onDone"
     @keydown.esc.stop="isRenumberDialogOpen = false"
     @keydown.stop
+    @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column ga-4 pa-3" width="400px">
       <h2>{{ t('dialog.renumber.title') }}</h2>
