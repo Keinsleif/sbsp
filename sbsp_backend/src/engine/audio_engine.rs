@@ -342,7 +342,7 @@ impl AudioEngine {
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
         let manager = self.manager.as_mut().ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
-        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).map_err(|e| anyhow::anyhow!("Failed to create clock {}", e))?;
+        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).map_err(|_| anyhow::anyhow!("Failed to create audio. Playback limit reached."))?;
 
         let filepath_clone = data.filepath.clone();
 

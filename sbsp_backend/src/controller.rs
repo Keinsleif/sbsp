@@ -460,12 +460,9 @@ impl CueController {
                     state_changed = true;
                 }
             }
-            ExecutorEvent::Error { cue_id, error, .. } => {
-                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    active_cue.status = PlaybackStatus::Error;
-                    state_changed = true;
-                    log::error!("State: Cue error on '{}': {}", active_cue.cue_id, error);
-                }
+            ExecutorEvent::Error { cue_id, .. } => {
+                show_state.active_cues.shift_remove(cue_id);
+                state_changed = true;
             }
             ExecutorEvent::PreWaitStarted { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {

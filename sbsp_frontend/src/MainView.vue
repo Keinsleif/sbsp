@@ -180,6 +180,10 @@ onMounted(() => {
         }
         break;
       }
+      case 'cueError':
+        console.error(event.payload.param.error);
+        uiState.error(event.payload.param.error);
+        break;
       case 'operationFailed':
         console.error(event.payload.param.error);
         uiState.error(event.payload.param.error.message);
