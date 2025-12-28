@@ -184,14 +184,6 @@ impl AssetProcessor {
 
         let track_id = track.id;
 
-        let duration = codec_params
-            .time_base
-            .zip(codec_params.n_frames)
-            .map(|(base, spans)| {
-                let symphonia_time = base.calc_time(spans);
-                symphonia_time.seconds as f64 + symphonia_time.frac
-            });
-
         let sample_rate = codec_params
             .sample_rate
             .ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
@@ -205,6 +197,7 @@ impl AssetProcessor {
                 / (WAVEFORM_THRESHOLD - 1) as u64;
         }
 
+        let mut sample_buf = None;
         let mut ebur128 = if let Some(channels) = channel_count {
             Some(EbuR128::new(
                 channels as u32,
@@ -214,11 +207,13 @@ impl AssetProcessor {
         } else {
             None
         };
-        let mut first_audio_sample = None;
-        let mut last_audio_sample = None;
+
+        let mut first_audio_sample: Option<u64> = None;
+        let mut last_audio_sample: Option<u64> = None;
         let mut max_audio_sample: f32 = 0.0;
         let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
-        let mut sample_index = 0;
+        let mut sample_index: u64 = 0;
+        let mut peak_counter: u64 = 0;
         let mut max_in_current_peak: f32 = 0.0;
 
         let result = loop {
@@ -244,31 +239,39 @@ impl AssetProcessor {
                             ebur128::Mode::I,
                         )?);
                     }
-                    let mut sample_buf =
-                        SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
-
-                    sample_buf.copy_interleaved_ref(decoded);
-
-                    if let Some(ebur) = &mut ebur128 {
-                        ebur.add_frames_f32(sample_buf.samples())?;
+                    if sample_buf.is_none() {
+                        sample_buf = Some(SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec));
+                    } else if let Some(buffer) = &mut sample_buf && buffer.capacity() < decoded.capacity() * decoded_spec.channels.count() {
+                        *buffer = SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
                     }
 
-                    for &sample in sample_buf.samples() {
-                        if sample.abs() >= AUDIO_THRESHOLD {
-                            if first_audio_sample.is_none() {
-                                first_audio_sample = Some(sample_index);
-                            }
-                            last_audio_sample = Some(sample_index);
-                        }
-                        max_in_current_peak = max_in_current_peak.max(sample.abs());
+                    if let Some(buffer) = &mut sample_buf {
+                        buffer.copy_interleaved_ref(decoded);
 
-                        sample_index += 1;
-                        if sample_index % samples_per_peaks == 0 {
-                            waveform.push(max_in_current_peak);
-                            if max_in_current_peak > max_audio_sample {
-                                max_audio_sample = max_in_current_peak;
+                        let samples= buffer.samples();
+
+                        if let Some(ebur) = &mut ebur128 {
+                            ebur.add_frames_f32(samples)?;
+                        }
+                        for &sample in samples {
+                            if sample.abs() >= AUDIO_THRESHOLD {
+                                if first_audio_sample.is_none() {
+                                    first_audio_sample = Some(sample_index);
+                                }
+                                last_audio_sample = Some(sample_index);
                             }
-                            max_in_current_peak = 0.0;
+                            max_in_current_peak = max_in_current_peak.max(sample.abs());
+
+                            sample_index += 1;
+                            peak_counter += 1;
+                            if peak_counter >= samples_per_peaks {
+                                waveform.push(max_in_current_peak);
+                                if max_in_current_peak > max_audio_sample {
+                                    max_audio_sample = max_in_current_peak;
+                                }
+                                max_in_current_peak = 0.0;
+                                peak_counter = 0;
+                            }
                         }
                     }
                 }
@@ -282,26 +285,30 @@ impl AssetProcessor {
 
         let channels = channel_count.unwrap_or(2);
 
-        if sample_index % samples_per_peaks > 0 {
+        if peak_counter > 0 {
             waveform.push(max_in_current_peak);
         }
 
-        let start_time = codec_params
+        let calc_sec = |(base, spans): (symphonia::core::units::TimeBase, u64)| {
+            let t = base.calc_time(spans);
+            t.seconds as f64 + t.frac
+        };
+
+        let duration = codec_params
+            .time_base
+            .zip(codec_params.n_frames)
+            .map(calc_sec);
+
+            let start_time = codec_params
             .time_base
             .zip(
                 first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64),
             )
-            .map(|(base, spans)| {
-                let symphonia_time = base.calc_time(spans);
-                symphonia_time.seconds as f64 + symphonia_time.frac
-            });
+            .map(calc_sec);
         let end_time = codec_params
             .time_base
             .zip(last_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
-            .map(|(base, spans)| {
-                let symphonia_time = base.calc_time(spans);
-                symphonia_time.seconds as f64 + symphonia_time.frac
-            });
+            .map(calc_sec);
 
         let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
 
@@ -310,7 +317,7 @@ impl AssetProcessor {
             duration,
             waveform,
             integrated_lufs,
-            peak: max_audio_sample.log10() * 20.0,
+            peak: if max_audio_sample > 0.0 { max_audio_sample.log10() * 20.0 } else { -60.0 },
             start_time,
             end_time,
         })

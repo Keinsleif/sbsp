@@ -24,6 +24,9 @@ opt-level = "s" # Prioritizes small binary size. Use `3` if you prefer speed.
 panic = "abort" # Higher performance by disabling panic handlers.
 strip = true # Ensures debug symbols are removed.
 
+[profile.dev.package.sbsp_backend]
+opt-level = 1
+
 [profile.dev.package.kira]
 opt-level = 3
 
