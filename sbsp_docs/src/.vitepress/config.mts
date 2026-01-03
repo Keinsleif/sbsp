@@ -21,7 +21,7 @@ export default defineConfig({
       {
         text: 'UI',
         items: [
-          { text: '外観', link: '/usage/ui/overview' }
+          { text: 'メイン画面', link: '/usage/ui/main' }
         ]
       },
       {
