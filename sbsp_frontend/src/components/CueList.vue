@@ -247,7 +247,15 @@
           </div>
         </td>
         <td headers="cuelist_repeat">
-          <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
+          <v-icon
+            v-show="
+              (item.cue.params.type == 'audio' && item.cue.params.repeat) ||
+              (item.cue.params.type == 'group' &&
+                item.cue.params.mode.type == 'playlist' &&
+                item.cue.params.mode.repeat)
+            "
+            :icon="mdiRepeat"
+          />
         </td>
         <td headers="cuelist_sequence">
           <v-icon v-show="item.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
