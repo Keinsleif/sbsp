@@ -19,20 +19,24 @@ export default defineConfig({
     nav: [
       { text: 'ホーム', link: '/' },
       { text: 'インストール', link: '/installation'},
-      { text: '使用方法', link: '/usage/' },
+      { text: '使用方法', link: '/usage/start' },
     ],
 
     sidebar: [
       {
-        text: 'UI',
+        text: 'インターフェース',
         items: [
-          { text: 'メイン画面', link: '/usage/ui/main' }
+          { text: 'メイン画面', link: '/usage/ui/main' },
         ]
       },
       {
         text: 'Cues',
+        link: '/usage/cues',
         items: [
-          { text: '音声キュー', link: '/usage/cues/audio' }
+          { text: '音声キュー', link: '/usage/cues/audio' },
+          { text: 'フェードキュー', link: '/usage/cues/fade' },
+          { text: 'グループキュー', link: '/usage/cues/group' },
+          { text: '再生制御キュー', link: '/usage/cues/playback' },
         ]
       }
     ],
