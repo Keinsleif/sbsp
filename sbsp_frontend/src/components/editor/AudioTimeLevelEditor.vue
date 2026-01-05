@@ -43,7 +43,10 @@
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
         :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
-        @update="saveEditorValue"
+        @update="
+          saveEditorValue();
+          changeActiveCueVolume();
+        "
       />
       <v-btn-group variant="tonal" direction="vertical" divided>
         <v-tooltip
@@ -51,26 +54,12 @@
           :text="t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })"
         >
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              height="25px"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="setVolumeToLUFS"
-              >LUFS</v-btn
-            >
+            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToLUFS">LUFS</v-btn>
           </template>
         </v-tooltip>
         <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              height="25px"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="setVolumeToMAX"
-              >MAX</v-btn
-            >
+            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToMAX">MAX</v-btn>
           </template>
         </v-tooltip>
       </v-btn-group>
@@ -78,7 +67,7 @@
       <panning-fader
         :label="t('main.bottomEditor.timeLevels.pan')"
         :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        @update="saveEditorValue"
+        @update="saveEditorValue()"
       />
       <v-divider vertical inset thickness="2" />
       <v-checkbox

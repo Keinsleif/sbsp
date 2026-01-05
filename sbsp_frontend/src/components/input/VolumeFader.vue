@@ -11,15 +11,14 @@
     :label="props.label"
     :ticks="tickLabels"
     :direction="props.direction"
-    @dblclick="faderPosition = 0"
+    @dblclick="
+      faderPosition = 0;
+      onMouseUp.clear();
+      emit('update');
+    "
     @keydown.stop
     @mousedown="sliderChanging = true"
-    @mouseup="
-      if (sliderChanging) {
-        sliderChanging = false;
-        emit('update');
-      }
-    "
+    @mouseup="onMouseUp"
   >
     <template v-slot:thumb-label="{ modelValue }">
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
@@ -39,6 +38,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import VolumeInput from './VolumeInput.vue';
+import { debounce } from '../../utils';
 
 const faderToDecibels = (fader: number): number => {
   if (fader > -10) {
@@ -87,6 +87,13 @@ const faderPosition = computed({
     volume.value = faderToDecibels(newValue);
   },
 });
+
+const onMouseUp = debounce(() => {
+  if (sliderChanging.value) {
+    sliderChanging.value = false;
+    emit('update');
+  }
+}, 500);
 
 const tickLabels = computed(() => {
   if (props.thumbAmount == 'decreased') {
