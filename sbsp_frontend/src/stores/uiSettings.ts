@@ -14,6 +14,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     appearance: {
       language: null,
       darkMode: 'dark',
+      hideControls: false,
     },
     hotkey: {
       playback: {

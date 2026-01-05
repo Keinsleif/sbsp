@@ -71,6 +71,7 @@ impl Default for GeneralSettings {
 pub struct AppearanceSettings {
     pub language: Option<String>,
     pub dark_mode: DarkMode,
+    pub hide_controls: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]

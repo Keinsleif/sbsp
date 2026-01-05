@@ -153,6 +153,11 @@
                 autocomplete="off"
                 @keydown.stop
               ></v-select>
+              <v-checkbox
+                v-model="editingSettings.global.appearance.hideControls"
+                :label="'Hide playback controls on top header'"
+                hide-details
+              ></v-checkbox>
             </v-sheet>
           </v-tabs-window-item>
           <v-tabs-window-item value="hotkey" class="pa-3">
