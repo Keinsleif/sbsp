@@ -5,6 +5,7 @@
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
       cueTypes="all"
+      :exclude="selectedCue != null ? selectedCue.id : ''"
       @update="saveEditorValue"
     />
   </v-sheet>
