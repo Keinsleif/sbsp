@@ -191,6 +191,12 @@
       "save": "Save",
       "dontSave": "Don't save",
       "cancel": "Cancel"
+    },
+    "message": {
+      "license": {
+        "proTitle": "License Error",
+        "serverPanel": "Pro License is required to use Server Panel."
+      }
     }
   },
   "general": {

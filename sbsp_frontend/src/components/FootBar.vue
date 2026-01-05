@@ -33,6 +33,7 @@ import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
+import { message } from '@tauri-apps/plugin-dialog';
 
 const { t } = useI18n();
 
@@ -44,6 +45,12 @@ const openSettings = async () => {
 };
 
 const openServerPanel = () => {
-  invoke('open_server_panel').catch((e) => console.error(e));
+  invoke('open_server_panel').catch((e) => {
+    if (e[0]) {
+      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+    } else {
+      console.error(e);
+    }
+  });
 };
 </script>

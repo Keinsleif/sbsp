@@ -267,6 +267,12 @@
       "content": "ShowModelへの変更を保存しますか？",
       "dontSave": "保存しない",
       "save": "保存"
+    },
+    "message": {
+      "license": {
+        "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。",
+        "proTitle": "ライセンスエラー"
+      }
     }
   },
   "general": {
