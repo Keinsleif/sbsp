@@ -178,7 +178,7 @@
           "playback": {
             "title": "再生",
             "go": "Go",
-            "load": "ロード",
+            "load": "読み込み",
             "pauseAndResume": "一時停止＆再開",
             "pauseAll": "すべて一時停止",
             "resumeAll": "すべて再開",
