@@ -184,8 +184,8 @@
             "resumeAll": "すべて再開",
             "stop": "停止",
             "stopAll": "すべて停止",
-            "seekForward": "前方へスキップ (一般設定で設定された秒数)",
-            "seekBackward": "後方へスキップ（一般設定で設定された秒数）"
+            "seekForward": "前方へスキップ (全般設定で設定された秒数)",
+            "seekBackward": "後方へスキップ（全般設定で設定された秒数）"
           },
           "audio": {
             "title": "音声キュー",

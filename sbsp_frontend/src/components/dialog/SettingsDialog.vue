@@ -212,7 +212,7 @@
           </v-tabs-window-item>
           <v-tabs-window-item value="template" class="fill-height">
             <v-sheet class="d-flex flex-column w-100" height="100%">
-              <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
+              <v-table fixed-header density="compact" class="flex-grow-1 border" height="100%">
                 <thead>
                   <tr>
                     <th id="cuelist_type">{{ t('dialog.settings.global.template.type') }}</th>
@@ -632,7 +632,7 @@
                   </tr>
                 </tbody>
               </v-table>
-              <div style="height: 302px" class="flex-grow-0 mb-0">
+              <div style="height: 250px" class="flex-grow-0 mb-0 border">
                 <bottom-editor v-model="selectingCue"></bottom-editor>
               </div>
             </v-sheet>
