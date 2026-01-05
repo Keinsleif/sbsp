@@ -219,6 +219,7 @@ const setVolumeToLUFS = () => {
   if (integratedLufs == null) return;
   volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
   saveEditorValue();
+  changeActiveCueVolume();
 };
 
 const setVolumeToMAX = () => {
@@ -229,6 +230,7 @@ const setVolumeToMAX = () => {
   if (peak == null) return;
   volume.value = -peak;
   saveEditorValue();
+  changeActiveCueVolume();
 };
 </script>
 
