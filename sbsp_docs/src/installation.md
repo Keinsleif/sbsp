@@ -31,7 +31,7 @@ RedHat, CentOS : ` SBS.Player-x.x.x-1.x86_64.rpm `
 
 をダウンロードします。（x.x.xにはバージョン番号が入ります）
 
-## 3. Microsoft Store から (Windowsのみ、安定版のみ)
+## Microsoft Store から (Windowsのみ、安定版のみ)
 
 以下のリンクからMicrosoft Storeを開き、インストールします。
 
