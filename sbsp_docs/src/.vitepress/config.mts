@@ -27,6 +27,7 @@ export default defineConfig({
       {
         text: 'Cues',
         items: [
+          { text: '音声キュー', link: '/usage/cues/audio' }
         ]
       }
     ],
