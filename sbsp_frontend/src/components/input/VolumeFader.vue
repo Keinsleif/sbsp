@@ -13,6 +13,13 @@
     :direction="props.direction"
     @dblclick="faderPosition = 0"
     @keydown.stop
+    @mousedown="sliderChanging = true"
+    @mouseup="
+      if (sliderChanging) {
+        sliderChanging = false;
+        emit('update');
+      }
+    "
   >
     <template v-slot:thumb-label="{ modelValue }">
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
@@ -22,15 +29,15 @@
         v-show="!props.hideInput"
         v-model="volume"
         @mousedown.stop
-        @mouseup.stop
         @dblclick.stop
+        @update="emit('update')"
       ></volume-input>
     </template>
   </v-slider>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import VolumeInput from './VolumeInput.vue';
 
 const faderToDecibels = (fader: number): number => {
@@ -68,6 +75,9 @@ const props = withDefaults(
 );
 
 const volume = defineModel<number>({ default: 0 });
+const emit = defineEmits(['update']);
+
+const sliderChanging = ref(false);
 
 const faderPosition = computed({
   get() {

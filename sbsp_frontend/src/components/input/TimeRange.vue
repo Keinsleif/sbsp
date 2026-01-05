@@ -4,7 +4,13 @@
     v-model="innerRange"
     min="0"
     :max="props.duration"
-    @update:model-value="emit('update')"
+    @mousedown="sliderChanging = true"
+    @mouseup="
+      if (sliderChanging) {
+        sliderChanging = false;
+        emit('update');
+      }
+    "
     @keydown.stop
   >
     <template v-slot:prepend>
@@ -14,7 +20,6 @@
         :label="t('main.bottomEditor.timeLevels.startTime')"
         @update="emit('update')"
         @mousedown.stop
-        @mouseup.stop
       ></time-input>
     </template>
     <template v-slot:append>
@@ -24,18 +29,19 @@
         :label="t('main.bottomEditor.timeLevels.endTime')"
         @update="emit('update')"
         @mousedown.stop
-        @mouseup.stop
       ></time-input>
     </template>
   </v-range-slider>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import TimeInput from './TimeInput.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+
+const sliderChanging = ref(false);
 
 const range = defineModel<[number | null, number | null]>({ required: true });
 const props = withDefaults(
