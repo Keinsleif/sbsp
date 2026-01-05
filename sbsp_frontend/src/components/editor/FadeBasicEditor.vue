@@ -13,12 +13,7 @@
       :label="t('main.bottomEditor.fade.targetVolume')"
       :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
-      @update:model-value="saveEditorValue"
-      @mousedown="sliderChanging = true"
-      @mouseup="
-        sliderChanging = false;
-        saveEditorValue();
-      "
+      @update="saveEditorValue"
     />
     <fade-param-input
       class="align-self-start"
