@@ -155,7 +155,7 @@
               ></v-select>
               <v-checkbox
                 v-model="editingSettings.global.appearance.hideControls"
-                :label="'Hide playback controls on top header'"
+                :label="t('dialog.settings.global.appearance.hideControls')"
                 hide-details
               ></v-checkbox>
             </v-sheet>

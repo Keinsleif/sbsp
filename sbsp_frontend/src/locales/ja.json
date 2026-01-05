@@ -208,7 +208,8 @@
           "darkMode": "ダークモード",
           "language": "言語",
           "systemLanguage": "システムの言語",
-          "systemSettings": "システムの設定"
+          "systemSettings": "システムの設定",
+          "hideControls": "上部ヘッダーの再生制御ボタンを隠す"
         },
         "nameFormat": {
           "audio": {

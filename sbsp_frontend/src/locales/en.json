@@ -132,7 +132,8 @@
           "language": "Language",
           "systemLanguage": "System Language",
           "darkMode": "Dark Mode",
-          "systemSettings": "System Settings"
+          "systemSettings": "System Settings",
+          "hideControls": "Hide playback controls on top header"
         },
         "nameFormat": {
           "audio": {
