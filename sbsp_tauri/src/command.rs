@@ -34,28 +34,25 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
 }
 
 #[tauri::command]
-pub fn file_open(app_handle: tauri::AppHandle) {
+pub async fn file_open(app_handle: tauri::AppHandle) -> Result<(), String> {
     let model_handle = app_handle
         .state::<AppState>()
         .get_handle()
-        .model_handle
-        .clone();
-    tokio::spawn(async move {
-        let (result_tx, result_rx) = oneshot::channel();
-        app_handle
-            .dialog()
-            .file()
-            .add_filter("Show Model", &["sbsp"])
-            .pick_file(|file_path_option| {
-                result_tx.send(file_path_option).unwrap();
-            });
-        if let Ok(Some(file_path)) = result_rx.await {
-            model_handle
-                .load_from_file(file_path.into_path().unwrap())
-                .await
-                .unwrap();
-        }
-    });
+        .model_handle;
+    let (result_tx, result_rx) = oneshot::channel();
+    app_handle
+        .dialog()
+        .file()
+        .add_filter("Show Model", &["sbsp"])
+        .pick_file(|file_path_option| {
+            result_tx.send(file_path_option).unwrap();
+        });
+    if let Ok(Some(file_path)) = result_rx.await {
+        model_handle
+            .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
+            .await.map_err(|e| e.to_string())?
+    }
+    Ok(())
 }
 
 #[tauri::command]
