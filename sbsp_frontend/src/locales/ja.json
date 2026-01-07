@@ -15,7 +15,9 @@
       "paste": "貼り付け",
       "delete": "削除",
       "selectAll": "すべて選択",
-      "title": "編集"
+      "title": "編集",
+      "exportSettings": "グローバル設定をエクスポート",
+      "importSettings": "グローバル設定をインポート"
     },
     "cue": {
       "audio": "音声キュー",
@@ -273,6 +275,9 @@
         "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。",
         "proTitle": "ライセンスエラー"
       }
+    },
+    "save": {
+      "exportSettingsFilter": "グローバル設定ファイル"
     }
   },
   "general": {

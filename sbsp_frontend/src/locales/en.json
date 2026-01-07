@@ -15,7 +15,9 @@
       "copy": "Copy",
       "paste": "Paste",
       "selectAll": "Select All",
-      "title": "Edit"
+      "title": "Edit",
+      "importSettings": "Import global settings",
+      "exportSettings": "Export global settings"
     },
     "cue": {
       "audio": "Audio Cue",
@@ -197,6 +199,9 @@
         "proTitle": "License Error",
         "serverPanel": "Pro License is required to use Server Panel."
       }
+    },
+    "save": {
+      "exportSettingsFilter": "GlobalSettings File"
     }
   },
   "general": {
