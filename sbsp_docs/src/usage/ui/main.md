@@ -213,7 +213,7 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。詳
 
 ### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">31</text></svg> 設定画面を開く
 
-設定画面を開きます。
+[設定画面](./settings)を開きます。
 
 <style>
     svg {
