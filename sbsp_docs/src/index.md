@@ -12,14 +12,13 @@ hero:
       link: /installation
     - theme: alt
       text: 使用方法
-      link: /usage
+      link: /usage/ui/main
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: 制御された音源再生
+    details: 個々の音源を個別の設定、再生順序によって制御された状態で再生することができます。
+  - title: 柔軟なカスタマイズ
+    details: ホットキーや作成されるキューのテンプレートなどを自由に変更できます。
+  - title: 共有に優れたエクスポート
+    details: フォルダにエクスポートすることで、音声ファイルなどもまとめて１つのフォルダで共有することができます。
 ---
-

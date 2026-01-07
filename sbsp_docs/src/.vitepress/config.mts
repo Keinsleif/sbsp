@@ -19,7 +19,7 @@ export default defineConfig({
     nav: [
       { text: 'ホーム', link: '/' },
       { text: 'インストール', link: '/installation'},
-      { text: '使用方法', link: '/usage' },
+      { text: '使用方法', link: '/usage/ui/main' },
     ],
 
     sidebar: [
