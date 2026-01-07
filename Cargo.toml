@@ -9,7 +9,7 @@ members = [
 
 [workspace.package]
 authors = ["Keinsleif"]
-version = "1.0.1"
+version = "1.1.0"
 edition = "2024"
 license = "Elastic-2.0"
 publish = false
