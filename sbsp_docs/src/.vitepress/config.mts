@@ -9,6 +9,7 @@ export default defineConfig({
     ['link', { rel: 'icon', href: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
     ['link', { rel: 'apple-touch-icon', href: '/apple-touch-icon.png'}]
   ],
+  base: '/sbsp/docs/',
 
   markdown: {
     breaks: true
