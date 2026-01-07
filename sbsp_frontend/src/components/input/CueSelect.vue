@@ -27,7 +27,7 @@ const selectedId = defineModel<string | null>();
 const props = withDefaults(
   defineProps<{
     label?: string;
-    cueType?: 'audio' | 'wait' | 'all';
+    cueType?: 'audio' | 'audioAndGroup' | 'wait' | 'all';
     exclude?: string;
     nullText?: string | null;
   }>(),
@@ -56,6 +56,8 @@ const filterCue = (cue: Cue): boolean => {
   }
   if (props.cueType == 'all') {
     return true;
+  } else if (props.cueType == 'audioAndGroup') {
+    return cue.params.type == 'audio' || cue.params.type == 'group';
   } else {
     return cue.params.type == props.cueType;
   }

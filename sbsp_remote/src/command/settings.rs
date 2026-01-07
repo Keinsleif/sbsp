@@ -58,6 +58,7 @@ pub async fn save_settings(
 
 #[tauri::command]
 pub async fn import_settings_from_file(
+    handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     path: &Path,
 ) -> Result<GlobalSettings, String> {
@@ -66,6 +67,15 @@ pub async fn import_settings_from_file(
         .load_from_file(path)
         .await
         .map_err(|e| e.to_string())?;
+    if let Ok(path) = handle.path().app_config_dir() {
+        let config_path = path.join("config.json");
+        if let Err(e) = state.settings_manager.save_to_file(&config_path).await {
+            log::error!("Failed to save imported config. {}", e);
+            return Err(format!("Failed to save imported config. {}", e))
+        }
+    } else {
+        return Err("Failed to locate config path.".into())
+    }
     Ok(state.settings_manager.read().await.clone())
 }
 

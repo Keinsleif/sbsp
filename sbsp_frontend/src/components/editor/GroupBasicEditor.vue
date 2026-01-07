@@ -22,7 +22,7 @@
       v-model="repeat"
       hide-details
       density="compact"
-      :label="'Repeat'"
+      :label="t('main.bottomEditor.timeLevels.repeat')"
       :disabled="selectedCue != null && mode != 'playlist'"
       @update:model-value="saveEditorValue"
     ></v-checkbox>

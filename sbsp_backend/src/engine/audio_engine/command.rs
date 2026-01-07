@@ -19,7 +19,7 @@ pub enum AudioCommand {
     Stop { id: Uuid },
     SeekTo { id: Uuid, position: f64 },
     SeekBy { id: Uuid, amount: f64 },
-    SetVolume { id: Uuid, volume: f32, fade_param: FadeParam },
+    FadeVolume { id: Uuid, volume: f32, fade_param: FadeParam },
     PerformAction { id: Uuid, action: AudioAction },
     Reconfigure(ShowAudioSettings),
 }

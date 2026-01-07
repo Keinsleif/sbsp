@@ -69,7 +69,7 @@
           v-model="target"
           class="flex-grow-0"
           :label="t('main.bottomEditor.continueTargetCue')"
-          cue-type="all"
+          cueType="all"
           :exclude="selectedCue?.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"

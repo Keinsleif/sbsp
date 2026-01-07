@@ -8,7 +8,7 @@
           >.<span style="font-size: 32pt; line-height: 1">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
         </div>
       </div>
-      <div class="d-flex flex-column ga-3">
+      <div :class="uiSettings.settings.appearance.hideControls ? 'd-none' : 'd-flex'" class="flex-column ga-3">
         <v-btn-group variant="flat" divided class="border" density="comfortable">
           <v-btn
             density="comfortable"
@@ -99,10 +99,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { buildCueName } from '../utils';
 import { useNow, useWindowFocus } from '@vueuse/core';
 import { useUiState } from '../stores/uistate';
+import { useUiSettings } from '../stores/uiSettings';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 const hasFocus = useWindowFocus();
 

@@ -3,84 +3,6 @@
 創価大学放送部（SBS）での使用を想定した音源再生ソフトです。  
 Mac用の舞台オペレーティングソフトウェアである [QLab](https://qlab.app/) にインスパイアされています。  
 
-## 機能
-
-### Backend (sbsp_backend)
-
-- 基本
-  - [x] apiserverの起動
-  - [x] キュー、キューリストの一括管理
-  - [x] キュー、キューリストの編集
-  - [x] キューの実行
-  - [x] preWaitの実装
-  - [x] postWait、sequence(auto-follow)の実装
-  - [x] auto-followターゲット指定
-  - [x] キュー名のデフォルト機能（内容から自動生成）
-  - [x] preWait中のロード
-  - [x] シーク
-  - [ ] ショーモデルのリセット (New)
-  - [ ] 保存確認
-  - [ ] レファレンスLUFSを設定可能に
-  - [ ] 自動キュー名のフォーマット設定
-- 音声
-  - [x] 再生、一時停止、再開、停止
-  - [x] ロード
-  - [ ] アンロード
-  - [x] 開始位置、終了位置
-  - [x] フェードイン、フェードアウト
-  - [x] 長さ解析
-  - [x] 波形解析
-  - [x] リピート&リピート停止(CueActionで対応)
-  - [ ] 音量調整(AudioEngine全体)
-  - [x] streaming sound 対応(手動設定)
-  - [x] モノラル出力
-- その他
-  - [x] 待機キュー
-  - [ ] グループキュー
-  - [ ] 再生、一時停止、停止キュー
-  - [ ] MIDIキュー
-  - [ ] MIDIトリガー
-  - [ ] OSCキュー
-  - [ ] OSCトリガー
-- リモート処理
-  - [x] apiclientの実装
-  - [x] apiclient、切断処理、切断時処理
-  - [x] mDNSによるLANディスカバリー
-  - [ ] 閲覧/編集 権限管理
-  - [ ] ping
-  - [ ] トラフィックの暗号化(wss,https & SBSP CA + サーバー起動時に証明書動的生成)
-        rcgen, rusttls(axum, reqwest)を用いる
-
-### GUI (sbsp_tauri)
-
-- 基本
-  - [x] スリープ防止
-  - [x] キューパラメータ編集
-  - [x] フォーカスなしインジケータ
-  - [x] キューアクションのUI実装
-  - [ ] 閲覧/編集モード
-- キーボードショートカット
-  - [x] 開く、保存
-  - [x] キューリスト移動（↑↓）
-  - [x] キューリスト全選択 (Ctrl+A)
-  - [x] キュー削除 (Ctrl+Delete)
-- メニュー項目
-  - [x] キューリスト全選択
-  - [x] キュー削除
-  - [x] 各キューの追加
-- 設定画面
-  - [x] キューテンプレート編集機能
-- その他
-  - [x] vueuse使用に書き換え
-  - [x] i18n対応(vue-i18n)
-- リモート機能
-  - [x] サーバー管理パネル
-
-### Remote GUI (sbsp_remote)
-
-- 基本
-  - [x] 接続
-
 ## ビルド
 
 ### 前準備
@@ -91,7 +13,14 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 
 上記のページを元に Rust, Node.js, その他の依存パッケージをインストール
 
-- [pnpm](https://pnpm.io/ja/installation)
+> [!NOTE]
+> Linuxにおいては、追加で以下の依存関係が必要です。
+>
+> > Debian/Ubuntu/Mint では `libasound2-dev`、Fedora/Centos では`alsa-lib-devel` パッケージ
+
+- pnpm
+
+[https://pnpm.io/ja/installation](https://pnpm.io/ja/installation)
 
 上記のページを元に pnpm をインストール
 

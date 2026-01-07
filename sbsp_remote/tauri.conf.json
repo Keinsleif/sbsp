@@ -13,7 +13,8 @@
       "script": "pnpm build",
       "cwd": "../sbsp_frontend"
     },
-    "frontendDist": "../sbsp_frontend/dist"
+    "frontendDist": "../sbsp_frontend/dist",
+    "removeUnusedCommands": true
   },
   "app": {
     "windows": [
@@ -113,7 +114,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEyMkY0OTQ0RDk0NjA3MEMKUldRTUIwYlpSRWt2RXYwbkRpT0ZDTWhKcnN2ZS9zMFFDSEFyeTkxR2w3STlEY2Rrckk5cHcyc1IK",
       "endpoints": [
-        "https://keinsleif.github.io/sbsp/remote/latest.json"
+        "https://keinsleif.github.io/sbsp/update/latest-remote.json"
       ]
     }
   }

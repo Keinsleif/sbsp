@@ -1,6 +1,6 @@
 <template>
   <div class="pa-2 border-md rounded position-relative">
-    <span class="position-absolute text-subtitle-2 text-medium-emphasis" style="top: 8px; left: 8px">
+    <span class="position-absolute text-caption text-medium-emphasis" style="top: 4px; left: 8px">
       {{ props.label }}
     </span>
     <v-sheet class="d-flex flex-row align-end ga-2">

@@ -4,7 +4,8 @@ import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { i18n } from './i18n';
 import { platform } from '@tauri-apps/plugin-os';
-import { message } from '@tauri-apps/plugin-dialog';
+import { message, open, save } from '@tauri-apps/plugin-dialog';
+import { useUiSettings } from './stores/uiSettings';
 
 export const createWindowMenu = async (side: 'main' | 'remote') => {
   const { t } = i18n.global;
@@ -137,6 +138,47 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
       await PredefinedMenuItem.new({
         item: 'SelectAll',
         text: t('menu.edit.selectAll'),
+      }),
+      await PredefinedMenuItem.new({
+        item: 'Separator',
+      }),
+      await MenuItem.new({
+        id: 'id_import_settings',
+        text: t('menu.edit.importSettings'),
+        action: () => {
+          const uiSettings = useUiSettings();
+          open({
+            multiple: false,
+            directory: false,
+          })
+            .then((path) => {
+              if (path != null) {
+                uiSettings.import_from_file(path);
+              }
+            })
+            .catch((e) => console.error(e));
+        },
+      }),
+      await MenuItem.new({
+        id: 'id_export_settings',
+        text: t('menu.edit.exportSettings'),
+        action: () => {
+          const uiSettings = useUiSettings();
+          save({
+            filters: [
+              {
+                name: t('dialog.save.exportSettingsFilter'),
+                extensions: ['json'],
+              },
+            ],
+          })
+            .then((path) => {
+              if (path != null) {
+                uiSettings.export_to_file(path);
+              }
+            })
+            .catch((e) => console.error(e));
+        },
       }),
     ],
   });

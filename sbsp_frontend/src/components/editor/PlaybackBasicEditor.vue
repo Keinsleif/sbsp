@@ -4,7 +4,8 @@
       v-model="target"
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
-      cue-type="all"
+      cueTypes="all"
+      :exclude="selectedCue != null ? selectedCue.id : ''"
       @update="saveEditorValue"
     />
   </v-sheet>

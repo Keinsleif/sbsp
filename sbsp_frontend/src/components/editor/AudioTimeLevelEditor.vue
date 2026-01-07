@@ -6,11 +6,6 @@
         :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
         :duration="assetResult.get(selectedCue?.id)?.duration || undefined"
         @update="saveEditorValue"
-        @mousedown="sliderChanging = true"
-        @mouseup="
-          sliderChanging = false;
-          saveEditorValue();
-        "
       ></time-range>
       <v-btn-group variant="tonal" divided density="compact">
         <v-tooltip target="cursor">
@@ -48,10 +43,7 @@
         v-model="volume"
         :label="t('main.bottomEditor.timeLevels.volume')"
         :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
-        @update:model-value="saveEditorValue"
-        @mousedown="sliderChanging = true"
-        @mouseup="
-          sliderChanging = false;
+        @update="
           saveEditorValue();
           changeActiveCueVolume();
         "
@@ -62,26 +54,12 @@
           :text="t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })"
         >
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              height="25px"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="setVolumeToLUFS"
-              >LUFS</v-btn
-            >
+            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToLUFS">LUFS</v-btn>
           </template>
         </v-tooltip>
         <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
           <template v-slot:activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              height="25px"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="setVolumeToMAX"
-              >MAX</v-btn
-            >
+            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToMAX">MAX</v-btn>
           </template>
         </v-tooltip>
       </v-btn-group>
@@ -89,12 +67,7 @@
       <panning-fader
         :label="t('main.bottomEditor.timeLevels.pan')"
         :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        @update:model-value="saveEditorValue"
-        @mousedown="sliderChanging = true"
-        @mouseup="
-          sliderChanging = false;
-          saveEditorValue();
-        "
+        @update="saveEditorValue()"
       />
       <v-divider vertical inset thickness="2" />
       <v-checkbox
@@ -219,6 +192,7 @@ const setVolumeToLUFS = () => {
   if (integratedLufs == null) return;
   volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
   saveEditorValue();
+  changeActiveCueVolume();
 };
 
 const setVolumeToMAX = () => {
@@ -229,6 +203,7 @@ const setVolumeToMAX = () => {
   if (peak == null) return;
   volume.value = -peak;
   saveEditorValue();
+  changeActiveCueVolume();
 };
 </script>
 

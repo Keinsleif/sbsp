@@ -14,6 +14,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     appearance: {
       language: null,
       darkMode: 'dark',
+      hideControls: false,
     },
     hotkey: {
       playback: {
@@ -204,11 +205,25 @@ export const useUiSettings = defineStore('uiSettings', () => {
     return structuredClone(toRaw(settings.value));
   };
 
+  const import_from_file = (path: string) => {
+    invoke<GlobalSettings>('import_settings_from_file', { path: path })
+      .then((settings) => {
+        update(settings);
+      })
+      .catch((e) => console.error(e));
+  };
+
+  const export_to_file = (path: string) => {
+    invoke('export_settings_to_file', { path: path }).catch((e) => console.error(e));
+  };
+
   return {
     settings: readonly(settings),
     update,
     reload,
     save,
     clone,
+    import_from_file,
+    export_to_file,
   };
 });

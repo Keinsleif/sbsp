@@ -87,8 +87,8 @@
           <v-icon v-show="getStatus(item.cue.id) == 'Loaded'" :icon="mdiUpload" color="warning"></v-icon>
           <v-progress-circular
             v-show="getStatus(item.cue.id) == 'Stopping'"
-            indeterminate
-            size="21"
+            indeterminate="disable-shrink"
+            size="16"
             color="warning"
           ></v-progress-circular>
         </td>
@@ -247,7 +247,15 @@
           </div>
         </td>
         <td headers="cuelist_repeat">
-          <v-icon v-show="item.cue.params.type == 'audio' && item.cue.params.repeat" :icon="mdiRepeat" />
+          <v-icon
+            v-show="
+              (item.cue.params.type == 'audio' && item.cue.params.repeat) ||
+              (item.cue.params.type == 'group' &&
+                item.cue.params.mode.type == 'playlist' &&
+                item.cue.params.mode.repeat)
+            "
+            :icon="mdiRepeat"
+          />
         </td>
         <td headers="cuelist_sequence">
           <v-icon v-show="item.sequence.type == 'autoFollow'" :icon="mdiArrowExpandDown" />
@@ -445,59 +453,31 @@ const click = (event: MouseEvent, index: number) => {
           uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
         }
       }
+      uiState.selected = clickedId;
+      uiState.setPlaybackCursor(clickedId);
     } else {
-      uiState.selectedRows = [clickedId];
+      uiState.setSelected(clickedId);
     }
-    uiState.selected = clickedId;
   } else if (event.ctrlKey) {
     if (uiState.selected != null) {
       if (uiState.selectedRows.includes(clickedId)) {
-        uiState.selectedRows.splice(
-          uiState.selectedRows.findIndex((row) => row === clickedId),
-          1,
-        );
-        if (uiState.selectedRows.length === 0) {
-          uiState.selected = null;
-        } else if (index === showModel.flatCueList.findIndex((item) => item.cue.id == showState.playbackCursor)) {
-          const findIdx = (x: string): number => showModel.flatCueList.findIndex((item) => item.cue.id === x);
-          uiState.selected = uiState.selectedRows.reduce((a, b) => {
-            return findIdx(a) > findIdx(b) ? a : b;
-          });
-        }
+        uiState.removeFromSelected(clickedId);
       } else {
-        uiState.selectedRows.push(clickedId);
-        uiState.selected = clickedId;
+        uiState.addSelected(clickedId);
       }
     } else {
-      uiState.selectedRows = [clickedId];
-      uiState.selected = clickedId;
+      uiState.setSelected(clickedId);
     }
   } else {
-    uiState.selectedRows = [clickedId];
-    uiState.selected = clickedId;
-  }
-  if (getLockCursorToSelection()) {
-    invoke('set_playback_cursor', {
-      cueId: uiState.selected !== null ? uiState.selected : null,
-    }).catch((e) => {
-      console.error('Failed to set cursor. ' + e);
-    });
+    uiState.setSelected(clickedId);
   }
 };
 
-const resetSelection = (event: MouseEvent) => {
+const resetSelection = (event: MouseEvent): void => {
   if (event.button != 0) {
     return;
   }
-  uiState.selectedRows = [];
-  uiState.selected = null;
-  if (getLockCursorToSelection()) {
-    invoke('set_playback_cursor', {
-      cueId: uiState.selected !== null ? uiState.selected : null,
-    }).catch((e) => {
-      console.error('Failed to set cursor. ' + e);
-    });
-  }
+  uiState.clearSelected();
 };
 
 const getCueIcon = (type: string): string | undefined => {
@@ -642,6 +622,7 @@ const setPlaybackCursor = (cueId: string) => {
   table {
     table-layout: fixed;
     font-size: 0.9em;
+    min-width: 920px;
   }
   > div {
     scroll-padding-top: 34px;

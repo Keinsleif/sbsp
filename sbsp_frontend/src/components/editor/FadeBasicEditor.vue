@@ -4,7 +4,7 @@
       v-model="target"
       class="flex-grow-0"
       :label="t('main.bottomEditor.targetCue')"
-      cue-type="audio"
+      cueType="audioAndGroup"
       :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update="saveEditorValue"
     />
@@ -13,12 +13,7 @@
       :label="t('main.bottomEditor.fade.targetVolume')"
       :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
-      @update:model-value="saveEditorValue"
-      @mousedown="sliderChanging = true"
-      @mouseup="
-        sliderChanging = false;
-        saveEditorValue();
-      "
+      @update="saveEditorValue"
     />
     <fade-param-input
       class="align-self-start"

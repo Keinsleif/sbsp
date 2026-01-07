@@ -19,7 +19,11 @@
               v-show="activeCue.status != 'Stopping'"
               :icon="activeCue.params.type == 'audio' && activeCue.params.repeating === true ? mdiRepeat : undefined"
             ></v-icon>
-            <v-progress-circular v-show="activeCue.status == 'Stopping'" indeterminate></v-progress-circular>
+            <v-progress-circular
+              v-show="activeCue.status == 'Stopping'"
+              indeterminate="disable-shrink"
+              size="21"
+            ></v-progress-circular>
           </v-sheet>
           <v-sheet class="pa-0 d-flex flex-row justify-space-between">
             <v-list-item density="compact">

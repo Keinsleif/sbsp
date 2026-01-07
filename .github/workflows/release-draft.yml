@@ -1,9 +1,17 @@
-name: 'publish'
+name: 'release'
 
 on:
   push:
     branches:
       - release
+    paths:
+      - sbsp_backend/**
+      - sbsp_frontend/**
+      - sbsp_tauri/**
+      - sbsp_remote/**
+      - Cargo.lock
+      - Cargo.toml
+      - THIRD_PARTY_NOTICES.md
   workflow_dispatch:
 
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
@@ -27,22 +35,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
       - name: setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
           run_install: false
 
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: sbsp_frontend/pnpm-lock.yaml
+
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
 
       - uses: cargo-bins/cargo-binstall@main
 
@@ -76,17 +88,7 @@ jobs:
           args: ${{ matrix.args }}
           tauriScript: cargo tauri
 
-      - run: mkdir upload && cp latest.json upload/
-
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./upload
-          destination_dir: main
-          keep_files: true
-
-      - run: rm upload/latest.json && rm latest.json
+      - run: mkdir upload && cp latest.json upload/latest-main.json
 
       # SBSP Remote
 
@@ -105,12 +107,11 @@ jobs:
           args: ${{ matrix.args }}
           tauriScript: cargo tauri
 
-      - run: cp latest.json upload/
+      - run: cp latest.json upload/latest-remote.json
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./upload
-          destination_dir: remote
-          keep_files: true
+          destination_dir: update

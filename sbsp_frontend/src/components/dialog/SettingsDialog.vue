@@ -5,6 +5,7 @@
     fullscreen
     @keydown.esc.stop="isSettingsDialogOpen = false"
     @keydown.stop
+    @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column w-100 h-100">
       <v-sheet class="flex-grow-1 d-flex flex-row w-100">
@@ -152,66 +153,79 @@
                 autocomplete="off"
                 @keydown.stop
               ></v-select>
+              <v-checkbox
+                v-model="editingSettings.global.appearance.hideControls"
+                :label="t('dialog.settings.global.appearance.hideControls')"
+                hide-details
+              ></v-checkbox>
             </v-sheet>
           </v-tabs-window-item>
           <v-tabs-window-item value="hotkey" class="pa-3">
             <h2 class="mb-3">{{ t('dialog.settings.global.hotkey.playback.title') }}</h2>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.go"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.go')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.load"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.load')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.pauseAndResume"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.pauseAndResume')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.pauseAll"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.pauseAll')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.resumeAll"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.resumeAll')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.stop"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.stop')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.stopAll"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.stopAll')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.seekForward"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.seekForward')"
-            ></hotkey-input>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.playback.seekBackward"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.playback.seekBackward')"
-            ></hotkey-input>
+            <div class="d-flex flex-row ga-4 px-3 align-start">
+              <div class="d-flex flex-column">
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.go"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.go')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.load"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.load')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.pauseAndResume"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.pauseAndResume')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.pauseAll"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.pauseAll')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.resumeAll"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.resumeAll')"
+                ></hotkey-input>
+              </div>
+              <div class="d-flex flex-column">
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.stop"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.stop')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.stopAll"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.stopAll')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.seekForward"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.seekForward')"
+                ></hotkey-input>
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.seekBackward"
+                  width="280px"
+                  :label="t('dialog.settings.global.hotkey.playback.seekBackward')"
+                ></hotkey-input>
+              </div>
+            </div>
             <v-divider></v-divider>
-            <h2 class="mb-3 mt-3">{{ t('dialog.settings.global.hotkey.audio.title') }}</h2>
-            <hotkey-input
-              v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
-              width="280px"
-              :label="t('dialog.settings.global.hotkey.audio.toggleRepeat')"
-            ></hotkey-input>
+            <h2 class="my-3">{{ t('dialog.settings.global.hotkey.audio.title') }}</h2>
+            <div class="px-3">
+              <hotkey-input
+                v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
+                width="280px"
+                :label="t('dialog.settings.global.hotkey.audio.toggleRepeat')"
+              ></hotkey-input>
+            </div>
           </v-tabs-window-item>
           <v-tabs-window-item value="template" class="fill-height">
             <v-sheet class="d-flex flex-column w-100" height="100%">
-              <v-table fixed-header density="compact" class="flex-grow-1" height="100%">
+              <v-table fixed-header density="compact" class="flex-grow-1 border" height="100%">
                 <thead>
                   <tr>
                     <th id="cuelist_type">{{ t('dialog.settings.global.template.type') }}</th>
@@ -631,7 +645,7 @@
                   </tr>
                 </tbody>
               </v-table>
-              <div style="height: 302px" class="flex-grow-0 mb-0">
+              <div style="height: 250px" class="flex-grow-0 mb-0 border">
                 <bottom-editor v-model="selectingCue"></bottom-editor>
               </div>
             </v-sheet>

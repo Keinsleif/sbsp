@@ -15,7 +15,9 @@
       "copy": "Copy",
       "paste": "Paste",
       "selectAll": "Select All",
-      "title": "Edit"
+      "title": "Edit",
+      "importSettings": "Import global settings",
+      "exportSettings": "Export global settings"
     },
     "cue": {
       "audio": "Audio Cue",
@@ -132,7 +134,8 @@
           "language": "Language",
           "systemLanguage": "System Language",
           "darkMode": "Dark Mode",
-          "systemSettings": "System Settings"
+          "systemSettings": "System Settings",
+          "hideControls": "Hide playback controls on top header"
         },
         "nameFormat": {
           "audio": {
@@ -190,6 +193,15 @@
       "save": "Save",
       "dontSave": "Don't save",
       "cancel": "Cancel"
+    },
+    "message": {
+      "license": {
+        "proTitle": "License Error",
+        "serverPanel": "Pro License is required to use Server Panel."
+      }
+    },
+    "save": {
+      "exportSettingsFilter": "GlobalSettings File"
     }
   },
   "general": {
@@ -254,7 +266,8 @@
         "pan": "Pan",
         "repeat": "Repeat",
         "startTime": "Start Time",
-        "endTime": "End Time"
+        "endTime": "End Time",
+        "scaleWaveform": "Scale waveform by volume"
       },
       "fade": {
         "title": "Fade",

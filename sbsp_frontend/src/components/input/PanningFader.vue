@@ -12,6 +12,13 @@
     :ticks="tickLabels"
     :direction="props.direction"
     @dblclick="faderPosition = 0"
+    @mousedown="sliderChanging = true"
+    @mouseup="
+      if (sliderChanging) {
+        sliderChanging = false;
+        emit('update');
+      }
+    "
     @keydown.stop
   >
     <template v-slot:thumb-label="{ modelValue }">
@@ -31,6 +38,7 @@
         control-variant="hidden"
         hide-details
         width="100px"
+        @mousedown.stop
         @dblclick.stop
       ></v-number-input>
     </template>
@@ -38,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -53,6 +61,9 @@ const props = withDefaults(
 );
 
 const panning = defineModel<number>({ default: 0 });
+const emit = defineEmits(['update']);
+
+const sliderChanging = ref(false);
 
 const faderPosition = computed({
   get() {

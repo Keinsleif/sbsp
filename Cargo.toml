@@ -9,10 +9,23 @@ members = [
 
 [workspace.package]
 authors = ["Keinsleif"]
-version = "1.0.1"
+version = "1.1.0"
 edition = "2024"
 license = "Elastic-2.0"
 publish = false
+
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+
+[profile.release]
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true # Enables link-time-optimizations.
+opt-level = "s" # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort" # Higher performance by disabling panic handlers.
+strip = true # Ensures debug symbols are removed.
+
+[profile.dev.package.sbsp_backend]
+opt-level = 3
 
 [profile.dev.package.kira]
 opt-level = 3
@@ -23,13 +36,16 @@ opt-level = 3
 [profile.dev.package.symphonia]
 opt-level = 3
 
-[profile.dev.package.symphonia-core]
+[profile.dev.package.symphonia-codec-aac]
 opt-level = 3
 
-[profile.dev.package.symphonia-metadata]
+[profile.dev.package.symphonia-codec-adpcm]
 opt-level = 3
 
-[profile.dev.package.symphonia-format-riff]
+[profile.dev.package.symphonia-bundle-flac]
+opt-level = 3
+
+[profile.dev.package.symphonia-codec-alac]
 opt-level = 3
 
 [profile.dev.package.symphonia-format-caf]
@@ -41,25 +57,16 @@ opt-level = 3
 [profile.dev.package.symphonia-format-mkv]
 opt-level = 3
 
-[profile.dev.package.symphonia-format-ogg]
-opt-level = 3
-
-[profile.dev.package.symphonia-codec-aac]
-opt-level = 3
-
-[profile.dev.package.symphonia-codec-adpcm]
-opt-level = 3
-
-[profile.dev.package.symphonia-codec-alac]
-opt-level = 3
-
-[profile.dev.package.symphonia-bundle-flac]
-opt-level = 3
-
 [profile.dev.package.symphonia-bundle-mp3]
 opt-level = 3
 
+[profile.dev.package.symphonia-format-ogg]
+opt-level = 3
+
 [profile.dev.package.symphonia-codec-pcm]
+opt-level = 3
+
+[profile.dev.package.symphonia-format-riff]
 opt-level = 3
 
 [profile.dev.package.symphonia-codec-vorbis]

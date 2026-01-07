@@ -19,7 +19,7 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer
-      :model-value="uiState.isEditorOpen && uiState.mode == 'edit'"
+      :model-value="uiState.isBottomTabOpen && uiState.mode == 'edit'"
       app
       permanent
       location="bottom"
@@ -180,6 +180,10 @@ onMounted(() => {
         }
         break;
       }
+      case 'cueError':
+        console.error(event.payload.param.error);
+        uiState.error(event.payload.param.error);
+        break;
       case 'operationFailed':
         console.error(event.payload.param.error);
         uiState.error(event.payload.param.error.message);
