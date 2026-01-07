@@ -1,0 +1,23 @@
+{
+  "version": "1.1.0",
+  "notes": "See the assets to download this version and install.",
+  "pub_date": "2026-01-07T08:37:39.679Z",
+  "platforms": {
+    "linux-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXVWbWcycTV3STNLRlh6ejJWZkh5Y1lkYnNadXM0UDFxRyt6Vkx0bFlSQ082VlkweFV4eDk2M3Erd3ZKOTViWmtHcGZFTVRXRVNRS0VWSVJSb1o5OWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY3Nzc1MDUyCWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMS4xLjBfYW1kNjQuQXBwSW1hZ2UKOWVHZGUwYXhHdUVlL2M5SXlybkFIRXo1WFNjcXA4a0dOdi9aOHpKd3RGZVUzbVdCNFJrR2hSSm1EeVo0clp4b0pqc0xxNExtZmxTZWxRYzdMK0hFRGc9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v1.1.0/SBS.Player.Remote_1.1.0_amd64.AppImage"
+    },
+    "linux-x86_64-appimage": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RXVWbWcycTV3STNLRlh6ejJWZkh5Y1lkYnNadXM0UDFxRyt6Vkx0bFlSQ082VlkweFV4eDk2M3Erd3ZKOTViWmtHcGZFTVRXRVNRS0VWSVJSb1o5OWc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY3Nzc1MDUyCWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMS4xLjBfYW1kNjQuQXBwSW1hZ2UKOWVHZGUwYXhHdUVlL2M5SXlybkFIRXo1WFNjcXA4a0dOdi9aOHpKd3RGZVUzbVdCNFJrR2hSSm1EeVo0clp4b0pqc0xxNExtZmxTZWxRYzdMK0hFRGc9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v1.1.0/SBS.Player.Remote_1.1.0_amd64.AppImage"
+    },
+    "linux-x86_64-deb": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RWxuNGhSYjBOUy9TLzNoNVAyaGMwamJSdVRFaVd5cFFRQ3lET1NpYzIxZytOSTRPWVhJM0dBN01PcVRhdnBIbXBaQWt4ZElxdkYxT0Q3U0pvVWZmS2cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY3Nzc1MDUyCWZpbGU6U0JTIFBsYXllciBSZW1vdGVfMS4xLjBfYW1kNjQuZGViCnl6Z240L2hTdmNEenJFZHRvd1pqYjFxSEZzNGlIMmhXM2VuTnBQWHMrNVlrRS9hcjlCcFJsbkhSOGYySXNhaVlveW40Nk9ZcFkxc0Vya3ByU2ZaUUFBPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v1.1.0/SBS.Player.Remote_1.1.0_amd64.deb"
+    },
+    "linux-x86_64-rpm": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRTUIwYlpSRWt2RW52ZmJoSDdvOWxXdTZVaDdpOU9KOERIbzM0cnA0T0JhL015aUJ2aWZ0VkYwY2R2a0tBT1JwaEtmSnZidkk2RkNBL0Z0cU5LQmhkWmVZdDJNRHVMdlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY3Nzc1MDUyCWZpbGU6U0JTIFBsYXllciBSZW1vdGUtMS4xLjAtMS54ODZfNjQucnBtCmxxRGNCTmZrRWhvRmw1WTFnRVpVMVoybWRBZjhuMDBONHhOczVxN2FyOGlwTnJDaXc0ZVpyYWtOSGxNVFBiZVphRXVPVXJ2MHl2Rjh5TUZBbXZORERBPT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp_remote-v1.1.0/SBS.Player.Remote-1.1.0-1.x86_64.rpm"
+    }
+  }
+}
