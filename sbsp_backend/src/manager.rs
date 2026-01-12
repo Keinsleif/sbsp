@@ -1,10 +1,11 @@
 mod handle;
 mod command;
+mod project;
 
 use anyhow::anyhow;
 pub use handle::ShowModelHandle;
-pub use command::ModelCommand;
-pub use command::InsertPosition;
+pub use command::{ModelCommand, InsertPosition};
+pub use project::{ProjectStatus, ProjectFile};
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -14,7 +15,6 @@ use std::{
     sync::Arc,
 };
 
-use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
@@ -25,31 +25,6 @@ use crate::{
 };
 
 const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ProjectStatus {
-    Unsaved,
-    Saved{
-        project_type: ProjectType,
-        path: PathBuf,
-    },
-}
-
-impl ProjectStatus {
-    pub fn to_model_path_option(&self) -> Option<PathBuf> {
-        if let Self::Saved { path, .. } = self {
-            Some(path.to_path_buf())
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct ProjectFile {
-    project_type: ProjectType,
-    model: ShowModel,
-}
 
 pub struct ShowModelManager {
     model: Arc<RwLock<ShowModel>>,

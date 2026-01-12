@@ -1,9 +1,13 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{action::CueAction, executor::ExecutorCommand};
+use crate::action::CueAction;
+
+#[cfg(feature = "backend")]
+use crate::executor::ExecutorCommand;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "command",
     content = "params",
@@ -25,6 +29,7 @@ pub enum ControllerCommand {
     SetPlaybackCursor { cue_id: Option<Uuid> },
 }
 
+#[cfg(feature = "backend")]
 impl ControllerCommand {
     pub(super) fn into_executor_command(self) -> ExecutorCommand {
         match self {

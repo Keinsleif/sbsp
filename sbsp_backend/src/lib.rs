@@ -16,7 +16,6 @@ use crate::{
     model::settings::ShowAudioSettings,
 };
 
-#[cfg(feature = "backend")]
 pub mod action;
 #[cfg(feature = "backend")]
 pub mod asset_processor;
@@ -38,20 +37,24 @@ pub mod api;
 pub mod asset_processor {
     mod data;
     pub use data::AssetData;
+    mod command;
+    pub use command::AssetProcessorCommand;
 }
 #[cfg(feature = "type_export")]
 pub mod controller {
     pub mod state;
+    mod command;
+    pub use command::ControllerCommand;
 }
 #[cfg(feature = "type_export")]
-pub mod api {
-    pub mod client {
-        mod service_entry;
-        pub use service_entry::ServiceEntry;
-    }
-    mod file_list;
-    pub use file_list::FileList;
+pub mod manager {
+    mod command;
+    pub use command::{ModelCommand, InsertPosition};
+    mod project;
+    pub use project::{ProjectStatus, ProjectFile};
 }
+#[cfg(feature = "type_export")]
+pub mod api;
 
 #[cfg(feature = "backend")]
 #[derive(Default)]

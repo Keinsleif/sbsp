@@ -1,8 +1,10 @@
 mod data;
 mod handle;
+mod command;
 
 pub use data::AssetData;
 pub use handle::AssetProcessorHandle;
+pub use command::AssetProcessorCommand;
 
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
@@ -24,11 +26,6 @@ use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AssetProcessorCommand {
-    RequestFileAssetData { path: PathBuf },
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessResult {

@@ -51,7 +51,6 @@ pub async fn start_apiserver(
 
     let app = Router::new()
         .route("/ws", get(websocket_handler))
-        .route("/api/show/full_state", get(get_full_state_handler))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
@@ -93,20 +92,6 @@ pub async fn start_apiserver(
             .into_future(),
     );
     Ok(shutdown_tx)
-}
-
-async fn get_full_state_handler(State(state): State<ApiState>) -> axum::Json<FullShowState> {
-    let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
-    let show_model = state.backend_handle.model_handle.read().await.clone();
-    let show_state = state.state_rx.borrow().clone();
-
-    let full_state = FullShowState {
-        project_status,
-        show_model,
-        show_state,
-    };
-
-    axum::Json(full_state)
 }
 
 async fn websocket_handler(
@@ -180,6 +165,23 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         log::info!("WebSocket client disconnected (send error).");
                                         break;
                                     }
+                                }
+                            }
+                            WsCommand::RequestFullShowState => {
+                                let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
+                                let show_model = state.backend_handle.model_handle.read().await.clone();
+                                let show_state = state.state_rx.borrow().clone();
+
+                                let full_state = FullShowState {
+                                    project_status,
+                                    show_model,
+                                    show_state,
+                                };
+
+                                let ws_message = WsFeedback::FullShowState(full_state);
+                                if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                    log::info!("WebSocket client disconnected (send error).");
+                                    break;
                                 }
                             }
                         }
