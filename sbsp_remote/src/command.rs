@@ -1,18 +1,12 @@
 use std::path::PathBuf;
 
 use super::AppState;
-use tauri::{Manager, Listener, ipc::Channel, path::BaseDirectory};
-use tokio::sync::oneshot;
+use tauri::{Manager, ipc::Channel, path::BaseDirectory};
 
 pub mod client;
 pub mod controller;
 pub mod model_manager;
 pub mod settings;
-
-#[tauri::command]
-pub fn get_side() -> String {
-    "remote".into()
-}
 
 #[tauri::command]
 pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {
@@ -30,28 +24,6 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
         Ok(())
     } else {
         Err("Not connected.".into())
-    }
-}
-
-#[tauri::command]
-pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathBuf>, String> {
-    let pick_file_window =
-        tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[2])
-            .map_err(|e| e.to_string())?
-            .build()
-            .map_err(|e| e.to_string())?;
-    let (result_tx, result_rx) = oneshot::channel();
-    pick_file_window.once("file-select-result", |event| {
-        let path_vec = serde_json::from_str::<Option<Vec<PathBuf>>>(event.payload())
-            .unwrap()
-            .unwrap_or_default();
-        let _ = result_tx.send(path_vec);
-    });
-    let result = result_rx.await;
-    let _ = pick_file_window.close();
-    match result {
-        Ok(file_list) => Ok(file_list),
-        Err(e) => Err(e.to_string()),
     }
 }
 

@@ -3,7 +3,7 @@ mod settings;
 #[cfg(desktop)]
 pub mod update;
 
-use std::time::{SystemTime, Duration};
+use std::time::{Duration, SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -260,7 +260,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            command::get_side,
             command::get_third_party_notices,
             command::process_asset,
             command::file_new,
@@ -268,7 +267,6 @@ pub fn run() {
             command::file_save,
             command::file_save_as,
             command::export_to_folder,
-            command::pick_audio_assets,
             command::listen_level_meter,
             command::controller::go,
             command::controller::pause,
@@ -300,7 +298,6 @@ pub fn run() {
             command::server::set_discovery_option,
             command::server::start_server,
             command::server::stop_server,
-            command::server::open_server_panel,
             command::settings::get_settings,
             command::settings::set_settings,
             command::settings::reload_settings,

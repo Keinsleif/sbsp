@@ -1,6 +1,11 @@
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 use crate::AppState;
+
+#[tauri::command]
+pub async fn is_connected(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    Ok(state.is_connected().await)
+}
 
 #[tauri::command]
 pub async fn get_server_address(
@@ -18,15 +23,7 @@ pub async fn connect_to_server(
     state
         .connect(address, app_handle.clone())
         .await
-        .map_err(|e| e.to_string())?;
-    tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[0])
-        .map_err(|e| e.to_string())?
-        .build()
-        .map_err(|e| e.to_string())?;
-    if let Some(connect_window) = app_handle.get_webview_window("connect") {
-        let _ = connect_window.close();
-    }
-    Ok(())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

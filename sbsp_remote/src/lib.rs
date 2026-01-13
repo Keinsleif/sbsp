@@ -74,6 +74,10 @@ impl AppState {
             .map(|connection_data| connection_data.backend_handle.clone())
     }
 
+    pub async fn is_connected(&self) -> bool {
+        self.connection_data.read().await.is_some()
+    }
+
     pub async fn get_address(&self) -> Option<String> {
         self.connection_data
             .read()
@@ -94,6 +98,8 @@ impl AppState {
         });
         drop(connection_data_lock);
 
+        app_handle.emit("connection_status_changed", true).ok();
+
         tokio::spawn(forward_backend_state_and_event(
             app_handle.clone(),
             state_rx,
@@ -105,17 +111,7 @@ impl AppState {
             shutdown_tx.closed().await;
             let state = app_handle.state::<AppState>();
             state.disconnect_cleanup().await;
-            tauri::WebviewWindowBuilder::from_config(
-                &app_handle,
-                &app_handle.config().app.windows[1],
-            )
-            .unwrap()
-            .build()
-            .map_err(|e| e.to_string())
-            .unwrap();
-            if let Some(main_window) = app_handle.get_webview_window("main") {
-                let _ = main_window.close();
-            }
+            app_handle.emit("connection_status_changed", false).ok();
         });
         Ok(())
     }
@@ -220,19 +216,11 @@ pub fn run() {
                     }
                 });
             }
-
-            #[cfg(debug_assertions)]
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            command::get_side,
             command::get_third_party_notices,
             command::process_asset,
-            command::pick_audio_assets,
             command::listen_level_meter,
             command::controller::go,
             command::controller::pause,
@@ -256,6 +244,7 @@ pub fn run() {
             command::model_manager::renumber_cues,
             command::model_manager::update_model_name,
             command::model_manager::update_show_settings,
+            command::client::is_connected,
             command::client::get_server_address,
             command::client::connect_to_server,
             command::client::disconnect_from_server,

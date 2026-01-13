@@ -110,14 +110,22 @@ pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Resu
 pub async fn move_cue(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
-    target_id: Uuid,
+    target_id: Option<Uuid>,
 ) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
-        handle
-            .model_handle
-            .move_cue(cue_id, InsertPosition::Before { target: target_id })
-            .await
-            .map_err(|e| e.to_string())
+        if let Some(target) = target_id {
+            handle
+                .model_handle
+                .move_cue(cue_id, InsertPosition::Before { target })
+                .await
+                .map_err(|e| e.to_string())
+        } else {
+            handle
+                .model_handle
+                .move_cue(cue_id, InsertPosition::Last)
+                .await
+                .map_err(|e| e.to_string())
+        }
     } else {
         Err("Not connected.".into())
     }

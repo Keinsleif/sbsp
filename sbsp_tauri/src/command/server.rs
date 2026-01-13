@@ -1,5 +1,3 @@
-use sbsp_license::LicenseManager;
-
 use crate::AppState;
 
 #[tauri::command]
@@ -50,17 +48,4 @@ pub async fn stop_server(
 ) -> Result<(), String> {
     state.stop(app_handle).await;
     Ok(())
-}
-
-#[tauri::command]
-pub async fn open_server_panel(app_handle: tauri::AppHandle, license: tauri::State<'_, LicenseManager>) -> Result<(), (bool, String)> {
-    if license.is_pro() {
-        tauri::WebviewWindowBuilder::from_config(&app_handle, &app_handle.config().app.windows[1])
-            .map_err(|e| (false, e.to_string()))?
-            .build()
-            .map_err(|e| (false, e.to_string()))?;
-        Ok(())
-    } else {
-        Err((true, "Pro License required.".into()))
-    }
 }

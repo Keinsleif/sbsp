@@ -13,11 +13,6 @@ pub mod settings;
 pub mod license;
 
 #[tauri::command]
-pub fn get_side() -> String {
-    "main".into()
-}
-
-#[tauri::command]
 pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {
     let resource_path = app_handle.path().resolve("THIRD_PARTY_NOTICES.md", BaseDirectory::Resource).map_err(|e| e.to_string())?;
     tokio::fs::read_to_string(&resource_path).await.map_err(|e| e.to_string())
@@ -148,33 +143,6 @@ pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<
         } else {
             Ok(false)
         }
-    }
-}
-
-#[tauri::command]
-pub async fn pick_audio_assets(app_handle: tauri::AppHandle) -> Result<Vec<PathBuf>, String> {
-    let (result_tx, result_rx) = oneshot::channel();
-    app_handle
-        .dialog()
-        .file()
-        .add_filter(
-            "Audio",
-            &[
-                "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga", "wav",
-                "aac", "alac", "flac", "mp3",
-            ],
-        )
-        .pick_files(|path| {
-            let filepath_vec = path.unwrap_or(vec![]);
-            let path_vec: Vec<PathBuf> = filepath_vec
-                .into_iter()
-                .map_while(|item| item.into_path().ok())
-                .collect();
-            result_tx.send(path_vec).unwrap()
-        });
-    match result_rx.await {
-        Ok(result) => Ok(result),
-        Err(e) => Err(e.to_string()),
     }
 }
 
