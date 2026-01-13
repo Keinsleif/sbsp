@@ -20,7 +20,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 sbsp_backend = { path = "../sbsp_backend", features = ["type_export"], default-features = false}
 sbsp_license = { path = "../sbsp_license", features = ["ts-rs"] }
-ts-rs = { version = "11.0.1" }
+ts-rs = { version = "11" }
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -31,13 +31,13 @@ humantime = "2.3.0"
 sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
 sbsp_license = { path = "../sbsp_license" }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "fs"] }
-uuid = { version = "1.18.0", features = ["serde", "v4", "v7"] }
+uuid = { version = "1", features = ["serde", "v4", "v7"] }
 log = "0.4"
 anyhow = "1.0"
 serde_json = "1.0"
 serde = { version = "1" }
 thiserror = "2"
-ts-rs = { version = "11.0.1" }
+ts-rs = { version = "11" }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
