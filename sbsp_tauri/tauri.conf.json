@@ -5,15 +5,15 @@
   "identifier": "com.keinsleif.sbsp",
   "build": {
     "beforeDevCommand": {
-      "script": "pnpm dev",
+      "script": "pnpm dev:host",
       "cwd": "../sbsp_frontend"
     },
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": {
-      "script": "pnpm build",
+      "script": "pnpm build:host",
       "cwd": "../sbsp_frontend"
     },
-    "frontendDist": "../sbsp_frontend/dist",
+    "frontendDist": "../sbsp_frontend/dist/tauri/host",
     "removeUnusedCommands": true
   },
   "app": {

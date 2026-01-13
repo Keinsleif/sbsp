@@ -5,8 +5,12 @@
   "version": "1.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "dev:web": "cross-env VITE_APP_TARGET=\"websocket\" vite --port 1424",
+    "dev:host": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite",
+    "dev:remote": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite",
+    "prebuild:host": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"websocket\" vite build",
+    "build:host": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite build",
+    "build:remote": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -22,20 +26,22 @@
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "typia": "^11.0.0",
     "uuid": "^13.0.0",
-    "vue": "^3.5.25",
-    "vue-i18n": "^11.2.2",
-    "vue-router": "^4.6.4",
-    "vuetify": "^3.11.4"
+    "vue": "^3.5.26",
+    "vue-i18n": "^11.2.8",
+    "vuetify": "^3.11.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@intlify/unplugin-vue-i18n": "^11.0.3",
+    "@kennethwkz/unplugin-typia": "^2.6.7",
     "@mdi/js": "^7.4.47",
     "@tauri-apps/cli": "^2.9.6",
-    "@types/node": "^25.0.2",
+    "@types/node": "^25.0.6",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/eslint-config-prettier": "^10.2.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^16.5.0",
@@ -43,12 +49,12 @@
     "license-checker-rseidelsohn": "^4.4.2",
     "prettier": "^3.7.4",
     "rollup-plugin-visualizer": "^6.0.5",
-    "sass-embedded": "^1.97.1",
+    "sass-embedded": "^1.97.2",
     "sass-loader": "^16.0.6",
     "typescript": "~5.9.3",
-    "typescript-eslint": "^8.50.0",
-    "vite": "^7.3.0",
+    "typescript-eslint": "^8.52.0",
+    "vite": "^7.3.1",
     "vite-plugin-vuetify": "^2.1.2",
-    "vue-tsc": "^3.1.8"
+    "vue-tsc": "^3.2.2"
   }
 }

@@ -5,15 +5,15 @@
   "identifier": "com.keinsleif.sbsp.remote",
   "build": {
     "beforeDevCommand": {
-      "script": "pnpm dev --port 1422",
+      "script": "pnpm dev:remote --port 1422",
       "cwd": "../sbsp_frontend"
     },
     "devUrl": "http://localhost:1422",
     "beforeBuildCommand": {
-      "script": "pnpm build",
+      "script": "pnpm build:remote",
       "cwd": "../sbsp_frontend"
     },
-    "frontendDist": "../sbsp_frontend/dist",
+    "frontendDist": "../sbsp_frontend/dist/tauri/remote",
     "removeUnusedCommands": true
   },
   "app": {

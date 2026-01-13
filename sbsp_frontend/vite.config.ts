@@ -3,13 +3,19 @@ import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import UnpluginTyia from '@kennethwkz/unplugin-typia/vite';
 
 const host = process.env.TAURI_DEV_HOST;
+
+const outDir = process.env.VITE_APP_SIDE
+  ? `dist/${process.env.VITE_APP_TARGET}/${process.env.VITE_APP_SIDE}`
+  : `dist/${process.env.VITE_APP_TARGET}`;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [
     vue(),
+    UnpluginTyia({ cache: true }),
     vuetify({
       styles: {
         configFile: 'src/styles/settings.scss',
@@ -37,15 +43,13 @@ export default defineConfig(async () => ({
       : undefined,
   },
   build: {
+    outDir: outDir,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('vuetify')) {
               return 'vendor-vuetify';
-            }
-            if (id.includes('markdown-it')) {
-              return 'vendor-markdown-it';
             }
             return 'vendor';
           }
