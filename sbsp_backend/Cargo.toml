@@ -44,28 +44,28 @@ type_export = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-uuid = { version = "1.17.0", features = ["serde", "v4", "v7"] }
-indexmap = { version = "2.12.0", features = ["serde"] }
-log = { version = "0.4.27", optional = true }
+uuid = { version = "1", features = ["serde", "v4", "v7"] }
+indexmap = { version = "2", features = ["serde"] }
+log = { version = "0.4", optional = true }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs", "signal"], optional = true }
 serde_json = { version = "1.0", optional = true }
 kira = { version = "0.11.0", features = ["serde"], optional = true }
 symphonia = { version = "0.5.4", features = ["all"], optional = true }
-anyhow = { version = "1.0.98", optional = true }
+anyhow = { version = "1.0", optional = true }
 ebur128 = { version = "0.1.10", optional = true }
 async-recursion = { version = "1.1.1", optional = true }
 
 env_logger = { version = "0.11.8", optional = true }
 
-axum = { version = "0.8.4", features = ["ws"], optional = true }
-mdns-sd = { version = "0.15.1", optional = true, default-features = false, features = ["async"]}
+axum = { version = "0.8", features = ["ws"], optional = true }
+mdns-sd = { version = "0.17", optional = true, default-features = false, features = ["async"]}
 gethostname = { version = "1.0.2", optional = true }
 
-reqwest = { version = "0.12.23", features = ["json"], optional = true }
-reqwest-websocket = { version = "0.5.1", optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+reqwest-websocket = { version = "0.5", optional = true }
 futures-util = { version = "0.3.31",default-features = false, features = ["sink"], optional = true }
 
-ts-rs = { version = "11.0.1", features = ["uuid-impl", "indexmap-impl"] }
+ts-rs = { version = "11", features = ["uuid-impl", "indexmap-impl"] }
 
 [dev-dependencies]
 tempfile = "3.22.0"
