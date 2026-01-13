@@ -28,13 +28,17 @@ struct ApiState {
     shutdown_tx: broadcast::Sender<()>,
 }
 
-pub async fn start_apiserver(
+pub async fn start_apiserver_with<F>(
     port: u16,
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
     discover_option: Option<String>,
-) -> anyhow::Result<broadcast::Sender<()>> {
+    router_extender: F,
+) -> anyhow::Result<broadcast::Sender<()>>
+where
+    F: FnOnce(Router) -> Router + Send + 'static,
+{
     log::info!(
         "Starting server with port: {}, discovery: {:?}",
         port,
@@ -49,9 +53,11 @@ pub async fn start_apiserver(
         shutdown_tx: shutdown_tx.clone(),
     };
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/ws", get(websocket_handler))
         .with_state(state);
+
+    app = router_extender(app);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
     log::info!("ApiServer listening on 0.0.0.0:{}", port);
@@ -92,6 +98,16 @@ pub async fn start_apiserver(
             .into_future(),
     );
     Ok(shutdown_tx)
+}
+
+pub async fn start_apiserver(
+    port: u16,
+    backend_handle: BackendHandle,
+    state_rx: watch::Receiver<ShowState>,
+    event_tx: broadcast::Sender<UiEvent>,
+    discover_option: Option<String>,
+) -> anyhow::Result<broadcast::Sender<()>> {
+    start_apiserver_with(port, backend_handle, state_rx, event_tx, discover_option, |app| app).await
 }
 
 async fn websocket_handler(
