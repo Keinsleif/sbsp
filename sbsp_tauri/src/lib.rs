@@ -7,14 +7,15 @@ use std::time::{SystemTime, Duration};
 
 use log::LevelFilter;
 use sbsp_backend::{
-    BackendHandle, api::server::start_apiserver, controller::state::ShowState, event::UiEvent,
+    BackendHandle, api::server::start_apiserver_with, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
 use sbsp_license::LicenseManager;
-use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel};
+use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel, path::BaseDirectory};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
+use tower_http::services::ServeDir;
 
 use crate::settings::manager::GlobalSettingsManager;
 
@@ -88,12 +89,16 @@ impl AppState {
     pub async fn start(&self, app_handle: AppHandle) -> anyhow::Result<()> {
         let port_read_lock = self.port.read().await;
         let name_lock = self.discovery_option.read().await;
-        let shutdown_tx = start_apiserver(
+        let server_dir = app_handle.path().resolve("websocket", BaseDirectory::Resource)?;
+        let shutdown_tx = start_apiserver_with(
             *port_read_lock,
             self.backend_handle.clone(),
             self.state_rx.clone(),
             self.event_tx.clone(),
             name_lock.clone(),
+            move |router| {
+                router.fallback_service(ServeDir::new(server_dir.clone()))
+            },
         )
         .await?;
         drop(port_read_lock);
