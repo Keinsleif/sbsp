@@ -46,38 +46,40 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import TextInput from './components/input/TextInput.vue';
 import { useI18n } from 'vue-i18n';
+import { useApi } from './api';
 
 const { t } = useI18n();
+const api = useApi();
 
 const host = ref('');
 const port = ref('');
 const services = ref<ServiceEntry[]>([]);
 
-let unlisten: UnlistenFn | null = null;
+let unlisten: (() => void) | null = null;
 
 const connect = (address: string) => {
-  invoke('connect_to_server', { address: address }).catch((e) => console.error(e));
+  api.remote?.connectToServer(address);
 };
 
 onMounted(() => {
-  listen<ServiceEntry[]>('remote-discovery', (event) => {
-    services.value = event.payload;
-  }).then((unlisten_func) => {
-    unlisten = unlisten_func;
-  });
-  invoke('start_server_discovery').catch((e) => console.error(e));
+  api.remote
+    ?.onRemoteDiscoveryUpdate((event) => {
+      services.value = event;
+    })
+    .then((unlisten_func) => {
+      unlisten = unlisten_func;
+    });
+  api.remote?.startServerDiscovery();
 });
 
 onUnmounted(() => {
   if (unlisten != null) {
     unlisten();
   }
-  invoke('stop_server_discovery').catch((e) => console.error(e));
+  api.remote?.stopServerDiscovery();
 });
 </script>

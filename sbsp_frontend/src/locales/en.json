@@ -202,6 +202,17 @@
     },
     "save": {
       "exportSettingsFilter": "GlobalSettings File"
+    },
+    "server": {
+      "title": "Server Management",
+      "status": "Status",
+      "running": "Running",
+      "stopped": "Stopped",
+      "port": "Port",
+      "discoverable": "Discoverable",
+      "serverName": "Server Name",
+      "stop": "Stop",
+      "start": "Start"
     }
   },
   "general": {
@@ -212,16 +223,7 @@
     "forExpertWarning": "Change this only if you know what you're doing."
   },
   "view": {
-    "server": {
-      "status": "Status",
-      "running": "Running",
-      "stopped": "Stopped",
-      "port": "Port",
-      "discoverable": "Discoverable",
-      "serverName": "Server Name",
-      "stop": "Stop",
-      "start": "Start"
-    },
+    "server": {},
     "fileSelector": {
       "title": "Select Files"
     },

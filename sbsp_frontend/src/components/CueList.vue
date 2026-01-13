@@ -309,15 +309,16 @@ import {
 } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowState } from '../stores/showstate';
-import { invoke } from '@tauri-apps/api/core';
 import { buildCueName, calculateDuration, formatToSeconds, getLockCursorToSelection, secondsToFormat } from '../utils';
 import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
 import { useAssetResult } from '../stores/assetResult';
 import { useI18n } from 'vue-i18n';
 import { throttle } from 'vuetify/lib/util/throttle.mjs';
+import { useApi } from '../api';
 
 const { t } = useI18n();
+const api = useApi();
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -389,7 +390,7 @@ useHotkey('cmd+a', () => {
 useHotkey('cmd+backspace', () => {
   if (uiState.mode == 'edit') {
     for (const row of uiState.selectedRows) {
-      invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+      api.removeCue(row);
     }
   }
 });
@@ -423,13 +424,9 @@ const drop = (event: DragEvent, index: number) => {
     const cueId = showModel.flatCueList[fromIndex].cue.id;
     if (index < showModel.flatCueList.length) {
       const targetId = showModel.flatCueList[index].cue.id;
-      invoke('move_cue', { cueId: cueId, targetId: targetId }).catch((e) => {
-        console.log('Failed to move cue. ' + e);
-      });
+      api.moveCue(cueId, targetId);
     } else {
-      invoke('move_cue', { cueId: cueId, targetId: null }).catch((e) => {
-        console.log('Failed to move cue. ' + e);
-      });
+      api.moveCue(cueId, null);
     }
     // showModel.moveCue(cue_id, newIndex);
   }
@@ -587,7 +584,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
         break;
       }
     }
-    invoke('update_cue', { cue: newCue }).catch((e) => console.log(e.toString()));
+    api.updateCue(newCue);
   } else {
     if (target.dataset.prevText != undefined) {
       target.innerText = target.dataset.prevText;
@@ -612,7 +609,7 @@ const isActive = (cue_id: string): boolean => {
 
 const setPlaybackCursor = (cueId: string) => {
   if (!getLockCursorToSelection()) {
-    invoke('set_playback_cursor', { cueId: cueId }).catch((e) => console.error(e));
+    api.setPlaybackCursor(cueId);
   }
 };
 </script>

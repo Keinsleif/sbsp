@@ -752,7 +752,6 @@
 <script setup lang="ts">
 import { ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
-import { invoke } from '@tauri-apps/api/core';
 import type { ShowSettings } from '../../types/ShowSettings';
 import HotkeyInput from '../input/HotkeyInput.vue';
 import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } from '@mdi/js';
@@ -763,8 +762,10 @@ import TextInput from '../input/TextInput.vue';
 import { useUiSettings } from '../../stores/uiSettings';
 import type { GlobalSettings } from '../../types/GlobalSettings';
 import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
+const api = useApi();
 const showModel = useShowModel();
 const uiSettings = useUiSettings();
 
@@ -839,8 +840,8 @@ watch(isSettingsDialogOpen, (newState) => {
 });
 
 const saveSettings = () => {
-  invoke('update_show_settings', { newSettings: editingSettings.value.show }).catch((e) => console.error(e));
-  invoke('update_model_name', { newName: showModelName.value }).catch((e) => console.error(e));
+  api.updateShowSettings(editingSettings.value.show);
+  api.updateModelName(showModelName.value);
   uiSettings.update(editingSettings.value.global);
   uiSettings.save();
 };

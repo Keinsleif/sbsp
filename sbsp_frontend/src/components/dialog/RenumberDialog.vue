@@ -36,10 +36,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useUiState } from '../../stores/uistate';
-import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
+const api = useApi();
 const uiState = useUiState();
 
 const isRenumberDialogOpen = defineModel<boolean>({ required: true });
@@ -47,11 +48,8 @@ const startFrom = ref(0);
 const increment = ref(1);
 
 const onDone = () => {
-  invoke<{ cues: string[]; startFrom: number; increment: number }>('renumber_cues', {
-    cues: uiState.selectedRows,
-    startFrom: startFrom.value,
-    increment: increment.value,
-  })
+  api
+    .renumberCues(uiState.selectedRows, startFrom.value, increment.value)
     .then(() => {
       isRenumberDialogOpen.value = false;
     })

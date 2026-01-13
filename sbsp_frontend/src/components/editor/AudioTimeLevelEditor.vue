@@ -94,10 +94,11 @@ import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
-import { invoke } from '@tauri-apps/api/core';
 import { useShowModel } from '../../stores/showmodel';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
+const api = useApi();
 const { smAndDown, width } = useDisplay();
 
 const showState = useShowState();
@@ -160,7 +161,7 @@ const changeActiveCueVolume = () => {
   if (selectedCue.value == null) return;
   const activeCue = showState.activeCues[selectedCue.value.id];
   if (activeCue != null) {
-    invoke('set_volume', { cueId: activeCue.cueId, volume: volume.value });
+    api.sendSetVolume(activeCue.cueId, volume.value);
   }
 };
 

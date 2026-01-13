@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia';
-import { invoke } from '@tauri-apps/api/core';
 import { ref } from 'vue';
 import { getLockCursorToSelection } from '../utils';
+import { useApi } from '../api';
 
 export const useUiState = defineStore(
   'uistate',
   () => {
-    const side = ref<'remote' | 'main' | null>(null);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
@@ -21,16 +20,17 @@ export const useUiState = defineStore(
     const isSettingsDialogOpen = ref(false);
     const isCreditsDialogOpen = ref(false);
     const isLicenseDialogOpen = ref(false);
+    const isServerPanelOpen = ref(false);
+    const fileListResolver = ref<[((select: string[] | null) => void) | null, boolean]>([null, false]);
     const isBottomTabOpen = ref(true);
     const scaleWaveform = ref(true);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
     const setPlaybackCursor = (id: string | null) => {
+      const api = useApi();
       if (getLockCursorToSelection()) {
-        invoke('set_playback_cursor', {
-          cueId: id,
-        }).catch((e) => {
+        api.setPlaybackCursor(id).catch((e) => {
           console.error('Failed to set cursor. ' + e);
         });
       }
@@ -102,7 +102,6 @@ export const useUiState = defineStore(
     };
 
     return {
-      side,
       mode,
       selected,
       selectedRows,
@@ -117,6 +116,8 @@ export const useUiState = defineStore(
       isUpdateDialogOpen,
       isCreditsDialogOpen,
       isLicenseDialogOpen,
+      isServerPanelOpen,
+      fileListResolver,
       isBottomTabOpen,
       scaleWaveform,
       success_messages,

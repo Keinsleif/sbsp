@@ -19,7 +19,7 @@
             :class="[isCueStatus('Stopping') ? $style['blink'] : '']"
             @click="
               if (showState.playbackCursor != null) {
-                invoke('stop', { cueId: showState.playbackCursor }).catch((e) => console.log(e.toString()));
+                api.sendStop(showState.playbackCursor);
               }
             "
           ></v-btn>
@@ -30,10 +30,12 @@
             active-color="green"
             :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']"
             @click="
-              if (isCueStatus('Paused') || isCueStatus('PreWaitPaused')) {
-                invoke('resume', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
-              } else {
-                invoke('go').catch((e) => console.log(e.toString()));
+              if (showState.playbackCursor != null) {
+                if (isCueStatus('Paused') || isCueStatus('PreWaitPaused')) {
+                  api.sendResume(showState.playbackCursor);
+                } else {
+                  api.sendGo();
+                }
               }
             "
           ></v-btn>
@@ -95,16 +97,17 @@ import { useShowModel } from '../stores/showmodel';
 import { computed } from 'vue';
 import { useShowState } from '../stores/showstate';
 import { PlaybackStatus } from '../types/PlaybackStatus';
-import { invoke } from '@tauri-apps/api/core';
 import { buildCueName } from '../utils';
 import { useNow, useWindowFocus } from '@vueuse/core';
 import { useUiState } from '../stores/uistate';
 import { useUiSettings } from '../stores/uiSettings';
+import { useApi } from '../api';
 
 const showModel = useShowModel();
 const showState = useShowState();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
+const api = useApi();
 
 const hasFocus = useWindowFocus();
 
@@ -135,16 +138,16 @@ const handleReadyPauseButton = () => {
     switch (showState.activeCues[showState.playbackCursor]?.status) {
       case 'PreWaiting':
       case 'Playing': {
-        invoke('pause', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
+        api.sendPause(showState.playbackCursor);
         break;
       }
       case 'PreWaitPaused':
       case 'Paused': {
-        invoke('resume', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
+        api.sendResume(showState.playbackCursor);
         break;
       }
       case undefined: {
-        invoke('load', { cueId: showState.playbackCursor }).catch((e) => console.error(e));
+        api.sendLoad(showState.playbackCursor);
         break;
       }
     }

@@ -13,13 +13,7 @@
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
-      <v-btn
-        v-if="uiState.side == 'main'"
-        :icon="mdiServer"
-        size="small"
-        variant="text"
-        @click="openServerPanel"
-      ></v-btn>
+      <v-btn v-if="api.side == 'host'" :icon="mdiServer" size="small" variant="text" @click="openServerPanel"></v-btn>
       <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleBottomTab"></v-btn>
       <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
       <v-btn :icon="mdiCog" size="small" variant="text" @click="openSettings"></v-btn>
@@ -31,25 +25,26 @@
 import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
 import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
-import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
+import { useApi } from '../api';
 
 const { t } = useI18n();
 
 const showModel = useShowModel();
 const uiState = useUiState();
+const api = useApi();
 
 const openSettings = async () => {
   uiState.isSettingsDialogOpen = true;
 };
 
 const openServerPanel = () => {
-  invoke('open_server_panel').catch((e) => {
-    if (e[0]) {
-      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+  api.getLicenseInfo().then((info) => {
+    if (info != null && info.edition == 'Pro') {
+      uiState.isServerPanelOpen = true;
     } else {
-      console.error(e);
+      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
     }
   });
 };

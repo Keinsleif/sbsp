@@ -278,6 +278,17 @@
     },
     "save": {
       "exportSettingsFilter": "グローバル設定ファイル"
+    },
+    "server": {
+      "title": "サーバー管理",
+      "status": "状態",
+      "running": "実行中",
+      "stopped": "停止中",
+      "port": "ポート",
+      "discoverable": "LAN内から発見可能",
+      "serverName": "サーバー名",
+      "stop": "停止",
+      "start": "開始"
     }
   },
   "general": {
@@ -297,15 +308,6 @@
     "fileSelector": {
       "title": "ファイルを選択"
     },
-    "server": {
-      "status": "状態",
-      "running": "実行中",
-      "stopped": "停止中",
-      "port": "ポート",
-      "discoverable": "LAN内から発見可能",
-      "serverName": "サーバー名",
-      "stop": "停止",
-      "start": "開始"
-    }
+    "server": {}
   }
 }

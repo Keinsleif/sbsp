@@ -57,20 +57,19 @@
 
 <script setup lang="ts">
 import { mdiFileMusic } from '@mdi/js';
-import { open } from '@tauri-apps/plugin-dialog';
 import { ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
 import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
-import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
 const { mdAndDown } = useDisplay();
 
 const showState = useShowState();
-const uiState = useUiState();
+const api = useApi();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
@@ -131,39 +130,13 @@ const resetEditorValue = (name: string) => {
 
 const pickFile = () => {
   document.body.focus();
-  if (uiState.side) {
-    open({
-      multiple: false,
-      filters: [
-        {
-          name: 'Audio',
-          extensions: [
-            'aiff',
-            'aif',
-            'caf',
-            'mp4',
-            'm4a',
-            'mkv',
-            'mka',
-            'webm',
-            'ogg',
-            'oga',
-            'wav',
-            'aac',
-            'alac',
-            'flac',
-            'mp3',
-          ],
-        },
-      ],
-    }).then((value) => {
-      if (value == null) {
-        return;
-      }
-      target.value = value;
-      saveEditorValue();
-    });
-  }
+  api.pickAudioAssets({ multiple: false }).then((value) => {
+    if (value == null) {
+      return;
+    }
+    target.value = value[0];
+    saveEditorValue();
+  });
 };
 </script>
 

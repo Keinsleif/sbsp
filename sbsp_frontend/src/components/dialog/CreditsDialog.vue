@@ -16,12 +16,13 @@
 </template>
 
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/core';
 import markdownit from 'markdown-it';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
+const api = useApi();
 const isThirdPartyNoticesDialogOpen = defineModel<boolean>();
 const notices = ref('');
 
@@ -30,7 +31,8 @@ const md = markdownit({
 });
 
 onMounted(() => {
-  invoke<string>('get_third_party_notices')
+  api
+    .getThirdPartyNotices()
     .then((value) => (notices.value = md.render(value)))
     .catch((e) => console.error(e));
 });

@@ -1,13 +1,16 @@
-import { invoke } from '@tauri-apps/api/core';
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { i18n } from './i18n';
 import { platform } from '@tauri-apps/plugin-os';
-import { message, open, save } from '@tauri-apps/plugin-dialog';
+import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
+import { useApi } from './api';
 
-export const createWindowMenu = async (side: 'main' | 'remote') => {
+export const createWindowMenu = async () => {
+  const api = useApi();
+  if (api.target != 'tauri') return;
+  const side = api.side;
   const { t } = i18n.global;
   const currentPlatform = platform();
 
@@ -21,7 +24,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
         id: 'id_disconnect',
         text: t('menu.file.disconnect'),
         action: () => {
-          invoke('disconnect_from_server', {}).catch((e) => console.error(e));
+          api.remote?.disconnectFromServer();
         },
       }),
     ];
@@ -33,9 +36,9 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
       await MenuItem.new({
         id: 'id_new',
         text: t('menu.file.new'),
-        enabled: side == 'main',
+        enabled: side == 'host',
         action: () => {
-          invoke<boolean>('is_modified').then((isModified) => {
+          api.isModified().then((isModified) => {
             if (isModified) {
               message(t('dialog.saveConfirm.content'), {
                 buttons: {
@@ -47,16 +50,17 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
                 .then((result) => {
                   switch (result) {
                     case t('dialog.saveConfirm.save'):
-                      invoke<boolean>('file_save', {})
+                      api.host
+                        ?.fileSave()
                         .then((isSaved) => {
                           if (isSaved) {
-                            invoke('file_new', {}).catch((e) => console.error(e));
+                            api.host?.fileNew();
                           }
                         })
                         .catch((e) => console.error(e));
                       break;
                     case t('dialog.saveConfirm.dontSave'):
-                      invoke('file_new', {}).catch((e) => console.error(e));
+                      api.host?.fileNew();
                       break;
                     case t('dialog.saveConfirm.cancel'):
                       break;
@@ -64,7 +68,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
                 })
                 .catch((e) => console.error(e));
             } else {
-              invoke('file_new', {}).catch((e) => console.error(e));
+              api.host?.fileNew();
             }
           });
         },
@@ -72,36 +76,36 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
       await MenuItem.new({
         id: 'id_open',
         text: t('menu.file.open'),
-        enabled: side == 'main',
+        enabled: side == 'host',
         accelerator: currentPlatform == 'macos' ? '⌘ + O' : 'Ctrl + O',
         action: () => {
-          invoke('file_open', {}).catch((e) => console.error(e));
+          api.host?.fileOpen();
         },
       }),
       await MenuItem.new({
         id: 'id_save',
         text: t('menu.file.save'),
-        enabled: side == 'main',
+        enabled: side == 'host',
         accelerator: currentPlatform == 'macos' ? '⌘ + S' : 'Ctrl + S',
         action: () => {
-          invoke('file_save', {}).catch((e) => console.error(e));
+          api.host?.fileSave();
         },
       }),
       await MenuItem.new({
         id: 'id_save_as',
         text: t('menu.file.saveAs'),
-        enabled: side == 'main',
+        enabled: side == 'host',
         accelerator: currentPlatform == 'macos' ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
         action: () => {
-          invoke('file_save_as', {}).catch((e) => console.error(e));
+          api.host?.fileSaveAs();
         },
       }),
       await MenuItem.new({
         id: 'id_export_to_folder',
         text: t('menu.file.exportToFolder'),
-        enabled: side == 'main',
+        enabled: side == 'host',
         action: () => {
-          invoke('export_to_folder', {}).catch((e) => console.error(e));
+          api.host?.exportToFolder();
         },
       }),
       ...remoteFileMenuItem,
@@ -131,7 +135,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
         action: () => {
           const uiState = useUiState();
           for (const row of uiState.selectedRows) {
-            invoke('remove_cue', { cueId: row }).catch((e) => console.error(e));
+            api.removeCue(row);
           }
         },
       }),
@@ -147,16 +151,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
         text: t('menu.edit.importSettings'),
         action: () => {
           const uiSettings = useUiSettings();
-          open({
-            multiple: false,
-            directory: false,
-          })
-            .then((path) => {
-              if (path != null) {
-                uiSettings.import_from_file(path);
-              }
-            })
-            .catch((e) => console.error(e));
+          uiSettings.import_from_file();
         },
       }),
       await MenuItem.new({
@@ -164,20 +159,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
         text: t('menu.edit.exportSettings'),
         action: () => {
           const uiSettings = useUiSettings();
-          save({
-            filters: [
-              {
-                name: t('dialog.save.exportSettingsFilter'),
-                extensions: ['json'],
-              },
-            ],
-          })
-            .then((path) => {
-              if (path != null) {
-                uiSettings.export_to_file(path);
-              }
-            })
-            .catch((e) => console.error(e));
+          uiSettings.export_to_file();
         },
       }),
     ],
@@ -277,7 +259,7 @@ export const createWindowMenu = async (side: 'main' | 'remote') => {
   });
 
   let mainHelpMenu: MenuItem[] = [];
-  if (side == 'main') {
+  if (side == 'host') {
     mainHelpMenu = [
       await MenuItem.new({
         id: 'id_license',

@@ -68,13 +68,14 @@
 import { computed, ref, StyleValue, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
-import { invoke } from '@tauri-apps/api/core';
 import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
+const api = useApi();
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -186,7 +187,7 @@ const seek = (event: MouseEvent) => {
     (event.offsetX - nonNullStartTime.value * svgWidth.value) /
     (svgWidth.value * (nonNullEndTime.value - nonNullStartTime.value));
   if (position > 0 && position < 1) {
-    invoke('seek_to', { cueId: props.targetId, position: position * activeCue.duration });
+    api.sendSeekTo(props.targetId, position * activeCue.duration);
   }
 };
 

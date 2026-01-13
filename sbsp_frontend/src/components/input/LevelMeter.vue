@@ -53,9 +53,11 @@
 </template>
 
 <script setup lang="ts">
-import { Channel, invoke } from '@tauri-apps/api/core';
 import { useTimeoutFn } from '@vueuse/core';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useApi } from '../../api';
+
+const api = useApi();
 
 const DECAY_STEP = 0.5;
 
@@ -115,12 +117,10 @@ const decayLoop = () => {
 };
 
 onMounted(() => {
-  const levelListener = new Channel<[number, number]>();
-  levelListener.onmessage = (message) => {
+  api.listenLevelMeter((message) => {
     levels.value.left = Math.max(levels.value.left, Math.log10(message[0]) * 20);
     levels.value.right = Math.max(levels.value.right, Math.log10(message[1]) * 20);
-  };
-  invoke('listen_level_meter', { levelListener: levelListener }).catch((e) => console.error(e));
+  });
   decayLoop();
 });
 

@@ -2,10 +2,10 @@ import { MaybeRef, unref } from 'vue';
 import { useAssetResult } from './stores/assetResult';
 import { useShowModel } from './stores/showmodel';
 import { useUiSettings } from './stores/uiSettings';
-import { useUiState } from './stores/uistate';
 import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
+import { useApi } from './api';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -228,10 +228,10 @@ export const curveToEasing = (curve: Curve): Easing => {
 };
 
 export const getLockCursorToSelection = () => {
-  const side = useUiState().side;
-  if (side == 'main') {
+  const api = useApi();
+  if (api.side == 'host') {
     return useUiSettings().settings.general.lockCursorToSelection;
-  } else if (side == 'remote') {
+  } else if (api.side == 'remote') {
     return useShowModel().settings.remote.lockCursorToSelection;
   } else {
     return false;

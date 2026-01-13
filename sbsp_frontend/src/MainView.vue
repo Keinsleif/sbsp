@@ -33,15 +33,20 @@
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
-    <update-dialog v-model="uiState.isUpdateDialogOpen"></update-dialog>
+    <update-dialog v-if="api.target == 'tauri'" v-model="uiState.isUpdateDialogOpen"></update-dialog>
     <credits-dialog v-model="uiState.isCreditsDialogOpen"></credits-dialog>
     <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
+    <file-list-dialog
+      v-if="api.side == 'remote'"
+      v-model="uiState.fileListResolver[0]"
+      :multiple="uiState.fileListResolver[1]"
+    ></file-list-dialog>
+    <server-panel-dialog v-if="api.side == 'host'" v-model="uiState.isServerPanelOpen"></server-panel-dialog>
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { useHotkey } from 'vuetify';
-import { invoke } from '@tauri-apps/api/core';
 import ToolHeader from './components/ToolHeader.vue';
 import CueList from './components/CueList.vue';
 import SideBar from './components/SideBar.vue';
@@ -51,7 +56,6 @@ import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { computed, onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import { useShowState } from './stores/showstate';
-import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
@@ -59,8 +63,6 @@ import type { Cue } from './types/Cue';
 import { debounce } from './utils';
 import { useI18n } from 'vue-i18n';
 import type { ShowState } from './types/ShowState';
-import type { UiEvent } from './types/UiEvent';
-import type { ShowModel } from './types/ShowModel';
 import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import { useAssetResult } from './stores/assetResult';
 import { useUiSettings } from './stores/uiSettings';
@@ -69,7 +71,10 @@ import { createWindowMenu } from './window-menu';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import CreditsDialog from './components/dialog/CreditsDialog.vue';
 import LicenseDialog from './components/dialog/LicenseDialog.vue';
+import FileListDialog from './components/dialog/FileListDialog.vue';
+import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
 import { message } from '@tauri-apps/plugin-dialog';
+import { useApi } from './api';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -77,6 +82,7 @@ const uiState = useUiState();
 const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t, locale } = useI18n({ useScope: 'global' });
+const api = useApi();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -88,22 +94,21 @@ const onVisibilityChange = () => {
   }
 };
 
-const unlistenFuncs: UnlistenFn[] = [];
+const unlistenFuncs: (() => void)[] = [];
 let rafNumber: number | null = null;
 
 onMounted(() => {
-  invoke<'remote' | 'main'>('get_side').then((side) => {
-    uiState.side = side;
-    createWindowMenu(side).then((menu) => {
-      menu.setAsWindowMenu();
-    });
-    getCurrentWebviewWindow().setTitle((side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+  createWindowMenu().then((menu) => {
+    if (menu != null) menu.setAsWindowMenu();
   });
+  api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   let latestState: ShowState | null = null;
-  listen<ShowState>('backend-state-update', (event) => {
-    latestState = event.payload;
-  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+  api
+    .onStateUpdate((state) => {
+      latestState = state;
+    })
+    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
   const updateLoop = () => {
     if (latestState != null) {
       showState.update(latestState);
@@ -113,88 +118,84 @@ onMounted(() => {
   };
   rafNumber = requestAnimationFrame(updateLoop);
 
-  listen<UiEvent>('backend-event', (event) => {
-    switch (event.payload.type) {
-      case 'playbackCursorMoved': {
-        if (getLockCursorToSelection()) {
-          const cueId = event.payload.param.cueId;
-          if (cueId != null) {
-            if (uiState.selected != cueId) {
-              uiState.selected = cueId;
-              if (!uiState.selectedRows.includes(cueId)) {
-                uiState.selectedRows = [cueId];
+  api
+    .onUiEvent((event) => {
+      switch (event.type) {
+        case 'playbackCursorMoved': {
+          if (getLockCursorToSelection()) {
+            const cueId = event.param.cueId;
+            if (cueId != null) {
+              if (uiState.selected != cueId) {
+                uiState.selected = cueId;
+                if (!uiState.selectedRows.includes(cueId)) {
+                  uiState.selectedRows = [cueId];
+                }
               }
+            } else {
+              uiState.selectedRows = [];
+              uiState.selected = null;
             }
-          } else {
-            uiState.selectedRows = [];
-            uiState.selected = null;
           }
+          break;
         }
-        break;
-      }
-      case 'showModelLoaded':
-        invoke<ShowModel>('get_show_model').then((model) => {
-          showModel.updateAll(model);
-          uiState.success(t('notification.modelLoaded'));
-        });
-        getCurrentWebviewWindow().setTitle(
-          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-        );
-        break;
-      case 'showModelSaved':
-        uiState.success(t('notification.modelSaved'));
-        break;
-      case 'showModelReset':
-        invoke<ShowModel>('get_show_model').then((model) => {
-          showModel.updateAll(model);
-        });
-        getCurrentWebviewWindow().setTitle(
-          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-        );
-        break;
-      case 'cueRemoved':
-        if (uiState.selectedRows.includes(event.payload.param.cueId)) {
-          uiState.removeFromSelected(event.payload.param.cueId);
+        case 'showModelLoaded':
+          api.getShowModel().then((model) => {
+            showModel.updateAll(model);
+            uiState.success(t('notification.modelLoaded'));
+          });
+          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          break;
+        case 'showModelSaved':
+          uiState.success(t('notification.modelSaved'));
+          break;
+        case 'showModelReset':
+          api.getShowModel().then((model) => {
+            showModel.updateAll(model);
+          });
+          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          break;
+        case 'cueRemoved':
+          if (uiState.selectedRows.includes(event.param.cueId)) {
+            uiState.removeFromSelected(event.param.cueId);
+          }
+          break;
+        case 'cueListUpdated':
+          showModel.$patch({ cues: event.param.cues });
+          break;
+        case 'modelNameUpdated':
+          showModel.$patch({ name: event.param.newName });
+          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          break;
+        case 'settingsUpdated': {
+          const settings = event.param.newSettings;
+          showModel.$patch({ settings: settings });
+          break;
         }
-        break;
-      case 'cueListUpdated':
-        showModel.$patch({ cues: event.payload.param.cues });
-        break;
-      case 'modelNameUpdated':
-        showModel.$patch({ name: event.payload.param.newName });
-        getCurrentWebviewWindow().setTitle(
-          (uiState.side == 'main' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name,
-        );
-        break;
-      case 'settingsUpdated': {
-        const settings = event.payload.param.newSettings;
-        showModel.$patch({ settings: settings });
-        break;
-      }
-      case 'assetResult': {
-        if ('Ok' in event.payload.param.data) {
-          assetResult.add(event.payload.param.path, event.payload.param.data.Ok);
-        } else {
-          console.error(event.payload.param.data.Err);
-          uiState.error(event.payload.param.data.Err);
+        case 'assetResult': {
+          if ('Ok' in event.param.data) {
+            assetResult.add(event.param.path, event.param.data.Ok);
+          } else {
+            console.error(event.param.data.Err);
+            uiState.error(event.param.data.Err);
+          }
+          break;
         }
-        break;
+        case 'cueError':
+          console.error(event.param.error);
+          uiState.error(event.param.error);
+          break;
+        case 'operationFailed':
+          console.error(event.param.error);
+          uiState.error(event.param.error.message);
+          break;
       }
-      case 'cueError':
-        console.error(event.payload.param.error);
-        uiState.error(event.payload.param.error);
-        break;
-      case 'operationFailed':
-        console.error(event.payload.param.error);
-        uiState.error(event.payload.param.error.message);
-        break;
-    }
-  }).then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+    })
+    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
 
-  getCurrentWebviewWindow()
-    .onCloseRequested(async (event) => {
-      if (uiState.side == 'main') {
-        const isModified = await invoke<boolean>('is_modified');
+  if (api.side == 'host') {
+    getCurrentWebviewWindow()
+      .onCloseRequested(async (event) => {
+        const isModified = await api.isModified();
         if (isModified) {
           const result = await message(t('dialog.saveConfirm.content'), {
             buttons: {
@@ -205,7 +206,7 @@ onMounted(() => {
           }).catch((e) => console.error(e));
           switch (result) {
             case t('dialog.saveConfirm.save'):
-              await invoke('file_save');
+              await api.host?.fileSave();
               break;
             case t('dialog.saveConfirm.dontSave'):
               break;
@@ -214,17 +215,24 @@ onMounted(() => {
               break;
           }
         }
-      }
-    })
-    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
-  invoke<ShowModel>('get_show_model')
+      })
+      .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+  }
+  api
+    .getShowModel()
     .then((model) => {
       showModel.updateAll(model);
     })
     .catch((e) => console.error(e.toString()));
-  navigator.wakeLock.request('screen').then((value) => {
-    wakeLock.value = value;
-  });
+
+  if (navigator.wakeLock) {
+    navigator.wakeLock
+      .request('screen')
+      .then((value) => {
+        wakeLock.value = value;
+      })
+      .catch((e) => console.error(e));
+  }
   document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
@@ -232,9 +240,12 @@ onUnmounted(() => {
   unlistenFuncs.forEach((unlistenFn) => unlistenFn());
   document.removeEventListener('visibilitychange', onVisibilityChange);
   if (wakeLock.value != null) {
-    wakeLock.value.release().then(() => {
-      wakeLock.value = null;
-    });
+    wakeLock.value
+      .release()
+      .then(() => {
+        wakeLock.value = null;
+      })
+      .catch((e) => console.error(e));
   }
   if (rafNumber != null) {
     cancelAnimationFrame(rafNumber);
@@ -271,9 +282,9 @@ watch(
 watch(
   locale,
   () => {
-    if (uiState.side != null) {
-      createWindowMenu(uiState.side).then((menu) => {
-        menu.setAsWindowMenu();
+    if (api.side == 'host') {
+      createWindowMenu().then((menu) => {
+        if (menu != null) menu.setAsWindowMenu();
       });
     }
   },
@@ -284,13 +295,13 @@ const onCueEdited = debounce(() => {
   if (selectedCue.value == null) {
     return;
   }
-  invoke('update_cue', { cue: toRaw(selectedCue.value) });
+  api.updateCue(toRaw(selectedCue.value));
 }, 500);
 
 useHotkey(
   'cmd+o',
   () => {
-    invoke('file_open', {}).catch((e) => console.error(e));
+    api.host?.fileOpen();
   },
   { preventDefault: true },
 );
@@ -298,7 +309,7 @@ useHotkey(
 useHotkey(
   'cmd+s',
   () => {
-    invoke('file_save', {}).catch((e) => console.error(e));
+    api.host?.fileSave();
   },
   { preventDefault: true },
 );
@@ -306,7 +317,7 @@ useHotkey(
 useHotkey(
   'cmd+shift+a',
   () => {
-    invoke('file_save_as', {}).catch((e) => console.error(e));
+    api.host?.fileSaveAs();
   },
   { preventDefault: true },
 );
@@ -351,7 +362,7 @@ const audioToggleRepeatHotkey = computed(() =>
 useHotkey(
   goHotkey,
   () => {
-    invoke('go').catch((e) => console.error(e));
+    api.sendGo();
   },
   {
     preventDefault: true,
@@ -362,7 +373,7 @@ useHotkey(
   loadHotkey,
   () => {
     for (let cueId of uiState.selectedRows) {
-      invoke('load', { cueId: cueId }).catch((e) => console.error(e));
+      api.sendLoad(cueId);
     }
   },
   {
@@ -375,11 +386,11 @@ useHotkey(
   () => {
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
       if ((['PreWaiting', 'Playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
-        invoke('pause', { cueId: uiState.selected }).catch((e) => console.error(e));
+        api.sendPause(uiState.selected);
       } else if (
         (['PreWaitPaused', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
       ) {
-        invoke('resume', { cueId: uiState.selected }).catch((e) => console.error(e));
+        api.sendResume(uiState.selected);
       }
     }
   },
@@ -391,7 +402,7 @@ useHotkey(
 useHotkey(
   pauseAllHotkey,
   () => {
-    invoke('pause_all').catch((e) => console.error(e));
+    api.sendPauseAll();
   },
   {
     preventDefault: true,
@@ -401,7 +412,7 @@ useHotkey(
 useHotkey(
   resumeAllHotkey,
   () => {
-    invoke('resume_all').catch((e) => console.error(e));
+    api.sendResumeAll();
   },
   {
     preventDefault: true,
@@ -412,7 +423,7 @@ useHotkey(
   stopHotkey,
   () => {
     for (let cueId of uiState.selectedRows) {
-      invoke('stop', { cueId: cueId }).catch((e) => console.error(e));
+      api.sendStop(cueId);
     }
   },
   {
@@ -423,7 +434,7 @@ useHotkey(
 useHotkey(
   stopAllHotkey,
   () => {
-    invoke('stop_all').catch((e) => console.error(e));
+    api.sendStopAll();
   },
   {
     preventDefault: true,
@@ -439,9 +450,7 @@ useHotkey(
           showState.activeCues[uiState.selected]!.status,
         )
       ) {
-        invoke('seek_by', { cueId: uiState.selected, amount: uiSettings.settings.general.seekAmount }).catch((e) =>
-          console.error(e),
-        );
+        api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
       }
     }
   },
@@ -459,9 +468,7 @@ useHotkey(
           showState.activeCues[uiState.selected]!.status,
         )
       ) {
-        invoke('seek_by', { cueId: uiState.selected, amount: -uiSettings.settings.general.seekAmount }).catch((e) =>
-          console.error(e),
-        );
+        api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
       }
     }
   },
@@ -474,7 +481,7 @@ useHotkey(
   audioToggleRepeatHotkey,
   () => {
     for (let cueId of uiState.selectedRows) {
-      invoke('toggle_repeat', { cueId: cueId }).catch((e) => console.log(e));
+      api.sendToggleRepeat(cueId);
     }
   },
   {

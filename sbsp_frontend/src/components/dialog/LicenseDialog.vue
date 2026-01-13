@@ -36,7 +36,8 @@
         :text="t('dialog.license.activateLicense')"
         variant="outlined"
         @click="
-          invoke<boolean>('activate_license', {})
+          api
+            .activateLicense()
             .then((isActivated) => {
               if (isActivated) {
                 isLicenseActivateInfoDialogOpen = true;
@@ -72,12 +73,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { LicenseInformation } from '../../types/LicenseInformation';
-import { invoke } from '@tauri-apps/api/core';
 import TextInput from '../input/TextInput.vue';
 import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
 import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
 const { t, locale } = useI18n({ useScope: 'global' });
+const api = useApi();
 const isLicenseDialogOpen = defineModel<boolean>();
 const isLicenseActivateInfoDialogOpen = ref(false);
 const licenseInfo = ref<LicenseInformation | null>(null);
@@ -102,7 +104,8 @@ const onCopyId = () => {
 };
 
 const loadLicense = () => {
-  invoke<LicenseInformation | null>('get_license_info')
+  api
+    .getLicenseInfo()
     .then((value) => (licenseInfo.value = value))
     .catch((e) => console.error(e));
 };

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { readonly, ref, toRaw } from 'vue';
 import { GlobalSettings } from '../types/GlobalSettings';
-import { invoke } from '@tauri-apps/api/core';
+import { useApi } from '../api';
 
 export const useUiSettings = defineStore('uiSettings', () => {
   const settings = ref<GlobalSettings>({
@@ -178,7 +178,9 @@ export const useUiSettings = defineStore('uiSettings', () => {
     },
   });
 
-  invoke<GlobalSettings>('get_settings', {})
+  const api = useApi();
+  api
+    .getSettings()
     .then((value) => {
       settings.value = value;
     })
@@ -186,11 +188,12 @@ export const useUiSettings = defineStore('uiSettings', () => {
 
   const update = (newSettings: GlobalSettings) => {
     settings.value = newSettings;
-    invoke('set_settings', { newSettings: newSettings }).catch((e) => console.error(e));
+    api.setSettings(newSettings);
   };
 
   const reload = () => {
-    invoke<GlobalSettings>('reload_settings', {})
+    api
+      .reloadSettings()
       .then((value) => {
         settings.value = value;
       })
@@ -198,23 +201,24 @@ export const useUiSettings = defineStore('uiSettings', () => {
   };
 
   const save = () => {
-    invoke('save_settings', {}).catch((e) => console.error(e));
+    api.saveSettings();
   };
 
   const clone = () => {
     return structuredClone(toRaw(settings.value));
   };
 
-  const import_from_file = (path: string) => {
-    invoke<GlobalSettings>('import_settings_from_file', { path: path })
+  const import_from_file = () => {
+    api
+      .importSettingsFromFile()
       .then((settings) => {
         update(settings);
       })
       .catch((e) => console.error(e));
   };
 
-  const export_to_file = (path: string) => {
-    invoke('export_settings_to_file', { path: path }).catch((e) => console.error(e));
+  const export_to_file = () => {
+    api.exportSettingsToFile();
   };
 
   return {

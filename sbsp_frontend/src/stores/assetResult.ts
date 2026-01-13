@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { useShowModel } from './showmodel';
-import { invoke } from '@tauri-apps/api/core';
 import type { AssetData } from '../types/AssetData';
 import { ref } from 'vue';
+import { useApi } from '../api';
 
 export const useAssetResult = defineStore(
   'assetResult',
@@ -19,13 +19,14 @@ export const useAssetResult = defineStore(
         return null;
       }
       const showModel = useShowModel();
+      const api = useApi();
       const targetCue = showModel.getCueById(cueId);
       if (targetCue != null && targetCue.params.type == 'audio') {
         if (targetCue.params.target in results.value) {
           return results.value[targetCue.params.target];
         } else if (!processing.value.includes(targetCue.params.target)) {
           processing.value.push(targetCue.params.target);
-          invoke('process_asset', { path: targetCue.params.target }).catch((e) => console.error(e));
+          api.processAsset(targetCue.params.target);
           return null;
         } else {
           return null;
