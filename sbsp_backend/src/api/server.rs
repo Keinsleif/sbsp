@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, time::Duration};
 
 use async_recursion::async_recursion;
 use axum::{
@@ -12,7 +12,7 @@ use axum::{
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
-use tokio::sync::{broadcast, watch};
+use tokio::{sync::{broadcast, watch}, time::interval};
 
 use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
@@ -118,8 +118,10 @@ async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: ApiState) {
-    let mut state_rx = state.state_rx.clone();
+    let state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
+
+    let mut poll_timer = interval(Duration::from_millis(32));
 
     log::info!("New WebSocket client connected.");
 
@@ -136,15 +138,17 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                         break;
                     }
             }
-            Ok(_) = state_rx.changed() => {
-                let new_state = state_rx.borrow().clone();
-                let ws_message = WsFeedback::State(new_state);
+            _ = poll_timer.tick() => {
+                if let Ok(changed) = state_rx.has_changed() && changed {
+                    let new_state = state_rx.borrow().clone();
+                    let ws_message = WsFeedback::State(new_state);
 
-                if let Ok(payload) = serde_json::to_string(&ws_message)
-                    && socket.send(Message::Text(payload.into())).await.is_err() {
-                        log::info!("WebSocket client disconnected (send error).");
-                        break;
-                    }
+                    if let Ok(payload) = serde_json::to_string(&ws_message)
+                        && socket.send(Message::Text(payload.into())).await.is_err() {
+                            log::info!("WebSocket client disconnected (send error).");
+                            break;
+                        }
+                }
             }
 
             Some(Ok(msg)) = socket.recv() => {
