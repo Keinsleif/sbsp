@@ -21,7 +21,8 @@ export const useUiState = defineStore(
     const isCreditsDialogOpen = ref(false);
     const isLicenseDialogOpen = ref(false);
     const isServerPanelOpen = ref(false);
-    const fileListResolver = ref<[((select: string[] | null) => void) | null, boolean]>([null, false]);
+    const fileListResolver = ref<((select: string[] | null) => void) | null>(null);
+    const fileListOption = ref(false);
     const isBottomTabOpen = ref(true);
     const scaleWaveform = ref(true);
     const success_messages = ref<string[]>([]);
@@ -118,6 +119,7 @@ export const useUiState = defineStore(
       isLicenseDialogOpen,
       isServerPanelOpen,
       fileListResolver,
+      fileListOption,
       isBottomTabOpen,
       scaleWaveform,
       success_messages,

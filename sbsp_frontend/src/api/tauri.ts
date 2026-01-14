@@ -151,12 +151,10 @@ export function useTauriApi(): IBackendAdapter {
       } else {
         const uiState = useUiState();
         return new Promise((resolve) => {
-          uiState.fileListResolver = [
-            (select) => {
-              resolve(select || []);
-            },
-            options.multiple,
-          ];
+          uiState.fileListResolver = (select) => {
+            resolve(select || []);
+          };
+          uiState.fileListOption = options.multiple;
         });
       }
     },

@@ -38,8 +38,8 @@
     <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
     <file-list-dialog
       v-if="api.side == 'remote'"
-      v-model="uiState.fileListResolver[0]"
-      :multiple="uiState.fileListResolver[1]"
+      v-model="uiState.fileListResolver"
+      :multiple="uiState.fileListOption"
     ></file-list-dialog>
     <server-panel-dialog v-if="api.side == 'host'" v-model="uiState.isServerPanelOpen"></server-panel-dialog>
   </v-app>

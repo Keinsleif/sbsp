@@ -208,7 +208,7 @@ const openFileDialog = (): Promise<globalThis.FileList | null> =>
 const websocketApiState: {
   address: string | null;
   ws: WebSocket | null;
-  showModelBuffer: ShowModel;
+  showModelBuffer: ShowModel | null;
   projectStatus: ProjectStatus | null;
   stateUpdateListeners: { [key: string]: (state: ShowState) => void };
   uiEventListeners: { [key: string]: (event: UiEvent) => void };
@@ -217,22 +217,7 @@ const websocketApiState: {
 } = {
   address: null,
   ws: null,
-  showModelBuffer: {
-    name: 'Untitled',
-    cues: [],
-    settings: {
-      general: {
-        copyAssetsDestination: '.',
-      },
-      audio: {
-        monoOutput: false,
-        lufsTarget: 0,
-      },
-      remote: {
-        lockCursorToSelection: false,
-      },
-    },
-  },
+  showModelBuffer: null,
   projectStatus: null,
   stateUpdateListeners: {},
   uiEventListeners: {},
@@ -297,7 +282,6 @@ export function useWebsocketApi(): IBackendAdapter {
         websocketApiState.ws.onopen = () => {
           websocketApiState.address = address;
           Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(true));
-          websocketApi.sendCommand({ type: 'requestFullShowState' });
           resolve();
         };
       });
@@ -306,10 +290,10 @@ export function useWebsocketApi(): IBackendAdapter {
       websocketApiState.ws?.close();
     },
     startServerDiscovery: function (): void {
-      console.error('Not implemented');
+      console.log('Remote discovery on web api is not implemented.');
     },
     stopServerDiscovery: function (): void {
-      console.error('Not implemented');
+      console.log('Remote discovery on web api is not implemented.');
     },
     requestFileList: function (): void {
       websocketApi.sendCommand({ type: 'requestAssetList' });
@@ -357,12 +341,10 @@ export function useWebsocketApi(): IBackendAdapter {
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       const uiState = useUiState();
       return new Promise((resolve) => {
-        uiState.fileListResolver = [
-          (select) => {
-            resolve(select || []);
-          },
-          options.multiple,
-        ];
+        uiState.fileListResolver = (select) => {
+          resolve(select || []);
+        };
+        uiState.fileListOption = options.multiple;
       });
     },
     getLicenseInfo: function (): Promise<LicenseInformation | null> {
@@ -426,8 +408,23 @@ export function useWebsocketApi(): IBackendAdapter {
         params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
       });
     },
-    getShowModel: async function (): Promise<ShowModel> {
-      return websocketApiState.showModelBuffer;
+    getShowModel: function (): Promise<ShowModel> {
+      return new Promise((resolve) => {
+        if (websocketApiState.showModelBuffer != null) {
+          resolve(websocketApiState.showModelBuffer);
+        } else {
+          const initShowModelListener = (e: MessageEvent<string>) => {
+            const wsFeedback = JSON.parse(e.data) as WsFeedback;
+            if (wsFeedback.type == 'fullShowState') {
+              websocketApiState.showModelBuffer = wsFeedback.data.showModel;
+              resolve(wsFeedback.data.showModel);
+              websocketApiState.ws?.removeEventListener('message', initShowModelListener);
+            }
+          };
+          websocketApiState.ws?.addEventListener('message', initShowModelListener);
+          websocketApi.sendCommand({ type: 'requestFullShowState' });
+        }
+      });
     },
     isModified: async function (): Promise<boolean> {
       return websocketApiState.projectStatus?.status !== 'saved';
