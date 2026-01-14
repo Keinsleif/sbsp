@@ -21,10 +21,8 @@ const { t } = i18n.global;
 
 export function useTauriApi(): IBackendAdapter {
   const tauriApi: IBackendAdapter = {
-    side: side === 'host' || side == 'remote' ? side : 'host',
-    target: 'tauri',
     host:
-      side === 'host'
+      side == 'host'
         ? {
             fileNew: function (): void {
               invoke('file_new').catch((e) => console.error(e));
@@ -119,7 +117,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('listen_level_meter', { levelListener: channel });
     },
     pickAudioAssets: function (options: IPickAudioAssetsOptions): Promise<string[]> {
-      if (this.side == 'host') {
+      if (side == 'host') {
         return open({
           multiple: options.multiple,
           directory: false,

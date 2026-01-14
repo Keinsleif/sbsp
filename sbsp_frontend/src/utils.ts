@@ -5,7 +5,7 @@ import { useUiSettings } from './stores/uiSettings';
 import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
-import { useApi } from './api';
+import { side } from './api';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -228,10 +228,9 @@ export const curveToEasing = (curve: Curve): Easing => {
 };
 
 export const getLockCursorToSelection = () => {
-  const api = useApi();
-  if (api.side == 'host') {
+  if (side == 'host') {
     return useUiSettings().settings.general.lockCursorToSelection;
-  } else if (api.side == 'remote') {
+  } else if (side == 'remote') {
     return useShowModel().settings.remote.lockCursorToSelection;
   } else {
     return false;

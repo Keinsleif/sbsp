@@ -325,8 +325,7 @@ export function useWebsocketApi(): IBackendAdapter {
         websocketApiState.ws.send(JSON.stringify(command));
       }
     },
-    side: 'remote',
-    target: 'websocket',
+
     remote: remoteApi,
     isMacOs: function (): boolean {
       return navigator?.userAgent?.includes('Macintosh') ?? false;

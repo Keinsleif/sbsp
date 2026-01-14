@@ -15,8 +15,6 @@ export interface IPickAudioAssetsOptions {
 }
 
 export interface IBackendAdapter {
-  side: 'host' | 'remote';
-  target: 'tauri' | 'websocket';
   host?: IBackendHostAdapter;
   remote?: IBackendRemoteAdapter;
 

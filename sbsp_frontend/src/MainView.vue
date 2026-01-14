@@ -33,15 +33,15 @@
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
-    <update-dialog v-if="api.target == 'tauri'" v-model="uiState.isUpdateDialogOpen"></update-dialog>
+    <update-dialog v-if="target == 'tauri'" v-model="uiState.isUpdateDialogOpen"></update-dialog>
     <credits-dialog v-model="uiState.isCreditsDialogOpen"></credits-dialog>
     <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
     <file-list-dialog
-      v-if="api.side == 'remote'"
+      v-if="side == 'remote'"
       v-model="uiState.fileListResolver"
       :multiple="uiState.fileListOption"
     ></file-list-dialog>
-    <server-panel-dialog v-if="api.side == 'host'" v-model="uiState.isServerPanelOpen"></server-panel-dialog>
+    <server-panel-dialog v-if="side == 'host'" v-model="uiState.isServerPanelOpen"></server-panel-dialog>
   </v-app>
 </template>
 
@@ -74,7 +74,7 @@ import LicenseDialog from './components/dialog/LicenseDialog.vue';
 import FileListDialog from './components/dialog/FileListDialog.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi } from './api';
+import { useApi, side, target } from './api';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -101,7 +101,7 @@ onMounted(() => {
   createWindowMenu().then((menu) => {
     if (menu != null) menu.setAsWindowMenu();
   });
-  api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+  api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   let latestState: ShowState | null = null;
   api
@@ -143,7 +143,7 @@ onMounted(() => {
             showModel.updateAll(model);
             uiState.success(t('notification.modelLoaded'));
           });
-          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'showModelSaved':
           uiState.success(t('notification.modelSaved'));
@@ -152,7 +152,7 @@ onMounted(() => {
           api.getShowModel().then((model) => {
             showModel.updateAll(model);
           });
-          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'cueRemoved':
           if (uiState.selectedRows.includes(event.param.cueId)) {
@@ -164,7 +164,7 @@ onMounted(() => {
           break;
         case 'modelNameUpdated':
           showModel.$patch({ name: event.param.newName });
-          api.setTitle((api.side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'settingsUpdated': {
           const settings = event.param.newSettings;
@@ -192,7 +192,7 @@ onMounted(() => {
     })
     .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
 
-  if (api.side == 'host') {
+  if (side == 'host') {
     getCurrentWebviewWindow()
       .onCloseRequested(async (event) => {
         const isModified = await api.isModified();
@@ -282,7 +282,7 @@ watch(
 watch(
   locale,
   () => {
-    if (api.side == 'host') {
+    if (side == 'host') {
       createWindowMenu().then((menu) => {
         if (menu != null) menu.setAsWindowMenu();
       });

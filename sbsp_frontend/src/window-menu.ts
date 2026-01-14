@@ -5,12 +5,11 @@ import { i18n } from './i18n';
 import { platform } from '@tauri-apps/plugin-os';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
-import { useApi } from './api';
+import { useApi, side, target } from './api';
 
 export const createWindowMenu = async () => {
   const api = useApi();
-  if (api.target != 'tauri') return;
-  const side = api.side;
+  if (target != 'tauri') return;
   const { t } = i18n.global;
   const currentPlatform = platform();
 

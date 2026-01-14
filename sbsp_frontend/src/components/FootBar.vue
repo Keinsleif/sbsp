@@ -13,7 +13,7 @@
     </v-sheet>
     <v-sheet class="ml-auto mr-auto"> {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }} </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
-      <v-btn v-if="api.side == 'host'" :icon="mdiServer" size="small" variant="text" @click="openServerPanel"></v-btn>
+      <v-btn v-if="side == 'host'" :icon="mdiServer" size="small" variant="text" @click="openServerPanel"></v-btn>
       <v-btn :icon="mdiDockBottom" size="small" variant="text" @click="uiState.toggleBottomTab"></v-btn>
       <v-btn :icon="mdiDockRight" size="small" variant="text" @click="uiState.toggleRightSidebar"></v-btn>
       <v-btn :icon="mdiCog" size="small" variant="text" @click="openSettings"></v-btn>
@@ -27,7 +27,7 @@ import { useUiState } from '../stores/uistate';
 import { useShowModel } from '../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi } from '../api';
+import { useApi, side } from '../api';
 
 const { t } = useI18n();
 
