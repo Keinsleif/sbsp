@@ -98,13 +98,11 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
                         if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
                             match ws_message {
                                 WsFeedback::Event(ui_event) => {
-                                    if let UiEvent::ShowModelLoaded{..} = *ui_event {
-                                        if let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState)
-                                        && websocket.send(Message::Text(payload)).await.is_err() {
-                                            log::info!("WebSocket client disconnected (send error).");
-                                            break;
+                                    if let UiEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
+                                        {
+                                            let mut model_lock = model_clone.write().await;
+                                            *model_lock = model.clone();
                                         }
-                                    } else if let UiEvent::ShowModelSaved{project_type, path} = &*ui_event {
                                         {
                                             let mut project_status = project_status_clone.write().await;
                                             *project_status = ProjectStatus::Saved{
@@ -112,11 +110,23 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
                                                 path: path.clone(),
                                             };
                                         }
-                                    } else if UiEvent::ShowModelReset == *ui_event
-                                    && let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState)
-                                    && websocket.send(Message::Text(payload)).await.is_err() {
-                                        log::info!("WebSocket client disconnected (send error).");
-                                        break;
+                                    } else if let UiEvent::ShowModelSaved {project_type, path} = &*ui_event {
+                                        {
+                                            let mut project_status = project_status_clone.write().await;
+                                            *project_status = ProjectStatus::Saved{
+                                                project_type: project_type.clone(),
+                                                path: path.clone(),
+                                            };
+                                        }
+                                    } else if let UiEvent::ShowModelReset { model } = &*ui_event {
+                                        {
+                                            let mut model_lock = model_clone.write().await;
+                                            *model_lock = model.clone();
+                                        }
+                                        {
+                                            let mut project_status = project_status_clone.write().await;
+                                            *project_status = ProjectStatus::Unsaved;
+                                        }
                                     }
                                     if event_tx_clone.send(*ui_event).is_err() {
                                         log::error!("Failed to send UiEvent to channel.");

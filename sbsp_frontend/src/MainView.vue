@@ -139,19 +139,15 @@ onMounted(() => {
           break;
         }
         case 'showModelLoaded':
-          api.getShowModel().then((model) => {
-            showModel.updateAll(model);
-            uiState.success(t('notification.modelLoaded'));
-          });
+          showModel.updateAll(event.param.model);
+          uiState.success(t('notification.modelLoaded'));
           api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'showModelSaved':
           uiState.success(t('notification.modelSaved'));
           break;
         case 'showModelReset':
-          api.getShowModel().then((model) => {
-            showModel.updateAll(model);
-          });
+          showModel.updateAll(event.param.model);
           api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'cueRemoved':

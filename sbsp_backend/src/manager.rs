@@ -270,10 +270,18 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::Reset => {
-                let mut model = self.model.write().await;
-                *model = ShowModel::default();
+                {
+                    let mut model = self.model.write().await;
+                    *model = ShowModel::default();
+                }
                 self.modify_status.store(false, Ordering::Release);
-                self.event_tx.send(UiEvent::ShowModelReset)?;
+                {
+                    let mut project_status_lock = self.project_status.write().await;
+                    *project_status_lock = ProjectStatus::Unsaved;
+                }
+                self.event_tx.send(UiEvent::ShowModelReset {
+                    model: self.read().await.clone(),
+                })?;
                 Ok(())
             }
             ModelCommand::Save => {
@@ -324,8 +332,10 @@ impl ShowModelManager {
                             let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
                         }
                         self.modify_status.store(false, Ordering::Release);
-                        let mut project_status = self.project_status.write().await;
-                        *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                        {
+                            let mut project_status = self.project_status.write().await;
+                            *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                        }
                         UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
                     }
                 };
@@ -352,8 +362,10 @@ impl ShowModelManager {
                             let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
                         }
                         self.modify_status.store(false, Ordering::Release);
-                        let mut project_status = self.project_status.write().await;
-                        *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
+                        {
+                            let mut project_status = self.project_status.write().await;
+                            *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
+                        }
                         UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path: model_file_path }
                     }
                 };
@@ -373,7 +385,12 @@ impl ShowModelManager {
                     }
                     Ok(project_type) => {
                         self.modify_status.store(false, Ordering::Release);
-                        UiEvent::ShowModelLoaded { project_type, path }
+                        {
+                            let mut project_status = self.project_status.write().await;
+                            *project_status = ProjectStatus::Saved { project_type: project_type.clone(), path: path.clone() };
+                        }
+                        let model = self.read().await.clone();
+                        UiEvent::ShowModelLoaded { model, project_type, path }
                     }
                 };
                 self.event_tx.send(event)?;

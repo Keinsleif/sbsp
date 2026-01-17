@@ -288,28 +288,24 @@ export function useWebsocketApi(): IBackendAdapter {
       const mainEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
-          case 'hello':
-            if (msg.data.auth != null) {
-              if (password == null) {
-                websocketApiState.ws?.close();
-                return;
-              }
-
-              const secret = strToHashedBase64(password + msg.data.auth.salt);
-              const authString = strToHashedBase64(secret + msg.data.auth.challenge);
-              websocketApi.sendCommand({ type: 'authenticate', response: authString });
-            } else {
-              websocketApi.sendCommand({ type: 'authenticate', response: null });
-            }
-            break;
           case 'state':
             Object.values(websocketApiState.stateUpdateListeners).forEach((cb) => cb(msg.data));
             break;
           case 'event':
             switch (msg.data.type) {
               case 'showModelLoaded':
+                websocketApiState.showModelBuffer = msg.data.param.model;
+                websocketApiState.projectStatus = {
+                  status: 'saved',
+                  projectType: msg.data.param.projectType,
+                  path: msg.data.param.path,
+                };
+                break;
               case 'showModelReset':
-                websocketApi.sendCommand({ type: 'requestFullShowState' });
+                websocketApiState.showModelBuffer = msg.data.param.model;
+                websocketApiState.projectStatus = {
+                  status: 'unsaved',
+                };
                 break;
               case 'showModelSaved':
                 websocketApiState.projectStatus = {
