@@ -15,6 +15,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useUiState } from '../stores/uistate';
+import { ApiServerOptions } from '../types/ApiServerOptions';
 
 const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
@@ -24,6 +25,13 @@ export function useTauriApi(): IBackendAdapter {
     host:
       side == 'host'
         ? {
+            getLicenseInfo: function (): Promise<LicenseInformation | null> {
+              return invoke<LicenseInformation | null>('get_license_info');
+            },
+            activateLicense: function (): Promise<boolean> {
+              return invoke<boolean>('activate_license');
+            },
+
             fileNew: function (): void {
               invoke('file_new').catch((e) => console.error(e));
             },
@@ -42,17 +50,14 @@ export function useTauriApi(): IBackendAdapter {
             isServerRunning: function (): Promise<boolean> {
               return invoke<boolean>('is_server_running');
             },
-            setServerPort: function (port: number): Promise<void> {
-              return invoke('set_server_port', { port: port });
+            setServerOptions: function (options: ApiServerOptions): Promise<void> {
+              return invoke('set_server_options', { options: options });
             },
-            getServerPort: function (): Promise<number> {
-              return invoke<number>('get_server_port');
+            getServerOptions: function (): Promise<ApiServerOptions> {
+              return invoke<ApiServerOptions>('get_server_options');
             },
-            setDiscoveryOption: function (discoveryOption: string | null): Promise<void> {
-              return invoke('set_discovery_option', { discoveryOption: discoveryOption });
-            },
-            getDiscoveryOption: function (): Promise<string | null> {
-              return invoke<string | null>('get_discovery_option');
+            getHostname: function (): Promise<string> {
+              return invoke<string>('get_hostname');
             },
             startServer: function (): Promise<void> {
               return invoke('start_server');
@@ -75,8 +80,8 @@ export function useTauriApi(): IBackendAdapter {
       getServerAddress: function (): Promise<string | null> {
         return invoke<string | null>('get_server_address');
       },
-      connectToServer: function (address: string): Promise<void> {
-        return invoke('connect_to_server', { address: address });
+      connectToServer: function (address: string, password: string | null): Promise<void> {
+        return invoke('connect_to_server', { address: address, password: password });
       },
       disconnectFromServer: function (): void {
         invoke('disconnect_from_server').catch((e) => console.error(e));
@@ -155,12 +160,6 @@ export function useTauriApi(): IBackendAdapter {
           uiState.fileListOption = options.multiple;
         });
       }
-    },
-    getLicenseInfo: function (): Promise<LicenseInformation | null> {
-      return invoke<LicenseInformation | null>('get_license_info');
-    },
-    activateLicense: function (): Promise<boolean> {
-      return invoke<boolean>('activate_license');
     },
 
     setTitle: function (title: string): void {

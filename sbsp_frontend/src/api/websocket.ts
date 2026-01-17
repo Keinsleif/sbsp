@@ -10,10 +10,10 @@ import { WsCommand } from '../types/WsCommand';
 import { ProjectStatus } from '../types/ProjectStatus';
 import { v4 } from 'uuid';
 import { ServiceEntry } from '../types/ServiceEntry';
-import { LicenseInformation } from '../types/LicenseInformation';
 import { GlobalSettings } from '../types/GlobalSettings';
 import typia from 'typia';
 import { useUiState } from '../stores/uistate';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
@@ -205,6 +205,13 @@ const openFileDialog = (): Promise<globalThis.FileList | null> =>
     input.click();
   });
 
+const encoder = new TextEncoder();
+const strToHashedBase64 = (src: string): string => {
+  const hash = sha256(encoder.encode(src));
+
+  return btoa(String.fromCharCode(...hash));
+};
+
 const websocketApiState: {
   address: string | null;
   ws: WebSocket | null;
@@ -237,54 +244,91 @@ export function useWebsocketApi(): IBackendAdapter {
     getServerAddress: async function (): Promise<string | null> {
       return websocketApiState.address;
     },
-    connectToServer: function (address: string) {
-      return new Promise((resolve, reject) => {
-        try {
-          websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
-        } catch (e) {
-          reject(e);
-          return;
-        }
-        websocketApiState.ws.onmessage = (e) => {
-          const msg = JSON.parse(e.data) as WsFeedback;
-          switch (msg.type) {
-            case 'state':
-              Object.values(websocketApiState.stateUpdateListeners).forEach((cb) => cb(msg.data));
-              break;
-            case 'event':
-              switch (msg.data.type) {
-                case 'showModelLoaded':
-                case 'showModelReset':
-                  websocketApi.sendCommand({ type: 'requestFullShowState' });
-                  break;
-                case 'showModelSaved':
-                  websocketApiState.projectStatus = {
-                    status: 'saved',
-                    projectType: msg.data.param.projectType,
-                    path: msg.data.param.path,
-                  };
-              }
-              Object.values(websocketApiState.uiEventListeners).forEach((cb) => cb(msg.data));
-              break;
-            case 'assetList':
-              Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
-              break;
-            case 'fullShowState':
-              websocketApiState.showModelBuffer = msg.data.showModel;
-              websocketApiState.projectStatus = msg.data.projectStatus;
-          }
-        };
-        websocketApiState.ws.onclose = () => {
-          Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(false));
-          websocketApiState.ws = null;
-          websocketApiState.address = null;
-        };
-        websocketApiState.ws.onopen = () => {
-          websocketApiState.address = address;
-          Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(true));
-          resolve();
-        };
+    connectToServer: async function (address: string, password: string | null) {
+      try {
+        websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+      websocketApiState.ws.addEventListener('close', () => {
+        console.log('Disconnected.');
+        Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(false));
+        websocketApiState.ws = null;
+        websocketApiState.address = null;
       });
+      websocketApiState.ws.addEventListener('error', (event) => console.error('Websocket error: ', event));
+      const authEventListener = (e: MessageEvent<string>) => {
+        const msg = JSON.parse(e.data) as WsFeedback;
+        switch (msg.type) {
+          case 'hello':
+            if (msg.data.auth != null) {
+              if (password == null) {
+                websocketApiState.ws?.close();
+                return;
+              }
+              console.log(`auth info: salt=${msg.data.auth.salt}, challenge=${msg.data.auth.salt}`);
+
+              const secret = strToHashedBase64(password + msg.data.auth.salt);
+              const authString = strToHashedBase64(secret + msg.data.auth.challenge);
+              console.log('response string: ', authString);
+              websocketApi.sendCommand({ type: 'authenticate', response: authString });
+            } else {
+              websocketApi.sendCommand({ type: 'authenticate', response: null });
+            }
+            break;
+          case 'authenticated':
+            websocketApiState.ws?.addEventListener('message', mainEventListener);
+            websocketApiState.ws?.removeEventListener('message', authEventListener);
+            websocketApiState.address = address;
+            Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(true));
+            break;
+        }
+      };
+      const mainEventListener = (e: MessageEvent<string>) => {
+        const msg = JSON.parse(e.data) as WsFeedback;
+        switch (msg.type) {
+          case 'hello':
+            if (msg.data.auth != null) {
+              if (password == null) {
+                websocketApiState.ws?.close();
+                return;
+              }
+
+              const secret = strToHashedBase64(password + msg.data.auth.salt);
+              const authString = strToHashedBase64(secret + msg.data.auth.challenge);
+              websocketApi.sendCommand({ type: 'authenticate', response: authString });
+            } else {
+              websocketApi.sendCommand({ type: 'authenticate', response: null });
+            }
+            break;
+          case 'state':
+            Object.values(websocketApiState.stateUpdateListeners).forEach((cb) => cb(msg.data));
+            break;
+          case 'event':
+            switch (msg.data.type) {
+              case 'showModelLoaded':
+              case 'showModelReset':
+                websocketApi.sendCommand({ type: 'requestFullShowState' });
+                break;
+              case 'showModelSaved':
+                websocketApiState.projectStatus = {
+                  status: 'saved',
+                  projectType: msg.data.param.projectType,
+                  path: msg.data.param.path,
+                };
+            }
+            Object.values(websocketApiState.uiEventListeners).forEach((cb) => cb(msg.data));
+            break;
+          case 'assetList':
+            Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
+            break;
+          case 'fullShowState':
+            websocketApiState.showModelBuffer = msg.data.showModel;
+            websocketApiState.projectStatus = msg.data.projectStatus;
+        }
+      };
+      websocketApiState.ws.addEventListener('message', authEventListener);
     },
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
@@ -345,12 +389,6 @@ export function useWebsocketApi(): IBackendAdapter {
         };
         uiState.fileListOption = options.multiple;
       });
-    },
-    getLicenseInfo: function (): Promise<LicenseInformation | null> {
-      return new Promise<LicenseInformation | null>((resolve) => resolve(null));
-    },
-    activateLicense: async function (): Promise<boolean> {
-      return false;
     },
 
     setTitle: function (title: string): void {

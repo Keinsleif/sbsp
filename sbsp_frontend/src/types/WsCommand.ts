@@ -3,4 +3,4 @@ import type { AssetProcessorCommand } from "./AssetProcessorCommand";
 import type { ControllerCommand } from "./ControllerCommand";
 import type { ModelCommand } from "./ModelCommand";
 
-export type WsCommand = { "type": "controll" } & ControllerCommand | { "type": "model" } & ModelCommand | { "type": "assetProcessor" } & AssetProcessorCommand | { "type": "requestAssetList" } | { "type": "requestFullShowState" };
+export type WsCommand = { "type": "authenticate", response: string | null, } | { "type": "controll" } & ControllerCommand | { "type": "model" } & ModelCommand | { "type": "assetProcessor" } & AssetProcessorCommand | { "type": "requestAssetList" } | { "type": "requestFullShowState" };

@@ -86,9 +86,9 @@ impl AppState {
             .map(|connection_data| connection_data.address.clone())
     }
 
-    pub async fn connect(&self, address: String, app_handle: AppHandle) -> anyhow::Result<()> {
+    pub async fn connect(&self, app_handle: AppHandle, address: String, password: Option<String>) -> anyhow::Result<()> {
         let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) =
-            create_remote_backend(address.clone()).await?;
+            create_remote_backend(address.clone(), password).await?;
         let mut connection_data_lock = self.connection_data.write().await;
         *connection_data_lock = Some(ConnectionData {
             backend_handle: remote_handle,
@@ -215,6 +215,12 @@ pub fn run() {
                         log::error!("Failed to load config on startup. {}", e);
                     }
                 });
+            }
+
+            #[cfg(debug_assertions)]
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
             }
             Ok(())
         })

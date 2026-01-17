@@ -7,6 +7,7 @@ import { FileList } from '../types/FileList';
 import { ServiceEntry } from '../types/ServiceEntry';
 import { LicenseInformation } from '../types/LicenseInformation';
 import { GlobalSettings } from '../types/GlobalSettings';
+import { ApiServerOptions } from '../types/ApiServerOptions';
 
 type UnlistenFn = () => void;
 
@@ -22,8 +23,6 @@ export interface IBackendAdapter {
   getThirdPartyNotices(): Promise<string>;
   listenLevelMeter(levelListener: (levels: [number, number]) => void): Promise<void>;
   pickAudioAssets(options: IPickAudioAssetsOptions): Promise<string[]>;
-  getLicenseInfo(): Promise<LicenseInformation | null>;
-  activateLicense(): Promise<boolean>;
 
   setTitle(title: string): void;
 
@@ -71,6 +70,9 @@ export interface IBackendAdapter {
 }
 
 export interface IBackendHostAdapter {
+  getLicenseInfo(): Promise<LicenseInformation | null>;
+  activateLicense(): Promise<boolean>;
+
   // file pick
   fileNew(): void;
   fileOpen(): void;
@@ -80,10 +82,9 @@ export interface IBackendHostAdapter {
 
   // Server Specific
   isServerRunning(): Promise<boolean>;
-  setServerPort(port: number): Promise<void>;
-  getServerPort(): Promise<number>;
-  setDiscoveryOption(discoveryOption: string | null): Promise<void>;
-  getDiscoveryOption(): Promise<string | null>;
+  setServerOptions(options: ApiServerOptions): Promise<void>;
+  getServerOptions(): Promise<ApiServerOptions>;
+  getHostname(): Promise<string>;
   startServer(): Promise<void>;
   stopServer(): Promise<void>;
 
@@ -94,7 +95,7 @@ export interface IBackendRemoteAdapter {
   // Client Specific
   isConnected(): Promise<boolean>;
   getServerAddress(): Promise<string | null>;
-  connectToServer(address: string): Promise<void>;
+  connectToServer(address: string, password: string | null): Promise<void>;
   disconnectFromServer(): void;
   startServerDiscovery(): void;
   stopServerDiscovery(): void;

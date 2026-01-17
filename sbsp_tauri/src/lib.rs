@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
-    BackendHandle, api::server::start_apiserver_with, controller::state::ShowState, event::UiEvent,
+    BackendHandle, api::{ApiServerOptions, server::start_apiserver_with}, controller::state::ShowState, event::UiEvent,
     start_backend,
 };
 use sbsp_license::LicenseManager;
@@ -28,8 +28,7 @@ pub struct AppState {
     state_rx: watch::Receiver<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
     pub settings_manager: GlobalSettingsManager,
-    discovery_option: RwLock<Option<String>>,
-    port: RwLock<u16>,
+    server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
     level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>
 }
@@ -47,8 +46,7 @@ impl AppState {
             state_rx,
             event_tx,
             settings_manager,
-            discovery_option: RwLock::new(None),
-            port: RwLock::new(5800),
+            server_option: RwLock::new(ApiServerOptions { port: 5800, discoverry: None, password: None }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,
         }
@@ -62,46 +60,30 @@ impl AppState {
         self.shutdown_tx.lock().await.is_some()
     }
 
-    pub async fn is_discoverable(&self) -> bool {
-        self.discovery_option.read().await.is_some()
+    pub async fn set_server_options(&self, options: ApiServerOptions) {
+        let mut options_lock = self.server_option.write().await;
+        *options_lock = options;
+        drop(options_lock)
     }
 
-    pub async fn set_discovery_option(&self, discovery_option: Option<String>) {
-        let mut name_lock = self.discovery_option.write().await;
-        *name_lock = discovery_option;
-        drop(name_lock)
-    }
-
-    pub async fn get_discovery_option(&self) -> Option<String> {
-        self.discovery_option.read().await.clone()
-    }
-
-    pub async fn set_port(&self, port: u16) {
-        let mut port_write_lock = self.port.write().await;
-        *port_write_lock = port;
-        drop(port_write_lock);
-    }
-
-    pub async fn get_port(&self) -> u16 {
-        *self.port.read().await
+    pub async fn get_server_options(&self) -> ApiServerOptions {
+        self.server_option.read().await.clone()
     }
 
     pub async fn start(&self, app_handle: AppHandle) -> anyhow::Result<()> {
-        let port_read_lock = self.port.read().await;
-        let name_lock = self.discovery_option.read().await;
+        let option_lock = self.server_option.read().await;
         let server_dir = app_handle.path().resolve("websocket", BaseDirectory::Resource)?;
         let shutdown_tx = start_apiserver_with(
-            *port_read_lock,
             self.backend_handle.clone(),
             self.state_rx.clone(),
             self.event_tx.clone(),
-            name_lock.clone(),
+            option_lock.clone(),
             move |router| {
                 router.fallback_service(ServeDir::new(server_dir.clone()))
             },
         )
         .await?;
-        drop(port_read_lock);
+        drop(option_lock);
         let mut shutdown_tx_lock = self.shutdown_tx.lock().await;
         *shutdown_tx_lock = Some(shutdown_tx);
         drop(shutdown_tx_lock);
@@ -292,12 +274,11 @@ pub fn run() {
             command::model_manager::update_model_name,
             command::model_manager::update_show_settings,
             command::server::is_server_running,
-            command::server::get_server_port,
-            command::server::set_server_port,
-            command::server::get_discovery_option,
-            command::server::set_discovery_option,
             command::server::start_server,
             command::server::stop_server,
+            command::server::get_server_options,
+            command::server::set_server_options,
+            command::server::get_hostname,
             command::settings::get_settings,
             command::settings::set_settings,
             command::settings::reload_settings,

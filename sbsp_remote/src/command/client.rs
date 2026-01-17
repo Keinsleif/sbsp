@@ -19,9 +19,10 @@ pub async fn connect_to_server(
     app_handle: AppHandle,
     state: tauri::State<'_, AppState>,
     address: String,
+    password: Option<String>,
 ) -> Result<(), String> {
     state
-        .connect(address, app_handle.clone())
+        .connect(app_handle.clone(), address, password)
         .await
         .map_err(|e| e.to_string())
 }
