@@ -17,7 +17,7 @@
             host = entry.host;
             port = entry.port.toString();
           "
-          @dblclick="connect(entry.host + ':' + entry.port)"
+          @dblclick="connect(entry.host, entry.port)"
         >
           <th>{{ entry.serverName }}</th>
           <th>{{ entry.host }}</th>
@@ -26,20 +26,36 @@
       </tbody>
     </v-table>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
-      <text-input
+      <v-text-field
+        hide-details
+        persistent-placeholder
+        variant="outlined"
+        density="compact"
+        autocomplete="off"
         class="flex-grow-0"
         v-model="host"
         :label="t('view.connect.remoteHost')"
         width="400px"
-        align-input="left"
-      ></text-input>
-      <text-input class="flex-grow-0" v-model="port" :label="t('view.connect.remotePort')" width="100px"></text-input>
+        @keydown.enter="connect(host, port)"
+      ></v-text-field>
+      <v-text-field
+        hide-details
+        persistent-placeholder
+        variant="outlined"
+        density="compact"
+        autocomplete="off"
+        class="flex-grow-0"
+        v-model="port"
+        :label="t('view.connect.remotePort')"
+        width="100px"
+        @keydown.enter="connect(host, port)"
+      ></v-text-field>
       <v-btn
         class="ml-auto"
         :text="t('view.connect.connect')"
         color="primary"
         :disabled="host == '' || port == ''"
-        @click="connect(host + ':' + port)"
+        @click="connect(host, port)"
       ></v-btn>
     </v-footer>
   </div>
@@ -48,7 +64,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
-import TextInput from './components/input/TextInput.vue';
 import { useI18n } from 'vue-i18n';
 import { target, useApi } from './api';
 
@@ -61,7 +76,9 @@ const services = ref<ServiceEntry[]>([]);
 
 let unlisten: (() => void) | null = null;
 
-const connect = (address: string) => {
+const connect = (host: string, port: string | number) => {
+  if (host == '' || port == '') return;
+  const address = `${host}:${port}`;
   const password = prompt(t('view.connect.passwordPrompt'));
   if (password == null) return;
   if (password == '') {
