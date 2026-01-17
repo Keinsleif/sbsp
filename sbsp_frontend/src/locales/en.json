@@ -212,7 +212,19 @@
       "discoverable": "Discoverable",
       "serverName": "Server Name",
       "stop": "Stop",
-      "start": "Start"
+      "start": "Start",
+      "password": "Password",
+      "passwordEmpty": "Authentication disabled",
+      "generate": "Generate",
+      "showInfo": "Show Server Information",
+      "info": {
+        "hostnameUnavailable": "Hostname not available",
+        "host": "Host",
+        "passwordNotSet": "Not set",
+        "urlUnavailable": "URL not available",
+        "url": "Web Client URL",
+        "copyQr": "Copy QR"
+      }
     }
   },
   "general": {
@@ -231,7 +243,8 @@
       "remoteName": "Name",
       "remoteHost": "Host",
       "remotePort": "Port",
-      "connect": "Connect"
+      "connect": "Connect",
+      "passwordPrompt": "Enter password"
     }
   },
   "main": {

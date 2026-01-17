@@ -36,8 +36,8 @@
         :text="t('dialog.license.activateLicense')"
         variant="outlined"
         @click="
-          api
-            .activateLicense()
+          api.host
+            ?.activateLicense()
             .then((isActivated) => {
               if (isActivated) {
                 isLicenseActivateInfoDialogOpen = true;
@@ -104,8 +104,8 @@ const onCopyId = () => {
 };
 
 const loadLicense = () => {
-  api
-    .getLicenseInfo()
+  api.host
+    ?.getLicenseInfo()
     .then((value) => (licenseInfo.value = value))
     .catch((e) => console.error(e));
 };

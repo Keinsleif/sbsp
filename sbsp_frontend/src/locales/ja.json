@@ -288,7 +288,19 @@
       "discoverable": "LAN内から発見可能",
       "serverName": "サーバー名",
       "stop": "停止",
-      "start": "開始"
+      "start": "開始",
+      "password": "パスワード",
+      "generate": "生成",
+      "info": {
+        "copyQr": "QRコードをコピー",
+        "host": "ホスト名",
+        "hostnameUnavailable": "ホスト名を取得できません",
+        "passwordNotSet": "未設定",
+        "url": "WebクライアントURL",
+        "urlUnavailable": "Webクライアントは利用できません"
+      },
+      "passwordEmpty": "認証は無効です",
+      "showInfo": "サーバー接続情報を表示"
     }
   },
   "general": {
@@ -303,7 +315,8 @@
       "remoteName": "接続先名",
       "remoteHost": "ホスト",
       "remotePort": "ポート",
-      "connect": "接続"
+      "connect": "接続",
+      "passwordPrompt": "パスワードを入力してください"
     },
     "fileSelector": {
       "title": "ファイルを選択"

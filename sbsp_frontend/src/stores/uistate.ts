@@ -141,7 +141,16 @@ export const useUiState = defineStore(
   },
   {
     persist: {
-      omit: ['side', 'selected', 'selectedRows', 'success_messages', 'error_messages'],
+      pick: [
+        'mode',
+        'preWaitDisplayMode',
+        'durationDisplayMode',
+        'postWaitDisplayMode',
+        'sideBarTab',
+        'isRightSidebarOpen',
+        'isBottomTabOpen',
+        'scaleWaveform',
+      ],
     },
   },
 );

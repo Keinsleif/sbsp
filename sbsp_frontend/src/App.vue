@@ -36,12 +36,6 @@ watch(
 
 onMounted(() => {
   if (side == 'remote') {
-    const searchParams = new URLSearchParams(window.location.search);
-    const address = searchParams.get('address');
-    if (address != null) {
-      console.log(`Connecting to ${address}`);
-      api.remote?.connectToServer(address);
-    }
     api.remote
       ?.onConnectionStatusChanged((isConnected) => {
         connected.value = isConnected;

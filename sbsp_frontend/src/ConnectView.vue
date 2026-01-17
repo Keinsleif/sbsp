@@ -50,7 +50,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import TextInput from './components/input/TextInput.vue';
 import { useI18n } from 'vue-i18n';
-import { useApi } from './api';
+import { target, useApi } from './api';
 
 const { t } = useI18n();
 const api = useApi();
@@ -62,10 +62,35 @@ const services = ref<ServiceEntry[]>([]);
 let unlisten: (() => void) | null = null;
 
 const connect = (address: string) => {
-  api.remote?.connectToServer(address);
+  const password = prompt(t('view.connect.passwordPrompt'));
+  if (password == null) return;
+  if (password == '') {
+    api.remote?.connectToServer(address, null);
+  } else {
+    api.remote?.connectToServer(address, password);
+  }
 };
 
 onMounted(() => {
+  if (target == 'websocket') {
+    const searchParams = new URLSearchParams(window.location.search);
+    const address = searchParams.get('address');
+    let password = window.location.hash.substring(1).trim();
+    if (address != null) {
+      console.log(`Connecting to ${address}`);
+      if (password != '') {
+        api.remote?.connectToServer(address, password);
+      } else {
+        let password = prompt(t('view.connect.passwordPrompt'));
+        if (password == null) return;
+        if (password != '') {
+          api.remote?.connectToServer(address, password);
+        } else {
+          api.remote?.connectToServer(address, null);
+        }
+      }
+    }
+  }
   api.remote
     ?.onRemoteDiscoveryUpdate((event) => {
       services.value = event;

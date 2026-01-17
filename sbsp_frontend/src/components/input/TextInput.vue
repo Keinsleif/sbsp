@@ -1,6 +1,6 @@
 <template>
   <v-text-field
-    v-if="props.type == 'single'"
+    v-if="props.textType == 'single'"
     v-bind="$attrs"
     :hide-details="!props.showDetails"
     persistent-placeholder
@@ -24,7 +24,7 @@
     @keydown.stop
   ></v-text-field>
   <v-textarea
-    v-else-if="props.type == 'area'"
+    v-else-if="props.textType == 'area'"
     v-bind="$attrs"
     :hide-details="!props.showDetails"
     persistent-placeholder
@@ -50,12 +50,12 @@ import { ref, watch } from 'vue';
 const text = defineModel<string | null>({ default: '' });
 const props = withDefaults(
   defineProps<{
-    type?: 'single' | 'area';
+    textType?: 'single' | 'area';
     alignInput?: 'left' | 'center' | 'right';
     showDetails?: boolean;
   }>(),
   {
-    type: 'single',
+    textType: 'single',
     alignInput: 'center',
     showDetails: false,
   },

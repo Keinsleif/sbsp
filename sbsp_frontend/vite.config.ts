@@ -24,7 +24,9 @@ export default defineConfig(async () => ({
     VueI18nPlugin(),
     visualizer(),
   ],
-
+  define: {
+    APP_VERSION: JSON.stringify(process.env.npm_package_version),
+  },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

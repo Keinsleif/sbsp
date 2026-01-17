@@ -50,7 +50,7 @@
         class="flex-grow-1 flex-shrink-1"
         v-model="notes"
         :label="t('main.notes')"
-        type="area"
+        textType="area"
         @update="saveEditorValue"
       ></text-input>
       <v-sheet flat class="d-flex flex-row flex-grow-0 flex-shrink-0 ga-3">

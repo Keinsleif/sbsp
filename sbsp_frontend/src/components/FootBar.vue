@@ -40,7 +40,7 @@ const openSettings = async () => {
 };
 
 const openServerPanel = () => {
-  api.getLicenseInfo().then((info) => {
+  api.host?.getLicenseInfo().then((info) => {
     if (info != null && info.edition == 'Pro') {
       uiState.isServerPanelOpen = true;
     } else {

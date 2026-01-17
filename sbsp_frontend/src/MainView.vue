@@ -34,8 +34,8 @@
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
     <update-dialog v-if="target == 'tauri'" v-model="uiState.isUpdateDialogOpen"></update-dialog>
-    <credits-dialog v-model="uiState.isCreditsDialogOpen"></credits-dialog>
-    <license-dialog v-model="uiState.isLicenseDialogOpen"></license-dialog>
+    <credits-dialog v-if="target == 'tauri'" v-model="uiState.isCreditsDialogOpen"></credits-dialog>
+    <license-dialog v-if="side == 'host'" v-model="uiState.isLicenseDialogOpen"></license-dialog>
     <file-list-dialog
       v-if="side == 'remote'"
       v-model="uiState.fileListResolver"
