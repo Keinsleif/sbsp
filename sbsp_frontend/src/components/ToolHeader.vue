@@ -52,10 +52,10 @@
     </div>
     <div class="d-flex flex-column ga-3 flex-grow-1">
       <div class="d-flex flex-column ma-0 flex-grow-1">
-        <v-sheet class="pa-1 rounded mb-1 border-md" height="36px">
+        <v-sheet class="pa-1 rounded mb-1 border-md" style="word-break: keep-all" height="36px">
           {{ playbackCursorCueTitle }}
         </v-sheet>
-        <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-auto flex-grow-1" height="1px">{{
+        <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-y-auto flex-grow-1" height="1px">{{
           playbackCursorCue != null ? playbackCursorCue.notes : ''
         }}</v-sheet>
       </div>

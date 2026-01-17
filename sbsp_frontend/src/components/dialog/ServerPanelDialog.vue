@@ -44,7 +44,7 @@
             v-model="server_password"
             :disabled="isRunning"
             :type="isPasswordVisible ? 'text' : 'password'"
-            :placeholder="t('dialog.server.passwordEmpty')"
+            :placeholder="t('dialog.server.info.passwordNotSet')"
             :append-inner-icon="isPasswordVisible ? mdiEye : mdiEyeOff"
             align-input="left"
             class="flex-grow-1"
