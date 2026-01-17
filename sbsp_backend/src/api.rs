@@ -13,6 +13,9 @@ mod file_list;
 #[cfg(feature = "apiserver")]
 pub mod server;
 
+#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+mod auth;
+
 #[cfg(feature = "type_export")]
 pub mod client {
     mod service_entry;
@@ -21,10 +24,31 @@ pub mod client {
 
 pub use file_list::FileList;
 
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct ApiServerOptions {
+    pub port: u16,
+    pub discoverry: Option<String>,
+    pub password: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct AuthInfo {
+    pub challenge: String,
+    pub salt: String,
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum WsFeedback {
+    Hello {
+        auth: Option<AuthInfo>,
+    },
+    Authenticated,
     Event(Box<UiEvent>),
     State(ShowState),
     AssetList(Vec<FileList>),
@@ -35,6 +59,9 @@ pub enum WsFeedback {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsCommand {
+    Authenticate{
+        response: Option<String>,
+    },
     Controll(ControllerCommand),
     Model(Box<ModelCommand>),
     AssetProcessor(AssetProcessorCommand),

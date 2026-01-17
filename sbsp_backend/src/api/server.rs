@@ -16,7 +16,7 @@ use tokio::{sync::{broadcast, watch}, time::interval};
 
 use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
-    BackendHandle, api::FileList, asset_processor::AssetProcessorCommand,
+    BackendHandle, api::{AuthInfo, ApiServerOptions, FileList, auth::{check_authentication_string, generate_salt, generate_secret}}, asset_processor::AssetProcessorCommand,
     controller::state::ShowState, event::UiEvent, manager::ProjectStatus, model::ProjectType,
 };
 
@@ -26,14 +26,15 @@ struct ApiState {
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<UiEvent>,
     shutdown_tx: broadcast::Sender<()>,
+    options: ApiServerOptions,
+    salt: String,
 }
 
 pub async fn start_apiserver_with<F>(
-    port: u16,
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
-    discover_option: Option<String>,
+    options: ApiServerOptions,
     router_extender: F,
 ) -> anyhow::Result<broadcast::Sender<()>>
 where
@@ -41,16 +42,19 @@ where
 {
     log::info!(
         "Starting server with port: {}, discovery: {:?}",
-        port,
-        discover_option
+        &options.port,
+        &options.discoverry
     );
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
+    let salt = generate_salt();
 
     let state = ApiState {
         backend_handle,
         state_rx,
         event_rx_factory: event_tx,
         shutdown_tx: shutdown_tx.clone(),
+        options: options.clone(),
+        salt,
     };
 
     let mut app = Router::new()
@@ -59,34 +63,33 @@ where
 
     app = router_extender(app);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
-    log::info!("ApiServer listening on 0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", options.port)).await?;
+    log::info!("ApiServer listening on 0.0.0.0:{}", options.port);
 
-    if let Some(server_name) = discover_option {
+    if let Some(server_name) = options.discoverry {
         let mut shutdown_rx_clone = shutdown_tx.subscribe();
+        let hostname = get_mdns_hostname()?;
+        let mdns = ServiceDaemon::new()?;
+        let properties: HashMap<String, String> = HashMap::new();
+        let sv_info = ServiceInfo::new(
+            "_sbsp._tcp.local.",
+            &server_name,
+            &hostname,
+            "",
+            options.port,
+            properties,
+        )
+        .unwrap()
+        .enable_addr_auto();
+        mdns.register(sv_info).unwrap();
+
         tokio::spawn(async move {
-            let hostname = format!("{}.local.", gethostname().to_str().unwrap_or("NoHostname"));
-            let mdns = ServiceDaemon::new().expect("Could not create service daemon");
-
-            let properties: HashMap<String, String> = HashMap::new();
-
-            let sv_info = ServiceInfo::new(
-                "_sbsp._tcp.local.",
-                &server_name,
-                &hostname,
-                "",
-                port,
-                properties,
-            )
-            .unwrap()
-            .enable_addr_auto();
-            let sv_fullname = sv_info.get_fullname().to_string();
-            mdns.register(sv_info).unwrap();
 
             let _ = shutdown_rx_clone.recv().await;
-
-            let result = mdns.unregister(&sv_fullname).unwrap();
-            let _ = result.recv();
+            let mut result = mdns.shutdown();
+            while let Err(mdns_sd::Error::Again) = result {
+                result = mdns.shutdown();
+            }
         });
     }
     // let shutdown_tx_clone = shutdown_tx.clone();
@@ -101,13 +104,16 @@ where
 }
 
 pub async fn start_apiserver(
-    port: u16,
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
     event_tx: broadcast::Sender<UiEvent>,
-    discover_option: Option<String>,
+    options: ApiServerOptions,
 ) -> anyhow::Result<broadcast::Sender<()>> {
-    start_apiserver_with(port, backend_handle, state_rx, event_tx, discover_option, |app| app).await
+    start_apiserver_with(backend_handle, state_rx, event_tx, options, |app| app).await
+}
+
+pub fn get_mdns_hostname() -> anyhow::Result<String> {
+    gethostname().to_str().ok_or_else(|| anyhow::anyhow!("failed to get hostname.")).map(|hostname| format!("{}.local.", hostname))
 }
 
 async fn websocket_handler(
@@ -118,6 +124,56 @@ async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: ApiState) {
+    let challenge = generate_salt();
+    let auth_info = if state.options.password.is_some() {
+        Some(AuthInfo {
+            challenge: challenge.clone(),
+            salt: state.salt.clone(),
+        })
+    } else {
+        None
+    };
+
+    if let Ok(payload) = serde_json::to_string(&WsFeedback::Hello { auth: auth_info.clone() }) && socket.send(Message::Text(payload.into())).await.is_err() {
+        log::info!("WebSocket client disconnected (send error).");
+        return;
+    }
+
+    loop {
+        if let Some(Ok(msg)) = socket.recv().await {
+            if let Message::Text(text) = msg {
+                if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
+                && let WsCommand::Authenticate { response } = command {
+                    if let Some(password) = &state.options.password {
+                        let secret = generate_secret(password, &state.salt);
+                        if let Some(auth_str) = response && check_authentication_string(&secret, &challenge, &auth_str) {
+                            break;
+                        } else {
+                            if let Err(e) = socket.send(Message::Close(None)).await {
+                                log::error!("Error on closing socket. e={}", e);
+                                return;
+                            }
+                            log::debug!("Close message sent.");
+                            return;
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    continue;
+                }
+            } else if let Message::Close(_) = msg {
+                log::info!("WebSocket client sent close message.");
+                return;
+            }
+        }
+    }
+
+    if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated) && socket.send(Message::Text(payload.into())).await.is_err() {
+        log::info!("WebSocket client disconnected (send error).");
+        return;
+    }
+
     let state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
 
@@ -204,6 +260,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                     break;
                                 }
                             }
+                            _ => {}
                         }
                     } else {
                         log::error!("Invalid command received.")
