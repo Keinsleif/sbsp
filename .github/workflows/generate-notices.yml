@@ -9,6 +9,7 @@ on:
       - 'sbsp_frontend/pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
+      - .github/workflows/generate-notices.yml
   workflow_dispatch:
 
 concurrency:

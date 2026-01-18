@@ -12,6 +12,7 @@ on:
       - Cargo.lock
       - Cargo.toml
       - THIRD_PARTY_NOTICES.md
+      - .github/workflows/release-draft.yml
   workflow_dispatch:
 
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
