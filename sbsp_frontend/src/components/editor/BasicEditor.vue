@@ -1,5 +1,5 @@
 <template>
-  <v-sheet flat class="d-flex flex-row pa-4 ga-4">
+  <v-sheet flat class="d-flex flex-row pa-4 ga-4" min-width="720px">
     <v-sheet flat class="d-flex flex-column ga-2 flex-grow-0 flex-shrink-0" width="175px">
       <text-input v-model="number" class="flex-grow-0" :label="t('main.number')" @update="saveEditorValue"></text-input>
       <time-input

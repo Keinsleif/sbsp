@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex flex-row ma-0 w-100 h-100 ga-3 pa-3">
+  <div class="d-flex flex-row ma-0 w-100 h-100 ga-3 pa-3 overflow-x-auto">
     <div class="d-flex flex-column ga-3 flex-grow-0 align-start">
       <div class="d-flex align-center border flex-grow-1" :class="hasFocus ? '' : 'bg-red'">
         <div class="d-flex align-end pl-3 pr-3 text-center" style="font-size: 4em; line-height: 1">
@@ -52,7 +52,7 @@
     </div>
     <div class="d-flex flex-column ga-3 flex-grow-1">
       <div class="d-flex flex-column ma-0 flex-grow-1">
-        <v-sheet class="pa-1 rounded mb-1 border-md" style="word-break: keep-all" height="36px">
+        <v-sheet class="pa-1 rounded mb-1 border-md overflow-x-hidden" height="36px">
           {{ playbackCursorCueTitle }}
         </v-sheet>
         <v-sheet class="pa-2 pb-0 rounded border-md text-pre-wrap overflow-y-auto flex-grow-1" height="1px">{{

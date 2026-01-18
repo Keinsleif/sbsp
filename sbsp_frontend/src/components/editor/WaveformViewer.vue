@@ -173,7 +173,7 @@ const waveformTransform = computed(() => {
   }
 });
 
-const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef);
+const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef, { handleOutside: false, touch: false });
 
 const seek = (event: MouseEvent) => {
   if (props.targetId == null || event.button != 0) {

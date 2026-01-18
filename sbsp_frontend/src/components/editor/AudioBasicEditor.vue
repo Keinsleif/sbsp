@@ -36,21 +36,31 @@
     >
       <v-tooltip activator="parent" location="end">{{ t('general.forExpertWarning') }}</v-tooltip>
     </v-checkbox>
-    <v-sheet flat class="d-flex justify-space-evenly" :class="mdAndDown ? 'flex-column' : 'flex-row'">
-      <fade-param-input
-        v-model="fadeInParam"
-        :label="t('main.bottomEditor.audio.fadeIn')"
-        condition="in"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        @update="saveEditorValue"
-      ></fade-param-input>
-      <fade-param-input
-        v-model="fadeOutParam"
-        :label="t('main.bottomEditor.audio.fadeOut')"
-        condition="out"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        @update="saveEditorValue"
-      ></fade-param-input>
+    <v-sheet flat class="d-flex justify-space-evenly align-start flex-column flex-sm-row ga-2">
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="'Change Fade In'"
+      >
+        <fade-param-input
+          v-model="fadeInParam"
+          :label="t('main.bottomEditor.audio.fadeIn')"
+          condition="in"
+          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          @update="saveEditorValue"
+        ></fade-param-input>
+      </responsive-control>
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="'Change Fade Out'"
+      >
+        <fade-param-input
+          v-model="fadeOutParam"
+          :label="t('main.bottomEditor.audio.fadeOut')"
+          condition="out"
+          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          @update="saveEditorValue"
+        ></fade-param-input>
+      </responsive-control>
     </v-sheet>
   </v-sheet>
 </template>
@@ -59,14 +69,17 @@
 import { mdiFileMusic } from '@mdi/js';
 import { ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
+import ResponsiveControl from '../input/ResponsiveControl.vue';
 import { useShowState } from '../../stores/showstate';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
 import { useApi } from '../../api';
+import { useDisplay } from 'vuetify';
+import { useUiState } from '../../stores/uistate';
 
 const { t } = useI18n();
-const { mdAndDown } = useDisplay();
+const uiState = useUiState();
+const { mdAndDown, smAndDown } = useDisplay();
 
 const showState = useShowState();
 const api = useApi();

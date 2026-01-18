@@ -267,11 +267,10 @@ export function useWebsocketApi(): IBackendAdapter {
                 websocketApiState.ws?.close();
                 return;
               }
-              console.log(`auth info: salt=${msg.data.auth.salt}, challenge=${msg.data.auth.salt}`);
 
               const secret = strToHashedBase64(password + msg.data.auth.salt);
               const authString = strToHashedBase64(secret + msg.data.auth.challenge);
-              console.log('response string: ', authString);
+
               websocketApi.sendCommand({ type: 'authenticate', response: authString });
             } else {
               websocketApi.sendCommand({ type: 'authenticate', response: null });

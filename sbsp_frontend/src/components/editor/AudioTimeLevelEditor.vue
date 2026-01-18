@@ -38,37 +38,48 @@
       :start-time="range[0]"
       :end-time="range[1]"
     ></waveform-viewer>
-    <div class="d-flex flex-row ga-3 align-end">
-      <volume-fader
-        v-model="volume"
-        :label="t('main.bottomEditor.timeLevels.volume')"
-        :thumb-amount="width < 1600 ? (smAndDown ? 'baseOnly' : 'decreased') : 'full'"
-        @update="
-          saveEditorValue();
-          changeActiveCueVolume();
-        "
-      />
-      <v-btn-group variant="tonal" direction="vertical" divided>
-        <v-tooltip
-          target="cursor"
-          :text="t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })"
-        >
-          <template v-slot:activator="{ props: activatorProps }">
-            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToLUFS">LUFS</v-btn>
-          </template>
-        </v-tooltip>
-        <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
-          <template v-slot:activator="{ props: activatorProps }">
-            <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToMAX">MAX</v-btn>
-          </template>
-        </v-tooltip>
-      </v-btn-group>
+    <div class="d-flex flex-column flex-sm-row ga-0 ga-sm-3 align-center">
+      <responsive-control :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown" :button-label="'Change Volume'">
+        <div class="d-flex flex-row flex-grow-1">
+          <volume-fader
+            v-model="volume"
+            class="flex-grow-1"
+            :label="t('main.bottomEditor.timeLevels.volume')"
+            :direction="xs ? 'vertical' : 'horizontal'"
+            :thumb-amount="width < 1600 ? 'decreased' : 'full'"
+            @update="
+              saveEditorValue();
+              changeActiveCueVolume();
+            "
+          />
+          <v-btn-group class="flex-grow-0" variant="tonal" direction="vertical" divided>
+            <v-tooltip
+              target="cursor"
+              :text="
+                t('main.bottomEditor.timeLevels.lufsDescription', { targetLUFS: showModel.settings.audio.lufsTarget })
+              "
+            >
+              <template v-slot:activator="{ props: activatorProps }">
+                <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToLUFS">LUFS</v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip target="cursor" :text="t('main.bottomEditor.timeLevels.peakDescription')">
+              <template v-slot:activator="{ props: activatorProps }">
+                <v-btn v-bind="activatorProps" density="compact" height="25px" @click="setVolumeToMAX">MAX</v-btn>
+              </template>
+            </v-tooltip>
+          </v-btn-group>
+        </div>
+      </responsive-control>
       <v-divider vertical inset thickness="2" />
-      <panning-fader
-        :label="t('main.bottomEditor.timeLevels.pan')"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        @update="saveEditorValue()"
-      />
+      <responsive-control :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown" :button-label="'Change Pan'">
+        <panning-fader
+          :label="t('main.bottomEditor.timeLevels.pan')"
+          :direction="xs ? 'vertical' : 'horizontal'"
+          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          @update="saveEditorValue()"
+        />
+      </responsive-control>
       <v-divider vertical inset thickness="2" />
       <v-checkbox
         v-model="repeat"
@@ -88,6 +99,7 @@ import VolumeFader from '../input/VolumeFader.vue';
 import PanningFader from '../input/PanningFader.vue';
 import WaveformViewer from './WaveformViewer.vue';
 import TimeRange from '../input/TimeRange.vue';
+import ResponsiveControl from '../input/ResponsiveControl.vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
 import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
@@ -96,10 +108,12 @@ import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
 import { useShowModel } from '../../stores/showmodel';
 import { useApi } from '../../api';
+import { useUiState } from '../../stores/uistate';
 
 const { t } = useI18n();
 const api = useApi();
-const { smAndDown, width } = useDisplay();
+const uiState = useUiState();
+const { xs, smAndDown, mdAndDown, width } = useDisplay();
 
 const showState = useShowState();
 const assetResult = useAssetResult();

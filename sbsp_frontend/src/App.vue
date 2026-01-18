@@ -58,6 +58,8 @@ html {
   scrollbar-width: none;
   overscroll-behavior-y: none;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
 body,
 #app {

@@ -14,7 +14,15 @@
       <FootBar />
     </v-footer>
 
-    <v-navigation-drawer v-model="uiState.isRightSidebarOpen" app permanent location="right" width="260">
+    <v-navigation-drawer
+      :model-value="uiState.isRightSidebarOpen && mdAndUp"
+      app
+      permanent
+      persistent
+      touchless
+      location="right"
+      width="260"
+    >
       <SideBar />
     </v-navigation-drawer>
 
@@ -22,6 +30,8 @@
       :model-value="uiState.isBottomTabOpen && uiState.mode == 'edit'"
       app
       permanent
+      persistent
+      touchless
       location="bottom"
       width="250"
     >
@@ -75,6 +85,7 @@ import FileListDialog from './components/dialog/FileListDialog.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useApi, side, target } from './api';
+import { useDisplay } from 'vuetify/lib/composables/display.mjs';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -83,6 +94,7 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t, locale } = useI18n({ useScope: 'global' });
 const api = useApi();
+const { mdAndUp } = useDisplay();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 

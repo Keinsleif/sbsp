@@ -53,7 +53,7 @@
       <v-tabs-window-item value="blank" reverse-transition="false" transition="false">
         <div style="margin: auto; width: fit-content">No Selection</div>
       </v-tabs-window-item>
-      <v-tabs-window-item value="basics" reverse-transition="false" transition="false">
+      <v-tabs-window-item value="basics" reverse-transition="false" transition="false" class="overflow-x-auto">
         <basic-editor v-model="selectedCue" :sequence-override="props.sequenceOverride" @update="edited" />
       </v-tabs-window-item>
       <v-tabs-window-item value="audio" reverse-transition="false" transition="false">

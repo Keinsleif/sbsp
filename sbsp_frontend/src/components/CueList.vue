@@ -1,12 +1,5 @@
 <template>
-  <v-table
-    fixed-header
-    density="compact"
-    class="flex-grow-1"
-    :class="$style['cuelist']"
-    height="100%"
-    @mousedown="resetSelection($event)"
-  >
+  <v-table fixed-header density="compact" class="flex-grow-1" :class="$style['cuelist']" height="100%">
     <thead>
       <tr>
         <th id="cuelist_cursor" width="32px"></th>
@@ -470,12 +463,12 @@ const click = (event: MouseEvent, index: number) => {
   }
 };
 
-const resetSelection = (event: MouseEvent): void => {
-  if (event.button != 0) {
-    return;
-  }
-  uiState.clearSelected();
-};
+// const resetSelection = (event: MouseEvent): void => {
+//   if (event.button != 0) {
+//     return;
+//   }
+//   uiState.clearSelected();
+// };
 
 const getCueIcon = (type: string): string | undefined => {
   switch (type) {
