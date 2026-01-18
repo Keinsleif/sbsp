@@ -42,7 +42,7 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
 
-      - run: cargo binstall cargo-about --no-confirm
+      - run: cargo binstall cargo-about --no-confirm --force
 
       - name: install dependencies (ubuntu only)
         run: |
