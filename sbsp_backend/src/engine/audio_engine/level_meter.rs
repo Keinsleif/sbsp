@@ -1,8 +1,10 @@
 use core::f32;
-use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicU32, Ordering},
+};
 
 use kira::{Frame, effect::Effect};
-
 
 #[derive(Clone, Default)]
 pub struct SharedLevel {
@@ -35,7 +37,16 @@ impl LevelMeterEffect {
 
 impl Effect for LevelMeterEffect {
     fn process(&mut self, input: &mut [kira::Frame], _dt: f64, _info: &kira::info::Info) {
-        let frame = input.iter().fold(Frame { left: f32::NAN, right: f32::NAN}, |m, v| Frame { left: v.left.abs().max(m.left), right: v.right.abs().max(m.right)});
+        let frame = input.iter().fold(
+            Frame {
+                left: f32::NAN,
+                right: f32::NAN,
+            },
+            |m, v| Frame {
+                left: v.left.abs().max(m.left),
+                right: v.right.abs().max(m.right),
+            },
+        );
         self.shared.set(frame.left, frame.right);
     }
 }

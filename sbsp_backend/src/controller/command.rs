@@ -39,17 +39,12 @@ impl ControllerCommand {
             Self::Load(uuid) => ExecutorCommand::Load(uuid),
             Self::SeekTo(uuid, position) => ExecutorCommand::SeekTo(uuid, position),
             Self::SeekBy(uuid, amount) => ExecutorCommand::SeekBy(uuid, amount),
-            Self::PerformAction(uuid, action) => {
-                ExecutorCommand::PerformAction(uuid, action)
-            }
+            Self::PerformAction(uuid, action) => ExecutorCommand::PerformAction(uuid, action),
             _ => unreachable!(),
         }
     }
 
-    pub(super) fn try_all_into_single_executor_command(
-        &self,
-        cue_id: Uuid,
-    ) -> ExecutorCommand {
+    pub(super) fn try_all_into_single_executor_command(&self, cue_id: Uuid) -> ExecutorCommand {
         match self {
             Self::PauseAll => ExecutorCommand::Pause(cue_id),
             Self::ResumeAll => ExecutorCommand::Resume(cue_id),

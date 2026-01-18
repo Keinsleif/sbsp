@@ -13,16 +13,9 @@ use crate::model::{cue::Cue, settings::ShowSettings};
     rename_all_fields = "camelCase"
 )]
 pub enum InsertPosition {
-    Before {
-        target: Uuid
-    },
-    After {
-        target: Uuid
-    },
-    Inside {
-        target: Option<Uuid>,
-        index: usize
-    },
+    Before { target: Uuid },
+    After { target: Uuid },
+    Inside { target: Option<Uuid>, index: usize },
     Last,
 }
 

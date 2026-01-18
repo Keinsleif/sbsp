@@ -135,7 +135,11 @@ pub async fn toggle_repeat(state: tauri::State<'_, AppState>, cue_id: Uuid) -> R
 }
 
 #[tauri::command]
-pub async fn set_volume(state: tauri::State<'_, AppState>, cue_id: Uuid, volume: f32) -> Result<(), String> {
+pub async fn set_volume(
+    state: tauri::State<'_, AppState>,
+    cue_id: Uuid,
+    volume: f32,
+) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .controller_handle

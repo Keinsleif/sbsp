@@ -28,7 +28,7 @@ impl Default for FadeParam {
     fn default() -> Self {
         Self {
             duration: 3.0,
-            easing: Easing::InOutPowi(2)
+            easing: Easing::InOutPowi(2),
         }
     }
 }

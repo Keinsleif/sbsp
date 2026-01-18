@@ -1,7 +1,9 @@
 use std::{path::PathBuf, sync::RwLock};
 
-use ed25519_dalek::{SIGNATURE_LENGTH, Signature, Verifier, VerifyingKey, pkcs8::DecodePublicKey as _};
 use base64::prelude::*;
+use ed25519_dalek::{
+    SIGNATURE_LENGTH, Signature, Verifier, VerifyingKey, pkcs8::DecodePublicKey as _,
+};
 
 use data::{LicenseEdition, LicenseFile};
 
@@ -35,7 +37,10 @@ impl LicenseManager {
         let payload_bytes = serde_json::to_vec(&license_file.payload).unwrap_or_default();
 
         let mut signature_bytes = [0u8; SIGNATURE_LENGTH];
-        if BASE64_STANDARD.decode_slice(&license_file.signature, &mut signature_bytes).is_err() {
+        if BASE64_STANDARD
+            .decode_slice(&license_file.signature, &mut signature_bytes)
+            .is_err()
+        {
             anyhow::bail!("signature length error");
         }
         let signature = Signature::from_bytes(&signature_bytes);

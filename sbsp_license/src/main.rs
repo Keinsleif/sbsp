@@ -1,10 +1,10 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut, pkcs8::DecodePrivateKey};
 use base64::prelude::*;
 use clap::Parser;
+use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut, pkcs8::DecodePrivateKey};
+use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-use sbsp_license::data::{LicenseFile, LicenseInformation, LicenseEdition};
+use sbsp_license::data::{LicenseEdition, LicenseFile, LicenseInformation};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -27,13 +27,18 @@ fn main() {
 
     let license_payload = LicenseInformation {
         owner: args.owner,
-        edition: if let Some(edition) = args.edition && edition != "pro" {
+        edition: if let Some(edition) = args.edition
+            && edition != "pro"
+        {
             LicenseEdition::Free
         } else {
             LicenseEdition::Pro
         },
         id: Uuid::new_v4(),
-        issue_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+        issue_time: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
     };
 
     let key_content = std::fs::read_to_string(&args.privkey).unwrap();

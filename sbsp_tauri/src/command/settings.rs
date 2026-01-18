@@ -71,10 +71,10 @@ pub async fn import_settings_from_file(
         let config_path = path.join("config.json");
         if let Err(e) = state.settings_manager.save_to_file(&config_path).await {
             log::error!("Failed to save imported config. {}", e);
-            return Err(format!("Failed to save imported config. {}", e))
+            return Err(format!("Failed to save imported config. {}", e));
         }
     } else {
-        return Err("Failed to locate app config path.".into())
+        return Err("Failed to locate app config path.".into());
     }
     Ok(state.settings_manager.read().await.clone())
 }

@@ -1,11 +1,22 @@
-use std::{collections::VecDeque, path::PathBuf, sync::{Arc, atomic::{AtomicBool, Ordering}}};
+use std::{
+    collections::VecDeque,
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
     manager::{ModelCommand, ProjectStatus, command::InsertPosition},
-    model::{ShowModel, cue::{Cue, CueParam, CueSequence, group::GroupMode}, settings::ShowSettings},
+    model::{
+        ShowModel,
+        cue::{Cue, CueParam, CueSequence, group::GroupMode},
+        settings::ShowSettings,
+    },
 };
 
 #[derive(Clone)]
@@ -17,7 +28,12 @@ pub struct ShowModelHandle {
 }
 
 impl ShowModelHandle {
-    pub fn new(model: Arc<RwLock<ShowModel>>, command_tx: mpsc::Sender<ModelCommand>, project_status: Arc<RwLock<ProjectStatus>>, modify_status: Arc<AtomicBool>) -> Self {
+    pub fn new(
+        model: Arc<RwLock<ShowModel>>,
+        command_tx: mpsc::Sender<ModelCommand>,
+        project_status: Arc<RwLock<ProjectStatus>>,
+        modify_status: Arc<AtomicBool>,
+    ) -> Self {
         Self {
             model,
             command_tx,
@@ -76,7 +92,8 @@ impl ShowModelHandle {
     }
 
     pub async fn update_model_name(&self, new_name: String) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::UpdateModelName(new_name)).await?;
+        self.send_command(ModelCommand::UpdateModelName(new_name))
+            .await?;
         Ok(())
     }
 
@@ -102,7 +119,8 @@ impl ShowModelHandle {
     }
 
     pub async fn export_to_folder(&self, folder_path: PathBuf) -> anyhow::Result<()> {
-        self.send_command(ModelCommand::ExportToFolder(folder_path)).await?;
+        self.send_command(ModelCommand::ExportToFolder(folder_path))
+            .await?;
         Ok(())
     }
 
@@ -117,7 +135,7 @@ impl ShowModelHandle {
 
         while let Some(cue) = queue.pop_front() {
             if cue.id == *cue_id {
-                return Some(cue.clone())
+                return Some(cue.clone());
             }
 
             if let CueParam::Group { children, .. } = &cue.params {
@@ -150,7 +168,9 @@ impl ShowModelHandle {
     pub async fn get_all_children_by_id(&self, cue_id: &Uuid) -> Vec<Cue> {
         let mut result = Vec::new();
         let target_cue = self.get_cue_by_id(cue_id).await;
-        if let Some(target) = target_cue && let CueParam::Group { children, .. } = &target.params {
+        if let Some(target) = target_cue
+            && let CueParam::Group { children, .. } = &target.params
+        {
             let mut queue: VecDeque<&Vec<Cue>> = VecDeque::from([children.as_ref()]);
             while let Some(cues) = queue.pop_front() {
                 for cue in cues {
@@ -198,14 +218,18 @@ impl ShowModelHandle {
                         if let CueParam::Group { mode, .. } = &parent_cue.params {
                             match mode {
                                 GroupMode::Playlist { repeat } => {
-                                    if (index + 1) == cues.len() && let Some(first_cue) = cues.first() {
+                                    if (index + 1) == cues.len()
+                                        && let Some(first_cue) = cues.first()
+                                    {
                                         if *repeat {
-                                            return Some(CueSequence::AutoFollow { target_id: Some(first_cue.id) });
+                                            return Some(CueSequence::AutoFollow {
+                                                target_id: Some(first_cue.id),
+                                            });
                                         } else {
                                             return Some(CueSequence::DoNotContinue);
                                         }
                                     } else {
-                                        return Some(CueSequence::AutoFollow { target_id: None })
+                                        return Some(CueSequence::AutoFollow { target_id: None });
                                     }
                                 }
                                 GroupMode::Concurrency => {
@@ -214,7 +238,7 @@ impl ShowModelHandle {
                             }
                         }
                     } else {
-                        return Some(cue.sequence.clone())
+                        return Some(cue.sequence.clone());
                     }
                 }
 
@@ -236,7 +260,14 @@ impl ShowModelHandle {
 
     pub async fn get_asset_folder_path(&self) -> Option<PathBuf> {
         if let ProjectStatus::Saved { path, .. } = self.project_status.read().await.to_owned() {
-            let asset_dir = self.model.read().await.settings.general.copy_assets_destination.clone();
+            let asset_dir = self
+                .model
+                .read()
+                .await
+                .settings
+                .general
+                .copy_assets_destination
+                .clone();
             path.parent().map(|path| path.to_path_buf().join(asset_dir))
         } else {
             None

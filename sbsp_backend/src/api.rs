@@ -45,23 +45,19 @@ pub struct AuthInfo {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum WsFeedback {
-    Hello {
-        auth: Option<AuthInfo>,
-    },
+    Hello { auth: Option<AuthInfo> },
     Authenticated,
     Event(Box<UiEvent>),
     State(ShowState),
     AssetList(Vec<FileList>),
-    FullShowState(FullShowState)
+    FullShowState(FullShowState),
 }
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsCommand {
-    Authenticate{
-        response: Option<String>,
-    },
+    Authenticate { response: Option<String> },
     Controll(ControllerCommand),
     Model(Box<ModelCommand>),
     AssetProcessor(AssetProcessorCommand),

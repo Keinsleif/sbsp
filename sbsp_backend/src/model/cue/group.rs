@@ -1,5 +1,5 @@
-use ts_rs::TS;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(
@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
     rename_all_fields = "camelCase"
 )]
 pub enum GroupMode {
-    Playlist {
-        repeat: bool,
-    },
+    Playlist { repeat: bool },
     Concurrency,
 }

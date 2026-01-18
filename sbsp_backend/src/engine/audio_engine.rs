@@ -1,18 +1,20 @@
 mod command;
 mod event;
-mod mono_effect;
 pub mod level_meter;
+mod mono_effect;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween, clock::{ClockHandle, ClockSpeed, ClockTime}, sound::{
+    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
+    clock::{ClockHandle, ClockSpeed, ClockTime},
+    sound::{
         EndPosition, FromFileError, IntoOptionalRegion, PlaybackPosition, PlaybackState, Region,
         static_sound::{StaticSoundData, StaticSoundHandle},
         streaming::{StreamingSoundData, StreamingSoundHandle},
-    }
+    },
 };
 use std::{collections::HashMap, time::Duration};
 use tokio::{sync::mpsc, time};
@@ -20,7 +22,13 @@ use uuid::Uuid;
 
 use super::EngineEvent;
 use crate::{
-    action::AudioAction, controller::state::AudioStateParam, engine::audio_engine::level_meter::{LevelMeterEffect, SharedLevel}, model::{cue::audio::{FadeParam, SoundType}, settings::ShowAudioSettings}
+    action::AudioAction,
+    controller::state::AudioStateParam,
+    engine::audio_engine::level_meter::{LevelMeterEffect, SharedLevel},
+    model::{
+        cue::audio::{FadeParam, SoundType},
+        settings::ShowAudioSettings,
+    },
 };
 use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
@@ -164,12 +172,14 @@ impl PlaybackHandle {
 
     fn set_volume(&mut self, volume: f32) {
         self.volume = volume;
-        self.handle.set_volume(self.volume + self.fade_volume, Tween::default());
+        self.handle
+            .set_volume(self.volume + self.fade_volume, Tween::default());
     }
 
-    fn set_fade(&mut  self, volume: f32, tween: Tween) {
+    fn set_fade(&mut self, volume: f32, tween: Tween) {
         self.fade_volume = volume;
-        self.handle.set_volume(self.volume + self.fade_volume, tween);
+        self.handle
+            .set_volume(self.volume + self.fade_volume, tween);
     }
 }
 
@@ -229,18 +239,23 @@ impl AudioEngine {
         let mono_effect_handle = audio_manager_settings
             .main_track_builder
             .add_effect(MonoEffectBuilder::new(settings.mono_output));
-        audio_manager_settings.main_track_builder.add_built_effect(Box::new(LevelMeterEffect::new(shared_level.clone())));
+        audio_manager_settings
+            .main_track_builder
+            .add_built_effect(Box::new(LevelMeterEffect::new(shared_level.clone())));
         let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)?;
 
-        Ok((Self {
-            manager: Some(manager),
-            mono_effect_handle,
-            settings,
-            command_rx,
-            event_tx,
-            playing_sounds: HashMap::new(),
-            loaded_sounds: HashMap::new(),
-        }, shared_level))
+        Ok((
+            Self {
+                manager: Some(manager),
+                mono_effect_handle,
+                settings,
+                command_rx,
+                event_tx,
+                playing_sounds: HashMap::new(),
+                loaded_sounds: HashMap::new(),
+            },
+            shared_level,
+        ))
     }
 
     pub async fn run(mut self) {
@@ -347,8 +362,13 @@ impl AudioEngine {
     }
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
-        let manager = self.manager.as_mut().ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
-        let clock = manager.add_clock(ClockSpeed::SecondsPerTick(1.0)).map_err(|_| anyhow::anyhow!("Failed to create audio. Playback limit reached."))?;
+        let manager = self
+            .manager
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
+        let clock = manager
+            .add_clock(ClockSpeed::SecondsPerTick(1.0))
+            .map_err(|_| anyhow::anyhow!("Failed to create audio. Playback limit reached."))?;
 
         let filepath_clone = data.filepath.clone();
 
@@ -473,7 +493,10 @@ impl AudioEngine {
             self.handle_load(id, data.clone()).await?;
         }
 
-        let mut handle = self.loaded_sounds.remove(&id).ok_or_else(|| anyhow::anyhow!("Failed to get loaded sound."))?;
+        let mut handle = self
+            .loaded_sounds
+            .remove(&id)
+            .ok_or_else(|| anyhow::anyhow!("Failed to get loaded sound."))?;
         handle.start();
 
         log::info!("PLAY: id={}, file={}", id, data.filepath.display());
@@ -600,18 +623,24 @@ impl AudioEngine {
 
     async fn handle_fade_volume(&mut self, id: Uuid, volume: f32, param: FadeParam) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_fade(volume, Tween {
-                start_time: StartTime::Immediate,
-                duration: Duration::from_secs_f64(param.duration),
-                easing: param.easing.into(),
-            });
+            playing_sound.handle.set_fade(
+                volume,
+                Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_secs_f64(param.duration),
+                    easing: param.easing.into(),
+                },
+            );
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.set_fade(volume, Tween {
-                start_time: StartTime::Immediate,
-                duration: Duration::from_secs_f64(param.duration),
-                easing: param.easing.into(),
-            });
+            loaded_handle.set_fade(
+                volume,
+                Tween {
+                    start_time: StartTime::Immediate,
+                    duration: Duration::from_secs_f64(param.duration),
+                    easing: param.easing.into(),
+                },
+            );
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,

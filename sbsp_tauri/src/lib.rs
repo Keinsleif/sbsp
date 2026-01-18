@@ -7,14 +7,20 @@ use std::time::{Duration, SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
-    BackendHandle, api::{ApiServerOptions, server::start_apiserver_with}, controller::state::ShowState, event::UiEvent,
+    BackendHandle,
+    api::{ApiServerOptions, server::start_apiserver_with},
+    controller::state::ShowState,
+    event::UiEvent,
     start_backend,
 };
 use sbsp_license::LicenseManager;
 use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel, path::BaseDirectory};
-use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
-use tokio::{sync::{Mutex, RwLock, broadcast, watch}, time::interval};
+use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
+use tokio::{
+    sync::{Mutex, RwLock, broadcast, watch},
+    time::interval,
+};
 use tower_http::services::ServeDir;
 
 use crate::settings::manager::GlobalSettingsManager;
@@ -30,7 +36,7 @@ pub struct AppState {
     pub settings_manager: GlobalSettingsManager,
     server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
-    level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>
+    level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
 }
 
 impl AppState {
@@ -46,7 +52,11 @@ impl AppState {
             state_rx,
             event_tx,
             settings_manager,
-            server_option: RwLock::new(ApiServerOptions { port: 5800, discoverry: None, password: None }),
+            server_option: RwLock::new(ApiServerOptions {
+                port: 5800,
+                discoverry: None,
+                password: None,
+            }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,
         }
@@ -72,15 +82,15 @@ impl AppState {
 
     pub async fn start(&self, app_handle: AppHandle) -> anyhow::Result<()> {
         let option_lock = self.server_option.read().await;
-        let server_dir = app_handle.path().resolve("websocket", BaseDirectory::Resource)?;
+        let server_dir = app_handle
+            .path()
+            .resolve("websocket", BaseDirectory::Resource)?;
         let shutdown_tx = start_apiserver_with(
             self.backend_handle.clone(),
             self.state_rx.clone(),
             self.event_tx.clone(),
             option_lock.clone(),
-            move |router| {
-                router.fallback_service(ServeDir::new(server_dir.clone()))
-            },
+            move |router| router.fallback_service(ServeDir::new(server_dir.clone())),
         )
         .await?;
         drop(option_lock);
@@ -174,7 +184,8 @@ pub fn run() {
                     return Err(e.into());
                 }
             };
-            let (level_meter_tx, level_meter_rx) = watch::channel::<Option<Channel<(f32,f32)>>>(None);
+            let (level_meter_tx, level_meter_rx) =
+                watch::channel::<Option<Channel<(f32, f32)>>>(None);
 
             tokio::spawn(forward_backend_state_and_event(
                 app_handle.clone(),
@@ -219,7 +230,11 @@ pub fn run() {
             let app_handle_clone = app_handle.clone();
             tokio::spawn(async move {
                 let mut ticker = interval(Duration::from_millis(33)); // about 30fps
-                if let Some(shared_level) = app_handle_clone.state::<AppState>().get_handle().level_meter {
+                if let Some(shared_level) = app_handle_clone
+                    .state::<AppState>()
+                    .get_handle()
+                    .level_meter
+                {
                     loop {
                         ticker.tick().await;
                         if let Some(level_meter) = level_meter_rx.borrow().as_ref() {

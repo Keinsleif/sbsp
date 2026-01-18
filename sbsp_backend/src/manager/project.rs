@@ -6,10 +6,14 @@ use crate::model::{ProjectType, ShowModel};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(tag = "status", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "status",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum ProjectStatus {
     Unsaved,
-    Saved{
+    Saved {
         project_type: ProjectType,
         path: PathBuf,
     },

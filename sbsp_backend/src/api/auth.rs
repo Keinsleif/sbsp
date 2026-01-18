@@ -1,8 +1,8 @@
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha2::{Digest, Sha256};
 
 #[cfg(feature = "apiserver")]
-use rand::{rng, RngCore};
+use rand::{RngCore, rng};
 
 #[cfg(feature = "apiserver")]
 pub fn generate_salt() -> String {
@@ -28,6 +28,10 @@ pub fn generate_authentication_string(secret: &String, challenge: &String) -> St
 }
 
 #[cfg(feature = "apiserver")]
-pub fn check_authentication_string(secret: &String, challenge: &String, authentication_string: &String) -> bool {
+pub fn check_authentication_string(
+    secret: &String,
+    challenge: &String,
+    authentication_string: &String,
+) -> bool {
     generate_authentication_string(secret, challenge) == *authentication_string
 }

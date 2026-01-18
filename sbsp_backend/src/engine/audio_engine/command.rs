@@ -12,15 +12,40 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum AudioCommand {
-    Load { id: Uuid, data: AudioCommandData },
-    Play { id: Uuid, data: AudioCommandData },
-    Pause { id: Uuid },
-    Resume { id: Uuid },
-    Stop { id: Uuid },
-    SeekTo { id: Uuid, position: f64 },
-    SeekBy { id: Uuid, amount: f64 },
-    FadeVolume { id: Uuid, volume: f32, fade_param: FadeParam },
-    PerformAction { id: Uuid, action: AudioAction },
+    Load {
+        id: Uuid,
+        data: AudioCommandData,
+    },
+    Play {
+        id: Uuid,
+        data: AudioCommandData,
+    },
+    Pause {
+        id: Uuid,
+    },
+    Resume {
+        id: Uuid,
+    },
+    Stop {
+        id: Uuid,
+    },
+    SeekTo {
+        id: Uuid,
+        position: f64,
+    },
+    SeekBy {
+        id: Uuid,
+        amount: f64,
+    },
+    FadeVolume {
+        id: Uuid,
+        volume: f32,
+        fade_param: FadeParam,
+    },
+    PerformAction {
+        id: Uuid,
+        action: AudioAction,
+    },
     Reconfigure(ShowAudioSettings),
 }
 

@@ -1,5 +1,5 @@
-use tokio::sync::watch;
 use sbsp_backend::{BackendSettings, api::server::start_apiserver, start_backend};
+use tokio::sync::watch;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

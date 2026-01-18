@@ -7,15 +7,20 @@ use tokio::sync::oneshot;
 use crate::AppState;
 
 pub mod controller;
+pub mod license;
 pub mod model_manager;
 pub mod server;
 pub mod settings;
-pub mod license;
 
 #[tauri::command]
 pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {
-    let resource_path = app_handle.path().resolve("THIRD_PARTY_NOTICES.md", BaseDirectory::Resource).map_err(|e| e.to_string())?;
-    tokio::fs::read_to_string(&resource_path).await.map_err(|e| e.to_string())
+    let resource_path = app_handle
+        .path()
+        .resolve("THIRD_PARTY_NOTICES.md", BaseDirectory::Resource)
+        .map_err(|e| e.to_string())?;
+    tokio::fs::read_to_string(&resource_path)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -30,10 +35,7 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
 
 #[tauri::command]
 pub async fn file_open(app_handle: tauri::AppHandle) -> Result<(), String> {
-    let model_handle = app_handle
-        .state::<AppState>()
-        .get_handle()
-        .model_handle;
+    let model_handle = app_handle.state::<AppState>().get_handle().model_handle;
     let (result_tx, result_rx) = oneshot::channel();
     app_handle
         .dialog()
@@ -45,7 +47,8 @@ pub async fn file_open(app_handle: tauri::AppHandle) -> Result<(), String> {
     if let Ok(Some(file_path)) = result_rx.await {
         model_handle
             .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
-            .await.map_err(|e| e.to_string())?
+            .await
+            .map_err(|e| e.to_string())?
     }
     Ok(())
 }
@@ -57,11 +60,21 @@ pub async fn file_new(handle: tauri::AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn file_save(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub async fn file_save(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
     let handle = state.get_handle();
-    let file_dialog_builder = app_handle.dialog().file().add_filter("Show Model", &["sbsp"]);
+    let file_dialog_builder = app_handle
+        .dialog()
+        .file()
+        .add_filter("Show Model", &["sbsp"]);
     if handle.model_handle.get_current_file_path().await.is_some() {
-        handle.model_handle.save().await.map_err(|e| e.to_string())?;
+        handle
+            .model_handle
+            .save()
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(true)
     } else {
         let (result_tx, result_rx) = oneshot::channel();
@@ -70,7 +83,11 @@ pub async fn file_save(app_handle: tauri::AppHandle, state: tauri::State<'_, App
         });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            handle
+                .model_handle
+                .save_as(file_pathbuf)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(true)
         } else {
             Ok(false)
@@ -79,9 +96,15 @@ pub async fn file_save(app_handle: tauri::AppHandle, state: tauri::State<'_, App
 }
 
 #[tauri::command]
-pub async fn file_save_as(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub async fn file_save_as(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
     let handle = state.get_handle();
-    let file_dialog_builder = app_handle.dialog().file().add_filter("Show Model", &["sbsp"]);
+    let file_dialog_builder = app_handle
+        .dialog()
+        .file()
+        .add_filter("Show Model", &["sbsp"]);
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
         let (result_tx, result_rx) = oneshot::channel();
         file_dialog_builder
@@ -92,7 +115,11 @@ pub async fn file_save_as(app_handle: tauri::AppHandle, state: tauri::State<'_, 
             });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            handle
+                .model_handle
+                .save_as(file_pathbuf)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(true)
         } else {
             Ok(false)
@@ -104,7 +131,11 @@ pub async fn file_save_as(app_handle: tauri::AppHandle, state: tauri::State<'_, 
         });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle.model_handle.save_as(file_pathbuf).await.map_err(|e| e.to_string())?;
+            handle
+                .model_handle
+                .save_as(file_pathbuf)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(true)
         } else {
             Ok(false)
@@ -113,7 +144,10 @@ pub async fn file_save_as(app_handle: tauri::AppHandle, state: tauri::State<'_, 
 }
 
 #[tauri::command]
-pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub async fn export_to_folder(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
     let handle = state.get_handle();
     let file_dialog_builder = app_handle.dialog().file();
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
@@ -126,7 +160,11 @@ pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<
             });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle.model_handle.export_to_folder(file_pathbuf).await.map_err(|e| e.to_string())?;
+            handle
+                .model_handle
+                .export_to_folder(file_pathbuf)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(true)
         } else {
             Ok(false)
@@ -138,7 +176,11 @@ pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<
         });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle.model_handle.export_to_folder(file_pathbuf).await.map_err(|e| e.to_string())?;
+            handle
+                .model_handle
+                .export_to_folder(file_pathbuf)
+                .await
+                .map_err(|e| e.to_string())?;
             Ok(true)
         } else {
             Ok(false)
@@ -147,7 +189,10 @@ pub async fn export_to_folder(app_handle: tauri::AppHandle, state: tauri::State<
 }
 
 #[tauri::command]
-pub async fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<(f32, f32)>) -> Result<(), String> {
+pub async fn listen_level_meter(
+    state: tauri::State<'_, AppState>,
+    level_listener: Channel<(f32, f32)>,
+) -> Result<(), String> {
     state.level_meter_tx.send_modify(|channel| {
         *channel = Some(level_listener);
     });

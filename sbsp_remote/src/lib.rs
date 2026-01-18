@@ -14,7 +14,10 @@ use sbsp_backend::{
 };
 use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
-use tokio::{sync::{Mutex, RwLock, broadcast, mpsc, watch}, time::interval};
+use tokio::{
+    sync::{Mutex, RwLock, broadcast, mpsc, watch},
+    time::interval,
+};
 
 use crate::settings::manager::GlobalSettingsManager;
 
@@ -86,7 +89,12 @@ impl AppState {
             .map(|connection_data| connection_data.address.clone())
     }
 
-    pub async fn connect(&self, app_handle: AppHandle, address: String, password: Option<String>) -> anyhow::Result<()> {
+    pub async fn connect(
+        &self,
+        app_handle: AppHandle,
+        address: String,
+        password: Option<String>,
+    ) -> anyhow::Result<()> {
         let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) =
             create_remote_backend(address.clone(), password).await?;
         let mut connection_data_lock = self.connection_data.write().await;

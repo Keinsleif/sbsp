@@ -12,12 +12,23 @@ use axum::{
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
-use tokio::{sync::{broadcast, watch}, time::interval};
+use tokio::{
+    sync::{broadcast, watch},
+    time::interval,
+};
 
 use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
-    BackendHandle, api::{AuthInfo, ApiServerOptions, FileList, auth::{check_authentication_string, generate_salt, generate_secret}}, asset_processor::AssetProcessorCommand,
-    controller::state::ShowState, event::UiEvent, manager::ProjectStatus, model::ProjectType,
+    BackendHandle,
+    api::{
+        ApiServerOptions, AuthInfo, FileList,
+        auth::{check_authentication_string, generate_salt, generate_secret},
+    },
+    asset_processor::AssetProcessorCommand,
+    controller::state::ShowState,
+    event::UiEvent,
+    manager::ProjectStatus,
+    model::ProjectType,
 };
 
 #[derive(Clone)]
@@ -84,7 +95,6 @@ where
         mdns.register(sv_info).unwrap();
 
         tokio::spawn(async move {
-
             let _ = shutdown_rx_clone.recv().await;
             let mut result = mdns.shutdown();
             while let Err(mdns_sd::Error::Again) = result {
@@ -113,7 +123,10 @@ pub async fn start_apiserver(
 }
 
 pub fn get_mdns_hostname() -> anyhow::Result<String> {
-    gethostname().to_str().ok_or_else(|| anyhow::anyhow!("failed to get hostname.")).map(|hostname| format!("{}.local.", hostname))
+    gethostname()
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("failed to get hostname."))
+        .map(|hostname| format!("{}.local.", hostname))
 }
 
 async fn websocket_handler(
@@ -134,7 +147,10 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         None
     };
 
-    if let Ok(payload) = serde_json::to_string(&WsFeedback::Hello { auth: auth_info.clone() }) && socket.send(Message::Text(payload.into())).await.is_err() {
+    if let Ok(payload) = serde_json::to_string(&WsFeedback::Hello {
+        auth: auth_info.clone(),
+    }) && socket.send(Message::Text(payload.into())).await.is_err()
+    {
         log::info!("WebSocket client disconnected (send error).");
         return;
     }
@@ -143,10 +159,13 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         if let Some(Ok(msg)) = socket.recv().await {
             if let Message::Text(text) = msg {
                 if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
-                && let WsCommand::Authenticate { response } = command {
+                    && let WsCommand::Authenticate { response } = command
+                {
                     if let Some(password) = &state.options.password {
                         let secret = generate_secret(password, &state.salt);
-                        if let Some(auth_str) = response && check_authentication_string(&secret, &challenge, &auth_str) {
+                        if let Some(auth_str) = response
+                            && check_authentication_string(&secret, &challenge, &auth_str)
+                        {
                             break;
                         } else {
                             if let Err(e) = socket.send(Message::Close(None)).await {
@@ -169,7 +188,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         }
     }
 
-    if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated) && socket.send(Message::Text(payload.into())).await.is_err() {
+    if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated)
+        && socket.send(Message::Text(payload.into())).await.is_err()
+    {
         log::info!("WebSocket client disconnected (send error).");
         return;
     }

@@ -1,5 +1,8 @@
 use crate::AppState;
-use sbsp_backend::{manager::InsertPosition, model::{ShowModel, cue::Cue, settings::ShowSettings}};
+use sbsp_backend::{
+    manager::InsertPosition,
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
+};
 use uuid::Uuid;
 
 #[tauri::command]
@@ -56,7 +59,6 @@ pub async fn add_cue(
     } else {
         Err("Not connected.".into())
     }
-
 }
 
 #[tauri::command]

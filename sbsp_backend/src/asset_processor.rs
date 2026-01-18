@@ -1,10 +1,10 @@
+mod command;
 mod data;
 mod handle;
-mod command;
 
+pub use command::AssetProcessorCommand;
 pub use data::AssetData;
 pub use handle::AssetProcessorHandle;
-pub use command::AssetProcessorCommand;
 
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
@@ -116,9 +116,10 @@ impl AssetProcessor {
 
     async fn handle_process_file(&self, path: PathBuf) {
         let actual_path = {
-            if let Some(model_path) = self.model_handle.get_current_file_path().await && let Some(parent) = model_path.parent() {
-                parent
-                    .join(&path)
+            if let Some(model_path) = self.model_handle.get_current_file_path().await
+                && let Some(parent) = model_path.parent()
+            {
+                parent.join(&path)
             } else {
                 path.clone()
             }
@@ -237,15 +238,20 @@ impl AssetProcessor {
                         )?);
                     }
                     if sample_buf.is_none() {
-                        sample_buf = Some(SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec));
-                    } else if let Some(buffer) = &mut sample_buf && buffer.capacity() < decoded.capacity() * decoded_spec.channels.count() {
+                        sample_buf = Some(SampleBuffer::<f32>::new(
+                            decoded.capacity() as u64,
+                            decoded_spec,
+                        ));
+                    } else if let Some(buffer) = &mut sample_buf
+                        && buffer.capacity() < decoded.capacity() * decoded_spec.channels.count()
+                    {
                         *buffer = SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
                     }
 
                     if let Some(buffer) = &mut sample_buf {
                         buffer.copy_interleaved_ref(decoded);
 
-                        let samples= buffer.samples();
+                        let samples = buffer.samples();
 
                         if let Some(ebur) = &mut ebur128 {
                             ebur.add_frames_f32(samples)?;
@@ -296,7 +302,7 @@ impl AssetProcessor {
             .zip(codec_params.n_frames)
             .map(calc_sec);
 
-            let start_time = codec_params
+        let start_time = codec_params
             .time_base
             .zip(
                 first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64),
@@ -314,7 +320,11 @@ impl AssetProcessor {
             duration,
             waveform,
             integrated_lufs,
-            peak: if max_audio_sample > 0.0 { max_audio_sample.log10() * 20.0 } else { -60.0 },
+            peak: if max_audio_sample > 0.0 {
+                max_audio_sample.log10() * 20.0
+            } else {
+                -60.0
+            },
             start_time,
             end_time,
         })

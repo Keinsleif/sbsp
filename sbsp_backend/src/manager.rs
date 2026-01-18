@@ -1,11 +1,11 @@
-mod handle;
 mod command;
+mod handle;
 mod project;
 
 use anyhow::anyhow;
+pub use command::{InsertPosition, ModelCommand};
 pub use handle::ShowModelHandle;
-pub use command::{ModelCommand, InsertPosition};
-pub use project::{ProjectStatus, ProjectFile};
+pub use project::{ProjectFile, ProjectStatus};
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -19,9 +19,12 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings, event::{UiError, UiEvent}, model::{
-        ProjectType, ShowModel, cue::{Cue, CueParam}
-    }
+    BackendSettings,
+    event::{UiError, UiEvent},
+    model::{
+        ProjectType, ShowModel,
+        cue::{Cue, CueParam},
+    },
 };
 
 const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
@@ -37,7 +40,10 @@ pub struct ShowModelManager {
 }
 
 impl ShowModelManager {
-    pub fn new(event_tx: broadcast::Sender<UiEvent>, settings_rx: watch::Receiver<BackendSettings>) -> (Self, ShowModelHandle) {
+    pub fn new(
+        event_tx: broadcast::Sender<UiEvent>,
+        settings_rx: watch::Receiver<BackendSettings>,
+    ) -> (Self, ShowModelHandle) {
         let (command_tx, command_rx) = mpsc::channel(32);
         let model = Arc::new(RwLock::new(ShowModel::default()));
         let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
@@ -50,12 +56,7 @@ impl ShowModelManager {
             project_status: project_status.clone(),
             modify_status: modify_status.clone(),
         };
-        let handle = ShowModelHandle::new(
-            model,
-            command_tx,
-            project_status,
-            modify_status,
-        );
+        let handle = ShowModelHandle::new(model, command_tx, project_status, modify_status);
 
         (manager, handle)
     }
@@ -87,8 +88,12 @@ impl ShowModelManager {
                         model.settings.general.copy_assets_destination.clone()
                     };
 
-                    let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
-                        .await;
+                    let new_target = Self::import_asset_file(
+                        &audio_param.target,
+                        model_path,
+                        &import_destination,
+                    )
+                    .await;
                     if let Ok(target) = new_target {
                         audio_param.target = target;
                     } // ignore failed to import asset. use absolute path
@@ -101,7 +106,9 @@ impl ShowModelManager {
                     }
                 } else {
                     self.modify_status.store(true, Ordering::Release);
-                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
+                    UiEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -132,17 +139,27 @@ impl ShowModelManager {
                             let model = self.model.read().await;
                             model.settings.general.copy_assets_destination.clone()
                         };
-                        let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
-                            .await;
+                        let new_target = Self::import_asset_file(
+                            &audio_param.target,
+                            model_path,
+                            &import_destination,
+                        )
+                        .await;
                         if let Ok(target) = new_target {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
                     }
                     if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
-                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } }
+                        UiEvent::OperationFailed {
+                            error: UiError::CueEdit {
+                                message: format!("Failed to add cue. {}", e),
+                            },
+                        }
                     } else {
                         self.modify_status.store(true, Ordering::Release);
-                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
+                        UiEvent::CueListUpdated {
+                            cues: self.model.read().await.cues.clone(),
+                        }
                     }
                 };
                 self.event_tx.send(event)?;
@@ -176,21 +193,36 @@ impl ShowModelManager {
                                 let model = self.model.read().await;
                                 model.settings.general.copy_assets_destination.clone()
                             };
-                            let new_target = Self::import_asset_file(&audio_param.target, model_path, &import_destination)
-                                .await;
+                            let new_target = Self::import_asset_file(
+                                &audio_param.target,
+                                model_path,
+                                &import_destination,
+                            )
+                            .await;
                             if let Ok(target) = new_target {
                                 audio_param.target = target;
                             } // ignore failed to import asset. use absolute path
                         }
 
                         let result = if added_cues.is_empty() {
-                            self.insert_cue_at_position(new_cue.clone(), position.clone()).await
+                            self.insert_cue_at_position(new_cue.clone(), position.clone())
+                                .await
                         } else {
-                            self.insert_cue_at_position(new_cue.clone(), InsertPosition::After { target: added_cues.last().unwrap().id }).await
+                            self.insert_cue_at_position(
+                                new_cue.clone(),
+                                InsertPosition::After {
+                                    target: added_cues.last().unwrap().id,
+                                },
+                            )
+                            .await
                         };
 
                         if let Err(e) = result {
-                            let _ = self.event_tx.send(UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to add cue. {}", e) } });
+                            let _ = self.event_tx.send(UiEvent::OperationFailed {
+                                error: UiError::CueEdit {
+                                    message: format!("Failed to add cue. {}", e),
+                                },
+                            });
                         } else {
                             added_cues.push(new_cue.clone());
                         }
@@ -198,17 +230,25 @@ impl ShowModelManager {
                 }
                 if !added_cues.is_empty() {
                     self.modify_status.store(true, Ordering::Release);
-                    self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() })?;
+                    self.event_tx.send(UiEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    })?;
                 }
                 Ok(())
             }
             ModelCommand::RemoveCue { cue_id } => {
                 let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
-                    UiEvent::OperationFailed { error: UiError::CueEdit { message: "Failed to remove cue. id not found.".into() } }
+                    UiEvent::OperationFailed {
+                        error: UiError::CueEdit {
+                            message: "Failed to remove cue. id not found.".into(),
+                        },
+                    }
                 } else {
                     self.event_tx.send(UiEvent::CueRemoved { cue_id })?;
                     self.modify_status.store(true, Ordering::Release);
-                    UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
+                    UiEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -216,10 +256,16 @@ impl ShowModelManager {
             ModelCommand::MoveCue { cue_id, position } => {
                 let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
                     if let Err(e) = self.insert_cue_at_position(cue, position).await {
-                        UiEvent::OperationFailed { error: UiError::CueEdit { message: format!("Failed to mov cue. {}", e) } }
+                        UiEvent::OperationFailed {
+                            error: UiError::CueEdit {
+                                message: format!("Failed to mov cue. {}", e),
+                            },
+                        }
                     } else {
                         self.modify_status.store(true, Ordering::Release);
-                        UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() }
+                        UiEvent::CueListUpdated {
+                            cues: self.model.read().await.cues.clone(),
+                        }
                     }
                 } else {
                     UiEvent::OperationFailed {
@@ -285,7 +331,9 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::Save => {
-                let event = if let ProjectStatus::Saved { project_type, path } = &*self.project_status.read().await {
+                let event = if let ProjectStatus::Saved { project_type, path } =
+                    &*self.project_status.read().await
+                {
                     match self.save_to_file(path, project_type).await {
                         Err(error) => {
                             log::error!("Failed to save model file: {}", error);
@@ -298,7 +346,9 @@ impl ShowModelManager {
                         }
                         Ok(modified) => {
                             if modified {
-                                let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                                let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                                    cues: self.model.read().await.cues.clone(),
+                                });
                             }
                             self.modify_status.store(false, Ordering::Release);
                             UiEvent::ShowModelSaved {
@@ -329,14 +379,22 @@ impl ShowModelManager {
                     }
                     Ok(modified) => {
                         if modified {
-                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                                cues: self.model.read().await.cues.clone(),
+                            });
                         }
                         self.modify_status.store(false, Ordering::Release);
                         {
                             let mut project_status = self.project_status.write().await;
-                            *project_status = ProjectStatus::Saved { project_type: ProjectType::SingleFile, path: path.clone() };
+                            *project_status = ProjectStatus::Saved {
+                                project_type: ProjectType::SingleFile,
+                                path: path.clone(),
+                            };
                         }
-                        UiEvent::ShowModelSaved { project_type: ProjectType::SingleFile, path }
+                        UiEvent::ShowModelSaved {
+                            project_type: ProjectType::SingleFile,
+                            path,
+                        }
                     }
                 };
                 self.event_tx.send(event)?;
@@ -347,7 +405,10 @@ impl ShowModelManager {
                     anyhow::bail!("Failed to export to folder. path is not directory.");
                 }
                 let model_file_path = path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME);
-                let event = match self.save_to_file(&model_file_path, &ProjectType::ProjectFolder).await {
+                let event = match self
+                    .save_to_file(&model_file_path, &ProjectType::ProjectFolder)
+                    .await
+                {
                     Err(error) => {
                         log::error!("Failed to export model to folder: {}", error);
                         UiEvent::OperationFailed {
@@ -359,14 +420,22 @@ impl ShowModelManager {
                     }
                     Ok(modified) => {
                         if modified {
-                            let _ = self.event_tx.send(UiEvent::CueListUpdated { cues: self.model.read().await.cues.clone() });
+                            let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                                cues: self.model.read().await.cues.clone(),
+                            });
                         }
                         self.modify_status.store(false, Ordering::Release);
                         {
                             let mut project_status = self.project_status.write().await;
-                            *project_status = ProjectStatus::Saved { project_type: ProjectType::ProjectFolder, path: model_file_path.clone() };
+                            *project_status = ProjectStatus::Saved {
+                                project_type: ProjectType::ProjectFolder,
+                                path: model_file_path.clone(),
+                            };
                         }
-                        UiEvent::ShowModelSaved { project_type: ProjectType::ProjectFolder, path: model_file_path }
+                        UiEvent::ShowModelSaved {
+                            project_type: ProjectType::ProjectFolder,
+                            path: model_file_path,
+                        }
                     }
                 };
                 self.event_tx.send(event)?;
@@ -387,10 +456,17 @@ impl ShowModelManager {
                         self.modify_status.store(false, Ordering::Release);
                         {
                             let mut project_status = self.project_status.write().await;
-                            *project_status = ProjectStatus::Saved { project_type: project_type.clone(), path: path.clone() };
+                            *project_status = ProjectStatus::Saved {
+                                project_type: project_type.clone(),
+                                path: path.clone(),
+                            };
                         }
                         let model = self.read().await.clone();
-                        UiEvent::ShowModelLoaded { model, project_type, path }
+                        UiEvent::ShowModelLoaded {
+                            model,
+                            project_type,
+                            path,
+                        }
                     }
                 };
                 self.event_tx.send(event)?;
@@ -449,7 +525,11 @@ impl ShowModelManager {
         Err(format!("cue not found. id={}", cue_id))
     }
 
-    async fn insert_cue_at_position(&self, insert_cue: Cue, position: InsertPosition) -> Result<(), String> {
+    async fn insert_cue_at_position(
+        &self,
+        insert_cue: Cue,
+        position: InsertPosition,
+    ) -> Result<(), String> {
         let mut model = self.model.write().await;
         match position {
             InsertPosition::Before { target } => {
@@ -459,7 +539,7 @@ impl ShowModelManager {
                     for (index, cue) in cues.iter().enumerate() {
                         if cue.id == target {
                             cues.insert(index, insert_cue);
-                            return Ok(())
+                            return Ok(());
                         }
                     }
 
@@ -489,7 +569,7 @@ impl ShowModelManager {
                     }
                 }
                 Err("target id not found.".into())
-            },
+            }
             InsertPosition::Inside { target, index } => {
                 if let Some(parent_id) = target {
                     let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
@@ -517,7 +597,7 @@ impl ShowModelManager {
                 } else {
                     Err("insert index out of range.".into())
                 }
-            },
+            }
             InsertPosition::Last => {
                 model.cues.push(insert_cue);
                 Ok(())
@@ -537,7 +617,10 @@ impl ShowModelManager {
         }
         {
             let mut project_status = self.project_status.write().await;
-            *project_status = ProjectStatus::Saved{project_type: project_file.project_type.clone(), path: path.to_path_buf()};
+            *project_status = ProjectStatus::Saved {
+                project_type: project_file.project_type.clone(),
+                path: path.to_path_buf(),
+            };
         }
 
         log::info!("Show loaded from: {}", path.display());
@@ -546,13 +629,21 @@ impl ShowModelManager {
 
     pub async fn export_to_folder(&self, folder_path: &Path) -> Result<bool, anyhow::Error> {
         if folder_path.is_dir() {
-            self.save_to_file(&folder_path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME), &ProjectType::ProjectFolder).await
+            self.save_to_file(
+                &folder_path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
+                &ProjectType::ProjectFolder,
+            )
+            .await
         } else {
             Err(anyhow!("path is not directory."))
         }
     }
 
-    pub async fn save_to_file(&self, path: &PathBuf, project_type: &ProjectType) -> Result<bool, anyhow::Error> {
+    pub async fn save_to_file(
+        &self,
+        path: &PathBuf,
+        project_type: &ProjectType,
+    ) -> Result<bool, anyhow::Error> {
         let mut model_modified = false;
         let project_status = self.project_status.read().await;
 
@@ -567,15 +658,28 @@ impl ShowModelManager {
                     model.settings.general.copy_assets_destination.clone()
                 };
 
-                if let ProjectStatus::Saved { project_type, path: saved_path } = &*project_status && *project_type == ProjectType::ProjectFolder && path != saved_path {
+                if let ProjectStatus::Saved {
+                    project_type,
+                    path: saved_path,
+                } = &*project_status
+                    && *project_type == ProjectType::ProjectFolder
+                    && path != saved_path
+                {
                     let mut model = self.model.write().await;
                     let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
 
                     while let Some(cues) = queue.pop_front() {
                         for cue in cues.iter_mut() {
-                            if let CueParam::Audio(audio_param) = &mut cue.params && let Some(parent) = saved_path.parent() {
+                            if let CueParam::Audio(audio_param) = &mut cue.params
+                                && let Some(parent) = saved_path.parent()
+                            {
                                 let asset_path = parent.join(&audio_param.target);
-                                let new_path = Self::import_asset_file(&asset_path, project_dir, &import_destination).await?;
+                                let new_path = Self::import_asset_file(
+                                    &asset_path,
+                                    project_dir,
+                                    &import_destination,
+                                )
+                                .await?;
                                 audio_param.target = new_path;
                             }
                             if let CueParam::Group { children, .. } = &mut cue.params {
@@ -590,8 +694,14 @@ impl ShowModelManager {
                     while let Some(cues) = queue.pop_front() {
                         for cue in cues.iter_mut() {
                             if let CueParam::Audio(audio_param) = &mut cue.params
-                            && audio_param.target.is_absolute() {
-                                let new_path = Self::import_asset_file(&audio_param.target, project_dir, &import_destination).await?;
+                                && audio_param.target.is_absolute()
+                            {
+                                let new_path = Self::import_asset_file(
+                                    &audio_param.target,
+                                    project_dir,
+                                    &import_destination,
+                                )
+                                .await?;
                                 audio_param.target = new_path;
                             }
                             if let CueParam::Group { children, .. } = &mut cue.params {
@@ -610,7 +720,7 @@ impl ShowModelManager {
             let model = self.model.read().await;
             ProjectFile {
                 project_type: ProjectType::ProjectFolder,
-                model: model.clone()
+                model: model.clone(),
             }
         };
 
@@ -655,14 +765,17 @@ impl ShowModelManager {
 #[cfg(test)]
 mod tests {
     use crate::{
-        BackendSettings, event::UiEvent, manager::{ProjectStatus, ProjectType, command::InsertPosition}, model::{
+        BackendSettings,
+        event::UiEvent,
+        manager::{ProjectStatus, ProjectType, command::InsertPosition},
+        model::{
             ShowModel,
             cue::{
                 Cue, CueParam, CueSequence,
                 audio::{AudioCueParam, SoundType},
             },
             settings::ShowSettings,
-        }
+        },
     };
     use tempfile::{NamedTempFile, tempdir};
     use tokio::sync::{broadcast, watch};
@@ -718,9 +831,12 @@ mod tests {
                         sound_type: SoundType::Streaming,
                     }),
                 }],
-                settings: ShowSettings::default()
+                settings: ShowSettings::default(),
             }),
-            ProjectStatus::Saved {project_type: ProjectType::ProjectFolder, path: temp_dir.path().to_path_buf()},
+            ProjectStatus::Saved {
+                project_type: ProjectType::ProjectFolder,
+                path: temp_dir.path().to_path_buf(),
+            },
         )
         .await;
 
@@ -784,7 +900,10 @@ mod tests {
                 cues: vec![],
                 settings: ShowSettings::default(),
             }),
-            ProjectStatus::Saved {project_type: ProjectType::ProjectFolder, path: temp_dir.path().to_path_buf()},
+            ProjectStatus::Saved {
+                project_type: ProjectType::ProjectFolder,
+                path: temp_dir.path().to_path_buf(),
+            },
         )
         .await;
 
@@ -807,7 +926,16 @@ mod tests {
                 sound_type: SoundType::Streaming,
             }),
         };
-        model_handle.add_cue(new_cue.clone(), InsertPosition::Inside { target: None, index: 0 }).await.unwrap();
+        model_handle
+            .add_cue(
+                new_cue.clone(),
+                InsertPosition::Inside {
+                    target: None,
+                    index: 0,
+                },
+            )
+            .await
+            .unwrap();
 
         let estimated_audio_filename = temp_target.path().file_name().unwrap().to_str().unwrap();
         let estimated_audio_target = temp_dir.path().join(".").join(estimated_audio_filename);

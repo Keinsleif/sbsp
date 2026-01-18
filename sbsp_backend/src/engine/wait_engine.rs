@@ -196,7 +196,7 @@ impl WaitEngine {
                                 } else {
                                     Ok(())
                                 }
-                            } else if self.loaded_instances.remove(&instance_id).is_some() { 
+                            } else if self.loaded_instances.remove(&instance_id).is_some() {
                                 Ok(())
                              } else {
                                 Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))

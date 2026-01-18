@@ -42,16 +42,16 @@ pub mod asset_processor {
 }
 #[cfg(feature = "type_export")]
 pub mod controller {
-    pub mod state;
     mod command;
+    pub mod state;
     pub use command::ControllerCommand;
 }
 #[cfg(feature = "type_export")]
 pub mod manager {
     mod command;
-    pub use command::{ModelCommand, InsertPosition};
+    pub use command::{InsertPosition, ModelCommand};
     mod project;
-    pub use project::{ProjectStatus, ProjectFile};
+    pub use project::{ProjectFile, ProjectStatus};
 }
 #[cfg(feature = "type_export")]
 pub mod api;
@@ -73,11 +73,17 @@ pub struct BackendHandle {
 }
 
 #[cfg(feature = "backend")]
-pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>, enable_metering: bool) -> Result<(
-    BackendHandle,
-    watch::Receiver<ShowState>,
-    broadcast::Sender<UiEvent>,
-), anyhow::Error> {
+pub fn start_backend(
+    settings_rx: watch::Receiver<BackendSettings>,
+    enable_metering: bool,
+) -> Result<
+    (
+        BackendHandle,
+        watch::Receiver<ShowState>,
+        broadcast::Sender<UiEvent>,
+    ),
+    anyhow::Error,
+> {
     let (executor_command_tx, executor_command_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
     let (wait_tx, wait_rx) = mpsc::channel::<WaitCommand>(32);
@@ -86,7 +92,8 @@ pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>, enable_meter
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
 
-    let (model_manager, model_handle) = ShowModelManager::new(event_tx.clone(), settings_rx.clone());
+    let (model_manager, model_handle) =
+        ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
         settings_rx,
@@ -106,10 +113,18 @@ pub fn start_backend(settings_rx: watch::Receiver<BackendSettings>, enable_meter
     );
 
     let (audio_engine, level_meter) = if enable_metering {
-        let (engine, shared_level) = AudioEngine::new_with_level_meter(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default())?;
+        let (engine, shared_level) = AudioEngine::new_with_level_meter(
+            audio_rx,
+            engine_event_tx.clone(),
+            ShowAudioSettings::default(),
+        )?;
         (engine, Some(shared_level))
     } else {
-        let engine = AudioEngine::new(audio_rx, engine_event_tx.clone(), ShowAudioSettings::default())?;
+        let engine = AudioEngine::new(
+            audio_rx,
+            engine_event_tx.clone(),
+            ShowAudioSettings::default(),
+        )?;
         (engine, None)
     };
     let wait_engine = WaitEngine::new(wait_rx, engine_event_tx);

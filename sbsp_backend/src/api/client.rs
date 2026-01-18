@@ -11,7 +11,13 @@ use tokio::sync::{RwLock, broadcast, mpsc, watch};
 
 use super::{WsCommand, WsFeedback};
 use crate::{
-    BackendHandle, api::auth::{generate_authentication_string, generate_secret}, asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{ControllerCommand, CueControllerHandle, state::ShowState}, event::UiEvent, manager::{ModelCommand, ProjectStatus, ShowModelHandle}, model::ShowModel
+    BackendHandle,
+    api::auth::{generate_authentication_string, generate_secret},
+    asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
+    controller::{ControllerCommand, CueControllerHandle, state::ShowState},
+    event::UiEvent,
+    manager::{ModelCommand, ProjectStatus, ShowModelHandle},
+    model::ShowModel,
 };
 pub use file_list_handler::FileListHandle;
 pub use service_entry::ServiceEntry;
@@ -24,7 +30,10 @@ type ConnectionHandles = (
     mpsc::Sender<()>,
 );
 
-pub async fn create_remote_backend(address: String, password: Option<String>) -> anyhow::Result<ConnectionHandles> {
+pub async fn create_remote_backend(
+    address: String,
+    password: Option<String>,
+) -> anyhow::Result<ConnectionHandles> {
     let model = Arc::new(RwLock::new(ShowModel::default()));
     let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
@@ -50,12 +59,17 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
     let mut websocket = response.into_websocket().await?;
 
     if let Ok(Some(message)) = websocket.try_next().await {
-        if let Message::Text(text) = &message 
-        && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text) && let WsFeedback::Hello { auth } = feedback {
+        if let Message::Text(text) = &message
+            && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
+            && let WsFeedback::Hello { auth } = feedback
+        {
             let response = if let Some(auth_info) = auth {
                 if let Some(pass) = password {
                     let secret = generate_secret(&pass, &auth_info.salt);
-                    Some(generate_authentication_string(&secret, &auth_info.challenge))
+                    Some(generate_authentication_string(
+                        &secret,
+                        &auth_info.challenge,
+                    ))
                 } else {
                     anyhow::bail!("Password is required to connect.")
                 }
@@ -63,11 +77,12 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
                 None
             };
             if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
-            && websocket.send(Message::Text(payload)).await.is_err() {
+                && websocket.send(Message::Text(payload)).await.is_err()
+            {
                 log::info!("WebSocket client disconnected (send error).");
                 anyhow::bail!("Connection closed during authentication.");
             }
-        } else if let Message::Close{ .. } = &message {
+        } else if let Message::Close { .. } = &message {
             log::info!("WebSocket server sent close message.");
             anyhow::bail!("Connection closed during authentication.");
         }
@@ -75,10 +90,12 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
 
     loop {
         if let Ok(Some(message)) = websocket.try_next().await {
-            if let Message::Text(text) = &message 
-            && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text) && let WsFeedback::Authenticated = feedback {
+            if let Message::Text(text) = &message
+                && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
+                && let WsFeedback::Authenticated = feedback
+            {
                 break;
-            } else if let Message::Close{ .. } = &message {
+            } else if let Message::Close { .. } = &message {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
             }
@@ -86,7 +103,8 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
     }
 
     if let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState)
-    && websocket.send(Message::Text(payload)).await.is_err() {
+        && websocket.send(Message::Text(payload)).await.is_err()
+    {
         anyhow::bail!("WebSocket client disconnected (send error).");
     }
 
@@ -218,7 +236,7 @@ pub async fn create_remote_backend(address: String, password: Option<String>) ->
             controller_handle: CueControllerHandle {
                 command_tx: controller_tx,
             },
-            level_meter: None
+            level_meter: None,
         },
         state_rx,
         event_tx,

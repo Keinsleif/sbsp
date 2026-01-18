@@ -6,7 +6,8 @@ use uuid::Uuid;
 #[cfg(not(feature = "type_export"))]
 use crate::executor::ExecutorEvent;
 use crate::{
-    asset_processor::AssetData, model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings}
+    asset_processor::AssetData,
+    model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
