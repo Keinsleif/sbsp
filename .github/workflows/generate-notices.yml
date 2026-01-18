@@ -11,9 +11,9 @@ on:
       - 'about.toml'
   workflow_dispatch:
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: pages
+  group: notices
+  cancel-in-progress: true
 
 jobs:
   gen-notices:
