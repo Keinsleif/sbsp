@@ -60,32 +60,32 @@
 </template>
 
 <script setup lang="ts">
-import { mdiRepeat } from '@mdi/js';
-import { useShowModel } from '../stores/showmodel';
-import { useShowState } from '../stores/showstate';
-import { useUiState } from '../stores/uistate';
-import type { PlaybackStatus } from '../types/PlaybackStatus';
-import { buildCueName, secondsToFormat } from '../utils';
-import { useI18n } from 'vue-i18n';
-import LevelMeter from './input/LevelMeter.vue';
+  import { mdiRepeat } from '@mdi/js';
+  import { useShowModel } from '../stores/showmodel';
+  import { useShowState } from '../stores/showstate';
+  import { useUiState } from '../stores/uistate';
+  import type { PlaybackStatus } from '../types/PlaybackStatus';
+  import { buildCueName, secondsToFormat } from '../utils';
+  import { useI18n } from 'vue-i18n';
+  import LevelMeter from './input/LevelMeter.vue';
 
-const { t } = useI18n();
-const showModel = useShowModel();
-const showState = useShowState();
-const uiState = useUiState();
+  const { t } = useI18n();
+  const showModel = useShowModel();
+  const showState = useShowState();
+  const uiState = useUiState();
 
-const buildTitle = (cue_id: string) => {
-  const activeCue = showModel.getCueById(cue_id);
-  if (activeCue == null) return;
-  let result = '';
-  if (activeCue.number.trim() != '') {
-    result = activeCue.number + '・';
-  }
-  if (activeCue.name != null) {
-    result = result + activeCue.name;
-  } else {
-    result = result + buildCueName(activeCue);
-  }
-  return result;
-};
+  const buildTitle = (cue_id: string) => {
+    const activeCue = showModel.getCueById(cue_id);
+    if (activeCue == null) return;
+    let result = '';
+    if (activeCue.number.trim() != '') {
+      result = activeCue.number + '・';
+    }
+    if (activeCue.name != null) {
+      result = result + activeCue.name;
+    } else {
+      result = result + buildCueName(activeCue);
+    }
+    return result;
+  };
 </script>

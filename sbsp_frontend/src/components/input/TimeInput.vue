@@ -18,41 +18,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { formatToSeconds, secondsToFormat } from '../../utils';
+  import { ref, watch } from 'vue';
+  import { formatToSeconds, secondsToFormat } from '../../utils';
 
-const seconds = defineModel<number | null>({ default: null });
-const props = withDefaults(
-  defineProps<{
-    acceptMinus?: boolean;
-  }>(),
-  {
-    acceptMinus: false,
-  },
-);
-const emit = defineEmits(['update']);
+  const seconds = defineModel<number | null>({ default: null });
+  const props = withDefaults(
+    defineProps<{
+      acceptMinus?: boolean;
+    }>(),
+    {
+      acceptMinus: false,
+    },
+  );
+  const emit = defineEmits(['update']);
 
-const formattedValue = ref(secondsToFormat(seconds.value));
+  const formattedValue = ref(secondsToFormat(seconds.value));
 
-watch(seconds, () => {
-  formattedValue.value = secondsToFormat(seconds.value);
-});
+  watch(seconds, () => {
+    formattedValue.value = secondsToFormat(seconds.value);
+  });
 
-const save = () => {
-  const innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
-  seconds.value = innerValue;
-  if (seconds.value != innerValue) {
-    emit('update');
-  }
-};
+  const save = () => {
+    const innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
+    seconds.value = innerValue;
+    if (seconds.value != innerValue) {
+      emit('update');
+    }
+  };
 
-const reset = () => {
-  formattedValue.value = secondsToFormat(seconds.value);
-};
+  const reset = () => {
+    formattedValue.value = secondsToFormat(seconds.value);
+  };
 </script>
 
 <style lang="css" module>
-.centered-input input {
-  text-align: center;
-}
+  .centered-input input {
+    text-align: center;
+  }
 </style>

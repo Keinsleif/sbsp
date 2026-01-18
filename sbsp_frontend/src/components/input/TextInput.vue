@@ -45,65 +45,65 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+  import { ref, watch } from 'vue';
 
-const text = defineModel<string | null>({ default: '' });
-const props = withDefaults(
-  defineProps<{
-    textType?: 'single' | 'area';
-    alignInput?: 'left' | 'center' | 'right';
-    showDetails?: boolean;
-  }>(),
-  {
-    textType: 'single',
-    alignInput: 'center',
-    showDetails: false,
-  },
-);
-const emit = defineEmits(['update']);
+  const text = defineModel<string | null>({ default: '' });
+  const props = withDefaults(
+    defineProps<{
+      textType?: 'single' | 'area';
+      alignInput?: 'left' | 'center' | 'right';
+      showDetails?: boolean;
+    }>(),
+    {
+      textType: 'single',
+      alignInput: 'center',
+      showDetails: false,
+    },
+  );
+  const emit = defineEmits(['update']);
 
-const innerText = ref(text.value != null ? text.value : '');
+  const innerText = ref(text.value != null ? text.value : '');
 
-watch(text, () => {
-  innerText.value = text.value != null ? text.value : '';
-});
-
-const save = () => {
-  if (text.value != innerText.value) {
-    text.value = innerText.value;
-    emit('update');
-  }
-};
-
-const reset = () => {
-  innerText.value = text.value != null ? text.value : '';
-};
-
-const onTabInput = (event: KeyboardEvent) => {
-  event.preventDefault();
-  const textarea = event.target as HTMLTextAreaElement;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-
-  textarea.setRangeText('\t', start, end, 'end');
-  const inputEvent = new InputEvent('input', {
-    bubbles: true,
-    cancelable: false,
-    inputType: 'insertText',
-    data: '\t',
+  watch(text, () => {
+    innerText.value = text.value != null ? text.value : '';
   });
-  textarea.dispatchEvent(inputEvent);
-};
+
+  const save = () => {
+    if (text.value != innerText.value) {
+      text.value = innerText.value;
+      emit('update');
+    }
+  };
+
+  const reset = () => {
+    innerText.value = text.value != null ? text.value : '';
+  };
+
+  const onTabInput = (event: KeyboardEvent) => {
+    event.preventDefault();
+    const textarea = event.target as HTMLTextAreaElement;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    textarea.setRangeText('\t', start, end, 'end');
+    const inputEvent = new InputEvent('input', {
+      bubbles: true,
+      cancelable: false,
+      inputType: 'insertText',
+      data: '\t',
+    });
+    textarea.dispatchEvent(inputEvent);
+  };
 </script>
 
 <style lang="css" module>
-.center-input input {
-  text-align: center;
-}
-.left-input input {
-  text-align: left;
-}
-.right-input input {
-  text-align: right;
-}
+  .center-input input {
+    text-align: center;
+  }
+  .left-input input {
+    text-align: left;
+  }
+  .right-input input {
+    text-align: right;
+  }
 </style>

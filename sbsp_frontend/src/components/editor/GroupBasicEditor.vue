@@ -30,60 +30,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { Cue } from '../../types/Cue';
-import { useI18n } from 'vue-i18n';
+  import { ref, watch } from 'vue';
+  import type { Cue } from '../../types/Cue';
+  import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+  const { t } = useI18n();
 
-const selectedCue = defineModel<Cue | null>();
-const emit = defineEmits(['update']);
+  const selectedCue = defineModel<Cue | null>();
+  const emit = defineEmits(['update']);
 
-const mode = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'group' ? selectedCue.value.params.mode.type : null,
-);
+  const mode = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'group' ? selectedCue.value.params.mode.type : null,
+  );
 
-const repeat = ref(
-  selectedCue.value != null &&
-    selectedCue.value.params.type == 'group' &&
-    selectedCue.value.params.mode.type == 'playlist'
-    ? selectedCue.value.params.mode.repeat
-    : null,
-);
+  const repeat = ref(
+    selectedCue.value != null &&
+      selectedCue.value.params.type == 'group' &&
+      selectedCue.value.params.mode.type == 'playlist'
+      ? selectedCue.value.params.mode.repeat
+      : null,
+  );
 
-watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
-    return;
-  }
-  mode.value = selectedCue.value.params.mode.type;
-  repeat.value = selectedCue.value.params.mode.type == 'playlist' ? selectedCue.value.params.mode.repeat : null;
-});
+  watch(selectedCue, () => {
+    if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
+      return;
+    }
+    mode.value = selectedCue.value.params.mode.type;
+    repeat.value = selectedCue.value.params.mode.type == 'playlist' ? selectedCue.value.params.mode.repeat : null;
+  });
 
-const saveEditorValue = () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
-    return;
-  }
-  if (mode.value != null) {
-    if (mode.value != selectedCue.value.params.mode.type) {
-      selectedCue.value.params.mode.type = mode.value;
-      if (selectedCue.value.params.mode.type == 'playlist') {
-        selectedCue.value.params.mode.repeat = true;
+  const saveEditorValue = () => {
+    if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
+      return;
+    }
+    if (mode.value != null) {
+      if (mode.value != selectedCue.value.params.mode.type) {
+        selectedCue.value.params.mode.type = mode.value;
+        if (selectedCue.value.params.mode.type == 'playlist') {
+          selectedCue.value.params.mode.repeat = true;
+        }
+      }
+      if (
+        selectedCue.value.params.mode.type == 'playlist' &&
+        repeat.value != null &&
+        repeat.value != selectedCue.value.params.mode.repeat
+      ) {
+        selectedCue.value.params.mode.repeat = repeat.value;
       }
     }
-    if (
-      selectedCue.value.params.mode.type == 'playlist' &&
-      repeat.value != null &&
-      repeat.value != selectedCue.value.params.mode.repeat
-    ) {
-      selectedCue.value.params.mode.repeat = repeat.value;
-    }
-  }
-  emit('update');
-};
+    emit('update');
+  };
 </script>
 
 <style lang="css" module>
-.centered-input input {
-  text-align: center;
-}
+  .centered-input input {
+    text-align: center;
+  }
 </style>

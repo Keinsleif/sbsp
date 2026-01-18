@@ -141,172 +141,172 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
-import TextInput from '../input/TextInput.vue';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
-import { ApiServerOptions } from '../../types/ApiServerOptions';
-import { useUiState } from '../../stores/uistate';
-import { mdiCheck, mdiContentCopy, mdiEye, mdiEyeOff } from '@mdi/js';
-import CopyTextInput from '../input/CopyTextInput.vue';
-import QrViewer from '../input/QrViewer.vue';
+  import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
+  import TextInput from '../input/TextInput.vue';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api';
+  import { ApiServerOptions } from '../../types/ApiServerOptions';
+  import { useUiState } from '../../stores/uistate';
+  import { mdiCheck, mdiContentCopy, mdiEye, mdiEyeOff } from '@mdi/js';
+  import CopyTextInput from '../input/CopyTextInput.vue';
+  import QrViewer from '../input/QrViewer.vue';
 
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-const { t } = useI18n();
-const api = useApi();
-const uiState = useUiState();
+  const { t } = useI18n();
+  const api = useApi();
+  const uiState = useUiState();
 
-const isServerPanelOpen = defineModel<boolean>({ required: true });
-const qrRef = useTemplateRef<InstanceType<typeof QrViewer>>('qrRef');
+  const isServerPanelOpen = defineModel<boolean>({ required: true });
+  const qrRef = useTemplateRef<InstanceType<typeof QrViewer>>('qrRef');
 
-const isPasswordVisible = ref(false);
-const isServerInfoDialogOpen = ref(false);
-const copied = ref(false);
+  const isPasswordVisible = ref(false);
+  const isServerInfoDialogOpen = ref(false);
+  const copied = ref(false);
 
-const isRunning = ref<boolean | null>(null);
-const isDiscoverable = ref<boolean | null>(null);
-const server_port = ref<string>('');
-const server_name = ref<string>('Untitled SBS Player Server');
-const server_password = ref<string>('');
+  const isRunning = ref<boolean | null>(null);
+  const isDiscoverable = ref<boolean | null>(null);
+  const server_port = ref<string>('');
+  const server_name = ref<string>('Untitled SBS Player Server');
+  const server_password = ref<string>('');
 
-const server_hostname = ref<string | null>(null);
-const server_url = ref<string | null>(null);
+  const server_hostname = ref<string | null>(null);
+  const server_url = ref<string | null>(null);
 
-let server_options: ApiServerOptions = {
-  port: 5800,
-  discoverry: null,
-  password: null,
-};
+  let server_options: ApiServerOptions = {
+    port: 5800,
+    discoverry: null,
+    password: null,
+  };
 
-let unlisten: (() => void) | null = null;
+  let unlisten: (() => void) | null = null;
 
-const saveServerOptions = async () => {
-  if (isDiscoverable.value) {
-    server_options.discoverry = server_name.value;
-  } else {
-    server_options.discoverry = null;
-  }
-  server_options.port = parseInt(server_port.value);
-  let new_password: string | null = server_password.value.trim();
-  if (new_password === '') {
-    new_password = null;
-  }
-  server_options.password = new_password;
-  await api.host?.setServerOptions(server_options);
-};
-
-const toggleServer = async () => {
-  if (isRunning.value) {
-    api.host?.stopServer().catch((e) => {
-      console.error(e);
-      uiState.error_messages.push(e);
-    });
-  } else {
-    isPasswordVisible.value = false;
-    await saveServerOptions();
-    api.host?.startServer().catch((e) => {
-      console.error(e);
-      uiState.error_messages.push(e);
-    });
-  }
-};
-
-const generateRandomPassword = (): string => {
-  const array = new Uint32Array(16);
-  crypto.getRandomValues(array);
-
-  let password = '';
-  for (let i = 0; i < 16; i++) {
-    password += CHARSET[array[i] % CHARSET.length];
-  }
-
-  return password;
-};
-
-const generateServerUrl = async () => {
-  const hostname = await api.host?.getHostname();
-  server_hostname.value = hostname || null;
-  if (hostname) {
-    const address = `${hostname}:${server_options.port}`;
-    if (server_options.password) {
-      server_url.value = `http://${address}/?address=${address}#${server_options.password}`;
+  const saveServerOptions = async () => {
+    if (isDiscoverable.value) {
+      server_options.discoverry = server_name.value;
     } else {
-      server_url.value = `http://${address}/?address=${address}`;
+      server_options.discoverry = null;
     }
-  }
-};
+    server_options.port = parseInt(server_port.value);
+    let new_password: string | null = server_password.value.trim();
+    if (new_password === '') {
+      new_password = null;
+    }
+    server_options.password = new_password;
+    await api.host?.setServerOptions(server_options);
+  };
 
-const copyQr = () => {
-  if (qrRef.value == null) return;
-  const qrImageData = new XMLSerializer().serializeToString(qrRef.value.$el);
-  const qrImageBlob = new Blob([qrImageData], { type: 'image/svg+xml;charset=utf-8' });
-  const qrImageUrl = URL.createObjectURL(qrImageBlob);
+  const toggleServer = async () => {
+    if (isRunning.value) {
+      api.host?.stopServer().catch((e) => {
+        console.error(e);
+        uiState.error_messages.push(e);
+      });
+    } else {
+      isPasswordVisible.value = false;
+      await saveServerOptions();
+      api.host?.startServer().catch((e) => {
+        console.error(e);
+        uiState.error_messages.push(e);
+      });
+    }
+  };
 
-  const canvas = document.createElement('canvas');
-  canvas.width = qrRef.value.$el.clientWidth;
-  canvas.height = qrRef.value.$el.clientHeight;
-  const context = canvas.getContext('2d');
-  if (context == null) return;
+  const generateRandomPassword = (): string => {
+    const array = new Uint32Array(16);
+    crypto.getRandomValues(array);
 
-  const img = new Image(qrRef.value.$el.clientWidth, qrRef.value.$el.clientHeight);
-  img.addEventListener('load', () => {
-    console.log('loaded');
-    context.drawImage(img, 0, 0);
+    let password = '';
+    for (let i = 0; i < 16; i++) {
+      password += CHARSET[array[i] % CHARSET.length];
+    }
 
-    canvas.toBlob((blob) => {
-      if (blob == null) return;
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    }, 'image/png');
+    return password;
+  };
 
-    URL.revokeObjectURL(qrImageUrl);
-    copied.value = true;
-    setTimeout(() => (copied.value = false), 2000);
-  });
-  img.src = qrImageUrl;
-};
-
-watch(isServerPanelOpen, (value) => {
-  if (value) {
-    isPasswordVisible.value = false;
-  }
-});
-
-onMounted(() => {
-  api.host
-    ?.getServerOptions()
-    .then((options) => {
-      server_options = options;
-      if (options.discoverry != null) {
-        isDiscoverable.value = true;
-        server_name.value = options.discoverry;
+  const generateServerUrl = async () => {
+    const hostname = await api.host?.getHostname();
+    server_hostname.value = hostname || null;
+    if (hostname) {
+      const address = `${hostname}:${server_options.port}`;
+      if (server_options.password) {
+        server_url.value = `http://${address}/?address=${address}#${server_options.password}`;
       } else {
-        isDiscoverable.value = false;
+        server_url.value = `http://${address}/?address=${address}`;
       }
-      server_port.value = options.port.toString();
-      server_password.value = options.password || '';
-    })
-    .catch((e) => console.error(e));
-  api.host
-    ?.isServerRunning()
-    .then((state) => (isRunning.value = state))
-    .catch((e) => console.error(e));
-  api.host
-    ?.onServerStatusChanged((status) => {
-      if (status == 'started') {
-        isRunning.value = true;
-      } else if (status == 'stopped') {
-        isRunning.value = false;
-      }
-    })
-    .then((unlisten_func) => {
-      unlisten = unlisten_func;
-    });
-});
+    }
+  };
 
-onUnmounted(() => {
-  if (unlisten != null) {
-    unlisten();
-  }
-});
+  const copyQr = () => {
+    if (qrRef.value == null) return;
+    const qrImageData = new XMLSerializer().serializeToString(qrRef.value.$el);
+    const qrImageBlob = new Blob([qrImageData], { type: 'image/svg+xml;charset=utf-8' });
+    const qrImageUrl = URL.createObjectURL(qrImageBlob);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = qrRef.value.$el.clientWidth;
+    canvas.height = qrRef.value.$el.clientHeight;
+    const context = canvas.getContext('2d');
+    if (context == null) return;
+
+    const img = new Image(qrRef.value.$el.clientWidth, qrRef.value.$el.clientHeight);
+    img.addEventListener('load', () => {
+      console.log('loaded');
+      context.drawImage(img, 0, 0);
+
+      canvas.toBlob((blob) => {
+        if (blob == null) return;
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      }, 'image/png');
+
+      URL.revokeObjectURL(qrImageUrl);
+      copied.value = true;
+      setTimeout(() => (copied.value = false), 2000);
+    });
+    img.src = qrImageUrl;
+  };
+
+  watch(isServerPanelOpen, (value) => {
+    if (value) {
+      isPasswordVisible.value = false;
+    }
+  });
+
+  onMounted(() => {
+    api.host
+      ?.getServerOptions()
+      .then((options) => {
+        server_options = options;
+        if (options.discoverry != null) {
+          isDiscoverable.value = true;
+          server_name.value = options.discoverry;
+        } else {
+          isDiscoverable.value = false;
+        }
+        server_port.value = options.port.toString();
+        server_password.value = options.password || '';
+      })
+      .catch((e) => console.error(e));
+    api.host
+      ?.isServerRunning()
+      .then((state) => (isRunning.value = state))
+      .catch((e) => console.error(e));
+    api.host
+      ?.onServerStatusChanged((status) => {
+        if (status == 'started') {
+          isRunning.value = true;
+        } else if (status == 'stopped') {
+          isRunning.value = false;
+        }
+      })
+      .then((unlisten_func) => {
+        unlisten = unlisten_func;
+      });
+  });
+
+  onUnmounted(() => {
+    if (unlisten != null) {
+      unlisten();
+    }
+  });
 </script>

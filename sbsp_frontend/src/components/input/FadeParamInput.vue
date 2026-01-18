@@ -78,78 +78,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
-import { curveToEasing, easingToCurve } from '../../utils';
-import CurveViewer from './CurveViewer.vue';
-import TimeInput from './TimeInput.vue';
-import { useI18n } from 'vue-i18n';
+  import { ref, watch } from 'vue';
+  import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
+  import { curveToEasing, easingToCurve } from '../../utils';
+  import CurveViewer from './CurveViewer.vue';
+  import TimeInput from './TimeInput.vue';
+  import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+  const { t } = useI18n();
 
-const param = defineModel<AudioCueFadeParam | null>({ required: true });
-const props = withDefaults(
-  defineProps<{
-    label?: string;
-    condition?: 'in' | 'out' | 'both';
-    disableToggle?: boolean;
-    disabled?: boolean;
-  }>(),
-  {
-    label: '',
-    condition: 'in',
-    disableToggle: false,
-    disabled: false,
-  },
-);
-const emit = defineEmits(['update']);
+  const param = defineModel<AudioCueFadeParam | null>({ required: true });
+  const props = withDefaults(
+    defineProps<{
+      label?: string;
+      condition?: 'in' | 'out' | 'both';
+      disableToggle?: boolean;
+      disabled?: boolean;
+    }>(),
+    {
+      label: '',
+      condition: 'in',
+      disableToggle: false,
+      disabled: false,
+    },
+  );
+  const emit = defineEmits(['update']);
 
-const fadeEnabled = ref<boolean>(param.value != null || props.disableToggle);
-const duration = ref<number | null>(param.value != null ? param.value.duration : null);
-const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
-  param.value != null ? easingToCurve(param.value.easing).type : null,
-);
-const easingPower = ref<number | null>(param.value != null ? easingToCurve(param.value.easing).power : null);
+  const fadeEnabled = ref<boolean>(param.value != null || props.disableToggle);
+  const duration = ref<number | null>(param.value != null ? param.value.duration : null);
+  const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
+    param.value != null ? easingToCurve(param.value.easing).type : null,
+  );
+  const easingPower = ref<number | null>(param.value != null ? easingToCurve(param.value.easing).power : null);
 
-watch(param, () => {
-  if (param.value == null) {
-    fadeEnabled.value = false;
-    duration.value = null;
-    easingType.value = null;
-    easingPower.value = null;
-  } else {
-    fadeEnabled.value = true;
-    duration.value = param.value.duration;
-    const curve = easingToCurve(param.value.easing);
-    easingType.value = curve.type;
-    easingPower.value = curve.power;
-  }
-});
-
-const saveValues = () => {
-  if (fadeEnabled.value) {
+  watch(param, () => {
     if (param.value == null) {
-      param.value = {
-        duration: 3,
-        easing: { type: 'inOutPowi', intensity: 2 },
-      };
-      duration.value = 3;
-      easingType.value = 'inOutPow';
-      easingPower.value = 2;
+      fadeEnabled.value = false;
+      duration.value = null;
+      easingType.value = null;
+      easingPower.value = null;
     } else {
-      if (duration.value != null) {
-        param.value.duration = duration.value;
-      }
-      if (easingType.value == 'linear') {
-        easingPower.value = null;
-      } else if (easingPower.value == null) {
-        easingPower.value = 2;
-      }
-      param.value.easing = curveToEasing({ type: easingType.value, power: easingPower.value });
+      fadeEnabled.value = true;
+      duration.value = param.value.duration;
+      const curve = easingToCurve(param.value.easing);
+      easingType.value = curve.type;
+      easingPower.value = curve.power;
     }
-  } else {
-    param.value = null;
-  }
-  emit('update');
-};
+  });
+
+  const saveValues = () => {
+    if (fadeEnabled.value) {
+      if (param.value == null) {
+        param.value = {
+          duration: 3,
+          easing: { type: 'inOutPowi', intensity: 2 },
+        };
+        duration.value = 3;
+        easingType.value = 'inOutPow';
+        easingPower.value = 2;
+      } else {
+        if (duration.value != null) {
+          param.value.duration = duration.value;
+        }
+        if (easingType.value == 'linear') {
+          easingPower.value = null;
+        } else if (easingPower.value == null) {
+          easingPower.value = 2;
+        }
+        param.value.easing = curveToEasing({ type: easingType.value, power: easingPower.value });
+      }
+    } else {
+      param.value = null;
+    }
+    emit('update');
+  };
 </script>

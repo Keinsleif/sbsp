@@ -12,6 +12,7 @@
     "build:host": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite build",
     "build:remote": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite build",
     "preview": "vite preview",
+    "prettier": "prettier . -w",
     "tauri": "tauri"
   },
   "dependencies": {

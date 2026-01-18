@@ -22,30 +22,30 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
-import { useUiState } from '../stores/uistate';
-import { useShowModel } from '../stores/showmodel';
-import { useI18n } from 'vue-i18n';
-import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side } from '../api';
+  import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
+  import { useUiState } from '../stores/uistate';
+  import { useShowModel } from '../stores/showmodel';
+  import { useI18n } from 'vue-i18n';
+  import { message } from '@tauri-apps/plugin-dialog';
+  import { useApi, side } from '../api';
 
-const { t } = useI18n();
+  const { t } = useI18n();
 
-const showModel = useShowModel();
-const uiState = useUiState();
-const api = useApi();
+  const showModel = useShowModel();
+  const uiState = useUiState();
+  const api = useApi();
 
-const openSettings = async () => {
-  uiState.isSettingsDialogOpen = true;
-};
+  const openSettings = async () => {
+    uiState.isSettingsDialogOpen = true;
+  };
 
-const openServerPanel = () => {
-  api.host?.getLicenseInfo().then((info) => {
-    if (info != null && info.edition == 'Pro') {
-      uiState.isServerPanelOpen = true;
-    } else {
-      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
-    }
-  });
-};
+  const openServerPanel = () => {
+    api.host?.getLicenseInfo().then((info) => {
+      if (info != null && info.edition == 'Pro') {
+        uiState.isServerPanelOpen = true;
+      } else {
+        message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+      }
+    });
+  };
 </script>

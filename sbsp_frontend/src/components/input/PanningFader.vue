@@ -46,47 +46,47 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+  import { computed, ref } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    label?: string;
-    direction?: 'horizontal' | 'vertical';
-    hideInput?: boolean;
-  }>(),
-  {
-    direction: 'horizontal',
-    hideInput: false,
-  },
-);
+  const props = withDefaults(
+    defineProps<{
+      label?: string;
+      direction?: 'horizontal' | 'vertical';
+      hideInput?: boolean;
+    }>(),
+    {
+      direction: 'horizontal',
+      hideInput: false,
+    },
+  );
 
-const panning = defineModel<number>({ default: 0 });
-const emit = defineEmits(['update']);
+  const panning = defineModel<number>({ default: 0 });
+  const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+  const sliderChanging = ref(false);
 
-const faderPosition = computed({
-  get() {
-    return panning.value * 64;
-  },
-  set(newValue) {
-    panning.value = newValue / 64;
-  },
-});
+  const faderPosition = computed({
+    get() {
+      return panning.value * 64;
+    },
+    set(newValue) {
+      panning.value = newValue / 64;
+    },
+  });
 
-const thumbLabel = (value: number): string => {
-  if (value == 0) {
-    return 'Center';
-  } else if (value > 0) {
-    return 'R' + Math.abs(value);
-  } else {
-    return 'L' + Math.abs(value);
-  }
-};
+  const thumbLabel = (value: number): string => {
+    if (value == 0) {
+      return 'Center';
+    } else if (value > 0) {
+      return 'R' + Math.abs(value);
+    } else {
+      return 'L' + Math.abs(value);
+    }
+  };
 
-const tickLabels = {
-  64: 'R',
-  0: 'C',
-  '-64': 'L',
-};
+  const tickLabels = {
+    64: 'R',
+    0: 'C',
+    '-64': 'L',
+  };
 </script>

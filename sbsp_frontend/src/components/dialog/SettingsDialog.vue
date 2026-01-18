@@ -750,142 +750,142 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw, watch } from 'vue';
-import { useShowModel } from '../../stores/showmodel';
-import type { ShowSettings } from '../../types/ShowSettings';
-import HotkeyInput from '../input/HotkeyInput.vue';
-import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } from '@mdi/js';
-import { secondsToFormat, calculateDuration } from '../../utils';
-import BottomEditor from '../BottomEditor.vue';
-import type { Cue } from '../../types/Cue';
-import TextInput from '../input/TextInput.vue';
-import { useUiSettings } from '../../stores/uiSettings';
-import type { GlobalSettings } from '../../types/GlobalSettings';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+  import { ref, toRaw, watch } from 'vue';
+  import { useShowModel } from '../../stores/showmodel';
+  import type { ShowSettings } from '../../types/ShowSettings';
+  import HotkeyInput from '../input/HotkeyInput.vue';
+  import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } from '@mdi/js';
+  import { secondsToFormat, calculateDuration } from '../../utils';
+  import BottomEditor from '../BottomEditor.vue';
+  import type { Cue } from '../../types/Cue';
+  import TextInput from '../input/TextInput.vue';
+  import { useUiSettings } from '../../stores/uiSettings';
+  import type { GlobalSettings } from '../../types/GlobalSettings';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api';
 
-const { t } = useI18n();
-const api = useApi();
-const showModel = useShowModel();
-const uiSettings = useUiSettings();
+  const { t } = useI18n();
+  const api = useApi();
+  const showModel = useShowModel();
+  const uiSettings = useUiSettings();
 
-const isSettingsDialogOpen = defineModel<boolean>({ required: true });
+  const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
-const tab = ref('showGeneral');
-const selectingTemplate = ref<'audio' | 'wait' | 'fade' | 'start' | 'stop' | 'pause' | 'load' | 'group' | null>(null);
-const showModelName = ref<string>(showModel.name);
-const editingSettings = ref<{
-  show: ShowSettings;
-  global: GlobalSettings;
-}>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
+  const tab = ref('showGeneral');
+  const selectingTemplate = ref<'audio' | 'wait' | 'fade' | 'start' | 'stop' | 'pause' | 'load' | 'group' | null>(null);
+  const showModelName = ref<string>(showModel.name);
+  const editingSettings = ref<{
+    show: ShowSettings;
+    global: GlobalSettings;
+  }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 
-const getSelectingCue = () => {
-  if (selectingTemplate.value == 'audio') {
-    return editingSettings.value.global.template.audio;
-  } else if (selectingTemplate.value == 'wait') {
-    return editingSettings.value.global.template.wait;
-  } else if (selectingTemplate.value == 'fade') {
-    return editingSettings.value.global.template.fade;
-  } else if (selectingTemplate.value == 'start') {
-    return editingSettings.value.global.template.start;
-  } else if (selectingTemplate.value == 'stop') {
-    return editingSettings.value.global.template.stop;
-  } else if (selectingTemplate.value == 'pause') {
-    return editingSettings.value.global.template.pause;
-  } else if (selectingTemplate.value == 'load') {
-    return editingSettings.value.global.template.load;
-  } else if (selectingTemplate.value == 'group') {
-    return editingSettings.value.global.template.group;
-  }
-  return null;
-};
+  const getSelectingCue = () => {
+    if (selectingTemplate.value == 'audio') {
+      return editingSettings.value.global.template.audio;
+    } else if (selectingTemplate.value == 'wait') {
+      return editingSettings.value.global.template.wait;
+    } else if (selectingTemplate.value == 'fade') {
+      return editingSettings.value.global.template.fade;
+    } else if (selectingTemplate.value == 'start') {
+      return editingSettings.value.global.template.start;
+    } else if (selectingTemplate.value == 'stop') {
+      return editingSettings.value.global.template.stop;
+    } else if (selectingTemplate.value == 'pause') {
+      return editingSettings.value.global.template.pause;
+    } else if (selectingTemplate.value == 'load') {
+      return editingSettings.value.global.template.load;
+    } else if (selectingTemplate.value == 'group') {
+      return editingSettings.value.global.template.group;
+    }
+    return null;
+  };
 
-const selectingCue = ref<Cue | null>(getSelectingCue());
+  const selectingCue = ref<Cue | null>(getSelectingCue());
 
-watch(
-  () => selectingTemplate.value,
-  () => {
-    selectingCue.value = getSelectingCue();
-  },
-);
+  watch(
+    () => selectingTemplate.value,
+    () => {
+      selectingCue.value = getSelectingCue();
+    },
+  );
 
-watch(
-  () => showModel.settings,
-  (newSettings) => {
-    editingSettings.value.show = structuredClone(toRaw(newSettings));
-  },
-);
+  watch(
+    () => showModel.settings,
+    (newSettings) => {
+      editingSettings.value.show = structuredClone(toRaw(newSettings));
+    },
+  );
 
-watch(
-  () => showModel.name,
-  (newName) => {
-    showModelName.value = newName;
-  },
-);
+  watch(
+    () => showModel.name,
+    (newName) => {
+      showModelName.value = newName;
+    },
+  );
 
-watch(
-  () => uiSettings.settings,
-  () => {
-    editingSettings.value.global = uiSettings.clone();
-  },
-);
+  watch(
+    () => uiSettings.settings,
+    () => {
+      editingSettings.value.global = uiSettings.clone();
+    },
+  );
 
-watch(isSettingsDialogOpen, (newState) => {
-  if (newState) {
-    editingSettings.value = {
-      show: structuredClone(toRaw(showModel.settings)),
-      global: uiSettings.clone(),
+  watch(isSettingsDialogOpen, (newState) => {
+    if (newState) {
+      editingSettings.value = {
+        show: structuredClone(toRaw(showModel.settings)),
+        global: uiSettings.clone(),
+      };
+    }
+  });
+
+  const saveSettings = () => {
+    api.updateShowSettings(editingSettings.value.show);
+    api.updateModelName(showModelName.value);
+    uiSettings.update(editingSettings.value.global);
+    uiSettings.save();
+  };
+
+  const recallMusicBeePreset = () => {
+    editingSettings.value.global.hotkey.playback = {
+      go: 'Enter',
+      load: 'L',
+      pauseAndResume: 'Space',
+      pauseAll: '[',
+      resumeAll: ']',
+      stop: 'Backspace',
+      stopAll: 'Escape',
+      seekForward: null,
+      seekBackward: null,
     };
-  }
-});
+    editingSettings.value.global.hotkey.audioAction = {
+      toggleRepeat: 'R',
+    };
+    editingSettings.value.global.general.advanceCursorWhenGo = false;
+  };
 
-const saveSettings = () => {
-  api.updateShowSettings(editingSettings.value.show);
-  api.updateModelName(showModelName.value);
-  uiSettings.update(editingSettings.value.global);
-  uiSettings.save();
-};
-
-const recallMusicBeePreset = () => {
-  editingSettings.value.global.hotkey.playback = {
-    go: 'Enter',
-    load: 'L',
-    pauseAndResume: 'Space',
-    pauseAll: '[',
-    resumeAll: ']',
-    stop: 'Backspace',
-    stopAll: 'Escape',
-    seekForward: null,
-    seekBackward: null,
+  const recallQLabPreset = () => {
+    editingSettings.value.global.hotkey.playback = {
+      go: 'Space',
+      load: 'L',
+      pauseAndResume: 'P',
+      pauseAll: '[',
+      resumeAll: ']',
+      stop: 'S',
+      stopAll: 'Escape',
+      seekForward: null,
+      seekBackward: null,
+    };
+    editingSettings.value.global.hotkey.audioAction = {
+      toggleRepeat: 'R',
+    };
+    editingSettings.value.global.general.advanceCursorWhenGo = true;
   };
-  editingSettings.value.global.hotkey.audioAction = {
-    toggleRepeat: 'R',
-  };
-  editingSettings.value.global.general.advanceCursorWhenGo = false;
-};
-
-const recallQLabPreset = () => {
-  editingSettings.value.global.hotkey.playback = {
-    go: 'Space',
-    load: 'L',
-    pauseAndResume: 'P',
-    pauseAll: '[',
-    resumeAll: ']',
-    stop: 'S',
-    stopAll: 'Escape',
-    seekForward: null,
-    seekBackward: null,
-  };
-  editingSettings.value.global.hotkey.audioAction = {
-    toggleRepeat: 'R',
-  };
-  editingSettings.value.global.general.advanceCursorWhenGo = true;
-};
 </script>
 
 <style lang="css" module>
-.selected-row > td {
-  background-color: rgb(var(--v-theme-primary), 0.2);
-  color: rgb(var(--v-theme-on-background));
-}
+  .selected-row > td {
+    background-color: rgb(var(--v-theme-primary), 0.2);
+    color: rgb(var(--v-theme-on-background));
+  }
 </style>

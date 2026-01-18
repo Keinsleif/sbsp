@@ -23,56 +23,56 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+  import { computed } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    power?: string | number | null;
-    curve?: 'linear' | 'inPow' | 'outPow' | 'inOutPow' | null;
-    type?: 'in' | 'out';
-    strokeWidth?: number;
-    disabled?: boolean;
-  }>(),
-  {
-    power: 1,
-    curve: 'linear',
-    type: 'in',
-    strokeWidth: 2,
-    disabled: false,
-  },
-);
+  const props = withDefaults(
+    defineProps<{
+      power?: string | number | null;
+      curve?: 'linear' | 'inPow' | 'outPow' | 'inOutPow' | null;
+      type?: 'in' | 'out';
+      strokeWidth?: number;
+      disabled?: boolean;
+    }>(),
+    {
+      power: 1,
+      curve: 'linear',
+      type: 'in',
+      strokeWidth: 2,
+      disabled: false,
+    },
+  );
 
-const command = computed(() => {
-  if (props.type == null || props.disabled) {
-    return '';
-  }
-  let result;
-  if (props.type == 'in') {
-    result = 'M 0 100';
-  } else {
-    result = 'M 0 0';
-  }
-  for (let i = 1; i < 100; i++) {
-    let y = 0;
-    if (props.curve == 'linear') {
-      y = i / 100;
-    } else if (props.curve == 'inPow') {
-      y = Math.pow(i / 100, Number(props.power));
-    } else if (props.curve == 'outPow') {
-      y = 1 - Math.pow(1 - i / 100, Number(props.power));
-    } else if (props.curve == 'inOutPow') {
-      if (i < 50) {
-        y = 0.5 * Math.pow(i / 50, Number(props.power));
+  const command = computed(() => {
+    if (props.type == null || props.disabled) {
+      return '';
+    }
+    let result;
+    if (props.type == 'in') {
+      result = 'M 0 100';
+    } else {
+      result = 'M 0 0';
+    }
+    for (let i = 1; i < 100; i++) {
+      let y = 0;
+      if (props.curve == 'linear') {
+        y = i / 100;
+      } else if (props.curve == 'inPow') {
+        y = Math.pow(i / 100, Number(props.power));
+      } else if (props.curve == 'outPow') {
+        y = 1 - Math.pow(1 - i / 100, Number(props.power));
+      } else if (props.curve == 'inOutPow') {
+        if (i < 50) {
+          y = 0.5 * Math.pow(i / 50, Number(props.power));
+        } else {
+          y = 0.5 * (1 - Math.pow(2 - i / 50, Number(props.power))) + 0.5;
+        }
+      }
+      if (props.type == 'in') {
+        result += ` L ${i} ${100 - y * 100}`;
       } else {
-        y = 0.5 * (1 - Math.pow(2 - i / 50, Number(props.power))) + 0.5;
+        result += ` L ${i} ${y * 100}`;
       }
     }
-    if (props.type == 'in') {
-      result += ` L ${i} ${100 - y * 100}`;
-    } else {
-      result += ` L ${i} ${y * 100}`;
-    }
-  }
-  return result;
-});
+    return result;
+  });
 </script>

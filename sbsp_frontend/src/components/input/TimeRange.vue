@@ -35,32 +35,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import TimeInput from './TimeInput.vue';
-import { useI18n } from 'vue-i18n';
+  import { computed, ref } from 'vue';
+  import TimeInput from './TimeInput.vue';
+  import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+  const { t } = useI18n();
 
-const sliderChanging = ref(false);
+  const sliderChanging = ref(false);
 
-const range = defineModel<[number | null, number | null]>({ required: true });
-const props = withDefaults(
-  defineProps<{
-    duration?: number;
-  }>(),
-  {
-    duration: 0,
-  },
-);
-const emit = defineEmits(['update']);
+  const range = defineModel<[number | null, number | null]>({ required: true });
+  const props = withDefaults(
+    defineProps<{
+      duration?: number;
+    }>(),
+    {
+      duration: 0,
+    },
+  );
+  const emit = defineEmits(['update']);
 
-const innerRange = computed({
-  get() {
-    return [range.value[0] != null ? range.value[0] : 0, range.value[1] != null ? range.value[1] : props.duration];
-  },
-  set(newValue) {
-    range.value[0] = newValue[0] != 0 ? newValue[0] : null;
-    range.value[1] = newValue[1] != props.duration ? newValue[1] : null;
-  },
-});
+  const innerRange = computed({
+    get() {
+      return [range.value[0] != null ? range.value[0] : 0, range.value[1] != null ? range.value[1] : props.duration];
+    },
+    set(newValue) {
+      range.value[0] = newValue[0] != 0 ? newValue[0] : null;
+      range.value[1] = newValue[1] != props.duration ? newValue[1] : null;
+    },
+  });
 </script>

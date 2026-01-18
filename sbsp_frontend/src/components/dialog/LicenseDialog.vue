@@ -71,46 +71,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { LicenseInformation } from '../../types/LicenseInformation';
-import TextInput from '../input/TextInput.vue';
-import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+  import { computed, onMounted, ref } from 'vue';
+  import { LicenseInformation } from '../../types/LicenseInformation';
+  import TextInput from '../input/TextInput.vue';
+  import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api';
 
-const { t, locale } = useI18n({ useScope: 'global' });
-const api = useApi();
-const isLicenseDialogOpen = defineModel<boolean>();
-const isLicenseActivateInfoDialogOpen = ref(false);
-const licenseInfo = ref<LicenseInformation | null>(null);
+  const { t, locale } = useI18n({ useScope: 'global' });
+  const api = useApi();
+  const isLicenseDialogOpen = defineModel<boolean>();
+  const isLicenseActivateInfoDialogOpen = ref(false);
+  const licenseInfo = ref<LicenseInformation | null>(null);
 
-const edition = computed(() => {
-  return licenseInfo.value != null ? licenseInfo.value.edition : 'Free';
-});
+  const edition = computed(() => {
+    return licenseInfo.value != null ? licenseInfo.value.edition : 'Free';
+  });
 
-const issuedDate = computed(() => {
-  if (licenseInfo.value != null) {
-    const time = new Date(Number(licenseInfo.value.issue_time) * 1000);
-    return time.toLocaleString(locale.value);
-  } else {
-    return '-';
-  }
-});
+  const issuedDate = computed(() => {
+    if (licenseInfo.value != null) {
+      const time = new Date(Number(licenseInfo.value.issue_time) * 1000);
+      return time.toLocaleString(locale.value);
+    } else {
+      return '-';
+    }
+  });
 
-const onCopyId = () => {
-  if (licenseInfo.value != null) {
-    navigator.clipboard.writeText(licenseInfo.value.id);
-  }
-};
+  const onCopyId = () => {
+    if (licenseInfo.value != null) {
+      navigator.clipboard.writeText(licenseInfo.value.id);
+    }
+  };
 
-const loadLicense = () => {
-  api.host
-    ?.getLicenseInfo()
-    .then((value) => (licenseInfo.value = value))
-    .catch((e) => console.error(e));
-};
+  const loadLicense = () => {
+    api.host
+      ?.getLicenseInfo()
+      .then((value) => (licenseInfo.value = value))
+      .catch((e) => console.error(e));
+  };
 
-onMounted(() => {
-  loadLicense();
-});
+  onMounted(() => {
+    loadLicense();
+  });
 </script>

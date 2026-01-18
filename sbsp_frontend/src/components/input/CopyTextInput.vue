@@ -26,40 +26,40 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCheck, mdiContentCopy } from '@mdi/js';
-import { ref } from 'vue';
+  import { mdiCheck, mdiContentCopy } from '@mdi/js';
+  import { ref } from 'vue';
 
-const value = defineModel<string | null>({ default: '' });
-const props = withDefaults(
-  defineProps<{
-    alignInput?: 'left' | 'center' | 'right';
-  }>(),
-  {
-    alignInput: 'center',
-  },
-);
+  const value = defineModel<string | null>({ default: '' });
+  const props = withDefaults(
+    defineProps<{
+      alignInput?: 'left' | 'center' | 'right';
+    }>(),
+    {
+      alignInput: 'center',
+    },
+  );
 
-const copied = ref(false);
+  const copied = ref(false);
 
-const copyToClipboard = (value: string | null) => {
-  if (value) {
-    copied.value = true;
-    navigator.clipboard.writeText(value);
-    setTimeout(() => {
-      copied.value = false;
-    }, 2000);
-  }
-};
+  const copyToClipboard = (value: string | null) => {
+    if (value) {
+      copied.value = true;
+      navigator.clipboard.writeText(value);
+      setTimeout(() => {
+        copied.value = false;
+      }, 2000);
+    }
+  };
 </script>
 
 <style lang="css" module>
-.center-input input {
-  text-align: center;
-}
-.left-input input {
-  text-align: left;
-}
-.right-input input {
-  text-align: right;
-}
+  .center-input input {
+    text-align: center;
+  }
+  .left-input input {
+    text-align: left;
+  }
+  .right-input input {
+    text-align: right;
+  }
 </style>

@@ -65,156 +65,161 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, StyleValue, useTemplateRef } from 'vue';
-import { useAssetResult } from '../../stores/assetResult';
-import { useShowState } from '../../stores/showstate';
-import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
-import { secondsToFormat } from '../../utils';
-import { useUiState } from '../../stores/uistate';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+  import { computed, ref, StyleValue, useTemplateRef } from 'vue';
+  import { useAssetResult } from '../../stores/assetResult';
+  import { useShowState } from '../../stores/showstate';
+  import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
+  import { secondsToFormat } from '../../utils';
+  import { useUiState } from '../../stores/uistate';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api';
 
-const { t } = useI18n();
-const api = useApi();
+  const { t } = useI18n();
+  const api = useApi();
 
-const showState = useShowState();
-const assetResult = useAssetResult();
-const uiState = useUiState();
+  const showState = useShowState();
+  const assetResult = useAssetResult();
+  const uiState = useUiState();
 
-const isContextMenuOpen = ref(false);
-const contextMenuPosition = ref<[number, number] | null>(null);
+  const isContextMenuOpen = ref(false);
+  const contextMenuPosition = ref<[number, number] | null>(null);
 
-const props = withDefaults(
-  defineProps<{
-    targetId: string | null;
-    volume?: number;
-    startTime?: number | null;
-    endTime?: number | null;
-    heightPx?: number;
-  }>(),
-  {
-    targetId: null,
-    volume: 0,
-    startTime: 0,
-    endTime: 1,
-    heightPx: 75,
-  },
-);
+  const props = withDefaults(
+    defineProps<{
+      targetId: string | null;
+      volume?: number;
+      startTime?: number | null;
+      endTime?: number | null;
+      heightPx?: number;
+    }>(),
+    {
+      targetId: null,
+      volume: 0,
+      startTime: 0,
+      endTime: 1,
+      heightPx: 75,
+    },
+  );
 
-const contentHeight = computed(() => props.heightPx - 4);
+  const contentHeight = computed(() => props.heightPx - 4);
 
-const nonNullStartTime = computed<number>(() => {
-  const duration = assetResult.get(props.targetId)?.duration;
-  return props.startTime != null && duration != null ? props.startTime / duration : 0;
-});
+  const nonNullStartTime = computed<number>(() => {
+    const duration = assetResult.get(props.targetId)?.duration;
+    return props.startTime != null && duration != null ? props.startTime / duration : 0;
+  });
 
-const nonNullEndTime = computed<number>(() => {
-  const duration = assetResult.get(props.targetId)?.duration;
-  return props.endTime != null && duration != null ? props.endTime / duration : 1;
-});
+  const nonNullEndTime = computed<number>(() => {
+    const duration = assetResult.get(props.targetId)?.duration;
+    return props.endTime != null && duration != null ? props.endTime / duration : 1;
+  });
 
-const startPos = computed<number>(() => nonNullStartTime.value * (svgWidth.value - 1));
-const endPos = computed<number>(() => nonNullEndTime.value * (svgWidth.value - 1) - 1);
+  const startPos = computed<number>(() => nonNullStartTime.value * (svgWidth.value - 1));
+  const endPos = computed<number>(() => nonNullEndTime.value * (svgWidth.value - 1) - 1);
 
-const svgRef = useTemplateRef('svg');
-const { width: svgWidth } = useElementSize(svgRef);
-const parent = useParentElement();
-const position = computed<number>(() => {
-  if (props.targetId == null) return 0;
-  const activeCue = showState.activeCues[props.targetId];
-  if (activeCue != null && activeCue.duration !== 0) {
-    return activeCue.position / activeCue.duration;
-  } else {
-    return 0;
-  }
-});
-
-const currentPlayPos = computed(() => {
-  const range = nonNullEndTime.value - nonNullStartTime.value;
-  return (nonNullStartTime.value + position.value * range) * (svgWidth.value - 1);
-});
-
-const waveformPath = computedAsync(async () => {
-  if (svgWidth.value < 1) {
-    return '';
-  }
-  if (props.targetId == null) {
-    return '';
-  }
-  const source = assetResult.get(props.targetId)?.waveform;
-  if (source == null) {
-    return '';
-  }
-
-  let result = '';
-  const amp = contentHeight.value * 0.375;
-
-  const samplePerPixel = source.length / svgWidth.value;
-  for (let i = 0; i < svgWidth.value; i++) {
-    let start = Math.floor(i * samplePerPixel);
-    let end = Math.floor((i + 1) * samplePerPixel);
-
-    let max = source[start];
-    for (let j = start; j < end; j++) {
-      if (source[j] > max) max = source[j];
+  const svgRef = useTemplateRef('svg');
+  const { width: svgWidth } = useElementSize(svgRef);
+  const parent = useParentElement();
+  const position = computed<number>(() => {
+    if (props.targetId == null) return 0;
+    const activeCue = showState.activeCues[props.targetId];
+    if (activeCue != null && activeCue.duration !== 0) {
+      return activeCue.position / activeCue.duration;
+    } else {
+      return 0;
     }
-    if (max > 0) {
-      result += `M${i},${(1 - max) * amp}v${2 * amp * max}`;
+  });
+
+  const currentPlayPos = computed(() => {
+    const range = nonNullEndTime.value - nonNullStartTime.value;
+    return (nonNullStartTime.value + position.value * range) * (svgWidth.value - 1);
+  });
+
+  const waveformPath = computedAsync(async () => {
+    if (svgWidth.value < 1) {
+      return '';
     }
-  }
-  return result;
-}, null);
+    if (props.targetId == null) {
+      return '';
+    }
+    const source = assetResult.get(props.targetId)?.waveform;
+    if (source == null) {
+      return '';
+    }
 
-const waveformTransform = computed(() => {
-  if (uiState.scaleWaveform) {
-    return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
-  } else {
-    return `translate(0, ${contentHeight.value * 0.125})`;
-  }
-});
+    let result = '';
+    const amp = contentHeight.value * 0.375;
 
-const { x: mouseX, y: mouseY, elementX, isOutside } = useMouseInElement(svgRef, { handleOutside: false, touch: false });
+    const samplePerPixel = source.length / svgWidth.value;
+    for (let i = 0; i < svgWidth.value; i++) {
+      let start = Math.floor(i * samplePerPixel);
+      let end = Math.floor((i + 1) * samplePerPixel);
 
-const seek = (event: MouseEvent) => {
-  if (props.targetId == null || event.button != 0) {
-    return;
-  }
-  const activeCue = showState.activeCues[props.targetId];
-  if (activeCue == null) {
-    return;
-  }
-  const position =
-    (event.offsetX - nonNullStartTime.value * svgWidth.value) /
-    (svgWidth.value * (nonNullEndTime.value - nonNullStartTime.value));
-  if (position > 0 && position < 1) {
-    api.sendSeekTo(props.targetId, position * activeCue.duration);
-  }
-};
+      let max = source[start];
+      for (let j = start; j < end; j++) {
+        if (source[j] > max) max = source[j];
+      }
+      if (max > 0) {
+        result += `M${i},${(1 - max) * amp}v${2 * amp * max}`;
+      }
+    }
+    return result;
+  }, null);
 
-const tooltipText = computed(() => {
-  if (props.targetId == null) {
-    return '--:--.-- / --:--.--';
-  }
-  const duration = assetResult.get(props.targetId)?.duration;
-  if (duration == null) {
-    return '--:--.-- / --:--.--';
-  }
-  return `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
-});
+  const waveformTransform = computed(() => {
+    if (uiState.scaleWaveform) {
+      return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
+    } else {
+      return `translate(0, ${contentHeight.value * 0.125})`;
+    }
+  });
 
-const tooltipStyle = computed<StyleValue>(() => {
-  if (parent.value == null) return {};
-  const parentRect = parent.value.getBoundingClientRect();
-  return {
-    position: 'absolute',
-    top: `${mouseY.value - parentRect.top - 10}px`,
-    left: `${parentRect.right - mouseX.value > 150 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 120}px`,
+  const {
+    x: mouseX,
+    y: mouseY,
+    elementX,
+    isOutside,
+  } = useMouseInElement(svgRef, { handleOutside: false, touch: false });
+
+  const seek = (event: MouseEvent) => {
+    if (props.targetId == null || event.button != 0) {
+      return;
+    }
+    const activeCue = showState.activeCues[props.targetId];
+    if (activeCue == null) {
+      return;
+    }
+    const position =
+      (event.offsetX - nonNullStartTime.value * svgWidth.value) /
+      (svgWidth.value * (nonNullEndTime.value - nonNullStartTime.value));
+    if (position > 0 && position < 1) {
+      api.sendSeekTo(props.targetId, position * activeCue.duration);
+    }
   };
-});
+
+  const tooltipText = computed(() => {
+    if (props.targetId == null) {
+      return '--:--.-- / --:--.--';
+    }
+    const duration = assetResult.get(props.targetId)?.duration;
+    if (duration == null) {
+      return '--:--.-- / --:--.--';
+    }
+    return `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
+  });
+
+  const tooltipStyle = computed<StyleValue>(() => {
+    if (parent.value == null) return {};
+    const parentRect = parent.value.getBoundingClientRect();
+    return {
+      position: 'absolute',
+      top: `${mouseY.value - parentRect.top - 10}px`,
+      left: `${parentRect.right - mouseX.value > 150 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 120}px`,
+    };
+  });
 </script>
 
 <style lang="css" module>
-.waveform {
-  stroke: rgb(var(--v-theme-surface-variant), 0.8);
-}
+  .waveform {
+    stroke: rgb(var(--v-theme-surface-variant), 0.8);
+  }
 </style>

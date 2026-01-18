@@ -35,71 +35,71 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import type { FileList } from '../../types/FileList.ts';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api/index.ts';
+  import { computed, ref, watch } from 'vue';
+  import type { FileList } from '../../types/FileList.ts';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api/index.ts';
 
-const { t } = useI18n();
-const api = useApi();
-const fileListResolver = defineModel<((fileList: string[] | null) => void) | null>();
-const props = withDefaults(
-  defineProps<{
-    multiple: boolean;
-  }>(),
-  {
-    multiple: true,
-  },
-);
-const isFileListDialogOpen = computed(() => {
-  return fileListResolver.value != null;
-});
+  const { t } = useI18n();
+  const api = useApi();
+  const fileListResolver = defineModel<((fileList: string[] | null) => void) | null>();
+  const props = withDefaults(
+    defineProps<{
+      multiple: boolean;
+    }>(),
+    {
+      multiple: true,
+    },
+  );
+  const isFileListDialogOpen = computed(() => {
+    return fileListResolver.value != null;
+  });
 
-const pickFile = (select: string[] | null) => {
-  if (fileListResolver.value != null) {
-    fileListResolver.value(select);
-    fileListResolver.value = null;
-  }
-};
-
-const extList = [
-  'aiff',
-  'aif',
-  'caf',
-  'mp4',
-  'm4a',
-  'mkv',
-  'mka',
-  'webm',
-  'ogg',
-  'oga',
-  'wav',
-  'aac',
-  'alac',
-  'flac',
-  'mp3',
-];
-
-const fileList = ref<FileList[]>([]);
-const selected = ref<string[]>([]);
-
-let unlisten: (() => void) | null = null;
-
-watch(isFileListDialogOpen, (value) => {
-  if (value) {
-    api.setTitle(t('view.fileSelector.title'));
-    api.remote
-      ?.onFileListUpdate((list) => {
-        fileList.value = list;
-      })
-      .then((unlisten_func) => {
-        unlisten = unlisten_func;
-      });
-    api.remote?.requestFileList();
-  } else {
-    if (unlisten != null) {
-      unlisten();
+  const pickFile = (select: string[] | null) => {
+    if (fileListResolver.value != null) {
+      fileListResolver.value(select);
+      fileListResolver.value = null;
     }
-  }
-});
+  };
+
+  const extList = [
+    'aiff',
+    'aif',
+    'caf',
+    'mp4',
+    'm4a',
+    'mkv',
+    'mka',
+    'webm',
+    'ogg',
+    'oga',
+    'wav',
+    'aac',
+    'alac',
+    'flac',
+    'mp3',
+  ];
+
+  const fileList = ref<FileList[]>([]);
+  const selected = ref<string[]>([]);
+
+  let unlisten: (() => void) | null = null;
+
+  watch(isFileListDialogOpen, (value) => {
+    if (value) {
+      api.setTitle(t('view.fileSelector.title'));
+      api.remote
+        ?.onFileListUpdate((list) => {
+          fileList.value = list;
+        })
+        .then((unlisten_func) => {
+          unlisten = unlisten_func;
+        });
+      api.remote?.requestFileList();
+    } else {
+      if (unlisten != null) {
+        unlisten();
+      }
+    }
+  });
 </script>

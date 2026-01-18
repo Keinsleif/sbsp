@@ -94,136 +94,136 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import VolumeFader from '../input/VolumeFader.vue';
-import PanningFader from '../input/PanningFader.vue';
-import WaveformViewer from './WaveformViewer.vue';
-import TimeRange from '../input/TimeRange.vue';
-import ResponsiveControl from '../input/ResponsiveControl.vue';
-import { useAssetResult } from '../../stores/assetResult';
-import { useShowState } from '../../stores/showstate';
-import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
-import type { Cue } from '../../types/Cue';
-import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
-import { useShowModel } from '../../stores/showmodel';
-import { useApi } from '../../api';
-import { useUiState } from '../../stores/uistate';
+  import { ref, watch } from 'vue';
+  import VolumeFader from '../input/VolumeFader.vue';
+  import PanningFader from '../input/PanningFader.vue';
+  import WaveformViewer from './WaveformViewer.vue';
+  import TimeRange from '../input/TimeRange.vue';
+  import ResponsiveControl from '../input/ResponsiveControl.vue';
+  import { useAssetResult } from '../../stores/assetResult';
+  import { useShowState } from '../../stores/showstate';
+  import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
+  import type { Cue } from '../../types/Cue';
+  import { useI18n } from 'vue-i18n';
+  import { useDisplay } from 'vuetify';
+  import { useShowModel } from '../../stores/showmodel';
+  import { useApi } from '../../api';
+  import { useUiState } from '../../stores/uistate';
 
-const { t } = useI18n();
-const api = useApi();
-const uiState = useUiState();
-const { xs, smAndDown, mdAndDown, width } = useDisplay();
+  const { t } = useI18n();
+  const api = useApi();
+  const uiState = useUiState();
+  const { xs, smAndDown, mdAndDown, width } = useDisplay();
 
-const showState = useShowState();
-const assetResult = useAssetResult();
-const showModel = useShowModel();
+  const showState = useShowState();
+  const assetResult = useAssetResult();
+  const showModel = useShowModel();
 
-const selectedCue = defineModel<Cue | null>();
-const emit = defineEmits(['update']);
+  const selectedCue = defineModel<Cue | null>();
+  const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+  const sliderChanging = ref(false);
 
-const range = ref([
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
-  selectedCue.value != null && selectedCue.value.params.type == 'audio'
-    ? selectedCue.value.params.endTime
-    : assetResult.get(selectedCue.value?.id)?.duration,
-] as [number | null, number | null]);
+  const range = ref([
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
+    selectedCue.value != null && selectedCue.value.params.type == 'audio'
+      ? selectedCue.value.params.endTime
+      : assetResult.get(selectedCue.value?.id)?.duration,
+  ] as [number | null, number | null]);
 
-const volume = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.volume : 0,
-);
+  const volume = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.volume : 0,
+  );
 
-const panning = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.pan : 0,
-);
+  const panning = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.pan : 0,
+  );
 
-const repeat = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.repeat : false,
-);
+  const repeat = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.repeat : false,
+  );
 
-watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
-    return;
-  }
-  range.value = [selectedCue.value.params.startTime, selectedCue.value.params.endTime] as [
-    number | null,
-    number | null,
-  ];
-  volume.value = selectedCue.value.params.volume;
-  panning.value = selectedCue.value.params.pan;
-  repeat.value = selectedCue.value.params.repeat;
-});
+  watch(selectedCue, () => {
+    if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
+      return;
+    }
+    range.value = [selectedCue.value.params.startTime, selectedCue.value.params.endTime] as [
+      number | null,
+      number | null,
+    ];
+    volume.value = selectedCue.value.params.volume;
+    panning.value = selectedCue.value.params.pan;
+    repeat.value = selectedCue.value.params.repeat;
+  });
 
-const saveEditorValue = () => {
-  if (selectedCue.value == null || sliderChanging.value === true) {
-    return;
-  }
-  if (selectedCue.value.params.type != 'audio') {
-    return;
-  }
-  selectedCue.value.params.startTime = range.value[0];
-  selectedCue.value.params.endTime = range.value[1];
-  selectedCue.value.params.volume = volume.value;
-  selectedCue.value.params.pan = panning.value;
-  selectedCue.value.params.repeat = repeat.value;
-  emit('update');
-};
+  const saveEditorValue = () => {
+    if (selectedCue.value == null || sliderChanging.value === true) {
+      return;
+    }
+    if (selectedCue.value.params.type != 'audio') {
+      return;
+    }
+    selectedCue.value.params.startTime = range.value[0];
+    selectedCue.value.params.endTime = range.value[1];
+    selectedCue.value.params.volume = volume.value;
+    selectedCue.value.params.pan = panning.value;
+    selectedCue.value.params.repeat = repeat.value;
+    emit('update');
+  };
 
-const changeActiveCueVolume = () => {
-  if (selectedCue.value == null) return;
-  const activeCue = showState.activeCues[selectedCue.value.id];
-  if (activeCue != null) {
-    api.sendSetVolume(activeCue.cueId, volume.value);
-  }
-};
+  const changeActiveCueVolume = () => {
+    if (selectedCue.value == null) return;
+    const activeCue = showState.activeCues[selectedCue.value.id];
+    if (activeCue != null) {
+      api.sendSetVolume(activeCue.cueId, volume.value);
+    }
+  };
 
-const skipFirstSilence = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const startTime = assetResult.get(selectedCue.value.id)?.startTime;
-  if (startTime == null) return;
-  range.value[0] = startTime;
-  saveEditorValue();
-};
+  const skipFirstSilence = () => {
+    if (selectedCue.value == null) {
+      return;
+    }
+    const startTime = assetResult.get(selectedCue.value.id)?.startTime;
+    if (startTime == null) return;
+    range.value[0] = startTime;
+    saveEditorValue();
+  };
 
-const skipLastSilence = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const endTime = assetResult.get(selectedCue.value.id)?.endTime;
-  if (endTime == null) return;
-  range.value[1] = endTime;
-  saveEditorValue();
-};
+  const skipLastSilence = () => {
+    if (selectedCue.value == null) {
+      return;
+    }
+    const endTime = assetResult.get(selectedCue.value.id)?.endTime;
+    if (endTime == null) return;
+    range.value[1] = endTime;
+    saveEditorValue();
+  };
 
-const setVolumeToLUFS = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const integratedLufs = assetResult.get(selectedCue.value.id)?.integratedLufs;
-  if (integratedLufs == null) return;
-  volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
-  saveEditorValue();
-  changeActiveCueVolume();
-};
+  const setVolumeToLUFS = () => {
+    if (selectedCue.value == null) {
+      return;
+    }
+    const integratedLufs = assetResult.get(selectedCue.value.id)?.integratedLufs;
+    if (integratedLufs == null) return;
+    volume.value = showModel.settings.audio.lufsTarget - integratedLufs;
+    saveEditorValue();
+    changeActiveCueVolume();
+  };
 
-const setVolumeToMAX = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const peak = assetResult.get(selectedCue.value.id)?.peak;
-  if (peak == null) return;
-  volume.value = -peak;
-  saveEditorValue();
-  changeActiveCueVolume();
-};
+  const setVolumeToMAX = () => {
+    if (selectedCue.value == null) {
+      return;
+    }
+    const peak = assetResult.get(selectedCue.value.id)?.peak;
+    if (peak == null) return;
+    volume.value = -peak;
+    saveEditorValue();
+    changeActiveCueVolume();
+  };
 </script>
 
 <style lang="css" module>
-.centered-input input {
-  text-align: center;
-}
+  .centered-input input {
+    text-align: center;
+  }
 </style>

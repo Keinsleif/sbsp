@@ -66,95 +66,97 @@
 </template>
 
 <script setup lang="ts">
-import { mdiFileMusic } from '@mdi/js';
-import { ref, watch } from 'vue';
-import FadeParamInput from '../input/FadeParamInput.vue';
-import ResponsiveControl from '../input/ResponsiveControl.vue';
-import { useShowState } from '../../stores/showstate';
-import type { Cue } from '../../types/Cue';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
-import { useDisplay } from 'vuetify';
-import { useUiState } from '../../stores/uistate';
+  import { mdiFileMusic } from '@mdi/js';
+  import { ref, watch } from 'vue';
+  import FadeParamInput from '../input/FadeParamInput.vue';
+  import ResponsiveControl from '../input/ResponsiveControl.vue';
+  import { useShowState } from '../../stores/showstate';
+  import type { Cue } from '../../types/Cue';
+  import { useI18n } from 'vue-i18n';
+  import { useApi } from '../../api';
+  import { useDisplay } from 'vuetify';
+  import { useUiState } from '../../stores/uistate';
 
-const { t } = useI18n();
-const uiState = useUiState();
-const { mdAndDown, smAndDown } = useDisplay();
+  const { t } = useI18n();
+  const uiState = useUiState();
+  const { mdAndDown, smAndDown } = useDisplay();
 
-const showState = useShowState();
-const api = useApi();
+  const showState = useShowState();
+  const api = useApi();
 
-const selectedCue = defineModel<Cue | null>();
-const emit = defineEmits(['update']);
+  const selectedCue = defineModel<Cue | null>();
+  const emit = defineEmits(['update']);
 
-const target = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
-);
+  const target = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
+  );
 
-const soundType = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio'
-    ? selectedCue.value.params.soundType == 'static'
-    : false,
-);
+  const soundType = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio'
+      ? selectedCue.value.params.soundType == 'static'
+      : false,
+  );
 
-const fadeInParam = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.fadeInParam : null,
-);
+  const fadeInParam = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.fadeInParam : null,
+  );
 
-const fadeOutParam = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.fadeOutParam : null,
-);
+  const fadeOutParam = ref(
+    selectedCue.value != null && selectedCue.value.params.type == 'audio'
+      ? selectedCue.value.params.fadeOutParam
+      : null,
+  );
 
-watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
-    return;
-  }
-
-  target.value = selectedCue.value.params.target;
-  soundType.value = selectedCue.value.params.soundType == 'static';
-  fadeInParam.value = selectedCue.value.params.fadeInParam;
-  fadeOutParam.value = selectedCue.value.params.fadeOutParam;
-});
-
-const saveEditorValue = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  if (selectedCue.value.params.type != 'audio') {
-    return;
-  }
-  selectedCue.value.params.target = target.value;
-  selectedCue.value.params.soundType = soundType.value ? 'static' : 'streaming';
-  selectedCue.value.params.fadeInParam = fadeInParam.value;
-  selectedCue.value.params.fadeOutParam = fadeOutParam.value;
-  emit('update');
-};
-
-const resetEditorValue = (name: string) => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
-    return;
-  }
-  switch (name) {
-    case 'target':
-      target.value = selectedCue.value.params.target;
-      break;
-  }
-};
-
-const pickFile = () => {
-  document.body.focus();
-  api.pickAudioAssets({ multiple: false }).then((value) => {
-    if (value == null) {
+  watch(selectedCue, () => {
+    if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
       return;
     }
-    target.value = value[0];
-    saveEditorValue();
+
+    target.value = selectedCue.value.params.target;
+    soundType.value = selectedCue.value.params.soundType == 'static';
+    fadeInParam.value = selectedCue.value.params.fadeInParam;
+    fadeOutParam.value = selectedCue.value.params.fadeOutParam;
   });
-};
+
+  const saveEditorValue = () => {
+    if (selectedCue.value == null) {
+      return;
+    }
+    if (selectedCue.value.params.type != 'audio') {
+      return;
+    }
+    selectedCue.value.params.target = target.value;
+    selectedCue.value.params.soundType = soundType.value ? 'static' : 'streaming';
+    selectedCue.value.params.fadeInParam = fadeInParam.value;
+    selectedCue.value.params.fadeOutParam = fadeOutParam.value;
+    emit('update');
+  };
+
+  const resetEditorValue = (name: string) => {
+    if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
+      return;
+    }
+    switch (name) {
+      case 'target':
+        target.value = selectedCue.value.params.target;
+        break;
+    }
+  };
+
+  const pickFile = () => {
+    document.body.focus();
+    api.pickAudioAssets({ multiple: false }).then((value) => {
+      if (value == null) {
+        return;
+      }
+      target.value = value[0];
+      saveEditorValue();
+    });
+  };
 </script>
 
 <style lang="css" module>
-.centered-input input {
-  text-align: center;
-}
+  .centered-input input {
+    text-align: center;
+  }
 </style>

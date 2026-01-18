@@ -62,66 +62,66 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import { ServiceEntry } from './types/ServiceEntry';
-import { useI18n } from 'vue-i18n';
-import { target, useApi } from './api';
+  import { onMounted, onUnmounted, ref } from 'vue';
+  import { ServiceEntry } from './types/ServiceEntry';
+  import { useI18n } from 'vue-i18n';
+  import { target, useApi } from './api';
 
-const { t } = useI18n();
-const api = useApi();
+  const { t } = useI18n();
+  const api = useApi();
 
-const host = ref('');
-const port = ref('');
-const services = ref<ServiceEntry[]>([]);
+  const host = ref('');
+  const port = ref('');
+  const services = ref<ServiceEntry[]>([]);
 
-let unlisten: (() => void) | null = null;
+  let unlisten: (() => void) | null = null;
 
-const connect = (host: string, port: string | number) => {
-  if (host == '' || port == '') return;
-  const address = `${host}:${port}`;
-  const password = prompt(t('view.connect.passwordPrompt'));
-  if (password == null) return;
-  if (password == '') {
-    api.remote?.connectToServer(address, null);
-  } else {
-    api.remote?.connectToServer(address, password);
-  }
-};
+  const connect = (host: string, port: string | number) => {
+    if (host == '' || port == '') return;
+    const address = `${host}:${port}`;
+    const password = prompt(t('view.connect.passwordPrompt'));
+    if (password == null) return;
+    if (password == '') {
+      api.remote?.connectToServer(address, null);
+    } else {
+      api.remote?.connectToServer(address, password);
+    }
+  };
 
-onMounted(() => {
-  if (target == 'websocket') {
-    const searchParams = new URLSearchParams(window.location.search);
-    const address = searchParams.get('address');
-    let password = window.location.hash.substring(1).trim();
-    if (address != null) {
-      console.log(`Connecting to ${address}`);
-      if (password != '') {
-        api.remote?.connectToServer(address, password);
-      } else {
-        let password = prompt(t('view.connect.passwordPrompt'));
-        if (password == null) return;
+  onMounted(() => {
+    if (target == 'websocket') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const address = searchParams.get('address');
+      let password = window.location.hash.substring(1).trim();
+      if (address != null) {
+        console.log(`Connecting to ${address}`);
         if (password != '') {
           api.remote?.connectToServer(address, password);
         } else {
-          api.remote?.connectToServer(address, null);
+          let password = prompt(t('view.connect.passwordPrompt'));
+          if (password == null) return;
+          if (password != '') {
+            api.remote?.connectToServer(address, password);
+          } else {
+            api.remote?.connectToServer(address, null);
+          }
         }
       }
     }
-  }
-  api.remote
-    ?.onRemoteDiscoveryUpdate((event) => {
-      services.value = event;
-    })
-    .then((unlisten_func) => {
-      unlisten = unlisten_func;
-    });
-  api.remote?.startServerDiscovery();
-});
+    api.remote
+      ?.onRemoteDiscoveryUpdate((event) => {
+        services.value = event;
+      })
+      .then((unlisten_func) => {
+        unlisten = unlisten_func;
+      });
+    api.remote?.startServerDiscovery();
+  });
 
-onUnmounted(() => {
-  if (unlisten != null) {
-    unlisten();
-  }
-  api.remote?.stopServerDiscovery();
-});
+  onUnmounted(() => {
+    if (unlisten != null) {
+      unlisten();
+    }
+    api.remote?.stopServerDiscovery();
+  });
 </script>

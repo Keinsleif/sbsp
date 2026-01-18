@@ -80,94 +80,94 @@
 </template>
 
 <script setup lang="ts">
-import {
-  mdiPause,
-  mdiPlay,
-  mdiStop,
-  mdiChartBellCurveCumulative,
-  mdiTimerSandEmpty,
-  mdiVolumeHigh,
-  mdiPlayCircleOutline,
-  mdiStopCircleOutline,
-  mdiPauseCircleOutline,
-  mdiUploadCircleOutline,
-  mdiGroup,
-} from '@mdi/js';
-import { useShowModel } from '../stores/showmodel';
-import { computed } from 'vue';
-import { useShowState } from '../stores/showstate';
-import { PlaybackStatus } from '../types/PlaybackStatus';
-import { buildCueName } from '../utils';
-import { useNow, useWindowFocus } from '@vueuse/core';
-import { useUiState } from '../stores/uistate';
-import { useUiSettings } from '../stores/uiSettings';
-import { useApi } from '../api';
+  import {
+    mdiPause,
+    mdiPlay,
+    mdiStop,
+    mdiChartBellCurveCumulative,
+    mdiTimerSandEmpty,
+    mdiVolumeHigh,
+    mdiPlayCircleOutline,
+    mdiStopCircleOutline,
+    mdiPauseCircleOutline,
+    mdiUploadCircleOutline,
+    mdiGroup,
+  } from '@mdi/js';
+  import { useShowModel } from '../stores/showmodel';
+  import { computed } from 'vue';
+  import { useShowState } from '../stores/showstate';
+  import { PlaybackStatus } from '../types/PlaybackStatus';
+  import { buildCueName } from '../utils';
+  import { useNow, useWindowFocus } from '@vueuse/core';
+  import { useUiState } from '../stores/uistate';
+  import { useUiSettings } from '../stores/uiSettings';
+  import { useApi } from '../api';
 
-const showModel = useShowModel();
-const showState = useShowState();
-const uiState = useUiState();
-const uiSettings = useUiSettings();
-const api = useApi();
+  const showModel = useShowModel();
+  const showState = useShowState();
+  const uiState = useUiState();
+  const uiSettings = useUiSettings();
+  const api = useApi();
 
-const hasFocus = useWindowFocus();
+  const hasFocus = useWindowFocus();
 
-const playbackCursorCue = computed(() => {
-  return showState.playbackCursor != null ? showModel.getCueById(showState.playbackCursor) : null;
-});
+  const playbackCursorCue = computed(() => {
+    return showState.playbackCursor != null ? showModel.getCueById(showState.playbackCursor) : null;
+  });
 
-const playbackCursorCueTitle = computed(() => {
-  return playbackCursorCue.value != null
-    ? playbackCursorCue.value.number +
-        '・' +
-        (playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value))
-    : '';
-});
+  const playbackCursorCueTitle = computed(() => {
+    return playbackCursorCue.value != null
+      ? playbackCursorCue.value.number +
+          '・' +
+          (playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value))
+      : '';
+  });
 
-const isCueStatus = (status: PlaybackStatus) => {
-  if (showState.playbackCursor != null) {
-    const activeCue = showState.activeCues[showState.playbackCursor];
-    if (activeCue != null) {
-      return activeCue.status == status;
-    }
-  }
-  return false;
-};
-
-const handleReadyPauseButton = () => {
-  if (showState.playbackCursor != null) {
-    switch (showState.activeCues[showState.playbackCursor]?.status) {
-      case 'PreWaiting':
-      case 'Playing': {
-        api.sendPause(showState.playbackCursor);
-        break;
-      }
-      case 'PreWaitPaused':
-      case 'Paused': {
-        api.sendResume(showState.playbackCursor);
-        break;
-      }
-      case undefined: {
-        api.sendLoad(showState.playbackCursor);
-        break;
+  const isCueStatus = (status: PlaybackStatus) => {
+    if (showState.playbackCursor != null) {
+      const activeCue = showState.activeCues[showState.playbackCursor];
+      if (activeCue != null) {
+        return activeCue.status == status;
       }
     }
-  }
-};
+    return false;
+  };
 
-const time = useNow();
+  const handleReadyPauseButton = () => {
+    if (showState.playbackCursor != null) {
+      switch (showState.activeCues[showState.playbackCursor]?.status) {
+        case 'PreWaiting':
+        case 'Playing': {
+          api.sendPause(showState.playbackCursor);
+          break;
+        }
+        case 'PreWaitPaused':
+        case 'Paused': {
+          api.sendResume(showState.playbackCursor);
+          break;
+        }
+        case undefined: {
+          api.sendLoad(showState.playbackCursor);
+          break;
+        }
+      }
+    }
+  };
+
+  const time = useNow();
 </script>
 
 <style lang="css" module>
-.blink {
-  animation: flash 1s ease infinite;
-}
-@keyframes flash {
-  0%,
-  100% {
-    opacity: 1;
+  .blink {
+    animation: flash 1s ease infinite;
   }
-  50% {
-    opacity: 0;
+  @keyframes flash {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
   }
-}
 </style>

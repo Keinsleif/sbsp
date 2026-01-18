@@ -76,64 +76,64 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import BasicEditor from './editor/BasicEditor.vue';
-import AudioTimeLevelEditor from './editor/AudioTimeLevelEditor.vue';
-import AudioBasicEditor from './editor/AudioBasicEditor.vue';
-import type { Cue } from '../types/Cue';
-import FadeBasicEditor from './editor/FadeBasicEditor.vue';
-import { useI18n } from 'vue-i18n';
-import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
-import GroupBasicEditor from './editor/GroupBasicEditor.vue';
-import type { CueSequence } from '../types/CueSequence';
+  import { computed, ref } from 'vue';
+  import BasicEditor from './editor/BasicEditor.vue';
+  import AudioTimeLevelEditor from './editor/AudioTimeLevelEditor.vue';
+  import AudioBasicEditor from './editor/AudioBasicEditor.vue';
+  import type { Cue } from '../types/Cue';
+  import FadeBasicEditor from './editor/FadeBasicEditor.vue';
+  import { useI18n } from 'vue-i18n';
+  import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
+  import GroupBasicEditor from './editor/GroupBasicEditor.vue';
+  import type { CueSequence } from '../types/CueSequence';
 
-const { t } = useI18n();
-const selectedCue = defineModel<Cue | null>();
-const props = withDefaults(
-  defineProps<{
-    sequenceOverride?: CueSequence | null;
-  }>(),
-  {
-    sequenceOverride: null,
-  },
-);
-const emit = defineEmits(['update']);
+  const { t } = useI18n();
+  const selectedCue = defineModel<Cue | null>();
+  const props = withDefaults(
+    defineProps<{
+      sequenceOverride?: CueSequence | null;
+    }>(),
+    {
+      sequenceOverride: null,
+    },
+  );
+  const emit = defineEmits(['update']);
 
-const edited = () => {
-  document.body.focus();
-  emit('update');
-};
+  const edited = () => {
+    document.body.focus();
+    emit('update');
+  };
 
-const audioEditorTab = ref('basics');
-const fadeEditorTab = ref('basics');
-const playbackEditorTab = ref('basics');
-const groupEditorTab = ref('basics');
-const otherEditorTab = ref('basics');
+  const audioEditorTab = ref('basics');
+  const fadeEditorTab = ref('basics');
+  const playbackEditorTab = ref('basics');
+  const groupEditorTab = ref('basics');
+  const otherEditorTab = ref('basics');
 
-const editorTab = computed(() => {
-  if (selectedCue.value == null) {
-    return 'blank';
-  }
-  switch (selectedCue.value.params.type) {
-    case 'audio':
-      return audioEditorTab.value;
-    case 'fade':
-      return fadeEditorTab.value;
-    case 'start':
-    case 'load':
-    case 'pause':
-    case 'stop':
-      return playbackEditorTab.value;
-    case 'group':
-      return groupEditorTab.value;
-    default:
-      return otherEditorTab.value;
-  }
-});
+  const editorTab = computed(() => {
+    if (selectedCue.value == null) {
+      return 'blank';
+    }
+    switch (selectedCue.value.params.type) {
+      case 'audio':
+        return audioEditorTab.value;
+      case 'fade':
+        return fadeEditorTab.value;
+      case 'start':
+      case 'load':
+      case 'pause':
+      case 'stop':
+        return playbackEditorTab.value;
+      case 'group':
+        return groupEditorTab.value;
+      default:
+        return otherEditorTab.value;
+    }
+  });
 </script>
 
 <style lang="css" module>
-.centered-input input {
-  text-align: center;
-}
+  .centered-input input {
+    text-align: center;
+  }
 </style>

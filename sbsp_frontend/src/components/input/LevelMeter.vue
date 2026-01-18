@@ -53,92 +53,92 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core';
-import { onMounted, onUnmounted, ref } from 'vue';
-import { useApi } from '../../api';
+  import { useTimeoutFn } from '@vueuse/core';
+  import { onMounted, onUnmounted, ref } from 'vue';
+  import { useApi } from '../../api';
 
-const api = useApi();
+  const api = useApi();
 
-const DECAY_STEP = 0.5;
+  const DECAY_STEP = 0.5;
 
-const props = withDefaults(
-  defineProps<{
-    kind?: 'master';
-    width?: string;
-    height?: string;
-  }>(),
-  {
-    kind: 'master',
-    width: '4px',
-    height: '256px',
-  },
-);
+  const props = withDefaults(
+    defineProps<{
+      kind?: 'master';
+      width?: string;
+      height?: string;
+    }>(),
+    {
+      kind: 'master',
+      width: '4px',
+      height: '256px',
+    },
+  );
 
-const levels = ref({
-  left: -60,
-  right: -60,
-});
-
-const clipping = ref({
-  left: false,
-  right: false,
-});
-
-const { start: startLeftClipReset, stop: stopLeftClipReset } = useTimeoutFn(() => {
-  clipping.value.left = false;
-}, 500);
-const { start: startRightClipReset, stop: stopRightClipReset } = useTimeoutFn(() => {
-  clipping.value.right = false;
-}, 500);
-
-let animationFrameId: number;
-
-const decayLoop = () => {
-  if (levels.value.left > -60) {
-    levels.value.left = Math.max(-60, levels.value.left - DECAY_STEP);
-  }
-  if (levels.value.right > -60) {
-    levels.value.right = Math.max(-60, levels.value.right - DECAY_STEP);
-  }
-
-  if (levels.value.left > 0) {
-    clipping.value.left = true;
-    stopLeftClipReset();
-    startLeftClipReset();
-  }
-
-  if (levels.value.right > 0) {
-    clipping.value.right = true;
-    stopRightClipReset();
-    startRightClipReset();
-  }
-
-  animationFrameId = requestAnimationFrame(decayLoop);
-};
-
-onMounted(() => {
-  api.listenLevelMeter((message) => {
-    levels.value.left = Math.max(levels.value.left, Math.log10(message[0]) * 20);
-    levels.value.right = Math.max(levels.value.right, Math.log10(message[1]) * 20);
+  const levels = ref({
+    left: -60,
+    right: -60,
   });
-  decayLoop();
-});
 
-onUnmounted(() => {
-  cancelAnimationFrame(animationFrameId);
-});
+  const clipping = ref({
+    left: false,
+    right: false,
+  });
+
+  const { start: startLeftClipReset, stop: stopLeftClipReset } = useTimeoutFn(() => {
+    clipping.value.left = false;
+  }, 500);
+  const { start: startRightClipReset, stop: stopRightClipReset } = useTimeoutFn(() => {
+    clipping.value.right = false;
+  }, 500);
+
+  let animationFrameId: number;
+
+  const decayLoop = () => {
+    if (levels.value.left > -60) {
+      levels.value.left = Math.max(-60, levels.value.left - DECAY_STEP);
+    }
+    if (levels.value.right > -60) {
+      levels.value.right = Math.max(-60, levels.value.right - DECAY_STEP);
+    }
+
+    if (levels.value.left > 0) {
+      clipping.value.left = true;
+      stopLeftClipReset();
+      startLeftClipReset();
+    }
+
+    if (levels.value.right > 0) {
+      clipping.value.right = true;
+      stopRightClipReset();
+      startRightClipReset();
+    }
+
+    animationFrameId = requestAnimationFrame(decayLoop);
+  };
+
+  onMounted(() => {
+    api.listenLevelMeter((message) => {
+      levels.value.left = Math.max(levels.value.left, Math.log10(message[0]) * 20);
+      levels.value.right = Math.max(levels.value.right, Math.log10(message[1]) * 20);
+    });
+    decayLoop();
+  });
+
+  onUnmounted(() => {
+    cancelAnimationFrame(animationFrameId);
+  });
 </script>
 
 <style lang="css" module>
-.meter-bar {
-  background: linear-gradient(
-      to top,
-      rgb(52, 211, 103) 70%,
-      rgb(251, 191, 36) 70%,
-      rgb(251, 191, 36) 95%,
-      rgb(255, 0, 0) 95%
-    )
-    no-repeat;
-  box-sizing: content-box;
-}
+  .meter-bar {
+    background: linear-gradient(
+        to top,
+        rgb(52, 211, 103) 70%,
+        rgb(251, 191, 36) 70%,
+        rgb(251, 191, 36) 95%,
+        rgb(255, 0, 0) 95%
+      )
+      no-repeat;
+    box-sizing: content-box;
+  }
 </style>
