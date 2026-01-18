@@ -10166,10 +10166,10 @@ insights.
 
 - Used by
 
-    - [sbsp_backend 0.2.1]( https://crates.io/crates/sbsp_backend )
+    - [sbsp_backend 0.3.0]( https://crates.io/crates/sbsp_backend )
     - [sbsp_license 0.1.1]( https://crates.io/crates/sbsp_license )
-    - [sbsp_remote 1.1.0]( https://crates.io/crates/sbsp_remote )
-    - [sbsp_tauri 1.1.0]( https://crates.io/crates/sbsp_tauri )
+    - [sbsp_remote 1.2.0]( https://crates.io/crates/sbsp_remote )
+    - [sbsp_tauri 1.2.0]( https://crates.io/crates/sbsp_tauri )
 
 ```text
 Elastic License 2.0
@@ -15535,7 +15535,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
-### [sbsp_frontend@1.1.0](undefined)
+### [sbsp_frontend@1.2.0](undefined)
 license: UNLICENSED
 
 ```text
