@@ -2,7 +2,7 @@
   "name": "sbsp_frontend",
   "private": true,
   "license": "Elastic-2.0",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev:web": "cross-env VITE_APP_TARGET=\"websocket\" vite --port 1424",
