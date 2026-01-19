@@ -1,8 +1,9 @@
 <template>
   <v-dialog v-model="isFileListDialogOpen" width="640" height="360" @keydown.stop @contextmenu.prevent>
-    <div class="d-flex flex-column w-100 h-100">
+    <v-sheet class="d-flex flex-column w-100 h-100 py-1">
+      <h3 class="pa-2 border-b-thin">{{ t('dialog.fileSelect.title') }}</h3>
       <v-treeview
-        class="flex-grow-1"
+        class="flex-grow-1 overflow-y-auto"
         :items="fileList"
         density="compact"
         item-children="files"
@@ -30,7 +31,7 @@
           @click="pickFile(selected)"
         ></v-btn>
       </v-footer>
-    </div>
+    </v-sheet>
   </v-dialog>
 </template>
 
@@ -87,7 +88,7 @@
 
   watch(isFileListDialogOpen, (value) => {
     if (value) {
-      api.setTitle(t('view.fileSelector.title'));
+      api.setTitle(t('dialog.fileSelect.title'));
       api.remote
         ?.onFileListUpdate((list) => {
           fileList.value = list;

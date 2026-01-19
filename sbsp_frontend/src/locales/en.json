@@ -225,6 +225,9 @@
         "url": "Web Client URL",
         "copyQr": "Copy QR"
       }
+    },
+    "fileSelect": {
+      "title": "Select Files"
     }
   },
   "general": {
@@ -235,10 +238,6 @@
     "forExpertWarning": "Change this only if you know what you're doing."
   },
   "view": {
-    "server": {},
-    "fileSelector": {
-      "title": "Select Files"
-    },
     "connect": {
       "remoteName": "Name",
       "remoteHost": "Host",

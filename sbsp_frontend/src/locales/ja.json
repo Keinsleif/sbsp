@@ -305,6 +305,9 @@
       },
       "passwordEmpty": "認証は無効です",
       "showInfo": "サーバー接続情報を表示"
+    },
+    "fileSelect": {
+      "title": "ファイルを選択"
     }
   },
   "general": {
@@ -321,10 +324,6 @@
       "remotePort": "ポート",
       "connect": "接続",
       "passwordPrompt": "パスワードを入力してください"
-    },
-    "fileSelector": {
-      "title": "ファイルを選択"
-    },
-    "server": {}
+    }
   }
 }
