@@ -39,7 +39,10 @@
       :end-time="range[1]"
     ></waveform-viewer>
     <div class="d-flex flex-column flex-sm-row ga-0 ga-sm-3 align-center">
-      <responsive-control :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown" :button-label="'Change Volume'">
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="t('main.bottomEditor.timeLevels.changeVolume')"
+      >
         <div class="d-flex flex-row flex-grow-1">
           <volume-fader
             v-model="volume"
@@ -72,7 +75,10 @@
         </div>
       </responsive-control>
       <v-divider vertical inset thickness="2" />
-      <responsive-control :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown" :button-label="'Change Pan'">
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="t('main.bottomEditor.timeLevels.changePan')"
+      >
         <panning-fader
           :label="t('main.bottomEditor.timeLevels.pan')"
           :direction="xs ? 'vertical' : 'horizontal'"

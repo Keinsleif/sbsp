@@ -269,7 +269,9 @@
         "targetFile": "Target File",
         "loadEntireFileOnMemory": "Load entire file on memory",
         "fadeIn": "Fade In",
-        "fadeOut": "Fade Out"
+        "fadeOut": "Fade Out",
+        "changeFadeIn": "Change Fade In",
+        "changeFadeOut": "Change Fade Out"
       },
       "timeLevels": {
         "title": "Time & Levels",
@@ -282,7 +284,9 @@
         "repeat": "Repeat",
         "startTime": "Start Time",
         "endTime": "End Time",
-        "scaleWaveform": "Scale waveform by volume"
+        "scaleWaveform": "Scale waveform by volume",
+        "changeVolume": "Change Volume",
+        "changePan": "Change Pan"
       },
       "fade": {
         "title": "Fade",

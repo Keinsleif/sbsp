@@ -39,7 +39,7 @@
     <v-sheet flat class="d-flex justify-space-evenly align-start flex-column flex-sm-row ga-2">
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
-        :button-label="'Change Fade In'"
+        :button-label="t('main.bottomEditor.audio.changeFadeIn')"
       >
         <fade-param-input
           v-model="fadeInParam"
@@ -51,7 +51,7 @@
       </responsive-control>
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
-        :button-label="'Change Fade Out'"
+        :button-label="t('main.bottomEditor.audio.changeFadeOut')"
       >
         <fade-param-input
           v-model="fadeOutParam"

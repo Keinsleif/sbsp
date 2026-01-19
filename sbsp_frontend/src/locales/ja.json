@@ -58,14 +58,18 @@
         "title": "時間と音量",
         "endTime": "終了時間",
         "startTime": "開始時間",
-        "scaleWaveform": "音量に応じて波形を拡大/縮小"
+        "scaleWaveform": "音量に応じて波形を拡大/縮小",
+        "changePan": "Panを変更",
+        "changeVolume": "音量を変更"
       },
       "audio": {
         "targetFile": "対象ファイル",
         "loadEntireFileOnMemory": "実行時にすべてのデータをメモリにロードする",
         "fadeIn": "フェードイン",
         "fadeOut": "フェードアウト",
-        "title": "音声"
+        "title": "音声",
+        "changeFadeIn": "フェードインを変更",
+        "changeFadeOut": "フェードアウトを変更"
       },
       "basics": {
         "timestamp": "タイムスタンプ",
