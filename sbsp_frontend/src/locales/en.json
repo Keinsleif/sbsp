@@ -1,198 +1,18 @@
 {
-  "menu": {
-    "file": {
-      "open": "Open",
-      "save": "Save",
-      "saveAs": "Save As...",
-      "exportToFolder": "Export to Folder",
-      "title": "File",
-      "disconnect": "Disconnect",
-      "new": "New"
-    },
-    "edit": {
-      "cut": "Cut",
-      "delete": "Delete",
-      "copy": "Copy",
-      "paste": "Paste",
-      "selectAll": "Select All",
-      "title": "Edit",
-      "importSettings": "Import global settings",
-      "exportSettings": "Export global settings"
-    },
-    "cue": {
-      "audio": "Audio Cue",
-      "wait": "Wait Cue",
-      "fade": "Fade Cue",
-      "title": "Cue",
-      "start": "Start Cue",
-      "stop": "Stop Cue",
-      "pause": "Pause Cue",
-      "load": "Load Cue",
-      "group": "Group Cue"
-    },
-    "tools": {
-      "renumber": "Renumber selected cues",
-      "title": "Tools"
-    },
-    "help": {
-      "checkUpdate": "Check for updates",
-      "title": "Help",
-      "credits": "Credits",
-      "license": "License"
-    }
-  },
-  "notification": {
-    "modelLoaded": "Show model loaded.",
-    "modelSaved": "Show model saved."
-  },
   "dialog": {
-    "renumber": {
-      "title": "Renumber Cues",
-      "startNumber": "Start Number",
-      "increment": "Increment"
-    },
-    "settings": {
-      "tab": {
-        "preset": "Preset",
-        "category": {
-          "global": "Global",
-          "inThisShowModel": "In this ShowModel"
-        },
-        "general": "General",
-        "audio": "Audio",
-        "remote": "Remote",
-        "hotkey": "Hotkey",
-        "template": "Template",
-        "appearance": "Appearance",
-        "nameFormat": "Name Format"
-      },
-      "preset": {
-        "hotkeyCursor": {
-          "title": "Hotkey & Cursor behavier",
-          "musicBee": {
-            "description": "Preset for MusicBee like controls."
-          },
-          "qLab": {
-            "description": "Preset for QLab like controls."
-          }
-        }
-      },
-      "show": {
-        "general": {
-          "showModelName": "Show Model name",
-          "assetsDirectory": {
-            "title": "Assets directory",
-            "description": "Relative path to the directory for copying assets. (per-show setting)"
-          }
-        },
-        "audio": {
-          "monoOutput": "Downmix stereo to mono",
-          "targetLufs": "Target LUFS"
-        },
-        "remote": {
-          "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
-        }
-      },
-      "global": {
-        "general": {
-          "advanceCursorWhenGo": "Advance cursor when GO",
-          "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
-          "copyAssetsWhenAdd": "Copy assets when adding Cue",
-          "seekAmount": "Seek amount"
-        },
-        "hotkey": {
-          "playback": {
-            "title": "Playback",
-            "go": "Go",
-            "load": "Load",
-            "pauseAndResume": "Pause & Resume",
-            "pauseAll": "Pause All",
-            "resumeAll": "Resume All",
-            "stop": "Stop",
-            "stopAll": "Stop All",
-            "seekForward": "Seek Forward (seconds set in General Settings)",
-            "seekBackward": "Seek Backward (seconds set in General Settings)"
-          },
-          "audio": {
-            "title": "Audio Action",
-            "toggleRepeat": "ToggleRepeat"
-          }
-        },
-        "template": {
-          "type": "Type",
-          "audio": "Audio Cue",
-          "builtFromCueParam": "** built from cue param **",
-          "wait": "Wait Cue",
-          "fade": "Fade Cue",
-          "start": "Start Cue",
-          "stop": "Stop Cue",
-          "pause": "Pause Cue",
-          "load": "Load Cue",
-          "group": "Group Cue"
-        },
-        "appearance": {
-          "language": "Language",
-          "systemLanguage": "System Language",
-          "darkMode": "Dark Mode",
-          "systemSettings": "System Settings",
-          "hideControls": "Hide playback controls on top header"
-        },
-        "nameFormat": {
-          "audio": {
-            "title": "Audio Cue",
-            "description": "{'{'}filename{'}'} replaced with target audio filename"
-          },
-          "wait": {
-            "title": "Wait Cue",
-            "description": "{'{'}duration{'}'} replaced with wait duration"
-          },
-          "fade": {
-            "title": "Fade Cue",
-            "description": "{'{'}targetName{'}'} replaced with target cue name"
-          },
-          "start": {
-            "title": "Start Cue"
-          },
-          "playbackDescription": "{'{'}targetName{'}'} replaced with target cue name",
-          "stop": {
-            "title": "Stop Cue"
-          },
-          "pause": {
-            "title": "Pause Cue"
-          },
-          "load": {
-            "title": "Load Cue"
-          },
-          "group": {
-            "title": "Group Cue"
-          }
-        }
-      }
-    },
-    "update": {
-      "title": "Check for updates",
-      "noUpdates": "No updates available.",
-      "updatesAvailable": "New updates available.",
-      "installUpdate": "Install update",
-      "currentVersion": "Current Version",
-      "latestVersion": "Latest Version"
+    "fileSelect": {
+      "title": "Select Files"
     },
     "license": {
+      "activateLicense": "Activate License",
+      "edition": "Edition",
+      "issuedDate": "Issued Date",
+      "owner": "Owner",
       "success": {
         "message": "The license file has been successfully imported into the application.\nPlease delete the original license file or store it in a safe place.\n\n* You can re-download the license file from the store page.",
         "title": "License Activation success!"
       },
-      "title": "License",
-      "edition": "Edition",
-      "owner": "Owner",
-      "issuedDate": "Issued Date",
-      "activateLicense": "Activate License"
-    },
-    "saveConfirm": {
-      "content": "Save changes on this ShowModel?",
-      "save": "Save",
-      "dontSave": "Don't save",
-      "cancel": "Cancel"
+      "title": "License"
     },
     "message": {
       "license": {
@@ -200,131 +20,311 @@
         "serverPanel": "Pro License is required to use Server Panel."
       }
     },
+    "renumber": {
+      "increment": "Increment",
+      "startNumber": "Start Number",
+      "title": "Renumber Cues"
+    },
     "save": {
       "exportSettingsFilter": "GlobalSettings File"
     },
+    "saveConfirm": {
+      "cancel": "Cancel",
+      "content": "Save changes on this ShowModel?",
+      "dontSave": "Don't save",
+      "save": "Save"
+    },
     "server": {
-      "title": "Server Management",
-      "status": "Status",
-      "running": "Running",
-      "stopped": "Stopped",
-      "port": "Port",
       "discoverable": "Discoverable",
-      "serverName": "Server Name",
-      "stop": "Stop",
-      "start": "Start",
+      "generate": "Generate",
+      "info": {
+        "copyQr": "Copy QR",
+        "host": "Host",
+        "hostnameUnavailable": "Hostname not available",
+        "passwordNotSet": "Not set",
+        "url": "Web Client URL",
+        "urlUnavailable": "URL not available"
+      },
       "password": "Password",
       "passwordEmpty": "Authentication disabled",
-      "generate": "Generate",
+      "port": "Port",
+      "running": "Running",
+      "serverName": "Server Name",
       "showInfo": "Show Server Information",
-      "info": {
-        "hostnameUnavailable": "Hostname not available",
-        "host": "Host",
-        "passwordNotSet": "Not set",
-        "urlUnavailable": "URL not available",
-        "url": "Web Client URL",
-        "copyQr": "Copy QR"
+      "start": "Start",
+      "status": "Status",
+      "stop": "Stop",
+      "stopped": "Stopped",
+      "title": "Server Management"
+    },
+    "settings": {
+      "global": {
+        "appearance": {
+          "darkMode": "Dark Mode",
+          "hideControls": "Hide playback controls on top header",
+          "language": "Language",
+          "systemLanguage": "System Language",
+          "systemSettings": "System Settings"
+        },
+        "general": {
+          "advanceCursorWhenGo": "Advance cursor when GO",
+          "copyAssetsWhenAdd": "Copy assets when adding Cue",
+          "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
+          "seekAmount": "Seek amount"
+        },
+        "hotkey": {
+          "audio": {
+            "title": "Audio Action",
+            "toggleRepeat": "ToggleRepeat"
+          },
+          "playback": {
+            "go": "Go",
+            "load": "Load",
+            "pauseAll": "Pause All",
+            "pauseAndResume": "Pause & Resume",
+            "resumeAll": "Resume All",
+            "seekBackward": "Seek Backward (seconds set in General Settings)",
+            "seekForward": "Seek Forward (seconds set in General Settings)",
+            "stop": "Stop",
+            "stopAll": "Stop All",
+            "title": "Playback"
+          }
+        },
+        "nameFormat": {
+          "audio": {
+            "description": "{'{'}filename{'}'} replaced with target audio filename",
+            "title": "Audio Cue"
+          },
+          "fade": {
+            "description": "{'{'}targetName{'}'} replaced with target cue name",
+            "title": "Fade Cue"
+          },
+          "group": {
+            "title": "Group Cue"
+          },
+          "load": {
+            "title": "Load Cue"
+          },
+          "pause": {
+            "title": "Pause Cue"
+          },
+          "playbackDescription": "{'{'}targetName{'}'} replaced with target cue name",
+          "start": {
+            "title": "Start Cue"
+          },
+          "stop": {
+            "title": "Stop Cue"
+          },
+          "wait": {
+            "description": "{'{'}duration{'}'} replaced with wait duration",
+            "title": "Wait Cue"
+          }
+        },
+        "template": {
+          "audio": "Audio Cue",
+          "builtFromCueParam": "** built from cue param **",
+          "fade": "Fade Cue",
+          "group": "Group Cue",
+          "load": "Load Cue",
+          "pause": "Pause Cue",
+          "start": "Start Cue",
+          "stop": "Stop Cue",
+          "type": "Type",
+          "wait": "Wait Cue"
+        }
+      },
+      "preset": {
+        "hotkeyCursor": {
+          "musicBee": {
+            "description": "Preset for MusicBee like controls."
+          },
+          "qLab": {
+            "description": "Preset for QLab like controls."
+          },
+          "title": "Hotkey & Cursor behavier"
+        }
+      },
+      "show": {
+        "audio": {
+          "monoOutput": "Downmix stereo to mono",
+          "targetLufs": "Target LUFS"
+        },
+        "general": {
+          "assetsDirectory": {
+            "description": "Relative path to the directory for copying assets. (per-show setting)",
+            "title": "Assets directory"
+          },
+          "showModelName": "Show Model name"
+        },
+        "remote": {
+          "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
+        }
+      },
+      "tab": {
+        "appearance": "Appearance",
+        "audio": "Audio",
+        "category": {
+          "global": "Global",
+          "inThisShowModel": "In this ShowModel"
+        },
+        "general": "General",
+        "hotkey": "Hotkey",
+        "nameFormat": "Name Format",
+        "preset": "Preset",
+        "remote": "Remote",
+        "template": "Template"
       }
     },
-    "fileSelect": {
-      "title": "Select Files"
+    "update": {
+      "currentVersion": "Current Version",
+      "installUpdate": "Install update",
+      "latestVersion": "Latest Version",
+      "noUpdates": "No updates available.",
+      "title": "Check for updates",
+      "updatesAvailable": "New updates available."
     }
   },
   "general": {
     "cancel": "Cancel",
-    "done": "Done",
     "close": "Close",
-    "open": "Open",
-    "forExpertWarning": "Change this only if you know what you're doing."
-  },
-  "view": {
-    "connect": {
-      "remoteName": "Name",
-      "remoteHost": "Host",
-      "remotePort": "Port",
-      "connect": "Connect",
-      "passwordPrompt": "Enter password"
-    }
+    "done": "Done",
+    "forExpertWarning": "Change this only if you know what you're doing.",
+    "open": "Open"
   },
   "main": {
+    "bottomEditor": {
+      "audio": {
+        "changeFadeIn": "Change Fade In",
+        "changeFadeOut": "Change Fade Out",
+        "fadeIn": "Fade In",
+        "fadeOut": "Fade Out",
+        "loadEntireFileOnMemory": "Load entire file on memory",
+        "targetFile": "Target File",
+        "title": "Audio"
+      },
+      "basics": {
+        "nextCue": "Next Cue",
+        "timestamp": "Timestamp",
+        "title": "Basics"
+      },
+      "continueTargetCue": "Continue Target Cue",
+      "fade": {
+        "fadeParameter": "Fade Parameter",
+        "targetVolume": "Target Volume",
+        "title": "Fade"
+      },
+      "group": {
+        "mode": {
+          "concurrency": "Concurrency",
+          "label": "Group Mode",
+          "playlist": "Playlist"
+        },
+        "title": "Group"
+      },
+      "input": {
+        "curve": "Curve",
+        "easeIn": "EaseIn",
+        "easeInOut": "EaseInOut",
+        "easeOut": "EaseOut",
+        "intensity": "Intensity",
+        "linear": "Linear"
+      },
+      "playback": {
+        "title": "Playback"
+      },
+      "targetCue": "Target Cue",
+      "timeLevels": {
+        "changePan": "Change Pan",
+        "changeVolume": "Change Volume",
+        "endTime": "End Time",
+        "lufsDescription": "Set volume to match {targetLUFS}LUFS",
+        "pan": "Pan",
+        "peakDescription": "Set volume so that the audio peak is 0dBFS",
+        "repeat": "Repeat",
+        "scaleWaveform": "Scale waveform by volume",
+        "skipFirstSilence": "Skip first silence",
+        "skipLastSilence": "Skip last silence",
+        "startTime": "Start Time",
+        "title": "Time & Levels",
+        "volume": "Volume"
+      }
+    },
+    "continueMode": {
+      "autoContinue": "Auto-Continue",
+      "autoFollow": "Auto-Follow",
+      "doNotContinue": "DoNotContinue",
+      "title": "Continue Mode"
+    },
     "cueList": {},
+    "duration": "Duration",
     "footBar": {
       "cueCountSuffix": "cues"
     },
+    "name": "Name",
+    "notes": "Notes",
+    "number": "Number",
+    "postWait": "Post-Wait",
+    "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
       "levels": {
         "title": "Levels"
       }
+    }
+  },
+  "menu": {
+    "cue": {
+      "audio": "Audio Cue",
+      "fade": "Fade Cue",
+      "group": "Group Cue",
+      "load": "Load Cue",
+      "pause": "Pause Cue",
+      "start": "Start Cue",
+      "stop": "Stop Cue",
+      "title": "Cue",
+      "wait": "Wait Cue"
     },
-    "bottomEditor": {
-      "basics": {
-        "title": "Basics",
-        "timestamp": "Timestamp",
-        "nextCue": "Next Cue"
-      },
-      "audio": {
-        "title": "Audio",
-        "targetFile": "Target File",
-        "loadEntireFileOnMemory": "Load entire file on memory",
-        "fadeIn": "Fade In",
-        "fadeOut": "Fade Out",
-        "changeFadeIn": "Change Fade In",
-        "changeFadeOut": "Change Fade Out"
-      },
-      "timeLevels": {
-        "title": "Time & Levels",
-        "skipFirstSilence": "Skip first silence",
-        "skipLastSilence": "Skip last silence",
-        "volume": "Volume",
-        "lufsDescription": "Set volume to match {targetLUFS}LUFS",
-        "peakDescription": "Set volume so that the audio peak is 0dBFS",
-        "pan": "Pan",
-        "repeat": "Repeat",
-        "startTime": "Start Time",
-        "endTime": "End Time",
-        "scaleWaveform": "Scale waveform by volume",
-        "changeVolume": "Change Volume",
-        "changePan": "Change Pan"
-      },
-      "fade": {
-        "title": "Fade",
-        "targetVolume": "Target Volume",
-        "fadeParameter": "Fade Parameter"
-      },
-      "input": {
-        "curve": "Curve",
-        "linear": "Linear",
-        "easeIn": "EaseIn",
-        "easeOut": "EaseOut",
-        "easeInOut": "EaseInOut",
-        "intensity": "Intensity"
-      },
-      "targetCue": "Target Cue",
-      "playback": {
-        "title": "Playback"
-      },
-      "continueTargetCue": "Continue Target Cue",
-      "group": {
-        "title": "Group",
-        "mode": {
-          "label": "Group Mode",
-          "playlist": "Playlist",
-          "concurrency": "Concurrency"
-        }
-      }
+    "edit": {
+      "copy": "Copy",
+      "cut": "Cut",
+      "delete": "Delete",
+      "exportSettings": "Export global settings",
+      "importSettings": "Import global settings",
+      "paste": "Paste",
+      "selectAll": "Select All",
+      "title": "Edit"
     },
-    "number": "Number",
-    "name": "Name",
-    "preWait": "Pre-Wait",
-    "duration": "Duration",
-    "postWait": "Post-Wait",
-    "continueMode": {
-      "title": "Continue Mode",
-      "doNotContinue": "DoNotContinue",
-      "autoContinue": "Auto-Continue",
-      "autoFollow": "Auto-Follow"
+    "file": {
+      "disconnect": "Disconnect",
+      "exportToFolder": "Export to Folder",
+      "new": "New",
+      "open": "Open",
+      "save": "Save",
+      "saveAs": "Save As...",
+      "title": "File"
     },
-    "notes": "Notes"
+    "help": {
+      "checkUpdate": "Check for updates",
+      "credits": "Credits",
+      "license": "License",
+      "title": "Help"
+    },
+    "tools": {
+      "renumber": "Renumber selected cues",
+      "title": "Tools"
+    }
+  },
+  "notification": {
+    "modelLoaded": "Show model loaded.",
+    "modelSaved": "Show model saved."
+  },
+  "view": {
+    "connect": {
+      "connect": "Connect",
+      "passwordPrompt": "Enter password",
+      "remoteHost": "Host",
+      "remoteName": "Name",
+      "remotePort": "Port"
+    }
   }
 }

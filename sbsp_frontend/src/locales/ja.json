@@ -1,221 +1,94 @@
 {
-  "menu": {
-    "file": {
-      "open": "開く",
-      "save": "保存",
-      "saveAs": "名前をつけて保存",
-      "exportToFolder": "フォルダにエクスポート",
-      "title": "ファイル",
-      "disconnect": "サーバーから切断",
-      "new": "新規"
-    },
-    "edit": {
-      "cut": "切り取り",
-      "copy": "コピー",
-      "paste": "貼り付け",
-      "delete": "削除",
-      "selectAll": "すべて選択",
-      "title": "編集",
-      "exportSettings": "グローバル設定をエクスポート",
-      "importSettings": "グローバル設定をインポート"
-    },
-    "cue": {
-      "audio": "音声キュー",
-      "wait": "待機キュー",
-      "fade": "フェードキュー",
-      "title": "キュー",
-      "start": "開始キュー",
-      "stop": "停止キュー",
-      "load": "読み込みキュー",
-      "pause": "一時停止キュー",
-      "group": "グループキュー"
-    },
-    "tools": {
-      "renumber": "キュー番号の振り直し",
-      "title": "ツール"
-    },
-    "help": {
-      "checkUpdate": "アップデートを確認",
-      "title": "ヘルプ",
-      "credits": "クレジット",
-      "license": "ライセンス"
-    }
-  },
-  "notification": {
-    "modelLoaded": "正常にロードされました",
-    "modelSaved": "正常に保存されました"
-  },
-  "main": {
-    "bottomEditor": {
-      "timeLevels": {
-        "lufsDescription": "{targetLUFS}LUFS になるように音量を設定",
-        "skipFirstSilence": "開始前の無音をスキップ",
-        "skipLastSilence": "終了後の無音をスキップ",
-        "volume": "音量",
-        "peakDescription": "音声のPeakが 0dBFS になるように音量を設定",
-        "pan": "Pan",
-        "repeat": "リピート",
-        "title": "時間と音量",
-        "endTime": "終了時間",
-        "startTime": "開始時間",
-        "scaleWaveform": "音量に応じて波形を拡大/縮小",
-        "changePan": "Panを変更",
-        "changeVolume": "音量を変更"
-      },
-      "audio": {
-        "targetFile": "対象ファイル",
-        "loadEntireFileOnMemory": "実行時にすべてのデータをメモリにロードする",
-        "fadeIn": "フェードイン",
-        "fadeOut": "フェードアウト",
-        "title": "音声",
-        "changeFadeIn": "フェードインを変更",
-        "changeFadeOut": "フェードアウトを変更"
-      },
-      "basics": {
-        "timestamp": "タイムスタンプ",
-        "title": "基本",
-        "nextCue": "次のキュー"
-      },
-      "fade": {
-        "targetVolume": "目標音量",
-        "fadeParameter": "フェードパラメーター",
-        "title": "フェード"
-      },
-      "input": {
-        "curve": "カーブ",
-        "linear": "線形",
-        "easeIn": "EaseIn",
-        "easeOut": "EaseOut",
-        "easeInOut": "EaseInOut",
-        "intensity": "強度"
-      },
-      "targetCue": "対象キュー",
-      "continueTargetCue": "連鎖対象キュー",
-      "playback": {
-        "title": "再生"
-      },
-      "group": {
-        "mode": {
-          "concurrency": "同時実行",
-          "label": "グループ実行モード",
-          "playlist": "プレイリスト"
-        },
-        "title": "グループ"
-      }
-    },
-    "number": "番号",
-    "duration": "長さ",
-    "preWait": "Pre-Wait",
-    "continueMode": {
-      "title": "連鎖モード",
-      "doNotContinue": "連鎖しない",
-      "autoContinue": "自動継続",
-      "autoFollow": "自動追従"
-    },
-    "postWait": "Post-Wait",
-    "name": "名前",
-    "notes": "備考",
-    "footBar": {
-      "cueCountSuffix": "キュー"
-    },
-    "sideBar": {
-      "activeCues": "実行中のキュー",
-      "levels": {
-        "title": "レベル"
-      }
-    }
-  },
   "dialog": {
+    "fileSelect": {
+      "title": "ファイルを選択"
+    },
+    "license": {
+      "activateLicense": "ライセンスを有効化",
+      "edition": "エディション",
+      "issuedDate": "発行日時",
+      "owner": "所有者",
+      "success": {
+        "message": "ライセンスファイルは正常にアプリケーションにインポートされました。\n元のライセンスファイルは削除するか安全な場所に保管してください。\n\n※ライセンスファイルはストアページから再度ダウンロードできます。",
+        "title": "ライセンスの有効化に成功しました"
+      },
+      "title": "ライセンス"
+    },
+    "message": {
+      "license": {
+        "proTitle": "ライセンスエラー",
+        "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。"
+      }
+    },
     "renumber": {
-      "title": "キュー番号の振り直し",
+      "increment": "増分",
       "startNumber": "開始番号",
-      "increment": "増分"
+      "title": "キュー番号の振り直し"
+    },
+    "save": {
+      "exportSettingsFilter": "グローバル設定ファイル"
+    },
+    "saveConfirm": {
+      "cancel": "キャンセル",
+      "content": "ShowModelへの変更を保存しますか？",
+      "dontSave": "保存しない",
+      "save": "保存"
+    },
+    "server": {
+      "discoverable": "LAN内から発見可能",
+      "generate": "生成",
+      "info": {
+        "copyQr": "QRコードをコピー",
+        "host": "ホスト名",
+        "hostnameUnavailable": "ホスト名を取得できません",
+        "passwordNotSet": "未設定",
+        "url": "WebクライアントURL",
+        "urlUnavailable": "Webクライアントは利用できません"
+      },
+      "password": "パスワード",
+      "passwordEmpty": "認証は無効です",
+      "port": "ポート",
+      "running": "実行中",
+      "serverName": "サーバー名",
+      "showInfo": "サーバー接続情報を表示",
+      "start": "開始",
+      "status": "状態",
+      "stop": "停止",
+      "stopped": "停止中",
+      "title": "サーバー管理"
     },
     "settings": {
-      "tab": {
-        "preset": "プリセット",
-        "category": {
-          "global": "グローバル設定",
-          "inThisShowModel": "ShowModelの設定"
-        },
-        "general": "全般",
-        "audio": "音声",
-        "remote": "リモート操作",
-        "hotkey": "ホットキー",
-        "template": "テンプレート",
-        "appearance": "外観",
-        "nameFormat": "名前フォーマット"
-      },
-      "preset": {
-        "hotkeyCursor": {
-          "title": "ホットキーとカーソルの振る舞い",
-          "musicBee": {
-            "description": "MusicBee風の操作プリセット"
-          },
-          "qLab": {
-            "description": "QLab風の操作プリセット"
-          }
-        }
-      },
-      "show": {
-        "general": {
-          "showModelName": "ShowModelの名前",
-          "assetsDirectory": {
-            "title": "アセットの保存先",
-            "description": "アセットをコピーするディレクトリへの相対パス (ShowModelごとの設定)"
-          }
-        },
-        "audio": {
-          "monoOutput": "ステレオをモノラルにダウンミックス",
-          "targetLufs": "目標 LUFS"
-        },
-        "remote": {
-          "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"
-        }
-      },
       "global": {
+        "appearance": {
+          "darkMode": "ダークモード",
+          "hideControls": "上部ヘッダーの再生制御ボタンを隠す",
+          "language": "言語",
+          "systemLanguage": "システムの言語",
+          "systemSettings": "システムの設定"
+        },
         "general": {
           "advanceCursorWhenGo": "GO実行時に再生カーソルを進める",
-          "lockCursorToSelection": "再生カーソルを選択範囲にロック",
           "copyAssetsWhenAdd": "キューを追加するときにアセットをコピーする",
+          "lockCursorToSelection": "再生カーソルを選択範囲にロック",
           "seekAmount": "シーク秒数"
         },
         "hotkey": {
-          "playback": {
-            "title": "再生",
-            "go": "Go",
-            "load": "読み込み",
-            "pauseAndResume": "一時停止＆再開",
-            "pauseAll": "すべて一時停止",
-            "resumeAll": "すべて再開",
-            "stop": "停止",
-            "stopAll": "すべて停止",
-            "seekForward": "前方へスキップ (全般設定で設定された秒数)",
-            "seekBackward": "後方へスキップ（全般設定で設定された秒数）"
-          },
           "audio": {
             "title": "音声キュー",
             "toggleRepeat": "リピート切り替え"
+          },
+          "playback": {
+            "go": "Go",
+            "load": "読み込み",
+            "pauseAll": "すべて一時停止",
+            "pauseAndResume": "一時停止＆再開",
+            "resumeAll": "すべて再開",
+            "seekBackward": "後方へスキップ（全般設定で設定された秒数）",
+            "seekForward": "前方へスキップ (全般設定で設定された秒数)",
+            "stop": "停止",
+            "stopAll": "すべて停止",
+            "title": "再生"
           }
-        },
-        "template": {
-          "type": "種類",
-          "audio": "音声キュー",
-          "wait": "待機キュー",
-          "builtFromCueParam": "** キューのパラメータから自動作成 **",
-          "fade": "フェードキュー",
-          "group": "グループキュー",
-          "load": "読み込みキュー",
-          "pause": "一時停止キュー",
-          "start": "開始キュー",
-          "stop": "停止キュー"
-        },
-        "appearance": {
-          "darkMode": "ダークモード",
-          "language": "言語",
-          "systemLanguage": "システムの言語",
-          "systemSettings": "システムの設定",
-          "hideControls": "上部ヘッダーの再生制御ボタンを隠す"
         },
         "nameFormat": {
           "audio": {
@@ -246,84 +119,211 @@
             "description": "{'{'}duration{'}'} は待機する時間に置き換えられます",
             "title": "待機キュー"
           }
+        },
+        "template": {
+          "audio": "音声キュー",
+          "builtFromCueParam": "** キューのパラメータから自動作成 **",
+          "fade": "フェードキュー",
+          "group": "グループキュー",
+          "load": "読み込みキュー",
+          "pause": "一時停止キュー",
+          "start": "開始キュー",
+          "stop": "停止キュー",
+          "type": "種類",
+          "wait": "待機キュー"
         }
+      },
+      "preset": {
+        "hotkeyCursor": {
+          "musicBee": {
+            "description": "MusicBee風の操作プリセット"
+          },
+          "qLab": {
+            "description": "QLab風の操作プリセット"
+          },
+          "title": "ホットキーとカーソルの振る舞い"
+        }
+      },
+      "show": {
+        "audio": {
+          "monoOutput": "ステレオをモノラルにダウンミックス",
+          "targetLufs": "目標 LUFS"
+        },
+        "general": {
+          "assetsDirectory": {
+            "description": "アセットをコピーするディレクトリへの相対パス (ShowModelごとの設定)",
+            "title": "アセットの保存先"
+          },
+          "showModelName": "ShowModelの名前"
+        },
+        "remote": {
+          "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"
+        }
+      },
+      "tab": {
+        "appearance": "外観",
+        "audio": "音声",
+        "category": {
+          "global": "グローバル設定",
+          "inThisShowModel": "ShowModelの設定"
+        },
+        "general": "全般",
+        "hotkey": "ホットキー",
+        "nameFormat": "名前フォーマット",
+        "preset": "プリセット",
+        "remote": "リモート操作",
+        "template": "テンプレート"
       }
     },
     "update": {
-      "title": "アップデートを確認",
-      "noUpdates": "現在のバージョンは最新版です。",
-      "updatesAvailable": "更新が利用可能です。",
       "currentVersion": "現在のバージョン",
+      "installUpdate": "更新をインストール",
       "latestVersion": "最新バージョン",
-      "installUpdate": "更新をインストール"
-    },
-    "license": {
-      "activateLicense": "ライセンスを有効化",
-      "edition": "エディション",
-      "issuedDate": "発行日時",
-      "owner": "所有者",
-      "success": {
-        "message": "ライセンスファイルは正常にアプリケーションにインポートされました。\n元のライセンスファイルは削除するか安全な場所に保管してください。\n\n※ライセンスファイルはストアページから再度ダウンロードできます。",
-        "title": "ライセンスの有効化に成功しました"
-      },
-      "title": "ライセンス"
-    },
-    "saveConfirm": {
-      "cancel": "キャンセル",
-      "content": "ShowModelへの変更を保存しますか？",
-      "dontSave": "保存しない",
-      "save": "保存"
-    },
-    "message": {
-      "license": {
-        "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。",
-        "proTitle": "ライセンスエラー"
-      }
-    },
-    "save": {
-      "exportSettingsFilter": "グローバル設定ファイル"
-    },
-    "server": {
-      "title": "サーバー管理",
-      "status": "状態",
-      "running": "実行中",
-      "stopped": "停止中",
-      "port": "ポート",
-      "discoverable": "LAN内から発見可能",
-      "serverName": "サーバー名",
-      "stop": "停止",
-      "start": "開始",
-      "password": "パスワード",
-      "generate": "生成",
-      "info": {
-        "copyQr": "QRコードをコピー",
-        "host": "ホスト名",
-        "hostnameUnavailable": "ホスト名を取得できません",
-        "passwordNotSet": "未設定",
-        "url": "WebクライアントURL",
-        "urlUnavailable": "Webクライアントは利用できません"
-      },
-      "passwordEmpty": "認証は無効です",
-      "showInfo": "サーバー接続情報を表示"
-    },
-    "fileSelect": {
-      "title": "ファイルを選択"
+      "noUpdates": "現在のバージョンは最新版です。",
+      "title": "アップデートを確認",
+      "updatesAvailable": "更新が利用可能です。"
     }
   },
   "general": {
     "cancel": "キャンセル",
+    "close": "閉じる",
     "done": "完了",
     "forExpertWarning": "何をしているのか理解している場合のみ、これを変更してください。",
-    "close": "閉じる",
     "open": "開く"
+  },
+  "main": {
+    "bottomEditor": {
+      "audio": {
+        "changeFadeIn": "フェードインを変更",
+        "changeFadeOut": "フェードアウトを変更",
+        "fadeIn": "フェードイン",
+        "fadeOut": "フェードアウト",
+        "loadEntireFileOnMemory": "実行時にすべてのデータをメモリにロードする",
+        "targetFile": "対象ファイル",
+        "title": "音声"
+      },
+      "basics": {
+        "nextCue": "次のキュー",
+        "timestamp": "タイムスタンプ",
+        "title": "基本"
+      },
+      "continueTargetCue": "連鎖対象キュー",
+      "fade": {
+        "fadeParameter": "フェードパラメーター",
+        "targetVolume": "目標音量",
+        "title": "フェード"
+      },
+      "group": {
+        "mode": {
+          "concurrency": "同時実行",
+          "label": "グループ実行モード",
+          "playlist": "プレイリスト"
+        },
+        "title": "グループ"
+      },
+      "input": {
+        "curve": "カーブ",
+        "easeIn": "EaseIn",
+        "easeInOut": "EaseInOut",
+        "easeOut": "EaseOut",
+        "intensity": "強度",
+        "linear": "線形"
+      },
+      "playback": {
+        "title": "再生"
+      },
+      "targetCue": "対象キュー",
+      "timeLevels": {
+        "changePan": "Panを変更",
+        "changeVolume": "音量を変更",
+        "endTime": "終了時間",
+        "lufsDescription": "{targetLUFS}LUFS になるように音量を設定",
+        "pan": "Pan",
+        "peakDescription": "音声のPeakが 0dBFS になるように音量を設定",
+        "repeat": "リピート",
+        "scaleWaveform": "音量に応じて波形を拡大/縮小",
+        "skipFirstSilence": "開始前の無音をスキップ",
+        "skipLastSilence": "終了後の無音をスキップ",
+        "startTime": "開始時間",
+        "title": "時間と音量",
+        "volume": "音量"
+      }
+    },
+    "continueMode": {
+      "autoContinue": "自動継続",
+      "autoFollow": "自動追従",
+      "doNotContinue": "連鎖しない",
+      "title": "連鎖モード"
+    },
+    "duration": "長さ",
+    "footBar": {
+      "cueCountSuffix": "キュー"
+    },
+    "name": "名前",
+    "notes": "備考",
+    "number": "番号",
+    "postWait": "Post-Wait",
+    "preWait": "Pre-Wait",
+    "sideBar": {
+      "activeCues": "実行中のキュー",
+      "levels": {
+        "title": "レベル"
+      }
+    }
+  },
+  "menu": {
+    "cue": {
+      "audio": "音声キュー",
+      "fade": "フェードキュー",
+      "group": "グループキュー",
+      "load": "読み込みキュー",
+      "pause": "一時停止キュー",
+      "start": "開始キュー",
+      "stop": "停止キュー",
+      "title": "キュー",
+      "wait": "待機キュー"
+    },
+    "edit": {
+      "copy": "コピー",
+      "cut": "切り取り",
+      "delete": "削除",
+      "exportSettings": "グローバル設定をエクスポート",
+      "importSettings": "グローバル設定をインポート",
+      "paste": "貼り付け",
+      "selectAll": "すべて選択",
+      "title": "編集"
+    },
+    "file": {
+      "disconnect": "サーバーから切断",
+      "exportToFolder": "フォルダにエクスポート",
+      "new": "新規",
+      "open": "開く",
+      "save": "保存",
+      "saveAs": "名前をつけて保存",
+      "title": "ファイル"
+    },
+    "help": {
+      "checkUpdate": "アップデートを確認",
+      "credits": "クレジット",
+      "license": "ライセンス",
+      "title": "ヘルプ"
+    },
+    "tools": {
+      "renumber": "キュー番号の振り直し",
+      "title": "ツール"
+    }
+  },
+  "notification": {
+    "modelLoaded": "正常にロードされました",
+    "modelSaved": "正常に保存されました"
   },
   "view": {
     "connect": {
-      "remoteName": "接続先名",
-      "remoteHost": "ホスト",
-      "remotePort": "ポート",
       "connect": "接続",
-      "passwordPrompt": "パスワードを入力してください"
+      "passwordPrompt": "パスワードを入力してください",
+      "remoteHost": "ホスト",
+      "remoteName": "接続先名",
+      "remotePort": "ポート"
     }
   }
 }
