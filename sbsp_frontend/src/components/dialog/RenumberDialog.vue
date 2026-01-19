@@ -44,7 +44,7 @@
   const uiState = useUiState();
 
   const isRenumberDialogOpen = defineModel<boolean>({ required: true });
-  const startFrom = ref(0);
+  const startFrom = ref(1);
   const increment = ref(1);
 
   const onDone = () => {
