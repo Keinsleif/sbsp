@@ -1,0 +1,33 @@
+name: 'update-publish'
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+
+concurrency:
+  group: update-publish
+  cancel-in-progress: true
+
+jobs:
+  update-publish:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TYPE: ${{ contains(GITHUB_REF, 'remote') && 'remote' || 'main' }}
+    steps:
+      - run: mkdir upload
+
+      - name: 'update latest.json'
+        run: gh release download ${{ GITHUB_REF }} -p latest.json -O upload/latest-${{ RELEASE_TYPE }}.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./upload
+          destination_dir: update
+          keep_files: true

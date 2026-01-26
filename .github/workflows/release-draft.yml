@@ -86,8 +86,6 @@ jobs:
           args: ${{ matrix.args }}
           tauriScript: cargo tauri
 
-      - run: mkdir upload && cp latest.json upload/latest-main.json
-
       # SBSP Remote
 
       - uses: tauri-apps/tauri-action@v0
@@ -104,12 +102,3 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
           tauriScript: cargo tauri
-
-      - run: cp latest.json upload/latest-remote.json
-
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./upload
-          destination_dir: update
