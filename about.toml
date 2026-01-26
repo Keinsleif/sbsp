@@ -9,3 +9,5 @@ accepted = [
     "BSD-3-Clause",
     "Elastic-2.0",
 ]
+ignore-build-dependencies = true
+ignore-dev-dependencies = true

@@ -7,7 +7,7 @@ cargo about generate about.hbs -o THIRD_PARTY_NOTICES.md
 
 cd sbsp_frontend
 
-npx license-checker --json > "../scripts/tmp.json"
+pnpm exec license-checker-rseidelsohn --excludePackages sbsp_frontend --direct false --production --json --out ../scripts/tmp.json
 cd ../scripts
 node notice_json2md.js
 rm tmp.json

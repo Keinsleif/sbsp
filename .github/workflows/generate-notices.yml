@@ -59,7 +59,7 @@ jobs:
         working-directory: ./
 
       - name: Generate JS notices
-        run: npx license-checker --json > "../scripts/tmp.json"
+        run: pnpm exec license-checker-rseidelsohn --exclude sbsp_frontend --production --json > "../scripts/tmp.json"
         working-directory: ./sbsp_frontend
 
       - name: Combine notices

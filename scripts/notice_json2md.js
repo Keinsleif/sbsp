@@ -20,6 +20,7 @@ license: ${pnpm_data[i].licenses}
 \`\`\`text
 ${license_text}
 \`\`\`
+
 `;
 }
 
