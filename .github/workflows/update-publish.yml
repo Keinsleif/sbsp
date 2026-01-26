@@ -10,12 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  update-publish:
+  publish-latest:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    env:
-      RELEASE_TYPE: ${{ contains(env.GITHUB_REF, 'remote') && 'remote' || 'main' }}
     steps:
       - run: mkdir upload
 
@@ -23,6 +21,7 @@ jobs:
         run: gh release download ${{ GITHUB_REF }} -p latest.json -O upload/latest-${{ RELEASE_TYPE }}.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TYPE: ${{ contains(env.GITHUB_REF, 'remote') && 'remote' || 'main' }}
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
