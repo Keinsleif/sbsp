@@ -5,9 +5,8 @@ use std::sync::{Arc, atomic::AtomicBool};
 
 use futures_util::{SinkExt, TryStreamExt};
 use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
-use reqwest::Client;
-use reqwest_websocket::{CloseCode, Message, RequestBuilderExt};
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use super::{WsCommand, WsFeedback};
 use crate::{
@@ -51,12 +50,7 @@ pub async fn create_remote_backend(
     let project_status_clone = project_status.clone();
     let event_tx_clone = event_tx.clone();
 
-    let response = Client::default()
-        .get(format!("ws://{}/ws", address))
-        .upgrade()
-        .send()
-        .await?;
-    let mut websocket = response.into_websocket().await?;
+    let (mut websocket, _) = connect_async(format!("ws://{}/ws", address)).await?;
 
     if let Ok(Some(message)) = websocket.try_next().await {
         if let Message::Text(text) = &message
@@ -77,7 +71,7 @@ pub async fn create_remote_backend(
                 None
             };
             if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
-                && websocket.send(Message::Text(payload)).await.is_err()
+                && websocket.send(Message::Text(payload.into())).await.is_err()
             {
                 log::info!("WebSocket client disconnected (send error).");
                 anyhow::bail!("Connection closed during authentication.");
@@ -103,7 +97,7 @@ pub async fn create_remote_backend(
     }
 
     if let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState)
-        && websocket.send(Message::Text(payload)).await.is_err()
+        && websocket.send(Message::Text(payload.into())).await.is_err()
     {
         anyhow::bail!("WebSocket client disconnected (send error).");
     }
@@ -185,7 +179,7 @@ pub async fn create_remote_backend(
                 Some(model_command) = model_rx.recv() => {
                     let api_command = WsCommand::Model(Box::new(model_command));
                     if let Ok(payload) = serde_json::to_string(&api_command)
-                    && websocket.send(Message::Text(payload)).await.is_err() {
+                    && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
@@ -193,7 +187,7 @@ pub async fn create_remote_backend(
                 Some(controller_command) = controller_rx.recv() => {
                     let api_command = WsCommand::Controll(controller_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
-                    && websocket.send(Message::Text(payload)).await.is_err() {
+                    && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
@@ -201,19 +195,19 @@ pub async fn create_remote_backend(
                 Some(asset_processor_command) = asset_rx.recv() => {
                     let api_command = WsCommand::AssetProcessor(asset_processor_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
-                    && websocket.send(Message::Text(payload)).await.is_err() {
+                    && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
                 }
                 Some(_) = asset_list_command_rx.recv() => {
-                    if let Ok(payload) = serde_json::to_string(&WsCommand::RequestAssetList) && websocket.send(Message::Text(payload)).await.is_err() {
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::RequestAssetList) && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
                 }
                 _ = shutdown_rx.recv() => {
-                    if let Err(e) = websocket.send(Message::Close{ code: CloseCode::Normal, reason: "client shutdown".into() }).await {
+                    if let Err(e) = websocket.send(Message::Close(None)).await {
                         log::warn!("Failed to send Close message to client: {}", e);
                     }
                     break;
