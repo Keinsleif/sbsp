@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
   import markdownit from 'markdown-it';
+  import mila from 'markdown-it-link-attributes';
   import { onMounted, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useApi } from '../../api';
@@ -28,6 +29,13 @@
 
   const md = markdownit({
     html: true,
+  });
+
+  md.use(mila, {
+    attrs: {
+      target: '_blank',
+      rel: 'noopener',
+    },
   });
 
   onMounted(() => {

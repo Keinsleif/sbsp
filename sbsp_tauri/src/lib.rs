@@ -138,6 +138,7 @@ async fn forward_backend_state_and_event(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(LevelFilter::Debug)

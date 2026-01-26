@@ -27,6 +27,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = { version = "2", features = ["colored"] }
 tauri-plugin-os = "2"
+tauri-plugin-opener = "2"
 humantime = "2.3.0"
 sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
 sbsp_license = { path = "../sbsp_license" }

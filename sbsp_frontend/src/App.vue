@@ -56,7 +56,7 @@
     height: 100%;
     overflow: hidden;
     scrollbar-width: none;
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;

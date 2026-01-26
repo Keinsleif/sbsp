@@ -111,7 +111,7 @@
 
   onMounted(() => {
     createWindowMenu().then((menu) => {
-      if (menu != null) menu.setAsWindowMenu();
+      if (menu != null) menu.setAsAppMenu();
     });
     api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
@@ -292,7 +292,7 @@
     () => {
       if (side == 'host') {
         createWindowMenu().then((menu) => {
-          if (menu != null) menu.setAsWindowMenu();
+          if (menu != null) menu.setAsAppMenu();
         });
       }
     },
