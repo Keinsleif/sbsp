@@ -29,7 +29,7 @@ tauri-plugin-os = "2"
 humantime = "2.3.0"
 sbsp_backend = { path = "../sbsp_backend", features = ["apiclient"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync"] }
-uuid = { version = "1", features = ["serde", "v4", "v7"] }
+uuid = { version = "1", features = ["serde"] }
 log = "0.4"
 anyhow = "1.0"
 serde_json = { version = "1.0" }
