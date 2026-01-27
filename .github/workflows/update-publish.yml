@@ -18,9 +18,7 @@ concurrency:
 jobs:
   publish-latest:
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
