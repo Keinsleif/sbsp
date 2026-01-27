@@ -2,7 +2,7 @@ name: 'update-publish'
 
 on:
   release:
-    types: [released]
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -18,10 +18,10 @@ jobs:
       - run: mkdir upload
 
       - name: 'update latest.json'
-        run: gh release download ${{ GITHUB_REF }} -p latest.json -O upload/latest-${{ RELEASE_TYPE }}.json
+        run: gh release download ${{ github.event.release.tag_name }} -p latest.json -O upload/latest-${{ RELEASE_TYPE }}.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TYPE: ${{ contains(env.GITHUB_REF, 'remote') && 'remote' || 'main' }}
+          RELEASE_TYPE: ${{ contains(github.event.release.tag_name, 'remote') && 'remote' || 'main' }}
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
