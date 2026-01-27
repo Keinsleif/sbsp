@@ -269,7 +269,6 @@ pub fn run() {
             command::settings::get_settings,
             command::settings::set_settings,
             command::settings::reload_settings,
-            command::settings::save_settings,
             command::settings::import_settings_from_file,
             command::settings::export_settings_to_file,
             #[cfg(desktop)]

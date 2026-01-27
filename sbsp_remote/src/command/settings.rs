@@ -10,10 +10,25 @@ pub async fn get_settings(state: tauri::State<'_, AppState>) -> Result<GlobalSet
 #[tauri::command]
 pub async fn set_settings(
     state: tauri::State<'_, AppState>,
+    handle: tauri::AppHandle,
     new_settings: GlobalSettings,
 ) -> Result<(), String> {
-    state.settings_manager.update(new_settings).await;
-    Ok(())
+    if new_settings != *state.settings_manager.read().await {
+        state.settings_manager.update(new_settings).await;
+        if let Ok(path) = handle.path().app_config_dir() {
+            let config_path = path.join("config.json");
+            if let Err(e) = state.settings_manager.save_to_file(&config_path).await {
+                log::error!("Failed to save config. {}", e);
+                Err(format!("Failed to save config. {}", e))
+            } else {
+                Ok(())
+            }
+        } else {
+            Err("Failed to locate config path.".into())
+        }
+    } else {
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -32,24 +47,6 @@ pub async fn reload_settings(
             Err(format!("Failed to load config. {}", e))
         } else {
             Ok(state.settings_manager.read().await.clone())
-        }
-    } else {
-        Err("Failed to locate config path.".into())
-    }
-}
-
-#[tauri::command]
-pub async fn save_settings(
-    handle: tauri::AppHandle,
-    state: tauri::State<'_, AppState>,
-) -> Result<(), String> {
-    if let Ok(path) = handle.path().app_config_dir() {
-        let config_path = path.join("config.json");
-        if let Err(e) = state.settings_manager.save_to_file(&config_path).await {
-            log::error!("Failed to save config. {}", e);
-            Err(format!("Failed to save config. {}", e))
-        } else {
-            Ok(())
         }
     } else {
         Err("Failed to locate config path.".into())

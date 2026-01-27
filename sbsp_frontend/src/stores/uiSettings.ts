@@ -200,10 +200,6 @@ export const useUiSettings = defineStore('uiSettings', () => {
       .catch((e) => console.error(e));
   };
 
-  const save = () => {
-    api.saveSettings();
-  };
-
   const clone = () => {
     return structuredClone(toRaw(settings.value));
   };
@@ -225,7 +221,6 @@ export const useUiSettings = defineStore('uiSettings', () => {
     settings: readonly(settings),
     update,
     reload,
-    save,
     clone,
     import_from_file,
     export_to_file,

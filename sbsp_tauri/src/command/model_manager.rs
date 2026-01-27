@@ -142,11 +142,15 @@ pub async fn update_model_name(
     new_name: String,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    handle
-        .model_handle
-        .update_model_name(new_name)
-        .await
-        .map_err(|e| e.to_string())
+    if new_name != handle.model_handle.read().await.name {
+        handle
+            .model_handle
+            .update_model_name(new_name)
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
 }
 
 #[tauri::command]
@@ -155,9 +159,13 @@ pub async fn update_show_settings(
     new_settings: ShowSettings,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    handle
-        .model_handle
-        .update_settings(new_settings)
-        .await
-        .map_err(|e| e.to_string())
+    if new_settings != handle.model_handle.read().await.settings {
+        handle
+            .model_handle
+            .update_settings(new_settings)
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Ok(())
+    }
 }

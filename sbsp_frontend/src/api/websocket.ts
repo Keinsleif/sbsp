@@ -557,9 +557,6 @@ export function useWebsocketApi(): IBackendAdapter {
     reloadSettings: function (): Promise<GlobalSettings> {
       return this.getSettings();
     },
-    saveSettings: function (): void {
-      return;
-    },
     importSettingsFromFile: async function (): Promise<GlobalSettings> {
       return new Promise<GlobalSettings>((resolve, reject) => {
         openFileDialog()

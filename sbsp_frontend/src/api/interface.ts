@@ -61,7 +61,6 @@ export interface IBackendAdapter {
   getSettings(): Promise<GlobalSettings>;
   setSettings(newSettings: GlobalSettings): void;
   reloadSettings(): Promise<GlobalSettings>;
-  saveSettings(): void;
   importSettingsFromFile(): Promise<GlobalSettings>;
   exportSettingsToFile(): void;
 

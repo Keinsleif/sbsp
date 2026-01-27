@@ -251,9 +251,6 @@ export function useTauriApi(): IBackendAdapter {
     reloadSettings: function (): Promise<GlobalSettings> {
       return invoke<GlobalSettings>('reload_settings');
     },
-    saveSettings: function (): void {
-      invoke('save_settings', {}).catch((e) => console.error(e));
-    },
     importSettingsFromFile: function (): Promise<GlobalSettings> {
       return new Promise((resolve, reject) => {
         open({

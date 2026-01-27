@@ -843,7 +843,6 @@
     api.updateShowSettings(editingSettings.value.show);
     api.updateModelName(showModelName.value);
     uiSettings.update(editingSettings.value.global);
-    uiSettings.save();
   };
 
   const recallMusicBeePreset = () => {
