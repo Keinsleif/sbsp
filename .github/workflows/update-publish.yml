@@ -4,6 +4,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Target Release Tag'
+        required: true
+        type: string
+        default: 'sbsp-v1.2.1'
 
 concurrency:
   group: update-publish
@@ -12,7 +18,8 @@ concurrency:
 jobs:
   publish-latest:
     permissions:
-      contents: write
+      contents: read
+      pages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +28,7 @@ jobs:
       - run: mkdir upload
 
       - name: 'update latest.json'
-        run: gh release download ${{ github.event.release.tag_name }} -p latest.json -O upload/latest-${{ contains(github.event.release.tag_name, 'remote') && 'remote' || 'main' }}.json
+        run: gh release download ${{ github.event.inputs.tag_name || github.event.release.tag_name }} -p latest.json -O upload/latest-${{ contains(github.event.inputs.tag_name || github.event.release.tag_name, 'remote') && 'remote' || 'main' }}.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
