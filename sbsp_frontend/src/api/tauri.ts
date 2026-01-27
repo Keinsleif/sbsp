@@ -73,44 +73,47 @@ export function useTauriApi(): IBackendAdapter {
           }
         : undefined,
 
-    remote: {
-      isConnected: function (): Promise<boolean> {
-        return invoke<boolean>('is_connected');
-      },
-      getServerAddress: function (): Promise<string | null> {
-        return invoke<string | null>('get_server_address');
-      },
-      connectToServer: function (address: string, password: string | null): Promise<void> {
-        return invoke('connect_to_server', { address: address, password: password });
-      },
-      disconnectFromServer: function (): void {
-        invoke('disconnect_from_server').catch((e) => console.error(e));
-      },
-      startServerDiscovery: function (): void {
-        invoke('start_server_discovery').catch((e) => console.error(e));
-      },
-      stopServerDiscovery: function (): void {
-        invoke('stop_server_discovery').catch((e) => console.error(e));
-      },
-      requestFileList: function (): void {
-        invoke('request_file_list').catch((e) => console.error(e));
-      },
-      onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
-        return listen<boolean>('connection_status_changed', (event) => {
-          callback(event.payload);
-        });
-      },
-      onRemoteDiscoveryUpdate: function (callback: (serviceEntry: ServiceEntry[]) => void): Promise<UnlistenFn> {
-        return listen<ServiceEntry[]>('remote-discovery', (entry) => {
-          callback(entry.payload);
-        });
-      },
-      onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
-        return listen<FileList[]>('asset-list-update', (event) => {
-          callback(event.payload);
-        });
-      },
-    },
+    remote:
+      side == 'remote'
+        ? {
+            isConnected: function (): Promise<boolean> {
+              return invoke<boolean>('is_connected');
+            },
+            getServerAddress: function (): Promise<string | null> {
+              return invoke<string | null>('get_server_address');
+            },
+            connectToServer: function (address: string, password: string | null): Promise<void> {
+              return invoke('connect_to_server', { address: address, password: password });
+            },
+            disconnectFromServer: function (): void {
+              invoke('disconnect_from_server').catch((e) => console.error(e));
+            },
+            startServerDiscovery: function (): void {
+              invoke('start_server_discovery').catch((e) => console.error(e));
+            },
+            stopServerDiscovery: function (): void {
+              invoke('stop_server_discovery').catch((e) => console.error(e));
+            },
+            requestFileList: function (): void {
+              invoke('request_file_list').catch((e) => console.error(e));
+            },
+            onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
+              return listen<boolean>('connection_status_changed', (event) => {
+                callback(event.payload);
+              });
+            },
+            onRemoteDiscoveryUpdate: function (callback: (serviceEntry: ServiceEntry[]) => void): Promise<UnlistenFn> {
+              return listen<ServiceEntry[]>('remote-discovery', (entry) => {
+                callback(entry.payload);
+              });
+            },
+            onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
+              return listen<FileList[]>('asset-list-update', (event) => {
+                callback(event.payload);
+              });
+            },
+          }
+        : undefined,
     isMacOs: function (): boolean {
       return type() == 'macos';
     },
