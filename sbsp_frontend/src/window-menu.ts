@@ -2,7 +2,6 @@ import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/men
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
 import { i18n } from './i18n';
-import { platform } from '@tauri-apps/plugin-os';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
 import { useApi, side, target } from './api';
@@ -11,7 +10,7 @@ export const createWindowMenu = () => {
   const api = useApi();
   if (target != 'tauri') return;
   const { t } = i18n.global;
-  const currentPlatform = platform();
+  const isMacOs = api.isMacOs();
   let connected = api.remote ? false : true;
   const uiState = useUiState();
   let mode: 'edit' | 'run' | 'view' = uiState.mode;
@@ -168,7 +167,7 @@ export const createWindowMenu = () => {
       id: 'id_open',
       text: t('menu.file.open'),
       enabled: side == 'host',
-      accelerator: currentPlatform == 'macos' ? '⌘ + O' : 'Ctrl + O',
+      accelerator: isMacOs ? '⌘ + O' : 'Ctrl + O',
       action: () => {
         api.host?.fileOpen();
       },
@@ -178,7 +177,7 @@ export const createWindowMenu = () => {
       id: 'id_save',
       text: t('menu.file.save'),
       enabled: side == 'host',
-      accelerator: currentPlatform == 'macos' ? '⌘ + S' : 'Ctrl + S',
+      accelerator: isMacOs ? '⌘ + S' : 'Ctrl + S',
       action: () => {
         api.host?.fileSave();
       },
@@ -188,7 +187,7 @@ export const createWindowMenu = () => {
       id: 'id_save_as',
       text: t('menu.file.saveAs'),
       enabled: side == 'host',
-      accelerator: currentPlatform == 'macos' ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
+      accelerator: isMacOs ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
       action: () => {
         api.host?.fileSaveAs();
       },
@@ -234,7 +233,7 @@ export const createWindowMenu = () => {
       id: 'id_delete',
       text: t('menu.edit.deleteCue'),
       enabled: lastEditEnableStats,
-      accelerator: currentPlatform == 'macos' ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      accelerator: isMacOs ? '⌘ + ⌫' : 'Ctrl + Backspace',
       action: () => {
         const uiState = useUiState();
         for (const row of uiState.selectedRows) {
@@ -247,7 +246,7 @@ export const createWindowMenu = () => {
       id: 'id_select_all_cues',
       text: t('menu.edit.selectAllCues'),
       enabled: lastEditEnableStats,
-      accelerator: currentPlatform == 'macos' ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      accelerator: isMacOs ? '⌘ + ⌫' : 'Ctrl + Backspace',
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
