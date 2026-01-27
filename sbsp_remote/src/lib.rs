@@ -21,6 +21,13 @@ use tokio::{
 
 use crate::settings::manager::GlobalSettingsManager;
 
+#[cfg(debug_assertions)]
+const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
+
+#[cfg(not(debug_assertions))]
+const LOG_LEVEL: LevelFilter = LevelFilter::Info;
+
+
 async fn forward_backend_state_and_event(
     app_handle: AppHandle,
     state_rx: watch::Receiver<ShowState>,
@@ -178,7 +185,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(LevelFilter::Debug)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .level(LOG_LEVEL)
                 .format(move |out, message, record| {
                     let color_level = ColoredLevelConfig::new()
                         .error(Color::Red)

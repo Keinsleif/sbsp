@@ -29,6 +29,13 @@ const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
 -----END PUBLIC KEY-----";
 
+#[cfg(debug_assertions)]
+const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
+
+#[cfg(not(debug_assertions))]
+const LOG_LEVEL: LevelFilter = LevelFilter::Info;
+
+
 pub struct AppState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
@@ -141,7 +148,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::new()
-                .level(LevelFilter::Debug)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .level(LOG_LEVEL)
                 .format(move |out, message, record| {
                     let color_level = ColoredLevelConfig::new()
                         .error(Color::Red)

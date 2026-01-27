@@ -5,6 +5,8 @@ import { i18n } from './i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
 import { useApi, side, target } from './api';
+import { appLogDir } from '@tauri-apps/api/path';
+import { openPath } from '@tauri-apps/plugin-opener';
 
 export const createWindowMenu = () => {
   const api = useApi();
@@ -54,6 +56,7 @@ export const createWindowMenu = () => {
       credits: null,
       checkUpdate: null,
       license: null,
+      showLogFiles: null,
     },
   };
 
@@ -419,6 +422,16 @@ export const createWindowMenu = () => {
       },
     });
 
+    items.help.showLogFiles = await MenuItem.new({
+      id: 'id_show_log_files',
+      text: t('menu.help.showLogFiles'),
+      action: () => {
+        appLogDir().then((path) => {
+          openPath(path);
+        });
+      },
+    });
+
     items.help.checkUpdate = await MenuItem.new({
       id: 'id_check_update',
       text: t('menu.help.checkUpdate'),
@@ -430,7 +443,7 @@ export const createWindowMenu = () => {
 
     submenues.help = await Submenu.new({
       text: t('menu.help.title'),
-      items: [items.help.credits, items.help.checkUpdate, ...mainHelpMenu],
+      items: [items.help.credits, items.help.showLogFiles, items.help.checkUpdate, ...mainHelpMenu],
     });
 
     menu = await Menu.new({

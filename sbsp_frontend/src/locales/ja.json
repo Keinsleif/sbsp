@@ -306,7 +306,8 @@
       "checkUpdate": "アップデートを確認",
       "credits": "クレジット",
       "license": "ライセンス",
-      "title": "ヘルプ"
+      "title": "ヘルプ",
+      "showLogFiles": "ログファイルを表示"
     },
     "tools": {
       "renumber": "キュー番号の振り直し",

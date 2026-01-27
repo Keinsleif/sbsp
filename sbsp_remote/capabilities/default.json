@@ -7,6 +7,14 @@
     "core:default",
     "dialog:default",
     "opener:default",
-    "core:window:allow-set-title"
+    "core:window:allow-set-title",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPLOG"
+        }
+      ]
+    }
   ]
 }

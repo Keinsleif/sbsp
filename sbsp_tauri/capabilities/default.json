@@ -8,6 +8,14 @@
     "dialog:default",
     "opener:default",
     "core:window:allow-set-title",
-    "core:window:allow-destroy"
+    "core:window:allow-destroy",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPLOG"
+        }
+      ]
+    }
   ]
 }

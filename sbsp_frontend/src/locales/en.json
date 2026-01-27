@@ -307,7 +307,8 @@
       "checkUpdate": "Check for updates",
       "credits": "Credits",
       "license": "License",
-      "title": "Help"
+      "title": "Help",
+      "showLogFiles": "Show Log Files"
     },
     "tools": {
       "renumber": "Renumber selected cues",
