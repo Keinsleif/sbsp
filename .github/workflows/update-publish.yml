@@ -18,10 +18,9 @@ jobs:
       - run: mkdir upload
 
       - name: 'update latest.json'
-        run: gh release download ${{ github.event.release.tag_name }} -p latest.json -O upload/latest-${{ RELEASE_TYPE }}.json
+        run: gh release download ${{ github.event.release.tag_name }} -p latest.json -O upload/latest-${{ contains(github.event.release.tag_name, 'remote') && 'remote' || 'main' }}.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TYPE: ${{ contains(github.event.release.tag_name, 'remote') && 'remote' || 'main' }}
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
