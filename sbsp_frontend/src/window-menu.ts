@@ -7,294 +7,438 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
 import { useApi, side, target } from './api';
 
-export const createWindowMenu = async () => {
+export const createWindowMenu = () => {
   const api = useApi();
   if (target != 'tauri') return;
   const { t } = i18n.global;
   const currentPlatform = platform();
+  let connected = api.remote ? false : true;
+  const uiState = useUiState();
+  let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
-  let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];
-  if (side == 'remote') {
-    remoteFileMenuItem = [
-      await PredefinedMenuItem.new({
-        item: 'Separator',
-      }),
-      await MenuItem.new({
+  const items: {
+    [key: string]: {
+      [key: string]: MenuItem | PredefinedMenuItem | null;
+    };
+  } = {
+    file: {
+      new: null,
+      open: null,
+      save: null,
+      saveAs: null,
+      exportToFolder: null,
+      disconnect: null,
+    },
+    edit: {
+      cut: null,
+      copy: null,
+      paste: null,
+      deleteCue: null,
+      selectAllCues: null,
+      importSettings: null,
+      exportSettings: null,
+    },
+    cue: {
+      audio: null,
+      wait: null,
+      fade: null,
+      start: null,
+      stop: null,
+      pause: null,
+      load: null,
+      group: null,
+    },
+    tools: {
+      renumber: null,
+    },
+    help: {
+      credits: null,
+      checkUpdate: null,
+      license: null,
+    },
+  };
+
+  const submenues: { [key: string]: Submenu | null } = {
+    file: null,
+    edit: null,
+    cue: null,
+    tools: null,
+    help: null,
+  };
+
+  let menu: Menu | null = null;
+
+  const updateLocale = () => {
+    for (const submenu in items) {
+      for (const item in items[submenu]) {
+        items[submenu][item]?.setText(t(`menu.${submenu}.${item}`));
+      }
+      submenues[submenu]?.setText(t(`menu.${submenu}.title`));
+    }
+  };
+
+  const updateConnectionStatus = (isConnected: boolean) => {
+    if (side == 'remote') {
+      connected = isConnected;
+      (items.file.disconnect as MenuItem | null)?.setEnabled(connected);
+      updateEditMenuItemStats();
+    }
+  };
+
+  const updateEditMode = (newMode: 'edit' | 'run' | 'view') => {
+    mode = newMode;
+    updateEditMenuItemStats();
+  };
+
+  let lastEditEnableStats = connected && mode == 'edit';
+  const updateEditMenuItemStats = () => {
+    const enabled = connected && mode == 'edit';
+    if (lastEditEnableStats == enabled) return;
+    lastEditEnableStats = enabled;
+
+    (items.edit.deleteCue as MenuItem | null)?.setEnabled(enabled);
+    (items.edit.selectAllCues as MenuItem | null)?.setEnabled(enabled);
+    for (const item in items['cue']) {
+      (items['cue'][item] as MenuItem | null)?.setEnabled(enabled);
+    }
+    (items.tools.renumber as MenuItem | null)?.setEnabled(enabled);
+  };
+
+  const init = async () => {
+    let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];
+    if (side == 'remote') {
+      items.file.disconnect = await MenuItem.new({
         id: 'id_disconnect',
         text: t('menu.file.disconnect'),
+        enabled: connected,
         action: () => {
           api.remote?.disconnectFromServer();
         },
-      }),
-    ];
-  }
+      });
+      remoteFileMenuItem = [
+        await PredefinedMenuItem.new({
+          item: 'Separator',
+        }),
+        items.file.disconnect,
+      ];
+    }
 
-  const fileMenu = await Submenu.new({
-    text: t('menu.file.title'),
-    items: [
-      await MenuItem.new({
-        id: 'id_new',
-        text: t('menu.file.new'),
-        enabled: side == 'host',
-        action: () => {
-          api.isModified().then((isModified) => {
-            if (isModified) {
-              message(t('dialog.saveConfirm.content'), {
-                buttons: {
-                  yes: t('dialog.saveConfirm.save'),
-                  no: t('dialog.saveConfirm.dontSave'),
-                  cancel: t('dialog.saveConfirm.cancel'),
-                },
+    items.file.new = await MenuItem.new({
+      id: 'id_new',
+      text: t('menu.file.new'),
+      enabled: side == 'host',
+      action: () => {
+        api.isModified().then((isModified) => {
+          if (isModified) {
+            message(t('dialog.saveConfirm.content'), {
+              buttons: {
+                yes: t('dialog.saveConfirm.save'),
+                no: t('dialog.saveConfirm.dontSave'),
+                cancel: t('dialog.saveConfirm.cancel'),
+              },
+            })
+              .then((result) => {
+                switch (result) {
+                  case t('dialog.saveConfirm.save'):
+                    api.host
+                      ?.fileSave()
+                      .then((isSaved) => {
+                        if (isSaved) {
+                          api.host?.fileNew();
+                        }
+                      })
+                      .catch((e) => console.error(e));
+                    break;
+                  case t('dialog.saveConfirm.dontSave'):
+                    api.host?.fileNew();
+                    break;
+                  case t('dialog.saveConfirm.cancel'):
+                    break;
+                }
               })
-                .then((result) => {
-                  switch (result) {
-                    case t('dialog.saveConfirm.save'):
-                      api.host
-                        ?.fileSave()
-                        .then((isSaved) => {
-                          if (isSaved) {
-                            api.host?.fileNew();
-                          }
-                        })
-                        .catch((e) => console.error(e));
-                      break;
-                    case t('dialog.saveConfirm.dontSave'):
-                      api.host?.fileNew();
-                      break;
-                    case t('dialog.saveConfirm.cancel'):
-                      break;
-                  }
-                })
-                .catch((e) => console.error(e));
-            } else {
-              api.host?.fileNew();
-            }
-          });
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_open',
-        text: t('menu.file.open'),
-        enabled: side == 'host',
-        accelerator: currentPlatform == 'macos' ? '⌘ + O' : 'Ctrl + O',
-        action: () => {
-          api.host?.fileOpen();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_save',
-        text: t('menu.file.save'),
-        enabled: side == 'host',
-        accelerator: currentPlatform == 'macos' ? '⌘ + S' : 'Ctrl + S',
-        action: () => {
-          api.host?.fileSave();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_save_as',
-        text: t('menu.file.saveAs'),
-        enabled: side == 'host',
-        accelerator: currentPlatform == 'macos' ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
-        action: () => {
-          api.host?.fileSaveAs();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_export_to_folder',
-        text: t('menu.file.exportToFolder'),
-        enabled: side == 'host',
-        action: () => {
-          api.host?.exportToFolder();
-        },
-      }),
-      ...remoteFileMenuItem,
-    ],
-  });
-
-  const editMenu = await Submenu.new({
-    text: t('menu.edit.title'),
-    items: [
-      await PredefinedMenuItem.new({
-        item: 'Cut',
-        text: t('menu.edit.cut'),
-      }),
-      await PredefinedMenuItem.new({
-        item: 'Copy',
-        text: t('menu.edit.copy'),
-      }),
-      await PredefinedMenuItem.new({
-        item: 'Paste',
-        text: t('menu.edit.paste'),
-      }),
-      await MenuItem.new({
-        id: 'id_delete',
-        text: t('menu.edit.delete'),
-        // enabled: uiState.mode == 'edit',
-        accelerator: currentPlatform == 'macos' ? '⌘ + ⌫' : 'Ctrl + Backspace',
-        action: () => {
-          const uiState = useUiState();
-          for (const row of uiState.selectedRows) {
-            api.removeCue(row);
+              .catch((e) => console.error(e));
+          } else {
+            api.host?.fileNew();
           }
-        },
-      }),
-      await PredefinedMenuItem.new({
-        item: 'SelectAll',
-        text: t('menu.edit.selectAll'),
-      }),
-      await PredefinedMenuItem.new({
-        item: 'Separator',
-      }),
-      await MenuItem.new({
-        id: 'id_import_settings',
-        text: t('menu.edit.importSettings'),
-        action: () => {
-          const uiSettings = useUiSettings();
-          uiSettings.import_from_file();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_export_settings',
-        text: t('menu.edit.exportSettings'),
-        action: () => {
-          const uiSettings = useUiSettings();
-          uiSettings.export_to_file();
-        },
-      }),
-    ],
-  });
+        });
+      },
+    });
 
-  const cueMenu = await Submenu.new({
-    text: t('menu.cue.title'),
-    items: [
-      await MenuItem.new({
-        id: 'id_audio_cue',
-        text: t('menu.cue.audio'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyAudioCue();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_wait_cue',
-        text: t('menu.cue.wait'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyWaitCue();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_fade_cue',
-        text: t('menu.cue.fade'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyFadeCue();
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_start_cue',
-        text: t('menu.cue.start'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyPlaybackCue('start');
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_stop_cue',
-        text: t('menu.cue.stop'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyPlaybackCue('stop');
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_pause_cue',
-        text: t('menu.cue.pause'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyPlaybackCue('pause');
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_load_cue',
-        text: t('menu.cue.load'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyPlaybackCue('load');
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_group_cue',
-        text: t('menu.cue.group'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const showModel = useShowModel();
-          showModel.addEmptyGroupCue();
-        },
-      }),
-    ],
-  });
+    items.file.open = await MenuItem.new({
+      id: 'id_open',
+      text: t('menu.file.open'),
+      enabled: side == 'host',
+      accelerator: currentPlatform == 'macos' ? '⌘ + O' : 'Ctrl + O',
+      action: () => {
+        api.host?.fileOpen();
+      },
+    });
 
-  const toolsMenu = await Submenu.new({
-    text: t('menu.tools.title'),
-    items: [
-      await MenuItem.new({
-        id: 'id_renumber',
-        text: t('menu.tools.renumber'),
-        // enabled: uiState.mode == 'edit',
-        action: () => {
-          const uiState = useUiState();
-          uiState.isRenumberCueDialogOpen = true;
-        },
-      }),
-    ],
-  });
+    items.file.save = await MenuItem.new({
+      id: 'id_save',
+      text: t('menu.file.save'),
+      enabled: side == 'host',
+      accelerator: currentPlatform == 'macos' ? '⌘ + S' : 'Ctrl + S',
+      action: () => {
+        api.host?.fileSave();
+      },
+    });
 
-  let mainHelpMenu: MenuItem[] = [];
-  if (side == 'host') {
-    mainHelpMenu = [
-      await MenuItem.new({
+    items.file.saveAs = await MenuItem.new({
+      id: 'id_save_as',
+      text: t('menu.file.saveAs'),
+      enabled: side == 'host',
+      accelerator: currentPlatform == 'macos' ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
+      action: () => {
+        api.host?.fileSaveAs();
+      },
+    });
+
+    items.file.exportToFolder = await MenuItem.new({
+      id: 'id_export_to_folder',
+      text: t('menu.file.exportToFolder'),
+      enabled: side == 'host',
+      action: () => {
+        api.host?.exportToFolder();
+      },
+    });
+
+    submenues.file = await Submenu.new({
+      text: t('menu.file.title'),
+      items: [
+        items.file.new,
+        items.file.open,
+        items.file.save,
+        items.file.saveAs,
+        items.file.exportToFolder,
+        ...remoteFileMenuItem,
+      ],
+    });
+
+    items.edit.cut = await PredefinedMenuItem.new({
+      item: 'Cut',
+      text: t('menu.edit.cut'),
+    });
+
+    items.edit.copy = await PredefinedMenuItem.new({
+      item: 'Copy',
+      text: t('menu.edit.copy'),
+    });
+
+    items.edit.paste = await PredefinedMenuItem.new({
+      item: 'Paste',
+      text: t('menu.edit.paste'),
+    });
+
+    items.edit.deleteCue = await MenuItem.new({
+      id: 'id_delete',
+      text: t('menu.edit.deleteCue'),
+      enabled: lastEditEnableStats,
+      accelerator: currentPlatform == 'macos' ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      action: () => {
+        const uiState = useUiState();
+        for (const row of uiState.selectedRows) {
+          api.removeCue(row);
+        }
+      },
+    });
+
+    items.edit.selectAllCues = await MenuItem.new({
+      id: 'id_select_all_cues',
+      text: t('menu.edit.selectAllCues'),
+      enabled: lastEditEnableStats,
+      accelerator: currentPlatform == 'macos' ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      action: () => {
+        const uiState = useUiState();
+        const showModel = useShowModel();
+        uiState.selectedRows = showModel.flatCueList.filter((item) => !item.isHidden).map((item) => item.cue.id);
+      },
+    });
+
+    items.edit.importSettings = await MenuItem.new({
+      id: 'id_import_settings',
+      text: t('menu.edit.importSettings'),
+      action: () => {
+        const uiSettings = useUiSettings();
+        uiSettings.import_from_file();
+      },
+    });
+
+    items.edit.exportSettings = await MenuItem.new({
+      id: 'id_export_settings',
+      text: t('menu.edit.exportSettings'),
+      action: () => {
+        const uiSettings = useUiSettings();
+        uiSettings.export_to_file();
+      },
+    });
+
+    submenues.edit = await Submenu.new({
+      text: t('menu.edit.title'),
+      items: [
+        items.edit.cut,
+        items.edit.copy,
+        items.edit.paste,
+        items.edit.deleteCue,
+        items.edit.selectAllCues,
+        await PredefinedMenuItem.new({
+          item: 'Separator',
+        }),
+        items.edit.importSettings,
+        items.edit.exportSettings,
+      ],
+    });
+
+    items.cue.audio = await MenuItem.new({
+      id: 'id_audio_cue',
+      text: t('menu.cue.audio'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyAudioCue();
+      },
+    });
+
+    items.cue.wait = await MenuItem.new({
+      id: 'id_wait_cue',
+      text: t('menu.cue.wait'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyWaitCue();
+      },
+    });
+
+    items.cue.fade = await MenuItem.new({
+      id: 'id_fade_cue',
+      text: t('menu.cue.fade'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyFadeCue();
+      },
+    });
+
+    items.cue.start = await MenuItem.new({
+      id: 'id_start_cue',
+      text: t('menu.cue.start'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyPlaybackCue('start');
+      },
+    });
+
+    items.cue.stop = await MenuItem.new({
+      id: 'id_stop_cue',
+      text: t('menu.cue.stop'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyPlaybackCue('stop');
+      },
+    });
+
+    items.cue.pause = await MenuItem.new({
+      id: 'id_pause_cue',
+      text: t('menu.cue.pause'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyPlaybackCue('pause');
+      },
+    });
+
+    items.cue.load = await MenuItem.new({
+      id: 'id_load_cue',
+      text: t('menu.cue.load'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyPlaybackCue('load');
+      },
+    });
+
+    items.cue.group = await MenuItem.new({
+      id: 'id_group_cue',
+      text: t('menu.cue.group'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const showModel = useShowModel();
+        showModel.addEmptyGroupCue();
+      },
+    });
+
+    submenues.cue = await Submenu.new({
+      text: t('menu.cue.title'),
+      items: [
+        items.cue.audio,
+        items.cue.wait,
+        items.cue.fade,
+        items.cue.start,
+        items.cue.stop,
+        items.cue.pause,
+        items.cue.load,
+        items.cue.group,
+      ],
+    });
+
+    items.tools.renumber = await MenuItem.new({
+      id: 'id_renumber',
+      text: t('menu.tools.renumber'),
+      enabled: lastEditEnableStats,
+      action: () => {
+        const uiState = useUiState();
+        uiState.isRenumberCueDialogOpen = true;
+      },
+    });
+
+    submenues.tools = await Submenu.new({
+      text: t('menu.tools.title'),
+      items: [items.tools.renumber],
+    });
+
+    let mainHelpMenu: (MenuItem | PredefinedMenuItem)[] = [];
+    if (side == 'host') {
+      items.help.license = await MenuItem.new({
         id: 'id_license',
         text: t('menu.help.license'),
         action: () => {
           const uiState = useUiState();
           uiState.isLicenseDialogOpen = true;
         },
-      }),
-    ];
-  }
+      });
+      mainHelpMenu = [items.help.license];
+    }
 
-  const helpMenu = await Submenu.new({
-    text: t('menu.help.title'),
-    items: [
-      await MenuItem.new({
-        id: 'id_credits',
-        text: t('menu.help.credits'),
-        action: () => {
-          const uiState = useUiState();
-          uiState.isCreditsDialogOpen = true;
-        },
-      }),
-      await MenuItem.new({
-        id: 'id_check_update',
-        text: t('menu.help.checkUpdate'),
-        action: () => {
-          const uiState = useUiState();
-          uiState.isUpdateDialogOpen = true;
-        },
-      }),
-      ...mainHelpMenu,
-    ],
-  });
+    items.help.credits = await MenuItem.new({
+      id: 'id_credits',
+      text: t('menu.help.credits'),
+      action: () => {
+        const uiState = useUiState();
+        uiState.isCreditsDialogOpen = true;
+      },
+    });
 
-  return await Menu.new({
-    items: [fileMenu, editMenu, cueMenu, toolsMenu, helpMenu],
-  });
+    items.help.checkUpdate = await MenuItem.new({
+      id: 'id_check_update',
+      text: t('menu.help.checkUpdate'),
+      action: () => {
+        const uiState = useUiState();
+        uiState.isUpdateDialogOpen = true;
+      },
+    });
+
+    submenues.help = await Submenu.new({
+      text: t('menu.help.title'),
+      items: [items.help.credits, items.help.checkUpdate, ...mainHelpMenu],
+    });
+
+    menu = await Menu.new({
+      items: [submenues.file, submenues.edit, submenues.cue, submenues.tools, submenues.help],
+    });
+    menu.setAsAppMenu();
+  };
+
+  return { init, updateLocale, updateConnectionStatus, updateEditMode };
 };

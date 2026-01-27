@@ -286,12 +286,12 @@
     "edit": {
       "copy": "コピー",
       "cut": "切り取り",
-      "delete": "削除",
       "exportSettings": "グローバル設定をエクスポート",
       "importSettings": "グローバル設定をインポート",
       "paste": "貼り付け",
-      "selectAll": "すべて選択",
-      "title": "編集"
+      "title": "編集",
+      "deleteCue": "キューを削除",
+      "selectAllCues": "すべてのキューを選択"
     },
     "file": {
       "disconnect": "サーバーから切断",

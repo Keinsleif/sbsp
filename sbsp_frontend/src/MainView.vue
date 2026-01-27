@@ -43,9 +43,6 @@
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen"></renumber-dialog>
     <settings-dialog v-model="uiState.isSettingsDialogOpen"></settings-dialog>
-    <update-dialog v-if="target == 'tauri'" v-model="uiState.isUpdateDialogOpen"></update-dialog>
-    <credits-dialog v-if="target == 'tauri'" v-model="uiState.isCreditsDialogOpen"></credits-dialog>
-    <license-dialog v-if="side == 'host'" v-model="uiState.isLicenseDialogOpen"></license-dialog>
     <file-list-dialog
       v-if="side == 'remote'"
       v-model="uiState.fileListResolver"
@@ -73,18 +70,14 @@
   import { debounce } from './utils';
   import { useI18n } from 'vue-i18n';
   import type { ShowState } from './types/ShowState';
-  import UpdateDialog from './components/dialog/UpdateDialog.vue';
   import { useAssetResult } from './stores/assetResult';
   import { useUiSettings } from './stores/uiSettings';
   import { getLockCursorToSelection } from './utils';
-  import { createWindowMenu } from './window-menu';
   import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-  import CreditsDialog from './components/dialog/CreditsDialog.vue';
-  import LicenseDialog from './components/dialog/LicenseDialog.vue';
   import FileListDialog from './components/dialog/FileListDialog.vue';
   import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
   import { message } from '@tauri-apps/plugin-dialog';
-  import { useApi, side, target } from './api';
+  import { useApi, side } from './api';
   import { useDisplay } from 'vuetify/lib/composables/display.mjs';
 
   const showModel = useShowModel();
@@ -92,7 +85,7 @@
   const uiState = useUiState();
   const assetResult = useAssetResult();
   const uiSettings = useUiSettings();
-  const { t, locale } = useI18n({ useScope: 'global' });
+  const { t } = useI18n();
   const api = useApi();
   const { mdAndUp } = useDisplay();
 
@@ -110,9 +103,6 @@
   let rafNumber: number | null = null;
 
   onMounted(() => {
-    createWindowMenu().then((menu) => {
-      if (menu != null) menu.setAsAppMenu();
-    });
     api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
     let latestState: ShowState | null = null;
@@ -285,18 +275,6 @@
       }
       selectedCue.value = uiState.selected != null ? showModel.getCueById(uiState.selected)! : null;
     },
-  );
-
-  watch(
-    locale,
-    () => {
-      if (side == 'host') {
-        createWindowMenu().then((menu) => {
-          if (menu != null) menu.setAsAppMenu();
-        });
-      }
-    },
-    { flush: 'post' },
   );
 
   const onCueEdited = debounce(() => {

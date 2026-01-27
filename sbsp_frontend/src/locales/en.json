@@ -287,12 +287,12 @@
     "edit": {
       "copy": "Copy",
       "cut": "Cut",
-      "delete": "Delete",
       "exportSettings": "Export global settings",
       "importSettings": "Import global settings",
       "paste": "Paste",
-      "selectAll": "Select All",
-      "title": "Edit"
+      "title": "Edit",
+      "deleteCue": "Delete Cue",
+      "selectAllCues": "Select All Cues"
     },
     "file": {
       "disconnect": "Disconnect",
