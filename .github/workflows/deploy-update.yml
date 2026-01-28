@@ -11,10 +11,6 @@ on:
         type: string
         default: 'sbsp-v1.2.1'
 
-concurrency:
-  group: deploy-update
-  cancel-in-progress: true
-
 jobs:
   upload:
     permissions:
