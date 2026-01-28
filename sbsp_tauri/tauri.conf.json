@@ -32,8 +32,9 @@
         "connect-src": "ipc: http://ipc.localhost",
         "font-src": ["https://fonts.gstatic.com"],
         "img-src": "'self' asset: http://asset.localhost blob: data:",
-        "scrypt-src": "'self' 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='",
-        "style-src": "'unsafe-inline' 'self' https://fonts.googleapis.com 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='"
+        "script-src": "'self' 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='",
+        "style-src-elem": "'self' https://fonts.googleapis.com 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='",
+        "style-src-attr": "'unsafe-inline'"
       }
     }
   },
