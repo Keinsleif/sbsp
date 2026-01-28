@@ -32,12 +32,7 @@
     () => uiSettings.settings.appearance,
     (newSettings, oldSettings) => {
       if (newSettings.language != oldSettings.language) {
-        if (newSettings.language != null) {
-          locale.value = newSettings.language;
-        } else {
-          locale.value = navigator.language;
-        }
-        windowMenu?.updateLocale();
+        setLanguage(newSettings.language);
       }
       if (newSettings.darkMode != oldSettings.darkMode) {
         theme.change(newSettings.darkMode);
@@ -52,7 +47,18 @@
     },
   );
 
+  const setLanguage = (language: string | null) => {
+    if (language != null) {
+      locale.value = language;
+    } else {
+      locale.value = navigator.language;
+    }
+    windowMenu?.updateLocale();
+  };
+
   onMounted(() => {
+    setLanguage(uiSettings.settings.appearance.language);
+    theme.change(uiSettings.settings.appearance.darkMode);
     windowMenu?.init();
     if (side == 'remote') {
       api.remote
