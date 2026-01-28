@@ -2,7 +2,7 @@ name: 'deploy-update'
 
 on:
   release:
-    types: [published]
+    types: [released]
   workflow_dispatch:
     inputs:
       tag_name:
@@ -26,7 +26,6 @@ jobs:
         run: gh release download ${{ github.event.inputs.tag_name || github.event.release.tag_name }} -p latest.json -O upload/latest-${{ contains(github.event.inputs.tag_name || github.event.release.tag_name, 'remote') && 'remote' || 'main' }}.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ !(github.event.release.prerelease || github.event.release.draft) }}
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
@@ -35,4 +34,3 @@ jobs:
           publish_dir: ./upload
           destination_dir: update
           keep_files: true
-        if: ${{ !(github.event.release.prerelease || github.event.release.draft) }}
