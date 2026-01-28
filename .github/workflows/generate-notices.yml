@@ -1,4 +1,4 @@
-name: 'notices'
+name: 'generate-notices'
 
 on:
   push:
@@ -13,11 +13,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: notices
+  group: generate-notices
   cancel-in-progress: true
 
 jobs:
-  gen-notices:
+  generate:
     permissions:
       contents: write
 

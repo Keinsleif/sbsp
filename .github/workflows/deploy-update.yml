@@ -1,4 +1,4 @@
-name: 'update-publish'
+name: 'deploy-update'
 
 on:
   release:
@@ -12,11 +12,11 @@ on:
         default: 'sbsp-v1.2.1'
 
 concurrency:
-  group: update-publish
+  group: deploy-update
   cancel-in-progress: true
 
 jobs:
-  publish-latest:
+  upload:
     permissions:
       contents: write
     runs-on: ubuntu-latest
