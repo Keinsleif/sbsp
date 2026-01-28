@@ -10064,8 +10064,8 @@ insights.
 
     - [sbsp_backend 0.3.1]( https://crates.io/crates/sbsp_backend )
     - [sbsp_license 0.1.1]( https://crates.io/crates/sbsp_license )
-    - [sbsp_remote 1.2.1]( https://crates.io/crates/sbsp_remote )
-    - [sbsp_tauri 1.2.1]( https://crates.io/crates/sbsp_tauri )
+    - [sbsp_remote 1.2.2]( https://crates.io/crates/sbsp_remote )
+    - [sbsp_tauri 1.2.2]( https://crates.io/crates/sbsp_tauri )
 
 ```text
 Elastic License 2.0
