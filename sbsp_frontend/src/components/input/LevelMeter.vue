@@ -20,7 +20,7 @@
           ></div>
         </div>
       </div>
-      <div class="d-flex flex-column position-relative" style="font-size: 0.6em; width: 1.8em">
+      <div class="position-relative" style="font-size: 0.6em; width: 1.8em">
         <div class="text-center position-absolute" style="width: 100%; transform: translateY(-50%); top: 0">0</div>
         <div class="text-center position-absolute" style="width: 100%; transform: translateY(-50%); top: 10%">6</div>
         <div class="text-center position-absolute" style="width: 100%; transform: translateY(-50%); top: 20%">12</div>
