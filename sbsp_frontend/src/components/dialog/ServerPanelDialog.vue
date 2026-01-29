@@ -232,7 +232,7 @@
       if (server_options.password) {
         server_url.value = `http://${address}/?address=${address}#${server_options.password}`;
       } else {
-        server_url.value = `http://${address}/?address=${address}`;
+        server_url.value = `http://${address}/?address=${address}#`;
       }
     }
   };

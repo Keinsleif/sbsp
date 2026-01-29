@@ -92,11 +92,12 @@
     if (target == 'websocket') {
       const searchParams = new URLSearchParams(window.location.search);
       const address = searchParams.get('address');
-      let password = window.location.hash.substring(1).trim();
       if (address != null) {
         console.log(`Connecting to ${address}`);
-        if (password != '') {
-          api.remote?.connectToServer(address, password);
+        if (window.location.hash != '') {
+          api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
+        } else if (window.location.href.endsWith('#')) {
+          api.remote?.connectToServer(address, null);
         } else {
           let password = prompt(t('view.connect.passwordPrompt'));
           if (password == null) return;
