@@ -137,6 +137,9 @@
                 uiState.selectedRows = [];
                 uiState.selected = null;
               }
+              if (event.param.cueId != null) {
+                uiState.expandToVisible(event.param.cueId);
+              }
             }
             break;
           }

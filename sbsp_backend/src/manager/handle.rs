@@ -129,6 +129,24 @@ impl ShowModelHandle {
         Ok(())
     }
 
+    pub async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
+        let model = self.read().await;
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if cue.id == *cue_id {
+                return true;
+            }
+
+            if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        false
+    }
+
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
         let model = self.read().await;
         let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
@@ -232,8 +250,8 @@ impl ShowModelHandle {
                                         return Some(CueSequence::AutoFollow { target_id: None });
                                     }
                                 }
-                                GroupMode::Concurrency => {
-                                    return Some(CueSequence::DoNotContinue);
+                                GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
+                                    return Some(cue.sequence.clone());
                                 }
                             }
                         }

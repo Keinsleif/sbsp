@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getLockCursorToSelection } from '../utils';
 import { useApi } from '../api';
+import { useShowModel } from './showmodel';
 
 export const useUiState = defineStore(
   'uistate',
@@ -77,6 +78,22 @@ export const useUiState = defineStore(
       }
     };
 
+    const expandToVisible = (id: string) => {
+      const showModel = useShowModel();
+      let target_id: string | null = id;
+      while (target_id != null) {
+        const target_cue = showModel.flatCueList.find((value) => value.cue.id == target_id);
+        if (target_cue != null && target_cue.parent != null) {
+          if (!expandedRows.value.includes(target_cue.parent)) {
+            expandedRows.value.push(target_cue.parent);
+          }
+          target_id = target_cue.parent;
+        } else {
+          target_id = null;
+        }
+      }
+    };
+
     const togglePreWaitDisplayMode = () => {
       preWaitDisplayMode.value = preWaitDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
     };
@@ -130,6 +147,7 @@ export const useUiState = defineStore(
       addSelected,
       removeFromSelected,
       toggleExpand,
+      expandToVisible,
       togglePreWaitDisplayMode,
       toggleDurationDisplayMode,
       togglePostWaitDisplayMode,

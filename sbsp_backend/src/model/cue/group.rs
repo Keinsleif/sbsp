@@ -10,4 +10,5 @@ use ts_rs::TS;
 pub enum GroupMode {
     Playlist { repeat: bool },
     Concurrency,
+    StartFirst { enter: bool },
 }

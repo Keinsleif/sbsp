@@ -9,6 +9,7 @@
       :items="[
         { value: 'playlist', name: t('main.bottomEditor.group.mode.playlist') },
         { value: 'concurrency', name: t('main.bottomEditor.group.mode.concurrency') },
+        { value: 'startFirst', name: 'Start First' },
       ]"
       item-value="value"
       item-title="name"
@@ -23,7 +24,15 @@
       hide-details
       density="compact"
       :label="t('main.bottomEditor.timeLevels.repeat')"
-      :disabled="selectedCue != null && mode != 'playlist'"
+      v-show="selectedCue != null && mode == 'playlist'"
+      @update:model-value="saveEditorValue"
+    ></v-checkbox>
+    <v-checkbox
+      v-model="enter"
+      hide-details
+      density="compact"
+      :label="'Advance cursor into Group'"
+      v-show="selectedCue != null && mode == 'startFirst'"
       @update:model-value="saveEditorValue"
     ></v-checkbox>
   </v-sheet>
@@ -51,12 +60,21 @@
       : null,
   );
 
+  const enter = ref(
+    selectedCue.value != null &&
+      selectedCue.value.params.type == 'group' &&
+      selectedCue.value.params.mode.type == 'startFirst'
+      ? selectedCue.value.params.mode.enter
+      : null,
+  );
+
   watch(selectedCue, () => {
     if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
       return;
     }
     mode.value = selectedCue.value.params.mode.type;
     repeat.value = selectedCue.value.params.mode.type == 'playlist' ? selectedCue.value.params.mode.repeat : null;
+    enter.value = selectedCue.value.params.mode.type == 'startFirst' ? selectedCue.value.params.mode.enter : null;
   });
 
   const saveEditorValue = () => {
@@ -68,6 +86,8 @@
         selectedCue.value.params.mode.type = mode.value;
         if (selectedCue.value.params.mode.type == 'playlist') {
           selectedCue.value.params.mode.repeat = true;
+        } else if (selectedCue.value.params.mode.type == 'startFirst') {
+          selectedCue.value.params.mode.enter = false;
         }
       }
       if (
@@ -76,6 +96,13 @@
         repeat.value != selectedCue.value.params.mode.repeat
       ) {
         selectedCue.value.params.mode.repeat = repeat.value;
+      }
+      if (
+        selectedCue.value.params.mode.type == 'startFirst' &&
+        enter.value != null &&
+        enter.value != selectedCue.value.params.mode.enter
+      ) {
+        selectedCue.value.params.mode.enter = enter.value;
       }
     }
     emit('update');

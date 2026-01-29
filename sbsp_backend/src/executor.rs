@@ -254,7 +254,7 @@ impl Executor {
                 log::warn!("Loading transport cues is not available. ignoring...");
             }
             CueParam::Group { mode, children } => match mode {
-                GroupMode::Playlist { .. } => {
+                GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                     if let Some(first_cue) = children.first() {
                         self.process_command(ExecutorCommand::Load(first_cue.id))
                             .await?;
@@ -409,7 +409,7 @@ impl Executor {
                 self.process_command(ExecutorCommand::Load(*target)).await?;
             }
             CueParam::Group { mode, children } => match mode {
-                GroupMode::Playlist { .. } => {
+                GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                     if let Some(first_cue) = children.first() {
                         self.process_command(ExecutorCommand::Execute(first_cue.id))
                             .await?;

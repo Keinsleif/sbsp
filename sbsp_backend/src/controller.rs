@@ -17,7 +17,7 @@ use crate::{
     event::UiEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
-    model::cue::CueSequence,
+    model::cue::{CueParam, CueSequence, group::GroupMode},
 };
 
 pub struct CueController {
@@ -155,7 +155,7 @@ impl CueController {
             | ControllerCommand::Resume(cue_id)
             | ControllerCommand::Stop(cue_id)
             | ControllerCommand::PerformAction(cue_id, ..) => {
-                if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
+                if self.model_handle.is_cue_exists(&cue_id).await {
                     let executor_command = command.into_executor_command();
                     self.executor_tx.send(executor_command).await?;
                 } else {
@@ -207,7 +207,7 @@ impl CueController {
     async fn handle_go(&self, cue_id: Uuid) -> Result<()> {
         let state = self.state_tx.borrow().clone();
 
-        if self.model_handle.get_cue_by_id(&cue_id).await.is_some() {
+        if self.model_handle.is_cue_exists(&cue_id).await {
             if let Some(active_cue) = state.active_cues.get(&cue_id)
                 && active_cue.status != PlaybackStatus::Loaded
             {
@@ -230,12 +230,14 @@ impl CueController {
         } else {
             anyhow::bail!("Playback cursor unavailable.");
         };
-        self.set_playback_cursor(
+        let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await && let CueParam::Group { mode, children } = &cue.params && let GroupMode::StartFirst { enter } = mode && *enter && let Some(first_cue) = children.first() {
+            Some(first_cue.id)
+        } else {
             self.model_handle
                 .get_next_cue_id_by_id(&playback_cursor)
-                .await,
-        )
-        .await?;
+                .await
+        };
+        self.set_playback_cursor(next_cursor).await?;
         Ok(())
     }
 
