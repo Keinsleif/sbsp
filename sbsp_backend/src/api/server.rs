@@ -1,14 +1,11 @@
-use std::{collections::HashMap, path::PathBuf, time::Duration};
+use std::{collections::HashMap, path::PathBuf, time::{Duration, Instant}};
 
 use async_recursion::async_recursion;
 use axum::{
-    Router,
-    extract::{
+    Router, extract::{
         State, WebSocketUpgrade,
         ws::{Message, WebSocket},
-    },
-    response::IntoResponse,
-    routing::get,
+    }, response::IntoResponse, routing::get
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
@@ -30,6 +27,8 @@ use crate::{
     manager::ProjectStatus,
     model::ProjectType,
 };
+
+const SMOOTH_FACTOR: f64 = 0.2;
 
 #[derive(Clone)]
 struct ApiState {
@@ -137,6 +136,8 @@ async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: ApiState) {
+    let base_time = Instant::now();
+    let mut latency = 0.0;
     let challenge = generate_salt();
     let auth_info = if state.options.password.is_some() {
         Some(AuthInfo {
@@ -198,7 +199,8 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
 
-    let mut poll_timer = interval(Duration::from_millis(32));
+    let mut poll_timer = interval(Duration::from_secs(5));
+    let mut ping_timer = interval(Duration::from_secs(10));
 
     log::info!("New WebSocket client connected.");
 
@@ -227,68 +229,92 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                         }
                 }
             }
-
+            _ = ping_timer.tick() => {
+                let time_bytes = base_time.elapsed().as_secs_f64().to_le_bytes();
+                if socket.send(Message::Ping(time_bytes.to_vec().into())).await.is_err() {
+                    log::info!("WebSocket client disconnected (send error).");
+                    break;
+                }
+            }
             Some(Ok(msg)) = socket.recv() => {
-                if let Message::Text(text) = msg {
-                    if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
-                        match command_request {
-                            WsCommand::Controll(controller_command) => {
-                                if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
-                                    log::error!("Failed to send Go command to CueController.");
-                                    break;
+                match msg { 
+                    Message::Text(text) => {
+                        if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
+                            match command_request {
+                                WsCommand::Controll(controller_command) => {
+                                    if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
+                                        log::error!("Failed to send Go command to CueController.");
+                                        break;
+                                    }
+                                },
+                                WsCommand::Model(model_command) => {
+                                    if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
+                                        log::error!("Failed to send Model command to ShowModelManager.");
+                                        break;
+                                    }
+                                },
+                                WsCommand::AssetProcessor(asset_processor_command) => {
+                                    match asset_processor_command {
+                                        AssetProcessorCommand::RequestFileAssetData { path } => {
+                                            state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
+                                        },
+                                    }
+                                },
+                                WsCommand::RequestAssetList => {
+                                    log::info!("Asset List reqested.");
+                                    if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
+                                    && project_type == ProjectType::ProjectFolder
+                                    && let Some(parent) = path.parent()
+                                    && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
+                                        let ws_message = WsFeedback::AssetList(file_list);
+                                        if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            break;
+                                        }
+                                    }
                                 }
-                            },
-                            WsCommand::Model(model_command) => {
-                                if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
-                                    log::error!("Failed to send Model command to ShowModelManager.");
-                                    break;
-                                }
-                            },
-                            WsCommand::AssetProcessor(asset_processor_command) => {
-                                match asset_processor_command {
-                                    AssetProcessorCommand::RequestFileAssetData { path } => {
-                                        state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
-                                    },
-                                }
-                            },
-                            WsCommand::RequestAssetList => {
-                                log::info!("Asset List reqested.");
-                                if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
-                                && project_type == ProjectType::ProjectFolder
-                                && let Some(parent) = path.parent()
-                                && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
-                                    let ws_message = WsFeedback::AssetList(file_list);
+                                WsCommand::RequestFullShowState => {
+                                    let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
+                                    let show_model = state.backend_handle.model_handle.read().await.clone();
+                                    let show_state = state.state_rx.borrow().clone();
+
+                                    let full_state = FullShowState {
+                                        project_status,
+                                        show_model,
+                                        show_state,
+                                    };
+
+                                    let ws_message = WsFeedback::FullShowState(full_state);
                                     if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                         log::info!("WebSocket client disconnected (send error).");
                                         break;
                                     }
                                 }
+                                _ => {}
                             }
-                            WsCommand::RequestFullShowState => {
-                                let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
-                                let show_model = state.backend_handle.model_handle.read().await.clone();
-                                let show_state = state.state_rx.borrow().clone();
-
-                                let full_state = FullShowState {
-                                    project_status,
-                                    show_model,
-                                    show_state,
-                                };
-
-                                let ws_message = WsFeedback::FullShowState(full_state);
-                                if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
-                                    log::info!("WebSocket client disconnected (send error).");
-                                    break;
-                                }
-                            }
-                            _ => {}
+                        } else {
+                            log::error!("Invalid command received.")
                         }
-                    } else {
-                        log::error!("Invalid command received.")
                     }
-                } else if let Message::Close(_) = msg {
-                    log::info!("WebSocket client sent close message.");
-                    break;
+                    Message::Ping(bytes) => {
+                        if socket.send(Message::Pong(bytes)).await.is_err() {
+                            log::info!("WebSocket client disconnected (send error).");
+                            break;
+                        }
+                    }
+                    Message::Pong(bytes) => {
+                        if let Ok(time_bytes) = bytes.to_vec().try_into() {
+                            let start = Duration::from_secs_f64(f64::from_le_bytes(time_bytes));
+                            let now = base_time.elapsed();
+                            let current_latency = (now - start).as_secs_f64();
+                            latency = (SMOOTH_FACTOR * current_latency) + ((1.0 - SMOOTH_FACTOR) * latency);
+                        }
+                    }
+                    Message::Close(_) => {
+                        log::info!("WebSocket client sent close message.");
+                        break;
+                    }
+                    _ => {},
                 }
             }
             _ = shutdown_rx.recv() => {
