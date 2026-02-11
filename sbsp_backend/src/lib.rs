@@ -1,4 +1,7 @@
 #[cfg(feature = "backend")]
+use std::time::Instant;
+
+#[cfg(feature = "backend")]
 use tokio::sync::{broadcast, mpsc, watch};
 
 #[cfg(feature = "backend")]
@@ -70,6 +73,16 @@ pub struct BackendHandle {
     pub asset_processor_handle: AssetProcessorHandle,
     pub controller_handle: CueControllerHandle,
     pub level_meter: Option<SharedLevel>,
+    request_state_sync_tx: mpsc::Sender<()>,
+}
+
+#[cfg(feature = "backend")]
+impl BackendHandle {
+    pub async fn request_state_sync(&self) {
+        if let Err(e) = self.request_state_sync_tx.send(()).await {
+            log::error!("Error when sending request state sync e={};", e);
+        }
+    }
 }
 
 #[cfg(feature = "backend")]
@@ -139,14 +152,43 @@ pub fn start_backend(
     tokio::spawn(wait_engine.run());
     tokio::spawn(asset_processor.run());
 
+    let request_state_sync_tx = handle_state_sync(state_rx.clone(), event_tx.clone());
+
     Ok((
         BackendHandle {
             model_handle,
             asset_processor_handle,
             controller_handle,
             level_meter,
+            request_state_sync_tx,
         },
         state_rx,
         event_tx,
     ))
+}
+
+#[cfg(feature = "backend")]
+fn handle_state_sync(state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>) -> mpsc::Sender<()> {
+    let (sender, mut receiver) = mpsc::channel(8);
+
+    tokio::spawn(async move {
+        let base_time = Instant::now();
+        loop {
+            if receiver.recv().await.is_some() {
+                let cues = {
+                    use crate::event::CueState;
+
+                    let state = state_rx.borrow();
+                    state.active_cues.iter().map(|(id, ac)| CueState { id: *id, position: ac.position }).collect()
+                };
+                if let Err(e) = event_tx.send(UiEvent::SyncState { server_time: base_time.elapsed().as_secs_f64(), latency: 0.0, cues }) {
+                    log::trace!("No UI clients are listening to playback events. e={}", e);
+                }
+            } else {
+                break;
+            }
+        }
+    });
+
+    sender
 }

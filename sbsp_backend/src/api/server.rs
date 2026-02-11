@@ -18,12 +18,11 @@ use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle,
     api::{
-        ApiServerOptions, AuthInfo, FileList,
-        auth::{check_authentication_string, generate_salt, generate_secret},
+        ApiServerOptions, AuthInfo, FileList, auth::{check_authentication_string, generate_salt, generate_secret}
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
-    event::UiEvent,
+    event::{CueState, UiEvent},
     manager::ProjectStatus,
     model::ProjectType,
 };
@@ -199,7 +198,6 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let state_rx = state.state_rx.clone();
     let mut event_rx = state.event_rx_factory.subscribe();
 
-    let mut poll_timer = interval(Duration::from_secs(5));
     let mut ping_timer = interval(Duration::from_secs(10));
 
     log::info!("New WebSocket client connected.");
@@ -216,18 +214,6 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
-            }
-            _ = poll_timer.tick() => {
-                if let Ok(changed) = state_rx.has_changed() && changed {
-                    let new_state = state_rx.borrow().clone();
-                    let ws_message = WsFeedback::State(new_state);
-
-                    if let Ok(payload) = serde_json::to_string(&ws_message)
-                        && socket.send(Message::Text(payload.into())).await.is_err() {
-                            log::info!("WebSocket client disconnected (send error).");
-                            break;
-                        }
-                }
             }
             _ = ping_timer.tick() => {
                 let time_bytes = base_time.elapsed().as_secs_f64().to_le_bytes();
@@ -290,7 +276,22 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         break;
                                     }
                                 }
-                                _ => {}
+                                WsCommand::RequestSyncState => {
+                                    let mut cues = Vec::new();
+                                    {
+                                        let state = state_rx.borrow();
+                                        for (id, active_cue) in &state.active_cues {
+                                            cues.push(CueState { id: *id, position: active_cue.position })
+                                        }
+                                    }
+
+                                    let ws_message = WsFeedback::Event(Box::new(UiEvent::SyncState { server_time: base_time.elapsed().as_secs_f64(), latency, cues}));
+                                    if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                        log::info!("WebSocket client disconnected (send error).");
+                                        break;
+                                    }
+                                },
+                                WsCommand::Authenticate { .. } => {},
                             }
                         } else {
                             log::error!("Invalid command received.")

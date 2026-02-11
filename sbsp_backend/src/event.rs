@@ -62,6 +62,11 @@ pub enum UiEvent {
     PlaybackCursorMoved {
         cue_id: Option<Uuid>,
     },
+    SyncState{
+        server_time: f64,
+        latency: f64,
+        cues: Vec<CueState>
+    },
 
     // Model Events
     ShowModelLoaded {
@@ -137,4 +142,12 @@ impl From<ExecutorEvent> for UiEvent {
             ExecutorEvent::PreWaitCompleted { cue_id } => UiEvent::CuePreWaitCompleted { cue_id },
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct CueState {
+    pub id: Uuid,
+    pub position: f64,
 }

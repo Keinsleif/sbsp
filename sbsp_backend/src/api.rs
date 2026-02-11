@@ -48,7 +48,6 @@ pub enum WsFeedback {
     Hello { auth: Option<AuthInfo> },
     Authenticated,
     Event(Box<UiEvent>),
-    State(ShowState),
     AssetList(Vec<FileList>),
     FullShowState(FullShowState),
 }
@@ -63,6 +62,7 @@ pub enum WsCommand {
     AssetProcessor(AssetProcessorCommand),
     RequestAssetList,
     RequestFullShowState,
+    RequestSyncState,
 }
 
 #[derive(Serialize, Deserialize)]
