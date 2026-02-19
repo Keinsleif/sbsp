@@ -2,7 +2,6 @@
 import type { AuthInfo } from "./AuthInfo";
 import type { FileList } from "./FileList";
 import type { FullShowState } from "./FullShowState";
-import type { ShowState } from "./ShowState";
 import type { UiEvent } from "./UiEvent";
 
-export type WsFeedback = { "type": "hello", "data": { auth: AuthInfo | null, } } | { "type": "authenticated" } | { "type": "event", "data": UiEvent } | { "type": "state", "data": ShowState } | { "type": "assetList", "data": Array<FileList> } | { "type": "fullShowState", "data": FullShowState };
+export type WsFeedback = { "type": "hello", "data": { auth: AuthInfo | null, } } | { "type": "authenticated" } | { "type": "event", "data": UiEvent } | { "type": "assetList", "data": Array<FileList> } | { "type": "fullShowState", "data": FullShowState };
