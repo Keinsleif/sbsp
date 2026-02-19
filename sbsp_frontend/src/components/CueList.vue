@@ -328,29 +328,35 @@
 
   const scrollIntoIndex = (index: number) => {
     if (cueListItemRefs.value != null) {
-      cueListItemRefs.value[index].scrollIntoView({ block: 'nearest' });
+      cueListItemRefs.value[index]?.scrollIntoView({ block: 'nearest' });
     }
   };
 
   const onArrowUp = throttle((e: KeyboardEvent) => {
     if (uiState.selected != null) {
       let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) - 1;
-      if (cursorIndex < 0) return;
-      while (showModel.flatCueList[cursorIndex].isHidden) {
+      let cursorCueRef = showModel.flatCueList[cursorIndex];
+      if (cursorCueRef == null) return;
+
+      while (cursorCueRef.isHidden) {
         cursorIndex--;
-        if (cursorIndex < 0) {
+        cursorCueRef = showModel.flatCueList[cursorIndex];
+        if (cursorCueRef == null) {
           return;
         }
       }
       if (e.shiftKey) {
-        uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
+        uiState.addSelected(cursorCueRef.cue.id);
       } else {
-        uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
+        uiState.setSelected(cursorCueRef.cue.id);
       }
       scrollIntoIndex(cursorIndex);
-    } else if (showModel.flatCueList.length > 0) {
-      uiState.setSelected(showModel.flatCueList[0].cue.id);
-      scrollIntoIndex(0);
+    } else {
+      const firstCueId = showModel.flatCueList[0]?.cue.id;
+      if (firstCueId != null) {
+        uiState.setSelected(firstCueId);
+        scrollIntoIndex(0);
+      }
     }
   }, 100);
 
@@ -360,22 +366,28 @@
   const onArrowDown = throttle((e: KeyboardEvent) => {
     if (uiState.selected != null) {
       let cursorIndex = showModel.flatCueList.findIndex((item) => item.cue.id == uiState.selected) + 1;
-      if (cursorIndex >= showModel.flatCueList.length) return;
-      while (showModel.flatCueList[cursorIndex].isHidden) {
-        if (cursorIndex >= showModel.flatCueList.length) {
+      let cursorCueRef = showModel.flatCueList[cursorIndex];
+      if (cursorCueRef == null) return;
+
+      while (cursorCueRef.isHidden) {
+        cursorIndex++;
+        cursorCueRef = showModel.flatCueList[cursorIndex];
+        if (cursorCueRef == null) {
           return;
         }
-        cursorIndex++;
       }
       if (e.shiftKey) {
-        uiState.addSelected(showModel.flatCueList[cursorIndex].cue.id);
+        uiState.addSelected(cursorCueRef.cue.id);
       } else {
-        uiState.setSelected(showModel.flatCueList[cursorIndex].cue.id);
+        uiState.setSelected(cursorCueRef.cue.id);
       }
       scrollIntoIndex(cursorIndex);
-    } else if (showModel.flatCueList.length > 0) {
-      uiState.setSelected(showModel.flatCueList[showModel.flatCueList.length - 1].cue.id);
-      scrollIntoIndex(showModel.flatCueList.length - 1);
+    } else {
+      const lastCueId = showModel.flatCueList[showModel.flatCueList.length - 1]?.cue.id;
+      if (lastCueId != null) {
+        uiState.setSelected(lastCueId);
+        scrollIntoIndex(showModel.flatCueList.length - 1);
+      }
     }
   }, 100);
 
@@ -420,12 +432,14 @@
       if (fromIndex === index) {
         return;
       }
-      const cueId = showModel.flatCueList[fromIndex].cue.id;
+      const srcCueId = showModel.flatCueList[fromIndex]?.cue.id;
+      if (srcCueId == undefined) return;
       if (index < showModel.flatCueList.length) {
-        const targetId = showModel.flatCueList[index].cue.id;
-        api.moveCue(cueId, targetId);
+        const targetId = showModel.flatCueList[index]?.cue.id;
+        if (targetId == null) return;
+        api.moveCue(srcCueId, targetId);
       } else {
-        api.moveCue(cueId, null);
+        api.moveCue(srcCueId, null);
       }
       // showModel.moveCue(cue_id, newIndex);
     }
@@ -435,18 +449,23 @@
     if (event.button != 0) {
       return;
     }
-    const clickedId = showModel.flatCueList[index].cue.id;
+    const clickedId = showModel.flatCueList[index]?.cue.id;
+    if (clickedId == null) return;
     if (event.shiftKey) {
       if (uiState.selected != null) {
         uiState.selectedRows = [];
         const prevIndex = showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected);
         if (index >= prevIndex) {
           for (let i = prevIndex; i <= index; i++) {
-            uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
+            const targetCueId = showModel.flatCueList[i]?.cue.id;
+            if (targetCueId == null) continue;
+            uiState.selectedRows.push(targetCueId);
           }
         } else {
           for (let i = index; i <= prevIndex; i++) {
-            uiState.selectedRows.push(showModel.flatCueList[i].cue.id);
+            const targetCueId = showModel.flatCueList[i]?.cue.id;
+            if (targetCueId == null) continue;
+            uiState.selectedRows.push(targetCueId);
           }
         }
         uiState.selected = clickedId;
@@ -511,17 +530,19 @@
     if (e.target == null || !(e.target instanceof HTMLElement) || e.target.contentEditable === 'true') {
       return;
     }
+    const targetCue = showModel.flatCueList[rowIndex];
+    if (targetCue == null) return;
     if (editType == 'cuelist_duration') {
-      const cueType = showModel.flatCueList[rowIndex].cue.params.type;
+      const cueType = targetCue.cue.params.type;
       if (cueType != 'wait' && cueType != 'fade') {
         return;
       }
     }
     if (editType == 'cuelist_post_wait') {
-      if (showModel.flatCueList[rowIndex].isSequenceOverrided) {
+      if (targetCue.isSequenceOverrided) {
         return;
       }
-      if (showModel.flatCueList[rowIndex].sequence.type != 'autoContinue') {
+      if (targetCue.sequence.type != 'autoContinue') {
         return;
       }
     }
@@ -546,7 +567,9 @@
     target.contentEditable = 'false';
     target.classList.remove('inEdit');
     if (needSave) {
-      const newCue = structuredClone(toRaw(showModel.flatCueList[rowIndex].cue));
+      const targetCue = showModel.flatCueList[rowIndex];
+      if (targetCue == null) return;
+      const newCue = structuredClone(toRaw(targetCue.cue));
       switch (editType) {
         case 'cuelist_number':
           newCue.number = target.innerText;

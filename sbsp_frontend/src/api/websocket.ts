@@ -561,11 +561,12 @@ export function useWebsocketApi(): IBackendAdapter {
       return new Promise<GlobalSettings>((resolve, reject) => {
         openFileDialog()
           .then((files) => {
-            if (files == null || files.length != 1) {
+            const filepath = files != null ? files[0] : null;
+            if (filepath == null) {
               reject();
               return;
             }
-            files[0].text().then((text) => {
+            filepath.text().then((text) => {
               try {
                 const result = settingsValidator(JSON.parse(text));
                 if (result.success) {

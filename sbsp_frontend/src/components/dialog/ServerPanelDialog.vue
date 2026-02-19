@@ -218,7 +218,7 @@
 
     let password = '';
     for (let i = 0; i < 16; i++) {
-      password += CHARSET[array[i] % CHARSET.length];
+      password += CHARSET[array[i]! % CHARSET.length];
     }
 
     return password;

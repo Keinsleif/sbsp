@@ -22,8 +22,9 @@ export const useAssetResult = defineStore(
       const api = useApi();
       const targetCue = showModel.getCueById(cueId);
       if (targetCue != null && targetCue.params.type == 'audio') {
-        if (targetCue.params.target in results.value) {
-          return results.value[targetCue.params.target];
+        const result = results.value[targetCue.params.target];
+        if (result != null) {
+          return result;
         } else if (!processing.value.includes(targetCue.params.target)) {
           processing.value.push(targetCue.params.target);
           api.processAsset(targetCue.params.target);

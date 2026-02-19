@@ -35,7 +35,7 @@ const recursiveCueCheck = (
       if (parent.params.mode.type == 'playlist') {
         if (index + 1 == list.length) {
           if (parent.params.mode.repeat) {
-            sequence = { type: 'autoFollow', targetId: list[0].id };
+            sequence = { type: 'autoFollow', targetId: list[0]!.id };
           } else {
             sequence = { type: 'doNotContinue' };
           }
@@ -140,7 +140,7 @@ export const useShowModel = defineStore('showmodel', {
             const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
             newCue.id = v4();
             if (newCue.params.type == 'audio') {
-              newCue.params.target = assets[0];
+              newCue.params.target = assets[0]!;
             }
             api.addCue(newCue, uiState.selected, false);
           } else if (assets.length > 1) {

@@ -58,11 +58,8 @@ export const useUiState = defineStore(
     const removeFromSelected = (id: string) => {
       if (selectedRows.value.includes(id)) {
         selectedRows.value = selectedRows.value.filter((selected) => selected != id);
-        if (selectedRows.value.length > 0) {
-          selected.value = selectedRows.value[selectedRows.value.length - 1];
-        } else {
-          selected.value = null;
-        }
+        const newValue = selectedRows.value[selectedRows.value.length - 1] || null;
+        selected.value = newValue;
         setPlaybackCursor(selected.value);
       }
     };

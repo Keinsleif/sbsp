@@ -83,7 +83,8 @@ export const format = (str: string, obj: { [key: string]: string }): string => {
     if (match === '{{') return '{';
     if (match === '}}') return '}';
 
-    return typeof obj[key.trim()] !== 'undefined' ? obj[key.trim()] : match;
+    const replaceTarget = obj[key.trim()];
+    return typeof replaceTarget !== 'undefined' ? replaceTarget : match;
   });
 };
 

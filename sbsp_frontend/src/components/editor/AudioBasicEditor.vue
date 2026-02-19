@@ -87,7 +87,7 @@
   const selectedCue = defineModel<Cue | null>();
   const emit = defineEmits(['update']);
 
-  const target = ref(
+  const target = ref<string>(
     selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.target : '',
   );
 
@@ -146,11 +146,11 @@
   const pickFile = () => {
     document.body.focus();
     api.pickAudioAssets({ multiple: false }).then((value) => {
-      if (value == null) {
-        return;
+      const filepath = value[0];
+      if (filepath != null) {
+        target.value = filepath;
+        saveEditorValue();
       }
-      target.value = value[0];
-      saveEditorValue();
     });
   };
 </script>
