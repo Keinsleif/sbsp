@@ -5,18 +5,12 @@ use std::sync::{Arc, atomic::AtomicBool};
 
 use futures_util::{SinkExt, TryStreamExt};
 use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
-use tokio::sync::{RwLock, broadcast, mpsc, watch};
+use tokio::sync::{RwLock, broadcast, mpsc, oneshot, watch};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use super::{WsCommand, WsFeedback};
 use crate::{
-    BackendHandle,
-    api::auth::{generate_authentication_string, generate_secret},
-    asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
-    controller::{ControllerCommand, CueControllerHandle},
-    event::UiEvent,
-    manager::{ModelCommand, ProjectStatus, ShowModelHandle},
-    model::ShowModel,
+    BackendHandle, FullShowState, api::auth::{generate_authentication_string, generate_secret}, asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ProjectStatus, ShowModelHandle}, model::ShowModel
 };
 pub use file_list_handler::FileListHandle;
 pub use service_entry::ServiceEntry;
@@ -44,6 +38,9 @@ pub async fn create_remote_backend(
     let asset_list_handle = FileListHandle::new(asset_list_rx, asset_list_command_tx);
 
     let (request_state_sync_tx, mut request_state_sync_rx) = mpsc::channel(8);
+    let (request_full_state_tx, mut request_full_state_rx) = mpsc::channel(8);
+
+    let mut full_state_responder: Option<oneshot::Sender<FullShowState>> = None;
 
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
 
@@ -153,6 +150,11 @@ pub async fn create_remote_backend(
                                         }
                                     }
                                     WsFeedback::FullShowState(full_state) => {
+                                        if let Some(responder) = full_state_responder.take()
+                                        && responder.send(full_state.clone()).is_err() {
+                                            log::error!("Error while responding full state request.");
+                                        }
+
                                         {
                                             let mut show_model = model_clone.write().await;
                                             *show_model = full_state.show_model;
@@ -218,6 +220,13 @@ pub async fn create_remote_backend(
                         break;
                     }
                 }
+                Some(responder) = request_full_state_rx.recv() => {
+                    full_state_responder = Some(responder);
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState) && websocket.send(Message::Text(payload.into())).await.is_err() {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
+                    }
+                }
                 _ = shutdown_rx.recv() => {
                     if let Err(e) = websocket.send(Message::Close(None)).await {
                         log::warn!("Failed to send Close message to client: {}", e);
@@ -244,6 +253,7 @@ pub async fn create_remote_backend(
             },
             level_meter: None,
             request_state_sync_tx,
+            request_full_state_tx,
         },
         event_tx,
         asset_list_handle,

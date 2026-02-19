@@ -278,6 +278,7 @@ impl CueController {
             }
             ExecutorEvent::Started {
                 cue_id,
+                duration,
                 initial_params,
             } => {
                 if let Some(cue_sequence) = self.model_handle.get_cue_sequence_by_id(cue_id).await {
@@ -295,14 +296,14 @@ impl CueController {
                 }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = 0.0;
-                    active_cue.duration = 0.0;
+                    active_cue.duration = *duration;
                     active_cue.status = PlaybackStatus::Playing;
                     active_cue.params = *initial_params;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,
                         position: 0.0,
-                        duration: 0.0,
+                        duration: *duration,
                         status: PlaybackStatus::Playing,
                         params: *initial_params,
                     };
@@ -485,16 +486,16 @@ impl CueController {
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
-            ExecutorEvent::PreWaitStarted { cue_id } => {
+            ExecutorEvent::PreWaitStarted { cue_id, duration } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = 0.0;
-                    active_cue.duration = 0.0;
+                    active_cue.duration = *duration;
                     active_cue.status = PlaybackStatus::PreWaiting;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,
                         position: 0.0,
-                        duration: 0.0,
+                        duration: *duration,
                         status: PlaybackStatus::PreWaiting,
                         params: StateParam::None,
                     };
@@ -578,17 +579,8 @@ impl CueController {
             log::trace!("No UI clients are listening to state updates.");
         }
 
-        match &event {
-            ExecutorEvent::Started { .. }
-            | ExecutorEvent::Paused { .. }
-            | ExecutorEvent::Resumed { .. }
-            | ExecutorEvent::Completed { .. }
-            | ExecutorEvent::Error { .. } => {
-                if state_changed && self.event_tx.send(UiEvent::from(event)).is_err() {
-                    log::trace!("No UI clients are listening to playback events.");
-                }
-            }
-            _ => (),
+        if state_changed && let Ok(ui_event) = UiEvent::try_from(event) && self.event_tx.send(ui_event).is_err() {
+            log::trace!("No UI clients are listening to playback events.");
         }
         Ok(())
     }
@@ -600,15 +592,13 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
-        BackendSettings,
-        manager::ShowModelManager,
-        model::{
+        BackendSettings, event::CueStatusEventParam, manager::ShowModelManager, model::{
             self,
             cue::{
                 Cue,
                 audio::{AudioCueParam, Easing, FadeParam, SoundType},
             },
-        },
+        }
     };
 
     use super::*;
@@ -749,13 +739,14 @@ mod tests {
         playback_event_tx
             .send(ExecutorEvent::Started {
                 cue_id,
+                duration: 43.0,
                 initial_params: StateParam::None,
             })
             .await
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStarted { cue_id }));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Started { cue_id, duration: 43.0, params: StateParam::None })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -815,7 +806,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CuePaused { cue_id }));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Paused { cue_id, position: 21.0 })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Paused);
@@ -831,7 +822,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueResumed { cue_id }));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Resumed { cue_id })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -856,7 +847,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueCompleted { cue_id }));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Completed{ cue_id })));
         assert!(!state_rx.borrow().active_cues.contains_key(&cue_id));
     }
 }

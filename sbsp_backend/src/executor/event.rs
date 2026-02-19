@@ -11,6 +11,7 @@ pub enum ExecutorEvent {
     },
     PreWaitStarted {
         cue_id: Uuid,
+        duration: f64,
     },
     PreWaitProgress {
         cue_id: Uuid,
@@ -33,6 +34,7 @@ pub enum ExecutorEvent {
     },
     Started {
         cue_id: Uuid,
+        duration: f64,
         initial_params: StateParam,
     },
     Progress {

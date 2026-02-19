@@ -22,7 +22,7 @@ use crate::{
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
-    event::{CueState, UiEvent},
+    event::{CueState, SyncData, UiEvent},
     manager::ProjectStatus,
     model::ProjectType,
 };
@@ -285,7 +285,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         }
                                     }
 
-                                    let ws_message = WsFeedback::Event(Box::new(UiEvent::SyncState { server_time: base_time.elapsed().as_secs_f64(), latency, cues}));
+                                    let ws_message = WsFeedback::Event(Box::new(UiEvent::SyncState(SyncData { latency, cues})));
                                     if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                         log::info!("WebSocket client disconnected (send error).");
                                         break;

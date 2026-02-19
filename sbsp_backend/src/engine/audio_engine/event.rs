@@ -11,6 +11,7 @@ pub enum AudioEngineEvent {
     },
     Started {
         instance_id: Uuid,
+        duration: f64,
         initial_params: AudioStateParam,
     },
     Progress {

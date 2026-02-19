@@ -103,7 +103,7 @@ impl WaitEngine {
                                     remaining_duration: Duration::from_secs_f64(duration),
                                 });
                             }
-                            let wait_event = WaitEvent::Started { instance_id };
+                            let wait_event = WaitEvent::Started { instance_id, duration };
                             let event = Self::wrap_wait_event(wait_type, wait_event);
                             if let Err(e) = self.event_tx.send(event).await {
                                 Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))

@@ -9,6 +9,7 @@ pub enum WaitEvent {
     },
     Started {
         instance_id: Uuid,
+        duration: f64,
     },
     Progress {
         instance_id: Uuid,
@@ -35,7 +36,7 @@ impl WaitEvent {
     pub fn id(&self) -> Uuid {
         match self {
             WaitEvent::Loaded { instance_id, .. } => *instance_id,
-            WaitEvent::Started { instance_id } => *instance_id,
+            WaitEvent::Started { instance_id, .. } => *instance_id,
             WaitEvent::Progress { instance_id, .. } => *instance_id,
             WaitEvent::Paused { instance_id, .. } => *instance_id,
             WaitEvent::Resumed { instance_id } => *instance_id,
