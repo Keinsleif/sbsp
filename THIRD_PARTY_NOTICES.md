@@ -9682,8 +9682,8 @@ limitations under the License.
     - [thiserror 1.0.69]( https://github.com/dtolnay/thiserror )
     - [thiserror 2.0.18]( https://github.com/dtolnay/thiserror )
     - [time-core 0.1.8]( https://github.com/time-rs/time )
-    - [time-macros 0.2.26]( https://github.com/time-rs/time )
-    - [time 0.3.46]( https://github.com/time-rs/time )
+    - [time-macros 0.2.27]( https://github.com/time-rs/time )
+    - [time 0.3.47]( https://github.com/time-rs/time )
     - [typeid 1.0.3]( https://github.com/dtolnay/typeid )
     - [unic-char-property 0.9.0]( https://github.com/open-i18n/rust-unic/ )
     - [unic-char-range 0.9.0]( https://github.com/open-i18n/rust-unic/ )
@@ -10727,7 +10727,7 @@ DEALINGS IN THE SOFTWARE.
 
 - Used by
 
-    - [bytes 1.11.0]( https://github.com/tokio-rs/bytes )
+    - [bytes 1.11.1]( https://github.com/tokio-rs/bytes )
 
 ```text
 Copyright (c) 2018 Carl Lerche
@@ -14771,7 +14771,7 @@ SOFTWARE.
 
 ```
 
-### [markdown-it@14.1.0](https://github.com/markdown-it/markdown-it)
+### [markdown-it@14.1.1](https://github.com/markdown-it/markdown-it)
 license: MIT
 
 ```text
