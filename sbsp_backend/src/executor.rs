@@ -718,6 +718,7 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
+                    AudioEngineEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
                     AudioEngineEvent::Stopping {
                         position, duration, ..
                     } => {
@@ -783,6 +784,7 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
+                    WaitEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
                     WaitEvent::Stopped { .. } => {
                         if self
                             .active_instances
@@ -869,6 +871,7 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
+                    WaitEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
                     WaitEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&cue_id);
                         self.check_and_stop_parents(cue_id, false).await?;

@@ -576,17 +576,12 @@ impl AudioEngine {
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.seek_to(position);
-            if let Some(last_status) = &playing_sound.last_status
-                && last_status.state.eq(&PlaybackState::Paused)
-            {
-                self.event_tx
-                    .send(EngineEvent::Audio(AudioEngineEvent::Paused {
-                        instance_id: id,
-                        position,
-                        duration: playing_sound.handle.duration,
-                    }))
-                    .await?;
-            }
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                    instance_id: id,
+                    position,
+                }))
+                .await?;
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_to(position);
@@ -605,7 +600,14 @@ impl AudioEngine {
 
     async fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            let position = playing_sound.handle.position() + amount;
             playing_sound.handle.seek_by(amount);
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                    instance_id: id,
+                    position,
+                }))
+                .await?;
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             loaded_handle.seek_by(amount);

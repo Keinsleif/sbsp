@@ -157,6 +157,7 @@ impl TryFrom<ExecutorEvent> for UiEvent {
             ExecutorEvent::Stopped { cue_id } => Some(CueStatusEventParam::Stopped { cue_id }),
             ExecutorEvent::Completed { cue_id } => Some(CueStatusEventParam::Completed { cue_id }),
             ExecutorEvent::Progress { .. } => None,
+            ExecutorEvent::Seeked { cue_id, position } => Some(CueStatusEventParam::Seeked { cue_id, position }),
             ExecutorEvent::Stopping { cue_id, .. } => Some(CueStatusEventParam::Stopping { cue_id }),
             ExecutorEvent::StateParamUpdated { cue_id, params } => Some(CueStatusEventParam::StateParamUpdated { cue_id, params }),
             ExecutorEvent::Error { cue_id, error } => Some(CueStatusEventParam::Error { cue_id, error }),

@@ -409,6 +409,12 @@ impl CueController {
                     state_changed = true;
                 }
             }
+            ExecutorEvent::Seeked { cue_id, position } => {
+                if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
+                    active_cue.position = *position;
+                    state_changed = true;
+                }
+            }
             ExecutorEvent::Stopping {
                 cue_id,
                 position,
