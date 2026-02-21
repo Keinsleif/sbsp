@@ -119,20 +119,12 @@ impl AppState {
     }
 }
 
-async fn forward_backend_state_and_event(
+async fn forward_backend_event(
     app_handle: AppHandle,
-    state_rx: watch::Receiver<ShowState>,
     mut event_rx: broadcast::Receiver<UiEvent>,
 ) {
-    let mut poll_timer = interval(Duration::from_millis(32));
     loop {
         tokio::select! {
-            _ = poll_timer.tick() => {
-                if let Ok(changed) = state_rx.has_changed() && changed {
-                    let state = state_rx.borrow().clone();
-                    app_handle.emit("backend-state-update", state).ok();
-                }
-            },
             Ok(event) = event_rx.recv() => {
                 app_handle.emit("backend-event", event).ok();
             }
@@ -196,9 +188,8 @@ pub fn run() {
             let (level_meter_tx, level_meter_rx) =
                 watch::channel::<Option<Channel<(f32, f32)>>>(None);
 
-            tokio::spawn(forward_backend_state_and_event(
+            tokio::spawn(forward_backend_event(
                 app_handle.clone(),
-                state_rx.clone(),
                 event_tx.subscribe(),
             ));
 
@@ -266,6 +257,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            command::request_state_sync,
+            command::get_full_state,
             command::get_third_party_notices,
             command::process_asset,
             command::file_new,

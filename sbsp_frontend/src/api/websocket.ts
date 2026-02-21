@@ -1,7 +1,5 @@
 import { Cue } from '../types/Cue';
-import { ShowModel } from '../types/ShowModel';
 import { ShowSettings } from '../types/ShowSettings';
-import { ShowState } from '../types/ShowState';
 import { UiEvent } from '../types/UiEvent';
 import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions } from './interface';
 import { WsFeedback } from '../types/WsFeedback';
@@ -14,6 +12,7 @@ import { GlobalSettings } from '../types/GlobalSettings';
 import typia from 'typia';
 import { useUiState } from '../stores/uistate';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { FullShowState } from '../types/FullShowState';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
@@ -215,21 +214,19 @@ const strToHashedBase64 = (src: string): string => {
 const websocketApiState: {
   address: string | null;
   ws: WebSocket | null;
-  showModelBuffer: ShowModel | null;
   projectStatus: ProjectStatus | null;
-  stateUpdateListeners: { [key: string]: (state: ShowState) => void };
   uiEventListeners: { [key: string]: (event: UiEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
   connectionStatusListeners: { [key: string]: (isConnected: boolean) => void };
+  fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
 } = {
   address: null,
   ws: null,
-  showModelBuffer: null,
   projectStatus: null,
-  stateUpdateListeners: {},
   uiEventListeners: {},
   assetListListeners: {},
   connectionStatusListeners: {},
+  fullStateResolver: null,
 };
 
 interface IWebsocketBackendAdapter extends IBackendAdapter {
@@ -287,13 +284,9 @@ export function useWebsocketApi(): IBackendAdapter {
       const mainEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
-          case 'state':
-            Object.values(websocketApiState.stateUpdateListeners).forEach((cb) => cb(msg.data));
-            break;
           case 'event':
             switch (msg.data.type) {
               case 'showModelLoaded':
-                websocketApiState.showModelBuffer = msg.data.param.model;
                 websocketApiState.projectStatus = {
                   status: 'saved',
                   projectType: msg.data.param.projectType,
@@ -301,7 +294,6 @@ export function useWebsocketApi(): IBackendAdapter {
                 };
                 break;
               case 'showModelReset':
-                websocketApiState.showModelBuffer = msg.data.param.model;
                 websocketApiState.projectStatus = {
                   status: 'unsaved',
                 };
@@ -319,7 +311,9 @@ export function useWebsocketApi(): IBackendAdapter {
             Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
             break;
           case 'fullShowState':
-            websocketApiState.showModelBuffer = msg.data.showModel;
+            if (websocketApiState.fullStateResolver != null) {
+              websocketApiState.fullStateResolver[0](msg.data);
+            }
             websocketApiState.projectStatus = msg.data.projectStatus;
         }
       };
@@ -369,6 +363,20 @@ export function useWebsocketApi(): IBackendAdapter {
     isMacOs: function (): boolean {
       return navigator?.userAgent?.includes('Macintosh') ?? false;
     },
+
+    requestStateSync() {
+      this.sendCommand({ type: 'requestSyncState' });
+    },
+    getFullState() {
+      return new Promise((resolve, reject) => {
+        if (websocketApiState.fullStateResolver != null) {
+          websocketApiState.fullStateResolver[1]();
+        }
+        websocketApiState.fullStateResolver = [resolve, reject];
+        websocketApi.sendCommand({ type: 'requestFullShowState' });
+      });
+    },
+
     getThirdPartyNotices: async function (): Promise<string> {
       return 'Not Available. To read third party notices, please use host app.';
     },
@@ -440,24 +448,7 @@ export function useWebsocketApi(): IBackendAdapter {
         params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
       });
     },
-    getShowModel: function (): Promise<ShowModel> {
-      return new Promise((resolve) => {
-        if (websocketApiState.showModelBuffer != null) {
-          resolve(websocketApiState.showModelBuffer);
-        } else {
-          const initShowModelListener = (e: MessageEvent<string>) => {
-            const wsFeedback = JSON.parse(e.data) as WsFeedback;
-            if (wsFeedback.type == 'fullShowState') {
-              websocketApiState.showModelBuffer = wsFeedback.data.showModel;
-              resolve(wsFeedback.data.showModel);
-              websocketApiState.ws?.removeEventListener('message', initShowModelListener);
-            }
-          };
-          websocketApiState.ws?.addEventListener('message', initShowModelListener);
-          websocketApi.sendCommand({ type: 'requestFullShowState' });
-        }
-      });
-    },
+
     isModified: async function (): Promise<boolean> {
       return websocketApiState.projectStatus?.status !== 'saved';
     },
@@ -595,13 +586,6 @@ export function useWebsocketApi(): IBackendAdapter {
       });
     },
 
-    onStateUpdate: async function (callback: (state: ShowState) => void): Promise<UnlistenFn> {
-      const id = v4();
-      websocketApiState.stateUpdateListeners[id] = callback;
-      return () => {
-        delete websocketApiState.stateUpdateListeners[id];
-      };
-    },
     onUiEvent: async function (callback: (event: UiEvent) => void): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.uiEventListeners[id] = callback;

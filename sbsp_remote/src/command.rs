@@ -1,12 +1,32 @@
 use std::path::PathBuf;
 
 use super::AppState;
+use sbsp_backend::FullShowState;
 use tauri::{Manager, ipc::Channel, path::BaseDirectory};
 
 pub mod client;
 pub mod controller;
 pub mod model_manager;
 pub mod settings;
+
+#[tauri::command]
+pub async fn request_state_sync(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    if let Some(handle) = state.get_handle().await {
+        handle.request_state_sync().await;
+        Ok(())
+    } else {
+        Err("Not connected.".into())
+    }
+}
+
+#[tauri::command]
+pub async fn get_full_state(state: tauri::State<'_, AppState>) -> Result<FullShowState, String> {
+    if let Some(handle) = state.get_handle().await {
+        handle.get_full_state().await.map_err(|e| e.to_string())
+    } else {
+        Err("Not connected.".into())
+    }
+}
 
 #[tauri::command]
 pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {

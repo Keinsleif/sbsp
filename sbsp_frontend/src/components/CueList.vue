@@ -67,19 +67,15 @@
           ></v-icon>
         </td>
         <td headers="cuelist_status" style="padding-left: 6px">
+          <v-icon v-show="isStatusIn(item.cue.id, ['playing', 'preWaiting'])" :icon="mdiPlay" color="success"></v-icon>
           <v-icon
-            v-show="['Playing', 'PreWaiting'].includes(getStatus(item.cue.id))"
-            :icon="mdiPlay"
-            color="success"
-          ></v-icon>
-          <v-icon
-            v-show="['Paused', 'PreWaitPaused'].includes(getStatus(item.cue.id))"
+            v-show="isStatusIn(item.cue.id, ['paused', 'preWaitPaused'])"
             :icon="mdiPause"
             color="warning"
           ></v-icon>
-          <v-icon v-show="getStatus(item.cue.id) == 'Loaded'" :icon="mdiUpload" color="warning"></v-icon>
+          <v-icon v-show="getStatus(item.cue.id) == 'loaded'" :icon="mdiUpload" color="warning"></v-icon>
           <v-progress-circular
-            v-show="getStatus(item.cue.id) == 'Stopping'"
+            v-show="getStatus(item.cue.id) == 'stopping'"
             indeterminate="disable-shrink"
             size="16"
             color="warning"
@@ -516,11 +512,19 @@
     }
   };
 
-  const getStatus = (id: string): string => {
+  const getStatus = (id: string): PlaybackStatus | null => {
     if (showState.activeCues[id] == undefined) {
-      return '';
+      return null;
     }
     return showState.activeCues[id].status;
+  };
+
+  const isStatusIn = (cueId: string, statusList: PlaybackStatus[]): boolean => {
+    const status = getStatus(cueId);
+    if (status) {
+      return statusList.includes(status);
+    }
+    return false;
   };
 
   const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
@@ -618,14 +622,14 @@
   const isPreWaitActive = (cue_id: string): boolean => {
     return (
       cue_id in showState.activeCues &&
-      (['PreWaiting', 'PreWaitPaused'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status)
+      (['preWaiting', 'preWaitPaused'] as PlaybackStatus[]).includes(showState.activeCues[cue_id]!.status)
     );
   };
 
   const isActive = (cue_id: string): boolean => {
     return (
       cue_id in showState.activeCues &&
-      (['Playing', 'Paused', 'Stopping', 'Completed'] as PlaybackStatus[]).includes(
+      (['playing', 'paused', 'stopping', 'completed'] as PlaybackStatus[]).includes(
         showState.activeCues[cue_id]!.status,
       )
     );

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use sbsp_backend::FullShowState;
 use tauri::{Manager as _, ipc::Channel, path::BaseDirectory};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
@@ -11,6 +12,19 @@ pub mod license;
 pub mod model_manager;
 pub mod server;
 pub mod settings;
+
+#[tauri::command]
+pub async fn request_state_sync(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let handle = state.get_handle();
+    handle.request_state_sync().await;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_full_state(state: tauri::State<'_, AppState>) -> Result<FullShowState, String> {
+    let handle = state.get_handle();
+    handle.get_full_state().await.map_err(|e| e.to_string())
+}
 
 #[tauri::command]
 pub async fn get_third_party_notices(app_handle: tauri::AppHandle) -> Result<String, String> {

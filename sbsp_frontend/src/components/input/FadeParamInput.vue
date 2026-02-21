@@ -79,15 +79,15 @@
 
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { AudioCueFadeParam } from '../../types/AudioCueFadeParam';
   import { curveToEasing, easingToCurve } from '../../utils';
   import CurveViewer from './CurveViewer.vue';
   import TimeInput from './TimeInput.vue';
   import { useI18n } from 'vue-i18n';
+  import type { FadeParam } from '../../types/FadeParam';
 
   const { t } = useI18n();
 
-  const param = defineModel<AudioCueFadeParam | null>({ required: true });
+  const param = defineModel<FadeParam | null>({ required: true });
   const props = withDefaults(
     defineProps<{
       label?: string;
