@@ -192,7 +192,7 @@ export const useShowState = defineStore('showstate', () => {
         if (activeCue.params.type == 'audio' && activeCue.params.repeating) {
           activeCue.position = (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
         } else {
-          activeCue.position = Math.max(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
+          activeCue.position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
         }
       }
     });
