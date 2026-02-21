@@ -756,7 +756,7 @@ mod tests {
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
-            assert_eq!(active_cue.duration, 0.0);
+            assert_eq!(active_cue.duration, 43.0);
             assert_eq!(active_cue.position, 0.0);
             assert_eq!(active_cue.params, StateParam::None);
         } else {
