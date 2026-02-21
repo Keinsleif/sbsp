@@ -1,8 +1,6 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { Cue } from '../types/Cue';
-import { ShowModel } from '../types/ShowModel';
 import { ShowSettings } from '../types/ShowSettings';
-import { ShowState } from '../types/ShowState';
 import { UiEvent } from '../types/UiEvent';
 import { IBackendAdapter, IPickAudioAssetsOptions } from './interface';
 import { type } from '@tauri-apps/plugin-os';
@@ -16,6 +14,7 @@ import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useUiState } from '../stores/uistate';
 import { ApiServerOptions } from '../types/ApiServerOptions';
+import { FullShowState } from '../types/FullShowState';
 
 const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
@@ -117,6 +116,14 @@ export function useTauriApi(): IBackendAdapter {
     isMacOs: function (): boolean {
       return type() == 'macos';
     },
+
+    requestStateSync() {
+      invoke('request_state_sync');
+    },
+    getFullState() {
+      return invoke<FullShowState>('get_full_state');
+    },
+
     getThirdPartyNotices: function (): Promise<string> {
       return invoke<string>('get_third_party_notices');
     },
@@ -211,9 +218,7 @@ export function useTauriApi(): IBackendAdapter {
     sendSetVolume: function (cueId: string, volume: number): Promise<void> {
       return invoke('set_volume', { cueId: cueId, volume: volume });
     },
-    getShowModel: function (): Promise<ShowModel> {
-      return invoke<ShowModel>('get_show_model');
-    },
+
     isModified: function (): Promise<boolean> {
       return invoke<boolean>('is_modified');
     },
@@ -282,11 +287,6 @@ export function useTauriApi(): IBackendAdapter {
         .catch((e) => console.error(e));
     },
 
-    onStateUpdate: function (callback: (state: ShowState) => void): Promise<UnlistenFn> {
-      return listen<ShowState>('backend-state-update', (event) => {
-        callback(event.payload);
-      });
-    },
     onUiEvent: function (callback: (event: UiEvent) => void): Promise<UnlistenFn> {
       return listen<UiEvent>('backend-event', (event) => {
         callback(event.payload);

@@ -8,6 +8,8 @@ import { useApi, side, target } from './api';
 import { appLogDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
 
+type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
+
 export const createWindowMenu = () => {
   const api = useApi();
   if (target != 'tauri') return;
@@ -17,50 +19,46 @@ export const createWindowMenu = () => {
   const uiState = useUiState();
   let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
-  const items: {
-    [key: string]: {
-      [key: string]: MenuItem | PredefinedMenuItem | null;
-    };
-  } = {
+  const items = {
     file: {
-      new: null,
-      open: null,
-      save: null,
-      saveAs: null,
-      exportToFolder: null,
-      disconnect: null,
+      new: null as MenuItemHolder,
+      open: null as MenuItemHolder,
+      save: null as MenuItemHolder,
+      saveAs: null as MenuItemHolder,
+      exportToFolder: null as MenuItemHolder,
+      disconnect: null as MenuItemHolder,
     },
     edit: {
-      cut: null,
-      copy: null,
-      paste: null,
-      deleteCue: null,
-      selectAllCues: null,
-      importSettings: null,
-      exportSettings: null,
+      cut: null as MenuItemHolder,
+      copy: null as MenuItemHolder,
+      paste: null as MenuItemHolder,
+      deleteCue: null as MenuItemHolder,
+      selectAllCues: null as MenuItemHolder,
+      importSettings: null as MenuItemHolder,
+      exportSettings: null as MenuItemHolder,
     },
     cue: {
-      audio: null,
-      wait: null,
-      fade: null,
-      start: null,
-      stop: null,
-      pause: null,
-      load: null,
-      group: null,
+      audio: null as MenuItemHolder,
+      wait: null as MenuItemHolder,
+      fade: null as MenuItemHolder,
+      start: null as MenuItemHolder,
+      stop: null as MenuItemHolder,
+      pause: null as MenuItemHolder,
+      load: null as MenuItemHolder,
+      group: null as MenuItemHolder,
     },
     tools: {
-      renumber: null,
+      renumber: null as MenuItemHolder,
     },
     help: {
-      credits: null,
-      checkUpdate: null,
-      license: null,
-      showLogFiles: null,
+      credits: null as MenuItemHolder,
+      checkUpdate: null as MenuItemHolder,
+      license: null as MenuItemHolder,
+      showLogFiles: null as MenuItemHolder,
     },
   };
 
-  const submenues: { [key: string]: Submenu | null } = {
+  const submenues: { [key in keyof typeof items]: Submenu | null } = {
     file: null,
     edit: null,
     cue: null,
@@ -71,12 +69,12 @@ export const createWindowMenu = () => {
   let menu: Menu | null = null;
 
   const updateLocale = () => {
-    for (const submenu in items) {
-      for (const item in items[submenu]) {
-        items[submenu][item]?.setText(t(`menu.${submenu}.${item}`));
-      }
-      submenues[submenu]?.setText(t(`menu.${submenu}.title`));
-    }
+    Object.entries(items).forEach(([submenuId, menus]) => {
+      Object.entries(menus).forEach(([menuId, menuItem]) => {
+        menuItem?.setText(t(`menu.${submenuId}.${menuId}`));
+      });
+      submenues[submenuId as keyof typeof items]?.setText(t(`menu.${submenuId}.title`));
+    });
   };
 
   const updateConnectionStatus = (isConnected: boolean) => {
@@ -100,9 +98,9 @@ export const createWindowMenu = () => {
 
     (items.edit.deleteCue as MenuItem | null)?.setEnabled(enabled);
     (items.edit.selectAllCues as MenuItem | null)?.setEnabled(enabled);
-    for (const item in items['cue']) {
-      (items['cue'][item] as MenuItem | null)?.setEnabled(enabled);
-    }
+    Object.values(items.cue).forEach((value) => {
+      (value as MenuItem | null)?.setEnabled(enabled);
+    });
     (items.tools.renumber as MenuItem | null)?.setEnabled(enabled);
   };
 

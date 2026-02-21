@@ -155,8 +155,10 @@
       let end = Math.floor((i + 1) * samplePerPixel);
 
       let max = source[start];
+      if (max == null) continue;
       for (let j = start; j < end; j++) {
-        if (source[j] > max) max = source[j];
+        const value = source[j];
+        if (value != null && value > max) max = value;
       }
       if (max > 0) {
         result += `M${i},${(1 - max) * amp}v${2 * amp * max}`;

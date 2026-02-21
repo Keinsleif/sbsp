@@ -3,21 +3,17 @@ mod settings;
 #[cfg(desktop)]
 pub mod update;
 
-use std::time::{Duration, SystemTime};
+use std::time::{SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
     api::client::{FileListHandle, create_remote_backend, start_discovery},
-    controller::state::ShowState,
     event::UiEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
-use tokio::{
-    sync::{Mutex, RwLock, broadcast, mpsc, watch},
-    time::interval,
-};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 use crate::settings::manager::GlobalSettingsManager;
 
@@ -28,21 +24,13 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 
 
-async fn forward_backend_state_and_event(
+async fn forward_backend_event(
     app_handle: AppHandle,
-    state_rx: watch::Receiver<ShowState>,
     mut event_rx: broadcast::Receiver<UiEvent>,
     mut asset_list_handle: FileListHandle,
 ) {
-    let mut poll_timer = interval(Duration::from_millis(32));
     loop {
         tokio::select! {
-            _ = poll_timer.tick() => {
-                if let Ok(changed) = state_rx.has_changed() && changed {
-                    let state = state_rx.borrow().clone();
-                    app_handle.emit("backend-state-update", state).ok();
-                }
-            },
             Ok(event) = event_rx.recv() => {
                 app_handle.emit("backend-event", event).ok();
             },
@@ -102,7 +90,7 @@ impl AppState {
         address: String,
         password: Option<String>,
     ) -> anyhow::Result<()> {
-        let (remote_handle, state_rx, event_tx, asset_list_handle, shutdown_tx) =
+        let (remote_handle, event_tx, asset_list_handle, shutdown_tx) =
             create_remote_backend(address.clone(), password).await?;
         let mut connection_data_lock = self.connection_data.write().await;
         *connection_data_lock = Some(ConnectionData {
@@ -115,9 +103,8 @@ impl AppState {
 
         app_handle.emit("connection_status_changed", true).ok();
 
-        tokio::spawn(forward_backend_state_and_event(
+        tokio::spawn(forward_backend_event(
             app_handle.clone(),
-            state_rx,
             event_tx.subscribe(),
             asset_list_handle,
         ));
@@ -242,6 +229,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            command::request_state_sync,
+            command::get_full_state,
             command::get_third_party_notices,
             command::process_asset,
             command::listen_level_meter,

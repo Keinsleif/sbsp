@@ -13,10 +13,10 @@
           <v-btn
             density="comfortable"
             :icon="mdiStop"
-            :active="isCueStatus('Stopping')"
+            :active="isCueStatus('stopping')"
             active-color="red"
             :disabled="showState.playbackCursor == null"
-            :class="[isCueStatus('Stopping') ? $style['blink'] : '']"
+            :class="[isCueStatus('stopping') ? $style['blink'] : '']"
             @click="
               if (showState.playbackCursor != null) {
                 api.sendStop(showState.playbackCursor);
@@ -25,13 +25,13 @@
           ></v-btn>
           <v-btn
             :icon="mdiPlay"
-            :active="isCueStatus('Playing') || isCueStatus('PreWaiting')"
+            :active="isCueStatus('playing') || isCueStatus('preWaiting')"
             :disabled="showState.playbackCursor == null"
             active-color="green"
-            :class="[isCueStatus('PreWaiting') ? $style['blink'] : '']"
+            :class="[isCueStatus('preWaiting') ? $style['blink'] : '']"
             @click="
               if (showState.playbackCursor != null) {
-                if (isCueStatus('Paused') || isCueStatus('PreWaitPaused')) {
+                if (isCueStatus('paused') || isCueStatus('preWaitPaused')) {
                   api.sendResume(showState.playbackCursor);
                 } else {
                   api.sendGo();
@@ -41,10 +41,10 @@
           ></v-btn>
           <v-btn
             :icon="mdiPause"
-            :active="isCueStatus('Paused') || isCueStatus('Loaded')"
+            :active="isCueStatus('paused') || isCueStatus('loaded')"
             :disabled="showState.playbackCursor == null"
             active-color="orange"
-            :class="[isCueStatus('Loaded') ? $style['blink'] : '']"
+            :class="[isCueStatus('loaded') ? $style['blink'] : '']"
             @click="handleReadyPauseButton"
           ></v-btn>
         </v-btn-group>
@@ -136,13 +136,13 @@
   const handleReadyPauseButton = () => {
     if (showState.playbackCursor != null) {
       switch (showState.activeCues[showState.playbackCursor]?.status) {
-        case 'PreWaiting':
-        case 'Playing': {
+        case 'preWaiting':
+        case 'playing': {
           api.sendPause(showState.playbackCursor);
           break;
         }
-        case 'PreWaitPaused':
-        case 'Paused': {
+        case 'preWaitPaused':
+        case 'paused': {
           api.sendResume(showState.playbackCursor);
           break;
         }

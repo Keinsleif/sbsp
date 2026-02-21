@@ -69,7 +69,6 @@
   import type { Cue } from './types/Cue';
   import { debounce } from './utils';
   import { useI18n } from 'vue-i18n';
-  import type { ShowState } from './types/ShowState';
   import { useAssetResult } from './stores/assetResult';
   import { useUiSettings } from './stores/uiSettings';
   import { getLockCursorToSelection } from './utils';
@@ -79,6 +78,7 @@
   import { message } from '@tauri-apps/plugin-dialog';
   import { useApi, side } from './api';
   import { useDisplay } from 'vuetify/lib/composables/display.mjs';
+  import { useIntervalFn } from '@vueuse/core';
 
   const showModel = useShowModel();
   const showState = useShowState();
@@ -105,17 +105,18 @@
   onMounted(() => {
     api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
-    let latestState: ShowState | null = null;
-    api
-      .onStateUpdate((state) => {
-        latestState = state;
-      })
-      .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
+    useIntervalFn(
+      () => {
+        api.requestStateSync();
+      },
+      side == 'remote' ? 5000 : 10000,
+      {
+        immediate: true,
+      },
+    );
+
     const updateLoop = () => {
-      if (latestState != null) {
-        showState.update(latestState);
-        latestState = null;
-      }
+      showState.handleRAF();
       rafNumber = requestAnimationFrame(updateLoop);
     };
     rafNumber = requestAnimationFrame(updateLoop);
@@ -123,7 +124,15 @@
     api
       .onUiEvent((event) => {
         switch (event.type) {
+          case 'cueStatus':
+            if (event.param.type == 'error') {
+              console.error(event.param.error);
+              uiState.error(event.param.error);
+            }
+            showState.handleCueStateEvent(event.param);
+            break;
           case 'playbackCursorMoved': {
+            showState.updatePlaybackCursor(event.param.cueId);
             if (getLockCursorToSelection()) {
               const cueId = event.param.cueId;
               if (cueId != null) {
@@ -143,6 +152,9 @@
             }
             break;
           }
+          case 'syncState':
+            showState.handleSyncEvent(event.param);
+            break;
           case 'showModelLoaded':
             showModel.updateAll(event.param.model);
             uiState.success(t('notification.modelLoaded'));
@@ -181,10 +193,6 @@
             }
             break;
           }
-          case 'cueError':
-            console.error(event.param.error);
-            uiState.error(event.param.error);
-            break;
           case 'operationFailed':
             console.error(event.param.error);
             uiState.error(event.param.error.message);
@@ -220,9 +228,10 @@
         .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
     }
     api
-      .getShowModel()
-      .then((model) => {
-        showModel.updateAll(model);
+      .getFullState()
+      .then((fullState) => {
+        showModel.updateAll(fullState.showModel);
+        showState.update(fullState.showState);
       })
       .catch((e) => console.error(e.toString()));
 
@@ -376,10 +385,10 @@
     pauseAndResumeHotkey,
     () => {
       if (uiState.selected != null && uiState.selected in showState.activeCues) {
-        if ((['PreWaiting', 'Playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
+        if ((['preWaiting', 'playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
           api.sendPause(uiState.selected);
         } else if (
-          (['PreWaitPaused', 'Paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
+          (['preWaitPaused', 'paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
         ) {
           api.sendResume(uiState.selected);
         }
@@ -437,7 +446,7 @@
     () => {
       if (uiState.selected != null && uiState.selected in showState.activeCues) {
         if (
-          !(['Loaded', 'Completed', 'Stopped', 'Error'] as PlaybackStatus[]).includes(
+          !(['loaded', 'completed', 'stopped', 'error'] as PlaybackStatus[]).includes(
             showState.activeCues[uiState.selected]!.status,
           )
         ) {
@@ -455,7 +464,7 @@
     () => {
       if (uiState.selected != null && uiState.selected in showState.activeCues) {
         if (
-          !(['Loaded', 'Completed', 'Stopped', 'Error'] as PlaybackStatus[]).includes(
+          !(['loaded', 'completed', 'stopped', 'error'] as PlaybackStatus[]).includes(
             showState.activeCues[uiState.selected]!.status,
           )
         ) {

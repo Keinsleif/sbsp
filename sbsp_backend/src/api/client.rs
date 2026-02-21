@@ -5,25 +5,18 @@ use std::sync::{Arc, atomic::AtomicBool};
 
 use futures_util::{SinkExt, TryStreamExt};
 use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
-use tokio::sync::{RwLock, broadcast, mpsc, watch};
+use tokio::sync::{RwLock, broadcast, mpsc, oneshot, watch};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use super::{WsCommand, WsFeedback};
 use crate::{
-    BackendHandle,
-    api::auth::{generate_authentication_string, generate_secret},
-    asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
-    controller::{ControllerCommand, CueControllerHandle, state::ShowState},
-    event::UiEvent,
-    manager::{ModelCommand, ProjectStatus, ShowModelHandle},
-    model::ShowModel,
+    BackendHandle, FullShowState, api::auth::{generate_authentication_string, generate_secret}, asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ProjectStatus, ShowModelHandle}, model::ShowModel
 };
 pub use file_list_handler::FileListHandle;
 pub use service_entry::ServiceEntry;
 
 type ConnectionHandles = (
     BackendHandle,
-    watch::Receiver<ShowState>,
     broadcast::Sender<UiEvent>,
     FileListHandle,
     mpsc::Sender<()>,
@@ -35,7 +28,6 @@ pub async fn create_remote_backend(
 ) -> anyhow::Result<ConnectionHandles> {
     let model = Arc::new(RwLock::new(ShowModel::default()));
     let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
-    let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
     let (event_tx, _) = broadcast::channel::<UiEvent>(32);
     let (model_tx, mut model_rx) = mpsc::channel::<ModelCommand>(32);
     let (controller_tx, mut controller_rx) = mpsc::channel::<ControllerCommand>(32);
@@ -44,6 +36,12 @@ pub async fn create_remote_backend(
     let (asset_list_tx, asset_list_rx) = watch::channel(Vec::new());
     let (asset_list_command_tx, mut asset_list_command_rx) = mpsc::channel(8);
     let asset_list_handle = FileListHandle::new(asset_list_rx, asset_list_command_tx);
+
+    let (request_state_sync_tx, mut request_state_sync_rx) = mpsc::channel(8);
+    let (request_full_state_tx, mut request_full_state_rx) = mpsc::channel(8);
+
+    let mut full_state_responder: Option<oneshot::Sender<FullShowState>> = None;
+
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
 
     let model_clone = model.clone();
@@ -106,74 +104,84 @@ pub async fn create_remote_backend(
         loop {
             tokio::select! {
                 Ok(Some(message)) = websocket.try_next() => {
-                    if let Message::Text(text) = message {
-                        if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
-                            match ws_message {
-                                WsFeedback::Event(ui_event) => {
-                                    if let UiEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
+                    match message {
+                        Message::Text(text) => {
+                            if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
+                                match ws_message {
+                                    WsFeedback::Event(ui_event) => {
+                                        if let UiEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
+                                            {
+                                                let mut model_lock = model_clone.write().await;
+                                                *model_lock = model.clone();
+                                            }
+                                            {
+                                                let mut project_status = project_status_clone.write().await;
+                                                *project_status = ProjectStatus::Saved{
+                                                    project_type: project_type.clone(),
+                                                    path: path.clone(),
+                                                };
+                                            }
+                                        } else if let UiEvent::ShowModelSaved {project_type, path} = &*ui_event {
+                                            {
+                                                let mut project_status = project_status_clone.write().await;
+                                                *project_status = ProjectStatus::Saved{
+                                                    project_type: project_type.clone(),
+                                                    path: path.clone(),
+                                                };
+                                            }
+                                        } else if let UiEvent::ShowModelReset { model } = &*ui_event {
+                                            {
+                                                let mut model_lock = model_clone.write().await;
+                                                *model_lock = model.clone();
+                                            }
+                                            {
+                                                let mut project_status = project_status_clone.write().await;
+                                                *project_status = ProjectStatus::Unsaved;
+                                            }
+                                        }
+                                        if event_tx_clone.send(*ui_event).is_err() {
+                                            log::error!("Failed to send UiEvent to channel.");
+                                            break;
+                                        }
+                                    },
+                                    WsFeedback::AssetList(file_list) => {
+                                        if asset_list_tx.send(file_list).is_err() {
+                                            log::error!("Failed to send asset list to channel.");
+                                        }
+                                    }
+                                    WsFeedback::FullShowState(full_state) => {
+                                        if let Some(responder) = full_state_responder.take()
+                                        && responder.send(full_state.clone()).is_err() {
+                                            log::error!("Error while responding full state request.");
+                                        }
+
                                         {
-                                            let mut model_lock = model_clone.write().await;
-                                            *model_lock = model.clone();
+                                            let mut show_model = model_clone.write().await;
+                                            *show_model = full_state.show_model;
                                         }
                                         {
                                             let mut project_status = project_status_clone.write().await;
-                                            *project_status = ProjectStatus::Saved{
-                                                project_type: project_type.clone(),
-                                                path: path.clone(),
-                                            };
-                                        }
-                                    } else if let UiEvent::ShowModelSaved {project_type, path} = &*ui_event {
-                                        {
-                                            let mut project_status = project_status_clone.write().await;
-                                            *project_status = ProjectStatus::Saved{
-                                                project_type: project_type.clone(),
-                                                path: path.clone(),
-                                            };
-                                        }
-                                    } else if let UiEvent::ShowModelReset { model } = &*ui_event {
-                                        {
-                                            let mut model_lock = model_clone.write().await;
-                                            *model_lock = model.clone();
-                                        }
-                                        {
-                                            let mut project_status = project_status_clone.write().await;
-                                            *project_status = ProjectStatus::Unsaved;
+                                            *project_status = full_state.project_status;
                                         }
                                     }
-                                    if event_tx_clone.send(*ui_event).is_err() {
-                                        log::error!("Failed to send UiEvent to channel.");
-                                        break;
-                                    }
-                                },
-                                WsFeedback::State(show_state) => {
-                                    if state_tx.send(show_state).is_err() {
-                                        log::error!("Failed to send ShowState to channel.");
-                                        break;
-                                    }
-                                },
-                                WsFeedback::AssetList(file_list) => {
-                                    if asset_list_tx.send(file_list).is_err() {
-                                        log::error!("Failed to send asset list to channel.");
-                                    }
+                                    WsFeedback::Hello { .. } => {},
+                                    WsFeedback::Authenticated => {},
                                 }
-                                WsFeedback::FullShowState(full_state) => {
-                                    {
-                                        let mut show_model = model_clone.write().await;
-                                        *show_model = full_state.show_model;
-                                    }
-                                    {
-                                        let mut project_status = project_status_clone.write().await;
-                                        *project_status = full_state.project_status;
-                                    }
-                                }
-                                _ => {},
+                            } else {
+                                log::error!("Invalid command received.")
                             }
-                        } else {
-                            log::error!("Invalid command received.")
                         }
-                    } else if let Message::Close{ .. } = message {
-                        log::info!("WebSocket server sent close message.");
-                        break;
+                        Message::Close{ .. } => {
+                            log::info!("WebSocket server sent close message.");
+                            break;
+                        }
+                        Message::Ping(bytes) => {
+                            if websocket.send(Message::Pong(bytes)).await.is_err() {
+                                log::info!("WebSocket client disconnected (send error).");
+                                break;
+                            }
+                        }
+                        _ => {}
                     }
                 }
                 Some(model_command) = model_rx.recv() => {
@@ -206,6 +214,19 @@ pub async fn create_remote_backend(
                         break;
                     }
                 }
+                Some(_) = request_state_sync_rx.recv() => {
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::RequestSyncState) && websocket.send(Message::Text(payload.into())).await.is_err() {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
+                    }
+                }
+                Some(responder) = request_full_state_rx.recv() => {
+                    full_state_responder = Some(responder);
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::RequestFullShowState) && websocket.send(Message::Text(payload.into())).await.is_err() {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
+                    }
+                }
                 _ = shutdown_rx.recv() => {
                     if let Err(e) = websocket.send(Message::Close(None)).await {
                         log::warn!("Failed to send Close message to client: {}", e);
@@ -231,8 +252,9 @@ pub async fn create_remote_backend(
                 command_tx: controller_tx,
             },
             level_meter: None,
+            request_state_sync_tx,
+            request_full_state_tx,
         },
-        state_rx,
         event_tx,
         asset_list_handle,
         shutdown_tx,

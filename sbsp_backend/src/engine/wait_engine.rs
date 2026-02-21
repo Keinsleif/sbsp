@@ -103,7 +103,7 @@ impl WaitEngine {
                                     remaining_duration: Duration::from_secs_f64(duration),
                                 });
                             }
-                            let wait_event = WaitEvent::Started { instance_id };
+                            let wait_event = WaitEvent::Started { instance_id, duration };
                             let event = Self::wrap_wait_event(wait_type, wait_event);
                             if let Err(e) = self.event_tx.send(event).await {
                                 Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
@@ -153,14 +153,10 @@ impl WaitEngine {
                         WaitCommand::SeekTo {instance_id, position} => {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
                                 waiting_instance.remaining_duration = waiting_instance.total_duration - Duration::from_secs_f64(position);
-                                if waiting_instance.status.eq(&WaitingStatus::Paused) {
-                                    let wait_event = WaitEvent::Paused { instance_id, position, duration: waiting_instance.total_duration.as_secs_f64() };
-                                    let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
-                                    if let Err(e) = self.event_tx.send(event).await {
-                                        Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
-                                    } else {
-                                        Ok(())
-                                    }
+                                let wait_event = WaitEvent::Seeked { instance_id, position };
+                                let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                if let Err(e) = self.event_tx.send(event).await {
+                                    Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                 } else {
                                     Ok(())
                                 }
@@ -172,14 +168,10 @@ impl WaitEngine {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
                                 waiting_instance.remaining_duration -= Duration::from_secs_f64(amount);
                                 let position = (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64();
-                                if waiting_instance.status.eq(&WaitingStatus::Paused) {
-                                    let wait_event = WaitEvent::Paused { instance_id, position, duration: waiting_instance.total_duration.as_secs_f64() };
-                                    let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
-                                    if let Err(e) = self.event_tx.send(event).await {
-                                        Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
-                                    } else {
-                                        Ok(())
-                                    }
+                                let wait_event = WaitEvent::Seeked { instance_id, position };
+                                let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                if let Err(e) = self.event_tx.send(event).await {
+                                    Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                 } else {
                                     Ok(())
                                 }

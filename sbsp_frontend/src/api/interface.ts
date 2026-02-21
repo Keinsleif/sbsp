@@ -1,6 +1,4 @@
 import type { Cue } from '../types/Cue';
-import type { ShowModel } from '../types/ShowModel';
-import type { ShowState } from '../types/ShowState';
 import type { UiEvent } from '../types/UiEvent';
 import { ShowSettings } from '../types/ShowSettings';
 import { FileList } from '../types/FileList';
@@ -8,6 +6,7 @@ import { ServiceEntry } from '../types/ServiceEntry';
 import { LicenseInformation } from '../types/LicenseInformation';
 import { GlobalSettings } from '../types/GlobalSettings';
 import { ApiServerOptions } from '../types/ApiServerOptions';
+import { FullShowState } from '../types/FullShowState';
 
 type UnlistenFn = () => void;
 
@@ -25,6 +24,10 @@ export interface IBackendAdapter {
   pickAudioAssets(options: IPickAudioAssetsOptions): Promise<string[]>;
 
   setTitle(title: string): void;
+
+  // state sync
+  requestStateSync(): void;
+  getFullState(): Promise<FullShowState>;
 
   // asset processor
   processAsset(path: string): Promise<void>;
@@ -45,8 +48,8 @@ export interface IBackendAdapter {
   sendSetVolume(cueId: string, volume: number): Promise<void>;
 
   // Model getter
-  getShowModel(): Promise<ShowModel>;
   isModified(): Promise<boolean>;
+
   // Model commands
   updateCue(cue: Cue): Promise<void>;
   addCue(cue: Cue, targetId: string | null, toBefore: boolean): void;
@@ -64,7 +67,6 @@ export interface IBackendAdapter {
   importSettingsFromFile(): Promise<GlobalSettings>;
   exportSettingsToFile(): void;
 
-  onStateUpdate(callback: (state: ShowState) => void): Promise<UnlistenFn>;
   onUiEvent(callback: (event: UiEvent) => void): Promise<UnlistenFn>;
 }
 
