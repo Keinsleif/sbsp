@@ -57,20 +57,23 @@ export const useShowState = defineStore('showstate', () => {
     const lastSyncedAt = performance.now();
     console.debug(`${data.type.toUpperCase()}: ${data.cueId}`);
     switch (data.type) {
-      case 'loaded':
-        syncedData.value[data.cueId] = {
-          position: data.position,
-          status: 'loaded',
-          lastSyncedAt,
-        };
-        activeCues.value[data.cueId] = {
-          cueId: data.cueId,
-          position: data.position,
-          duration: data.duration,
-          status: 'loaded',
-          params: { type: 'none' },
-        };
+      case 'loaded': {
+        if (syncedData.value[data.cueId] == null) {
+          syncedData.value[data.cueId] = {
+            position: data.position,
+            status: 'loaded',
+            lastSyncedAt,
+          };
+          activeCues.value[data.cueId] = {
+            cueId: data.cueId,
+            position: data.position,
+            duration: data.duration,
+            status: 'loaded',
+            params: { type: 'none' },
+          };
+        }
         break;
+      }
       case 'preWaitStarted':
         syncedData.value[data.cueId] = {
           position: 0.0,
