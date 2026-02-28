@@ -52,7 +52,7 @@
         v-show="position != 0"
         :style="{
           transform: `translateX(${currentPlayPos}px)`,
-          transition: 'transform 150ms linear',
+          transition: 'transform 10ms linear',
         }"
         x="0"
         y="0"
