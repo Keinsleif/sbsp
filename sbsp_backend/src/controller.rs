@@ -602,7 +602,7 @@ mod tests {
             self,
             cue::{
                 Cue,
-                audio::{AudioCueParam, Easing, FadeParam, SoundType},
+                audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
         }
     };
@@ -657,7 +657,7 @@ mod tests {
                         duration: 5.0,
                         easing: Easing::InPow(2.0),
                     }),
-                    volume: 0.0,
+                    volume: Decibels::IDENTITY,
                     pan: 0.0,
                     repeat: false,
                     sound_type: SoundType::Streaming,

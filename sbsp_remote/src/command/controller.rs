@@ -1,5 +1,5 @@
 use crate::AppState;
-use sbsp_backend::action::{AudioAction, CueAction};
+use sbsp_backend::{action::{AudioAction, CueAction}, model::cue::audio::Decibels};
 use uuid::Uuid;
 
 #[tauri::command]
@@ -173,7 +173,7 @@ pub async fn toggle_repeat(state: tauri::State<'_, AppState>, cue_id: Uuid) -> R
 pub async fn set_volume(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
-    volume: f32,
+    volume: Decibels,
 ) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle

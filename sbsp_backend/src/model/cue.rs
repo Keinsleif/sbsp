@@ -6,7 +6,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::model::cue::{
-    audio::{AudioCueParam, FadeParam},
+    audio::{AudioCueParam, Decibels, FadeParam},
     group::GroupMode,
 };
 
@@ -53,7 +53,7 @@ pub enum CueParam {
     },
     Fade {
         target: Uuid,
-        volume: f32,
+        volume: Decibels,
         fade_param: FadeParam,
     },
     Start {

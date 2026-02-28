@@ -1,7 +1,46 @@
-use std::path::PathBuf;
+use std::{ops::Add, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[ts(as = "f32")]
+pub struct Decibels(f32);
+
+impl Decibels {
+    pub const MUTE: Self = Self(-60.0);
+    pub const IDENTITY: Self = Self(0.0);
+
+    pub fn as_amplitude(&self) -> f32 {
+        10.0f32.powf(self.0 / 20.0)
+    }
+}
+
+impl Default for Decibels {
+    fn default() -> Self {
+        Self(0.0)
+    }
+}
+
+impl From<f32> for Decibels {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Decibels> for f32 {
+    fn from(value: Decibels) -> Self {
+        value.0
+    }
+}
+
+impl Add for Decibels {
+    type Output = Decibels;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
@@ -11,7 +50,7 @@ pub struct AudioCueParam {
     pub fade_in_param: Option<FadeParam>,
     pub end_time: Option<f64>,
     pub fade_out_param: Option<FadeParam>,
-    pub volume: f32,
+    pub volume: Decibels,
     pub pan: f32,
     pub repeat: bool,
     pub sound_type: SoundType,

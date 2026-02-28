@@ -978,7 +978,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::audio::{Easing, FadeParam, SoundType},
+            cue::audio::{Decibels, Easing, FadeParam, SoundType},
         },
     };
 
@@ -1021,7 +1021,7 @@ mod tests {
                     duration: 5.0,
                     easing: Easing::InPow(2.0),
                 }),
-                volume: 0.0,
+                volume: Decibels::IDENTITY,
                 pan: 0.0,
                 repeat: false,
                 sound_type: SoundType::Streaming,
@@ -1064,7 +1064,7 @@ mod tests {
 
         if let AudioCommand::Play { data, .. } = command {
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
-            assert_eq!(data.volume, 0.0);
+            assert_eq!(data.volume, Decibels::IDENTITY);
             assert_eq!(data.pan, 0.0);
             assert_eq!(data.start_time, Some(5.0));
             assert_eq!(
