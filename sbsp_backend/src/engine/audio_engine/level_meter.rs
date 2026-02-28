@@ -48,24 +48,6 @@ where
         let channels = input.channels().get();
         Self { input, shared, current_channel: channels }
     }
-
-    /// Returns a reference to the inner source.
-    #[inline]
-    pub fn inner(&self) -> &I {
-        &self.input
-    }
-
-    /// Returns a mutable reference to the inner source.
-    #[inline]
-    pub fn inner_mut(&mut self) -> &mut I {
-        &mut self.input
-    }
-
-    /// Returns the inner source.
-    #[inline]
-    pub fn into_inner(self) -> I {
-        self.input
-    }
 }
 
 impl<I> Iterator for LevelMeter<I> 
@@ -82,9 +64,9 @@ where
             self.current_channel = 0;
             if let Some(s) = sample {
                 if self.current_channel == 0 {
-                    self.shared.set_left(s as f32);
+                    self.shared.set_left(s);
                 } else if self.current_channel == 1 {
-                    self.shared.set_right(s as f32);
+                    self.shared.set_right(s);
                 }
             }
         }
