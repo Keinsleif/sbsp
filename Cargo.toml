@@ -27,7 +27,7 @@ strip = true # Ensures debug symbols are removed.
 [profile.dev.package.sbsp_backend]
 opt-level = 3
 
-[profile.dev.package.kira]
+[profile.dev.package.rodio]
 opt-level = 3
 
 [profile.dev.package.cpal]
