@@ -140,7 +140,7 @@ impl Default for TemplateSettings {
                     volume: 0.0,
                     fade_param: FadeParam {
                         duration: 3.0,
-                        easing: Easing::InOutPowi(2),
+                        easing: Easing::InOutPow(2.0),
                     },
                 },
             },

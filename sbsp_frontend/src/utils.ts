@@ -185,14 +185,11 @@ export const easingToCurve = (easing: Easing): Curve => {
   switch (easing.type) {
     case 'linear':
       return { type: 'linear', power: null };
-    case 'inPowi':
-    case 'inPowf':
+    case 'inPow':
       return { type: 'inPow', power: easing.intensity };
-    case 'outPowi':
-    case 'outPowf':
+    case 'outPow':
       return { type: 'outPow', power: easing.intensity };
-    case 'inOutPowi':
-    case 'inOutPowf':
+    case 'inOutPow':
       return { type: 'inOutPow', power: easing.intensity };
   }
 };
@@ -208,23 +205,11 @@ export const curveToEasing = (curve: Curve): Easing => {
     case 'linear':
       return { type: 'linear' };
     case 'inPow':
-      if (Number.isInteger(curve.power)) {
-        return { type: 'inPowi', intensity: curve.power };
-      } else {
-        return { type: 'inPowf', intensity: curve.power };
-      }
+      return { type: 'inPow', intensity: curve.power };
     case 'outPow':
-      if (Number.isInteger(curve.power)) {
-        return { type: 'outPowi', intensity: curve.power };
-      } else {
-        return { type: 'outPowf', intensity: curve.power };
-      }
+      return { type: 'outPow', intensity: curve.power };
     case 'inOutPow':
-      if (Number.isInteger(curve.power)) {
-        return { type: 'inOutPowi', intensity: curve.power };
-      } else {
-        return { type: 'inOutPowf', intensity: curve.power };
-      }
+      return { type: 'inOutPow', intensity: curve.power };
   }
 };
 

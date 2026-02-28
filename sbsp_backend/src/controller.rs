@@ -655,7 +655,7 @@ mod tests {
                     end_time: Some(50.0),
                     fade_out_param: Some(FadeParam {
                         duration: 5.0,
-                        easing: Easing::InPowi(2),
+                        easing: Easing::InPow(2.0),
                     }),
                     volume: 0.0,
                     pan: 0.0,

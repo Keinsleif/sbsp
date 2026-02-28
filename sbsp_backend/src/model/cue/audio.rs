@@ -28,7 +28,7 @@ impl Default for FadeParam {
     fn default() -> Self {
         Self {
             duration: 3.0,
-            easing: Easing::InOutPowi(2),
+            easing: Easing::InOutPow(2.0),
         }
     }
 }
@@ -42,40 +42,26 @@ impl Default for FadeParam {
 )]
 pub enum Easing {
     Linear,
-    InPowi(i32),
-    OutPowi(i32),
-    InOutPowi(i32),
-    InPowf(f64),
-    OutPowf(f64),
-    InOutPowf(f64),
+    InPow(f64),
+    OutPow(f64),
+    InOutPow(f64),
 }
 
-#[cfg(feature = "backend")]
-impl From<kira::Easing> for Easing {
-    fn from(value: kira::Easing) -> Self {
-        match value {
-            kira::Easing::Linear => Self::Linear,
-            kira::Easing::InPowi(i) => Self::InPowi(i),
-            kira::Easing::OutPowi(i) => Self::OutPowi(i),
-            kira::Easing::InOutPowi(i) => Self::InOutPowi(i),
-            kira::Easing::InPowf(f) => Self::InPowf(f),
-            kira::Easing::OutPowf(f) => Self::OutPowf(f),
-            kira::Easing::InOutPowf(f) => Self::InOutPowf(f),
-        }
-    }
-}
-
-#[cfg(feature = "backend")]
-impl From<Easing> for kira::Easing {
-    fn from(val: Easing) -> Self {
-        match val {
-            Easing::Linear => kira::Easing::Linear,
-            Easing::InPowi(i) => kira::Easing::InPowi(i),
-            Easing::OutPowi(i) => kira::Easing::OutPowi(i),
-            Easing::InOutPowi(i) => kira::Easing::InOutPowi(i),
-            Easing::InPowf(f) => kira::Easing::InPowf(f),
-            Easing::OutPowf(f) => kira::Easing::OutPowf(f),
-            Easing::InOutPowf(f) => kira::Easing::InOutPowf(f),
+impl Easing {
+    pub fn get_factor(&self, mut x: f64) -> f64 {
+        match self {
+            Easing::Linear => x,
+            Easing::InPow(power) => x.powf(*power),
+            Easing::OutPow(power) => 1.0 - Self::InPow(*power).get_factor(1.0 - x),
+            Easing::InOutPow(power) => {
+                x *= 2.0;
+                if x < 1.0 {
+                    0.5 * Self::InPow(*power).get_factor(x)
+                } else {
+                    x = 2.0 - x;
+                    0.5 * (1.0 - Self::InPow(*power).get_factor(x)) + 0.5
+                }
+            }
         }
     }
 }
