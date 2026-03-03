@@ -184,6 +184,10 @@
             showModel.$patch({ settings: settings });
             break;
           }
+          case 'assetMetadata': {
+            assetResult.addMetadata(event.param.path, event.param.data);
+            break;
+          }
           case 'assetResult': {
             if ('Ok' in event.param.data) {
               assetResult.add(event.param.path, event.param.data.Ok);

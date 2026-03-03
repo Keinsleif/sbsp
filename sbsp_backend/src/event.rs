@@ -6,7 +6,7 @@ use uuid::Uuid;
 #[cfg(not(feature = "type_export"))]
 use crate::executor::ExecutorEvent;
 use crate::{
-    asset_processor::AssetData, controller::state::StateParam, model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings}
+    asset_processor::{AssetData, AssetMetadata}, controller::state::StateParam, model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings}
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,6 +54,10 @@ pub enum UiEvent {
     },
 
     // AssetProcessor Events
+    AssetMetadata {
+        path: PathBuf,
+        data: AssetMetadata,
+    },
     AssetResult {
         path: PathBuf,
         data: Result<AssetData, String>,

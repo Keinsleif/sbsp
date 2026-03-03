@@ -172,7 +172,7 @@
                       ? showState.activeCues[item.cue.id]!.position
                       : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
                   )
-                : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
+                : secondsToFormat(calculateDuration(item.cue.params, assetResult.getMetadata(item.cue.id)?.duration))
             }}
           </div>
         </td>
@@ -231,7 +231,9 @@
                     )
                   : item.sequence.type == 'autoContinue'
                     ? secondsToFormat(item.sequence.postWait)
-                    : secondsToFormat(calculateDuration(item.cue.params, assetResult.get(item.cue.id)?.duration))
+                    : secondsToFormat(
+                        calculateDuration(item.cue.params, assetResult.getMetadata(item.cue.id)?.duration),
+                      )
             }}
           </div>
         </td>

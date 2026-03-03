@@ -38,7 +38,7 @@ pub mod api;
 #[cfg(feature = "type_export")]
 pub mod asset_processor {
     mod data;
-    pub use data::AssetData;
+    pub use data::{AssetData, AssetMetadata};
     mod command;
     pub use command::AssetProcessorCommand;
 }
