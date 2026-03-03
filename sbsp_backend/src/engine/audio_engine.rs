@@ -3,12 +3,14 @@ mod event;
 pub mod level_meter;
 mod mono;
 mod audio_soucre;
+mod lowcost_skip;
+mod static_source;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
-use std::{collections::HashMap, fs::File, sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
+use std::{collections::HashMap, fs::File, num::NonZero, sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
 use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 use rodio::{Decoder, Source, mixer::Mixer, source::{SeekError, Zero}, stream::{DeviceSinkBuilder, MixerDeviceSink}};
@@ -17,12 +19,14 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    engine::audio_engine::{audio_soucre::{AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings}, level_meter::{LevelMeter, SharedLevel}},
+    engine::audio_engine::{audio_soucre::{AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping}, level_meter::{LevelMeter, SharedLevel}, static_source::StaticSource},
     model::{
-        cue::audio::{Decibels, FadeParam},
+        cue::audio::{Decibels, FadeParam, SoundType},
         settings::ShowAudioSettings,
     },
 };
+
+const NANOS_PER_SEC: u64 = 1_000_000_000;
 
 struct PlaybackHandle {
     handle: AudioSourceHandle,
@@ -128,7 +132,8 @@ impl AudioEngine {
         settings: ShowAudioSettings,
     ) -> Result<Self> {
         let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
-        let output = DeviceSinkBuilder::open_default_sink()?;
+        let builder = DeviceSinkBuilder::from_default_device()?;
+        let output = builder.with_channels(NonZero::new(settings.output_channels).ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?).open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = output.config();
             (output_config.channel_count(), output_config.sample_rate())
@@ -160,7 +165,8 @@ impl AudioEngine {
     ) -> Result<(Self, SharedLevel)> {
         let shared_level = SharedLevel::default();
         let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
-        let output = DeviceSinkBuilder::open_default_sink()?;
+        let builder = DeviceSinkBuilder::from_default_device()?;
+        let output = builder.with_channels(NonZero::new(settings.output_channels).ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?).open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = output.config();
             (output_config.channel_count(), output_config.sample_rate())
@@ -252,7 +258,11 @@ impl AudioEngine {
                                 },
                                 AudioPlaybackState::HardStopping |
                                 AudioPlaybackState::SoftStopping => {
-                                    AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
+                                    if let Some(last_state) = &playing_sound.last_status && last_state.state == playback_state {
+                                        AudioEngineEvent::Progress { instance_id: id, position, duration: playing_sound.handle.duration }
+                                    } else {
+                                        AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
+                                    }
                                 },
                                 AudioPlaybackState::Stopped => {
                                     log::info!("STOP: id={}", id);
@@ -293,30 +303,57 @@ impl AudioEngine {
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Audio Mixer is not available"))?;
         
-        let audio_source;
-        let handle;
+        let mut settings = AudioSourceSettings::from(&data);
+        settings.channel_mapping = ChannelMapping::from_pan(data.pan);
 
-        let settings = AudioSourceSettings::from(&data);
+        let handle;
+        let duration;
 
         let filepath_clone = data.filepath.clone();
-        (audio_source, handle) =
-            tokio::task::spawn_blocking(move || -> Result<(AudioSource<Decoder<File>>, AudioSourceHandle), anyhow::Error> {
-                let file = File::open(filepath_clone)?;
-                let len = file.metadata()?.len();
-                Ok(AudioSource::new(Decoder::builder().with_data(file).with_byte_len(len).with_seekable(true).build()?, settings))
-            })
-            .await?
-            .with_context(|| {
-                format!(
-                    "Failed to load sound data from: {}",
-                    data.filepath.display()
-                )
-            })?;
+        match data.sound_type {
+            SoundType::Static => {
+                let audio_source;
+                (audio_source, handle) =
+                    tokio::task::spawn_blocking(move || -> Result<(AudioSource<StaticSource>, AudioSourceHandle), anyhow::Error> {
+                        let file = File::open(filepath_clone)?;
+                        let len = file.metadata()?.len();
+                        let decoder = Decoder::builder().with_data(file).with_byte_len(len).with_seekable(true).build()?;
+                        Ok(AudioSource::new(StaticSource::new(decoder), settings))
+                    })
+                    .await?
+                    .with_context(|| {
+                        format!(
+                            "Failed to load sound data from: {}",
+                            data.filepath.display()
+                        )
+                    })?;
 
-        let duration = audio_source.total_duration().map_or(0.0, |d| d.as_secs_f64());
-        mixer.add(audio_source);
+                duration = audio_source.total_duration().map_or(0.0, |d| d.as_secs_f64());
+                mixer.add(audio_source);
+            }
+            SoundType::Streaming => {
+                let audio_source;
+                (audio_source, handle) =
+                    tokio::task::spawn_blocking(move || -> Result<(AudioSource<Decoder<File>>, AudioSourceHandle), anyhow::Error> {
+                        let file = File::open(filepath_clone)?;
+                        let len = file.metadata()?.len();
+                        let decoder = Decoder::builder().with_data(file).with_byte_len(len).with_seekable(true).build()?;
+                        Ok(AudioSource::new(decoder, settings))
+                    })
+                    .await?
+                    .with_context(|| {
+                        format!(
+                            "Failed to load sound data from: {}",
+                            data.filepath.display()
+                        )
+                    })?;
 
-        log::info!("LOAD: id={}, file={}", id, data.filepath.display());
+                duration = audio_source.total_duration().map_or(0.0, |d| d.as_secs_f64());
+                mixer.add(audio_source);
+            }
+        }
+
+        log::info!("LOAD: id={}, file={}, duration={}", id, data.filepath.display(), duration);
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
