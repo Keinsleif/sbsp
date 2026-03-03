@@ -1,10 +1,14 @@
-use std::{num::NonZero, ops::{Deref, DerefMut}, sync::{Arc, atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering}}, time::Duration};
+use std::{f32::consts::SQRT_2, num::NonZero, ops::{Deref, DerefMut}, sync::{Arc, atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering}}, time::Duration};
 
-use rodio::{ChannelCount, Sample, SampleRate, Source, source::{SeekError, SkipDuration, TakeDuration}};
+use rodio::{ChannelCount, Sample, SampleRate, Source, source::{SeekError, TakeDuration}};
 use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
 use crate::{engine::audio_engine::AudioCommandData, model::cue::audio::{Decibels, Easing, FadeParam}};
+
+use super::lowcost_skip::SkipDuration;
+
+const MAX_CHANNELS: u16 = 128;
 
 const DEFAULT_FADE_PARAM: FadeParam = FadeParam {
     duration: 0.001,
@@ -207,6 +211,61 @@ impl Volume {
     }
 }
 
+pub struct ChannelMapping {
+    input_channels: usize,
+    output_channels: usize,
+    map: Box<[f32]>,
+}
+
+impl ChannelMapping {
+    pub fn auto_map(in_n: usize, out_n: usize) -> Self {
+        let mut map = vec![0.0; in_n * out_n].into_boxed_slice();
+        match (in_n, out_n) {
+            (1, 2) => {
+                map[0] = 1.0;
+                map[1] = 1.0;
+            },
+            (2, 1) => {
+                map[0] = 0.5;
+                map[1] = 0.5;
+            }
+            (in_n, out_n) if in_n == out_n => {
+                for i in 0..out_n {
+                    map[i * out_n + i] = 1.0;
+                }
+            }
+            (in_n, out_n) => {
+                for i in 0..in_n.min(out_n) {
+                    map[i * out_n + i] = 1.0;
+                }
+            }
+        }
+        Self { input_channels: in_n, output_channels: out_n, map }
+    }
+
+    /// generate channel mapping from pannig (-1.0..1.0 mapped to L..R). other channels are ignored.
+    pub fn from_pan(pan: f32) -> Self {
+        let mut map = vec![0.0; 4].into_boxed_slice();
+        let pan = pan.clamp(-1.0, 1.0);
+        let right_amount = (pan + 1.0) * 0.5;
+        map[0] = (1.0 - right_amount).sqrt() * SQRT_2;
+        map[3] = right_amount.sqrt() * SQRT_2;
+        Self {
+            input_channels: 2,
+            output_channels: 2,
+            map,
+        }
+    }
+
+    pub fn get_factor(&self, in_n: usize, out_n: usize) -> f32 {
+        if in_n < self.input_channels && out_n < self.output_channels {
+            self.map[in_n * self.output_channels + out_n]
+        } else {
+            0.0
+        }
+    }
+}
+
 pub struct AudioSourceSettings {
     pub repeat: bool,
     pub start_time: Option<f64>,
@@ -214,12 +273,12 @@ pub struct AudioSourceSettings {
     pub fadeout_param: Option<FadeParam>,
     pub fadein_param: Option<FadeParam>,
     pub volume: Decibels,
-    pub output_channels: u16,
+    pub channel_mapping: ChannelMapping,
 }
 
 impl From<&AudioCommandData> for AudioSourceSettings {
     fn from(value: &AudioCommandData) -> Self {
-        Self { repeat: value.repeat, start_time: value.start_time, end_time: value.end_time, fadeout_param: value.fade_out_param, fadein_param: value.fade_in_param, volume: value.volume, output_channels: 2 }
+        Self { repeat: value.repeat, start_time: value.start_time, end_time: value.end_time, fadeout_param: value.fade_out_param, fadein_param: value.fade_in_param, volume: value.volume, channel_mapping: ChannelMapping::auto_map(2, 2) }
     }
 }
 
@@ -261,13 +320,16 @@ pub struct AudioSource<I> where I: Source {
     settings: AudioSourceSettings,
     fadeout_param: FadeParam,
     current_channel: u16,
-    samples_counted: usize,
-    offset_duration: f64,
+    input_samples_counted: usize,
+    offset_position: f64,
+    frames_counted: usize,
+    playing_frames_counted: usize,
+    update_interval: usize,
     current_span_channels: ChannelCount,
     current_span_sample_rate: SampleRate,
-    first_channel_sample: Option<Sample>,
     control_volume: Volume,
     volume: Volume,
+    output_buffer: Box<[Sample]>,
 }
 
 impl<I> AudioSource<I> where I: Source + 'static {
@@ -283,12 +345,14 @@ impl<I> AudioSource<I> where I: Source + 'static {
         } else {
             Volume::new(settings.volume.as_amplitude())
         };
+        let output_buffer = vec![0.0; settings.channel_mapping.output_channels].into_boxed_slice();
+        let update_interval = Self::calculate_interval(&sample_rate);
 
         let input = match (settings.start_time, settings.end_time) {
             (None, None) => InnerSource::Original(input),
             (None, Some(end)) => InnerSource::Taken(input.take_duration(Duration::from_secs_f64(end))),
-            (Some(start), None) => InnerSource::Skipped(input.skip_duration(Duration::from_secs_f64(start))),
-            (Some(start), Some(end)) => InnerSource::Ranged(input.take_duration(Duration::from_secs_f64(end)).skip_duration(Duration::from_secs_f64(start))),
+            (Some(start), None) => InnerSource::Skipped(SkipDuration::new(input, Duration::from_secs_f64(start))),
+            (Some(start), Some(end)) => InnerSource::Ranged(SkipDuration::new(input.take_duration(Duration::from_secs_f64(end)), Duration::from_secs_f64(start))),
         };
 
         (Self {
@@ -298,11 +362,14 @@ impl<I> AudioSource<I> where I: Source + 'static {
             settings,
             fadeout_param,
             current_channel: channels.get(),
-            samples_counted: 0,
-            offset_duration: 0.0,
+            output_buffer,
+            input_samples_counted: 0,
             current_span_channels: channels,
             current_span_sample_rate: sample_rate,
-            first_channel_sample: None,
+            offset_position: 0.0,
+            frames_counted: update_interval,
+            playing_frames_counted: 0,
+            update_interval,
             control_volume: Volume::new(1.0),
             volume,
         },
@@ -310,6 +377,10 @@ impl<I> AudioSource<I> where I: Source + 'static {
             shared,
             control: control_pr,
         })
+    }
+
+    fn calculate_interval(sample_rate: &NonZero<u32>) -> usize {
+        sample_rate.get() as usize / 1_000
     }
 }
 
@@ -320,56 +391,63 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
     fn next(&mut self) -> Option<Self::Item> {
         let mut state = AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap();
         
-        if self.current_channel >= self.settings.output_channels {
+        if self.current_channel >= self.settings.channel_mapping.output_channels as u16 {
             self.current_channel = 0;
-            // Command Handling
-            if let Ok(command) = self.control.pop() {
-                match command {
-                    AudioSourceControlCommand::Start => {
-                        if matches!(state, AudioPlaybackState::Loaded) {
-                            state = AudioPlaybackState::Playing;
-                        }
-                    },
-                    AudioSourceControlCommand::Pause => {
-                        if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Resuming) {
-                            state = AudioPlaybackState::Pausing;
-                            self.control_volume.set_volume(0.0, DEFAULT_FADE_PARAM);
-                        }
-                    },
-                    AudioSourceControlCommand::Resume => {
-                        if matches!(state, AudioPlaybackState::Paused) {
-                            state = AudioPlaybackState::Resuming;
-                            self.control_volume.set_volume(1.0, DEFAULT_FADE_PARAM);
-                        }
-                    },
-                    AudioSourceControlCommand::FadeOut => {
-                        if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Pausing | AudioPlaybackState::Paused | AudioPlaybackState::Resuming) {
-                            if state == AudioPlaybackState::Paused {
-                                state = AudioPlaybackState::Stopped;
-                            } else {
-                                state = AudioPlaybackState::SoftStopping;
-                                self.control_volume.set_volume(0.0, self.fadeout_param);
+
+            if self.frames_counted >= self.update_interval {
+                self.frames_counted = 0;
+                self.shared.position.store((self.offset_position + self.playing_frames_counted as f64
+                        / self.current_span_sample_rate.get() as f64).to_bits(), Ordering::Release);
+                // Command Handling
+                if let Ok(command) = self.control.pop() {
+                    match command {
+                        AudioSourceControlCommand::Start => {
+                            if matches!(state, AudioPlaybackState::Loaded) {
+                                state = AudioPlaybackState::Playing;
                             }
-                        }
-                    },
-                    AudioSourceControlCommand::Stop => {
-                        if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Pausing | AudioPlaybackState::Paused | AudioPlaybackState::Resuming | AudioPlaybackState::SoftStopping) {
-                            if state == AudioPlaybackState::Paused {
-                                state = AudioPlaybackState::Stopped;
-                            } else {
-                                state = AudioPlaybackState::HardStopping;
+                        },
+                        AudioSourceControlCommand::Pause => {
+                            if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Resuming) {
+                                state = AudioPlaybackState::Pausing;
                                 self.control_volume.set_volume(0.0, DEFAULT_FADE_PARAM);
                             }
+                        },
+                        AudioSourceControlCommand::Resume => {
+                            if matches!(state, AudioPlaybackState::Paused) {
+                                state = AudioPlaybackState::Resuming;
+                                self.control_volume.set_volume(1.0, DEFAULT_FADE_PARAM);
+                            }
+                        },
+                        AudioSourceControlCommand::FadeOut => {
+                            if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Pausing | AudioPlaybackState::Paused | AudioPlaybackState::Resuming) {
+                                if state == AudioPlaybackState::Paused {
+                                    state = AudioPlaybackState::Stopped;
+                                } else {
+                                    state = AudioPlaybackState::SoftStopping;
+                                    self.control_volume.set_volume(0.0, self.fadeout_param);
+                                }
+                            }
+                        },
+                        AudioSourceControlCommand::Stop => {
+                            if matches!(state, AudioPlaybackState::Playing | AudioPlaybackState::Pausing | AudioPlaybackState::Paused | AudioPlaybackState::Resuming | AudioPlaybackState::SoftStopping) {
+                                if state == AudioPlaybackState::Paused {
+                                    state = AudioPlaybackState::Stopped;
+                                } else {
+                                    state = AudioPlaybackState::HardStopping;
+                                    self.control_volume.set_volume(0.0, DEFAULT_FADE_PARAM);
+                                }
+                            }
+                        },
+                        AudioSourceControlCommand::Seek { position, result } => {
+                            let _ = result.send(self.try_seek(Duration::from_secs_f64(position)));
+                        },
+                        AudioSourceControlCommand::SetVolume { volume, fade_param } => {
+                            self.volume.set_volume(volume.as_amplitude(), fade_param);
                         }
-                    },
-                    AudioSourceControlCommand::Seek { position, result } => {
-                        let _ = result.send(self.try_seek(Duration::from_secs_f64(position)));
-                    },
-                    AudioSourceControlCommand::SetVolume { volume, fade_param } => {
-                        self.volume.set_volume(volume.as_amplitude(), fade_param);
                     }
                 }
             }
+
             let dt = 1.0 / self.current_span_sample_rate.get() as f64;
             if self.control_volume.update(dt) {
                 match state {
@@ -387,64 +465,75 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
                 }
             }
             self.volume.update(dt);
-        }
-        self.current_channel += 1;
 
-        // return samples
-        let sample = match state {
-            AudioPlaybackState::Loaded => Some(0.0),
-            AudioPlaybackState::Paused => Some(0.0),
-            AudioPlaybackState::Stopped => None,
-            AudioPlaybackState::Completed => None,
-            _advancing => {
-                let mut item;
-                if self.current_channel == 0 {
-                    if self.settings.output_channels < self.current_span_channels.get() {
-                        for _ in self.settings.output_channels..self.current_span_channels.get() {
-                            if self.input.next().is_none() {
-                                break;
-                            }
+            match state {
+                AudioPlaybackState::Loaded |
+                AudioPlaybackState::Paused |
+                AudioPlaybackState::Stopped |
+                AudioPlaybackState::Completed => {}
+                _advancing => {
+                    let factor = self.control_volume.volume * self.volume.volume;
+
+                    let mut completed = false;
+                    let mut inputs = [0.0; MAX_CHANNELS as usize];
+                    for i in 0..self.current_span_channels.get().min(MAX_CHANNELS) {
+                        let sample = self.input.next();
+                        if let Some(s) = sample {
+                            inputs[i as usize] = s;
+                        } else {
+                            completed = true;
+                            break;
                         }
-                        item = self.input.next();
-                    } else if self.settings.output_channels > self.current_span_channels.get() {
-                        item = self.input.next();
-                        self.first_channel_sample = item;
-                    } else {
-                        item = self.input.next();
                     }
-                } else if self.current_channel > self.current_span_channels.get() {
-                    item = self.first_channel_sample;
-                } else {
-                    item = self.input.next();
-                }
-                let factor = self.control_volume.volume * self.volume.volume;
 
-                if item.is_some() {
-                    self.samples_counted += 1;
-                    if Some(self.samples_counted) == self.current_span_len() {
-                        self.offset_duration += self.samples_counted as f64
-                            / self.current_span_sample_rate.get() as f64
-                            / self.current_span_channels.get() as f64;
+                    if !completed {
+                        for out_n in 0..self.settings.channel_mapping.output_channels {
+                            let mut out = 0.0;
+                            for (in_n, src) in inputs.iter().take(self.settings.channel_mapping.input_channels).enumerate() {
+                                out += self.settings.channel_mapping.get_factor(in_n, out_n) * src;
+                            }
+                            self.output_buffer[out_n] = out * factor;
+                        }
+                    } else if self.shared.repeat.load(Ordering::Acquire) {
+                        let _ = self.try_seek(Duration::ZERO);
+                    } else {
+                        state = AudioPlaybackState::Completed;
+                    };
 
-                        self.shared.position.store(self.offset_duration.to_bits(), Ordering::Release);
+                    if Some(self.input_samples_counted) == self.current_span_len() {
+                        self.offset_position += self.playing_frames_counted as f64 / self.current_span_sample_rate.get() as f64;
+                        self.playing_frames_counted = 0;
 
-                        self.samples_counted = 0;
+                        self.input_samples_counted = 0;
 
                         self.current_span_channels = self.channels();
                         self.current_span_sample_rate = self.sample_rate();
+                        self.update_interval = Self::calculate_interval(&self.current_span_sample_rate);
                     }
-                } else if self.shared.repeat.load(Ordering::Acquire) {
-                    let _ = self.try_seek(Duration::ZERO);
-                    item = Some(0.0)
-                } else {
-                    state = AudioPlaybackState::Completed;
+                    self.input_samples_counted += self.current_span_channels.get() as usize;
+
+                    self.playing_frames_counted += 1;
                 }
-                item.map(|s| s * factor)
+            }
+
+            // State publish
+            self.shared.state.store(state as u8, Ordering::Release);
+
+            self.frames_counted += 1;
+        }
+
+        // return samples
+        let sample = match state {
+            AudioPlaybackState::Loaded |
+            AudioPlaybackState::Paused => Some(0.0),
+            AudioPlaybackState::Stopped |
+            AudioPlaybackState::Completed => None,
+            _advancing => {
+                Some(self.output_buffer[self.current_channel as usize])
             },
         };
 
-        // State publish
-        self.shared.state.store(state as u8, Ordering::Release);
+        self.current_channel += 1;
 
         sample
     }
@@ -463,7 +552,7 @@ impl<I> Source for AudioSource<I> where I: Source + 'static {
 
     #[inline]
     fn channels(&self) -> ChannelCount {
-        NonZero::new(self.settings.output_channels).unwrap() as ChannelCount
+        NonZero::new(self.settings.channel_mapping.output_channels as u16).unwrap() as ChannelCount
     }
 
     #[inline]
@@ -480,10 +569,11 @@ impl<I> Source for AudioSource<I> where I: Source + 'static {
     fn try_seek(&mut self, pos: Duration) -> Result<(), SeekError> {
         let result = self.input.try_seek(self.settings.start_time.map_or(pos, |st| Duration::from_secs_f64(st) + pos));
         if result.is_ok() {
-            self.offset_duration = pos.as_secs_f64();
-            self.shared.position.store(self.offset_duration.to_bits(), Ordering::Release);
+            self.offset_position = pos.as_secs_f64();
+            self.playing_frames_counted = 0;
+            self.shared.position.store(self.offset_position.to_bits(), Ordering::Release);
 
-            self.samples_counted = 0;
+            self.input_samples_counted = 0;
         }
         result
     }
