@@ -1,5 +1,5 @@
 use core::f32;
-use std::{sync::{
+use std::{num::NonZero, sync::{
     Arc,
     atomic::{AtomicU32, Ordering},
 }, time::Duration};
@@ -37,7 +37,10 @@ impl SharedLevel {
 pub struct LevelMeter<I> {
     input: I,
     shared: SharedLevel,
+    channels: NonZero<u16>,
     current_channel: u16,
+    peak_frame: (f32, f32),
+    frames_counted: usize,
 }
 
 impl<I> LevelMeter<I>
@@ -45,8 +48,8 @@ where
     I: Source,
 {
     pub fn new(input: I, shared: SharedLevel) -> Self {
-        let channels = input.channels().get();
-        Self { input, shared, current_channel: channels }
+        let channels = input.channels();
+        Self { input, shared, channels, current_channel: 0, frames_counted: 0, peak_frame: (0.0, 0.0) }
     }
 }
 
@@ -58,20 +61,27 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<I::Item> {
-        let channels = self.input.channels().get();
-        let sample = self.input.next();
-        if self.current_channel >= channels {
+        let sample = self.input.next()?;
+        let level = sample.abs();
+        match self.current_channel {
+            0 => self.peak_frame.0 = self.peak_frame.0.max(level),
+            1 => self.peak_frame.1 = self.peak_frame.1.max(level),
+            _ => {},
+        }
+
+        self.current_channel += 1;
+
+        if self.current_channel >= self.channels.get() {
             self.current_channel = 0;
-            if let Some(s) = sample {
-                if self.current_channel == 0 {
-                    self.shared.set_left(s);
-                } else if self.current_channel == 1 {
-                    self.shared.set_right(s);
-                }
+            self.frames_counted += 1;
+            if self.frames_counted == 512 {
+                self.shared.set(self.peak_frame.0, self.peak_frame.1);
+                self.peak_frame = (0.0, 0.0);
+                self.frames_counted = 0;
             }
         }
-        self.current_channel += 1;
-        sample
+
+        Some(sample)
     }
 
     #[inline]

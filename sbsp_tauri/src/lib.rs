@@ -239,7 +239,7 @@ pub fn run() {
                         ticker.tick().await;
                         if let Some(level_meter) = level_meter_rx.borrow().as_ref() {
                             let (l, r) = shared_level.get();
-                            if l > 0.001 && r > 0.001 {
+                            if l > 0.001 || r > 0.001 {
                                 level_meter.send((l, r)).ok();
                             }
                         }
