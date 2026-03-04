@@ -382,6 +382,20 @@ impl<I> AudioSource<I> where I: Source + 'static {
     fn calculate_interval(sample_rate: &NonZero<u32>) -> usize {
         sample_rate.get() as usize / 1_000
     }
+
+    fn is_advancing(state: AudioPlaybackState) -> bool {
+        match state {
+            AudioPlaybackState::Loaded |
+            AudioPlaybackState::Paused |
+            AudioPlaybackState::Stopped |
+            AudioPlaybackState::Completed => false,
+            AudioPlaybackState::Playing |
+            AudioPlaybackState::Pausing |
+            AudioPlaybackState::Resuming |
+            AudioPlaybackState::SoftStopping |
+            AudioPlaybackState::HardStopping => true,
+        }
+    }
 }
 
 impl<I> Iterator for AudioSource<I> where I: Source + 'static {
@@ -396,8 +410,12 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
 
             if self.frames_counted >= self.update_interval {
                 self.frames_counted = 0;
-                self.shared.position.store((self.offset_position + self.playing_frames_counted as f64
-                        / self.current_span_sample_rate.get() as f64).to_bits(), Ordering::Release);
+
+                if Self::is_advancing(state) {
+                    self.shared.position.store((self.offset_position + self.playing_frames_counted as f64
+                            / self.current_span_sample_rate.get() as f64).to_bits(), Ordering::Release);
+                }
+
                 // Command Handling
                 if let Ok(command) = self.control.pop() {
                     match command {
@@ -445,6 +463,9 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
                             self.volume.set_volume(volume.as_amplitude(), fade_param);
                         }
                     }
+
+                    // State publish
+                    self.shared.state.store(state as u8, Ordering::Release);
                 }
             }
 
@@ -463,61 +484,64 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
                     },
                     _ => {},
                 }
+                // State publish
+                self.shared.state.store(state as u8, Ordering::Release);
             }
             self.volume.update(dt);
 
-            match state {
-                AudioPlaybackState::Loaded |
-                AudioPlaybackState::Paused |
-                AudioPlaybackState::Stopped |
-                AudioPlaybackState::Completed => {}
-                _advancing => {
-                    let factor = self.control_volume.volume * self.volume.volume;
+            if Self::is_advancing(state) {
+                let factor = self.control_volume.volume * self.volume.volume;
 
-                    let mut completed = false;
-                    let mut inputs = [0.0; MAX_CHANNELS as usize];
-                    for i in 0..self.current_span_channels.get().min(MAX_CHANNELS) {
-                        let sample = self.input.next();
-                        if let Some(s) = sample {
-                            inputs[i as usize] = s;
-                        } else {
-                            completed = true;
-                            break;
-                        }
-                    }
-
-                    if !completed {
-                        for out_n in 0..self.settings.channel_mapping.output_channels {
-                            let mut out = 0.0;
-                            for (in_n, src) in inputs.iter().take(self.settings.channel_mapping.input_channels).enumerate() {
-                                out += self.settings.channel_mapping.get_factor(in_n, out_n) * src;
-                            }
-                            self.output_buffer[out_n] = out * factor;
-                        }
-                    } else if self.shared.repeat.load(Ordering::Acquire) {
-                        let _ = self.try_seek(Duration::ZERO);
+                let mut completed = false;
+                let mut inputs = [0.0; MAX_CHANNELS as usize];
+                for i in 0..self.current_span_channels.get().min(MAX_CHANNELS) {
+                    let sample = self.input.next();
+                    if let Some(s) = sample {
+                        inputs[i as usize] = s;
                     } else {
-                        state = AudioPlaybackState::Completed;
-                    };
-
-                    if Some(self.input_samples_counted) == self.current_span_len() {
-                        self.offset_position += self.playing_frames_counted as f64 / self.current_span_sample_rate.get() as f64;
-                        self.playing_frames_counted = 0;
-
-                        self.input_samples_counted = 0;
-
-                        self.current_span_channels = self.channels();
-                        self.current_span_sample_rate = self.sample_rate();
-                        self.update_interval = Self::calculate_interval(&self.current_span_sample_rate);
+                        completed = true;
+                        break;
                     }
-                    self.input_samples_counted += self.current_span_channels.get() as usize;
-
-                    self.playing_frames_counted += 1;
                 }
-            }
 
-            // State publish
-            self.shared.state.store(state as u8, Ordering::Release);
+                if !completed {
+                    for out_n in 0..self.settings.channel_mapping.output_channels {
+                        let mut out = 0.0;
+                        for (in_n, src) in inputs.iter().take(self.settings.channel_mapping.input_channels).enumerate() {
+                            out += self.settings.channel_mapping.get_factor(in_n, out_n) * src;
+                        }
+                        self.output_buffer[out_n] = out * factor;
+                    }
+                } else if self.shared.repeat.load(Ordering::Acquire) {
+                    let _ = self.try_seek(Duration::ZERO);
+                } else {
+                    state = match state {
+                        AudioPlaybackState::SoftStopping |
+                        AudioPlaybackState::HardStopping => {
+                            AudioPlaybackState::Stopped
+                        }
+                        _ => {
+                            AudioPlaybackState::Completed
+                        }
+                    };
+                    // State publish
+                    self.shared.state.store(state as u8, Ordering::Release);
+                };
+
+                if Some(self.input_samples_counted) == self.current_span_len() {
+                    self.offset_position += self.playing_frames_counted as f64 / self.current_span_sample_rate.get() as f64;
+                    self.playing_frames_counted = 0;
+
+                    self.input_samples_counted = 0;
+
+                    self.current_span_channels = self.channels();
+                    self.current_span_sample_rate = self.sample_rate();
+                    self.update_interval = Self::calculate_interval(&self.current_span_sample_rate);
+                }
+                self.input_samples_counted += self.current_span_channels.get() as usize;
+
+                self.playing_frames_counted += 1;
+            }
 
             self.frames_counted += 1;
         }
@@ -536,11 +560,6 @@ impl<I> Iterator for AudioSource<I> where I: Source + 'static {
         self.current_channel += 1;
 
         sample
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.input.size_hint()
     }
 }
 
@@ -570,8 +589,10 @@ impl<I> Source for AudioSource<I> where I: Source + 'static {
         let result = self.input.try_seek(self.settings.start_time.map_or(pos, |st| Duration::from_secs_f64(st) + pos));
         if result.is_ok() {
             self.offset_position = pos.as_secs_f64();
-            self.playing_frames_counted = 0;
             self.shared.position.store(self.offset_position.to_bits(), Ordering::Release);
+            self.playing_frames_counted = 0;
+            self.frames_counted = 0;
+            self.current_channel = 0;
 
             self.input_samples_counted = 0;
         }
