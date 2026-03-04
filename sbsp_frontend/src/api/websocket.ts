@@ -97,7 +97,7 @@ const DEFAULT_SETTINGS: GlobalSettings = {
         fadeParam: {
           duration: 3.0,
           easing: {
-            type: 'inOutPowi',
+            type: 'inOutPow',
             intensity: 2,
           },
         },

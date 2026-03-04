@@ -76,6 +76,7 @@ export const useShowModel = defineStore('showmodel', {
           copyAssetsDestination: '.',
         },
         audio: {
+          outputChannels: 2,
           monoOutput: false,
           lufsTarget: -14,
         },

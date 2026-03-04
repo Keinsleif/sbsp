@@ -232,7 +232,7 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
     case 'wait':
       return cue.params.duration;
     case 'audio':
-      return calculateDuration(cue.params, assetResult.get(cue.id)?.duration);
+      return calculateDuration(cue.params, assetResult.getMetadata(cue.id)?.duration);
     case 'fade':
       return cue.params.fadeParam.duration;
     case 'start':
