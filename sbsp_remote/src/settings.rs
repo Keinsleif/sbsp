@@ -11,7 +11,7 @@ use sbsp_backend::{
     BackendSettings,
     model::cue::{
         Cue, CueParam, CueSequence,
-        audio::{AudioCueParam, Easing, FadeParam, SoundType, Decibels},
+        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
     },
 };

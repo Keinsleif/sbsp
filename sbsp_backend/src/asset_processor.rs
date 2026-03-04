@@ -145,8 +145,8 @@ impl AssetProcessor {
         let result_tx = self.result_tx.clone();
         let event_tx = self.event_tx.clone();
         tokio::task::spawn_blocking(move || {
-            let asset_data =
-                Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx).map_err(|e| e.to_string());
+            let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
+                .map_err(|e| e.to_string());
             result_tx
                 .send(ProcessResult {
                     path,
@@ -157,7 +157,11 @@ impl AssetProcessor {
         log::info!("Asset Process started. file={:?}", actual_path);
     }
 
-    fn process_asset(path: PathBuf, orig_path: PathBuf, event_tx: broadcast::Sender<UiEvent>) -> anyhow::Result<AssetData> {
+    fn process_asset(
+        path: PathBuf,
+        orig_path: PathBuf,
+        event_tx: broadcast::Sender<UiEvent>,
+    ) -> anyhow::Result<AssetData> {
         let src: std::fs::File = std::fs::File::open(&path)?;
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
@@ -185,7 +189,7 @@ impl AssetProcessor {
                 "No track with supported codec",
             ))?;
 
-            let track_id = track.id;
+        let track_id = track.id;
 
         let codec_params = track.codec_params.clone();
 
@@ -199,9 +203,17 @@ impl AssetProcessor {
             .ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
         let mut channel_count = codec_params.channels.map(|channels| channels.count());
 
-        let mut metadata = AssetMetadata { path: path.clone(), duration, channel_count: channel_count.map(|c| c as u16), sample_rate };
+        let mut metadata = AssetMetadata {
+            path: path.clone(),
+            duration,
+            channel_count: channel_count.map(|c| c as u16),
+            sample_rate,
+        };
 
-        let _ = event_tx.send(UiEvent::AssetMetadata { path: orig_path, data: metadata.clone() });
+        let _ = event_tx.send(UiEvent::AssetMetadata {
+            path: orig_path,
+            data: metadata.clone(),
+        });
 
         let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
 

@@ -1,4 +1,7 @@
-use sbsp_backend::{action::{AudioAction, CueAction}, model::cue::audio::Decibels};
+use sbsp_backend::{
+    action::{AudioAction, CueAction},
+    model::cue::audio::Decibels,
+};
 use uuid::Uuid;
 
 use crate::AppState;

@@ -1,5 +1,6 @@
 use crate::{
-    FullShowState, asset_processor::AssetProcessorCommand, controller::ControllerCommand, event::UiEvent, manager::ModelCommand
+    FullShowState, asset_processor::AssetProcessorCommand, controller::ControllerCommand,
+    event::UiEvent, manager::ModelCommand,
 };
 use serde::{Deserialize, Serialize};
 

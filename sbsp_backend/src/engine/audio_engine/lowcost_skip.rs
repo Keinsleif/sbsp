@@ -149,11 +149,11 @@ where
 mod tests {
     use std::time::Duration;
 
+    use rodio::Sample;
     use rodio::buffer::SamplesBuffer;
-    use rodio::{ChannelCount, SampleRate};
     use rodio::math::nz;
     use rodio::source::Source;
-    use rodio::Sample;
+    use rodio::{ChannelCount, SampleRate};
 
     fn test_skip_duration_samples_left(
         channels: ChannelCount,

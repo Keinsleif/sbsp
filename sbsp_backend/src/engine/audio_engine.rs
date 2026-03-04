@@ -1,25 +1,45 @@
+mod audio_source;
 mod command;
 mod event;
 pub mod level_meter;
-mod mono;
-mod audio_source;
 mod lowcost_skip;
+mod mono;
 mod static_source;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
-use std::{collections::HashMap, fs::File, num::NonZero, sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
+use rodio::{
+    Decoder, Source,
+    mixer::Mixer,
+    source::{SeekError, Zero},
+    stream::{DeviceSinkBuilder, MixerDeviceSink},
+};
+use std::{
+    collections::HashMap,
+    fs::File,
+    num::NonZero,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 use tokio::{sync::mpsc, time};
 use uuid::Uuid;
-use rodio::{Decoder, Source, mixer::Mixer, source::{SeekError, Zero}, stream::{DeviceSinkBuilder, MixerDeviceSink}};
 
 use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    engine::audio_engine::{audio_source::{AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping}, level_meter::{LevelMeter, SharedLevel}, static_source::StaticSource},
+    engine::audio_engine::{
+        audio_source::{
+            AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping,
+        },
+        level_meter::{LevelMeter, SharedLevel},
+        static_source::StaticSource,
+    },
     model::{
         cue::audio::{Decibels, FadeParam, SoundType},
         settings::ShowAudioSettings,
@@ -91,8 +111,7 @@ impl PlaybackHandle {
 
     fn set_volume(&mut self, volume: Decibels) {
         self.volume = volume;
-        self.handle
-            .set_volume(self.volume + self.fade_volume);
+        self.handle.set_volume(self.volume + self.fade_volume);
     }
 
     fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
@@ -133,12 +152,17 @@ impl AudioEngine {
     ) -> Result<Self> {
         let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
         let builder = DeviceSinkBuilder::from_default_device()?;
-        let output = builder.with_channels(NonZero::new(settings.output_channels).ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?).open_stream()?;
+        let output = builder
+            .with_channels(
+                NonZero::new(settings.output_channels)
+                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
+            )
+            .open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = output.config();
             (output_config.channel_count(), output_config.sample_rate())
         };
-        
+
         let (main_mixer, mixer_source) = rodio::mixer::mixer(channel_count, sample_rate);
         main_mixer.add(Zero::new(channel_count, sample_rate));
 
@@ -166,16 +190,24 @@ impl AudioEngine {
         let shared_level = SharedLevel::default();
         let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
         let builder = DeviceSinkBuilder::from_default_device()?;
-        let output = builder.with_channels(NonZero::new(settings.output_channels).ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?).open_stream()?;
+        let output = builder
+            .with_channels(
+                NonZero::new(settings.output_channels)
+                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
+            )
+            .open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = output.config();
             (output_config.channel_count(), output_config.sample_rate())
         };
-        
+
         let (main_mixer, mixer_source) = rodio::mixer::mixer(channel_count, sample_rate);
         main_mixer.add(Zero::new(channel_count, sample_rate));
 
-        let main_source = LevelMeter::new(mono::Mono::new(mixer_source, is_mono.clone()), shared_level.clone());
+        let main_source = LevelMeter::new(
+            mono::Mono::new(mixer_source, is_mono.clone()),
+            shared_level.clone(),
+        );
 
         output.mixer().add(main_source);
 
@@ -302,7 +334,7 @@ impl AudioEngine {
             .audio_mixer
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Audio Mixer is not available"))?;
-        
+
         let mut settings = AudioSourceSettings::from(&data);
         settings.channel_mapping = ChannelMapping::from_pan(data.pan);
 
@@ -328,7 +360,9 @@ impl AudioEngine {
                         )
                     })?;
 
-                duration = audio_source.total_duration().map_or(0.0, |d| d.as_secs_f64());
+                duration = audio_source
+                    .total_duration()
+                    .map_or(0.0, |d| d.as_secs_f64());
                 mixer.add(audio_source);
             }
             SoundType::Streaming => {
@@ -348,12 +382,19 @@ impl AudioEngine {
                         )
                     })?;
 
-                duration = audio_source.total_duration().map_or(0.0, |d| d.as_secs_f64());
+                duration = audio_source
+                    .total_duration()
+                    .map_or(0.0, |d| d.as_secs_f64());
                 mixer.add(audio_source);
             }
         }
 
-        log::info!("LOAD: id={}, file={}, duration={}", id, data.filepath.display(), duration);
+        log::info!(
+            "LOAD: id={}, file={}, duration={}",
+            id,
+            data.filepath.display(),
+            duration
+        );
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
@@ -428,10 +469,10 @@ impl AudioEngine {
     async fn handle_resume(&mut self, id: Uuid) -> Result<()> {
         log::info!("RESUME: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            if matches!(playing_sound
-                .handle
-                .state(), AudioPlaybackState::Pausing | AudioPlaybackState::Paused)
-            {
+            if matches!(
+                playing_sound.handle.state(),
+                AudioPlaybackState::Pausing | AudioPlaybackState::Paused
+            ) {
                 playing_sound.handle.resume();
                 self.event_tx
                     .send(EngineEvent::Audio(AudioEngineEvent::Resumed {
@@ -458,7 +499,9 @@ impl AudioEngine {
     }
 
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
-        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) && playing_sound.handle.seek_to(position).await.is_ok() {
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id)
+            && playing_sound.handle.seek_to(position).await.is_ok()
+        {
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
                     instance_id: id,
@@ -466,7 +509,9 @@ impl AudioEngine {
                 }))
                 .await?;
             Ok(())
-        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) && loaded_handle.seek_to(position).await.is_ok() {
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id)
+            && loaded_handle.seek_to(position).await.is_ok()
+        {
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,
@@ -513,7 +558,12 @@ impl AudioEngine {
         }
     }
 
-    async fn handle_fade_volume(&mut self, id: Uuid, volume: Decibels, param: FadeParam) -> Result<()> {
+    async fn handle_fade_volume(
+        &mut self,
+        id: Uuid,
+        volume: Decibels,
+        param: FadeParam,
+    ) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.set_fade(volume, param);
             Ok(())

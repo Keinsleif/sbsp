@@ -1,11 +1,18 @@
-use std::{collections::HashMap, path::PathBuf, time::{Duration, Instant}};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 use async_recursion::async_recursion;
 use axum::{
-    Router, extract::{
+    Router,
+    extract::{
         State, WebSocketUpgrade,
         ws::{Message, WebSocket},
-    }, response::IntoResponse, routing::get
+    },
+    response::IntoResponse,
+    routing::get,
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
@@ -18,7 +25,8 @@ use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle,
     api::{
-        ApiServerOptions, AuthInfo, FileList, auth::{check_authentication_string, generate_salt, generate_secret}
+        ApiServerOptions, AuthInfo, FileList,
+        auth::{check_authentication_string, generate_salt, generate_secret},
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
@@ -223,7 +231,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                 }
             }
             Some(Ok(msg)) = socket.recv() => {
-                match msg { 
+                match msg {
                     Message::Text(text) => {
                         if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
                             match command_request {

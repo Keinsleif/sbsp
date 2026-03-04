@@ -35,7 +35,6 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 #[cfg(not(debug_assertions))]
 const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 
-
 pub struct AppState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
@@ -119,10 +118,7 @@ impl AppState {
     }
 }
 
-async fn forward_backend_event(
-    app_handle: AppHandle,
-    mut event_rx: broadcast::Receiver<UiEvent>,
-) {
+async fn forward_backend_event(app_handle: AppHandle, mut event_rx: broadcast::Receiver<UiEvent>) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {

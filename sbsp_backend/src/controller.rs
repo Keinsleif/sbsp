@@ -230,7 +230,12 @@ impl CueController {
         } else {
             anyhow::bail!("Playback cursor unavailable.");
         };
-        let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await && let CueParam::Group { mode, children } = &cue.params && let GroupMode::StartFirst { enter } = mode && *enter && let Some(first_cue) = children.first() {
+        let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await
+            && let CueParam::Group { mode, children } = &cue.params
+            && let GroupMode::StartFirst { enter } = mode
+            && *enter
+            && let Some(first_cue) = children.first()
+        {
             Some(first_cue.id)
         } else {
             self.model_handle
@@ -585,7 +590,10 @@ impl CueController {
             log::trace!("No UI clients are listening to state updates.");
         }
 
-        if state_changed && let Ok(ui_event) = UiEvent::try_from(event) && self.event_tx.send(ui_event).is_err() {
+        if state_changed
+            && let Ok(ui_event) = UiEvent::try_from(event)
+            && self.event_tx.send(ui_event).is_err()
+        {
             log::trace!("No UI clients are listening to playback events.");
         }
         Ok(())
@@ -598,13 +606,16 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
-        BackendSettings, event::CueStatusEventParam, manager::ShowModelManager, model::{
+        BackendSettings,
+        event::CueStatusEventParam,
+        manager::ShowModelManager,
+        model::{
             self,
             cue::{
                 Cue,
                 audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
-        }
+        },
     };
 
     use super::*;
@@ -752,7 +763,11 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Started { cue_id, duration: 43.0, params: StateParam::None })));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Started {
+            cue_id,
+            duration: 43.0,
+            params: StateParam::None
+        })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -812,7 +827,10 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Paused { cue_id, position: 21.0 })));
+        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Paused {
+            cue_id,
+            position: 21.0
+        })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Paused);
@@ -853,7 +871,11 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Completed{ cue_id })));
+        assert!(
+            event.eq(&UiEvent::CueStatus(CueStatusEventParam::Completed {
+                cue_id
+            }))
+        );
         assert!(!state_rx.borrow().active_cues.contains_key(&cue_id));
     }
 }

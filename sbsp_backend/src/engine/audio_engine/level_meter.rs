@@ -1,8 +1,12 @@
 use core::f32;
-use std::{num::NonZero, sync::{
-    Arc,
-    atomic::{AtomicU32, Ordering},
-}, time::Duration};
+use std::{
+    num::NonZero,
+    sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    },
+    time::Duration,
+};
 
 use rodio::{ChannelCount, SampleRate, Source, source::SeekError};
 
@@ -44,16 +48,23 @@ pub struct LevelMeter<I> {
 }
 
 impl<I> LevelMeter<I>
-where 
+where
     I: Source,
 {
     pub fn new(input: I, shared: SharedLevel) -> Self {
         let channels = input.channels();
-        Self { input, shared, channels, current_channel: 0, frames_counted: 0, peak_frame: (0.0, 0.0) }
+        Self {
+            input,
+            shared,
+            channels,
+            current_channel: 0,
+            frames_counted: 0,
+            peak_frame: (0.0, 0.0),
+        }
     }
 }
 
-impl<I> Iterator for LevelMeter<I> 
+impl<I> Iterator for LevelMeter<I>
 where
     I: Source,
 {
@@ -66,7 +77,7 @@ where
         match self.current_channel {
             0 => self.peak_frame.0 = self.peak_frame.0.max(level),
             1 => self.peak_frame.1 = self.peak_frame.1.max(level),
-            _ => {},
+            _ => {}
         }
 
         self.current_channel += 1;

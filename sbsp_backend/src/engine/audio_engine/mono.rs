@@ -1,4 +1,10 @@
-use std::{sync::{Arc, atomic::{AtomicBool, Ordering}},  time::Duration};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use rodio::{ChannelCount, Sample, SampleRate, Source, source::SeekError};
 

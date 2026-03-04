@@ -10,7 +10,13 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use super::{WsCommand, WsFeedback};
 use crate::{
-    BackendHandle, FullShowState, api::auth::{generate_authentication_string, generate_secret}, asset_processor::{AssetProcessorCommand, AssetProcessorHandle}, controller::{ControllerCommand, CueControllerHandle}, event::UiEvent, manager::{ModelCommand, ProjectStatus, ShowModelHandle}, model::ShowModel
+    BackendHandle, FullShowState,
+    api::auth::{generate_authentication_string, generate_secret},
+    asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
+    controller::{ControllerCommand, CueControllerHandle},
+    event::UiEvent,
+    manager::{ModelCommand, ProjectStatus, ShowModelHandle},
+    model::ShowModel,
 };
 pub use file_list_handler::FileListHandle;
 pub use service_entry::ServiceEntry;
