@@ -2,7 +2,7 @@ mod command;
 mod event;
 pub mod level_meter;
 mod mono;
-mod audio_soucre;
+mod audio_source;
 mod lowcost_skip;
 mod static_source;
 
@@ -19,7 +19,7 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    engine::audio_engine::{audio_soucre::{AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping}, level_meter::{LevelMeter, SharedLevel}, static_source::StaticSource},
+    engine::audio_engine::{audio_source::{AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping}, level_meter::{LevelMeter, SharedLevel}, static_source::StaticSource},
     model::{
         cue::audio::{Decibels, FadeParam, SoundType},
         settings::ShowAudioSettings,
