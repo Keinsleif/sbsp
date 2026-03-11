@@ -245,7 +245,7 @@ impl AudioEngine {
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
-                        AudioCommand::Stop { id } => self.handle_stop(id),
+                        AudioCommand::Stop { id } => self.handle_stop(id).await,
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
                         AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
@@ -487,12 +487,13 @@ impl AudioEngine {
         }
     }
 
-    fn handle_stop(&mut self, id: Uuid) -> Result<()> {
+    async fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop();
             Ok(())
         } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
             loaded_sound.stop();
+            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: id })).await?;
             Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
