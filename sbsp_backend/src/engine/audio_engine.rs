@@ -513,10 +513,9 @@ impl AudioEngine {
             && loaded_handle.seek_to(position).await.is_ok()
         {
             self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
                     instance_id: id,
                     position,
-                    duration: loaded_handle.duration,
                 }))
                 .await?;
             Ok(())
@@ -545,10 +544,9 @@ impl AudioEngine {
                 Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
             } else {
                 self.event_tx
-                    .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                    .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
                         instance_id: id,
                         position,
-                        duration: loaded_handle.duration,
                     }))
                     .await?;
                 Ok(())
