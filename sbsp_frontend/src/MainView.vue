@@ -109,7 +109,7 @@
       () => {
         api.requestStateSync();
       },
-      side == 'remote' ? 5000 : 2000,
+      5000,
       {
         immediate: true,
       },
