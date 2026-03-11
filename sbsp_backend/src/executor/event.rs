@@ -34,6 +34,7 @@ pub enum ExecutorEvent {
     },
     Started {
         cue_id: Uuid,
+        position: f64,
         duration: f64,
         initial_params: StateParam,
     },

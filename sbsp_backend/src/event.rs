@@ -102,6 +102,7 @@ pub enum CueStatusEventParam {
     },
     Started {
         cue_id: Uuid,
+        position: f64,
         duration: f64,
         params: StateParam,
     },
@@ -167,10 +168,12 @@ impl TryFrom<ExecutorEvent> for UiEvent {
             }),
             ExecutorEvent::Started {
                 cue_id,
+                position,
                 duration,
                 initial_params,
             } => Some(CueStatusEventParam::Started {
                 cue_id,
+                position,
                 duration,
                 params: initial_params,
             }),

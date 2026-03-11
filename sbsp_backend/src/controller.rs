@@ -283,6 +283,7 @@ impl CueController {
             }
             ExecutorEvent::Started {
                 cue_id,
+                position,
                 duration,
                 initial_params,
             } => {
@@ -300,14 +301,14 @@ impl CueController {
                     );
                 }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    active_cue.position = 0.0;
+                    active_cue.position = *position;
                     active_cue.duration = *duration;
                     active_cue.status = PlaybackStatus::Playing;
                     active_cue.params = *initial_params;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,
-                        position: 0.0,
+                        position: *position,
                         duration: *duration,
                         status: PlaybackStatus::Playing,
                         params: *initial_params,
@@ -756,6 +757,7 @@ mod tests {
         playback_event_tx
             .send(ExecutorEvent::Started {
                 cue_id,
+                position: 0.0,
                 duration: 43.0,
                 initial_params: StateParam::None,
             })
@@ -765,6 +767,7 @@ mod tests {
         let event = event_rx.recv().await.unwrap();
         assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Started {
             cue_id,
+            position: 0.0,
             duration: 43.0,
             params: StateParam::None
         })));

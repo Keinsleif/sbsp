@@ -9,6 +9,7 @@ pub enum WaitEvent {
     },
     Started {
         instance_id: Uuid,
+        position: f64,
         duration: f64,
     },
     Progress {

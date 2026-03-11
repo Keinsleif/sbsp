@@ -416,6 +416,7 @@ impl Executor {
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
+                                position: 0.0,
                                 duration: 0.0,
                                 initial_params: StateParam::None,
                             })
@@ -431,6 +432,7 @@ impl Executor {
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
+                                position: 0.0,
                                 duration: 0.0,
                                 initial_params: StateParam::None,
                             })
@@ -693,11 +695,13 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Started {
+                        position,
                         duration,
                         initial_params,
                         ..
                     } => ExecutorEvent::Started {
                         cue_id,
+                        position,
                         duration,
                         initial_params: StateParam::Audio(initial_params),
                     },
@@ -855,8 +859,9 @@ impl Executor {
                         position,
                         duration,
                     },
-                    WaitEvent::Started { duration, .. } => ExecutorEvent::Started {
+                    WaitEvent::Started { position, duration, .. } => ExecutorEvent::Started {
                         cue_id,
+                        position,
                         duration,
                         initial_params: StateParam::Wait,
                     },
@@ -918,6 +923,7 @@ impl Executor {
                     self.executor_event_tx
                         .send(ExecutorEvent::Started {
                             cue_id: parent.id,
+                            position: 0.0,
                             duration: 0.0,
                             initial_params: StateParam::None,
                         })
@@ -1123,6 +1129,7 @@ mod tests {
         engine_event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id,
+                position: 0.0,
                 duration: 23.0,
                 initial_params: AudioStateParam::default(),
             }))
@@ -1132,11 +1139,13 @@ mod tests {
         if let Some(event) = playback_event_rx.recv().await {
             if let ExecutorEvent::Started {
                 cue_id,
+                position,
                 duration,
                 initial_params,
             } = event
             {
                 assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(position, 0.0);
                 assert_eq!(duration, 23.0);
                 assert_eq!(
                     initial_params,

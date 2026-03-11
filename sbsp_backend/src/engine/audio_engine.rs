@@ -432,6 +432,7 @@ impl AudioEngine {
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id: id,
+                position: handle.position(),
                 duration: handle.duration,
                 initial_params: AudioStateParam {
                     repeating: data.repeat,
