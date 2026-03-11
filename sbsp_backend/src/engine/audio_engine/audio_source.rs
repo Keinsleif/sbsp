@@ -189,26 +189,26 @@ impl AudioSourceHandle {
 }
 
 struct VolumeFadeInfo {
-    pub from: f32,
-    pub to: f32,
+    pub from: Decibels,
+    pub to: Decibels,
     pub elapsed: f64,
     pub fade_param: FadeParam,
 }
 
 struct Volume {
-    pub volume: f32,
+    pub volume: Decibels,
     pub fade_info: Option<VolumeFadeInfo>,
 }
 
 impl Volume {
-    pub fn new(volume: f32) -> Self {
+    pub fn new(volume: Decibels) -> Self {
         Self {
             volume,
             fade_info: None,
         }
     }
 
-    pub fn new_with_fade(init: f32, target: f32, fade_param: FadeParam) -> Self {
+    pub fn new_with_fade(init: Decibels, target: Decibels, fade_param: FadeParam) -> Self {
         Self {
             volume: init,
             fade_info: Some(VolumeFadeInfo {
@@ -220,7 +220,7 @@ impl Volume {
         }
     }
 
-    pub fn set_volume(&mut self, volume: f32, fade_param: FadeParam) {
+    pub fn set_volume(&mut self, volume: Decibels, fade_param: FadeParam) {
         if let Some(info) = self.fade_info.as_mut() {
             info.from = self.volume;
             info.to = volume;
@@ -243,12 +243,12 @@ impl Volume {
                 return true;
             }
 
-            self.volume = info.from
-                + info
-                    .fade_param
-                    .easing
-                    .get_factor(info.elapsed / info.fade_param.duration) as f32
-                    * (info.to - info.from);
+            let progress = info
+                .fade_param
+                .easing
+                .get_factor(info.elapsed / info.fade_param.duration) as f32;
+
+            self.volume = info.from + (info.to - info.from) * progress;
 
             info.elapsed += dt;
         }
@@ -412,9 +412,9 @@ where
         let shared = Arc::new(AudioSourceShared::new(settings.repeat));
         let (control_pr, control_co) = RingBuffer::new(8);
         let volume = if let Some(fadein_param) = settings.fadein_param {
-            Volume::new_with_fade(0.0, settings.volume.as_amplitude(), fadein_param)
+            Volume::new_with_fade(Decibels::MUTE, settings.volume, fadein_param)
         } else {
-            Volume::new(settings.volume.as_amplitude())
+            Volume::new(settings.volume)
         };
         let output_buffer = vec![0.0; settings.channel_mapping.output_channels].into_boxed_slice();
         let update_interval = Self::calculate_interval(&sample_rate);
@@ -449,7 +449,7 @@ where
                 frames_counted: update_interval,
                 playing_frames_counted: 0,
                 update_interval,
-                control_volume: Volume::new(1.0),
+                control_volume: Volume::new(Decibels::IDENTITY),
                 volume,
             },
             AudioSourceHandle {
@@ -519,13 +519,13 @@ where
                                 AudioPlaybackState::Playing | AudioPlaybackState::Resuming
                             ) {
                                 state = AudioPlaybackState::Pausing;
-                                self.control_volume.set_volume(0.0, DEFAULT_FADE_PARAM);
+                                self.control_volume.set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                             }
                         }
                         AudioSourceControlCommand::Resume => {
                             if matches!(state, AudioPlaybackState::Paused) {
                                 state = AudioPlaybackState::Resuming;
-                                self.control_volume.set_volume(1.0, DEFAULT_FADE_PARAM);
+                                self.control_volume.set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
                         AudioSourceControlCommand::FadeOut => {
@@ -540,7 +540,7 @@ where
                                     state = AudioPlaybackState::Stopped;
                                 } else {
                                     state = AudioPlaybackState::SoftStopping;
-                                    self.control_volume.set_volume(0.0, self.fadeout_param);
+                                    self.control_volume.set_volume(Decibels::MUTE, self.fadeout_param);
                                 }
                             }
                         }
@@ -557,7 +557,7 @@ where
                                     state = AudioPlaybackState::Stopped;
                                 } else {
                                     state = AudioPlaybackState::HardStopping;
-                                    self.control_volume.set_volume(0.0, DEFAULT_FADE_PARAM);
+                                    self.control_volume.set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                                 }
                             }
                         }
@@ -565,7 +565,7 @@ where
                             let _ = result.send(self.try_seek(Duration::from_secs_f64(position)));
                         }
                         AudioSourceControlCommand::SetVolume { volume, fade_param } => {
-                            self.volume.set_volume(volume.as_amplitude(), fade_param);
+                            self.volume.set_volume(volume, fade_param);
                         }
                     }
 
@@ -594,7 +594,7 @@ where
             self.volume.update(dt);
 
             if Self::is_advancing(state) {
-                let factor = self.control_volume.volume * self.volume.volume;
+                let factor = self.control_volume.volume + self.volume.volume;
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];
@@ -618,7 +618,7 @@ where
                         {
                             out += self.settings.channel_mapping.get_factor(in_n, out_n) * src;
                         }
-                        self.output_buffer[out_n] = out * factor;
+                        self.output_buffer[out_n] = out * factor.as_amplitude();
                     }
                 } else if self.shared.repeat.load(Ordering::Acquire) {
                     let _ = self.try_seek(Duration::ZERO);

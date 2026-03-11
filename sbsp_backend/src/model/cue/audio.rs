@@ -1,4 +1,4 @@
-use std::{ops::Add, path::PathBuf};
+use std::{ops::{Add, Mul, Sub}, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -39,6 +39,30 @@ impl Add for Decibels {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
+    }
+}
+
+impl Sub for Decibels {
+    type Output = Decibels;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
+impl Mul for Decibels {
+    type Output = Decibels;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl Mul<f32> for Decibels {
+    type Output = Decibels;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self(self.0 * rhs)
     }
 }
 
