@@ -691,11 +691,7 @@ where
 
     #[inline]
     fn try_seek(&mut self, pos: Duration) -> Result<(), SeekError> {
-        let result = self.input.try_seek(
-            self.settings
-                .start_time
-                .map_or(pos, |st| Duration::from_secs_f64(st) + pos),
-        );
+        let result = self.input.try_seek(pos);
         if result.is_ok() {
             self.offset_position = pos.as_secs_f64();
             self.shared
