@@ -4,7 +4,6 @@ use rodio::{ChannelCount, SampleRate, Source, source::SeekError};
 
 use crate::engine::audio_engine::NANOS_PER_SEC;
 
-/// A source that skips specified duration of the given source from it's current position.
 #[derive(Clone, Debug)]
 pub struct SkipDuration<I> {
     input: I,
@@ -15,12 +14,12 @@ impl<I> SkipDuration<I>
 where
     I: Source,
 {
-    /// Internal function that builds a `SkipDuration` object.
     pub fn new(mut input: I, duration: Duration) -> Self
     where
         I: Source,
     {
         if input.try_seek(duration).is_err() {
+            // fallback to original implementation
             Self::do_skip_duration(&mut input, duration);
         }
         SkipDuration {
@@ -29,23 +28,17 @@ where
         }
     }
 
-    /// Skips specified `duration` of the given `input` source from it's current position.
     fn do_skip_duration(input: &mut I, mut duration: Duration)
     where
         I: Source,
     {
         while duration > Duration::ZERO {
             if input.current_span_len().is_none() {
-                // Sample rate and the amount of channels will be the same till the end.
                 Self::do_skip_duration_unchecked(input, duration);
                 return;
             }
 
-            // .unwrap() safety: if `current_span_len()` is None, the body of the `if` statement
-            // above returns before we get here.
             let span_len: usize = input.current_span_len().unwrap();
-            // If span_len is zero, then there is no more data to skip. Instead
-            // just bail out.
             if span_len == 0 {
                 return;
             }
@@ -56,7 +49,6 @@ where
             let samples_per_channel = duration.as_nanos() * sample_rate / NANOS_PER_SEC as u128;
             let samples_to_skip: u128 = samples_per_channel * channels;
 
-            // Check if we need to skip only part of the current span.
             if span_len as u128 > samples_to_skip {
                 Self::skip_samples(input, samples_to_skip as usize);
                 return;
@@ -69,8 +61,6 @@ where
         }
     }
 
-    /// Skips specified `duration` from the `input` source assuming that sample rate
-    /// and amount of channels are not changing.
     fn do_skip_duration_unchecked(input: &mut I, duration: Duration)
     where
         I: Source,
@@ -82,7 +72,6 @@ where
         Self::skip_samples(input, samples_to_skip as usize);
     }
 
-    /// Skips `n` samples from the given `input` source.
     fn skip_samples(input: &mut I, n: usize)
     where
         I: Source,
