@@ -10,6 +10,7 @@ use std::{
 
 use rodio::{ChannelCount, SampleRate, Source, source::SeekError};
 
+// This source can be used for wrapping static channels and sample rate source only.
 #[derive(Clone, Default)]
 pub struct SharedLevel {
     pub left: Arc<AtomicU32>,
@@ -45,6 +46,7 @@ pub struct LevelMeter<I> {
     current_channel: u16,
     peak_frame: (f32, f32),
     frames_counted: usize,
+    update_interval: usize,
 }
 
 impl<I> LevelMeter<I>
@@ -53,6 +55,7 @@ where
 {
     pub fn new(input: I, shared: SharedLevel) -> Self {
         let channels = input.channels();
+        let update_interval = (input.sample_rate().get() as f64 * 0.005) as usize;
         Self {
             input,
             shared,
@@ -60,6 +63,7 @@ where
             current_channel: 0,
             frames_counted: 0,
             peak_frame: (0.0, 0.0),
+            update_interval,
         }
     }
 }
@@ -85,7 +89,7 @@ where
         if self.current_channel >= self.channels.get() {
             self.current_channel = 0;
             self.frames_counted += 1;
-            if self.frames_counted == 512 {
+            if self.frames_counted == self.update_interval {
                 self.shared.set(self.peak_frame.0, self.peak_frame.1);
                 self.peak_frame = (0.0, 0.0);
                 self.frames_counted = 0;
