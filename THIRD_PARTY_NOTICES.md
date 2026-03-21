@@ -6566,7 +6566,7 @@ limitations under the License.
     - [stable_deref_trait 1.2.1]( https://github.com/storyyeller/stable_deref_trait )
     - [string_cache 0.8.9]( https://github.com/servo/string-cache )
     - [syn 1.0.109]( https://github.com/dtolnay/syn )
-    - [tar 0.4.44]( https://github.com/alexcrichton/tar-rs )
+    - [tar 0.4.45]( https://github.com/alexcrichton/tar-rs )
     - [tempfile 3.26.0]( https://github.com/Stebalien/tempfile )
     - [tendril 0.4.3]( https://github.com/servo/tendril )
     - [toml_datetime 0.6.3]( https://github.com/toml-rs/toml )
@@ -10226,7 +10226,7 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 - Used by
 
-    - [rustls-webpki 0.103.9]( https://github.com/rustls/webpki )
+    - [rustls-webpki 0.103.10]( https://github.com/rustls/webpki )
 
 ```text
 Except as otherwise noted, this project is licensed under the following
