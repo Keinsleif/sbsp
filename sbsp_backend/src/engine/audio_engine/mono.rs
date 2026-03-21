@@ -8,6 +8,7 @@ use std::{
 
 use rodio::{ChannelCount, Sample, SampleRate, Source, source::SeekError};
 
+// This source can be used for wrapping static channels and sample rate source only.
 #[derive(Clone, Debug)]
 pub struct Mono<I>
 where
