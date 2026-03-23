@@ -1,22 +1,31 @@
+mod audio_source;
 mod command;
 mod event;
 pub mod level_meter;
-mod mono_effect;
+mod lowcost_skip;
+mod mono;
+mod static_source;
 
 pub use command::{AudioCommand, AudioCommandData};
 pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
-use kira::{
-    AudioManager, AudioManagerSettings, Decibels, DefaultBackend, Panning, StartTime, Tween,
-    clock::{ClockHandle, ClockSpeed, ClockTime},
-    sound::{
-        EndPosition, FromFileError, IntoOptionalRegion, PlaybackPosition, PlaybackState, Region,
-        static_sound::{StaticSoundData, StaticSoundHandle},
-        streaming::{StreamingSoundData, StreamingSoundHandle},
-    },
+use rodio::{
+    Decoder, Source,
+    mixer::Mixer,
+    source::{SeekError, Zero},
+    stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::HashMap,
+    fs::File,
+    num::NonZero,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 use tokio::{sync::mpsc, time};
 use uuid::Uuid;
 
@@ -24,104 +33,38 @@ use super::EngineEvent;
 use crate::{
     action::AudioAction,
     controller::state::AudioStateParam,
-    engine::audio_engine::level_meter::{LevelMeterEffect, SharedLevel},
+    engine::audio_engine::{
+        audio_source::{
+            AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping,
+        },
+        level_meter::{LevelMeter, SharedLevel},
+        static_source::StaticSource,
+    },
     model::{
-        cue::audio::{FadeParam, SoundType},
+        cue::audio::{Decibels, FadeParam, SoundType},
         settings::ShowAudioSettings,
     },
 };
-use mono_effect::{MonoEffectBuilder, MonoEffectHandle};
 
-enum SoundHandle {
-    Static(StaticSoundHandle),
-    Streaming(StreamingSoundHandle<FromFileError>),
-}
-
-impl SoundHandle {
-    fn state(&self) -> PlaybackState {
-        match self {
-            Self::Static(handle) => handle.state(),
-            Self::Streaming(handle) => handle.state(),
-        }
-    }
-
-    fn position(&self) -> f64 {
-        match self {
-            Self::Static(handle) => handle.position(),
-            Self::Streaming(handle) => handle.position(),
-        }
-    }
-
-    fn pause(&mut self, tween: Tween) {
-        match self {
-            Self::Static(handle) => handle.pause(tween),
-            Self::Streaming(handle) => handle.pause(tween),
-        }
-    }
-
-    fn resume(&mut self, tween: Tween) {
-        match self {
-            Self::Static(handle) => handle.resume(tween),
-            Self::Streaming(handle) => handle.resume(tween),
-        }
-    }
-
-    fn stop(&mut self, tween: Tween) {
-        match self {
-            Self::Static(handle) => handle.stop(tween),
-            Self::Streaming(handle) => handle.stop(tween),
-        }
-    }
-
-    fn seek_to(&mut self, position: f64) {
-        match self {
-            Self::Static(handle) => handle.seek_to(position),
-            Self::Streaming(handle) => handle.seek_to(position),
-        }
-    }
-
-    fn seek_by(&mut self, amount: f64) {
-        match self {
-            Self::Static(handle) => handle.seek_by(amount),
-            Self::Streaming(handle) => handle.seek_by(amount),
-        }
-    }
-
-    fn set_loop_region(&mut self, loop_region: impl IntoOptionalRegion) {
-        match self {
-            Self::Static(handle) => handle.set_loop_region(loop_region),
-            Self::Streaming(handle) => handle.set_loop_region(loop_region),
-        }
-    }
-
-    fn set_volume(&mut self, volume: f32, tween: Tween) {
-        match self {
-            Self::Static(handle) => handle.set_volume(volume, tween),
-            Self::Streaming(handle) => handle.set_volume(volume, tween),
-        }
-    }
-}
+const NANOS_PER_SEC: u64 = 1_000_000_000;
 
 struct PlaybackHandle {
-    handle: SoundHandle,
-    clock: ClockHandle,
+    handle: AudioSourceHandle,
     duration: f64,
-    fade_out_tween: Option<Tween>,
-    repeat: bool,
-    volume: f32,
-    fade_volume: f32,
+    volume: Decibels,
+    fade_volume: Decibels,
 }
 
 impl PlaybackHandle {
-    fn state(&self) -> PlaybackState {
+    fn state(&self) -> AudioPlaybackState {
         self.handle.state()
     }
 
     fn is_repeating(&self) -> bool {
-        self.repeat
+        self.handle.is_repeating()
     }
 
-    fn get_volume(&self) -> f32 {
+    fn get_volume(&self) -> Decibels {
         self.volume
     }
 
@@ -130,62 +73,57 @@ impl PlaybackHandle {
     }
 
     fn start(&mut self) {
-        self.clock.start();
+        self.handle.start();
     }
 
     fn pause(&mut self) {
-        self.handle.pause(Tween::default());
+        self.handle.pause();
     }
 
     fn resume(&mut self) {
-        self.handle.resume(Tween::default());
+        self.handle.resume();
     }
 
     fn stop(&mut self) {
-        if self.state().eq(&PlaybackState::Stopping) {
+        let state = self.state();
+        if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
+            return;
+        }
+        if self.state().eq(&AudioPlaybackState::SoftStopping) {
             // Hard Stop
-            self.handle.stop(Tween::default());
+            self.handle.stop();
         } else {
-            self.handle.stop(self.fade_out_tween.unwrap_or_default());
+            self.handle.fade_out();
         }
     }
 
-    fn seek_to(&mut self, position: f64) {
-        self.handle.seek_to(position);
+    async fn seek_to(&mut self, position: f64) -> Result<(), SeekError> {
+        self.handle.seek_to(position).await
     }
 
-    fn seek_by(&mut self, amount: f64) {
-        self.handle.seek_by(amount);
+    async fn seek_by(&mut self, amount: f64) -> Result<(), SeekError> {
+        self.handle.seek_by(amount).await
     }
 
     fn set_repeat(&mut self, repeat: bool) {
-        if repeat {
-            self.handle.set_loop_region(Some(Region {
-                start: PlaybackPosition::Seconds(0.0),
-                end: EndPosition::EndOfAudio,
-            }));
-        } else {
-            self.handle.set_loop_region(None);
-        }
-        self.repeat = repeat;
+        self.handle.set_repeat(repeat);
     }
 
-    fn set_volume(&mut self, volume: f32) {
+    fn set_volume(&mut self, volume: Decibels) {
         self.volume = volume;
-        self.handle
-            .set_volume(self.volume + self.fade_volume, Tween::default());
+        self.handle.set_volume(self.volume + self.fade_volume);
     }
 
-    fn set_fade(&mut self, volume: f32, tween: Tween) {
+    fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
         self.fade_volume = volume;
         self.handle
-            .set_volume(self.volume + self.fade_volume, tween);
+            .set_fade(self.volume + self.fade_volume, fade_param);
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 struct LastStatus {
-    state: PlaybackState,
+    state: AudioPlaybackState,
     position: f64,
     duration: f64,
 }
@@ -193,12 +131,12 @@ struct LastStatus {
 struct PlayingSound {
     handle: PlaybackHandle,
     last_status: Option<LastStatus>,
-    manual_stop_sent: bool,
 }
 
 pub struct AudioEngine {
-    manager: Option<AudioManager>,
-    mono_effect_handle: MonoEffectHandle,
+    _output: Option<MixerDeviceSink>,
+    audio_mixer: Option<Mixer>,
+    is_mono: Arc<AtomicBool>,
     settings: ShowAudioSettings,
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
@@ -212,15 +150,30 @@ impl AudioEngine {
         event_tx: mpsc::Sender<EngineEvent>,
         settings: ShowAudioSettings,
     ) -> Result<Self> {
-        let mut audio_manager_settings = AudioManagerSettings::default();
-        let mono_effect_handle = audio_manager_settings
-            .main_track_builder
-            .add_effect(MonoEffectBuilder::new(settings.mono_output));
-        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)?;
+        let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
+        let builder = DeviceSinkBuilder::from_default_device()?;
+        let output = builder
+            .with_channels(
+                NonZero::new(settings.output_channels)
+                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
+            )
+            .open_stream()?;
+        let (channel_count, sample_rate) = {
+            let output_config = output.config();
+            (output_config.channel_count(), output_config.sample_rate())
+        };
+
+        let (main_mixer, mixer_source) = rodio::mixer::mixer(channel_count, sample_rate);
+        main_mixer.add(Zero::new(channel_count, sample_rate));
+
+        let main_source = mono::Mono::new(mixer_source, is_mono.clone());
+
+        output.mixer().add(main_source);
 
         Ok(Self {
-            manager: Some(manager),
-            mono_effect_handle,
+            _output: Some(output),
+            audio_mixer: Some(main_mixer),
+            is_mono,
             settings,
             command_rx,
             event_tx,
@@ -235,19 +188,34 @@ impl AudioEngine {
         settings: ShowAudioSettings,
     ) -> Result<(Self, SharedLevel)> {
         let shared_level = SharedLevel::default();
-        let mut audio_manager_settings = AudioManagerSettings::default();
-        let mono_effect_handle = audio_manager_settings
-            .main_track_builder
-            .add_effect(MonoEffectBuilder::new(settings.mono_output));
-        audio_manager_settings
-            .main_track_builder
-            .add_built_effect(Box::new(LevelMeterEffect::new(shared_level.clone())));
-        let manager = AudioManager::<DefaultBackend>::new(audio_manager_settings)?;
+        let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
+        let builder = DeviceSinkBuilder::from_default_device()?;
+        let output = builder
+            .with_channels(
+                NonZero::new(settings.output_channels)
+                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
+            )
+            .open_stream()?;
+        let (channel_count, sample_rate) = {
+            let output_config = output.config();
+            (output_config.channel_count(), output_config.sample_rate())
+        };
+
+        let (main_mixer, mixer_source) = rodio::mixer::mixer(channel_count, sample_rate);
+        main_mixer.add(Zero::new(channel_count, sample_rate));
+
+        let main_source = LevelMeter::new(
+            mono::Mono::new(mixer_source, is_mono.clone()),
+            shared_level.clone(),
+        );
+
+        output.mixer().add(main_source);
 
         Ok((
             Self {
-                manager: Some(manager),
-                mono_effect_handle,
+                _output: Some(output),
+                audio_mixer: Some(main_mixer),
+                is_mono,
                 settings,
                 command_rx,
                 event_tx,
@@ -277,14 +245,14 @@ impl AudioEngine {
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
-                        AudioCommand::Stop { id } => self.handle_stop(id),
+                        AudioCommand::Stop { id } => self.handle_stop(id).await,
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
                         AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.settings.mono_output {
-                                self.mono_effect_handle.set_enable(settings.mono_output);
+                                self.is_mono.store(settings.mono_output, Ordering::Release);
                             }
                             self.settings = settings.clone();
                             Ok(())
@@ -298,51 +266,51 @@ impl AudioEngine {
                     }
                 },
                 _ = poll_timer.tick() => {
-                    let keys = self.playing_sounds.keys().clone();
+                    let keys: Vec<_> = self.playing_sounds.keys().cloned().collect();
                     for id in keys {
-                        let Some(playing_sound) = self.playing_sounds.get(id) else {
-                            continue;
-                        };
-                        let playback_state = playing_sound.handle.state();
-                        let position = playing_sound.handle.position();
-                        let event = match playback_state {
-                            kira::sound::PlaybackState::Playing => {
-                                let event = EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration });
-                                if let Err(e) = self.event_tx.try_send(event) {
-                                    log::warn!("EngineEvent dropped: {:?}", e);
-                                }
+                        let event = {
+                            let Some(playing_sound) = self.playing_sounds.get(&id) else {
                                 continue;
-                            },
-                            kira::sound::PlaybackState::Pausing => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })
-                            },
-                            kira::sound::PlaybackState::Paused => {
-                                if let Some(last_state) = &playing_sound.last_status
-                                    && last_state.eq(&LastStatus {state: playback_state, position, duration: playing_sound.handle.duration }) {
-                                        continue;
-                                }
-                                EngineEvent::Audio(AudioEngineEvent::Paused { instance_id: *id, position, duration: playing_sound.handle.duration })
-                            },
-                            kira::sound::PlaybackState::WaitingToResume => {
-                                continue
-                            },
-                            kira::sound::PlaybackState::Resuming => {
-                                EngineEvent::Audio(AudioEngineEvent::Progress { instance_id: *id, position, duration: playing_sound.handle.duration })
-                            },
-                            kira::sound::PlaybackState::Stopping => {
-                                EngineEvent::Audio(AudioEngineEvent::Stopping { instance_id: *id, position, duration: playing_sound.handle.duration })
-                            },
-                            kira::sound::PlaybackState::Stopped => {
-                                if playing_sound.manual_stop_sent {
-                                    log::info!("STOP: id={}", *id);
-                                    EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: *id })
-                                } else {
-                                    log::info!("COMPLETE: id={}", *id);
-                                    EngineEvent::Audio(AudioEngineEvent::Completed { instance_id: *id })
-                                }
-                            },
+                            };
+                            let playback_state = playing_sound.handle.state();
+                            let position = playing_sound.handle.position();
+                            match playback_state {
+                                AudioPlaybackState::Loaded => continue,
+                                AudioPlaybackState::Playing |
+                                AudioPlaybackState::Pausing |
+                                AudioPlaybackState::Resuming => {
+                                    AudioEngineEvent::Progress { instance_id: id, position, duration: playing_sound.handle.duration }
+                                },
+                                AudioPlaybackState::Paused => {
+                                    if let Some(last_state) = &playing_sound.last_status
+                                        && last_state.eq(&LastStatus {state: playback_state, position, duration: playing_sound.handle.duration }) {
+                                            continue;
+                                    }
+                                    AudioEngineEvent::Paused { instance_id: id, position, duration: playing_sound.handle.duration }
+                                },
+                                AudioPlaybackState::HardStopping |
+                                AudioPlaybackState::SoftStopping => {
+                                    if let Some(last_state) = &playing_sound.last_status && last_state.state == playback_state {
+                                        AudioEngineEvent::Progress { instance_id: id, position, duration: playing_sound.handle.duration }
+                                    } else {
+                                        AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
+                                    }
+                                },
+                                AudioPlaybackState::Stopped => {
+                                    log::info!("STOP: id={}", id);
+                                    AudioEngineEvent::Stopped { instance_id: id }
+                                },
+                                AudioPlaybackState::Completed => {
+                                    log::info!("COMPLETE: id={}", id);
+                                    AudioEngineEvent::Completed { instance_id: id }
+                                },
+                            }
                         };
-                        if self.event_tx.send(event).await.is_err() {
+                        if matches!(event, AudioEngineEvent::Progress {..}) {
+                            if let Err(e) = self.event_tx.try_send(EngineEvent::Audio(event)) {
+                                log::warn!("EngineEvent dropped: {:?}", e);
+                            }
+                        } else if self.event_tx.send(EngineEvent::Audio(event)).await.is_err() {
                             log::warn!("AudioEngineEvent bus dropped.");
                         }
                     }
@@ -353,7 +321,7 @@ impl AudioEngine {
                             duration: playing_sound.handle.duration,
                         });
                     }
-                    self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), kira::sound::PlaybackState::Stopped));
+                    self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
                 },
                 else => break
             }
@@ -362,108 +330,71 @@ impl AudioEngine {
     }
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
-        let manager = self
-            .manager
+        let mixer = self
+            .audio_mixer
             .as_mut()
-            .ok_or_else(|| anyhow::anyhow!("AudioManager is not available"))?;
-        let clock = manager
-            .add_clock(ClockSpeed::SecondsPerTick(1.0))
-            .map_err(|_| anyhow::anyhow!("Failed to create audio. Playback limit reached."))?;
+            .ok_or_else(|| anyhow::anyhow!("Audio Mixer is not available"))?;
+
+        let mut settings = AudioSourceSettings::from(&data);
+        settings.channel_mapping = ChannelMapping::from_pan(data.pan);
+
+        let handle;
+        let duration;
 
         let filepath_clone = data.filepath.clone();
-
-        let duration;
-        let handle;
-
-        if data.sound_type == SoundType::Static {
-            let mut sound_data =
-                tokio::task::spawn_blocking(move || StaticSoundData::from_file(filepath_clone))
+        match data.sound_type {
+            SoundType::Static => {
+                let audio_source;
+                (audio_source, handle) =
+                    tokio::task::spawn_blocking(move || -> Result<(AudioSource<StaticSource>, AudioSourceHandle), anyhow::Error> {
+                        let file = File::open(filepath_clone)?;
+                        let len = file.metadata()?.len();
+                        let decoder = Decoder::builder().with_data(file).with_byte_len(len).with_seekable(true).build()?;
+                        Ok(AudioSource::new(StaticSource::new(decoder), settings))
+                    })
                     .await?
                     .with_context(|| {
                         format!(
                             "Failed to load sound data from: {}",
                             data.filepath.display()
                         )
-                    })?
-                    .slice(Region {
-                        start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
-                        end: if let Some(end_time) = data.end_time {
-                            EndPosition::Custom(PlaybackPosition::Seconds(end_time))
-                        } else {
-                            EndPosition::EndOfAudio
-                        },
+                    })?;
+
+                duration = audio_source
+                    .total_duration()
+                    .map_or(0.0, |d| d.as_secs_f64());
+                mixer.add(audio_source);
+            }
+            SoundType::Streaming => {
+                let audio_source;
+                (audio_source, handle) =
+                    tokio::task::spawn_blocking(move || -> Result<(AudioSource<Decoder<File>>, AudioSourceHandle), anyhow::Error> {
+                        let file = File::open(filepath_clone)?;
+                        let len = file.metadata()?.len();
+                        let decoder = Decoder::builder().with_data(file).with_byte_len(len).with_seekable(true).build()?;
+                        Ok(AudioSource::new(decoder, settings))
                     })
-                    .volume(Decibels::from(data.volume))
-                    .panning(Panning::from(data.pan))
-                    .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
-
-            if data.repeat {
-                sound_data = sound_data.loop_region(Some(Region {
-                    start: PlaybackPosition::Seconds(0.0),
-                    end: EndPosition::EndOfAudio,
-                }));
-            }
-
-            if let Some(fade_in_param) = data.fade_in_param {
-                sound_data = sound_data.fade_in_tween(Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(fade_in_param.duration),
-                    easing: fade_in_param.easing.into(),
-                });
-            }
-
-            duration = sound_data.duration().as_secs_f64();
-
-            log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-            handle = SoundHandle::Static(manager.play(sound_data)?);
-        } else {
-            let mut sound_data =
-                tokio::task::spawn_blocking(move || StreamingSoundData::from_file(filepath_clone))
                     .await?
                     .with_context(|| {
                         format!(
                             "Failed to load sound data from: {}",
                             data.filepath.display()
                         )
-                    })?
-                    .slice(Region {
-                        start: PlaybackPosition::Seconds(data.start_time.unwrap_or(0.0)),
-                        end: if let Some(end_time) = data.end_time {
-                            EndPosition::Custom(PlaybackPosition::Seconds(end_time))
-                        } else {
-                            EndPosition::EndOfAudio
-                        },
-                    })
-                    .volume(Decibels::from(data.volume))
-                    .panning(Panning::from(data.pan))
-                    .start_time(StartTime::ClockTime(ClockTime::from_ticks_f64(&clock, 0.0)));
+                    })?;
 
-            if data.repeat {
-                sound_data = sound_data.loop_region(Some(Region {
-                    start: PlaybackPosition::Seconds(0.0),
-                    end: EndPosition::EndOfAudio,
-                }));
+                duration = audio_source
+                    .total_duration()
+                    .map_or(0.0, |d| d.as_secs_f64());
+                mixer.add(audio_source);
             }
-
-            if let Some(fade_in_param) = data.fade_in_param {
-                sound_data = sound_data.fade_in_tween(Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(fade_in_param.duration),
-                    easing: fade_in_param.easing.into(),
-                });
-            }
-
-            duration = sound_data.duration().as_secs_f64();
-
-            log::info!("LOAD: id={}, file={}", id, data.filepath.display());
-            handle = SoundHandle::Streaming(manager.play(sound_data)?);
         }
 
-        let fade_out_tween = data.fade_out_param.map(|fade_out_param| Tween {
-            start_time: StartTime::Immediate,
-            duration: Duration::from_secs_f64(fade_out_param.duration),
-            easing: fade_out_param.easing.into(),
-        });
+        log::info!(
+            "LOAD: id={}, file={}, duration={}",
+            id,
+            data.filepath.display(),
+            duration
+        );
 
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
@@ -477,12 +408,9 @@ impl AudioEngine {
             id,
             PlaybackHandle {
                 handle,
-                clock,
                 duration,
-                repeat: data.repeat,
                 volume: data.volume,
-                fade_volume: 0.0,
-                fade_out_tween,
+                fade_volume: Decibels::IDENTITY,
             },
         );
         Ok(())
@@ -504,6 +432,7 @@ impl AudioEngine {
         self.event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id: id,
+                position: handle.position(),
                 duration: handle.duration,
                 initial_params: AudioStateParam {
                     repeating: data.repeat,
@@ -517,7 +446,6 @@ impl AudioEngine {
             PlayingSound {
                 handle,
                 last_status: None,
-                manual_stop_sent: false,
             },
         );
         Ok(())
@@ -542,11 +470,10 @@ impl AudioEngine {
     async fn handle_resume(&mut self, id: Uuid) -> Result<()> {
         log::info!("RESUME: id={}", id);
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            if playing_sound
-                .handle
-                .state()
-                .eq(&kira::sound::PlaybackState::Paused)
-            {
+            if matches!(
+                playing_sound.handle.state(),
+                AudioPlaybackState::Pausing | AudioPlaybackState::Paused
+            ) {
                 playing_sound.handle.resume();
                 self.event_tx
                     .send(EngineEvent::Audio(AudioEngineEvent::Resumed {
@@ -560,13 +487,13 @@ impl AudioEngine {
         }
     }
 
-    fn handle_stop(&mut self, id: Uuid) -> Result<()> {
+    async fn handle_stop(&mut self, id: Uuid) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.stop();
-            playing_sound.manual_stop_sent = true;
             Ok(())
         } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
             loaded_sound.stop();
+            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: id })).await?;
             Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
@@ -574,8 +501,9 @@ impl AudioEngine {
     }
 
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
-        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.seek_to(position);
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id)
+            && playing_sound.handle.seek_to(position).await.is_ok()
+        {
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
                     instance_id: id,
@@ -583,13 +511,13 @@ impl AudioEngine {
                 }))
                 .await?;
             Ok(())
-        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.seek_to(position);
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id)
+            && loaded_handle.seek_to(position).await.is_ok()
+        {
             self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
+                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
                     instance_id: id,
                     position,
-                    duration: loaded_handle.duration,
                 }))
                 .await?;
             Ok(())
@@ -601,49 +529,46 @@ impl AudioEngine {
     async fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             let position = playing_sound.handle.position() + amount;
-            playing_sound.handle.seek_by(amount);
-            self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
-                    instance_id: id,
-                    position,
-                }))
-                .await?;
-            Ok(())
+            if let Err(e) = playing_sound.handle.seek_by(amount).await {
+                Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
+            } else {
+                self.event_tx
+                    .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                        instance_id: id,
+                        position,
+                    }))
+                    .await?;
+                Ok(())
+            }
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.seek_by(amount);
-            self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
-                    instance_id: id,
-                    position: loaded_handle.position(),
-                    duration: loaded_handle.duration,
-                }))
-                .await?;
-            Ok(())
+            let position = loaded_handle.position() + amount;
+            if let Err(e) = loaded_handle.seek_by(amount).await {
+                Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
+            } else {
+                self.event_tx
+                    .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                        instance_id: id,
+                        position,
+                    }))
+                    .await?;
+                Ok(())
+            }
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
         }
     }
 
-    async fn handle_fade_volume(&mut self, id: Uuid, volume: f32, param: FadeParam) -> Result<()> {
+    async fn handle_fade_volume(
+        &mut self,
+        id: Uuid,
+        volume: Decibels,
+        param: FadeParam,
+    ) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_fade(
-                volume,
-                Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(param.duration),
-                    easing: param.easing.into(),
-                },
-            );
+            playing_sound.handle.set_fade(volume, param);
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.set_fade(
-                volume,
-                Tween {
-                    start_time: StartTime::Immediate,
-                    duration: Duration::from_secs_f64(param.duration),
-                    easing: param.easing.into(),
-                },
-            );
+            loaded_handle.set_fade(volume, param);
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,

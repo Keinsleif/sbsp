@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "backend")]
 use tokio::sync::{broadcast, mpsc, oneshot, watch};
 
-use crate::{model::ShowModel, manager::ProjectStatus, controller::state::ShowState};
 #[cfg(feature = "backend")]
 use crate::{
     asset_processor::{AssetProcessor, AssetProcessorHandle},
@@ -17,6 +16,7 @@ use crate::{
     manager::{ShowModelHandle, ShowModelManager},
     model::settings::ShowAudioSettings,
 };
+use crate::{controller::state::ShowState, manager::ProjectStatus, model::ShowModel};
 
 pub mod action;
 #[cfg(feature = "backend")]
@@ -38,7 +38,7 @@ pub mod api;
 #[cfg(feature = "type_export")]
 pub mod asset_processor {
     mod data;
-    pub use data::AssetData;
+    pub use data::{AssetData, AssetMetadata};
     mod command;
     pub use command::AssetProcessorCommand;
 }
@@ -188,7 +188,10 @@ pub fn start_backend(
 }
 
 #[cfg(feature = "backend")]
-fn handle_state_sync(state_rx: watch::Receiver<ShowState>, event_tx: broadcast::Sender<UiEvent>) -> mpsc::Sender<()> {
+fn handle_state_sync(
+    state_rx: watch::Receiver<ShowState>,
+    event_tx: broadcast::Sender<UiEvent>,
+) -> mpsc::Sender<()> {
     let (sender, mut receiver) = mpsc::channel(8);
 
     tokio::spawn(async move {
@@ -200,7 +203,14 @@ fn handle_state_sync(state_rx: watch::Receiver<ShowState>, event_tx: broadcast::
                     use crate::event::CueState;
 
                     let state = state_rx.borrow();
-                    state.active_cues.iter().map(|(id, ac)| CueState { id: *id, position: ac.position }).collect()
+                    state
+                        .active_cues
+                        .iter()
+                        .map(|(id, ac)| CueState {
+                            id: *id,
+                            position: ac.position,
+                        })
+                        .collect()
                 };
                 if let Err(e) = event_tx.send(UiEvent::SyncState(SyncData { latency: 0.0, cues })) {
                     log::trace!("No UI clients are listening to playback events. e={}", e);
@@ -215,16 +225,23 @@ fn handle_state_sync(state_rx: watch::Receiver<ShowState>, event_tx: broadcast::
 }
 
 #[cfg(feature = "backend")]
-fn handle_full_state(model_handle: ShowModelHandle, state_rx: watch::Receiver<ShowState>) -> mpsc::Sender<oneshot::Sender<FullShowState>> {
-    let (request_full_state_tx, mut request_full_state_rx) = mpsc::channel::<oneshot::Sender<FullShowState>>(8);
+fn handle_full_state(
+    model_handle: ShowModelHandle,
+    state_rx: watch::Receiver<ShowState>,
+) -> mpsc::Sender<oneshot::Sender<FullShowState>> {
+    let (request_full_state_tx, mut request_full_state_rx) =
+        mpsc::channel::<oneshot::Sender<FullShowState>>(8);
 
     tokio::spawn(async move {
         while let Some(responder) = request_full_state_rx.recv().await {
-            if responder.send(FullShowState {
-                project_status: model_handle.get_project_state().await.clone(),
-                show_model: model_handle.read().await.clone(),
-                show_state: state_rx.borrow().clone(),
-            }).is_err() {
+            if responder
+                .send(FullShowState {
+                    project_status: model_handle.get_project_state().await.clone(),
+                    show_model: model_handle.read().await.clone(),
+                    show_state: state_rx.borrow().clone(),
+                })
+                .is_err()
+            {
                 log::error!("error on responding full show state.");
                 break;
             }

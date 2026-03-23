@@ -4,7 +4,7 @@
       <time-range
         v-model="range"
         :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        :duration="assetResult.get(selectedCue?.id)?.duration || undefined"
+        :duration="assetResult.getMetadata(selectedCue?.id)?.duration || undefined"
         @update="saveEditorValue"
       ></time-range>
       <v-btn-group variant="tonal" divided density="compact">
@@ -43,7 +43,7 @@
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.timeLevels.changeVolume')"
       >
-        <div class="d-flex flex-row flex-grow-1">
+        <div class="d-flex flex-row flex-grow-1 ga-2">
           <volume-fader
             v-model="volume"
             class="flex-grow-1"
@@ -80,6 +80,7 @@
         :button-label="t('main.bottomEditor.timeLevels.changePan')"
       >
         <panning-fader
+          v-model="panning"
           :label="t('main.bottomEditor.timeLevels.pan')"
           :direction="xs ? 'vertical' : 'horizontal'"
           :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
@@ -134,7 +135,7 @@
     selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
     selectedCue.value != null && selectedCue.value.params.type == 'audio'
       ? selectedCue.value.params.endTime
-      : assetResult.get(selectedCue.value?.id)?.duration,
+      : assetResult.getMetadata(selectedCue.value?.id)?.duration,
   ] as [number | null, number | null]);
 
   const volume = ref(

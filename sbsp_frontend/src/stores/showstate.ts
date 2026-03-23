@@ -110,20 +110,21 @@ export const useShowState = defineStore('showstate', () => {
       case 'preWaitCompleted':
         // start cue will automatically triggered in backend.
         break;
-      case 'started':
+      case 'started': {
         syncedData.value[data.cueId] = {
-          position: 0.0,
+          position: data.position,
           status: 'playing',
           lastSyncedAt,
         };
         activeCues.value[data.cueId] = {
           cueId: data.cueId,
-          position: 0.0,
+          position: data.position,
           duration: data.duration,
           status: 'playing',
           params: data.params,
         };
         break;
+      }
       case 'paused': {
         syncedData.value[data.cueId] = {
           position: data.position,

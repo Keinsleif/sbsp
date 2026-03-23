@@ -109,7 +109,7 @@
       () => {
         api.requestStateSync();
       },
-      side == 'remote' ? 5000 : 10000,
+      5000,
       {
         immediate: true,
       },
@@ -182,6 +182,10 @@
           case 'settingsUpdated': {
             const settings = event.param.newSettings;
             showModel.$patch({ settings: settings });
+            break;
+          }
+          case 'assetMetadata': {
+            assetResult.addMetadata(event.param.path, event.param.data);
             break;
           }
           case 'assetResult': {

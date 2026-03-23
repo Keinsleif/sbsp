@@ -6,7 +6,9 @@ use uuid::Uuid;
 #[cfg(not(feature = "type_export"))]
 use crate::executor::ExecutorEvent;
 use crate::{
-    asset_processor::AssetData, controller::state::StateParam, model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings}
+    asset_processor::{AssetData, AssetMetadata},
+    controller::state::StateParam,
+    model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,6 +56,10 @@ pub enum UiEvent {
     },
 
     // AssetProcessor Events
+    AssetMetadata {
+        path: PathBuf,
+        data: AssetMetadata,
+    },
     AssetResult {
         path: PathBuf,
         data: Result<AssetData, String>,
@@ -96,6 +102,7 @@ pub enum CueStatusEventParam {
     },
     Started {
         cue_id: Uuid,
+        position: f64,
         duration: f64,
         params: StateParam,
     },
@@ -150,23 +157,61 @@ impl TryFrom<ExecutorEvent> for UiEvent {
         use crate::executor::ExecutorEvent;
 
         let status_param = match value {
-            ExecutorEvent::Loaded { cue_id, position, duration } => Some(CueStatusEventParam::Loaded { cue_id, position, duration }),
-            ExecutorEvent::Started { cue_id, duration, initial_params } => Some(CueStatusEventParam::Started { cue_id, duration, params: initial_params }),
-            ExecutorEvent::Paused { cue_id, position, .. } => Some(CueStatusEventParam::Paused { cue_id, position }),
+            ExecutorEvent::Loaded {
+                cue_id,
+                position,
+                duration,
+            } => Some(CueStatusEventParam::Loaded {
+                cue_id,
+                position,
+                duration,
+            }),
+            ExecutorEvent::Started {
+                cue_id,
+                position,
+                duration,
+                initial_params,
+            } => Some(CueStatusEventParam::Started {
+                cue_id,
+                position,
+                duration,
+                params: initial_params,
+            }),
+            ExecutorEvent::Paused {
+                cue_id, position, ..
+            } => Some(CueStatusEventParam::Paused { cue_id, position }),
             ExecutorEvent::Resumed { cue_id } => Some(CueStatusEventParam::Resumed { cue_id }),
             ExecutorEvent::Stopped { cue_id } => Some(CueStatusEventParam::Stopped { cue_id }),
             ExecutorEvent::Completed { cue_id } => Some(CueStatusEventParam::Completed { cue_id }),
             ExecutorEvent::Progress { .. } => None,
-            ExecutorEvent::Seeked { cue_id, position } => Some(CueStatusEventParam::Seeked { cue_id, position }),
-            ExecutorEvent::Stopping { cue_id, .. } => Some(CueStatusEventParam::Stopping { cue_id }),
-            ExecutorEvent::StateParamUpdated { cue_id, params } => Some(CueStatusEventParam::StateParamUpdated { cue_id, params }),
-            ExecutorEvent::Error { cue_id, error } => Some(CueStatusEventParam::Error { cue_id, error }),
-            ExecutorEvent::PreWaitStarted { cue_id, duration } => Some(CueStatusEventParam::PreWaitStarted { cue_id, duration }),
+            ExecutorEvent::Seeked { cue_id, position } => {
+                Some(CueStatusEventParam::Seeked { cue_id, position })
+            }
+            ExecutorEvent::Stopping { cue_id, .. } => {
+                Some(CueStatusEventParam::Stopping { cue_id })
+            }
+            ExecutorEvent::StateParamUpdated { cue_id, params } => {
+                Some(CueStatusEventParam::StateParamUpdated { cue_id, params })
+            }
+            ExecutorEvent::Error { cue_id, error } => {
+                Some(CueStatusEventParam::Error { cue_id, error })
+            }
+            ExecutorEvent::PreWaitStarted { cue_id, duration } => {
+                Some(CueStatusEventParam::PreWaitStarted { cue_id, duration })
+            }
             ExecutorEvent::PreWaitProgress { .. } => None,
-            ExecutorEvent::PreWaitPaused { cue_id, position, .. } => Some(CueStatusEventParam::PreWaitPaused { cue_id, position }),
-            ExecutorEvent::PreWaitResumed { cue_id } => Some(CueStatusEventParam::PreWaitResumed { cue_id }),
-            ExecutorEvent::PreWaitStopped { cue_id } => Some(CueStatusEventParam::PreWaitStopped { cue_id }),
-            ExecutorEvent::PreWaitCompleted { cue_id } => Some(CueStatusEventParam::PreWaitCompleted { cue_id }),
+            ExecutorEvent::PreWaitPaused {
+                cue_id, position, ..
+            } => Some(CueStatusEventParam::PreWaitPaused { cue_id, position }),
+            ExecutorEvent::PreWaitResumed { cue_id } => {
+                Some(CueStatusEventParam::PreWaitResumed { cue_id })
+            }
+            ExecutorEvent::PreWaitStopped { cue_id } => {
+                Some(CueStatusEventParam::PreWaitStopped { cue_id })
+            }
+            ExecutorEvent::PreWaitCompleted { cue_id } => {
+                Some(CueStatusEventParam::PreWaitCompleted { cue_id })
+            }
         };
         if let Some(param) = status_param {
             Ok(UiEvent::CueStatus(param))
@@ -181,7 +226,7 @@ impl TryFrom<ExecutorEvent> for UiEvent {
 #[serde(rename_all = "camelCase")]
 pub struct SyncData {
     pub latency: f64,
-    pub cues: Vec<CueState>
+    pub cues: Vec<CueState>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

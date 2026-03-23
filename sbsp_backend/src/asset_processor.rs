@@ -3,8 +3,9 @@ mod data;
 mod handle;
 
 pub use command::AssetProcessorCommand;
-pub use data::AssetData;
+pub use data::{AssetData, AssetMetadata};
 pub use handle::AssetProcessorHandle;
+use symphonia::core::codecs::CODEC_TYPE_NULL;
 
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
@@ -99,10 +100,10 @@ impl AssetProcessor {
                 Ok(result) = result_rx.recv() => {
                     let mut cache = self.cache.write().await;
                     if let Ok(data) = &result.data {
-                        if let Ok(metadata) = tokio::fs::metadata(data.path.clone()).await && let Ok(last_modified) = metadata.modified() {
-                            cache.entries.insert(data.path.clone(), CacheEntry { last_modified, data: data.clone() });
+                        if let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
+                            cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified, data: data.clone() });
                         } else {
-                            cache.entries.insert(data.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
+                            cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
                         }
                     }
                     self.processing.write().await.retain(|value| *value != result.path);
@@ -142,9 +143,10 @@ impl AssetProcessor {
 
         let actual_path_clone = actual_path.clone();
         let result_tx = self.result_tx.clone();
+        let event_tx = self.event_tx.clone();
         tokio::task::spawn_blocking(move || {
-            let asset_data =
-                Self::process_asset(actual_path_clone.clone()).map_err(|e| e.to_string());
+            let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
+                .map_err(|e| e.to_string());
             result_tx
                 .send(ProcessResult {
                     path,
@@ -155,7 +157,11 @@ impl AssetProcessor {
         log::info!("Asset Process started. file={:?}", actual_path);
     }
 
-    fn process_asset(path: PathBuf) -> anyhow::Result<AssetData> {
+    fn process_asset(
+        path: PathBuf,
+        orig_path: PathBuf,
+        event_tx: broadcast::Sender<UiEvent>,
+    ) -> anyhow::Result<AssetData> {
         let src: std::fs::File = std::fs::File::open(&path)?;
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
@@ -175,19 +181,43 @@ impl AssetProcessor {
 
         let mut format = probed.format;
 
-        let track = format.default_track().unwrap();
-        let codec_params = track.codec_params.clone();
-
-        let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
+        let track = format
+            .tracks()
+            .iter()
+            .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
+            .ok_or(symphonia::core::errors::Error::Unsupported(
+                "No track with supported codec",
+            ))?;
 
         let track_id = track.id;
+
+        let codec_params = track.codec_params.clone();
+
+        let duration = codec_params
+            .time_base
+            .zip(codec_params.n_frames)
+            .map(calc_secs_from_timebase);
 
         let sample_rate = codec_params
             .sample_rate
             .ok_or_else(|| anyhow::anyhow!("Sample rate not found."))?;
         let mut channel_count = codec_params.channels.map(|channels| channels.count());
-        let total_samples = codec_params.n_frames.unwrap_or(0);
 
+        let mut metadata = AssetMetadata {
+            path: path.clone(),
+            duration,
+            channel_count: channel_count.map(|c| c as u16),
+            sample_rate,
+        };
+
+        let _ = event_tx.send(UiEvent::AssetMetadata {
+            path: orig_path,
+            data: metadata.clone(),
+        });
+
+        let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
+
+        let total_samples = codec_params.n_frames.unwrap_or(0);
         let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
 
         if total_samples > 0 && (total_samples / samples_per_peaks) > WAVEFORM_THRESHOLD as u64 {
@@ -292,32 +322,23 @@ impl AssetProcessor {
             waveform.push(max_in_current_peak);
         }
 
-        let calc_sec = |(base, spans): (symphonia::core::units::TimeBase, u64)| {
-            let t = base.calc_time(spans);
-            t.seconds as f64 + t.frac
-        };
-
-        let duration = codec_params
-            .time_base
-            .zip(codec_params.n_frames)
-            .map(calc_sec);
-
         let start_time = codec_params
             .time_base
             .zip(
                 first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64),
             )
-            .map(calc_sec);
+            .map(calc_secs_from_timebase);
         let end_time = codec_params
             .time_base
             .zip(last_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
-            .map(calc_sec);
+            .map(calc_secs_from_timebase);
 
         let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
 
+        metadata.channel_count = channel_count.map(|c| c as u16);
+
         Ok(AssetData {
-            path,
-            duration,
+            metadata,
             waveform,
             integrated_lufs,
             peak: if max_audio_sample > 0.0 {
@@ -329,6 +350,11 @@ impl AssetProcessor {
             end_time,
         })
     }
+}
+
+fn calc_secs_from_timebase((base, spans): (symphonia::core::units::TimeBase, u64)) -> f64 {
+    let t = base.calc_time(spans);
+    t.seconds as f64 + t.frac
 }
 
 fn ignore_end_of_stream_error(

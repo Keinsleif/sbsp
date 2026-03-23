@@ -85,7 +85,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
           fadeParam: {
             duration: 3.0,
             easing: {
-              type: 'inOutPowi',
+              type: 'inOutPow',
               intensity: 2,
             },
           },

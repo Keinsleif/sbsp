@@ -61,7 +61,7 @@
   const fadeParam = ref(
     selectedCue.value != null && selectedCue.value.params.type == 'fade'
       ? selectedCue.value.params.fadeParam
-      : ({ duration: 3.0, easing: { type: 'inOutPowi', intensity: 2 } } as FadeParam),
+      : ({ duration: 3.0, easing: { type: 'inOutPow', intensity: 2 } } as FadeParam),
   );
 
   watch(selectedCue, () => {

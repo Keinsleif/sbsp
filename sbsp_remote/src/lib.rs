@@ -3,7 +3,7 @@ mod settings;
 #[cfg(desktop)]
 pub mod update;
 
-use std::time::{SystemTime};
+use std::time::SystemTime;
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -22,7 +22,6 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 
 #[cfg(not(debug_assertions))]
 const LOG_LEVEL: LevelFilter = LevelFilter::Info;
-
 
 async fn forward_backend_event(
     app_handle: AppHandle,

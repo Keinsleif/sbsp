@@ -2,6 +2,8 @@ use indexmap::map::IndexMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::model::cue::audio::Decibels;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +38,7 @@ pub enum StateParam {
 #[serde(rename_all = "camelCase")]
 pub struct AudioStateParam {
     pub repeating: bool,
-    pub volume: f32,
+    pub volume: Decibels,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

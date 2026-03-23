@@ -11,7 +11,7 @@ use sbsp_backend::{
     BackendSettings,
     model::cue::{
         Cue, CueParam, CueSequence,
-        audio::{AudioCueParam, Easing, FadeParam, SoundType},
+        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
     },
 };
@@ -113,7 +113,7 @@ impl Default for TemplateSettings {
                     fade_in_param: None,
                     end_time: None,
                     fade_out_param: None,
-                    volume: 0.0,
+                    volume: Decibels::IDENTITY,
                     pan: 0.0,
                     repeat: false,
                     sound_type: SoundType::Streaming,
@@ -137,10 +137,10 @@ impl Default for TemplateSettings {
                 sequence: CueSequence::DoNotContinue,
                 params: CueParam::Fade {
                     target: Uuid::nil(),
-                    volume: 0.0,
+                    volume: Decibels::IDENTITY,
                     fade_param: FadeParam {
                         duration: 3.0,
-                        easing: Easing::InOutPowi(2),
+                        easing: Easing::InOutPow(2.0),
                     },
                 },
             },

@@ -416,6 +416,7 @@ impl Executor {
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
+                                position: 0.0,
                                 duration: 0.0,
                                 initial_params: StateParam::None,
                             })
@@ -431,6 +432,7 @@ impl Executor {
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
+                                position: 0.0,
                                 duration: 0.0,
                                 initial_params: StateParam::None,
                             })
@@ -692,8 +694,14 @@ impl Executor {
                         position,
                         duration,
                     },
-                    AudioEngineEvent::Started { duration, initial_params, .. } => ExecutorEvent::Started {
+                    AudioEngineEvent::Started {
+                        position,
+                        duration,
+                        initial_params,
+                        ..
+                    } => ExecutorEvent::Started {
                         cue_id,
+                        position,
                         duration,
                         initial_params: StateParam::Audio(initial_params),
                     },
@@ -718,7 +726,9 @@ impl Executor {
                         duration,
                     },
                     AudioEngineEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
-                    AudioEngineEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
+                    AudioEngineEvent::Seeked { position, .. } => {
+                        ExecutorEvent::Seeked { cue_id, position }
+                    }
                     AudioEngineEvent::Stopping {
                         position, duration, ..
                     } => {
@@ -762,7 +772,9 @@ impl Executor {
 
                 let executor_event = match wait_event {
                     WaitEvent::Loaded { .. } => unreachable!(),
-                    WaitEvent::Started { duration, .. } => ExecutorEvent::PreWaitStarted { cue_id, duration },
+                    WaitEvent::Started { duration, .. } => {
+                        ExecutorEvent::PreWaitStarted { cue_id, duration }
+                    }
                     WaitEvent::Progress {
                         position, duration, ..
                     } => {
@@ -784,7 +796,9 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::PreWaitResumed { cue_id },
-                    WaitEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
+                    WaitEvent::Seeked { position, .. } => {
+                        ExecutorEvent::Seeked { cue_id, position }
+                    }
                     WaitEvent::Stopped { .. } => {
                         if self
                             .active_instances
@@ -845,8 +859,9 @@ impl Executor {
                         position,
                         duration,
                     },
-                    WaitEvent::Started { duration, .. } => ExecutorEvent::Started {
+                    WaitEvent::Started { position, duration, .. } => ExecutorEvent::Started {
                         cue_id,
+                        position,
                         duration,
                         initial_params: StateParam::Wait,
                     },
@@ -871,7 +886,9 @@ impl Executor {
                         duration,
                     },
                     WaitEvent::Resumed { .. } => ExecutorEvent::Resumed { cue_id },
-                    WaitEvent::Seeked { position, .. } => ExecutorEvent::Seeked { cue_id, position },
+                    WaitEvent::Seeked { position, .. } => {
+                        ExecutorEvent::Seeked { cue_id, position }
+                    }
                     WaitEvent::Stopped { .. } => {
                         self.active_instances.write().await.remove(&cue_id);
                         self.check_and_stop_parents(cue_id, false).await?;
@@ -906,6 +923,7 @@ impl Executor {
                     self.executor_event_tx
                         .send(ExecutorEvent::Started {
                             cue_id: parent.id,
+                            position: 0.0,
                             duration: 0.0,
                             initial_params: StateParam::None,
                         })
@@ -978,7 +996,7 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::audio::{Easing, FadeParam, SoundType},
+            cue::audio::{Decibels, Easing, FadeParam, SoundType},
         },
     };
 
@@ -1019,9 +1037,9 @@ mod tests {
                 end_time: Some(50.0),
                 fade_out_param: Some(FadeParam {
                     duration: 5.0,
-                    easing: Easing::InPowi(2),
+                    easing: Easing::InPow(2.0),
                 }),
-                volume: 0.0,
+                volume: Decibels::IDENTITY,
                 pan: 0.0,
                 repeat: false,
                 sound_type: SoundType::Streaming,
@@ -1064,7 +1082,7 @@ mod tests {
 
         if let AudioCommand::Play { data, .. } = command {
             assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
-            assert_eq!(data.volume, 0.0);
+            assert_eq!(data.volume, Decibels::IDENTITY);
             assert_eq!(data.pan, 0.0);
             assert_eq!(data.start_time, Some(5.0));
             assert_eq!(
@@ -1079,7 +1097,7 @@ mod tests {
                 data.fade_out_param,
                 Some(FadeParam {
                     duration: 5.0,
-                    easing: Easing::InPowi(2)
+                    easing: Easing::InPow(2.0)
                 })
             );
             assert!(!data.repeat);
@@ -1111,6 +1129,7 @@ mod tests {
         engine_event_tx
             .send(EngineEvent::Audio(AudioEngineEvent::Started {
                 instance_id,
+                position: 0.0,
                 duration: 23.0,
                 initial_params: AudioStateParam::default(),
             }))
@@ -1120,11 +1139,13 @@ mod tests {
         if let Some(event) = playback_event_rx.recv().await {
             if let ExecutorEvent::Started {
                 cue_id,
+                position,
                 duration,
                 initial_params,
             } = event
             {
                 assert_eq!(cue_id, orig_cue_id);
+                assert_eq!(position, 0.0);
                 assert_eq!(duration, 23.0);
                 assert_eq!(
                     initial_params,

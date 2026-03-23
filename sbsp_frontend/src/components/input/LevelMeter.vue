@@ -15,7 +15,7 @@
             style="transition: height 40ms ease-out"
             :style="{
               width: props.width,
-              height: (levels.left * 100) / -60 + '%',
+              height: Math.min(levels.left * 100, 0) / -60 + '%',
             }"
           ></div>
         </div>
@@ -43,7 +43,7 @@
             style="transition: height 40ms ease-out"
             :style="{
               width: props.width,
-              height: (levels.right * 100) / -60 + '%',
+              height: Math.min(levels.right * 100, 0) / -60 + '%',
             }"
           ></div>
         </div>
@@ -121,7 +121,7 @@
       levels.value.left = Math.max(levels.value.left, Math.log10(message[0]) * 20);
       levels.value.right = Math.max(levels.value.right, Math.log10(message[1]) * 20);
     });
-    decayLoop();
+    animationFrameId = requestAnimationFrame(decayLoop);
   });
 
   onUnmounted(() => {

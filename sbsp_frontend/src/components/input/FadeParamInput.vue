@@ -131,7 +131,7 @@
       if (param.value == null) {
         param.value = {
           duration: 3,
-          easing: { type: 'inOutPowi', intensity: 2 },
+          easing: { type: 'inOutPow', intensity: 2 },
         };
         duration.value = 3;
         easingType.value = 'inOutPow';

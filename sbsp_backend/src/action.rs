@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::model::cue::audio::Decibels;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
@@ -21,5 +23,5 @@ pub enum CueAction {
 )]
 pub enum AudioAction {
     ToggleRepeat,
-    SetVolume(f32),
+    SetVolume(Decibels),
 }

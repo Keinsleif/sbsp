@@ -52,7 +52,7 @@
         v-show="position != 0"
         :style="{
           transform: `translateX(${currentPlayPos}px)`,
-          transition: 'transform 150ms linear',
+          transition: 'transform 10ms linear',
         }"
         x="0"
         y="0"
@@ -104,12 +104,12 @@
   const contentHeight = computed(() => props.heightPx - 4);
 
   const nonNullStartTime = computed<number>(() => {
-    const duration = assetResult.get(props.targetId)?.duration;
+    const duration = assetResult.getMetadata(props.targetId)?.duration;
     return props.startTime != null && duration != null ? props.startTime / duration : 0;
   });
 
   const nonNullEndTime = computed<number>(() => {
-    const duration = assetResult.get(props.targetId)?.duration;
+    const duration = assetResult.getMetadata(props.targetId)?.duration;
     return props.endTime != null && duration != null ? props.endTime / duration : 1;
   });
 
@@ -202,7 +202,7 @@
     if (props.targetId == null) {
       return '--:--.-- / --:--.--';
     }
-    const duration = assetResult.get(props.targetId)?.duration;
+    const duration = assetResult.getMetadata(props.targetId)?.duration;
     if (duration == null) {
       return '--:--.-- / --:--.--';
     }
