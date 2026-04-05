@@ -330,6 +330,10 @@ impl AudioEngine {
     }
 
     async fn handle_load(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
+        if self.loaded_sounds.contains_key(&id) {
+            anyhow::bail!("Audio cue already loaded. id={}", id);
+        }
+
         let mixer = self
             .audio_mixer
             .as_mut()
@@ -417,6 +421,9 @@ impl AudioEngine {
     }
 
     async fn handle_play(&mut self, id: Uuid, data: AudioCommandData) -> Result<()> {
+        if self.playing_sounds.contains_key(&id) {
+            anyhow::bail!("Audio cue already playing. id={}", id);
+        }
         if !self.loaded_sounds.contains_key(&id) {
             self.handle_load(id, data.clone()).await?;
         }
