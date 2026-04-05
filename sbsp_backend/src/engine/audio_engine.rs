@@ -454,13 +454,6 @@ impl AudioEngine {
     async fn handle_pause(&mut self, id: Uuid) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
             playing_sound.handle.pause();
-            self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Paused {
-                    instance_id: id,
-                    position: playing_sound.handle.position(),
-                    duration: playing_sound.handle.duration,
-                }))
-                .await?;
             Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
