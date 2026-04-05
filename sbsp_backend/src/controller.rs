@@ -466,8 +466,8 @@ impl CueController {
             ExecutorEvent::Completed { cue_id, .. } => {
                 let mut wait_tasks = self.wait_tasks.write().await;
                 if let Some(sequence) = wait_tasks.remove(cue_id)
-                    && let CueSequence::AutoFollow { target_id } = sequence
-                {
+                && let CueSequence::AutoFollow { target_id } |
+                CueSequence::AutoContinue { target_id, .. } = sequence {
                     if let Some(target) = target_id {
                         if let Err(e) = self.handle_go(target).await {
                             log::error!("Failed to perform cue sequence. ignoring. error={}", e);

@@ -57,6 +57,7 @@
         <time-input
           width="175px"
           v-model="postWait"
+          :max="duration"
           class="flex-grow-0"
           :disabled="
             (selectedCue != null && selectedCue.id in showState.activeCues && sequence != 'autoContinue') ||

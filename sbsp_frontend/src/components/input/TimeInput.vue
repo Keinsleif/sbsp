@@ -25,6 +25,7 @@
   const props = withDefaults(
     defineProps<{
       acceptMinus?: boolean;
+      max?: number | null;
     }>(),
     {
       acceptMinus: false,
@@ -39,7 +40,10 @@
   });
 
   const save = () => {
-    const innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
+    let innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
+    if (props.max != null && innerValue > props.max) {
+      innerValue = props.max;
+    }
     seconds.value = innerValue;
     if (seconds.value != innerValue) {
       emit('update');
