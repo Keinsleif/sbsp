@@ -119,6 +119,7 @@ impl Executor {
                                     executed: true,
                                 },
                             );
+                            drop(active_instances);
                             self.load_cue(&cue).await?;
                         }
                         self.wait_tx
