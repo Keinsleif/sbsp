@@ -185,7 +185,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     .then((value) => {
       settings.value = value;
     })
-    .catch((e) => console.error(e));
+    .catch(e => console.error(e));
 
   const update = (newSettings: GlobalSettings) => {
     settings.value = newSettings;
@@ -198,7 +198,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
       .then((value) => {
         settings.value = value;
       })
-      .catch((e) => console.error(e));
+      .catch(e => console.error(e));
   };
 
   const clone = () => {
@@ -211,7 +211,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
       .then((settings) => {
         update(settings);
       })
-      .catch((e) => console.error(e));
+      .catch(e => console.error(e));
   };
 
   const export_to_file = () => {

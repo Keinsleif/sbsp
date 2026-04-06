@@ -14,41 +14,41 @@
       $event.target.blur();
     "
     @keydown.stop
-  ></v-text-field>
+  />
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
-  const volume = defineModel<number>();
-  const emit = defineEmits(['update']);
+const volume = defineModel<number>();
+const emit = defineEmits(['update']);
 
-  const validateVolume = (src: number | undefined): string => {
-    if (src == null) {
-      return '0.00';
-    }
-    if (src > 10) {
-      return '10.00';
-    } else if (src <= -60) {
-      return '-∞';
-    } else {
-      return src.toFixed(2);
-    }
-  };
+const validateVolume = (src: number | undefined): string => {
+  if (src == null) {
+    return '0.00';
+  }
+  if (src > 10) {
+    return '10.00';
+  } else if (src <= -60) {
+    return '-∞';
+  } else {
+    return src.toFixed(2);
+  }
+};
 
-  const innerVolume = ref(validateVolume(volume.value));
+const innerVolume = ref(validateVolume(volume.value));
 
-  watch(volume, () => {
+watch(volume, () => {
+  innerVolume.value = validateVolume(volume.value);
+});
+
+const saveValue = () => {
+  const newVolume = Number(innerVolume.value);
+  if (isNaN(newVolume)) {
     innerVolume.value = validateVolume(volume.value);
-  });
-
-  const saveValue = () => {
-    const newVolume = Number(innerVolume.value);
-    if (isNaN(newVolume)) {
-      innerVolume.value = validateVolume(volume.value);
-      return;
-    }
-    volume.value = newVolume;
-    emit('update');
-  };
+    return;
+  }
+  volume.value = newVolume;
+  emit('update');
+};
 </script>

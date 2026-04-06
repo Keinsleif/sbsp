@@ -189,8 +189,8 @@ export const useShowState = defineStore('showstate', () => {
       activeCue.status = lastSyncCue.status;
 
       if (
-        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status) &&
-        activeCue.duration > 0
+        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
+        && activeCue.duration > 0
       ) {
         const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
         if (activeCue.params.type == 'audio' && activeCue.params.repeating) {

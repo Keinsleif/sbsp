@@ -6,7 +6,10 @@
     @keydown.stop
     @contextmenu.prevent
   >
-    <v-sheet class="d-flex flex-column pa-4 ga-3" width="450px">
+    <v-sheet
+      class="d-flex flex-column pa-4 ga-3"
+      width="450px"
+    >
       <h2>{{ t('dialog.license.title') }}</h2>
       <div>
         {{ t('dialog.license.edition') }} :
@@ -26,11 +29,15 @@
         align-input="left"
         :append-inner-icon="mdiContentCopy"
         autocomplete="off"
-        @click:appendInner="onCopyId()"
-      ></text-input>
+        @click:append-inner="onCopyId()"
+      />
     </v-sheet>
     <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 pa-3 ga-3">
-      <v-btn :icon="mdiReload" density="comfortable" @click="loadLicense"></v-btn>
+      <v-btn
+        :icon="mdiReload"
+        density="comfortable"
+        @click="loadLicense"
+      />
       <v-btn
         class="ml-auto"
         :text="t('dialog.license.activateLicense')"
@@ -45,8 +52,12 @@
             })
             .catch((e) => console.error(e))
         "
-      ></v-btn>
-      <v-btn :text="t('general.close')" color="primary" @click="isLicenseDialogOpen = false"></v-btn>
+      />
+      <v-btn
+        :text="t('general.close')"
+        color="primary"
+        @click="isLicenseDialogOpen = false"
+      />
     </v-footer>
     <v-dialog
       v-model="isLicenseActivateInfoDialogOpen"
@@ -56,14 +67,21 @@
     >
       <v-card>
         <v-card-title class="d-flex flex-row text-success pa-4">
-          <v-icon :icon="mdiCheckCircleOutline"></v-icon>
+          <v-icon :icon="mdiCheckCircleOutline" />
           <span class="font-weight-black">{{ t('dialog.license.success.title') }}</span>
         </v-card-title>
-        <v-card-text class="bg-surface-light" style="white-space: pre-line">
+        <v-card-text
+          class="bg-surface-light"
+          style="white-space: pre-line"
+        >
           {{ t('dialog.license.success.message') }}
         </v-card-text>
         <v-card-actions>
-          <v-btn :text="t('general.close')" color="primary" @click="isLicenseActivateInfoDialogOpen = false"></v-btn>
+          <v-btn
+            :text="t('general.close')"
+            color="primary"
+            @click="isLicenseActivateInfoDialogOpen = false"
+          />
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -71,46 +89,46 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue';
-  import { LicenseInformation } from '../../types/LicenseInformation';
-  import TextInput from '../input/TextInput.vue';
-  import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
-  import { useI18n } from 'vue-i18n';
-  import { useApi } from '../../api';
+import { computed, onMounted, ref } from 'vue';
+import { LicenseInformation } from '../../types/LicenseInformation';
+import TextInput from '../input/TextInput.vue';
+import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
+import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
 
-  const { t, locale } = useI18n({ useScope: 'global' });
-  const api = useApi();
-  const isLicenseDialogOpen = defineModel<boolean>();
-  const isLicenseActivateInfoDialogOpen = ref(false);
-  const licenseInfo = ref<LicenseInformation | null>(null);
+const { t, locale } = useI18n({ useScope: 'global' });
+const api = useApi();
+const isLicenseDialogOpen = defineModel<boolean>();
+const isLicenseActivateInfoDialogOpen = ref(false);
+const licenseInfo = ref<LicenseInformation | null>(null);
 
-  const edition = computed(() => {
-    return licenseInfo.value != null ? licenseInfo.value.edition : 'Free';
-  });
+const edition = computed(() => {
+  return licenseInfo.value != null ? licenseInfo.value.edition : 'Free';
+});
 
-  const issuedDate = computed(() => {
-    if (licenseInfo.value != null) {
-      const time = new Date(Number(licenseInfo.value.issue_time) * 1000);
-      return time.toLocaleString(locale.value);
-    } else {
-      return '-';
-    }
-  });
+const issuedDate = computed(() => {
+  if (licenseInfo.value != null) {
+    const time = new Date(Number(licenseInfo.value.issue_time) * 1000);
+    return time.toLocaleString(locale.value);
+  } else {
+    return '-';
+  }
+});
 
-  const onCopyId = () => {
-    if (licenseInfo.value != null) {
-      navigator.clipboard.writeText(licenseInfo.value.id);
-    }
-  };
+const onCopyId = () => {
+  if (licenseInfo.value != null) {
+    navigator.clipboard.writeText(licenseInfo.value.id);
+  }
+};
 
-  const loadLicense = () => {
-    api.host
-      ?.getLicenseInfo()
-      .then((value) => (licenseInfo.value = value))
-      .catch((e) => console.error(e));
-  };
+const loadLicense = () => {
+  api.host
+    ?.getLicenseInfo()
+    .then(value => (licenseInfo.value = value))
+    .catch(e => console.error(e));
+};
 
-  onMounted(() => {
-    loadLicense();
-  });
+onMounted(() => {
+  loadLicense();
+});
 </script>

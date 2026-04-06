@@ -251,11 +251,11 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       websocketApiState.ws.addEventListener('close', () => {
         console.log('Disconnected.');
-        Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(false));
+        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
         websocketApiState.ws = null;
         websocketApiState.address = null;
       });
-      websocketApiState.ws.addEventListener('error', (event) => console.error('Websocket error: ', event));
+      websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
@@ -278,7 +278,7 @@ export function useWebsocketApi(): IBackendAdapter {
             websocketApiState.ws?.addEventListener('message', mainEventListener);
             websocketApiState.ws?.removeEventListener('message', authEventListener);
             websocketApiState.address = address;
-            Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(true));
+            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
             break;
         }
       };
@@ -309,7 +309,7 @@ export function useWebsocketApi(): IBackendAdapter {
             Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
             break;
           case 'assetList':
-            Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
+            Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
             break;
           case 'fullShowState':
             if (websocketApiState.fullStateResolver != null) {

@@ -20,7 +20,7 @@ export const secondsToFormat = (source_seconds: number | null): string => {
   const mm = ('00' + minute).slice(-2);
   const ss = ('00' + seconds).slice(-2);
   const ms = ('00' + milliseconds).slice(-2);
-  let time = '';
+  let time;
   if (hour > 0) {
     time = `${hh}:${mm}:${ss}.${ms}`;
   } else {
@@ -64,7 +64,7 @@ const secondsToHMR = (source_seconds: number): string => {
     ms = ms.slice(0, 1);
   }
 
-  let time = '';
+  let time;
   if (hour > 0) {
     time = `${hh}h ${mm}m ${ss}s`;
   } else if (minute > 0) {
@@ -245,7 +245,7 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
 };
 
 export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: number;
   const wrap = function (...args: unknown[]) {
     wrap.debouncing = true;
     clearTimeout(timeoutId);

@@ -157,7 +157,7 @@ export const useShowModel = defineStore('showmodel', {
             api.addCues(newCues, uiState.selected, false);
           }
         })
-        .catch((e) => console.error(e));
+        .catch(e => console.error(e));
     },
     addEmptyWaitCue() {
       const uiState = useUiState();
@@ -204,13 +204,13 @@ export const useShowModel = defineStore('showmodel', {
           break;
       }
       newCue.id = v4();
-      const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
+      const targetCue = this.cues.find(cue => cue.id == uiState.selected);
       if (
-        targetCue != null &&
-        (newCue.params.type == 'start' ||
-          newCue.params.type == 'stop' ||
-          newCue.params.type == 'pause' ||
-          newCue.params.type == 'load')
+        targetCue != null
+        && (newCue.params.type == 'start'
+          || newCue.params.type == 'stop'
+          || newCue.params.type == 'pause'
+          || newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
         api.addCue(newCue, uiState.selected, type == 'load' || type == 'start');

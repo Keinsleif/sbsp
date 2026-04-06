@@ -32,10 +32,10 @@ export function useTauriApi(): IBackendAdapter {
             },
 
             fileNew: function (): void {
-              invoke('file_new').catch((e) => console.error(e));
+              invoke('file_new').catch(e => console.error(e));
             },
             fileOpen: function (): void {
-              invoke('file_open').catch((e) => console.error(e));
+              invoke('file_open').catch(e => console.error(e));
             },
             fileSave: function (): Promise<boolean> {
               return invoke<boolean>('file_save');
@@ -85,16 +85,16 @@ export function useTauriApi(): IBackendAdapter {
               return invoke('connect_to_server', { address: address, password: password });
             },
             disconnectFromServer: function (): void {
-              invoke('disconnect_from_server').catch((e) => console.error(e));
+              invoke('disconnect_from_server').catch(e => console.error(e));
             },
             startServerDiscovery: function (): void {
-              invoke('start_server_discovery').catch((e) => console.error(e));
+              invoke('start_server_discovery').catch(e => console.error(e));
             },
             stopServerDiscovery: function (): void {
-              invoke('stop_server_discovery').catch((e) => console.error(e));
+              invoke('stop_server_discovery').catch(e => console.error(e));
             },
             requestFileList: function (): void {
-              invoke('request_file_list').catch((e) => console.error(e));
+              invoke('request_file_list').catch(e => console.error(e));
             },
             onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
               return listen<boolean>('connection_status_changed', (event) => {
@@ -226,7 +226,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('update_cue', { cue: cue });
     },
     addCue: function (cue: Cue, targetId: string | null, toBefore: boolean): void {
-      invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore }).catch((e) => console.error(e));
+      invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore }).catch(e => console.error(e));
     },
     addCues: function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void> {
       return invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
@@ -251,7 +251,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke<GlobalSettings>('get_settings');
     },
     setSettings: function (newSettings: GlobalSettings): void {
-      invoke('set_settings', { newSettings: newSettings }).catch((e) => console.error(e));
+      invoke('set_settings', { newSettings: newSettings }).catch(e => console.error(e));
     },
     reloadSettings: function (): Promise<GlobalSettings> {
       return invoke<GlobalSettings>('reload_settings');
@@ -267,7 +267,7 @@ export function useTauriApi(): IBackendAdapter {
               invoke<GlobalSettings>('import_settings_from_file', { path: path }).then(resolve).catch(reject);
             }
           })
-          .catch((e) => console.error(e));
+          .catch(e => console.error(e));
       });
     },
     exportSettingsToFile: function (): void {
@@ -281,10 +281,10 @@ export function useTauriApi(): IBackendAdapter {
       })
         .then((path) => {
           if (path != null) {
-            invoke('export_settings_to_file', { path: path }).catch((e) => console.error(e));
+            invoke('export_settings_to_file', { path: path }).catch(e => console.error(e));
           }
         })
-        .catch((e) => console.error(e));
+        .catch(e => console.error(e));
     },
 
     onBackendEvent: function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {

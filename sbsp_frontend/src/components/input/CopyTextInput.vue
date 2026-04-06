@@ -1,9 +1,9 @@
 <template>
   <v-text-field
     v-bind="$attrs"
+    v-model="value"
     hide-details
     persistent-placeholder
-    v-model="value"
     variant="outlined"
     density="compact"
     autocomplete="off"
@@ -16,40 +16,47 @@
     "
     @keydown.stop
   >
-    <template v-slot:append-inner>
+    <template #append-inner>
       <v-fade-transition leave-absolute>
-        <v-icon v-if="copied" :icon="mdiCheck"></v-icon>
-        <v-icon v-else :icon="mdiContentCopy" @click="copyToClipboard(value)"></v-icon>
+        <v-icon
+          v-if="copied"
+          :icon="mdiCheck"
+        />
+        <v-icon
+          v-else
+          :icon="mdiContentCopy"
+          @click="copyToClipboard(value)"
+        />
       </v-fade-transition>
     </template>
   </v-text-field>
 </template>
 
 <script setup lang="ts">
-  import { mdiCheck, mdiContentCopy } from '@mdi/js';
-  import { ref } from 'vue';
+import { mdiCheck, mdiContentCopy } from '@mdi/js';
+import { ref } from 'vue';
 
-  const value = defineModel<string | null>({ default: '' });
-  const props = withDefaults(
-    defineProps<{
-      alignInput?: 'left' | 'center' | 'right';
-    }>(),
-    {
-      alignInput: 'center',
-    },
-  );
+const value = defineModel<string | null>({ default: '' });
+const props = withDefaults(
+  defineProps<{
+    alignInput?: 'left' | 'center' | 'right';
+  }>(),
+  {
+    alignInput: 'center',
+  },
+);
 
-  const copied = ref(false);
+const copied = ref(false);
 
-  const copyToClipboard = (value: string | null) => {
-    if (value) {
-      copied.value = true;
-      navigator.clipboard.writeText(value);
-      setTimeout(() => {
-        copied.value = false;
-      }, 2000);
-    }
-  };
+const copyToClipboard = (value: string | null) => {
+  if (value) {
+    copied.value = true;
+    navigator.clipboard.writeText(value);
+    setTimeout(() => {
+      copied.value = false;
+    }, 2000);
+  }
+};
 </script>
 
 <style lang="css" module>
