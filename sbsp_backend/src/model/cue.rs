@@ -61,6 +61,7 @@ pub enum CueParam {
     },
     Stop {
         target: Uuid,
+        #[serde(default)]
         hard: bool,
     },
     Pause {
