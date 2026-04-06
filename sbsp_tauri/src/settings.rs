@@ -164,6 +164,7 @@ impl Default for TemplateSettings {
                 sequence: CueSequence::DoNotContinue,
                 params: CueParam::Stop {
                     target: Uuid::nil(),
+                    hard: false,
                 },
             },
             pause: Cue {

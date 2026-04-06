@@ -434,9 +434,12 @@ impl Executor {
                     self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 }
             }
-            CueParam::Stop { target } => {
+            CueParam::Stop { target , hard} => {
                 if self.active_instances.read().await.contains_key(target) {
                     self.process_command(ExecutorCommand::Stop(*target)).await?;
+                    if *hard {
+                        self.process_command(ExecutorCommand::Stop(*target)).await?;
+                    }
                     self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, position: 0.0, duration: 0.0, initial_params: StateParam::None }).await?;
                     self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 }

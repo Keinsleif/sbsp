@@ -129,6 +129,7 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       params: {
         type: 'stop',
         target: '00000000-0000-0000-0000-000000000000',
+        hard: false,
       },
     },
     pause: {
