@@ -1,6 +1,6 @@
 use crate::{
     FullShowState, asset_processor::AssetProcessorCommand, controller::ControllerCommand,
-    event::UiEvent, manager::ModelCommand,
+    event::BackendEvent, manager::ModelCommand,
 };
 use serde::{Deserialize, Serialize};
 
@@ -44,7 +44,7 @@ pub struct AuthInfo {
 pub enum WsFeedback {
     Hello { auth: Option<AuthInfo> },
     Authenticated,
-    Event(Box<UiEvent>),
+    Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
     FullShowState(FullShowState),
 }

@@ -9,7 +9,7 @@ use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
     api::client::{FileListHandle, create_remote_backend, start_discovery},
-    event::UiEvent,
+    event::BackendEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
@@ -25,7 +25,7 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 
 async fn forward_backend_event(
     app_handle: AppHandle,
-    mut event_rx: broadcast::Receiver<UiEvent>,
+    mut event_rx: broadcast::Receiver<BackendEvent>,
     mut asset_list_handle: FileListHandle,
 ) {
     loop {

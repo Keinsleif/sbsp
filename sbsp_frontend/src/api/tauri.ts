@@ -1,7 +1,7 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { Cue } from '../types/Cue';
 import { ShowSettings } from '../types/ShowSettings';
-import { UiEvent } from '../types/UiEvent';
+import { BackendEvent } from '../types/BackendEvent';
 import { IBackendAdapter, IPickAudioAssetsOptions } from './interface';
 import { type } from '@tauri-apps/plugin-os';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -287,8 +287,8 @@ export function useTauriApi(): IBackendAdapter {
         .catch((e) => console.error(e));
     },
 
-    onUiEvent: function (callback: (event: UiEvent) => void): Promise<UnlistenFn> {
-      return listen<UiEvent>('backend-event', (event) => {
+    onBackendEvent: function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
+      return listen<BackendEvent>('backend-event', (event) => {
         callback(event.payload);
       });
     },

@@ -19,7 +19,7 @@ use crate::{
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
-pub enum UiEvent {
+pub enum BackendEvent {
     // Cue Status Events
     CueStatus(CueStatusEventParam),
 
@@ -150,7 +150,7 @@ pub enum UiError {
 }
 
 #[cfg(not(feature = "type_export"))]
-impl TryFrom<ExecutorEvent> for UiEvent {
+impl TryFrom<ExecutorEvent> for BackendEvent {
     type Error = ();
 
     fn try_from(value: ExecutorEvent) -> Result<Self, Self::Error> {
@@ -214,7 +214,7 @@ impl TryFrom<ExecutorEvent> for UiEvent {
             }
         };
         if let Some(param) = status_param {
-            Ok(UiEvent::CueStatus(param))
+            Ok(BackendEvent::CueStatus(param))
         } else {
             Err(())
         }

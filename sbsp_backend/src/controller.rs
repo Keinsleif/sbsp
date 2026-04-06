@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::{
     BackendSettings,
     controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
-    event::UiEvent,
+    event::BackendEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
     model::cue::{CueParam, CueSequence, group::GroupMode},
@@ -28,8 +28,8 @@ pub struct CueController {
 
     executor_event_rx: mpsc::Receiver<ExecutorEvent>,
     state_tx: watch::Sender<ShowState>,
-    event_tx: broadcast::Sender<UiEvent>,
-    event_rx: broadcast::Receiver<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
+    event_rx: broadcast::Receiver<BackendEvent>,
 
     wait_tasks: HashMap<Uuid, CueSequence>,
 }
@@ -41,7 +41,7 @@ impl CueController {
         executor_tx: mpsc::Sender<ExecutorCommand>,
         executor_event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
-        event_tx: broadcast::Sender<UiEvent>,
+        event_tx: broadcast::Sender<BackendEvent>,
     ) -> (Self, CueControllerHandle) {
         let event_rx = event_tx.subscribe();
         let (command_tx, command_rx) = mpsc::channel::<ControllerCommand>(32);
@@ -77,7 +77,7 @@ impl CueController {
                 },
                 Ok(event) = self.event_rx.recv() => {
                     match event {
-                        UiEvent::ShowModelLoaded{..} => {
+                        BackendEvent::ShowModelLoaded{..} => {
                             if self.state_tx.borrow().playback_cursor.is_none() {
                                 let model = self.model_handle.read().await;
                                 if let Some(first_cue) = model.cues.first() {
@@ -93,7 +93,7 @@ impl CueController {
                                 log::error!("Failed to stop active cues before load. {}", e);
                             }
                         },
-                        UiEvent::CueRemoved{cue_id} => {
+                        BackendEvent::CueRemoved{cue_id} => {
                             if self.state_tx.borrow().playback_cursor.eq(&Some(cue_id)) {
                                 let model = self.model_handle.read().await;
                                 if let Some(first_cue) = model.cues.first() {
@@ -115,7 +115,7 @@ impl CueController {
                                 }
                             }
                         }
-                        UiEvent::SettingsUpdated{ new_settings } => {
+                        BackendEvent::SettingsUpdated{ new_settings } => {
                             if let Err(e) = self.executor_tx.send(ExecutorCommand::ReconfigureEngines(new_settings)).await {
                                 log::error!("{}", e);
                             }
@@ -192,7 +192,7 @@ impl CueController {
                         state.playback_cursor = cue_id;
                         if self
                             .event_tx
-                            .send(UiEvent::PlaybackCursorMoved { cue_id })
+                            .send(BackendEvent::PlaybackCursorMoved { cue_id })
                             .is_err()
                         {
                             log::trace!("No UI clients are listening to playback events.");
@@ -251,7 +251,7 @@ impl CueController {
             state.playback_cursor = cursor;
         });
         self.event_tx
-            .send(UiEvent::PlaybackCursorMoved { cue_id: cursor })?;
+            .send(BackendEvent::PlaybackCursorMoved { cue_id: cursor })?;
         Ok(())
     }
 
@@ -586,7 +586,7 @@ impl CueController {
         }
 
         if state_changed
-            && let Ok(ui_event) = UiEvent::try_from(event)
+            && let Ok(ui_event) = BackendEvent::try_from(event)
             && self.event_tx.send(ui_event).is_err()
         {
             log::trace!("No UI clients are listening to playback events.");
@@ -628,12 +628,12 @@ mod tests {
         Receiver<ExecutorCommand>,
         Sender<ExecutorEvent>,
         watch::Receiver<ShowState>,
-        broadcast::Receiver<UiEvent>,
+        broadcast::Receiver<BackendEvent>,
     ) {
         let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-        let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
+        let (event_tx, event_rx) = broadcast::channel::<BackendEvent>(32);
 
         let (_, settings_rx) = watch::channel(BackendSettings {
             advance_cursor_when_go: true,
@@ -731,7 +731,7 @@ mod tests {
         let event = event_rx.recv().await.unwrap();
         assert_eq!(
             event,
-            UiEvent::PlaybackCursorMoved {
+            BackendEvent::PlaybackCursorMoved {
                 cue_id: Some(cue_id_next)
             }
         );
@@ -759,7 +759,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Started {
+        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Started {
             cue_id,
             position: 0.0,
             duration: 43.0,
@@ -824,7 +824,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Paused {
+        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Paused {
             cue_id,
             position: 21.0
         })));
@@ -843,7 +843,7 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&UiEvent::CueStatus(CueStatusEventParam::Resumed { cue_id })));
+        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Resumed { cue_id })));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -869,7 +869,7 @@ mod tests {
 
         let event = event_rx.recv().await.unwrap();
         assert!(
-            event.eq(&UiEvent::CueStatus(CueStatusEventParam::Completed {
+            event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Completed {
                 cue_id
             }))
         );

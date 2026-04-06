@@ -1070,7 +1070,7 @@ mod tests {
         BackendSettings,
         controller::state::AudioStateParam,
         engine::audio_engine::{AudioCommand, AudioEngineEvent},
-        event::UiEvent,
+        event::BackendEvent,
         manager::ShowModelManager,
         model::{
             self,
@@ -1092,7 +1092,7 @@ mod tests {
         let (wait_tx, _wait_rx) = mpsc::channel::<WaitCommand>(32);
         let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
         let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
-        let (event_tx, _) = broadcast::channel::<UiEvent>(32);
+        let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
         let (_, settings_rx) = watch::channel(BackendSettings::default());
 
         let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx);

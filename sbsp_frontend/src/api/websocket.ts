@@ -1,6 +1,6 @@
 import { Cue } from '../types/Cue';
 import { ShowSettings } from '../types/ShowSettings';
-import { UiEvent } from '../types/UiEvent';
+import { BackendEvent } from '../types/BackendEvent';
 import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions } from './interface';
 import { WsFeedback } from '../types/WsFeedback';
 import { FileList } from '../types/FileList';
@@ -216,7 +216,7 @@ const websocketApiState: {
   address: string | null;
   ws: WebSocket | null;
   projectStatus: ProjectStatus | null;
-  uiEventListeners: { [key: string]: (event: UiEvent) => void };
+  backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
   connectionStatusListeners: { [key: string]: (isConnected: boolean) => void };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
@@ -224,7 +224,7 @@ const websocketApiState: {
   address: null,
   ws: null,
   projectStatus: null,
-  uiEventListeners: {},
+  backendEventListeners: {},
   assetListListeners: {},
   connectionStatusListeners: {},
   fullStateResolver: null,
@@ -306,7 +306,7 @@ export function useWebsocketApi(): IBackendAdapter {
                   path: msg.data.param.path,
                 };
             }
-            Object.values(websocketApiState.uiEventListeners).forEach((cb) => cb(msg.data));
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
             break;
           case 'assetList':
             Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
@@ -587,11 +587,11 @@ export function useWebsocketApi(): IBackendAdapter {
       });
     },
 
-    onUiEvent: async function (callback: (event: UiEvent) => void): Promise<UnlistenFn> {
+    onBackendEvent: async function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
       const id = v4();
-      websocketApiState.uiEventListeners[id] = callback;
+      websocketApiState.backendEventListeners[id] = callback;
       return () => {
-        delete websocketApiState.uiEventListeners[id];
+        delete websocketApiState.backendEventListeners[id];
       };
     },
   };

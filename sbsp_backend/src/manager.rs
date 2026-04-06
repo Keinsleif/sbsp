@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::{
     BackendSettings,
-    event::{UiError, UiEvent},
+    event::{UiError, BackendEvent},
     model::{
         ProjectType, ShowModel,
         cue::{Cue, CueParam},
@@ -33,7 +33,7 @@ pub struct ShowModelManager {
     model: Arc<RwLock<ShowModel>>,
     settings_rx: watch::Receiver<BackendSettings>,
     command_rx: mpsc::Receiver<ModelCommand>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
 
     project_status: Arc<RwLock<ProjectStatus>>,
     modify_status: Arc<AtomicBool>,
@@ -41,7 +41,7 @@ pub struct ShowModelManager {
 
 impl ShowModelManager {
     pub fn new(
-        event_tx: broadcast::Sender<UiEvent>,
+        event_tx: broadcast::Sender<BackendEvent>,
         settings_rx: watch::Receiver<BackendSettings>,
     ) -> (Self, ShowModelHandle) {
         let (command_tx, command_rx) = mpsc::channel(32);
@@ -99,14 +99,14 @@ impl ShowModelManager {
                     } // ignore failed to import asset. use absolute path
                 }
                 let event = if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
-                    UiEvent::OperationFailed {
+                    BackendEvent::OperationFailed {
                         error: UiError::CueEdit {
                             message: format!("Failed to update cue. {}", e),
                         },
                     }
                 } else {
                     self.modify_status.store(true, Ordering::Release);
-                    UiEvent::CueListUpdated {
+                    BackendEvent::CueListUpdated {
                         cues: self.model.read().await.cues.clone(),
                     }
                 };
@@ -124,7 +124,7 @@ impl ShowModelManager {
                 };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let event = if id_exists {
-                    UiEvent::OperationFailed {
+                    BackendEvent::OperationFailed {
                         error: UiError::CueEdit {
                             message: format!("Cue already exist: cue_id={}", cue.id),
                         },
@@ -150,14 +150,14 @@ impl ShowModelManager {
                         } // ignore failed to import asset. use absolute path
                     }
                     if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
-                        UiEvent::OperationFailed {
+                        BackendEvent::OperationFailed {
                             error: UiError::CueEdit {
                                 message: format!("Failed to add cue. {}", e),
                             },
                         }
                     } else {
                         self.modify_status.store(true, Ordering::Release);
-                        UiEvent::CueListUpdated {
+                        BackendEvent::CueListUpdated {
                             cues: self.model.read().await.cues.clone(),
                         }
                     }
@@ -178,7 +178,7 @@ impl ShowModelManager {
                         model.cues.iter().any(|c| c.id == cue.id)
                     };
                     if id_exists {
-                        self.event_tx.send(UiEvent::OperationFailed {
+                        self.event_tx.send(BackendEvent::OperationFailed {
                             error: UiError::CueEdit {
                                 message: format!("Cue already exist. cue_id={}", cue.id),
                             },
@@ -218,7 +218,7 @@ impl ShowModelManager {
                         };
 
                         if let Err(e) = result {
-                            let _ = self.event_tx.send(UiEvent::OperationFailed {
+                            let _ = self.event_tx.send(BackendEvent::OperationFailed {
                                 error: UiError::CueEdit {
                                     message: format!("Failed to add cue. {}", e),
                                 },
@@ -230,7 +230,7 @@ impl ShowModelManager {
                 }
                 if !added_cues.is_empty() {
                     self.modify_status.store(true, Ordering::Release);
-                    self.event_tx.send(UiEvent::CueListUpdated {
+                    self.event_tx.send(BackendEvent::CueListUpdated {
                         cues: self.model.read().await.cues.clone(),
                     })?;
                 }
@@ -238,15 +238,15 @@ impl ShowModelManager {
             }
             ModelCommand::RemoveCue { cue_id } => {
                 let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
-                    UiEvent::OperationFailed {
+                    BackendEvent::OperationFailed {
                         error: UiError::CueEdit {
                             message: "Failed to remove cue. id not found.".into(),
                         },
                     }
                 } else {
-                    self.event_tx.send(UiEvent::CueRemoved { cue_id })?;
+                    self.event_tx.send(BackendEvent::CueRemoved { cue_id })?;
                     self.modify_status.store(true, Ordering::Release);
-                    UiEvent::CueListUpdated {
+                    BackendEvent::CueListUpdated {
                         cues: self.model.read().await.cues.clone(),
                     }
                 };
@@ -256,19 +256,19 @@ impl ShowModelManager {
             ModelCommand::MoveCue { cue_id, position } => {
                 let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
                     if let Err(e) = self.insert_cue_at_position(cue, position).await {
-                        UiEvent::OperationFailed {
+                        BackendEvent::OperationFailed {
                             error: UiError::CueEdit {
                                 message: format!("Failed to mov cue. {}", e),
                             },
                         }
                     } else {
                         self.modify_status.store(true, Ordering::Release);
-                        UiEvent::CueListUpdated {
+                        BackendEvent::CueListUpdated {
                             cues: self.model.read().await.cues.clone(),
                         }
                     }
                 } else {
-                    UiEvent::OperationFailed {
+                    BackendEvent::OperationFailed {
                         error: UiError::CueEdit {
                             message: format!("Cue already exist: cue_id={}", cue_id),
                         },
@@ -293,7 +293,7 @@ impl ShowModelManager {
                 }
                 if number != start_from {
                     self.modify_status.store(true, Ordering::Release);
-                    self.event_tx.send(UiEvent::CueListUpdated {
+                    self.event_tx.send(BackendEvent::CueListUpdated {
                         cues: model.cues.clone(),
                     })?;
                 }
@@ -303,7 +303,7 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 model.name = new_name.clone();
                 self.modify_status.store(true, Ordering::Release);
-                self.event_tx.send(UiEvent::ModelNameUpdated { new_name })?;
+                self.event_tx.send(BackendEvent::ModelNameUpdated { new_name })?;
                 Ok(())
             }
             ModelCommand::UpdateSettings(new_settings) => {
@@ -312,7 +312,7 @@ impl ShowModelManager {
                 model.settings = *new_settings.clone();
                 self.modify_status.store(true, Ordering::Release);
                 self.event_tx
-                    .send(UiEvent::SettingsUpdated { new_settings })?;
+                    .send(BackendEvent::SettingsUpdated { new_settings })?;
                 Ok(())
             }
             ModelCommand::Reset => {
@@ -325,7 +325,7 @@ impl ShowModelManager {
                     let mut project_status_lock = self.project_status.write().await;
                     *project_status_lock = ProjectStatus::Unsaved;
                 }
-                self.event_tx.send(UiEvent::ShowModelReset {
+                self.event_tx.send(BackendEvent::ShowModelReset {
                     model: self.read().await.clone(),
                 })?;
                 Ok(())
@@ -337,7 +337,7 @@ impl ShowModelManager {
                     match self.save_to_file(path, project_type).await {
                         Err(error) => {
                             log::error!("Failed to save model file: {}", error);
-                            UiEvent::OperationFailed {
+                            BackendEvent::OperationFailed {
                                 error: UiError::FileSave {
                                     path: path.to_path_buf(),
                                     message: error.to_string(),
@@ -346,12 +346,12 @@ impl ShowModelManager {
                         }
                         Ok(modified) => {
                             if modified {
-                                let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                                let _ = self.event_tx.send(BackendEvent::CueListUpdated {
                                     cues: self.model.read().await.cues.clone(),
                                 });
                             }
                             self.modify_status.store(false, Ordering::Release);
-                            UiEvent::ShowModelSaved {
+                            BackendEvent::ShowModelSaved {
                                 project_type: project_type.clone(),
                                 path: path.to_path_buf(),
                             }
@@ -361,7 +361,7 @@ impl ShowModelManager {
                     log::warn!(
                         "Save command issued, but no file path is set. Use SaveToFile first."
                     );
-                    UiEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
+                    BackendEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -370,7 +370,7 @@ impl ShowModelManager {
                 let event = match self.save_to_file(&path, &ProjectType::SingleFile).await {
                     Err(error) => {
                         log::error!("Failed to save model file: {}", error);
-                        UiEvent::OperationFailed {
+                        BackendEvent::OperationFailed {
                             error: UiError::FileSave {
                                 path,
                                 message: error.to_string(),
@@ -379,7 +379,7 @@ impl ShowModelManager {
                     }
                     Ok(modified) => {
                         if modified {
-                            let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                            let _ = self.event_tx.send(BackendEvent::CueListUpdated {
                                 cues: self.model.read().await.cues.clone(),
                             });
                         }
@@ -391,7 +391,7 @@ impl ShowModelManager {
                                 path: path.clone(),
                             };
                         }
-                        UiEvent::ShowModelSaved {
+                        BackendEvent::ShowModelSaved {
                             project_type: ProjectType::SingleFile,
                             path,
                         }
@@ -411,7 +411,7 @@ impl ShowModelManager {
                 {
                     Err(error) => {
                         log::error!("Failed to export model to folder: {}", error);
-                        UiEvent::OperationFailed {
+                        BackendEvent::OperationFailed {
                             error: UiError::FileSave {
                                 path: model_file_path.clone(),
                                 message: error.to_string(),
@@ -420,7 +420,7 @@ impl ShowModelManager {
                     }
                     Ok(modified) => {
                         if modified {
-                            let _ = self.event_tx.send(UiEvent::CueListUpdated {
+                            let _ = self.event_tx.send(BackendEvent::CueListUpdated {
                                 cues: self.model.read().await.cues.clone(),
                             });
                         }
@@ -432,7 +432,7 @@ impl ShowModelManager {
                                 path: model_file_path.clone(),
                             };
                         }
-                        UiEvent::ShowModelSaved {
+                        BackendEvent::ShowModelSaved {
                             project_type: ProjectType::ProjectFolder,
                             path: model_file_path,
                         }
@@ -445,7 +445,7 @@ impl ShowModelManager {
                 let event = match self.load_from_file(path.as_path()).await {
                     Err(error) => {
                         log::error!("Failed to load model file: {}", error);
-                        UiEvent::OperationFailed {
+                        BackendEvent::OperationFailed {
                             error: UiError::FileLoad {
                                 path,
                                 message: error.to_string(),
@@ -462,7 +462,7 @@ impl ShowModelManager {
                             };
                         }
                         let model = self.read().await.clone();
-                        UiEvent::ShowModelLoaded {
+                        BackendEvent::ShowModelLoaded {
                             model,
                             project_type,
                             path,
@@ -766,7 +766,7 @@ impl ShowModelManager {
 mod tests {
     use crate::{
         BackendSettings,
-        event::UiEvent,
+        event::BackendEvent,
         manager::{ProjectStatus, ProjectType, command::InsertPosition},
         model::{
             ShowModel,
@@ -786,8 +786,8 @@ mod tests {
     async fn setup_manager(
         initial_model: Option<ShowModel>,
         project_status: ProjectStatus,
-    ) -> (ShowModelHandle, broadcast::Receiver<UiEvent>) {
-        let (event_tx, event_rx) = broadcast::channel::<UiEvent>(32);
+    ) -> (ShowModelHandle, broadcast::Receiver<BackendEvent>) {
+        let (event_tx, event_rx) = broadcast::channel::<BackendEvent>(32);
         let (_, settings_rx) = watch::channel(BackendSettings {
             copy_assets_when_add: true,
             ..Default::default()
@@ -875,7 +875,7 @@ mod tests {
 
         let updated_cue;
         loop {
-            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+            if let Ok(BackendEvent::CueListUpdated { cues }) = event_rx.recv().await {
                 updated_cue = cues[0].clone();
                 break;
             }
@@ -946,7 +946,7 @@ mod tests {
 
         let added_cue;
         loop {
-            if let Ok(UiEvent::CueListUpdated { cues }) = event_rx.recv().await {
+            if let Ok(BackendEvent::CueListUpdated { cues }) = event_rx.recv().await {
                 added_cue = cues[0].clone();
                 break;
             }

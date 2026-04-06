@@ -11,7 +11,7 @@ use crate::{
         audio_engine::{AudioCommand, AudioEngine, level_meter::SharedLevel},
         wait_engine::{WaitCommand, WaitEngine},
     },
-    event::UiEvent,
+    event::BackendEvent,
     executor::{Executor, ExecutorCommand, ExecutorEvent},
     manager::{ShowModelHandle, ShowModelManager},
     model::settings::ShowAudioSettings,
@@ -110,7 +110,7 @@ pub fn start_backend(
     (
         BackendHandle,
         watch::Receiver<ShowState>,
-        broadcast::Sender<UiEvent>,
+        broadcast::Sender<BackendEvent>,
     ),
     anyhow::Error,
 > {
@@ -120,7 +120,7 @@ pub fn start_backend(
     let (executor_event_tx, executor_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
-    let (event_tx, _) = broadcast::channel::<UiEvent>(32);
+    let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
 
     let (model_manager, model_handle) =
         ShowModelManager::new(event_tx.clone(), settings_rx.clone());
@@ -190,7 +190,7 @@ pub fn start_backend(
 #[cfg(feature = "backend")]
 fn handle_state_sync(
     state_rx: watch::Receiver<ShowState>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
 ) -> mpsc::Sender<()> {
     let (sender, mut receiver) = mpsc::channel(8);
 
@@ -212,7 +212,7 @@ fn handle_state_sync(
                         })
                         .collect()
                 };
-                if let Err(e) = event_tx.send(UiEvent::SyncState(SyncData { latency: 0.0, cues })) {
+                if let Err(e) = event_tx.send(BackendEvent::SyncState(SyncData { latency: 0.0, cues })) {
                     log::trace!("No UI clients are listening to playback events. e={}", e);
                 }
             } else {

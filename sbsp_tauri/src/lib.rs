@@ -10,7 +10,7 @@ use sbsp_backend::{
     BackendHandle,
     api::{ApiServerOptions, server::start_apiserver_with},
     controller::state::ShowState,
-    event::UiEvent,
+    event::BackendEvent,
     start_backend,
 };
 use sbsp_license::LicenseManager;
@@ -38,7 +38,7 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 pub struct AppState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
     pub settings_manager: GlobalSettingsManager,
     server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
@@ -49,7 +49,7 @@ impl AppState {
     pub fn new(
         backend_handle: BackendHandle,
         state_rx: watch::Receiver<ShowState>,
-        event_tx: broadcast::Sender<UiEvent>,
+        event_tx: broadcast::Sender<BackendEvent>,
         settings_manager: GlobalSettingsManager,
         level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
     ) -> Self {
@@ -118,7 +118,7 @@ impl AppState {
     }
 }
 
-async fn forward_backend_event(app_handle: AppHandle, mut event_rx: broadcast::Receiver<UiEvent>) {
+async fn forward_backend_event(app_handle: AppHandle, mut event_rx: broadcast::Receiver<BackendEvent>) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {

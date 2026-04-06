@@ -1,5 +1,5 @@
 import type { Cue } from '../types/Cue';
-import type { UiEvent } from '../types/UiEvent';
+import type { BackendEvent } from '../types/BackendEvent';
 import { ShowSettings } from '../types/ShowSettings';
 import { FileList } from '../types/FileList';
 import { ServiceEntry } from '../types/ServiceEntry';
@@ -67,7 +67,7 @@ export interface IBackendAdapter {
   importSettingsFromFile(): Promise<GlobalSettings>;
   exportSettingsToFile(): void;
 
-  onUiEvent(callback: (event: UiEvent) => void): Promise<UnlistenFn>;
+  onBackendEvent(callback: (event: BackendEvent) => void): Promise<UnlistenFn>;
 }
 
 export interface IBackendHostAdapter {
