@@ -5,10 +5,10 @@ pub mod state;
 pub use command::ControllerCommand;
 pub use handle::CueControllerHandle;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap};
 
 use anyhow::Result;
-use tokio::sync::{RwLock, broadcast, mpsc, watch};
+use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
@@ -31,7 +31,7 @@ pub struct CueController {
     event_tx: broadcast::Sender<UiEvent>,
     event_rx: broadcast::Receiver<UiEvent>,
 
-    wait_tasks: Arc<RwLock<HashMap<Uuid, CueSequence>>>,
+    wait_tasks: HashMap<Uuid, CueSequence>,
 }
 
 impl CueController {
@@ -55,7 +55,7 @@ impl CueController {
                 state_tx,
                 event_tx,
                 event_rx,
-                wait_tasks: Arc::new(RwLock::new(HashMap::new())),
+                wait_tasks: HashMap::new(),
             },
             CueControllerHandle { command_tx },
         )
@@ -255,7 +255,7 @@ impl CueController {
         Ok(())
     }
 
-    async fn handle_executor_event(&self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
+    async fn handle_executor_event(&mut self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
         let mut show_state = self.state_tx.borrow().clone();
         let mut state_changed = false;
 
@@ -289,10 +289,7 @@ impl CueController {
             } => {
                 if let Some(cue_sequence) = self.model_handle.get_cue_sequence_by_id(cue_id).await {
                     if !matches!(cue_sequence, CueSequence::DoNotContinue) {
-                        self.wait_tasks
-                            .write()
-                            .await
-                            .insert(*cue_id, cue_sequence.clone());
+                        self.wait_tasks.insert(*cue_id, cue_sequence.clone());
                     }
                 } else {
                     log::warn!(
@@ -324,8 +321,7 @@ impl CueController {
                 ..
             } => {
                 {
-                    let mut wait_tasks = self.wait_tasks.write().await;
-                    if let Some(sequence) = wait_tasks.get(cue_id)
+                    if let Some(sequence) = self.wait_tasks.get(cue_id)
                         && let CueSequence::AutoContinue {
                             target_id,
                             post_wait,
@@ -345,7 +341,7 @@ impl CueController {
                         {
                             log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                         }
-                        wait_tasks.remove(cue_id);
+                        self.wait_tasks.remove(cue_id);
                     }
                 }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
@@ -454,7 +450,7 @@ impl CueController {
                 }
             }
             ExecutorEvent::Stopped { cue_id } => {
-                self.wait_tasks.write().await.remove(cue_id);
+                self.wait_tasks.remove(cue_id);
                 self.state_tx.send_modify(|state| {
                     if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
                         active_cue.status = PlaybackStatus::Stopped;
@@ -464,8 +460,7 @@ impl CueController {
                 state_changed = true;
             }
             ExecutorEvent::Completed { cue_id, .. } => {
-                let mut wait_tasks = self.wait_tasks.write().await;
-                if let Some(sequence) = wait_tasks.remove(cue_id)
+                if let Some(sequence) = self.wait_tasks.remove(cue_id)
                 && let CueSequence::AutoFollow { target_id } |
                 CueSequence::AutoContinue { target_id, .. } = sequence {
                     if let Some(target) = target_id {
@@ -479,7 +474,6 @@ impl CueController {
                         log::error!("Failed to perform cue sequence. ignoring. error={}", e);
                     }
                 }
-                drop(wait_tasks);
                 self.state_tx.send_modify(|state| {
                     if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
                         active_cue.status = PlaybackStatus::Completed;
