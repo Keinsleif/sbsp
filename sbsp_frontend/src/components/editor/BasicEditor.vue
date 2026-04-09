@@ -80,10 +80,7 @@
           :exclude="selectedCue?.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"
-          :disabled="
-            (selectedCue != null && !(selectedCue.id in showState.activeCues) && chain == 'doNotChain') ||
-              props.chainOverride != null
-          "
+          :disabled="props.chainOverride != null || selectedCue == null || selectedCue.id in showState.activeCues || chain == 'doNotChain'"
           @update="saveEditorValue"
         />
         <v-btn
