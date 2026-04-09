@@ -54,11 +54,11 @@
         x="0"
         :y="contentHeight / 2"
         height="1"
-        :width="svgWidth.value"
+        :width="svgWidth"
       />
       <path
-        v-if="waveformPath.value != null"
-        :d="waveformPath.value"
+        v-if="waveformPath != null"
+        :d="waveformPath"
         :transform="waveformTransform"
         :class="$style.waveform"
         transform-origin="center"

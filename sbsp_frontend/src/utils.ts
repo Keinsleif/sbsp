@@ -245,10 +245,10 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
 };
 
 export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
-  let timeoutId: number;
+  let timeoutId: unknown;
   const wrap = function (...args: unknown[]) {
     wrap.debouncing = true;
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId as number);
     timeoutId = setTimeout(() => {
       fn(...args);
       wrap.debouncing = false;
@@ -256,7 +256,7 @@ export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<numbe
   };
   wrap.debouncing = false;
   wrap.clear = () => {
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId as number);
   };
   wrap.immediate = fn;
   return wrap;
