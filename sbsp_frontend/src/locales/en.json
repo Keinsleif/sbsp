@@ -230,7 +230,8 @@
         "linear": "Linear"
       },
       "playback": {
-        "title": "Playback"
+        "title": "Playback",
+        "hard": "Stop without fading"
       },
       "targetCue": "Target Cue",
       "timeLevels": {

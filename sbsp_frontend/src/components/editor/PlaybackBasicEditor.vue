@@ -11,6 +11,14 @@
       :exclude="selectedCue != null ? selectedCue.id : ''"
       @update="saveEditorValue"
     />
+    <v-checkbox
+      v-show="selectedCue != null && selectedCue.params.type == 'stop'"
+      v-model="hard"
+      hide-details
+      density="compact"
+      :label="t('main.bottomEditor.playback.hard')"
+      @update:model-value="saveEditorValue"
+    />
   </v-sheet>
 </template>
 
@@ -38,6 +46,9 @@ const target = ref(
     ? selectedCue.value.params.target
     : '',
 );
+const hard = ref(
+  selectedCue.value != null && selectedCue.value.params.type == 'stop' ? selectedCue.value.params.hard : null,
+);
 
 watch(selectedCue, () => {
   if (
@@ -53,6 +64,7 @@ watch(selectedCue, () => {
   }
 
   target.value = selectedCue.value.params.target;
+  hard.value = selectedCue.value.params.type == 'stop' ? selectedCue.value.params.hard : null;
 });
 
 const saveEditorValue = () => {
@@ -70,6 +82,9 @@ const saveEditorValue = () => {
     return;
   }
   selectedCue.value.params.target = target.value;
+  if (selectedCue.value.params.type == 'stop') {
+    selectedCue.value.params.hard = hard.value || false;
+  }
   emit('update');
 };
 </script>

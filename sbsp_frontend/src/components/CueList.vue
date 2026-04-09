@@ -38,7 +38,7 @@
         <th
           id="cuelist_pre_wait"
           class="text-center"
-          width="104px"
+          width="124px"
           style="padding: 0px 8px"
         >
           <div class="d-flex flex-row justify-center ga-1">
@@ -53,7 +53,7 @@
         <th
           id="cuelist_duration"
           class="text-center"
-          width="104px"
+          width="124px"
           style="padding: 0px 8px"
         >
           <div class="d-flex flex-row justify-center ga-1">
@@ -272,7 +272,6 @@
         <td headers="cuelist_name" />
         <td headers="cuelist_pre_wait" />
         <td headers="cuelist_duration" />
-        <td headers="cuelist_post_wait" />
         <td headers="cuelist_repeat" />
         <td headers="cuelist_chain" />
       </tr>

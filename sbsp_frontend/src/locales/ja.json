@@ -230,7 +230,8 @@
         "linear": "線形"
       },
       "playback": {
-        "title": "再生"
+        "title": "再生",
+        "hard": "フェード無しで停止"
       },
       "targetCue": "対象キュー",
       "timeLevels": {
