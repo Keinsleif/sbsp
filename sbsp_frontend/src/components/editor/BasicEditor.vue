@@ -29,7 +29,6 @@
         @update="saveEditorValue"
       />
       <v-select
-        ref="cue_chain"
         v-model="chain"
         class="flex-grow-0"
         hide-details
@@ -82,7 +81,7 @@
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"
           :disabled="
-            (selectedCue != null && selectedCue.id in showState.activeCues && chain == 'doNotChain') ||
+            (selectedCue != null && !(selectedCue.id in showState.activeCues) && chain == 'doNotChain') ||
               props.chainOverride != null
           "
           @update="saveEditorValue"
@@ -186,6 +185,7 @@ const saveEditorValue = () => {
     if (selectedCue.value.chain.type == 'doNotChain') {
       target.value = null;
     } else {
+      console.log(target.value);
       selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
