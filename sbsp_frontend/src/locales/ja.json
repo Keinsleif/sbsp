@@ -250,9 +250,9 @@
       }
     },
     "chainMode": {
-      "autoContinue": "完了後",
-      "autoFollow": "開始後",
-      "doNotContinue": "連鎖しない",
+      "afterComplete": "完了後",
+      "afterStart": "開始後",
+      "doNotChain": "連鎖しない",
       "title": "連鎖モード"
     },
     "duration": "長さ",
