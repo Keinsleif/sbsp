@@ -17,7 +17,7 @@ use crate::{
     event::BackendEvent,
     executor::{ExecutorCommand, ExecutorEvent},
     manager::ShowModelHandle,
-    model::cue::{CueParam, CueSequence, group::GroupMode},
+    model::cue::{CueChain, CueParam, group::GroupMode},
 };
 
 pub struct CueController {
@@ -31,7 +31,7 @@ pub struct CueController {
     event_tx: broadcast::Sender<BackendEvent>,
     event_rx: broadcast::Receiver<BackendEvent>,
 
-    wait_tasks: HashMap<Uuid, CueSequence>,
+    wait_tasks: HashMap<Uuid, CueChain>,
 }
 
 impl CueController {
@@ -287,9 +287,27 @@ impl CueController {
                 duration,
                 initial_params,
             } => {
-                if let Some(cue_sequence) = self.model_handle.get_cue_sequence_by_id(cue_id).await {
-                    if !matches!(cue_sequence, CueSequence::DoNotContinue) {
-                        self.wait_tasks.insert(*cue_id, cue_sequence.clone());
+                if let Some(chain) = self.model_handle.get_cue_chain_by_id(cue_id).await {
+                    match &chain {
+                        CueChain::AfterComplete { .. } => {
+                            self.wait_tasks.insert(*cue_id, chain.clone());
+                        }
+                        CueChain::AfterStart { target_id } => {
+                            if let Some(target) = target_id {
+                                if let Err(e) = self.handle_go(*target).await {
+                                    log::error!(
+                                        "Failed to perform cue chain. ignoring. error={}",
+                                        e
+                                    );
+                                }
+                            } else if let Some(next_id) =
+                                self.model_handle.get_next_cue_id_by_id(cue_id).await
+                                && let Err(e) = self.handle_go(next_id).await
+                            {
+                                log::error!("Failed to perform cue chain. ignoring. error={}", e);
+                            }
+                        }
+                        CueChain::DoNotChain => {}
                     }
                 } else {
                     log::warn!(
@@ -320,30 +338,6 @@ impl CueController {
                 duration,
                 ..
             } => {
-                {
-                    if let Some(sequence) = self.wait_tasks.get(cue_id)
-                        && let CueSequence::AutoContinue {
-                            target_id,
-                            post_wait,
-                        } = sequence
-                        && position > post_wait
-                    {
-                        if let Some(target) = target_id {
-                            if let Err(e) = self.handle_go(*target).await {
-                                log::error!(
-                                    "Failed to perform cue sequence. ignoring. error={}",
-                                    e
-                                );
-                            }
-                        } else if let Some(next_id) =
-                            self.model_handle.get_next_cue_id_by_id(cue_id).await
-                            && let Err(e) = self.handle_go(next_id).await
-                        {
-                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
-                        }
-                        self.wait_tasks.remove(cue_id);
-                    }
-                }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     if (position - active_cue.position).abs() > 0.1 {
                         active_cue.position = (position * 10.0).floor() / 10.0;
@@ -460,18 +454,17 @@ impl CueController {
                 state_changed = true;
             }
             ExecutorEvent::Completed { cue_id, .. } => {
-                if let Some(sequence) = self.wait_tasks.remove(cue_id)
-                && let CueSequence::AutoFollow { target_id } |
-                CueSequence::AutoContinue { target_id, .. } = sequence {
+                if let Some(chain) = self.wait_tasks.remove(cue_id)
+                && let CueChain::AfterComplete { target_id } = chain {
                     if let Some(target) = target_id {
                         if let Err(e) = self.handle_go(target).await {
-                            log::error!("Failed to perform cue sequence. ignoring. error={}", e);
+                            log::error!("Failed to perform cue chain. ignoring. error={}", e);
                         }
                     } else if let Some(next_id) =
                         self.model_handle.get_next_cue_id_by_id(cue_id).await
                         && let Err(e) = self.handle_go(next_id).await
                     {
-                        log::error!("Failed to perform cue sequence. ignoring. error={}", e);
+                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
                     }
                 }
                 self.state_tx.send_modify(|state| {
@@ -650,7 +643,7 @@ mod tests {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: model::cue::CueSequence::DoNotContinue,
+                chain: model::cue::CueChain::DoNotChain,
                 params: model::cue::CueParam::Audio(AudioCueParam {
                     target: PathBuf::from("./I.G.Y.flac"),
                     start_time: Some(5.0),

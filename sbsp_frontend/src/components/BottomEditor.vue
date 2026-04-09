@@ -125,7 +125,7 @@
       >
         <basic-editor
           v-model="selectedCue"
-          :sequence-override="props.sequenceOverride"
+          :chain-override="props.chainOverride"
           @update="edited"
         />
       </v-tabs-window-item>
@@ -193,16 +193,16 @@ import FadeBasicEditor from './editor/FadeBasicEditor.vue';
 import { useI18n } from 'vue-i18n';
 import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
 import GroupBasicEditor from './editor/GroupBasicEditor.vue';
-import type { CueSequence } from '../types/CueSequence';
+import type { CueChain } from '../types/CueChain';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();
 const props = withDefaults(
   defineProps<{
-    sequenceOverride?: CueSequence | null;
+    chainOverride?: CueChain | null;
   }>(),
   {
-    sequenceOverride: null,
+    chainOverride: null,
   },
 );
 const emit = defineEmits(['update']);

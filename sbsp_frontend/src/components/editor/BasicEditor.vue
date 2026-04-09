@@ -29,17 +29,17 @@
         @update="saveEditorValue"
       />
       <v-select
-        ref="cue_sequence"
-        v-model="sequence"
+        ref="cue_chain"
+        v-model="chain"
         class="flex-grow-0"
         hide-details
         persistent-placeholder
-        :label="t('main.continueMode.title')"
-        :disabled="(selectedCue != null && selectedCue.id in showState.activeCues) || props.sequenceOverride != null"
+        :label="t('main.chainMode.title')"
+        :disabled="(selectedCue != null && selectedCue.id in showState.activeCues) || props.chainOverride != null"
         :items="[
-          { value: 'doNotContinue', name: t('main.continueMode.doNotContinue') },
-          { value: 'autoContinue', name: t('main.continueMode.autoContinue') },
-          { value: 'autoFollow', name: t('main.continueMode.autoFollow') },
+          { value: 'doNotChain', name: t('main.chainMode.doNotChain') },
+          { value: 'afterStart', name: t('main.chainMode.afterStart') },
+          { value: 'afterComplete', name: t('main.chainMode.afterComplete') },
         ]"
         item-value="value"
         item-title="name"
@@ -73,18 +73,6 @@
         flat
         class="d-flex flex-row flex-grow-0 flex-shrink-0 ga-3"
       >
-        <time-input
-          v-model="postWait"
-          width="175px"
-          :max="duration"
-          class="flex-grow-0"
-          :disabled="
-            (selectedCue != null && selectedCue.id in showState.activeCues && sequence != 'autoContinue') ||
-              props.sequenceOverride != null
-          "
-          :label="t('main.postWait')"
-          @update="saveEditorValue"
-        />
         <cue-select
           v-model="target"
           class="flex-grow-0"
@@ -94,8 +82,8 @@
           :null-text="t('main.bottomEditor.basics.nextCue')"
           max-width="640px"
           :disabled="
-            (selectedCue != null && selectedCue.id in showState.activeCues && sequence == 'doNotContinue') ||
-              props.sequenceOverride != null
+            (selectedCue != null && selectedCue.id in showState.activeCues && chain == 'doNotChain') ||
+              props.chainOverride != null
           "
           @update="saveEditorValue"
         />
@@ -122,7 +110,7 @@ import { useShowState } from '../../stores/showstate';
 import { useI18n } from 'vue-i18n';
 import { NIL } from 'uuid';
 import CueSelect from '../input/CueSelect.vue';
-import type { CueSequence } from '../../types/CueSequence';
+import type { CueChain } from '../../types/CueChain';
 
 const { t } = useI18n();
 
@@ -131,40 +119,34 @@ const showState = useShowState();
 const selectedCue = defineModel<Cue | null>();
 const props = withDefaults(
   defineProps<{
-    sequenceOverride?: CueSequence | null;
+    chainOverride?: CueChain | null;
   }>(),
   {
-    sequenceOverride: null,
+    chainOverride: null,
   },
 );
 const emit = defineEmits(['update']);
 
-const overridedSequence = computed(() =>
-  props.sequenceOverride != null
-    ? props.sequenceOverride
+const overridedChain = computed(() =>
+  props.chainOverride != null
+    ? props.chainOverride
     : selectedCue.value != null
-      ? selectedCue.value.sequence
+      ? selectedCue.value.chain
       : null,
 );
 
 const number = ref(selectedCue.value != null ? selectedCue.value.number : null);
 const duration = ref(getDuration(selectedCue.value));
 const preWait = ref(selectedCue.value != null ? selectedCue.value.preWait : null);
-const sequence = ref(overridedSequence.value != null ? overridedSequence.value.type : null);
-const postWait = ref(
-  overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
-    ? overridedSequence.value.type == 'autoContinue'
-      ? overridedSequence.value.postWait
-      : getDuration(selectedCue.value)
-    : null,
-);
+const chain = ref(overridedChain.value != null ? overridedChain.value.type : null);
+
 const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 const target = ref(
-  overridedSequence.value != null
-  && overridedSequence.value.type != 'doNotContinue'
-  && overridedSequence.value.targetId != NIL
-    ? overridedSequence.value.targetId
+  overridedChain.value != null
+  && overridedChain.value.type != 'doNotChain'
+  && overridedChain.value.targetId != NIL
+    ? overridedChain.value.targetId
     : null,
 );
 
@@ -172,18 +154,12 @@ watch(selectedCue, () => {
   number.value = selectedCue.value != null ? selectedCue.value.number : null;
   duration.value = getDuration(selectedCue.value);
   preWait.value = selectedCue.value != null ? selectedCue.value.preWait : null;
-  sequence.value = overridedSequence.value != null ? overridedSequence.value.type : null;
-  postWait.value
-    = overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
-      ? overridedSequence.value.type == 'autoContinue'
-        ? overridedSequence.value.postWait
-        : getDuration(selectedCue.value)
-      : null;
+  chain.value = overridedChain.value != null ? overridedChain.value.type : null;
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   target.value
-    = overridedSequence.value != null && overridedSequence.value.type != 'doNotContinue'
-      ? overridedSequence.value.targetId
+    = overridedChain.value != null && overridedChain.value.type != 'doNotChain'
+      ? overridedChain.value.targetId
       : null;
 });
 
@@ -192,9 +168,6 @@ watch(
   () => {
     const cueDuration = getDuration(selectedCue.value);
     duration.value = cueDuration;
-    if (sequence.value == 'autoFollow') {
-      postWait.value = cueDuration;
-    }
   },
 );
 
@@ -208,23 +181,12 @@ const saveEditorValue = () => {
   if (preWait.value != null) {
     selectedCue.value.preWait = preWait.value;
   }
-  if (sequence.value != null && props.sequenceOverride == null) {
-    selectedCue.value.sequence.type = sequence.value;
-    if (selectedCue.value.sequence.type == 'doNotContinue') {
+  if (chain.value != null && props.chainOverride == null) {
+    selectedCue.value.chain.type = chain.value;
+    if (selectedCue.value.chain.type == 'doNotChain') {
       target.value = null;
-      postWait.value = null;
     } else {
-      selectedCue.value.sequence.targetId = target.value != null ? target.value : null;
-      if (selectedCue.value.sequence.type == 'autoContinue') {
-        if (postWait.value != null) {
-          selectedCue.value.sequence.postWait = postWait.value;
-        } else {
-          postWait.value = 0;
-          selectedCue.value.sequence.postWait = 0;
-        }
-      } else {
-        postWait.value = getDuration(selectedCue.value);
-      }
+      selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
   if (name.value != null) {

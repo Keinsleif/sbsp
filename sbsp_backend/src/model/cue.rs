@@ -18,7 +18,8 @@ pub struct Cue {
     pub name: Option<String>,
     pub notes: String,
     pub pre_wait: f64,
-    pub sequence: CueSequence,
+    #[serde(default)]
+    pub chain: CueChain,
     pub params: CueParam,
 }
 
@@ -28,14 +29,13 @@ pub struct Cue {
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
-pub enum CueSequence {
+pub enum CueChain {
     #[default]
-    DoNotContinue,
-    AutoContinue {
+    DoNotChain,
+    AfterStart {
         target_id: Option<Uuid>,
-        post_wait: f64,
     },
-    AutoFollow {
+    AfterComplete {
         target_id: Option<Uuid>,
     },
 }

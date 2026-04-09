@@ -249,9 +249,9 @@
         "volume": "音量"
       }
     },
-    "continueMode": {
-      "autoContinue": "自動継続",
-      "autoFollow": "自動追従",
+    "chainMode": {
+      "autoContinue": "完了後",
+      "autoFollow": "開始後",
       "doNotContinue": "連鎖しない",
       "title": "連鎖モード"
     },
@@ -262,7 +262,6 @@
     "name": "名前",
     "notes": "備考",
     "number": "番号",
-    "postWait": "Post-Wait",
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "実行中のキュー",

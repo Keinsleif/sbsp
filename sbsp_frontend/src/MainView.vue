@@ -49,7 +49,7 @@
     >
       <BottomEditor
         v-model="selectedCue"
-        :sequence-override="selectedCueSequenceOverride"
+        :chain-override="selectedCueChainOverride"
         @update="onCueEdited"
       />
     </v-navigation-drawer>
@@ -294,7 +294,7 @@ onUnmounted(() => {
 });
 
 const selectedCue = ref<Cue | null>(uiState.selected != null ? showModel.getCueById(uiState.selected)! : null);
-const selectedCueSequenceOverride = computed(() => {
+const selectedCueChainOverride = computed(() => {
   if (selectedCue.value == null) {
     return null;
   }
@@ -302,8 +302,8 @@ const selectedCueSequenceOverride = computed(() => {
   if (flatEntry == null) {
     return null;
   }
-  if (flatEntry.isSequenceOverrided) {
-    return flatEntry.sequence;
+  if (flatEntry.isChainOverrided) {
+    return flatEntry.chain;
   } else {
     return null;
   }

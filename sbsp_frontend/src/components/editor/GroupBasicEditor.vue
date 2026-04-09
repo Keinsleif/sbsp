@@ -4,7 +4,6 @@
     class="d-flex flex-column pa-4 ga-4"
   >
     <v-select
-      ref="cue_sequence"
       v-model="mode"
       hide-details
       persistent-placeholder

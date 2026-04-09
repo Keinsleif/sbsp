@@ -51,8 +51,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'audio',
@@ -73,8 +73,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'wait',
@@ -87,8 +87,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'fade',
@@ -109,8 +109,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'start',
@@ -123,8 +123,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'stop',
@@ -138,8 +138,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'pause',
@@ -152,8 +152,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'load',
@@ -166,8 +166,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'group',

@@ -6,7 +6,7 @@ import { useUiState } from './uistate';
 import { useUiSettings } from './uiSettings';
 import { v4 } from 'uuid';
 import { toRaw } from 'vue';
-import type { CueSequence } from '../types/CueSequence';
+import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
 
 type FlatCueEntry = {
@@ -16,8 +16,8 @@ type FlatCueEntry = {
   innerIndex: number;
   isHidden: boolean;
   isGroup: boolean;
-  sequence: CueSequence;
-  isSequenceOverrided: boolean;
+  chain: CueChain;
+  isChainOverrided: boolean;
 };
 
 const recursiveCueCheck = (
@@ -30,20 +30,20 @@ const recursiveCueCheck = (
   const cuelist: FlatCueEntry[] = [];
 
   list.forEach((cue, index) => {
-    let sequence: CueSequence | null = null;
+    let chain: CueChain | null = null;
     if (parent?.params.type == 'group') {
       if (parent.params.mode.type == 'playlist') {
         if (index + 1 == list.length) {
           if (parent.params.mode.repeat) {
-            sequence = { type: 'autoFollow', targetId: list[0]!.id };
+            chain = { type: 'afterComplete', targetId: list[0]!.id };
           } else {
-            sequence = { type: 'doNotContinue' };
+            chain = { type: 'doNotChain' };
           }
         } else {
-          sequence = { type: 'autoFollow', targetId: null };
+          chain = { type: 'afterComplete', targetId: null };
         }
       } else if (parent.params.mode.type == 'concurrency') {
-        sequence = { type: 'doNotContinue' };
+        chain = { type: 'doNotChain' };
       }
     }
     cuelist.push({
@@ -53,8 +53,8 @@ const recursiveCueCheck = (
       innerIndex: index,
       isHidden: isHidden,
       isGroup: cue.params.type == 'group',
-      sequence: sequence != null ? sequence : cue.sequence,
-      isSequenceOverrided: sequence != null,
+      chain: chain != null ? chain : cue.chain,
+      isChainOverrided: chain != null,
     });
 
     if (cue.params.type == 'group') {

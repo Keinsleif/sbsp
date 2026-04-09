@@ -39,8 +39,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           soundType: 'streaming',
@@ -61,8 +61,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'wait',
@@ -75,8 +75,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'fade',
@@ -97,8 +97,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'start',
@@ -111,8 +111,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'stop',
@@ -126,8 +126,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'pause',
@@ -140,8 +140,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'load',
@@ -154,8 +154,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
         name: null,
         notes: '',
         preWait: 0.0,
-        sequence: {
-          type: 'doNotContinue',
+        chain: {
+          type: 'doNotChain',
         },
         params: {
           type: 'group',

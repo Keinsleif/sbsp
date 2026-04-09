@@ -1104,7 +1104,7 @@ mod tests {
             name: None,
             notes: "".to_string(),
             pre_wait: 0.0,
-            sequence: model::cue::CueSequence::DoNotContinue,
+            chain: model::cue::CueChain::DoNotChain,
             params: model::cue::CueParam::Audio(AudioCueParam {
                 target: PathBuf::from("./I.G.Y.flac"),
                 start_time: Some(5.0),

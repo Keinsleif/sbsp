@@ -66,28 +66,13 @@
           </div>
         </th>
         <th
-          id="cuelist_post_wait"
-          class="text-center"
-          width="104px"
-          style="padding: 0px 8px"
-        >
-          <div class="d-flex flex-row justify-center ga-1">
-            {{ t('main.postWait') }}
-            <v-icon
-              class="mt-auto mb-auto"
-              :icon="uiState.postWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click.stop="uiState.togglePostWaitDisplayMode"
-            />
-          </div>
-        </th>
-        <th
           id="cuelist_repeat"
           width="32px"
         >
           <v-icon :icon="mdiRepeat" />
         </th>
         <th
-          id="cuelist_sequence"
+          id="cuelist_chain"
           width="54px"
         >
           <v-icon :icon="mdiChevronDoubleDown" />
@@ -253,71 +238,6 @@
             }}
           </div>
         </td>
-        <td
-          headers="cuelist_post_wait"
-          class="text-center"
-          style="padding: 0px 4px"
-        >
-          <div
-            :class="
-              isActive(item.cue.id) &&
-                (item.sequence.type == 'autoFollow' ||
-                  (item.sequence.type == 'autoContinue' &&
-                    showState.activeCues[item.cue.id]!.position < item.sequence.postWait))
-                ? 'border-md border-primary'
-                : ''
-            "
-            :style="{
-              background:
-                item.sequence.type != 'doNotContinue' &&
-                isActive(item.cue.id) &&
-                showState.activeCues[item.cue.id]!.position <
-                (item.sequence.type == 'autoContinue'
-                  ? item.sequence.postWait
-                  : showState.activeCues[item.cue.id]!.duration)
-                  ? 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ' +
-                    Math.floor(
-                      (showState.activeCues[item.cue.id]!.position * 100) /
-                        (item.sequence.type == 'autoContinue'
-                          ? item.sequence.postWait
-                          : showState.activeCues[item.cue.id]!.duration),
-                    ) +
-                    '%, transparent ' +
-                    Math.floor(
-                      (showState.activeCues[item.cue.id]!.position * 100) /
-                        (item.sequence.type == 'autoContinue'
-                          ? item.sequence.postWait
-                          : showState.activeCues[item.cue.id]!.duration),
-                    ) +
-                    '%) no-repeat'
-                  : '',
-            }"
-            @dblclick="if (!isActive(item.cue.id)) openEditable($event, i, 'cuelist_post_wait');"
-            @blur="closeEditable($event.target, true, i, 'cuelist_post_wait')"
-            @keydown.enter.stop="closeEditable($event.target, true, i, 'cuelist_post_wait')"
-            @keydown.esc.stop="closeEditable($event.target, false, i, 'cuelist_post_wait')"
-          >
-            {{
-              item.sequence.type == 'doNotContinue'
-                ? '--:--.--'
-                : isActive(item.cue.id) &&
-                  showState.activeCues[item.cue.id]!.position <
-                  (item.sequence.type == 'autoContinue'
-                    ? item.sequence.postWait
-                    : showState.activeCues[item.cue.id]!.duration)
-                  ? secondsToFormat(
-                    uiState.postWaitDisplayMode == 'elapsed'
-                      ? showState.activeCues[item.cue.id]!.position
-                      : showState.activeCues[item.cue.id]!.duration - showState.activeCues[item.cue.id]!.position,
-                  )
-                  : item.sequence.type == 'autoContinue'
-                    ? secondsToFormat(item.sequence.postWait)
-                    : secondsToFormat(
-                      calculateDuration(item.cue.params, assetResult.getMetadata(item.cue.id)?.duration),
-                    )
-            }}
-          </div>
-        </td>
         <td headers="cuelist_repeat">
           <v-icon
             v-show="
@@ -329,13 +249,13 @@
             :icon="mdiRepeat"
           />
         </td>
-        <td headers="cuelist_sequence">
+        <td headers="cuelist_chain">
           <v-icon
-            v-show="item.sequence.type == 'autoFollow'"
+            v-show="item.chain.type == 'afterComplete'"
             :icon="mdiArrowExpandDown"
           />
           <v-icon
-            v-show="item.sequence.type == 'autoContinue'"
+            v-show="item.chain.type == 'afterStart'"
             :icon="mdiArrowDown"
           />
         </td>
@@ -354,7 +274,7 @@
         <td headers="cuelist_duration" />
         <td headers="cuelist_post_wait" />
         <td headers="cuelist_repeat" />
-        <td headers="cuelist_sequence" />
+        <td headers="cuelist_chain" />
       </tr>
     </tbody>
   </v-table>
@@ -632,10 +552,10 @@ const openEditable = (e: MouseEvent, rowIndex: number, editType: string) => {
     }
   }
   if (editType == 'cuelist_post_wait') {
-    if (targetCue.isSequenceOverrided) {
+    if (targetCue.isChainOverrided) {
       return;
     }
-    if (targetCue.sequence.type != 'autoContinue') {
+    if (targetCue.chain.type != 'afterStart') {
       return;
     }
   }
@@ -688,13 +608,6 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, rowIndex: 
         } else if (newCue.params.type == 'fade') {
           let newDuration = formatToSeconds(target.innerText, false);
           newCue.params.fadeParam.duration = newDuration;
-        }
-        break;
-      }
-      case 'cuelist_post_wait': {
-        if (newCue.sequence.type == 'autoContinue') {
-          let newPostWait = formatToSeconds(target.innerText);
-          newCue.sequence.postWait = newPostWait;
         }
         break;
       }

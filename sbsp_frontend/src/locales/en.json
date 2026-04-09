@@ -249,10 +249,10 @@
         "volume": "Volume"
       }
     },
-    "continueMode": {
-      "autoContinue": "Auto-Continue",
-      "autoFollow": "Auto-Follow",
-      "doNotContinue": "DoNotContinue",
+    "chainMode": {
+      "afterStart": "After-Start",
+      "afterComplete": "After-Complete",
+      "doNotChain": "DoNotChain",
       "title": "Continue Mode"
     },
     "cueList": {},
@@ -263,7 +263,6 @@
     "name": "Name",
     "notes": "Notes",
     "number": "Number",
-    "postWait": "Post-Wait",
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",

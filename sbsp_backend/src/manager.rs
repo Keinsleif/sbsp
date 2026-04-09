@@ -771,7 +771,7 @@ mod tests {
         model::{
             ShowModel,
             cue::{
-                Cue, CueParam, CueSequence,
+                Cue, CueParam, CueChain,
                 audio::{AudioCueParam, Decibels, SoundType},
             },
             settings::ShowSettings,
@@ -818,7 +818,7 @@ mod tests {
                     name: Some("test cue".into()),
                     notes: "note".into(),
                     pre_wait: 0.0,
-                    sequence: CueSequence::DoNotContinue,
+                    chain: CueChain::DoNotChain,
                     params: CueParam::Audio(AudioCueParam {
                         target: temp_target.path().to_path_buf(),
                         start_time: None,
@@ -846,7 +846,7 @@ mod tests {
             name: Some("test cue".into()),
             notes: "note".into(),
             pre_wait: 0.0,
-            sequence: CueSequence::DoNotContinue,
+            chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target_after.path().to_path_buf(),
                 start_time: None,
@@ -913,7 +913,7 @@ mod tests {
             name: Some("test cue".into()),
             notes: "note".into(),
             pre_wait: 0.0,
-            sequence: CueSequence::DoNotContinue,
+            chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target.path().to_path_buf(),
                 start_time: None,

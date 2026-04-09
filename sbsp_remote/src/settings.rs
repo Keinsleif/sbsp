@@ -10,7 +10,7 @@ use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendSettings,
     model::cue::{
-        Cue, CueParam, CueSequence,
+        Cue, CueParam, CueChain,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
     },
@@ -27,8 +27,8 @@ pub struct GlobalSettings {
     pub name_format: NameFormatSettings,
 }
 
-impl From<GlobalSettings> for BackendSettings {
-    fn from(from: GlobalSettings) -> BackendSettings {
+impl From<&GlobalSettings> for BackendSettings {
+    fn from(from: &GlobalSettings) -> BackendSettings {
         BackendSettings {
             advance_cursor_when_go: from.general.advance_cursor_when_go,
             copy_assets_when_add: from.general.copy_assets_when_add,
@@ -106,7 +106,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
                     start_time: None,
@@ -125,7 +125,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Wait { duration: 5.0 },
             },
             fade: Cue {
@@ -134,7 +134,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Fade {
                     target: Uuid::nil(),
                     volume: Decibels::IDENTITY,
@@ -150,7 +150,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Start {
                     target: Uuid::nil(),
                 },
@@ -161,7 +161,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Stop {
                     target: Uuid::nil(),
                     hard: false,
@@ -173,7 +173,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Pause {
                     target: Uuid::nil(),
                 },
@@ -184,7 +184,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Load {
                     target: Uuid::nil(),
                 },
@@ -195,7 +195,7 @@ impl Default for TemplateSettings {
                 name: None,
                 notes: "".to_string(),
                 pre_wait: 0.0,
-                sequence: CueSequence::DoNotContinue,
+                chain: CueChain::DoNotChain,
                 params: CueParam::Group {
                     mode: GroupMode::Playlist { repeat: true },
                     children: Box::new(Vec::new()),

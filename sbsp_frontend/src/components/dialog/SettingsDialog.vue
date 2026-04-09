@@ -340,19 +340,13 @@
                       {{ t('main.duration') }}
                     </th>
                     <th
-                      id="cuelist_post_wait"
-                      class="text-center"
-                    >
-                      {{ t('main.postWait') }}
-                    </th>
-                    <th
                       id="cuelist_repeat"
                       width="53px"
                     >
                       <v-icon :icon="mdiRepeat" />
                     </th>
                     <th
-                      id="cuelist_sequence"
+                      id="cuelist_chain"
                       width="53px"
                     >
                       <v-icon :icon="mdiChevronDoubleDown" />
@@ -405,21 +399,6 @@
                         {{ secondsToFormat(calculateDuration(editingSettings.global.template.audio.params, null)) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.audio.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.audio.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.audio.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.audio.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat">
                       <v-icon
                         v-show="
@@ -429,13 +408,13 @@
                         :icon="mdiRepeat"
                       />
                     </td>
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.audio.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.audio.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.audio.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.audio.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -491,29 +470,14 @@
                         }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.wait.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.wait.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.wait.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.wait.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.wait.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.wait.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.wait.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.wait.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -569,29 +533,14 @@
                         }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.fade.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.fade.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.fade.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.fade.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.fade.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.fade.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.fade.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.fade.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -641,29 +590,14 @@
                         {{ secondsToFormat(null) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.start.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.start.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.start.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.start.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.start.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.start.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.start.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.start.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -713,29 +647,14 @@
                         {{ secondsToFormat(null) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.stop.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.stop.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.stop.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.stop.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.stop.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.stop.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.stop.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.stop.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -785,29 +704,14 @@
                         {{ secondsToFormat(null) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.pause.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.pause.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.pause.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.pause.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.pause.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.pause.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.pause.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.pause.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -857,29 +761,14 @@
                         {{ secondsToFormat(null) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.load.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.load.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.load.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.load.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.load.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.load.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.load.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.load.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
@@ -929,29 +818,14 @@
                         {{ secondsToFormat(null) }}
                       </div>
                     </td>
-                    <td
-                      headers="cuelist_post_wait"
-                      class="text-center pa-1"
-                      width="100px"
-                    >
-                      <div>
-                        {{
-                          editingSettings.global.template.group.sequence.type == 'doNotContinue'
-                            ? '--:--.--'
-                            : editingSettings.global.template.group.sequence.type == 'autoContinue'
-                              ? secondsToFormat(editingSettings.global.template.group.sequence.postWait)
-                              : secondsToFormat(calculateDuration(editingSettings.global.template.group.params, null))
-                        }}
-                      </div>
-                    </td>
                     <td headers="cuelist_repeat" />
-                    <td headers="cuelist_sequence">
+                    <td headers="cuelist_chain">
                       <v-icon
-                        v-show="editingSettings.global.template.group.sequence.type == 'autoFollow'"
+                        v-show="editingSettings.global.template.group.chain.type == 'afterComplete'"
                         :icon="mdiArrowExpandDown"
                       />
                       <v-icon
-                        v-show="editingSettings.global.template.group.sequence.type == 'autoContinue'"
+                        v-show="editingSettings.global.template.group.chain.type == 'afterStart'"
                         :icon="mdiArrowDown"
                       />
                     </td>
