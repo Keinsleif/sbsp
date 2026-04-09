@@ -263,7 +263,7 @@
     "name": "名前",
     "notes": "備考",
     "number": "番号",
-    "preWait": "Pre-Wait",
+    "preWait": "事前待機",
     "sideBar": {
       "activeCues": "実行中のキュー",
       "levels": {
