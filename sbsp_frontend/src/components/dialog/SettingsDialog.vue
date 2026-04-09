@@ -123,6 +123,19 @@
             value="audio"
             class="pa-4"
           >
+            <v-number-input
+              v-model="editingSettings.show.audio.outputChannels"
+              class="mt-4"
+              :label="t('dialog.settings.show.audio.outputChannels')"
+              density="compact"
+              variant="outlined"
+              hide-details
+              width="200px"
+              autocomplete="off"
+              :min="1"
+              :max="8"
+              :precision="0"
+            />
             <v-checkbox
               v-model="editingSettings.show.audio.monoOutput"
               :label="t('dialog.settings.show.audio.monoOutput')"

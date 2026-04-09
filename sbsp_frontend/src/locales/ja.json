@@ -147,7 +147,8 @@
       "show": {
         "audio": {
           "monoOutput": "ステレオをモノラルにダウンミックス",
-          "targetLufs": "目標 LUFS"
+          "targetLufs": "目標 LUFS",
+          "outputChannels": "出力チャンネル数"
         },
         "general": {
           "assetsDirectory": {

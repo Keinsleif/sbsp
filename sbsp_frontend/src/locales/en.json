@@ -147,7 +147,8 @@
       "show": {
         "audio": {
           "monoOutput": "Downmix stereo to mono",
-          "targetLufs": "Target LUFS"
+          "targetLufs": "Target LUFS",
+          "outputChannels": "Output channels"
         },
         "general": {
           "assetsDirectory": {
