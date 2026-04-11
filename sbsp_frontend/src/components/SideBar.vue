@@ -70,6 +70,7 @@
           </v-sheet>
           <v-progress-linear
             :color="activeCue.status == 'paused' || activeCue.status == 'stopping' ? 'warning' : 'primary'"
+            style="transition: none;"
             :model-value="activeCue != null ? (activeCue.position * 100) / activeCue.duration : 0"
             height="16"
           />
