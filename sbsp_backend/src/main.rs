@@ -1,9 +1,28 @@
-use sbsp_backend::{BackendSettings, api::server::start_apiserver, start_backend};
+use std::path::PathBuf;
+
+use sbsp_backend::{BackendSettings, api::{ApiServerOptions, server::start_apiserver}, start_backend};
+use clap::Parser;
 use tokio::sync::watch;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    file: Option<PathBuf>,
+
+    #[arg(long, default_value_t = 5800)]
+    port: u16,
+
+    #[arg(short, long, default_value = "SBS Player API Server")]
+    discovery: Option<String>,
+
+    #[arg(short, long)]
+    password: Option<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
+    let args = Args::parse();
     let (_, settings_rx) = watch::channel(BackendSettings::default());
 
     let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, false) {
@@ -13,12 +32,20 @@ async fn main() -> Result<(), anyhow::Error> {
             return Err(anyhow::anyhow!("{}", e));
         }
     };
+
+    if let Some(path) = args.file {
+        backend_handle.model_handle.load_from_file(path).await?;
+    }
+
     let shutdown_tx = start_apiserver(
-        5800,
         backend_handle,
         state_rx,
         event_tx,
-        Some("SBS Player API Server".into()),
+        ApiServerOptions {
+            port: args.port,
+            discoverry: args.discovery,
+            password: args.password,
+        }
     )
     .await?;
 
