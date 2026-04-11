@@ -168,6 +168,16 @@ export const useShowState = defineStore('showstate', () => {
       case 'completed':
       case 'error':
         delete syncedData.value[data.cueId];
+        break;
+      case 'stateParamUpdated': {
+        const activeCue = activeCues.value[data.cueId];
+        if (activeCue != null) {
+          activeCue.params = data.params;
+        }
+        break;
+      }
+      default:
+        console.log('Unahndled show state event occured.');
     }
   };
 
