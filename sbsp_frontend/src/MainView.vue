@@ -333,29 +333,31 @@ const onCueEdited = debounce(() => {
   api.updateCue(toRaw(selectedCue.value));
 }, 500);
 
-useHotkey(
-  'cmd+o',
-  () => {
-    api.host?.fileOpen();
-  },
-  { preventDefault: true },
-);
+if (api.host) {
+  useHotkey(
+    'cmd+o',
+    () => {
+      api.host?.fileOpen();
+    },
+    { preventDefault: true },
+  );
 
-useHotkey(
-  'cmd+s',
-  () => {
-    api.host?.fileSave();
-  },
-  { preventDefault: true },
-);
+  useHotkey(
+    'cmd+s',
+    () => {
+      api.host?.fileSave();
+    },
+    { preventDefault: true },
+  );
 
-useHotkey(
-  'cmd+shift+a',
-  () => {
-    api.host?.fileSaveAs();
-  },
-  { preventDefault: true },
-);
+  useHotkey(
+    'cmd+shift+a',
+    () => {
+      api.host?.fileSaveAs();
+    },
+    { preventDefault: true },
+  );
+}
 
 const goHotkey = computed(() =>
   uiSettings.settings.hotkey.playback.go != null ? uiSettings.settings.hotkey.playback.go : undefined,
