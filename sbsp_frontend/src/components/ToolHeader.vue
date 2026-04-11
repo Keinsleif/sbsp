@@ -161,8 +161,10 @@ import { useNow, useWindowFocus } from '@vueuse/core';
 import { useUiState } from '../stores/uistate';
 import { useUiSettings } from '../stores/uiSettings';
 import { useApi } from '../api';
+import { storeToRefs } from 'pinia';
 
 const showModel = useShowModel();
+const { getCueById } = storeToRefs(showModel);
 const showState = useShowState();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
@@ -171,7 +173,7 @@ const api = useApi();
 const hasFocus = useWindowFocus();
 
 const playbackCursorCue = computed(() => {
-  return showState.playbackCursor != null ? showModel.getCueById(showState.playbackCursor) : null;
+  return showState.playbackCursor != null ? getCueById.value(showState.playbackCursor) : null;
 });
 
 const playbackCursorCueTitle = computed(() => {

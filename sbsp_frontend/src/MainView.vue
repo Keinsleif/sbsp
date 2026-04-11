@@ -106,8 +106,10 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { useApi, side } from './api';
 import { useDisplay } from 'vuetify/lib/composables/display.mjs';
 import { useIntervalFn } from '@vueuse/core';
+import { storeToRefs } from 'pinia';
 
 const showModel = useShowModel();
+const { getCueById } = storeToRefs(showModel);
 const showState = useShowState();
 const uiState = useUiState();
 const assetResult = useAssetResult();
@@ -293,7 +295,7 @@ onUnmounted(() => {
   }
 });
 
-const selectedCue = ref<Cue | null>(uiState.selected != null ? showModel.getCueById(uiState.selected)! : null);
+const selectedCue = ref<Cue | null>(uiState.selected != null ? getCueById.value(uiState.selected)! : null);
 const selectedCueChainOverride = computed(() => {
   if (selectedCue.value == null) {
     return null;
@@ -316,9 +318,13 @@ watch(
       onCueEdited.clear();
       onCueEdited.immediate();
     }
-    selectedCue.value = uiState.selected != null ? showModel.getCueById(uiState.selected)! : null;
+    selectedCue.value = uiState.selected != null ? getCueById.value(uiState.selected)! : null;
   },
 );
+
+watch(() => showModel.cues, () => {
+  selectedCue.value = uiState.selected != null ? getCueById.value(uiState.selected)! : null;
+});
 
 const onCueEdited = debounce(() => {
   if (selectedCue.value == null) {

@@ -100,14 +100,16 @@ import type { PlaybackStatus } from '../types/PlaybackStatus';
 import { buildCueName, secondsToFormat } from '../utils';
 import { useI18n } from 'vue-i18n';
 import LevelMeter from './input/LevelMeter.vue';
+import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
 const showModel = useShowModel();
+const { getCueById } = storeToRefs(showModel);
 const showState = useShowState();
 const uiState = useUiState();
 
 const buildTitle = (cue_id: string) => {
-  const activeCue = showModel.getCueById(cue_id);
+  const activeCue = getCueById.value(cue_id);
   if (activeCue == null) return;
   let result = '';
   if (activeCue.number.trim() != '') {

@@ -86,10 +86,10 @@ export const useShowModel = defineStore('showmodel', {
       },
     }) as ShowModel,
   getters: {
-    getCueById() {
+    getCueById(state) {
       return (cue_id: string): Cue | undefined => {
         const queue = [];
-        let cuelist: Cue[] | undefined = this.cues;
+        let cuelist: Cue[] | undefined = state.cues;
         while (cuelist != undefined) {
           for (const cue of cuelist) {
             if (cue.id == cue_id) {

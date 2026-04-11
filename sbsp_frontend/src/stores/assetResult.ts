@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { defineStore, storeToRefs } from 'pinia';
 import { useShowModel } from './showmodel';
 import type { AssetData } from '../types/AssetData';
 import type { AssetMetadata } from '../types/AssetMetadata';
@@ -25,8 +25,9 @@ export const useAssetResult = defineStore(
         return null;
       }
       const showModel = useShowModel();
+      const { getCueById } = storeToRefs(showModel);
       const api = useApi();
-      const targetCue = showModel.getCueById(cueId);
+      const targetCue = getCueById.value(cueId);
       if (targetCue != null && targetCue.params.type == 'audio') {
         const result = results.value[targetCue.params.target];
         if (result != null) {
@@ -48,8 +49,9 @@ export const useAssetResult = defineStore(
         return null;
       }
       const showModel = useShowModel();
+      const { getCueById } = storeToRefs(showModel);
       const api = useApi();
-      const targetCue = showModel.getCueById(cueId);
+      const targetCue = getCueById.value(cueId);
       if (targetCue != null && targetCue.params.type == 'audio') {
         const result = metadatas.value[targetCue.params.target];
         if (result != null) {

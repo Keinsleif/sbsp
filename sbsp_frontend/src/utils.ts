@@ -6,6 +6,7 @@ import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
 import { side } from './api';
+import { storeToRefs } from 'pinia';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -105,35 +106,40 @@ export const buildCueName = (cue: Cue | null): string => {
       });
     case 'fade': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.fade, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'start': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.start, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'stop': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.stop, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'pause': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.pause, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'load': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.load, {
         targetName: buildCueName(targetCue ?? null),
       });
