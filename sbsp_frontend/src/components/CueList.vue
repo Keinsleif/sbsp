@@ -252,11 +252,11 @@
         <td headers="cuelist_chain">
           <v-icon
             v-show="item.chain.type == 'afterComplete'"
-            :icon="mdiArrowExpandDown"
+            :icon="mdiArrowCollapseDown"
           />
           <v-icon
             v-show="item.chain.type == 'afterStart'"
-            :icon="mdiArrowDown"
+            :icon="mdiArrowExpandDown"
           />
         </td>
       </tr>
@@ -285,7 +285,7 @@ import { useShowModel } from '../stores/showmodel';
 import {
   mdiAlphaEBoxOutline,
   mdiAlphaRBoxOutline,
-  mdiArrowDown,
+  mdiArrowCollapseDown,
   mdiArrowExpandDown,
   mdiArrowRightBold,
   mdiChartBellCurveCumulative,
