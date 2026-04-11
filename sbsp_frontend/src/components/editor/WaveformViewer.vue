@@ -146,7 +146,7 @@ const startPos = computed<number>(() => nonNullStartTime.value * (svgWidth.value
 const endPos = computed<number>(() => nonNullEndTime.value * (svgWidth.value - 1) - 1);
 
 const svgRef = useTemplateRef('svg');
-const { width: svgWidth } = useElementSize(svgRef.value);
+const { width: svgWidth } = useElementSize(svgRef);
 const parent = useParentElement();
 const position = computed<number>(() => {
   if (props.targetId == null) return 0;
@@ -209,7 +209,7 @@ const {
   y: mouseY,
   elementX,
   isOutside,
-} = useMouseInElement(svgRef.value, { handleOutside: false, touch: false });
+} = useMouseInElement(svgRef, { handleOutside: false, touch: false });
 
 const seek = (event: MouseEvent) => {
   if (props.targetId == null || event.button != 0) {
@@ -235,6 +235,7 @@ const tooltipText = computed(() => {
   if (duration == null) {
     return '--:--.-- / --:--.--';
   }
+  console.log(svgWidth.value);
   return `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
 });
 
@@ -244,7 +245,7 @@ const tooltipStyle = computed<StyleValue>(() => {
   return {
     position: 'absolute',
     top: `${mouseY.value - parentRect.top - 10}px`,
-    left: `${parentRect.right - mouseX.value > 150 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 120}px`,
+    left: `${parentRect.right - mouseX.value > 180 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 150}px`,
   };
 });
 </script>
