@@ -19,6 +19,7 @@
         :label="t('dialog.renumber.startNumber')"
         density="compact"
         variant="outlined"
+        :precision="null"
       />
       <v-number-input
         v-model="increment"
@@ -27,6 +28,7 @@
         :label="t('dialog.renumber.increment')"
         density="compact"
         variant="outlined"
+        :precision="null"
       />
       <v-sheet class="d-flex flex-row justify-end ga-2">
         <v-btn @click="isRenumberDialogOpen = false">

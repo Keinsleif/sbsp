@@ -151,6 +151,7 @@
               hide-details
               width="200px"
               autocomplete="off"
+              :precision="2"
             />
           </v-tabs-window-item>
           <v-tabs-window-item
@@ -194,6 +195,7 @@
               variant="outlined"
               autocomplete="off"
               @keydown.stop
+              :precision="2"
             />
           </v-tabs-window-item>
           <v-tabs-window-item

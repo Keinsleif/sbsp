@@ -56,6 +56,7 @@
         density="compact"
         variant="outlined"
         autocomplete="off"
+        :precision="0"
         @update:model-value="saveValues"
         @keydown.stop
       />
