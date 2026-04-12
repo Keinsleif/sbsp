@@ -59,6 +59,18 @@
         v-show="!item.isHidden"
         ref="cuelistItem"
         :key="item.cue.id"
+        :style="{
+          background: showState.activeCues[item.cue.id] != null
+            ? (showState.activeCues[item.cue.id]!.status.startsWith('pre')
+              ? 'linear-gradient(to right, rgba(var(--v-theme-warning), 0.5) '
+              : 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ') +
+              (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration
+              +
+              '%, transparent ' +
+              (showState.activeCues[item.cue.id]!.position * 100) / showState.activeCues[item.cue.id]!.duration +
+              '%) no-repeat'
+            : '',
+        }"
         @click="setPlaybackCursor(item.cue.id)"
       >
         <td

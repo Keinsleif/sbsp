@@ -45,7 +45,7 @@
       </v-btn>
       <v-btn @click="activeTab = 'monitor'">
         <v-icon :icon="mdiMonitor" />
-        <span>Monitor</span>
+        <span>Active</span>
       </v-btn>
     </v-bottom-navigation>
   </v-app>
