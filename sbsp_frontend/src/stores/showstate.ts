@@ -7,7 +7,7 @@ import { CueStatusEventParam } from '../types/CueStatusEventParam';
 import { ShowState } from '../types/ShowState';
 
 export const useShowState = defineStore('showstate', () => {
-  const playbackCursor = ref<string | null>();
+  const playbackCursor = ref<string | null>(null);
   const activeCues = ref<{ [id: string]: ActiveCue }>({});
   const syncedData = ref<{ [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number } }>({});
   const latency = ref<number>(0);
