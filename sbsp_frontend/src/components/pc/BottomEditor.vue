@@ -185,15 +185,15 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import BasicEditor from './editor/BasicEditor.vue';
-import AudioTimeLevelEditor from './editor/AudioTimeLevelEditor.vue';
-import AudioBasicEditor from './editor/AudioBasicEditor.vue';
-import type { Cue } from '../types/Cue';
-import FadeBasicEditor from './editor/FadeBasicEditor.vue';
+import BasicEditor from '../editor/BasicEditor.vue';
+import AudioTimeLevelEditor from '../editor/AudioTimeLevelEditor.vue';
+import AudioBasicEditor from '../editor/AudioBasicEditor.vue';
+import type { Cue } from '../../types/Cue';
+import FadeBasicEditor from '../editor/FadeBasicEditor.vue';
 import { useI18n } from 'vue-i18n';
-import PlaybackBasicEditor from './editor/PlaybackBasicEditor.vue';
-import GroupBasicEditor from './editor/GroupBasicEditor.vue';
-import type { CueChain } from '../types/CueChain';
+import PlaybackBasicEditor from '../editor/PlaybackBasicEditor.vue';
+import GroupBasicEditor from '../editor/GroupBasicEditor.vue';
+import type { CueChain } from '../../types/CueChain';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();

@@ -281,7 +281,7 @@
 
 <script setup lang="ts">
 import { ref, toRaw, useTemplateRef } from 'vue';
-import { useShowModel } from '../stores/showmodel';
+import { useShowModel } from '../../stores/showmodel';
 import {
   mdiAlphaEBoxOutline,
   mdiAlphaRBoxOutline,
@@ -304,21 +304,21 @@ import {
   mdiUploadCircleOutline,
   mdiVolumeHigh,
 } from '@mdi/js';
-import { useUiState } from '../stores/uistate';
-import { useShowState } from '../stores/showstate';
+import { useUiState } from '../../stores/uistate';
+import { useShowState } from '../../stores/showstate';
 import {
   buildCueName,
   calculateDuration,
   formatToSeconds,
   getLockCursorToSelection,
   secondsToFormat,
-} from '../utils';
-import type { PlaybackStatus } from '../types/PlaybackStatus';
+} from '../../utils';
+import type { PlaybackStatus } from '../../types/PlaybackStatus';
 import { useHotkey } from 'vuetify';
-import { useAssetResult } from '../stores/assetResult';
+import { useAssetResult } from '../../stores/assetResult';
 import { useI18n } from 'vue-i18n';
 import { throttle } from 'vuetify/lib/util/throttle.mjs';
-import { useApi } from '../api';
+import { useApi } from '../../api';
 
 const { t } = useI18n();
 const api = useApi();

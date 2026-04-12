@@ -972,7 +972,7 @@ import type { ShowSettings } from '../../types/ShowSettings';
 import HotkeyInput from '../input/HotkeyInput.vue';
 import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } from '@mdi/js';
 import { secondsToFormat, calculateDuration } from '../../utils';
-import BottomEditor from '../BottomEditor.vue';
+import BottomEditor from '../pc/BottomEditor.vue';
 import type { Cue } from '../../types/Cue';
 import TextInput from '../input/TextInput.vue';
 import { useUiSettings } from '../../stores/uiSettings';

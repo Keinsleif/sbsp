@@ -46,11 +46,11 @@
 
 <script setup lang="ts">
 import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
-import { useUiState } from '../stores/uistate';
-import { useShowModel } from '../stores/showmodel';
+import { useUiState } from '../../stores/uistate';
+import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side } from '../api';
+import { useApi, side } from '../../api';
 
 const { t } = useI18n();
 

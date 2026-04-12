@@ -152,15 +152,15 @@ import {
   mdiUploadCircleOutline,
   mdiGroup,
 } from '@mdi/js';
-import { useShowModel } from '../stores/showmodel';
+import { useShowModel } from '../../stores/showmodel';
 import { computed } from 'vue';
-import { useShowState } from '../stores/showstate';
-import { PlaybackStatus } from '../types/PlaybackStatus';
-import { buildCueName } from '../utils';
+import { useShowState } from '../../stores/showstate';
+import { PlaybackStatus } from '../../types/PlaybackStatus';
+import { buildCueName } from '../../utils';
 import { useNow, useWindowFocus } from '@vueuse/core';
-import { useUiState } from '../stores/uistate';
-import { useUiSettings } from '../stores/uiSettings';
-import { useApi } from '../api';
+import { useUiState } from '../../stores/uistate';
+import { useUiSettings } from '../../stores/uiSettings';
+import { useApi } from '../../api';
 import { storeToRefs } from 'pinia';
 
 const showModel = useShowModel();
@@ -184,15 +184,15 @@ const playbackCursorCueTitle = computed(() => {
     : '';
 });
 
-const isCueStatus = (status: PlaybackStatus) => {
+const isCueStatus = computed(() => {
   if (showState.playbackCursor != null) {
     const activeCue = showState.activeCues[showState.playbackCursor];
     if (activeCue != null) {
-      return activeCue.status == status;
+      return (status: PlaybackStatus) => activeCue.status == status;
     }
   }
-  return false;
-};
+  return () => false;
+});
 
 const handleReadyPauseButton = () => {
   if (showState.playbackCursor != null) {

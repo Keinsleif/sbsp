@@ -93,13 +93,13 @@
 
 <script setup lang="ts">
 import { mdiRepeat } from '@mdi/js';
-import { useShowModel } from '../stores/showmodel';
-import { useShowState } from '../stores/showstate';
-import { useUiState } from '../stores/uistate';
-import type { PlaybackStatus } from '../types/PlaybackStatus';
-import { buildCueName, secondsToFormat } from '../utils';
+import { useShowModel } from '../../stores/showmodel';
+import { useShowState } from '../../stores/showstate';
+import { useUiState } from '../../stores/uistate';
+import type { PlaybackStatus } from '../../types/PlaybackStatus';
+import { buildCueName, secondsToFormat } from '../../utils';
 import { useI18n } from 'vue-i18n';
-import LevelMeter from './input/LevelMeter.vue';
+import LevelMeter from '../input/LevelMeter.vue';
 import { storeToRefs } from 'pinia';
 
 const { t } = useI18n();
