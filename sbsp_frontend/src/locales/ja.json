@@ -270,6 +270,11 @@
       "levels": {
         "title": "レベル"
       }
+    },
+    "mobile": {
+      "list": "リスト",
+      "controls": "操作",
+      "active": "実行中"
     }
   },
   "menu": {

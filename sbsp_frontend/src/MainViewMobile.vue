@@ -37,15 +37,15 @@
     <v-bottom-navigation v-model="activeTab">
       <v-btn @click="activeTab = 'list'">
         <v-icon :icon="mdiFormatListBulleted" />
-        <span>List</span>
+        <span>{{ t('main.mobile.list') }}</span>
       </v-btn>
       <v-btn @click="activeTab = 'controls'">
         <v-icon :icon="mdiRemote" />
-        <span>Controls</span>
+        <span>{{ t('main.mobile.controls') }}</span>
       </v-btn>
       <v-btn @click="activeTab = 'monitor'">
         <v-icon :icon="mdiMonitor" />
-        <span>Active</span>
+        <span>{{ t('main.mobile.active') }}</span>
       </v-btn>
     </v-bottom-navigation>
   </v-app>
@@ -58,7 +58,9 @@ import { ref } from 'vue';
 import ControlsPanel from './components/mobile/ControlsPanel.vue';
 import MonitorPanel from './components/mobile/MonitorPanel.vue';
 import CueList from './components/mobile/CueList.vue';
+import { useI18n } from 'vue-i18n';
 
 const activeTab = ref('list');
+const { t } = useI18n();
 const time = useNow();
 </script>

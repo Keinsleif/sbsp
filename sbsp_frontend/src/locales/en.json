@@ -271,6 +271,11 @@
       "levels": {
         "title": "Levels"
       }
+    },
+    "mobile": {
+      "list": "List",
+      "controls": "Controls",
+      "active": "Active"
     }
   },
   "menu": {
