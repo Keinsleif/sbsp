@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
-import UnpluginTyia from '@kennethwkz/unplugin-typia/vite';
+import UnpluginTyia from '@typia/unplugin/vite';
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -48,7 +48,7 @@ export default defineConfig(async () => ({
     outDir: outDir,
     rollupOptions: {
       output: {
-        manualChunks(id) {
+        manualChunks(id: string | string[]) {
           if (id.includes('node_modules')) {
             if (id.includes('vuetify')) {
               return 'vendor-vuetify';
