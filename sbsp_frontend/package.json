@@ -39,12 +39,11 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@intlify/unplugin-vue-i18n": "^11.0.7",
-    "@kennethwkz/unplugin-typia": "^2.6.7",
     "@mdi/js": "^7.4.47",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tauri-apps/cli": "^2.10.1",
     "@types/markdown-it-link-attributes": "^3.0.5",
-    "@types/node": "^25.5.2",
+    "@typia/unplugin": "^12.0.2",
     "@vitejs/plugin-vue": "^6.0.5",
     "cross-env": "^10.1.0",
     "eslint": "^10.2.0",
