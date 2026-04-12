@@ -47,7 +47,7 @@
       :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
       width="100%"
       :height="`${contentHeight}px`"
-      @mousedown="seek($event)"
+      @pointerdown="seek($event)"
     >
       <rect
         :class="$style.waveform"

@@ -4,8 +4,8 @@
     hide-details
     min="0"
     :max="props.duration"
-    @mousedown="sliderChanging = true"
-    @mouseup="
+    @pointerdown="sliderChanging = true"
+    @pointerup="
       if (sliderChanging) {
         sliderChanging = false;
         emit('update');
@@ -19,7 +19,7 @@
         width="100px"
         :label="t('main.bottomEditor.timeLevels.startTime')"
         @update="emit('update')"
-        @mousedown.stop
+        @pointerdown.stop
       />
     </template>
     <template #append>
@@ -28,7 +28,7 @@
         width="100px"
         :label="t('main.bottomEditor.timeLevels.endTime')"
         @update="emit('update')"
-        @mousedown.stop
+        @pointerdown.stop
       />
     </template>
   </v-range-slider>

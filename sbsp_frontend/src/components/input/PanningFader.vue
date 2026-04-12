@@ -12,8 +12,8 @@
     :ticks="tickLabels"
     :direction="props.direction"
     @dblclick="faderPosition = 0"
-    @mousedown="sliderChanging = true"
-    @mouseup="
+    @pointerdown="sliderChanging = true"
+    @pointerup="
       if (sliderChanging) {
         sliderChanging = false;
         emit('update');
@@ -38,7 +38,7 @@
         control-variant="hidden"
         hide-details
         width="100px"
-        @mousedown.stop
+        @pointerdown.stop
         @dblclick.stop
       />
     </template>

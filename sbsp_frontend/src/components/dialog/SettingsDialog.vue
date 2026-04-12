@@ -369,7 +369,7 @@
                 <tbody>
                   <tr
                     :class="[selectingTemplate == 'audio' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'audio'"
+                    @pointerdown="selectingTemplate = 'audio'"
                   >
                     <td
                       headers="cuelist_type"
@@ -434,7 +434,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'wait' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'wait'"
+                    @pointerdown="selectingTemplate = 'wait'"
                   >
                     <td
                       headers="cuelist_type"
@@ -497,7 +497,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'fade' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'fade'"
+                    @pointerdown="selectingTemplate = 'fade'"
                   >
                     <td
                       headers="cuelist_type"
@@ -560,7 +560,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'start' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'start'"
+                    @pointerdown="selectingTemplate = 'start'"
                   >
                     <td
                       headers="cuelist_type"
@@ -617,7 +617,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'stop' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'stop'"
+                    @pointerdown="selectingTemplate = 'stop'"
                   >
                     <td
                       headers="cuelist_type"
@@ -674,7 +674,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'pause' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'pause'"
+                    @pointerdown="selectingTemplate = 'pause'"
                   >
                     <td
                       headers="cuelist_type"
@@ -731,7 +731,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'load' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'load'"
+                    @pointerdown="selectingTemplate = 'load'"
                   >
                     <td
                       headers="cuelist_type"
@@ -788,7 +788,7 @@
                   </tr>
                   <tr
                     :class="[selectingTemplate == 'group' ? $style['selected-row'] : '']"
-                    @mousedown="selectingTemplate = 'group'"
+                    @pointerdown="selectingTemplate = 'group'"
                   >
                     <td
                       headers="cuelist_type"

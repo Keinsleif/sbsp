@@ -13,12 +13,12 @@
     :direction="props.direction"
     @dblclick="
       faderPosition = 0;
-      onMouseUp.clear();
+      onPointerUp.clear();
       emit('update');
     "
     @keydown.stop
-    @mousedown="sliderChanging = true"
-    @mouseup="onMouseUp"
+    @pointerdown="sliderChanging = true"
+    @pointerup="onPointerUp"
   >
     <template #thumb-label="{ modelValue }">
       {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
@@ -27,7 +27,7 @@
       <volume-input
         v-show="!props.hideInput"
         v-model="volume"
-        @mousedown.stop
+        @pointerdown.stop
         @dblclick.stop
         @update="emit('update')"
       />
@@ -89,7 +89,7 @@ const faderPosition = computed({
   },
 });
 
-const onMouseUp = debounce(() => {
+const onPointerUp = debounce(() => {
   if (sliderChanging.value) {
     sliderChanging.value = false;
     emit('update');
