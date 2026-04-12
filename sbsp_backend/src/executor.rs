@@ -453,7 +453,7 @@ impl Executor {
                 }
                 }
             CueParam::Load { target } => {
-                if self.active_instances.read().await.contains_key(target) {
+                if !self.active_instances.read().await.contains_key(target) {
                     self.process_command(ExecutorCommand::Load(*target)).await?;
                     self.executor_event_tx.send(ExecutorEvent::Started { cue_id: cue.id, position: 0.0, duration: 0.0, initial_params: StateParam::None }).await?;
                     self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
