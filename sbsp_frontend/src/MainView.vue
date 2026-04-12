@@ -44,6 +44,7 @@ const unlistenFuncs: (() => void)[] = [];
 let rafNumber: number | null = null;
 
 onMounted(() => {
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   useIntervalFn(
