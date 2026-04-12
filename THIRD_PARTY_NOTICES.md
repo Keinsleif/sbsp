@@ -9220,7 +9220,7 @@ limitations under the License.
     - [osakit 0.3.1]( https://github.com/mdevils/rust-osakit )
     - [pin-project-lite 0.2.17]( https://github.com/taiki-e/pin-project-lite )
     - [proc-macro2 1.0.106]( https://github.com/dtolnay/proc-macro2 )
-    - [quote 1.0.44]( https://github.com/dtolnay/quote )
+    - [quote 1.0.45]( https://github.com/dtolnay/quote )
     - [r-efi 5.3.0]( https://github.com/r-efi/r-efi )
     - [rand 0.8.5]( https://github.com/rust-random/rand )
     - [rand 0.9.2]( https://github.com/rust-random/rand )
@@ -14065,7 +14065,7 @@ SOFTWARE.
 
 ```
 
-### [uqr@0.1.2](https://github.com/unjs/uqr)
+### [uqr@0.1.3](https://github.com/unjs/uqr)
 license: MIT
 
 ```text
@@ -14110,7 +14110,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ```
 
-### [vue-i18n@11.2.8](https://github.com/intlify/vue-i18n)
+### [vue-i18n@11.3.0](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -14137,7 +14137,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [vue@3.5.29](https://github.com/vuejs/core)
+### [vue@3.5.32](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -14165,7 +14165,7 @@ THE SOFTWARE.
 
 ```
 
-### [vuetify@4.0.0](https://github.com/vuetifyjs/vuetify)
+### [vuetify@4.0.5](https://github.com/vuetifyjs/vuetify)
 license: MIT
 
 ```text
