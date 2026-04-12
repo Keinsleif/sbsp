@@ -23,7 +23,10 @@
     "renumber": {
       "increment": "Increment",
       "startNumber": "Start Number",
-      "title": "Renumber Cues"
+      "title": "Renumber Cues",
+      "prefix": "Prefix",
+      "suffix": "Suffix",
+      "preview": "Preview"
     },
     "save": {
       "exportSettingsFilter": "GlobalSettings File"

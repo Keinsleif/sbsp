@@ -23,7 +23,9 @@
     "renumber": {
       "increment": "増分",
       "startNumber": "開始番号",
-      "title": "キュー番号の振り直し"
+      "title": "キュー番号の振り直し",
+      "prefix": "接頭辞",
+      "suffix": "接尾辞"
     },
     "save": {
       "exportSettingsFilter": "グローバル設定ファイル"

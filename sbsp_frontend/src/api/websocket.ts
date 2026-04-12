@@ -520,11 +520,11 @@ export function useWebsocketApi(): IBackendAdapter {
         });
       }
     },
-    renumberCues: async function (cues: string[], startFrom: number, increment: number): Promise<void> {
+    renumberCues: async function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       this.sendCommand({
         type: 'model',
         command: 'renumberCues',
-        params: { cues: cues, startFrom: startFrom, increment: increment },
+        params: { cues, startFrom, increment, prefix, suffix },
       });
     },
     updateModelName: async function (newName: string): Promise<void> {

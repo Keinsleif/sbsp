@@ -281,16 +281,39 @@ impl ShowModelManager {
                 cues,
                 start_from,
                 increment,
+                prefix,
+                suffix,
             } => {
                 let mut model = self.model.write().await;
+                let mut targets: HashSet<Uuid> = cues.into_iter().collect();
                 let mut number = start_from;
-                let targets: HashSet<Uuid> = cues.into_iter().collect();
-                for cue in model.cues.iter_mut() {
-                    if targets.contains(&cue.id) {
-                        cue.number = number.to_string();
-                        number += increment;
+                let prefix = prefix.unwrap_or_default();
+                let suffix = suffix.unwrap_or_default();
+
+                let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+
+                while let Some(cues) = queue.pop_front() {
+                    for cue in cues.iter_mut() {
+                        if targets.remove(&cue.id) {
+                            cue.number = format!("{}{}{}", &prefix, number, &suffix);
+                            number += increment;
+                            if targets.is_empty() {
+                                break;
+                            }
+                        }
+                    }
+
+                    if targets.is_empty() {
+                        break;
+                    }
+
+                    for cue in cues.iter_mut() {
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            queue.push_back(children);
+                        }
                     }
                 }
+
                 if number != start_from {
                     self.modify_status.store(true, Ordering::Release);
                     self.event_tx.send(BackendEvent::CueListUpdated {

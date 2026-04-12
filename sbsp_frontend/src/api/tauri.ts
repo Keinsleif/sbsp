@@ -237,8 +237,8 @@ export function useTauriApi(): IBackendAdapter {
     moveCue: function (cueId: string, targetId: string | null): Promise<void> {
       return invoke('move_cue', { cueId: cueId, targetId: targetId });
     },
-    renumberCues: function (cues: string[], startFrom: number, increment: number): Promise<void> {
-      return invoke('renumber_cues', { cues: cues, startFrom: startFrom, increment: increment });
+    renumberCues: function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
+      return invoke('renumber_cues', { cues, startFrom, increment, prefix, suffix });
     },
     updateModelName: function (newName: string): Promise<void> {
       return invoke('update_model_name', { newName: newName });

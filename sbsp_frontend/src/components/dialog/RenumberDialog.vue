@@ -19,7 +19,6 @@
         :label="t('dialog.renumber.startNumber')"
         density="compact"
         variant="outlined"
-        :precision="null"
       />
       <v-number-input
         v-model="increment"
@@ -28,7 +27,22 @@
         :label="t('dialog.renumber.increment')"
         density="compact"
         variant="outlined"
-        :precision="null"
+      />
+      <text-input
+        v-model="prefix"
+        class="flex-grow-0"
+        align-input="left"
+        :label="t('dialog.renumber.prefix')"
+      />
+      <text-input
+        v-model="suffix"
+        class="flex-grow-0"
+        align-input="left"
+        :label="t('dialog.renumber.suffix')"
+      />
+      <text-input
+        :model-value="preview"
+        :label="t('dialog.renumber.preview')"
       />
       <v-sheet class="d-flex flex-row justify-end ga-2">
         <v-btn @click="isRenumberDialogOpen = false">
@@ -46,10 +60,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
+import TextInput from '../input/TextInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -58,10 +73,20 @@ const uiState = useUiState();
 const isRenumberDialogOpen = defineModel<boolean>({ required: true });
 const startFrom = ref(1);
 const increment = ref(1);
+const prefix = ref('');
+const suffix = ref('');
+
+const preview = computed(() => {
+  let result = '';
+  for (let i = 0; i < 3; i++) {
+    result += prefix.value + (startFrom.value + increment.value * i) + suffix.value + '  ';
+  }
+  return result + '...';
+});
 
 const onDone = () => {
   api
-    .renumberCues(uiState.selectedRows, startFrom.value, increment.value)
+    .renumberCues(uiState.selectedRows, startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
     .then(() => {
       isRenumberDialogOpen.value = false;
     })

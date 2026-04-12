@@ -79,13 +79,17 @@ impl ShowModelHandle {
     pub async fn renumber_cues(
         &self,
         cues: Vec<Uuid>,
-        start_from: f64,
-        increment: f64,
+        start_from: usize,
+        increment: usize,
+        prefix: Option<String>,
+        suffix: Option<String>,
     ) -> anyhow::Result<()> {
         self.send_command(ModelCommand::RenumberCues {
             cues,
             start_from,
             increment,
+            prefix,
+            suffix,
         })
         .await?;
         Ok(())
