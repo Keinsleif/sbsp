@@ -7,6 +7,7 @@ import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
 import { side } from './api';
 import { storeToRefs } from 'pinia';
+import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -267,3 +268,26 @@ export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<numbe
   wrap.immediate = fn;
   return wrap;
 }
+
+export const getCueIcon = (type: string): string | undefined => {
+  switch (type) {
+    case 'audio':
+      return mdiVolumeHigh;
+    case 'wait':
+      return mdiTimerSandEmpty;
+    case 'fade':
+      return mdiChartBellCurveCumulative;
+    case 'start':
+      return mdiPlayCircleOutline;
+    case 'stop':
+      return mdiStopCircleOutline;
+    case 'pause':
+      return mdiPauseCircleOutline;
+    case 'load':
+      return mdiUploadCircleOutline;
+    case 'group':
+      return mdiGroup;
+  }
+};
+
+export const firstUpper = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

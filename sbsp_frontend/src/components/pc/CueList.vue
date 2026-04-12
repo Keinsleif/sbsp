@@ -94,7 +94,7 @@
         @dragover="dragOver($event, i)"
         @dragend="dragEnd"
         @drop="drop($event, i)"
-        @mousedown.stop="click($event, i)"
+        @pointerdown.stop="click($event, i)"
       >
         <td
           headers="cuelist_cursor"
@@ -162,7 +162,7 @@
           <v-icon
             :icon="item.isGroup ? (uiState.expandedRows.includes(item.cue.id) ? mdiMenuDown : mdiMenuRight) : undefined"
             @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
-            @mousedown.stop
+            @pointerdown.stop
           />
           {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
         </td>
@@ -288,21 +288,13 @@ import {
   mdiArrowCollapseDown,
   mdiArrowExpandDown,
   mdiArrowRightBold,
-  mdiChartBellCurveCumulative,
   mdiChevronDoubleDown,
-  mdiGroup,
   mdiMenuDown,
   mdiMenuRight,
   mdiPause,
-  mdiPauseCircleOutline,
   mdiPlay,
-  mdiPlayCircleOutline,
   mdiRepeat,
-  mdiStopCircleOutline,
-  mdiTimerSandEmpty,
   mdiUpload,
-  mdiUploadCircleOutline,
-  mdiVolumeHigh,
 } from '@mdi/js';
 import { useUiState } from '../../stores/uistate';
 import { useShowState } from '../../stores/showstate';
@@ -310,6 +302,7 @@ import {
   buildCueName,
   calculateDuration,
   formatToSeconds,
+  getCueIcon,
   getLockCursorToSelection,
   secondsToFormat,
 } from '../../utils';
@@ -498,27 +491,6 @@ const click = (event: MouseEvent, index: number) => {
 //   }
 //   uiState.clearSelected();
 // };
-
-const getCueIcon = (type: string): string | undefined => {
-  switch (type) {
-    case 'audio':
-      return mdiVolumeHigh;
-    case 'wait':
-      return mdiTimerSandEmpty;
-    case 'fade':
-      return mdiChartBellCurveCumulative;
-    case 'start':
-      return mdiPlayCircleOutline;
-    case 'stop':
-      return mdiStopCircleOutline;
-    case 'pause':
-      return mdiPauseCircleOutline;
-    case 'load':
-      return mdiUploadCircleOutline;
-    case 'group':
-      return mdiGroup;
-  }
-};
 
 const getStatus = (id: string): PlaybackStatus | null => {
   if (showState.activeCues[id] == undefined) {
