@@ -85,12 +85,18 @@ let unlisten: (() => void) | null = null;
 const connect = (host: string, port: string | number) => {
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
-  const password = prompt(t('view.connect.passwordPrompt'));
-  if (password == null) return;
-  if (password == '') {
+  if (window.location.hash != '') {
+    api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
+  } else if (window.location.href.endsWith('#')) {
     api.remote?.connectToServer(address, null);
   } else {
-    api.remote?.connectToServer(address, password);
+    let password = prompt(t('view.connect.passwordPrompt'));
+    if (password == null) return;
+    if (password != '') {
+      api.remote?.connectToServer(address, password);
+    } else {
+      api.remote?.connectToServer(address, null);
+    }
   }
 };
 
@@ -100,6 +106,8 @@ onMounted(() => {
     const address = searchParams.get('address');
     if (address != null) {
       console.log(`Connecting to ${address}`);
+      host.value = address.split(':')[0] || '';
+      port.value = address.split(':')[1] || '5800';
       if (window.location.hash != '') {
         api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
       } else if (window.location.href.endsWith('#')) {
