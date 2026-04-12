@@ -137,13 +137,15 @@ pub async fn move_cue(
 pub async fn renumber_cues(
     state: tauri::State<'_, AppState>,
     cues: Vec<Uuid>,
-    start_from: f64,
-    increment: f64,
+    start_from: usize,
+    increment: usize,
+    prefix: Option<String>,
+    suffix: Option<String>,
 ) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .model_handle
-            .renumber_cues(cues, start_from, increment)
+            .renumber_cues(cues, start_from, increment, prefix, suffix)
             .await
             .map_err(|e| e.to_string())
     } else {

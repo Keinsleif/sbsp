@@ -6,7 +6,7 @@ import { useUiState } from './uistate';
 import { useUiSettings } from './uiSettings';
 import { v4 } from 'uuid';
 import { toRaw } from 'vue';
-import type { CueSequence } from '../types/CueSequence';
+import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
 
 type FlatCueEntry = {
@@ -16,8 +16,8 @@ type FlatCueEntry = {
   innerIndex: number;
   isHidden: boolean;
   isGroup: boolean;
-  sequence: CueSequence;
-  isSequenceOverrided: boolean;
+  chain: CueChain;
+  isChainOverrided: boolean;
 };
 
 const recursiveCueCheck = (
@@ -30,20 +30,20 @@ const recursiveCueCheck = (
   const cuelist: FlatCueEntry[] = [];
 
   list.forEach((cue, index) => {
-    let sequence: CueSequence | null = null;
+    let chain: CueChain | null = null;
     if (parent?.params.type == 'group') {
       if (parent.params.mode.type == 'playlist') {
         if (index + 1 == list.length) {
           if (parent.params.mode.repeat) {
-            sequence = { type: 'autoFollow', targetId: list[0]!.id };
+            chain = { type: 'afterComplete', targetId: list[0]!.id };
           } else {
-            sequence = { type: 'doNotContinue' };
+            chain = { type: 'doNotChain' };
           }
         } else {
-          sequence = { type: 'autoFollow', targetId: null };
+          chain = { type: 'afterComplete', targetId: null };
         }
       } else if (parent.params.mode.type == 'concurrency') {
-        sequence = { type: 'doNotContinue' };
+        chain = { type: 'doNotChain' };
       }
     }
     cuelist.push({
@@ -53,8 +53,8 @@ const recursiveCueCheck = (
       innerIndex: index,
       isHidden: isHidden,
       isGroup: cue.params.type == 'group',
-      sequence: sequence != null ? sequence : cue.sequence,
-      isSequenceOverrided: sequence != null,
+      chain: chain != null ? chain : cue.chain,
+      isChainOverrided: chain != null,
     });
 
     if (cue.params.type == 'group') {
@@ -88,20 +88,7 @@ export const useShowModel = defineStore('showmodel', {
   getters: {
     getCueById() {
       return (cue_id: string): Cue | undefined => {
-        const queue = [];
-        let cuelist: Cue[] | undefined = this.cues;
-        while (cuelist != undefined) {
-          for (const cue of cuelist) {
-            if (cue.id == cue_id) {
-              return cue;
-            }
-
-            if (cue.params.type == 'group') {
-              queue.push(cue.params.children);
-            }
-          }
-          cuelist = queue.shift();
-        }
+        return this.flatCueList.find(entry => entry.cue.id == cue_id)?.cue;
       };
     },
     flatCueList(state) {
@@ -157,7 +144,7 @@ export const useShowModel = defineStore('showmodel', {
             api.addCues(newCues, uiState.selected, false);
           }
         })
-        .catch((e) => console.error(e));
+        .catch(e => console.error(e));
     },
     addEmptyWaitCue() {
       const uiState = useUiState();
@@ -204,13 +191,13 @@ export const useShowModel = defineStore('showmodel', {
           break;
       }
       newCue.id = v4();
-      const targetCue = this.cues.find((cue) => cue.id == uiState.selected);
+      const targetCue = this.cues.find(cue => cue.id == uiState.selected);
       if (
-        targetCue != null &&
-        (newCue.params.type == 'start' ||
-          newCue.params.type == 'stop' ||
-          newCue.params.type == 'pause' ||
-          newCue.params.type == 'load')
+        targetCue != null
+        && (newCue.params.type == 'start'
+          || newCue.params.type == 'stop'
+          || newCue.params.type == 'pause'
+          || newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
         api.addCue(newCue, uiState.selected, type == 'load' || type == 'start');

@@ -1,5 +1,5 @@
 import type { Cue } from '../types/Cue';
-import type { UiEvent } from '../types/UiEvent';
+import type { BackendEvent } from '../types/BackendEvent';
 import { ShowSettings } from '../types/ShowSettings';
 import { FileList } from '../types/FileList';
 import { ServiceEntry } from '../types/ServiceEntry';
@@ -56,7 +56,7 @@ export interface IBackendAdapter {
   addCues(cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void>;
   removeCue(cueId: string): Promise<void>;
   moveCue(cueId: string, targetId: string | null): Promise<void>;
-  renumberCues(cues: string[], startFrom: number, increment: number): Promise<void>;
+  renumberCues(cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void>;
   updateModelName(newName: string): Promise<void>;
   updateShowSettings(newSettings: ShowSettings): Promise<void>;
 
@@ -67,7 +67,7 @@ export interface IBackendAdapter {
   importSettingsFromFile(): Promise<GlobalSettings>;
   exportSettingsToFile(): void;
 
-  onUiEvent(callback: (event: UiEvent) => void): Promise<UnlistenFn>;
+  onBackendEvent(callback: (event: BackendEvent) => void): Promise<UnlistenFn>;
 }
 
 export interface IBackendHostAdapter {

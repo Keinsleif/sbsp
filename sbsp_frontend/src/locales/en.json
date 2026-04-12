@@ -23,7 +23,10 @@
     "renumber": {
       "increment": "Increment",
       "startNumber": "Start Number",
-      "title": "Renumber Cues"
+      "title": "Renumber Cues",
+      "prefix": "Prefix",
+      "suffix": "Suffix",
+      "preview": "Preview"
     },
     "save": {
       "exportSettingsFilter": "GlobalSettings File"
@@ -147,7 +150,8 @@
       "show": {
         "audio": {
           "monoOutput": "Downmix stereo to mono",
-          "targetLufs": "Target LUFS"
+          "targetLufs": "Target LUFS",
+          "outputChannels": "Output channels"
         },
         "general": {
           "assetsDirectory": {
@@ -230,7 +234,8 @@
         "linear": "Linear"
       },
       "playback": {
-        "title": "Playback"
+        "title": "Playback",
+        "hard": "Stop without fading"
       },
       "targetCue": "Target Cue",
       "timeLevels": {
@@ -249,10 +254,10 @@
         "volume": "Volume"
       }
     },
-    "continueMode": {
-      "autoContinue": "Auto-Continue",
-      "autoFollow": "Auto-Follow",
-      "doNotContinue": "DoNotContinue",
+    "chainMode": {
+      "afterStart": "After-Start",
+      "afterComplete": "After-Complete",
+      "doNotChain": "DoNotChain",
       "title": "Continue Mode"
     },
     "cueList": {},
@@ -263,13 +268,17 @@
     "name": "Name",
     "notes": "Notes",
     "number": "Number",
-    "postWait": "Post-Wait",
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
       "levels": {
         "title": "Levels"
       }
+    },
+    "mobile": {
+      "list": "List",
+      "controls": "Controls",
+      "active": "Active"
     }
   },
   "menu": {

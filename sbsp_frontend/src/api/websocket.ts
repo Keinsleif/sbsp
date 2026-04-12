@@ -1,6 +1,6 @@
 import { Cue } from '../types/Cue';
 import { ShowSettings } from '../types/ShowSettings';
-import { UiEvent } from '../types/UiEvent';
+import { BackendEvent } from '../types/BackendEvent';
 import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions } from './interface';
 import { WsFeedback } from '../types/WsFeedback';
 import { FileList } from '../types/FileList';
@@ -51,8 +51,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'audio',
@@ -73,8 +73,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'wait',
@@ -87,8 +87,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'fade',
@@ -109,8 +109,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'start',
@@ -123,12 +123,13 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'stop',
         target: '00000000-0000-0000-0000-000000000000',
+        hard: false,
       },
     },
     pause: {
@@ -137,8 +138,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'pause',
@@ -151,8 +152,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'load',
@@ -165,8 +166,8 @@ const DEFAULT_SETTINGS: GlobalSettings = {
       name: null,
       notes: '',
       preWait: 0,
-      sequence: {
-        type: 'doNotContinue',
+      chain: {
+        type: 'doNotChain',
       },
       params: {
         type: 'group',
@@ -215,7 +216,7 @@ const websocketApiState: {
   address: string | null;
   ws: WebSocket | null;
   projectStatus: ProjectStatus | null;
-  uiEventListeners: { [key: string]: (event: UiEvent) => void };
+  backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
   connectionStatusListeners: { [key: string]: (isConnected: boolean) => void };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
@@ -223,7 +224,7 @@ const websocketApiState: {
   address: null,
   ws: null,
   projectStatus: null,
-  uiEventListeners: {},
+  backendEventListeners: {},
   assetListListeners: {},
   connectionStatusListeners: {},
   fullStateResolver: null,
@@ -250,11 +251,11 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       websocketApiState.ws.addEventListener('close', () => {
         console.log('Disconnected.');
-        Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(false));
+        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
         websocketApiState.ws = null;
         websocketApiState.address = null;
       });
-      websocketApiState.ws.addEventListener('error', (event) => console.error('Websocket error: ', event));
+      websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
@@ -277,7 +278,7 @@ export function useWebsocketApi(): IBackendAdapter {
             websocketApiState.ws?.addEventListener('message', mainEventListener);
             websocketApiState.ws?.removeEventListener('message', authEventListener);
             websocketApiState.address = address;
-            Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(true));
+            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
             break;
         }
       };
@@ -305,10 +306,10 @@ export function useWebsocketApi(): IBackendAdapter {
                   path: msg.data.param.path,
                 };
             }
-            Object.values(websocketApiState.uiEventListeners).forEach((cb) => cb(msg.data));
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
             break;
           case 'assetList':
-            Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
+            Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
             break;
           case 'fullShowState':
             if (websocketApiState.fullStateResolver != null) {
@@ -519,11 +520,11 @@ export function useWebsocketApi(): IBackendAdapter {
         });
       }
     },
-    renumberCues: async function (cues: string[], startFrom: number, increment: number): Promise<void> {
+    renumberCues: async function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       this.sendCommand({
         type: 'model',
         command: 'renumberCues',
-        params: { cues: cues, startFrom: startFrom, increment: increment },
+        params: { cues, startFrom, increment, prefix, suffix },
       });
     },
     updateModelName: async function (newName: string): Promise<void> {
@@ -586,11 +587,11 @@ export function useWebsocketApi(): IBackendAdapter {
       });
     },
 
-    onUiEvent: async function (callback: (event: UiEvent) => void): Promise<UnlistenFn> {
+    onBackendEvent: async function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
       const id = v4();
-      websocketApiState.uiEventListeners[id] = callback;
+      websocketApiState.backendEventListeners[id] = callback;
       return () => {
-        delete websocketApiState.uiEventListeners[id];
+        delete websocketApiState.backendEventListeners[id];
       };
     },
   };

@@ -14,7 +14,7 @@ use crate::{
     manager::{ModelCommand, ProjectStatus, command::InsertPosition},
     model::{
         ShowModel,
-        cue::{Cue, CueParam, CueSequence, group::GroupMode},
+        cue::{Cue, CueParam, CueChain, group::GroupMode},
         settings::ShowSettings,
     },
 };
@@ -79,13 +79,17 @@ impl ShowModelHandle {
     pub async fn renumber_cues(
         &self,
         cues: Vec<Uuid>,
-        start_from: f64,
-        increment: f64,
+        start_from: usize,
+        increment: usize,
+        prefix: Option<String>,
+        suffix: Option<String>,
     ) -> anyhow::Result<()> {
         self.send_command(ModelCommand::RenumberCues {
             cues,
             start_from,
             increment,
+            prefix,
+            suffix,
         })
         .await?;
         Ok(())
@@ -225,7 +229,7 @@ impl ShowModelHandle {
         None
     }
 
-    pub async fn get_cue_sequence_by_id(&self, cue_id: &Uuid) -> Option<CueSequence> {
+    pub async fn get_cue_chain_by_id(&self, cue_id: &Uuid) -> Option<CueChain> {
         let model = self.read().await;
         let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
 
@@ -240,23 +244,23 @@ impl ShowModelHandle {
                                         && let Some(first_cue) = cues.first()
                                     {
                                         if *repeat {
-                                            return Some(CueSequence::AutoFollow {
+                                            return Some(CueChain::AfterComplete {
                                                 target_id: Some(first_cue.id),
                                             });
                                         } else {
-                                            return Some(CueSequence::DoNotContinue);
+                                            return Some(CueChain::DoNotChain);
                                         }
                                     } else {
-                                        return Some(CueSequence::AutoFollow { target_id: None });
+                                        return Some(CueChain::AfterComplete { target_id: None });
                                     }
                                 }
                                 GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
-                                    return Some(cue.sequence.clone());
+                                    return Some(cue.chain.clone());
                                 }
                             }
                         }
                     } else {
-                        return Some(cue.sequence.clone());
+                        return Some(cue.chain.clone());
                     }
                 }
 

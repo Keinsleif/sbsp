@@ -6,6 +6,8 @@ import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
 import { side } from './api';
+import { storeToRefs } from 'pinia';
+import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -20,7 +22,7 @@ export const secondsToFormat = (source_seconds: number | null): string => {
   const mm = ('00' + minute).slice(-2);
   const ss = ('00' + seconds).slice(-2);
   const ms = ('00' + milliseconds).slice(-2);
-  let time = '';
+  let time;
   if (hour > 0) {
     time = `${hh}:${mm}:${ss}.${ms}`;
   } else {
@@ -64,7 +66,7 @@ const secondsToHMR = (source_seconds: number): string => {
     ms = ms.slice(0, 1);
   }
 
-  let time = '';
+  let time;
   if (hour > 0) {
     time = `${hh}h ${mm}m ${ss}s`;
   } else if (minute > 0) {
@@ -105,35 +107,40 @@ export const buildCueName = (cue: Cue | null): string => {
       });
     case 'fade': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.fade, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'start': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.start, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'stop': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.stop, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'pause': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.pause, {
         targetName: buildCueName(targetCue ?? null),
       });
     }
     case 'load': {
       const showModel = useShowModel();
-      const targetCue = showModel.getCueById(cue.params.target);
+      const { getCueById } = storeToRefs(showModel);
+      const targetCue = getCueById.value(cue.params.target);
       return format(nameFormat.load, {
         targetName: buildCueName(targetCue ?? null),
       });
@@ -245,10 +252,10 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
 };
 
 export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: unknown;
   const wrap = function (...args: unknown[]) {
     wrap.debouncing = true;
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId as number);
     timeoutId = setTimeout(() => {
       fn(...args);
       wrap.debouncing = false;
@@ -256,8 +263,31 @@ export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<numbe
   };
   wrap.debouncing = false;
   wrap.clear = () => {
-    clearTimeout(timeoutId);
+    clearTimeout(timeoutId as number);
   };
   wrap.immediate = fn;
   return wrap;
 }
+
+export const getCueIcon = (type: string): string | undefined => {
+  switch (type) {
+    case 'audio':
+      return mdiVolumeHigh;
+    case 'wait':
+      return mdiTimerSandEmpty;
+    case 'fade':
+      return mdiChartBellCurveCumulative;
+    case 'start':
+      return mdiPlayCircleOutline;
+    case 'stop':
+      return mdiStopCircleOutline;
+    case 'pause':
+      return mdiPauseCircleOutline;
+    case 'load':
+      return mdiUploadCircleOutline;
+    case 'group':
+      return mdiGroup;
+  }
+};
+
+export const firstUpper = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

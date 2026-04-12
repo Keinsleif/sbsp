@@ -23,7 +23,9 @@
     "renumber": {
       "increment": "増分",
       "startNumber": "開始番号",
-      "title": "キュー番号の振り直し"
+      "title": "キュー番号の振り直し",
+      "prefix": "接頭辞",
+      "suffix": "接尾辞"
     },
     "save": {
       "exportSettingsFilter": "グローバル設定ファイル"
@@ -147,7 +149,8 @@
       "show": {
         "audio": {
           "monoOutput": "ステレオをモノラルにダウンミックス",
-          "targetLufs": "目標 LUFS"
+          "targetLufs": "目標 LUFS",
+          "outputChannels": "出力チャンネル数"
         },
         "general": {
           "assetsDirectory": {
@@ -230,7 +233,8 @@
         "linear": "線形"
       },
       "playback": {
-        "title": "再生"
+        "title": "再生",
+        "hard": "フェード無しで停止"
       },
       "targetCue": "対象キュー",
       "timeLevels": {
@@ -249,10 +253,10 @@
         "volume": "音量"
       }
     },
-    "continueMode": {
-      "autoContinue": "自動継続",
-      "autoFollow": "自動追従",
-      "doNotContinue": "連鎖しない",
+    "chainMode": {
+      "afterComplete": "完了後",
+      "afterStart": "開始後",
+      "doNotChain": "連鎖しない",
       "title": "連鎖モード"
     },
     "duration": "長さ",
@@ -262,13 +266,17 @@
     "name": "名前",
     "notes": "備考",
     "number": "番号",
-    "postWait": "Post-Wait",
-    "preWait": "Pre-Wait",
+    "preWait": "事前待機",
     "sideBar": {
       "activeCues": "実行中のキュー",
       "levels": {
         "title": "レベル"
       }
+    },
+    "mobile": {
+      "list": "リスト",
+      "controls": "操作",
+      "active": "実行中"
     }
   },
   "menu": {

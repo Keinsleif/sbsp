@@ -7,7 +7,7 @@ import { CueStatusEventParam } from '../types/CueStatusEventParam';
 import { ShowState } from '../types/ShowState';
 
 export const useShowState = defineStore('showstate', () => {
-  const playbackCursor = ref<string | null>();
+  const playbackCursor = ref<string | null>(null);
   const activeCues = ref<{ [id: string]: ActiveCue }>({});
   const syncedData = ref<{ [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number } }>({});
   const latency = ref<number>(0);
@@ -168,6 +168,16 @@ export const useShowState = defineStore('showstate', () => {
       case 'completed':
       case 'error':
         delete syncedData.value[data.cueId];
+        break;
+      case 'stateParamUpdated': {
+        const activeCue = activeCues.value[data.cueId];
+        if (activeCue != null) {
+          activeCue.params = data.params;
+        }
+        break;
+      }
+      default:
+        console.log('Unahndled show state event occured.');
     }
   };
 
@@ -189,8 +199,8 @@ export const useShowState = defineStore('showstate', () => {
       activeCue.status = lastSyncCue.status;
 
       if (
-        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status) &&
-        activeCue.duration > 0
+        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
+        && activeCue.duration > 0
       ) {
         const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
         if (activeCue.params.type == 'audio' && activeCue.params.repeating) {

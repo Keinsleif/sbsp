@@ -14,7 +14,7 @@ use crate::{
     api::auth::{generate_authentication_string, generate_secret},
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
-    event::UiEvent,
+    event::BackendEvent,
     manager::{ModelCommand, ProjectStatus, ShowModelHandle},
     model::ShowModel,
 };
@@ -23,7 +23,7 @@ pub use service_entry::ServiceEntry;
 
 type ConnectionHandles = (
     BackendHandle,
-    broadcast::Sender<UiEvent>,
+    broadcast::Sender<BackendEvent>,
     FileListHandle,
     mpsc::Sender<()>,
 );
@@ -34,7 +34,7 @@ pub async fn create_remote_backend(
 ) -> anyhow::Result<ConnectionHandles> {
     let model = Arc::new(RwLock::new(ShowModel::default()));
     let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
-    let (event_tx, _) = broadcast::channel::<UiEvent>(32);
+    let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
     let (model_tx, mut model_rx) = mpsc::channel::<ModelCommand>(32);
     let (controller_tx, mut controller_rx) = mpsc::channel::<ControllerCommand>(32);
     let (asset_tx, mut asset_rx) = mpsc::channel::<AssetProcessorCommand>(32);
@@ -115,7 +115,7 @@ pub async fn create_remote_backend(
                             if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
                                 match ws_message {
                                     WsFeedback::Event(ui_event) => {
-                                        if let UiEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
+                                        if let BackendEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
                                             {
                                                 let mut model_lock = model_clone.write().await;
                                                 *model_lock = model.clone();
@@ -127,7 +127,7 @@ pub async fn create_remote_backend(
                                                     path: path.clone(),
                                                 };
                                             }
-                                        } else if let UiEvent::ShowModelSaved {project_type, path} = &*ui_event {
+                                        } else if let BackendEvent::ShowModelSaved {project_type, path} = &*ui_event {
                                             {
                                                 let mut project_status = project_status_clone.write().await;
                                                 *project_status = ProjectStatus::Saved{
@@ -135,7 +135,7 @@ pub async fn create_remote_backend(
                                                     path: path.clone(),
                                                 };
                                             }
-                                        } else if let UiEvent::ShowModelReset { model } = &*ui_event {
+                                        } else if let BackendEvent::ShowModelReset { model } = &*ui_event {
                                             {
                                                 let mut model_lock = model_clone.write().await;
                                                 *model_lock = model.clone();
@@ -146,7 +146,7 @@ pub async fn create_remote_backend(
                                             }
                                         }
                                         if event_tx_clone.send(*ui_event).is_err() {
-                                            log::error!("Failed to send UiEvent to channel.");
+                                            log::error!("Failed to send BackendEvent to channel.");
                                             break;
                                         }
                                     },

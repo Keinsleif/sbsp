@@ -13,7 +13,6 @@ export const useUiState = defineStore(
     const expandedRows = ref<string[]>([]);
     const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
-    const postWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
@@ -57,7 +56,7 @@ export const useUiState = defineStore(
     };
     const removeFromSelected = (id: string) => {
       if (selectedRows.value.includes(id)) {
-        selectedRows.value = selectedRows.value.filter((selected) => selected != id);
+        selectedRows.value = selectedRows.value.filter(selected => selected != id);
         const newValue = selectedRows.value[selectedRows.value.length - 1] || null;
         selected.value = newValue;
         setPlaybackCursor(selected.value);
@@ -67,7 +66,7 @@ export const useUiState = defineStore(
     const toggleExpand = (id: string) => {
       if (expandedRows.value.includes(id)) {
         expandedRows.value.splice(
-          expandedRows.value.findIndex((value) => value == id),
+          expandedRows.value.findIndex(value => value == id),
           1,
         );
       } else {
@@ -79,7 +78,7 @@ export const useUiState = defineStore(
       const showModel = useShowModel();
       let target_id: string | null = id;
       while (target_id != null) {
-        const target_cue = showModel.flatCueList.find((value) => value.cue.id == target_id);
+        const target_cue = showModel.flatCueList.find(value => value.cue.id == target_id);
         if (target_cue != null && target_cue.parent != null) {
           if (!expandedRows.value.includes(target_cue.parent)) {
             expandedRows.value.push(target_cue.parent);
@@ -97,10 +96,6 @@ export const useUiState = defineStore(
 
     const toggleDurationDisplayMode = () => {
       durationDisplayMode.value = durationDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
-    };
-
-    const togglePostWaitDisplayMode = () => {
-      postWaitDisplayMode.value = postWaitDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
     };
 
     const toggleRightSidebar = () => {
@@ -123,7 +118,6 @@ export const useUiState = defineStore(
       expandedRows,
       preWaitDisplayMode,
       durationDisplayMode,
-      postWaitDisplayMode,
       sideBarTab,
       isRightSidebarOpen,
       isRenumberCueDialogOpen,
@@ -147,7 +141,6 @@ export const useUiState = defineStore(
       expandToVisible,
       togglePreWaitDisplayMode,
       toggleDurationDisplayMode,
-      togglePostWaitDisplayMode,
       toggleRightSidebar,
       toggleBottomTab,
       success,
@@ -160,7 +153,6 @@ export const useUiState = defineStore(
         'mode',
         'preWaitDisplayMode',
         'durationDisplayMode',
-        'postWaitDisplayMode',
         'sideBarTab',
         'isRightSidebarOpen',
         'isBottomTabOpen',

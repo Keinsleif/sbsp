@@ -30,7 +30,7 @@ use crate::{
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
-    event::{CueState, SyncData, UiEvent},
+    event::{CueState, SyncData, BackendEvent},
     manager::ProjectStatus,
     model::ProjectType,
 };
@@ -41,7 +41,7 @@ const SMOOTH_FACTOR: f64 = 0.2;
 struct ApiState {
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
-    event_rx_factory: broadcast::Sender<UiEvent>,
+    event_rx_factory: broadcast::Sender<BackendEvent>,
     shutdown_tx: broadcast::Sender<()>,
     options: ApiServerOptions,
     salt: String,
@@ -50,7 +50,7 @@ struct ApiState {
 pub async fn start_apiserver_with<F>(
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
     options: ApiServerOptions,
     router_extender: F,
 ) -> anyhow::Result<broadcast::Sender<()>>
@@ -122,7 +122,7 @@ where
 pub async fn start_apiserver(
     backend_handle: BackendHandle,
     state_rx: watch::Receiver<ShowState>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
     options: ApiServerOptions,
 ) -> anyhow::Result<broadcast::Sender<()>> {
     start_apiserver_with(backend_handle, state_rx, event_tx, options, |app| app).await
@@ -293,7 +293,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         }
                                     }
 
-                                    let ws_message = WsFeedback::Event(Box::new(UiEvent::SyncState(SyncData { latency, cues})));
+                                    let ws_message = WsFeedback::Event(Box::new(BackendEvent::SyncState(SyncData { latency, cues})));
                                     if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                         log::info!("WebSocket client disconnected (send error).");
                                         break;

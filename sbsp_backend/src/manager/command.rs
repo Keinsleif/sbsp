@@ -47,8 +47,10 @@ pub enum ModelCommand {
 
     RenumberCues {
         cues: Vec<Uuid>,
-        start_from: f64,
-        increment: f64,
+        start_from: usize,
+        increment: usize,
+        prefix: Option<String>,
+        suffix: Option<String>,
     },
 
     UpdateModelName(String),

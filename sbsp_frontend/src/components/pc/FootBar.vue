@@ -1,0 +1,74 @@
+<template>
+  <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
+    <v-sheet class="ml-0 mr-auto d-flex align-center">
+      <v-switch
+        v-model="uiState.mode"
+        hide-details
+        :true-icon="mdiPencil"
+        :false-icon="mdiEye"
+        true-value="edit"
+        false-value="run"
+        density="compact"
+      />
+    </v-sheet>
+    <v-sheet class="ml-auto mr-auto">
+      {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
+    </v-sheet>
+    <v-sheet class="mr-0 ml-auto d-flex align-center">
+      <v-btn
+        v-if="side == 'host'"
+        :icon="mdiServer"
+        size="small"
+        variant="text"
+        @click="openServerPanel"
+      />
+      <v-btn
+        :icon="mdiDockBottom"
+        size="small"
+        variant="text"
+        @click="uiState.toggleBottomTab"
+      />
+      <v-btn
+        :icon="mdiDockRight"
+        size="small"
+        variant="text"
+        @click="uiState.toggleRightSidebar"
+      />
+      <v-btn
+        :icon="mdiCog"
+        size="small"
+        variant="text"
+        @click="openSettings"
+      />
+    </v-sheet>
+  </v-sheet>
+</template>
+
+<script setup lang="ts">
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
+import { useUiState } from '../../stores/uistate';
+import { useShowModel } from '../../stores/showmodel';
+import { useI18n } from 'vue-i18n';
+import { message } from '@tauri-apps/plugin-dialog';
+import { useApi, side } from '../../api';
+
+const { t } = useI18n();
+
+const showModel = useShowModel();
+const uiState = useUiState();
+const api = useApi();
+
+const openSettings = async () => {
+  uiState.isSettingsDialogOpen = true;
+};
+
+const openServerPanel = () => {
+  api.host?.getLicenseInfo().then((info) => {
+    if (info != null && info.edition == 'Pro') {
+      uiState.isServerPanelOpen = true;
+    } else {
+      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+    }
+  });
+};
+</script>

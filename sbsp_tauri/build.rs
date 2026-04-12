@@ -2,7 +2,7 @@ use sbsp_backend::{
     api::{ApiServerOptions, WsCommand, WsFeedback},
     asset_processor::AssetData,
     controller::state::ShowState,
-    event::UiEvent,
+    event::BackendEvent,
     model::ShowModel,
 };
 use sbsp_license::data::LicenseInformation;
@@ -11,7 +11,7 @@ use ts_rs::TS;
 fn main() {
     <ShowModel as TS>::export_all().unwrap();
     <ShowState as TS>::export_all().unwrap();
-    <UiEvent as TS>::export_all().unwrap();
+    <BackendEvent as TS>::export_all().unwrap();
     <AssetData as TS>::export_all().unwrap();
     <ApiServerOptions as TS>::export_all().unwrap();
     <WsCommand as TS>::export_all().unwrap();

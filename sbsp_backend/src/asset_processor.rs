@@ -22,7 +22,7 @@ use symphonia::core::{
 };
 use tokio::sync::{RwLock, broadcast, mpsc};
 
-use crate::event::UiEvent;
+use crate::event::BackendEvent;
 use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
@@ -57,7 +57,7 @@ pub struct AssetProcessor {
     model_handle: ShowModelHandle,
 
     command_rx: mpsc::Receiver<AssetProcessorCommand>,
-    event_tx: broadcast::Sender<UiEvent>,
+    event_tx: broadcast::Sender<BackendEvent>,
     result_tx: broadcast::Sender<ProcessResult>,
 
     cache: Arc<RwLock<AssetCache>>,
@@ -67,7 +67,7 @@ pub struct AssetProcessor {
 impl AssetProcessor {
     pub fn new(
         model_handle: ShowModelHandle,
-        event_tx: broadcast::Sender<UiEvent>,
+        event_tx: broadcast::Sender<BackendEvent>,
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
@@ -107,7 +107,7 @@ impl AssetProcessor {
                         }
                     }
                     self.processing.write().await.retain(|value| *value != result.path);
-                    if let Err(e) = self.event_tx.send(UiEvent::AssetResult { path: result.path, data: result.data }) {
+                    if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
                         log::error!("Failed to send process result to event bus. {}", e);
                     }
                 }
@@ -128,7 +128,7 @@ impl AssetProcessor {
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&actual_path) {
             self.event_tx
-                .send(UiEvent::AssetResult {
+                .send(BackendEvent::AssetResult {
                     path,
                     data: Ok(entry.data.clone()),
                 })
@@ -160,7 +160,7 @@ impl AssetProcessor {
     fn process_asset(
         path: PathBuf,
         orig_path: PathBuf,
-        event_tx: broadcast::Sender<UiEvent>,
+        event_tx: broadcast::Sender<BackendEvent>,
     ) -> anyhow::Result<AssetData> {
         let src: std::fs::File = std::fs::File::open(&path)?;
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
@@ -210,7 +210,7 @@ impl AssetProcessor {
             sample_rate,
         };
 
-        let _ = event_tx.send(UiEvent::AssetMetadata {
+        let _ = event_tx.send(BackendEvent::AssetMetadata {
             path: orig_path,
             data: metadata.clone(),
         });

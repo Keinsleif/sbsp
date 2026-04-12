@@ -2,7 +2,7 @@ use sbsp_backend::{
     api::{FileList, client::ServiceEntry},
     asset_processor::AssetData,
     controller::state::ShowState,
-    event::UiEvent,
+    event::BackendEvent,
     model::ShowModel,
 };
 use ts_rs::TS;
@@ -16,7 +16,7 @@ fn main() {
 
     <ShowModel as TS>::export_all().unwrap();
     <ShowState as TS>::export_all().unwrap();
-    <UiEvent as TS>::export_all().unwrap();
+    <BackendEvent as TS>::export_all().unwrap();
     <AssetData as TS>::export_all().unwrap();
     <ServiceEntry as TS>::export_all().unwrap();
     <FileList as TS>::export_all().unwrap();

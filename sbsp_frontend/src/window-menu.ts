@@ -147,7 +147,7 @@ export const createWindowMenu = () => {
                           api.host?.fileNew();
                         }
                       })
-                      .catch((e) => console.error(e));
+                      .catch(e => console.error(e));
                     break;
                   case t('dialog.saveConfirm.dontSave'):
                     api.host?.fileNew();
@@ -156,7 +156,7 @@ export const createWindowMenu = () => {
                     break;
                 }
               })
-              .catch((e) => console.error(e));
+              .catch(e => console.error(e));
           } else {
             api.host?.fileNew();
           }
@@ -251,7 +251,7 @@ export const createWindowMenu = () => {
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
-        uiState.selectedRows = showModel.flatCueList.filter((item) => !item.isHidden).map((item) => item.cue.id);
+        uiState.selectedRows = showModel.flatCueList.filter(item => !item.isHidden).map(item => item.cue.id);
       },
     });
 
