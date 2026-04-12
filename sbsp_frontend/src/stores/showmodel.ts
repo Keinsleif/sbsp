@@ -86,22 +86,9 @@ export const useShowModel = defineStore('showmodel', {
       },
     }) as ShowModel,
   getters: {
-    getCueById(state) {
+    getCueById() {
       return (cue_id: string): Cue | undefined => {
-        const queue = [];
-        let cuelist: Cue[] | undefined = state.cues;
-        while (cuelist != undefined) {
-          for (const cue of cuelist) {
-            if (cue.id == cue_id) {
-              return cue;
-            }
-
-            if (cue.params.type == 'group') {
-              queue.push(cue.params.children);
-            }
-          }
-          cuelist = queue.shift();
-        }
+        return this.flatCueList.find(entry => entry.cue.id == cue_id)?.cue;
       };
     },
     flatCueList(state) {
