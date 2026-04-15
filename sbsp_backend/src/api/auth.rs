@@ -2,7 +2,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha2::{Digest, Sha256};
 
 #[cfg(feature = "apiserver")]
-use rand::{RngCore, rng};
+use rand::{Rng, rng};
 
 #[cfg(feature = "apiserver")]
 pub fn generate_salt() -> String {
