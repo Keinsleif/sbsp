@@ -9450,10 +9450,10 @@ insights.
 
 - Used by
 
-    - [sbsp_backend 1.0.0]( https://crates.io/crates/sbsp_backend )
+    - [sbsp_backend 1.0.1]( https://crates.io/crates/sbsp_backend )
     - [sbsp_license 0.1.1]( https://crates.io/crates/sbsp_license )
-    - [sbsp_remote 2.0.0-rc]( https://crates.io/crates/sbsp_remote )
-    - [sbsp_tauri 2.0.0-rc]( https://crates.io/crates/sbsp_tauri )
+    - [sbsp_remote 2.0.1-rc]( https://crates.io/crates/sbsp_remote )
+    - [sbsp_tauri 2.0.1-rc]( https://crates.io/crates/sbsp_tauri )
 
 ```text
 Elastic License 2.0
