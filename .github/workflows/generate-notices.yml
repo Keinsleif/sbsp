@@ -55,7 +55,7 @@ jobs:
         working-directory: ./sbsp_frontend
 
       - name: Generate Rust notices
-        run: cargo about generate about.hbs -o THIRD_PARTY_NOTICES.md
+        run: cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md
         working-directory: ./
 
       - name: Generate JS notices
