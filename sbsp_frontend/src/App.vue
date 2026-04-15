@@ -27,6 +27,7 @@ import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import CreditsDialog from './components/dialog/CreditsDialog.vue';
 import LicenseDialog from './components/dialog/LicenseDialog.vue';
 import { useUiState } from './stores/uistate';
+import { setTheme } from '@tauri-apps/api/app';
 
 const { locale } = useI18n({ useScope: 'global' });
 const windowMenu = createWindowMenu();
@@ -44,7 +45,11 @@ watch(
       setLanguage(newSettings.language);
     }
     if (newSettings.darkMode != oldSettings.darkMode) {
-      theme.change(newSettings.darkMode);
+      if (target == 'tauri') {
+        setTheme(newSettings.darkMode == 'system' ? null : newSettings.darkMode);
+      } else {
+        theme.change(newSettings.darkMode);
+      }
     }
   },
 );
@@ -67,7 +72,11 @@ const setLanguage = (language: string | null) => {
 
 onMounted(() => {
   setLanguage(uiSettings.settings.appearance.language);
-  theme.change(uiSettings.settings.appearance.darkMode);
+  if (target == 'tauri') {
+    setTheme(uiSettings.settings.appearance.darkMode == 'system' ? null : uiSettings.settings.appearance.darkMode);
+  } else {
+    theme.change(uiSettings.settings.appearance.darkMode);
+  }
   windowMenu?.init();
   if (side == 'remote') {
     api.remote
