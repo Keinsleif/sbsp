@@ -8,6 +8,7 @@ accepted = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-3-Clause",
     "Elastic-2.0",
+    "Zlib",
 ]
 ignore-build-dependencies = true
 ignore-dev-dependencies = true
