@@ -4326,7 +4326,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_backend"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -4370,7 +4370,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_remote"
-version = "2.0.0-rc"
+version = "2.0.1-rc"
 dependencies = [
  "anyhow",
  "humantime",
@@ -4394,7 +4394,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_tauri"
-version = "2.0.0-rc"
+version = "2.0.1-rc"
 dependencies = [
  "anyhow",
  "humantime",
