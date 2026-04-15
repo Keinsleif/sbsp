@@ -8,6 +8,7 @@
     "dialog:default",
     "opener:default",
     "core:window:allow-set-title",
+    "core:app:allow-set-app-theme",
     {
       "identifier": "opener:allow-open-path",
       "allow": [
