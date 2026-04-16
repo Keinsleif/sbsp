@@ -94,7 +94,7 @@ const onPointerUp = debounce(() => {
     sliderChanging.value = false;
     emit('update');
   }
-}, 500);
+}, 300);
 
 const tickLabels = computed(() => {
   if (props.thumbAmount == 'decreased') {
