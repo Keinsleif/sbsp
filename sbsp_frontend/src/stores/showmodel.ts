@@ -9,7 +9,7 @@ import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
 
-type FlatCueEntry = {
+export type FlatCueEntry = {
   cue: Cue;
   level: number;
   parent: null | string;
