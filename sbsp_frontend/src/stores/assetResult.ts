@@ -2,7 +2,7 @@ import { defineStore, storeToRefs } from 'pinia';
 import { useShowModel } from './showmodel';
 import type { AssetData } from '../types/AssetData';
 import type { AssetMetadata } from '../types/AssetMetadata';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { useApi } from '../api';
 
 export const useAssetResult = defineStore(
@@ -10,16 +10,17 @@ export const useAssetResult = defineStore(
   () => {
     const metadatas = ref<{ [path: string]: AssetMetadata }>({});
     const results = ref<{ [path: string]: AssetData }>({});
-    const processing = ref<string[]>([]);
+    const processing = reactive<Set<string>>(new Set([]));
 
     const add = (path: string, data: AssetData) => {
       results.value[path] = data;
       metadatas.value[path] = data.metadata;
-      processing.value.splice(processing.value.indexOf(path), 1);
+      processing.delete(path);
     };
     const addMetadata = (path: string, data: AssetMetadata) => {
       metadatas.value[path] = data;
     };
+
     const get = (cueId: string | null | undefined): AssetData | null => {
       if (cueId == null) {
         return null;
@@ -32,8 +33,8 @@ export const useAssetResult = defineStore(
         const result = results.value[targetCue.params.target];
         if (result != null) {
           return result;
-        } else if (!processing.value.includes(targetCue.params.target)) {
-          processing.value.push(targetCue.params.target);
+        } else if (!processing.has(targetCue.params.target)) {
+          processing.add(targetCue.params.target);
           api.processAsset(targetCue.params.target);
           return null;
         } else {
@@ -56,8 +57,8 @@ export const useAssetResult = defineStore(
         const result = metadatas.value[targetCue.params.target];
         if (result != null) {
           return result;
-        } else if (!processing.value.includes(targetCue.params.target)) {
-          processing.value.push(targetCue.params.target);
+        } else if (!processing.has(targetCue.params.target)) {
+          processing.add(targetCue.params.target);
           api.processAsset(targetCue.params.target);
           return null;
         } else {
