@@ -82,7 +82,7 @@ enum AudioSourceControlCommand {
     Stop,
     Seek {
         position: f64,
-        result: oneshot::Sender<Result<(), SeekError>>,
+        result: oneshot::Sender<Result<(), anyhow::Error>>,
     },
     SetVolume {
         volume: Decibels,
@@ -109,6 +109,9 @@ impl AudioSourceShared {
 pub struct AudioSourceHandle {
     shared: Arc<AudioSourceShared>,
     control: Producer<AudioSourceControlCommand>,
+    pub duration: f64,
+    volume: Decibels,
+    fade_volume: Decibels,
 }
 
 impl AudioSourceHandle {
@@ -128,6 +131,10 @@ impl AudioSourceHandle {
         self.shared.repeat.load(Ordering::Acquire)
     }
 
+    pub fn get_volume(&self) -> Decibels {
+        self.volume
+    }
+
     pub fn start(&mut self) {
         if self.state() == AudioPlaybackState::Loaded {
             let _ = self.control.push(AudioSourceControlCommand::Start);
@@ -145,29 +152,56 @@ impl AudioSourceHandle {
     }
 
     pub fn stop(&mut self) {
-        let _ = self.control.push(AudioSourceControlCommand::Stop);
+        let state = self.state();
+        if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
+            return;
+        }
+        if self.state().eq(&AudioPlaybackState::SoftStopping) {
+            // Hard Stop
+            let _ = self.control.push(AudioSourceControlCommand::Stop);
+        } else {
+            let _ = self.control.push(AudioSourceControlCommand::FadeOut);
+        }
     }
 
-    pub fn fade_out(&mut self) {
-        let _ = self.control.push(AudioSourceControlCommand::FadeOut);
-    }
-
-    pub async fn seek_to(&mut self, position: f64) -> Result<(), SeekError> {
+    pub async fn seek_to(&mut self, position: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
+        let position = position.clamp(0.0, self.duration);
         let _ = self.control.push(AudioSourceControlCommand::Seek {
             position,
             result: result_tx,
         });
-        result_rx.await.unwrap_or(Ok(()))
+        match result_rx.await {
+            Ok(Ok(_)) => {
+                Ok(position)
+            }
+            Ok(Err(err)) => {
+                Err(err)
+            }
+            Err(err) => {
+                Err(anyhow::anyhow!("failed to retrieve seek result. {}", err))
+            }
+        }
     }
 
-    pub async fn seek_by(&mut self, amount: f64) -> Result<(), SeekError> {
+    pub async fn seek_by(&mut self, amount: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
+        let position = (self.position() + amount).clamp(0.0, self.duration);
         let _ = self.control.push(AudioSourceControlCommand::Seek {
-            position: self.position() + amount,
+            position,
             result: result_tx,
         });
-        result_rx.await.unwrap_or(Ok(()))
+        match result_rx.await {
+            Ok(Ok(_)) => {
+                Ok(position)
+            }
+            Ok(Err(err)) => {
+                Err(err)
+            }
+            Err(err) => {
+                Err(anyhow::anyhow!("failed to retrieve seek result. {}", err))
+            }
+        }
     }
 
     pub fn set_repeat(&self, value: bool) {
@@ -175,16 +209,20 @@ impl AudioSourceHandle {
     }
 
     pub fn set_volume(&mut self, volume: Decibels) {
+        self.volume = volume;
+
         let _ = self.control.push(AudioSourceControlCommand::SetVolume {
-            volume,
+            volume: self.volume + self.fade_volume,
             fade_param: DEFAULT_FADE_PARAM,
         });
     }
 
     pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
+        self.fade_volume = volume;
+
         let _ = self
             .control
-            .push(AudioSourceControlCommand::SetVolume { volume, fade_param });
+            .push(AudioSourceControlCommand::SetVolume { volume: self.volume + self.fade_volume, fade_param });
     }
 }
 
@@ -411,11 +449,12 @@ where
         let fadeout_param = settings.fadeout_param.unwrap_or(DEFAULT_FADE_PARAM);
         let shared = Arc::new(AudioSourceShared::new(settings.repeat));
         let (control_pr, control_co) = RingBuffer::new(8);
-        let volume = if let Some(fadein_param) = settings.fadein_param {
-            Volume::new_with_fade(Decibels::MUTE, settings.volume, fadein_param)
+        let control_volume = if let Some(fadein_param) = settings.fadein_param {
+            Volume::new_with_fade(Decibels::MUTE, Decibels::IDENTITY, fadein_param)
         } else {
-            Volume::new(settings.volume)
+            Volume::new(Decibels::IDENTITY)
         };
+        let volume_db = settings.volume;
         let output_buffer = vec![0.0; settings.channel_mapping.output_channels].into_boxed_slice();
         let update_interval = Self::calculate_interval(&sample_rate);
 
@@ -433,6 +472,8 @@ where
             )),
         };
 
+        let duration = input.total_duration().map(|duration| duration.as_secs_f64()).unwrap_or(0.0);
+
         (
             Self {
                 input,
@@ -449,12 +490,15 @@ where
                 frames_counted: update_interval,
                 playing_frames_counted: 0,
                 update_interval,
-                control_volume: Volume::new(Decibels::IDENTITY),
-                volume,
+                control_volume,
+                volume: Volume::new(volume_db),
             },
             AudioSourceHandle {
                 shared,
                 control: control_pr,
+                duration,
+                volume: volume_db,
+                fade_volume: Decibels::IDENTITY,
             },
         )
     }
@@ -562,7 +606,14 @@ where
                             }
                         }
                         AudioSourceControlCommand::Seek { position, result } => {
-                            let _ = result.send(self.try_seek(Duration::from_secs_f64(position)));
+                            let _ = result.send(match Duration::try_from_secs_f64(position) {
+                                Ok(duration) => {
+                                    self.try_seek(duration).map_err(|err| err.into())
+                                }
+                                Err(err) => {
+                                    Err(anyhow::anyhow!("Invalid position. {}", err))
+                                }
+                            });
                         }
                         AudioSourceControlCommand::SetVolume { volume, fade_param } => {
                             self.volume.set_volume(volume, fade_param);
