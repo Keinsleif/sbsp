@@ -10,7 +10,7 @@ use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendSettings,
     model::cue::{
-        Cue, CueParam, CueChain,
+        Cue, CueChain, CueParam,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
     },

@@ -14,7 +14,7 @@ use crate::{
     manager::{ModelCommand, ProjectStatus, command::InsertPosition},
     model::{
         ShowModel,
-        cue::{Cue, CueParam, CueChain, group::GroupMode},
+        cue::{Cue, CueChain, CueParam, group::GroupMode},
         settings::ShowSettings,
     },
 };

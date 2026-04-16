@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
-use sbsp_backend::{BackendSettings, api::{ApiServerOptions, server::start_apiserver}, start_backend};
 use clap::Parser;
+use sbsp_backend::{
+    BackendSettings,
+    api::{ApiServerOptions, server::start_apiserver},
+    start_backend,
+};
 use tokio::sync::watch;
 
 #[derive(Parser, Debug)]
@@ -45,7 +49,7 @@ async fn main() -> Result<(), anyhow::Error> {
             port: args.port,
             discoverry: args.discovery,
             password: args.password,
-        }
+        },
     )
     .await?;
 

@@ -210,7 +210,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('seek_to', { cueId: cueId, position: position });
     },
     sendSeekBy: function (cueId: string, amount: number): Promise<void> {
-      return invoke('seek_to', { cueId: cueId, amount: amount });
+      return invoke('seek_by', { cueId: cueId, amount: amount });
     },
     sendToggleRepeat: function (cueId: string): Promise<void> {
       return invoke('toggle_repeat', { cueId: cueId });

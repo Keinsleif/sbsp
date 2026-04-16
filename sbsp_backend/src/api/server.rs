@@ -30,7 +30,7 @@ use crate::{
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
-    event::{CueState, SyncData, BackendEvent},
+    event::{BackendEvent, CueState, SyncData},
     manager::ProjectStatus,
     model::ProjectType,
 };

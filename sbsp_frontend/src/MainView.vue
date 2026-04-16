@@ -358,14 +358,9 @@ useHotkey(
 useHotkey(
   seekForwardHotkey,
   () => {
+    console.log('key triggered');
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
-      if (
-        !(['loaded', 'completed', 'stopped', 'error'] as PlaybackStatus[]).includes(
-          showState.activeCues[uiState.selected]!.status,
-        )
-      ) {
-        api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
-      }
+      api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
     }
   },
   {
@@ -377,13 +372,7 @@ useHotkey(
   seekBackwardHotkey,
   () => {
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
-      if (
-        !(['loaded', 'completed', 'stopped', 'error'] as PlaybackStatus[]).includes(
-          showState.activeCues[uiState.selected]!.status,
-        )
-      ) {
-        api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
-      }
+      api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
     }
   },
   {

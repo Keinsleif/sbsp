@@ -212,7 +212,9 @@ fn handle_state_sync(
                         })
                         .collect()
                 };
-                if let Err(e) = event_tx.send(BackendEvent::SyncState(SyncData { latency: 0.0, cues })) {
+                if let Err(e) =
+                    event_tx.send(BackendEvent::SyncState(SyncData { latency: 0.0, cues }))
+                {
                     log::trace!("No UI clients are listening to playback events. e={}", e);
                 }
             } else {

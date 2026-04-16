@@ -152,7 +152,8 @@ impl WaitEngine {
                         },
                         WaitCommand::SeekTo {instance_id, position} => {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
-                                waiting_instance.remaining_duration = waiting_instance.total_duration - Duration::from_secs_f64(position);
+                                let new_duration = (waiting_instance.total_duration.as_secs_f64() - position).clamp(0.0, waiting_instance.total_duration.as_secs_f64());
+                                waiting_instance.remaining_duration = Duration::from_secs_f64(new_duration);
                                 let wait_event = WaitEvent::Seeked { instance_id, position };
                                 let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
                                 if let Err(e) = self.event_tx.send(event).await {
@@ -166,7 +167,8 @@ impl WaitEngine {
                         },
                         WaitCommand::SeekBy {instance_id, amount} => {
                             if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
-                                waiting_instance.remaining_duration -= Duration::from_secs_f64(amount);
+                                let new_duration = (waiting_instance.remaining_duration.as_secs_f64() - amount).clamp(0.0, waiting_instance.total_duration.as_secs_f64());
+                                waiting_instance.remaining_duration = Duration::from_secs_f64(new_duration);
                                 let position = (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64();
                                 let wait_event = WaitEvent::Seeked { instance_id, position };
                                 let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);

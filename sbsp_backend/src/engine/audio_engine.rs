@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use rodio::{
     Decoder, Source,
     mixer::Mixer,
-    source::{SeekError, Zero},
+    source::Zero,
     stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
@@ -48,79 +48,6 @@ use crate::{
 
 const NANOS_PER_SEC: u64 = 1_000_000_000;
 
-struct PlaybackHandle {
-    handle: AudioSourceHandle,
-    duration: f64,
-    volume: Decibels,
-    fade_volume: Decibels,
-}
-
-impl PlaybackHandle {
-    fn state(&self) -> AudioPlaybackState {
-        self.handle.state()
-    }
-
-    fn is_repeating(&self) -> bool {
-        self.handle.is_repeating()
-    }
-
-    fn get_volume(&self) -> Decibels {
-        self.volume
-    }
-
-    fn position(&self) -> f64 {
-        self.handle.position()
-    }
-
-    fn start(&mut self) {
-        self.handle.start();
-    }
-
-    fn pause(&mut self) {
-        self.handle.pause();
-    }
-
-    fn resume(&mut self) {
-        self.handle.resume();
-    }
-
-    fn stop(&mut self) {
-        let state = self.state();
-        if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
-            return;
-        }
-        if self.state().eq(&AudioPlaybackState::SoftStopping) {
-            // Hard Stop
-            self.handle.stop();
-        } else {
-            self.handle.fade_out();
-        }
-    }
-
-    async fn seek_to(&mut self, position: f64) -> Result<(), SeekError> {
-        self.handle.seek_to(position).await
-    }
-
-    async fn seek_by(&mut self, amount: f64) -> Result<(), SeekError> {
-        self.handle.seek_by(amount).await
-    }
-
-    fn set_repeat(&mut self, repeat: bool) {
-        self.handle.set_repeat(repeat);
-    }
-
-    fn set_volume(&mut self, volume: Decibels) {
-        self.volume = volume;
-        self.handle.set_volume(self.volume + self.fade_volume);
-    }
-
-    fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
-        self.fade_volume = volume;
-        self.handle
-            .set_fade(self.volume + self.fade_volume, fade_param);
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 struct LastStatus {
     state: AudioPlaybackState,
@@ -129,7 +56,7 @@ struct LastStatus {
 }
 
 struct PlayingSound {
-    handle: PlaybackHandle,
+    handle: AudioSourceHandle,
     last_status: Option<LastStatus>,
 }
 
@@ -141,7 +68,7 @@ pub struct AudioEngine {
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
     playing_sounds: HashMap<Uuid, PlayingSound>,
-    loaded_sounds: HashMap<Uuid, PlaybackHandle>,
+    loaded_sounds: HashMap<Uuid, AudioSourceHandle>,
 }
 
 impl AudioEngine {
@@ -408,15 +335,7 @@ impl AudioEngine {
             }))
             .await?;
 
-        self.loaded_sounds.insert(
-            id,
-            PlaybackHandle {
-                handle,
-                duration,
-                volume: data.volume,
-                fade_volume: Decibels::IDENTITY,
-            },
-        );
+        self.loaded_sounds.insert(id, handle);
         Ok(())
     }
 
@@ -493,7 +412,11 @@ impl AudioEngine {
             Ok(())
         } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
             loaded_sound.stop();
-            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: id })).await?;
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Stopped {
+                    instance_id: id,
+                }))
+                .await?;
             Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
@@ -501,26 +424,32 @@ impl AudioEngine {
     }
 
     async fn handle_seek_to(&mut self, id: Uuid, position: f64) -> Result<()> {
-        if let Some(playing_sound) = self.playing_sounds.get_mut(&id)
-            && playing_sound.handle.seek_to(position).await.is_ok()
-        {
-            self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
-                    instance_id: id,
-                    position,
-                }))
-                .await?;
-            Ok(())
-        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id)
-            && loaded_handle.seek_to(position).await.is_ok()
-        {
-            self.event_tx
-                .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
-                    instance_id: id,
-                    position,
-                }))
-                .await?;
-            Ok(())
+        if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
+            match playing_sound.handle.seek_to(position).await {
+                Ok(seeked_position) => {
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                            instance_id: id,
+                            position: seeked_position,
+                        }))
+                        .await?;
+                    Ok(())
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
+            }
+        } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
+            match loaded_handle.seek_to(position).await {
+                Ok(seeked_position) => {
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                            instance_id: id,
+                            position: seeked_position,
+                        }))
+                        .await?;
+                    Ok(())
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
+            }
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
         }
@@ -528,30 +457,30 @@ impl AudioEngine {
 
     async fn handle_seek_by(&mut self, id: Uuid, amount: f64) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            let position = playing_sound.handle.position() + amount;
-            if let Err(e) = playing_sound.handle.seek_by(amount).await {
-                Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-            } else {
-                self.event_tx
-                    .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
-                        instance_id: id,
-                        position,
-                    }))
-                    .await?;
-                Ok(())
+            match playing_sound.handle.seek_by(amount).await {
+                Ok(seeked_position) => {
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                            instance_id: id,
+                            position: seeked_position,
+                        }))
+                        .await?;
+                    Ok(())
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            let position = loaded_handle.position() + amount;
-            if let Err(e) = loaded_handle.seek_by(amount).await {
-                Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-            } else {
-                self.event_tx
-                    .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
-                        instance_id: id,
-                        position,
-                    }))
-                    .await?;
-                Ok(())
+            match loaded_handle.seek_by(amount).await {
+                Ok(seeked_position) => {
+                    self.event_tx
+                        .send(EngineEvent::Audio(AudioEngineEvent::Seeked {
+                            instance_id: id,
+                            position: seeked_position,
+                        }))
+                        .await?;
+                    Ok(())
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
