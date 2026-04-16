@@ -172,15 +172,9 @@ impl AudioSourceHandle {
             result: result_tx,
         });
         match result_rx.await {
-            Ok(Ok(_)) => {
-                Ok(position)
-            }
-            Ok(Err(err)) => {
-                Err(err)
-            }
-            Err(err) => {
-                Err(anyhow::anyhow!("failed to retrieve seek result. {}", err))
-            }
+            Ok(Ok(_)) => Ok(position),
+            Ok(Err(err)) => Err(err),
+            Err(err) => Err(anyhow::anyhow!("failed to retrieve seek result. {}", err)),
         }
     }
 
@@ -192,15 +186,9 @@ impl AudioSourceHandle {
             result: result_tx,
         });
         match result_rx.await {
-            Ok(Ok(_)) => {
-                Ok(position)
-            }
-            Ok(Err(err)) => {
-                Err(err)
-            }
-            Err(err) => {
-                Err(anyhow::anyhow!("failed to retrieve seek result. {}", err))
-            }
+            Ok(Ok(_)) => Ok(position),
+            Ok(Err(err)) => Err(err),
+            Err(err) => Err(anyhow::anyhow!("failed to retrieve seek result. {}", err)),
         }
     }
 
@@ -220,9 +208,10 @@ impl AudioSourceHandle {
     pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
         self.fade_volume = volume;
 
-        let _ = self
-            .control
-            .push(AudioSourceControlCommand::SetVolume { volume: self.volume + self.fade_volume, fade_param });
+        let _ = self.control.push(AudioSourceControlCommand::SetVolume {
+            volume: self.volume + self.fade_volume,
+            fade_param,
+        });
     }
 }
 
@@ -281,10 +270,10 @@ impl Volume {
                 return true;
             }
 
-            let progress = info
-                .fade_param
-                .easing
-                .get_factor(info.elapsed / info.fade_param.duration) as f32;
+            let progress =
+                info.fade_param
+                    .easing
+                    .get_factor(info.elapsed / info.fade_param.duration) as f32;
 
             self.volume = info.from + (info.to - info.from) * progress;
 
@@ -472,7 +461,10 @@ where
             )),
         };
 
-        let duration = input.total_duration().map(|duration| duration.as_secs_f64()).unwrap_or(0.0);
+        let duration = input
+            .total_duration()
+            .map(|duration| duration.as_secs_f64())
+            .unwrap_or(0.0);
 
         (
             Self {
@@ -563,13 +555,15 @@ where
                                 AudioPlaybackState::Playing | AudioPlaybackState::Resuming
                             ) {
                                 state = AudioPlaybackState::Pausing;
-                                self.control_volume.set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
+                                self.control_volume
+                                    .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                             }
                         }
                         AudioSourceControlCommand::Resume => {
                             if matches!(state, AudioPlaybackState::Paused) {
                                 state = AudioPlaybackState::Resuming;
-                                self.control_volume.set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
+                                self.control_volume
+                                    .set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
                         AudioSourceControlCommand::FadeOut => {
@@ -584,7 +578,8 @@ where
                                     state = AudioPlaybackState::Stopped;
                                 } else {
                                     state = AudioPlaybackState::SoftStopping;
-                                    self.control_volume.set_volume(Decibels::MUTE, self.fadeout_param);
+                                    self.control_volume
+                                        .set_volume(Decibels::MUTE, self.fadeout_param);
                                 }
                             }
                         }
@@ -601,18 +596,15 @@ where
                                     state = AudioPlaybackState::Stopped;
                                 } else {
                                     state = AudioPlaybackState::HardStopping;
-                                    self.control_volume.set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
+                                    self.control_volume
+                                        .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                                 }
                             }
                         }
                         AudioSourceControlCommand::Seek { position, result } => {
                             let _ = result.send(match Duration::try_from_secs_f64(position) {
-                                Ok(duration) => {
-                                    self.try_seek(duration).map_err(|err| err.into())
-                                }
-                                Err(err) => {
-                                    Err(anyhow::anyhow!("Invalid position. {}", err))
-                                }
+                                Ok(duration) => self.try_seek(duration).map_err(|err| err.into()),
+                                Err(err) => Err(anyhow::anyhow!("Invalid position. {}", err)),
                             });
                         }
                         AudioSourceControlCommand::SetVolume { volume, fade_param } => {

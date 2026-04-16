@@ -335,10 +335,7 @@ impl AudioEngine {
             }))
             .await?;
 
-        self.loaded_sounds.insert(
-            id,
-            handle,
-        );
+        self.loaded_sounds.insert(id, handle);
         Ok(())
     }
 
@@ -415,7 +412,11 @@ impl AudioEngine {
             Ok(())
         } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
             loaded_sound.stop();
-            self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::Stopped { instance_id: id })).await?;
+            self.event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::Stopped {
+                    instance_id: id,
+                }))
+                .await?;
             Ok(())
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
@@ -433,10 +434,8 @@ impl AudioEngine {
                         }))
                         .await?;
                     Ok(())
-                },
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-                },
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             match loaded_handle.seek_to(position).await {
@@ -448,10 +447,8 @@ impl AudioEngine {
                         }))
                         .await?;
                     Ok(())
-                },
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-                },
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);
@@ -469,10 +466,8 @@ impl AudioEngine {
                         }))
                         .await?;
                     Ok(())
-                },
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-                },
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
             match loaded_handle.seek_by(amount).await {
@@ -484,10 +479,8 @@ impl AudioEngine {
                         }))
                         .await?;
                     Ok(())
-                },
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to perform seek. e={}", e))
-                },
+                }
+                Err(e) => Err(anyhow::anyhow!("Failed to perform seek. e={}", e)),
             }
         } else {
             anyhow::bail!("unknown instance_id. id={}", id);

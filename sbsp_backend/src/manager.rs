@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::{
     BackendSettings,
-    event::{UiError, BackendEvent},
+    event::{BackendEvent, UiError},
     model::{
         ProjectType, ShowModel,
         cue::{Cue, CueParam},
@@ -326,7 +326,8 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 model.name = new_name.clone();
                 self.modify_status.store(true, Ordering::Release);
-                self.event_tx.send(BackendEvent::ModelNameUpdated { new_name })?;
+                self.event_tx
+                    .send(BackendEvent::ModelNameUpdated { new_name })?;
                 Ok(())
             }
             ModelCommand::UpdateSettings(new_settings) => {
@@ -794,7 +795,7 @@ mod tests {
         model::{
             ShowModel,
             cue::{
-                Cue, CueParam, CueChain,
+                Cue, CueChain, CueParam,
                 audio::{AudioCueParam, Decibels, SoundType},
             },
             settings::ShowSettings,

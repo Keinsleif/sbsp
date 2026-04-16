@@ -1,4 +1,7 @@
-use std::{ops::{Add, Mul, Sub}, path::PathBuf};
+use std::{
+    ops::{Add, Mul, Sub},
+    path::PathBuf,
+};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;

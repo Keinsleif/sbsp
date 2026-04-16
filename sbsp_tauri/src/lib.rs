@@ -118,7 +118,10 @@ impl AppState {
     }
 }
 
-async fn forward_backend_event(app_handle: AppHandle, mut event_rx: broadcast::Receiver<BackendEvent>) {
+async fn forward_backend_event(
+    app_handle: AppHandle,
+    mut event_rx: broadcast::Receiver<BackendEvent>,
+) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {

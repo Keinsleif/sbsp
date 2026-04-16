@@ -5,7 +5,7 @@ pub mod state;
 pub use command::ControllerCommand;
 pub use handle::CueControllerHandle;
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc, watch};
@@ -455,7 +455,8 @@ impl CueController {
             }
             ExecutorEvent::Completed { cue_id, .. } => {
                 if let Some(chain) = self.wait_tasks.remove(cue_id)
-                && let CueChain::AfterComplete { target_id } = chain {
+                    && let CueChain::AfterComplete { target_id } = chain
+                {
                     if let Some(target) = target_id {
                         if let Err(e) = self.handle_go(target).await {
                             log::error!("Failed to perform cue chain. ignoring. error={}", e);
@@ -752,12 +753,14 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Started {
-            cue_id,
-            position: 0.0,
-            duration: 43.0,
-            params: StateParam::None
-        })));
+        assert!(
+            event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Started {
+                cue_id,
+                position: 0.0,
+                duration: 43.0,
+                params: StateParam::None
+            }))
+        );
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
@@ -817,10 +820,12 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Paused {
-            cue_id,
-            position: 21.0
-        })));
+        assert!(
+            event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Paused {
+                cue_id,
+                position: 21.0
+            }))
+        );
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Paused);
@@ -836,7 +841,11 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Resumed { cue_id })));
+        assert!(
+            event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Resumed {
+                cue_id
+            }))
+        );
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
