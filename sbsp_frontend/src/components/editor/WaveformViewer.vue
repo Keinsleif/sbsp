@@ -10,6 +10,7 @@
     <v-sheet
       v-show="!isOutside"
       v-if="props.targetId != null && svgRef != null && parent != null"
+      style="position: absolute; top: 0px; left: 0px;"
       :style="tooltipStyle"
       class="pl-1 pr-1 rounded text-caption"
     >
@@ -79,10 +80,7 @@
       />
       <rect
         v-show="position != 0"
-        :style="{
-          transform: `translateX(${currentPlayPos}px)`,
-          transition: 'transform 10ms linear',
-        }"
+        :style="playCursorStyle"
         x="0"
         y="0"
         width="2"
@@ -94,10 +92,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, StyleValue, useTemplateRef } from 'vue';
+import { computed, ref, shallowRef, StyleValue, toRaw, useTemplateRef } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
-import { computedAsync, useElementSize, useMouseInElement, useParentElement } from '@vueuse/core';
+import { useElementSize, useMouseInElement, useParentElement, useWebWorkerFn, watchDebounced } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
@@ -132,18 +130,16 @@ const props = withDefaults(
 
 const contentHeight = computed(() => props.heightPx - 4);
 
-const nonNullStartTime = computed<number>(() => {
-  const duration = assetResult.getMetadata(props.targetId)?.duration;
-  return props.startTime != null && duration != null ? props.startTime / duration : 0;
+const metadata = computed(() => (props.targetId ? assetResult.getMetadata(props.targetId) : null));
+const timeRange = computed(() => {
+  const duration = metadata.value?.duration || 1;
+  const start = props.startTime != null && duration != null ? props.startTime / duration : 0;
+  const end = props.endTime != null && duration != null ? props.endTime / duration : 1;
+  return { start, end, delta: end - start };
 });
 
-const nonNullEndTime = computed<number>(() => {
-  const duration = assetResult.getMetadata(props.targetId)?.duration;
-  return props.endTime != null && duration != null ? props.endTime / duration : 1;
-});
-
-const startPos = computed<number>(() => nonNullStartTime.value * (svgWidth.value - 1));
-const endPos = computed<number>(() => nonNullEndTime.value * (svgWidth.value - 1) - 1);
+const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
+const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
 
 const svgRef = useTemplateRef('svg');
 const { width: svgWidth } = useElementSize(svgRef);
@@ -158,28 +154,23 @@ const position = computed<number>(() => {
   }
 });
 
-const currentPlayPos = computed(() => {
-  const range = nonNullEndTime.value - nonNullStartTime.value;
-  return (nonNullStartTime.value + position.value * range) * (svgWidth.value - 1);
+const playCursorStyle = computed(() => {
+  const range = timeRange.value;
+  const x = (range.start + position.value * range.delta) * (svgWidth.value - 1);
+  return {
+    transform: `translateX(${x}px)`,
+    transition: 'transform 10ms linear',
+  };
 });
 
-const waveformPath = computedAsync(async () => {
-  if (svgWidth.value < 1) {
-    return '';
-  }
-  if (props.targetId == null) {
-    return '';
-  }
-  const source = assetResult.get(props.targetId)?.waveform;
-  if (source == null) {
-    return '';
-  }
+const waveformPath = shallowRef('');
 
+const buildWaveformPath = (source: number[], height: number, width: number) => {
   let result = '';
-  const amp = contentHeight.value * 0.375;
+  const amp = height * 0.375;
 
-  const samplePerPixel = source.length / svgWidth.value;
-  for (let i = 0; i < svgWidth.value; i++) {
+  const samplePerPixel = source.length / width;
+  for (let i = 0; i < width; i++) {
     let start = Math.floor(i * samplePerPixel);
     let end = Math.floor((i + 1) * samplePerPixel);
 
@@ -190,11 +181,31 @@ const waveformPath = computedAsync(async () => {
       if (value != null && value > max) max = value;
     }
     if (max > 0) {
-      result += `M${i},${(1 - max) * amp}v${2 * amp * max}`;
+      result += `M${i},${((1 - max) * amp).toFixed(2)}v${(2 * amp * max).toFixed()}`;
     }
   }
   return result;
-}, null);
+};
+
+const { workerFn, workerStatus } = useWebWorkerFn(buildWaveformPath);
+
+const updateWaveformPath = async () => {
+  if (svgWidth.value < 1 || props.targetId == null) {
+    waveformPath.value = '';
+    return;
+  }
+
+  const source = assetResult.get(props.targetId)?.waveform;
+  if (source == null) {
+    waveformPath.value = '';
+    return;
+  }
+  if (workerStatus.value != 'RUNNING') {
+    waveformPath.value = await workerFn(toRaw(source), contentHeight.value, svgWidth.value);
+  }
+};
+
+watchDebounced([svgWidth, contentHeight, () => assetResult.get(props.targetId)?.waveform], updateWaveformPath, { debounce: 200 });
 
 const waveformTransform = computed(() => {
   if (uiState.scaleWaveform) {
@@ -220,8 +231,8 @@ const seek = (event: MouseEvent) => {
     return;
   }
   const position
-    = (event.offsetX - nonNullStartTime.value * svgWidth.value)
-      / (svgWidth.value * (nonNullEndTime.value - nonNullStartTime.value));
+    = (event.offsetX - timeRange.value.start * svgWidth.value)
+      / (svgWidth.value * (timeRange.value.delta));
   if (position > 0 && position < 1) {
     api.sendSeekTo(props.targetId, position * activeCue.duration);
   }
@@ -235,7 +246,6 @@ const tooltipText = computed(() => {
   if (duration == null) {
     return '--:--.-- / --:--.--';
   }
-  console.log(svgWidth.value);
   return `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
 });
 
@@ -243,9 +253,7 @@ const tooltipStyle = computed<StyleValue>(() => {
   if (parent.value == null) return {};
   const parentRect = parent.value.getBoundingClientRect();
   return {
-    position: 'absolute',
-    top: `${mouseY.value - parentRect.top - 10}px`,
-    left: `${parentRect.right - mouseX.value > 180 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 150}px`,
+    transform: `translateX(${parentRect.right - mouseX.value > 180 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 150}px) translateY(${mouseY.value - parentRect.top - 10}px)`,
   };
 });
 </script>
