@@ -247,7 +247,7 @@ export const createWindowMenu = () => {
       id: 'id_select_all_cues',
       text: t('menu.edit.selectAllCues'),
       enabled: lastEditEnableStats,
-      accelerator: isMacOs ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      accelerator: isMacOs ? '⌘ + A' : 'Ctrl + A',
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
@@ -387,6 +387,7 @@ export const createWindowMenu = () => {
       id: 'id_renumber',
       text: t('menu.tools.renumber'),
       enabled: lastEditEnableStats,
+      accelerator: isMacOs ? '⌘ + R' : 'Ctrl + R',
       action: () => {
         const uiState = useUiState();
         uiState.isRenumberCueDialogOpen = true;
