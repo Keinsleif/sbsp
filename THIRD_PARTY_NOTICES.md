@@ -9450,10 +9450,10 @@ insights.
 
 - Used by
 
-    - [sbsp_backend 1.0.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.2.0]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote 2.0.2]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_tauri 2.0.2]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote 2.1.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_tauri 2.1.0]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
