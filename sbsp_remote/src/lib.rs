@@ -8,10 +8,10 @@ use std::time::SystemTime;
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::client::{FileListHandle, create_remote_backend, start_discovery},
+    api::client::{FileListHandle, create_remote_backend, start_discovery, ServiceEntry},
     event::BackendEvent,
 };
-use tauri::{AppHandle, Emitter, Manager as _};
+use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
@@ -23,6 +23,7 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 #[cfg(not(debug_assertions))]
 const LOG_LEVEL: LevelFilter = LevelFilter::Info;
 
+
 async fn forward_backend_event(
     app_handle: AppHandle,
     mut event_rx: broadcast::Receiver<BackendEvent>,
@@ -31,8 +32,10 @@ async fn forward_backend_event(
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
-                app_handle.emit("backend-event", event).ok();
-            },
+                if let Some(handler) = app_handle.state::<AppState>().event_handler.lock().await.as_ref() {
+                    handler.send(event).ok();
+                }
+            }
             Ok(list) = asset_list_handle.recv_file_list() => {
                 app_handle.emit("asset-list-update", list).ok();
             }
@@ -40,7 +43,6 @@ async fn forward_backend_event(
         }
     }
 }
-
 pub struct ConnectionData {
     backend_handle: BackendHandle,
     address: String,
@@ -52,6 +54,7 @@ pub struct AppState {
     connection_data: RwLock<Option<ConnectionData>>,
     discovery_stop_tx: Mutex<Option<mpsc::Sender<()>>>,
     pub settings_manager: GlobalSettingsManager,
+    event_handler: Mutex<Option<Channel<BackendEvent>>>,
 }
 
 impl AppState {
@@ -60,6 +63,7 @@ impl AppState {
             connection_data: RwLock::new(None),
             discovery_stop_tx: Mutex::new(None),
             settings_manager,
+            event_handler: Mutex::new(None),
         }
     }
 
@@ -137,7 +141,7 @@ impl AppState {
         }
     }
 
-    pub async fn start_discovery(&self, app_handle: AppHandle) {
+    pub async fn start_discovery(&self, channel: Channel<Vec<ServiceEntry>>) {
         let mut watch_rx = start_discovery();
         let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
         tokio::spawn(async move {
@@ -145,7 +149,7 @@ impl AppState {
                 tokio::select! {
                     Ok(_) = watch_rx.changed() => {
                         let services = watch_rx.borrow().clone();
-                        app_handle.emit("remote-discovery", services).ok();
+                        channel.send(services).ok();
                     },
                     _ = shutdown_rx.recv() => {
                         drop(watch_rx);
@@ -228,6 +232,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            command::listen_backend_event,
+            command::unlisten_backend_event,
             command::request_state_sync,
             command::get_full_state,
             command::get_third_party_notices,

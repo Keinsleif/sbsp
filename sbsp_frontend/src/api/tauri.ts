@@ -87,8 +87,9 @@ export function useTauriApi(): IBackendAdapter {
             disconnectFromServer: function (): void {
               invoke('disconnect_from_server').catch(e => console.error(e));
             },
-            startServerDiscovery: function (): void {
-              invoke('start_server_discovery').catch(e => console.error(e));
+            startServerDiscovery: function (callback: (serviceEntry: ServiceEntry[]) => void): void {
+              const channel = new Channel<ServiceEntry[]>(callback);
+              invoke('start_server_discovery', { channel }).catch(e => console.error(e));
             },
             stopServerDiscovery: function (): void {
               invoke('stop_server_discovery').catch(e => console.error(e));
@@ -99,11 +100,6 @@ export function useTauriApi(): IBackendAdapter {
             onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
               return listen<boolean>('connection_status_changed', (event) => {
                 callback(event.payload);
-              });
-            },
-            onRemoteDiscoveryUpdate: function (callback: (serviceEntry: ServiceEntry[]) => void): Promise<UnlistenFn> {
-              return listen<ServiceEntry[]>('remote-discovery', (entry) => {
-                callback(entry.payload);
               });
             },
             onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
@@ -288,9 +284,11 @@ export function useTauriApi(): IBackendAdapter {
     },
 
     onBackendEvent: function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
-      return listen<BackendEvent>('backend-event', (event) => {
-        callback(event.payload);
-      });
+      const channel = new Channel<BackendEvent>(callback);
+      invoke('listen_backend_event', { channel });
+      return new Promise(resolve => resolve(() => {
+        invoke('unlisten_backend_event');
+      }));
     },
   };
   return tauriApi;

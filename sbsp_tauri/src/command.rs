@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use sbsp_backend::FullShowState;
+use sbsp_backend::{FullShowState, event::BackendEvent};
 use tauri::{Manager as _, ipc::Channel, path::BaseDirectory};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
@@ -12,6 +12,18 @@ pub mod license;
 pub mod model_manager;
 pub mod server;
 pub mod settings;
+
+#[tauri::command]
+pub async fn listen_backend_event(state: tauri::State<'_, AppState>, channel: Channel<BackendEvent>) -> Result<(), String> {
+    *state.event_handler.lock().await = Some(channel);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unlisten_backend_event(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    *state.event_handler.lock().await = None;
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn request_state_sync(state: tauri::State<'_, AppState>) -> Result<(), String> {

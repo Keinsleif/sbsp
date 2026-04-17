@@ -101,7 +101,6 @@ let unlisten: (() => void) | null = null;
 
 watch(isFileListDialogOpen, (value) => {
   if (value) {
-    api.setTitle(t('dialog.fileSelect.title'));
     api.remote
       ?.onFileListUpdate((list) => {
         fileList.value = list;
