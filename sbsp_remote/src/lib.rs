@@ -8,7 +8,7 @@ use std::time::SystemTime;
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::client::{FileListHandle, create_remote_backend, start_discovery, ServiceEntry},
+    api::client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
     event::BackendEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
@@ -22,7 +22,6 @@ const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 
 #[cfg(not(debug_assertions))]
 const LOG_LEVEL: LevelFilter = LevelFilter::Info;
-
 
 async fn forward_backend_event(
     app_handle: AppHandle,

@@ -14,7 +14,10 @@ pub mod server;
 pub mod settings;
 
 #[tauri::command]
-pub async fn listen_backend_event(state: tauri::State<'_, AppState>, channel: Channel<BackendEvent>) -> Result<(), String> {
+pub async fn listen_backend_event(
+    state: tauri::State<'_, AppState>,
+    channel: Channel<BackendEvent>,
+) -> Result<(), String> {
     *state.event_handler.lock().await = Some(channel);
     Ok(())
 }
