@@ -21,7 +21,7 @@
         >
           <div
             class="position-relative top-0 left-0 bg-surface"
-            style="transition: height 40ms ease-out"
+            style="transition: height 60ms ease-out"
             :style="{
               width: props.width,
               height: Math.min(levels.left * 100, 0) / -60 + '%',

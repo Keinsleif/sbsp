@@ -323,7 +323,8 @@ export function useWebsocketApi(): IBackendAdapter {
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
     },
-    startServerDiscovery: function (): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    startServerDiscovery: function (_callback: (serviceEntry: ServiceEntry[]) => void): void {
       console.log('Remote discovery on web api is not implemented.');
     },
     stopServerDiscovery: function (): void {
@@ -338,11 +339,6 @@ export function useWebsocketApi(): IBackendAdapter {
       return () => {
         delete websocketApiState.connectionStatusListeners[id];
       };
-    },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onRemoteDiscoveryUpdate: async function (_callback: (serviceEntry: ServiceEntry[]) => void): Promise<UnlistenFn> {
-      console.log('Remote discovery on web api is not implemented.');
-      return () => {};
     },
     onFileListUpdate: async function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
       const id = v4();

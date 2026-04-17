@@ -80,8 +80,6 @@ const host = ref('');
 const port = ref('');
 const services = ref<ServiceEntry[]>([]);
 
-let unlisten: (() => void) | null = null;
-
 const connect = (host: string, port: string | number) => {
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
@@ -123,20 +121,13 @@ onMounted(() => {
       }
     }
   }
-  api.remote
-    ?.onRemoteDiscoveryUpdate((event) => {
-      services.value = event;
-    })
-    .then((unlisten_func) => {
-      unlisten = unlisten_func;
-    });
-  api.remote?.startServerDiscovery();
+
+  api.remote?.startServerDiscovery((event) => {
+    services.value = event;
+  });
 });
 
 onUnmounted(() => {
-  if (unlisten != null) {
-    unlisten();
-  }
   api.remote?.stopServerDiscovery();
 });
 </script>

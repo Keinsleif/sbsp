@@ -43,6 +43,7 @@ pub struct AppState {
     server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
     level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
+    event_handler: Mutex<Option<Channel<BackendEvent>>>,
 }
 
 impl AppState {
@@ -65,6 +66,7 @@ impl AppState {
             }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,
+            event_handler: Mutex::new(None),
         }
     }
 
@@ -125,7 +127,9 @@ async fn forward_backend_event(
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
-                app_handle.emit("backend-event", event).ok();
+                if let Some(handler) = app_handle.state::<AppState>().event_handler.lock().await.as_ref() {
+                    handler.send(event).ok();
+                }
             }
             else => break,
         }
@@ -256,6 +260,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            command::listen_backend_event,
+            command::unlisten_backend_event,
             command::request_state_sync,
             command::get_full_state,
             command::get_third_party_notices,

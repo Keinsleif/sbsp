@@ -1,4 +1,5 @@
-use tauri::AppHandle;
+use sbsp_backend::api::client::ServiceEntry;
+use tauri::{AppHandle, ipc::Channel};
 
 use crate::AppState;
 
@@ -35,10 +36,10 @@ pub async fn disconnect_from_server(state: tauri::State<'_, AppState>) -> Result
 
 #[tauri::command]
 pub async fn start_server_discovery(
-    app_handle: AppHandle,
     state: tauri::State<'_, AppState>,
+    channel: Channel<Vec<ServiceEntry>>,
 ) -> Result<(), String> {
-    state.start_discovery(app_handle).await;
+    state.start_discovery(channel).await;
     Ok(())
 }
 

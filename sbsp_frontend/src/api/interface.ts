@@ -98,11 +98,10 @@ export interface IBackendRemoteAdapter {
   getServerAddress(): Promise<string | null>;
   connectToServer(address: string, password: string | null): Promise<void>;
   disconnectFromServer(): void;
-  startServerDiscovery(): void;
+  startServerDiscovery(callback: (serviceEntry: ServiceEntry[]) => void): void;
   stopServerDiscovery(): void;
   requestFileList(): void;
 
   onConnectionStatusChanged(callback: (isConnected: boolean) => void): Promise<UnlistenFn>;
-  onRemoteDiscoveryUpdate(callback: (serviceEntry: ServiceEntry[]) => void): Promise<UnlistenFn>;
   onFileListUpdate(callback: (fileList: FileList[]) => void): Promise<UnlistenFn>;
 }

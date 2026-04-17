@@ -32,7 +32,8 @@
     variant="outlined"
     density="compact"
     autocomplete="off"
-    rows="0"
+    rows="1"
+    auto-grow
     no-resize
     @blur="save"
     @keydown.esc="
@@ -45,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 
 const text = defineModel<string | null>({ default: '' });
 const props = withDefaults(
@@ -62,10 +63,10 @@ const props = withDefaults(
 );
 const emit = defineEmits(['update']);
 
-const innerText = ref(text.value != null ? text.value : '');
+const innerText = ref(text.value ?? '');
 
 watch(text, () => {
-  innerText.value = text.value != null ? text.value : '';
+  innerText.value = text.value ?? '';
 });
 
 const save = () => {
@@ -85,14 +86,12 @@ const onTabInput = (event: KeyboardEvent) => {
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
 
-  textarea.setRangeText('\t', start, end, 'end');
-  const inputEvent = new InputEvent('input', {
-    bubbles: true,
-    cancelable: false,
-    inputType: 'insertText',
-    data: '\t',
+  const value = innerText.value;
+  innerText.value = value.substring(0, start) + '\t' + value.substring(end);
+
+  nextTick(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + 1;
   });
-  textarea.dispatchEvent(inputEvent);
 };
 </script>
 
