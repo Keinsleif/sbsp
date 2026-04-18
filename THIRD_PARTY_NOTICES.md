@@ -5736,9 +5736,10 @@ limitations under the License.
     - [unicase 2.9.0]( https://github.com/seanmonstar/unicase )
     - [unicode-segmentation 1.13.2]( https://github.com/unicode-rs/unicode-segmentation )
     - [url 2.5.8]( https://github.com/servo/rust-url )
-    - [uuid 1.23.0]( https://github.com/uuid-rs/uuid )
+    - [uuid 1.23.1]( https://github.com/uuid-rs/uuid )
     - [value-bag 1.12.0]( https://github.com/sval-rs/value-bag )
     - [wasi 0.11.1+wasi-snapshot-preview1]( https://github.com/bytecodealliance/wasi )
+    - [wasip2 1.0.3+wasi-0.2.9]( https://github.com/bytecodealliance/wasi-rs )
     - [wasm-bindgen-futures 0.4.68]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures )
     - [wasm-bindgen-macro-support 0.2.118]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro-support )
     - [wasm-bindgen-macro 0.2.118]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro )
@@ -5748,6 +5749,7 @@ limitations under the License.
     - [web_atoms 0.2.3]( https://github.com/servo/html5ever )
     - [window-vibrancy 0.6.0]( https://github.com/tauri-apps/tauri-plugin-vibrancy )
     - [wit-bindgen 0.51.0]( https://github.com/bytecodealliance/wit-bindgen )
+    - [wit-bindgen 0.57.1]( https://github.com/bytecodealliance/wit-bindgen )
     - [wry 0.54.4]( https://github.com/tauri-apps/wry )
     - [xattr 1.6.1]( https://github.com/Stebalien/xattr )
 
@@ -9030,7 +9032,7 @@ limitations under the License.
     - [r-efi 5.3.0]( https://github.com/r-efi/r-efi )
     - [r-efi 6.0.0]( https://github.com/r-efi/r-efi )
     - [rand 0.10.1]( https://github.com/rust-random/rand )
-    - [rand 0.8.5]( https://github.com/rust-random/rand )
+    - [rand 0.8.6]( https://github.com/rust-random/rand )
     - [rand 0.9.4]( https://github.com/rust-random/rand )
     - [rand_chacha 0.9.0]( https://github.com/rust-random/rand )
     - [raw-window-handle 0.6.2]( https://github.com/rust-windowing/raw-window-handle )
@@ -9079,7 +9081,6 @@ limitations under the License.
     - [unic-ucd-version 0.9.0]( https://github.com/open-i18n/rust-unic/ )
     - [unicode-ident 1.0.24]( https://github.com/dtolnay/unicode-ident )
     - [utf-8 0.7.6]( https://github.com/SimonSapin/rust-utf8 )
-    - [wasip2 1.0.2+wasi-0.2.9]( https://github.com/bytecodealliance/wasi-rs )
     - [wasip3 0.4.0+wasi-0.3.0-rc-2026-01-06]( https://github.com/bytecodealliance/wasi-rs )
     - [wasm-streams 0.5.0]( https://github.com/MattiasBuelens/wasm-streams/ )
     - [winapi-i686-pc-windows-gnu 0.4.0]( https://github.com/retep998/winapi-rs )
@@ -9377,7 +9378,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [webpki-root-certs 1.0.6]( https://github.com/rustls/webpki-roots )
+    - [webpki-root-certs 1.0.7]( https://github.com/rustls/webpki-roots )
 
 ```text
 # Community Data License Agreement - Permissive - Version 2.0
@@ -11367,7 +11368,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Used by
 
     - [tokio-util 0.7.18]( https://github.com/tokio-rs/tokio )
-    - [tokio 1.52.0]( https://github.com/tokio-rs/tokio )
+    - [tokio 1.52.1]( https://github.com/tokio-rs/tokio )
 
 ```text
 MIT License
