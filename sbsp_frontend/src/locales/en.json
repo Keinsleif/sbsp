@@ -263,7 +263,8 @@
     "cueList": {},
     "duration": "Duration",
     "footBar": {
-      "cueCountSuffix": "cues"
+      "cueCountSuffix": "cues",
+      "processingIndicator": "Processing {size} files"
     },
     "name": "Name",
     "notes": "Notes",

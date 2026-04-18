@@ -261,7 +261,8 @@
     },
     "duration": "長さ",
     "footBar": {
-      "cueCountSuffix": "キュー"
+      "cueCountSuffix": "キュー",
+      "processingIndicator": "{size} 個のファイルを処理中"
     },
     "name": "名前",
     "notes": "備考",
