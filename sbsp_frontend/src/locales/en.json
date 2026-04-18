@@ -221,9 +221,11 @@
         "mode": {
           "concurrency": "Concurrency",
           "label": "Group Mode",
-          "playlist": "Playlist"
+          "playlist": "Playlist",
+          "startFirst": "Start First"
         },
-        "title": "Group"
+        "title": "Group",
+        "advanceCursorInto": "Advance cursor into Group"
       },
       "input": {
         "curve": "Curve",

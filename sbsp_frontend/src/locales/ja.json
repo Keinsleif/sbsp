@@ -25,7 +25,8 @@
       "startNumber": "開始番号",
       "title": "キュー番号の振り直し",
       "prefix": "接頭辞",
-      "suffix": "接尾辞"
+      "suffix": "接尾辞",
+      "preview": "プレビュー"
     },
     "save": {
       "exportSettingsFilter": "グローバル設定ファイル"
@@ -220,9 +221,11 @@
         "mode": {
           "concurrency": "同時実行",
           "label": "グループ実行モード",
-          "playlist": "プレイリスト"
+          "playlist": "プレイリスト",
+          "startFirst": "先頭を開始"
         },
-        "title": "グループ"
+        "title": "グループ",
+        "advanceCursorInto": "実行時にカーソルをグループ内に進める"
       },
       "input": {
         "curve": "カーブ",

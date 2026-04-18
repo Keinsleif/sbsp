@@ -11,7 +11,7 @@
       :items="[
         { value: 'playlist', name: t('main.bottomEditor.group.mode.playlist') },
         { value: 'concurrency', name: t('main.bottomEditor.group.mode.concurrency') },
-        { value: 'startFirst', name: 'Start First' },
+        { value: 'startFirst', name: t('main.bottomEditor.group.mode.startFirst') },
       ]"
       item-value="value"
       item-title="name"
@@ -34,7 +34,7 @@
       v-model="enter"
       hide-details
       density="compact"
-      :label="'Advance cursor into Group'"
+      :label="t('main.bottomEditor.group.advanceCursorInto')"
       @update:model-value="saveEditorValue"
     />
   </v-sheet>
