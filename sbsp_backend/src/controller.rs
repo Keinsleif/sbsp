@@ -234,9 +234,16 @@ impl CueController {
             && let CueParam::Group { mode, children } = &cue.params
             && let GroupMode::StartFirst { enter } = mode
             && *enter
-            && let Some(first_cue) = children.first()
         {
-            Some(first_cue.id)
+            if let Some(target_cue) = children.get(1) {
+                Some(target_cue.id)
+            } else if let Some(first_cue) = children.first() {
+                Some(first_cue.id)
+            } else {
+                self.model_handle
+                .get_next_cue_id_by_id(&playback_cursor)
+                .await
+            }
         } else {
             self.model_handle
                 .get_next_cue_id_by_id(&playback_cursor)
