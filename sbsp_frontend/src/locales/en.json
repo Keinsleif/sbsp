@@ -221,9 +221,11 @@
         "mode": {
           "concurrency": "Concurrency",
           "label": "Group Mode",
-          "playlist": "Playlist"
+          "playlist": "Playlist",
+          "startFirst": "Start First"
         },
-        "title": "Group"
+        "title": "Group",
+        "advanceCursorInto": "Advance cursor into Group"
       },
       "input": {
         "curve": "Curve",
@@ -263,7 +265,8 @@
     "cueList": {},
     "duration": "Duration",
     "footBar": {
-      "cueCountSuffix": "cues"
+      "cueCountSuffix": "cues",
+      "processingIndicator": "Processing {size} files"
     },
     "name": "Name",
     "notes": "Notes",

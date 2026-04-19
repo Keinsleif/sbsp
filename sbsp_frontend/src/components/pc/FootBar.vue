@@ -15,6 +15,13 @@
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </v-sheet>
     <v-sheet class="mr-0 ml-auto d-flex align-center">
+      <div v-show="assetResult.processing.size > 0" class="d-flex align-center ga-1 mr-4">
+        <v-progress-circular
+          indeterminate="disable-shrink"
+          size="16"
+        />
+        {{ t('main.footBar.processingIndicator', { size: assetResult.processing.size }) }}
+      </div>
       <v-btn
         v-if="side == 'host'"
         :icon="mdiServer"
@@ -51,12 +58,14 @@ import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useApi, side } from '../../api';
+import { useAssetResult } from '../../stores/assetResult';
 
 const { t } = useI18n();
 
 const showModel = useShowModel();
 const uiState = useUiState();
 const api = useApi();
+const assetResult = useAssetResult();
 
 const openSettings = async () => {
   uiState.isSettingsDialogOpen = true;
