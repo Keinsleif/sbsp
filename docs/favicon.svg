@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="160" height="160" viewBox="0 0 160 160">
+  <rect x="2" y="2" width="156" height="156" rx="20" stroke="black" stroke-width="2" fill="#E0F2F7"/>
+
+  <polygon points="60,50 110,80 60,110" fill="#1976D2"/>
+
+  <rect x="22" y="50" width="8" height="60" rx="2" fill="#607D8B"/>
+  <rect x="37" y="60" width="8" height="40" rx="2" fill="#607D8B"/>
+  <rect x="7" y="70" width="8" height="20" rx="2" fill="#607D8B"/>
+
+  <rect x="130" y="50" width="8" height="60" rx="2" fill="#42A5F5"/>
+  <rect x="145" y="60" width="8" height="40" rx="2" fill="#42A5F5"/>
+  <rect x="115" y="70" width="8" height="20" rx="2" fill="#42A5F5"/>
+
+  <text x="80" y="40" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#333333" text-anchor="middle">SBS</text>
+
+  <text x="80" y="145" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#333333" text-anchor="middle">Player</text>
+</svg>
