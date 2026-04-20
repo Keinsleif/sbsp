@@ -9,7 +9,7 @@ members = [
 
 [workspace.package]
 authors = ["Keinsleif"]
-version = "2.1.0"
+version = "2.2.0"
 edition = "2024"
 license = "Elastic-2.0"
 homepage = "https://keinsleif.github.io/sbsp/docs/"
