@@ -305,11 +305,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             log::error!("Invalid command received.")
                         }
                     }
-                    Message::Ping(bytes) => {
-                        if socket.send(Message::Pong(bytes)).await.is_err() {
-                            log::info!("WebSocket client disconnected (send error).");
-                            break;
-                        }
+                    Message::Ping(bytes) if socket.send(Message::Pong(bytes.clone())).await.is_err() => {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
                     }
                     Message::Pong(bytes) => {
                         if let Ok(time_bytes) = bytes.to_vec().try_into() {

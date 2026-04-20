@@ -1,3 +1,6 @@
+mod volume;
+mod envelope;
+
 use std::{
     f32::consts::SQRT_2,
     num::NonZero,
@@ -17,11 +20,12 @@ use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
 use crate::{
-    engine::audio_engine::AudioCommandData,
-    model::cue::audio::{Decibels, Easing, FadeParam},
+    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
+    model::cue::audio::{Decibels, Easing, EnvelopeParam, FadeParam},
 };
 
 use super::lowcost_skip::SkipDuration;
+use volume::Volume;
 
 const MAX_CHANNELS: u16 = 128;
 
@@ -215,74 +219,6 @@ impl AudioSourceHandle {
     }
 }
 
-struct VolumeFadeInfo {
-    pub from: Decibels,
-    pub to: Decibels,
-    pub elapsed: f64,
-    pub fade_param: FadeParam,
-}
-
-struct Volume {
-    pub volume: Decibels,
-    pub fade_info: Option<VolumeFadeInfo>,
-}
-
-impl Volume {
-    pub fn new(volume: Decibels) -> Self {
-        Self {
-            volume,
-            fade_info: None,
-        }
-    }
-
-    pub fn new_with_fade(init: Decibels, target: Decibels, fade_param: FadeParam) -> Self {
-        Self {
-            volume: init,
-            fade_info: Some(VolumeFadeInfo {
-                from: init,
-                to: target,
-                elapsed: 0.0,
-                fade_param,
-            }),
-        }
-    }
-
-    pub fn set_volume(&mut self, volume: Decibels, fade_param: FadeParam) {
-        if let Some(info) = self.fade_info.as_mut() {
-            info.from = self.volume;
-            info.to = volume;
-            info.elapsed = 0.0;
-            info.fade_param = fade_param;
-        } else {
-            self.fade_info = Some(VolumeFadeInfo {
-                from: self.volume,
-                to: volume,
-                elapsed: 0.0,
-                fade_param,
-            });
-        }
-    }
-
-    pub fn update(&mut self, dt: f64) -> bool {
-        if let Some(info) = self.fade_info.as_mut() {
-            if info.elapsed >= info.fade_param.duration {
-                self.volume = info.to;
-                return true;
-            }
-
-            let progress =
-                info.fade_param
-                    .easing
-                    .get_factor(info.elapsed / info.fade_param.duration) as f32;
-
-            self.volume = info.from + (info.to - info.from) * progress;
-
-            info.elapsed += dt;
-        }
-        false
-    }
-}
-
 pub struct ChannelMapping {
     input_channels: usize,
     output_channels: usize,
@@ -350,6 +286,7 @@ pub struct AudioSourceSettings {
     pub fadein_param: Option<FadeParam>,
     pub volume: Decibels,
     pub channel_mapping: ChannelMapping,
+    pub envelope: Vec<EnvelopeParam>,
 }
 
 impl From<&AudioCommandData> for AudioSourceSettings {
@@ -362,6 +299,7 @@ impl From<&AudioCommandData> for AudioSourceSettings {
             fadein_param: value.fade_in_param,
             volume: value.volume,
             channel_mapping: ChannelMapping::auto_map(2, 2),
+            envelope: value.envelope.clone(),
         }
     }
 }
@@ -421,6 +359,7 @@ where
     current_span_sample_rate: SampleRate,
     control_volume: Volume,
     volume: Volume,
+    envelope: Envelope,
     output_buffer: Box<[Sample]>,
 }
 
@@ -443,6 +382,7 @@ where
             Volume::new(Decibels::IDENTITY)
         };
         let volume_db = settings.volume;
+        let envelope = settings.envelope.clone();
         let output_buffer = vec![0.0; settings.channel_mapping.output_channels].into_boxed_slice();
         let update_interval = Self::calculate_interval(&sample_rate);
 
@@ -482,6 +422,7 @@ where
                 update_interval,
                 control_volume,
                 volume: Volume::new(volume_db),
+                envelope: Envelope::new(envelope, duration),
             },
             AudioSourceHandle {
                 shared,
@@ -635,7 +576,8 @@ where
             self.volume.update(dt);
 
             if Self::is_advancing(state) {
-                let factor = self.control_volume.volume + self.volume.volume;
+                let factor = self.control_volume.volume + self.volume.volume + self.envelope.update(self.offset_position + self.playing_frames_counted as f64
+                        / self.current_span_sample_rate.get() as f64);
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];
@@ -725,6 +667,7 @@ where
             self.shared
                 .position
                 .store(self.offset_position.to_bits(), Ordering::Release);
+            self.envelope.seek(pos.as_secs_f64());
             self.playing_frames_counted = 0;
             self.frames_counted = 0;
             self.current_channel = 0;
