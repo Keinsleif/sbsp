@@ -23,6 +23,12 @@
         >
           {{ t('main.bottomEditor.timeLevels.title') }}
         </v-tab>
+        <v-tab
+          density="compact"
+          value="envelope"
+        >
+          {{ 'Envelope' }}
+        </v-tab>
       </v-tabs>
     </div>
     <div v-show="selectedCue != null && selectedCue.params.type == 'fade'">
@@ -150,6 +156,16 @@
         />
       </v-tabs-window-item>
       <v-tabs-window-item
+        value="envelope"
+        reverse-transition="false"
+        transition="false"
+      >
+        <audio-envelope-editor
+          v-model="selectedCue"
+          @update="edited"
+        />
+      </v-tabs-window-item>
+      <v-tabs-window-item
         value="fade"
         reverse-transition="false"
         transition="false"
@@ -193,6 +209,7 @@ import FadeBasicEditor from '../editor/FadeBasicEditor.vue';
 import { useI18n } from 'vue-i18n';
 import PlaybackBasicEditor from '../editor/PlaybackBasicEditor.vue';
 import GroupBasicEditor from '../editor/GroupBasicEditor.vue';
+import AudioEnvelopeEditor from '../editor/AudioEnvelopeEditor.vue';
 import type { CueChain } from '../../types/CueChain';
 
 const { t } = useI18n();
