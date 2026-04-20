@@ -291,3 +291,23 @@ export const getCueIcon = (type: string): string | undefined => {
 };
 
 export const firstUpper = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+export const faderToDecibels = (fader: number): number => {
+  if (fader > -10) {
+    return fader;
+  } else if (fader > -25) {
+    return 2 * (fader + 10) - 10;
+  } else {
+    return 4 * (fader + 25) - 40;
+  }
+};
+
+export const decibelsToFader = (decibels: number): number => {
+  if (decibels > -10) {
+    return decibels;
+  } else if (decibels > -40) {
+    return (decibels + 10) / 2 - 10;
+  } else {
+    return (decibels + 40) / 4 - 25;
+  }
+};

@@ -38,27 +38,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import VolumeInput from './VolumeInput.vue';
-import { debounce } from '../../utils';
-
-const faderToDecibels = (fader: number): number => {
-  if (fader > -10) {
-    return fader;
-  } else if (fader > -25) {
-    return 2 * (fader + 10) - 10;
-  } else {
-    return 4 * (fader + 25) - 40;
-  }
-};
-
-const decibelsToFader = (decibels: number): number => {
-  if (decibels > -10) {
-    return decibels;
-  } else if (decibels > -40) {
-    return (decibels + 10) / 2 - 10;
-  } else {
-    return (decibels + 40) / 4 - 25;
-  }
-};
+import { debounce, decibelsToFader, faderToDecibels } from '../../utils';
 
 const props = withDefaults(
   defineProps<{
