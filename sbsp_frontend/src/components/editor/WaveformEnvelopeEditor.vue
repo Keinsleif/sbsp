@@ -266,14 +266,18 @@ type Segment = {
   volume: number;
 };
 
-const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : []);
-watch(selectedCue, () => segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : []);
 const dragging = ref<{
   index: number;
   type: 'volume' | 'start' | 'end';
   dragged: boolean;
 } | null>(null);
 const selectedIdx = ref<number | null>(null);
+const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : []);
+watch(selectedCue, () => {
+  dragging.value = null;
+  selectedIdx.value = null;
+  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : [];
+});
 
 const linePath = computed<{
   dot: string;
