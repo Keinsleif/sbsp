@@ -131,7 +131,11 @@ const props = withDefaults(
 const contentHeight = computed(() => props.heightPx - 4);
 
 const metadata = computed(() => (props.targetId ? assetResult.getMetadata(props.targetId) : null));
-const timeRange = computed(() => {
+const timeRange = computed<{
+  start: number;
+  end: number;
+  delta: number;
+}>(() => {
   const duration = metadata.value?.duration || 1;
   const start = props.startTime != null && duration != null ? props.startTime / duration : 0;
   const end = props.endTime != null && duration != null ? props.endTime / duration : 1;
