@@ -28,6 +28,7 @@ export default defineConfig({
         text: 'インターフェース',
         items: [
           { text: 'メイン画面', link: '/usage/ui/main' },
+          { text: '基本エディタ', link: '/usage/ui/basic_editor' },
           { text: '設定画面', link: '/usage/ui/settings' },
         ]
       },

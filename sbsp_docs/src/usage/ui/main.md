@@ -77,7 +77,7 @@
 #### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">11</text></svg> キューのPre-Wait
 
 キューに設定されたPre-Waitを表示します。
-Pre-Waitはキューが実行されるまでの待機時間を表します。詳細は　　　を参照してください。
+Pre-Waitはキューが実行されるまでの待機時間を表します。
 キューエディタの基本タブや、編集モード時にダブルクリックすることで編集できます。
 
 キューが実行前待機中である場合は待機の進捗が表示されます。
@@ -89,13 +89,6 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。詳
 
 キューが実行中である場合は時間の進捗が表示されます。
 
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">13</text></svg> キューのPost-Wait
-
-キューに連鎖モードが設定されている場合、実行されてから連鎖がトリガーされるまでの時間を表示します。
-キューエディタの基本タブや、編集モード時にダブルクリックすることで編集できます。
-
-キューが実行中である場合は連鎖がトリガーされるまでの進捗が表示されます。
-
 ::: info NOTE
 時間を表示する列のヘッダーにあるアイコンをクリックすることで以下の２つの表示モードを切り替えることができます。
 
@@ -106,14 +99,14 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。詳
 
 ---
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">14</text></svg> キューのリピート設定
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">13</text></svg> キューのリピート設定
 
 - 音声キューがリピート設定されている場合
 - グループキューが"プレイリスト"モードに設定されており、リピート設定されている場合
 
 にリピートアイコン（<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><title>repeat</title><path d="M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z" fill="white" /></svg>）を表示します。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">15</text></svg> キューの連鎖モード設定
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="blue" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">14</text></svg> キューの連鎖モード設定
 
 連鎖モードが"自動継続"の場合は<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><title>arrow-down</title><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" fill="white" /></svg>
 連鎖モードが"自動追従"の場合は<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20"><title>arrow-expand-down</title><path d="M22,4V2H2V4H11V18.17L5.5,12.67L4.08,14.08L12,22L19.92,14.08L18.5,12.67L13,18.17V4H22Z" fill="white" /></svg>
@@ -121,7 +114,7 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。詳
 
 ## サイドパネル
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#349e33" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">16</text></svg> 実行中のキュー
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#349e33" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="14pt">15</text></svg> 実行中のキュー
 
 実行中のキューを表示します。
 キューの番号、名前、経過時間、残り時間、再生中のリピート設定等が表示されます。
@@ -130,88 +123,52 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。詳
 
 ## 下部エディタ
 
-### "基本"タブ
+ここでは、選択したキューについて、様々な設定を変更することができます。
 
-選択中のキューについて、情報や設定を変更することができます。
-（選択中のキューであり、カーソルとは関係ありません。）
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">16</text></svg> エディタタブ
 
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">17</text></svg> キュー番号
+選択しているキューについて、"基本" タブや、キューの種類に応じて様々な種類のエディタのタブが表示されます。
+タブをクリックすることでそのエディタを開きます。
 
-キューに設定される番号を編集します。
+"基本" エディタに関しては[こちらのページ](./basic_editor.md)の説明を参照してください。
 
-**再生される順序とは関係ありません。**
-数値だけでなく、文字列も使用することができます。
+それぞれのキューのエディタについてはキューの説明を参照してください。
 
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">18</text></svg> キューの名前
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">17</text></svg> エディタ内容
 
-キューに設定される名称を編集します。
-空欄にすることで、キューの種類や設定に応じて自動的に名称が設定されます。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">19</text></svg> キューのノート
-
-キューに設定されるノートを編集します。
-上部ヘッダーの[ノート部分](#3-カーソルのあるキューのノート)に表示されるため、タイミング等の情報を記入できます。
-[タイムスタンプ挿入ボタン](#25-ノートへのタイムスタンプ挿入ボタン)を利用することでキューのタイムスタンプを記録できます。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">20</text></svg> キューの長さ
-
-音声キューの場合はファイルの音声の長さが表示され編集はできません。
-待機キューの場合は待機時間を、フェードキューの場合はフェードにかける時間を編集することができます。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">21</text></svg> キューのPre-Wait
-
-キュー実行前の待機時間を編集できます。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">22</text></svg> キューの連鎖モード
-
-キューの連鎖モードを編集できます。
-
-- **連鎖しない**：キュー終了後に何も行いません
-- **自動継続**：キュー開始後にPost-Wait分待機し、対象のキューを実行します。
-- **自動追従**：キュー終了後に対象のキューを実行します。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">23</text></svg> キュー連鎖までの待機時間
-
-キューの連鎖モードが"**自動継続**"の場合、キューの実行から対象のキューを実行するまでの時間を編集できます。
-キューの連鎖モードが"**自動追従**"の場合、キューの長さが表示されます。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">24</text></svg> キュー連鎖の対象
-
-キューの連鎖モードが設定されている時、連鎖する対象のキューを編集できます。
-デフォルトではキューリストの次のキューが対象となっています。
-
-#### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">25</text></svg> ノートへのタイムスタンプ挿入ボタン
-
-キューが実行中の時、現在の経過時間をノートの挿入します。
-タイミングをノートに記入する際に便利です。
+エディタの内容が表示される部分です。キューを選択していない場合は何も表示されません。
 
 ## フッター
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">26</text></svg> 編集・実行モードの切り替え
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">18</text></svg> 編集・実行モードの切り替え
 
 編集モードと実行モードを切り替える事ができます。
 
 実行モードでは、[キュー追加ボタン](#5-新規キューの追加ボタン)、[下部エディタ](#下部エディタ)を非表示にします。
 また、[キューリスト](#キューリスト)におけるダブルクリックの編集ができなくなります。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">27</text></svg> キューの総数
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">19</text></svg> キューの総数
 
 リストに含まれるすべてのキューの数を表示します。
 これはグループキュー内部のキューも含まれます。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">28</text></svg> サーバーパネルを開く
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">20</text></svg> サーバーパネルを開く
 
 リモート操作用のサーバー管理パネルを開きます。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">29</text></svg> 下部エディタの表示切り替え
+::: warning NOTE
+この機能を利用するにはライセンス認証が必要です。
+:::
+
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">21</text></svg> 下部エディタの表示切り替え
 
 下部エディタの表示・非表示を切り替えます。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">30</text></svg> サイドパネルの表示切り替え
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">22</text></svg> サイドパネルの表示切り替え
 
 サイドパネルの表示・非表示を切り替えます。
 
-### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">31</text></svg> 設定画面を開く
+### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">23</text></svg> 設定画面を開く
 
 [設定画面](./settings)を開きます。
 
