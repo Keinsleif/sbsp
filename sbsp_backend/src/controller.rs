@@ -668,6 +668,7 @@ mod tests {
                     pan: 0.0,
                     repeat: false,
                     sound_type: SoundType::Streaming,
+                    envelope: Vec::new(),
                 }),
             });
         }
