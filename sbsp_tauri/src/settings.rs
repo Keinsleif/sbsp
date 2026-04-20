@@ -117,6 +117,7 @@ impl Default for TemplateSettings {
                     pan: 0.0,
                     repeat: false,
                     sound_type: SoundType::Streaming,
+                    envelope: Vec::new(),
                 }),
             },
             wait: Cue {
