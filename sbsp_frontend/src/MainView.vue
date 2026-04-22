@@ -6,7 +6,7 @@
 import { useHotkey } from 'vuetify';
 import { useUiState } from './stores/uistate';
 import { useShowModel } from './stores/showmodel';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useShowState } from './stores/showstate';
 import { PlaybackStatus } from './types/PlaybackStatus';
 import { useI18n } from 'vue-i18n';
@@ -247,47 +247,8 @@ if (api.host) {
   );
 }
 
-const goHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.go != null ? uiSettings.settings.hotkey.playback.go : undefined,
-);
-const loadHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.load != null ? uiSettings.settings.hotkey.playback.load : undefined,
-);
-const pauseAndResumeHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.pauseAndResume != null
-    ? uiSettings.settings.hotkey.playback.pauseAndResume
-    : undefined,
-);
-const pauseAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.pauseAll != null ? uiSettings.settings.hotkey.playback.pauseAll : undefined,
-);
-const resumeAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.resumeAll != null ? uiSettings.settings.hotkey.playback.resumeAll : undefined,
-);
-const stopHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.stop != null ? uiSettings.settings.hotkey.playback.stop : undefined,
-);
-const stopAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.stopAll != null ? uiSettings.settings.hotkey.playback.stopAll : undefined,
-);
-const seekForwardHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.seekForward != null
-    ? uiSettings.settings.hotkey.playback.seekForward
-    : undefined,
-);
-const seekBackwardHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.seekBackward != null
-    ? uiSettings.settings.hotkey.playback.seekBackward
-    : undefined,
-);
-const audioToggleRepeatHotkey = computed(() =>
-  uiSettings.settings.hotkey.audioAction.toggleRepeat != null
-    ? uiSettings.settings.hotkey.audioAction.toggleRepeat
-    : undefined,
-);
-
 useHotkey(
-  goHotkey,
+  uiSettings.settings.hotkey.playback.go || undefined,
   () => {
     api.sendGo();
   },
@@ -297,7 +258,7 @@ useHotkey(
 );
 
 useHotkey(
-  loadHotkey,
+  uiSettings.settings.hotkey.playback.load || undefined,
   () => {
     for (let cueId of uiState.selectedRows) {
       api.sendLoad(cueId);
@@ -309,7 +270,7 @@ useHotkey(
 );
 
 useHotkey(
-  pauseAndResumeHotkey,
+  uiSettings.settings.hotkey.playback.pauseAndResume || undefined,
   () => {
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
       if ((['preWaiting', 'playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
@@ -327,7 +288,7 @@ useHotkey(
 );
 
 useHotkey(
-  pauseAllHotkey,
+  uiSettings.settings.hotkey.playback.pauseAll || undefined,
   () => {
     api.sendPauseAll();
   },
@@ -337,7 +298,7 @@ useHotkey(
 );
 
 useHotkey(
-  resumeAllHotkey,
+  uiSettings.settings.hotkey.playback.resumeAll || undefined,
   () => {
     api.sendResumeAll();
   },
@@ -347,7 +308,7 @@ useHotkey(
 );
 
 useHotkey(
-  stopHotkey,
+  uiSettings.settings.hotkey.playback.stop || undefined,
   () => {
     for (let cueId of uiState.selectedRows) {
       api.sendStop(cueId);
@@ -359,7 +320,7 @@ useHotkey(
 );
 
 useHotkey(
-  stopAllHotkey,
+  uiSettings.settings.hotkey.playback.stopAll || undefined,
   () => {
     api.sendStopAll();
   },
@@ -369,7 +330,7 @@ useHotkey(
 );
 
 useHotkey(
-  seekForwardHotkey,
+  uiSettings.settings.hotkey.playback.seekForward || undefined,
   () => {
     console.log('key triggered');
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
@@ -382,7 +343,7 @@ useHotkey(
 );
 
 useHotkey(
-  seekBackwardHotkey,
+  uiSettings.settings.hotkey.playback.seekBackward || undefined,
   () => {
     if (uiState.selected != null && uiState.selected in showState.activeCues) {
       api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
@@ -394,7 +355,7 @@ useHotkey(
 );
 
 useHotkey(
-  audioToggleRepeatHotkey,
+  uiSettings.settings.hotkey.audioAction.toggleRepeat || undefined,
   () => {
     for (let cueId of uiState.selectedRows) {
       api.sendToggleRepeat(cueId);
