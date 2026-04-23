@@ -25,34 +25,36 @@ const seconds = defineModel<number | null>({ default: null });
 const props = withDefaults(
   defineProps<{
     acceptMinus?: boolean;
+    multiply?: number;
     max?: number | null;
   }>(),
   {
     max: null,
+    multiply: 1,
     acceptMinus: false,
   },
 );
 const emit = defineEmits(['update']);
 
-const formattedValue = ref(secondsToFormat(seconds.value));
+const formattedValue = ref(secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null));
 
-watch(seconds, () => {
-  formattedValue.value = secondsToFormat(seconds.value);
+watch([seconds, () => props.multiply], () => {
+  formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null);
 });
 
 const save = () => {
-  let innerValue = formatToSeconds(formattedValue.value, props.acceptMinus);
+  let innerValue = formatToSeconds(formattedValue.value, props.acceptMinus) / props.multiply;
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
   }
-  seconds.value = innerValue;
   if (seconds.value != innerValue) {
+    seconds.value = innerValue;
     emit('update');
   }
 };
 
 const reset = () => {
-  formattedValue.value = secondsToFormat(seconds.value);
+  formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null);
 };
 </script>
 
