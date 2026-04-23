@@ -253,7 +253,8 @@
         "skipLastSilence": "終了後の無音をスキップ",
         "startTime": "開始時間",
         "title": "時間と音量",
-        "volume": "音量"
+        "volume": "音量",
+        "envelopeVisible": "音量変化を表示"
       }
     },
     "chainMode": {

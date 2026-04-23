@@ -253,7 +253,8 @@
         "skipLastSilence": "Skip last silence",
         "startTime": "Start Time",
         "title": "Time & Levels",
-        "volume": "Volume"
+        "volume": "Volume",
+        "envelopeVisible": "Show envelope"
       }
     },
     "chainMode": {
