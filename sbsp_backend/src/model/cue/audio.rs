@@ -82,7 +82,7 @@ pub struct AudioCueParam {
     pub repeat: bool,
     pub sound_type: SoundType,
     #[serde(default)]
-    pub envelope: Vec<EnvelopeParam>,
+    pub envelope: Vec<EnvelopeSegment>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
@@ -103,7 +103,7 @@ impl Default for FadeParam {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct EnvelopeParam {
+pub struct EnvelopeSegment {
     pub start: f64,
     pub end: f64,
     pub volume: Decibels,

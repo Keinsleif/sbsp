@@ -21,7 +21,7 @@ use tokio::sync::oneshot;
 
 use crate::{
     engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
-    model::cue::audio::{Decibels, Easing, EnvelopeParam, FadeParam},
+    model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam},
 };
 
 use super::lowcost_skip::SkipDuration;
@@ -286,7 +286,7 @@ pub struct AudioSourceSettings {
     pub fadein_param: Option<FadeParam>,
     pub volume: Decibels,
     pub channel_mapping: ChannelMapping,
-    pub envelope: Vec<EnvelopeParam>,
+    pub envelope: Vec<EnvelopeSegment>,
 }
 
 impl From<&AudioCommandData> for AudioSourceSettings {

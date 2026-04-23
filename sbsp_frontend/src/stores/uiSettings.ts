@@ -53,6 +53,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
           volume: 0.0,
           pan: 0.0,
           repeat: false,
+          envelope: [],
         },
       },
       wait: {

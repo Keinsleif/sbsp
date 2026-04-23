@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     action::AudioAction,
     model::{
-        cue::audio::{Decibels, EnvelopeParam, FadeParam, SoundType},
+        cue::audio::{Decibels, EnvelopeSegment, FadeParam, SoundType},
         settings::ShowAudioSettings,
     },
 };
@@ -76,5 +76,5 @@ pub struct AudioCommandData {
     pub end_time: Option<f64>,
     pub fade_out_param: Option<FadeParam>,
     pub repeat: bool,
-    pub envelope: Vec<EnvelopeParam>,
+    pub envelope: Vec<EnvelopeSegment>,
 }

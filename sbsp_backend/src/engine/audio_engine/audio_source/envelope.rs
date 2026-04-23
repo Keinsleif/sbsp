@@ -1,13 +1,13 @@
-use crate::model::cue::audio::{Decibels, EnvelopeParam};
+use crate::model::cue::audio::{Decibels, EnvelopeSegment};
 
 pub struct Envelope {
-    segments: Vec<EnvelopeParam>,
+    segments: Vec<EnvelopeSegment>,
     current_idx: usize,
     duration: f64,
 }
 
 impl Envelope {
-    pub fn new(mut segments: Vec<EnvelopeParam>, duration: f64) -> Self {
+    pub fn new(mut segments: Vec<EnvelopeSegment>, duration: f64) -> Self {
         segments.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap());
         Self {
             segments,
@@ -73,14 +73,14 @@ impl Envelope {
 
 #[cfg(test)]
 mod tests {
-    use crate::{engine::audio_engine::audio_source::envelope::Envelope, model::cue::audio::{Decibels, EnvelopeParam}};
+    use crate::{engine::audio_engine::audio_source::envelope::Envelope, model::cue::audio::{Decibels, EnvelopeSegment}};
 
     #[test]
     fn update_normal() {
         let mut envelope = Envelope::new(vec![
-            EnvelopeParam { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
-            EnvelopeParam { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
-            EnvelopeParam { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
+            EnvelopeSegment { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
+            EnvelopeSegment { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
+            EnvelopeSegment { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
         ], 30.0);
 
         // start point
@@ -98,9 +98,9 @@ mod tests {
     #[test]
     fn seek() {
         let mut envelope = Envelope::new(vec![
-            EnvelopeParam { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
-            EnvelopeParam { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
-            EnvelopeParam { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
+            EnvelopeSegment { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
+            EnvelopeSegment { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
+            EnvelopeSegment { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
         ], 30.0);
 
         // end of second segment
