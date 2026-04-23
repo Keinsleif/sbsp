@@ -1,11 +1,14 @@
 <template>
-  <waveform-envelope-editor
-    v-model="selectedCue"
-    :height-px="100"
-    :start-time="range[0]"
-    :end-time="range[1]"
-    @update="saveEditorValue"
-  />
+  <v-sheet class="pa-3">
+    <waveform-envelope-editor
+      v-model="selectedCue"
+      :height-px="140"
+      :start-time="range[0]"
+      :end-time="range[1]"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      @update="saveEditorValue"
+    />
+  </v-sheet>
 </template>
 
 <script setup lang="ts">
@@ -13,8 +16,10 @@ import { ref, watch } from 'vue';
 import WaveformEnvelopeEditor from './WaveformEnvelopeEditor.vue';
 import type { Cue } from '../../types/Cue';
 import { useAssetResult } from '../../stores/assetResult';
+import { useShowState } from '../../stores/showstate';
 
 const assetResult = useAssetResult();
+const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
