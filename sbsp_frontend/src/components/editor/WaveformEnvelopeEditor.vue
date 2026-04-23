@@ -25,6 +25,7 @@
           const {x} = getSVGCoords(e);
           handleAddOrSplit(((x / svgWidth) - timeRange.start) / timeRange.delta);
         }"
+        @pointerdown="seek"
       >
         <rect
           :class="$style.waveform"
@@ -154,7 +155,9 @@ import { useElementSize, useEventListener, useMouseInElement, useParentElement, 
 import { secondsToFormat } from '../../utils';
 import { Cue } from '../../types/Cue';
 import { mdiMinus, mdiPlus, mdiTrashCan } from '@mdi/js';
+import { useApi } from '../../api';
 
+const api = useApi();
 const showState = useShowState();
 const assetResult = useAssetResult();
 
@@ -496,6 +499,23 @@ const removeSegment = () => {
       }
     }
     saveEditorValue();
+  }
+};
+
+const seek = (event: MouseEvent) => {
+  if (!props.disabled) return;
+  if (selectedCue.value == null || event.button != 0) {
+    return;
+  }
+  const activeCue = showState.activeCues[selectedCue.value.id];
+  if (activeCue == null) {
+    return;
+  }
+  const position
+    = (event.offsetX - timeRange.value.start * svgWidth.value)
+      / (svgWidth.value * (timeRange.value.delta));
+  if (position > 0 && position < 1) {
+    api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
 };
 </script>
