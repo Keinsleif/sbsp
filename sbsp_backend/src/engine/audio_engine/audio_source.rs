@@ -732,11 +732,3 @@ where
         result
     }
 }
-
-impl<I> Drop for AudioSource<I>
-where I: Source,
-{
-    fn drop(&mut self) {
-        println!("dropped.")
-    }
-}
