@@ -1,5 +1,64 @@
 <template>
-  <div>
+  <div class="d-flex flex-row ga-2">
+    <div class="d-flex flex-column align-center justify-center ga-2 mb-2">
+      <div class="d-flex flex-row align-center ga-2">
+        <time-input
+          v-model="timeRange.start"
+          width="175px"
+          :label="t('main.bottomEditor.timeLevels.startTime')"
+          :multiply="metadata?.duration || 1"
+          @update="emit('update')"
+          @pointerdown.stop
+        />
+        <v-tooltip target="cursor">
+          <template #activator="{ props: activatorProps }">
+            <v-btn
+              v-bind="activatorProps"
+              density="compact"
+              variant="outlined"
+              :icon="mdiSkipNext"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+              @click="skipFirstSilence"
+            />
+          </template>
+          <span>{{ t('main.bottomEditor.timeLevels.skipFirstSilence') }}</span>
+        </v-tooltip>
+      </div>
+      <div class="d-flex flex-row align-center ga-2">
+        <time-input
+          v-model="timeRange.end"
+          width="175px"
+          :label="t('main.bottomEditor.timeLevels.endTime')"
+          :multiply="metadata?.duration || 1"
+          @update="emit('update')"
+          @pointerdown.stop
+        />
+        <v-tooltip target="cursor">
+          <template #activator="{ props: activatorProps }">
+            <v-btn
+              v-bind="activatorProps"
+              density="compact"
+              variant="outlined"
+              :icon="mdiSkipPrevious"
+              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+              @click="skipLastSilence"
+            />
+          </template>
+          <span>{{ t('main.bottomEditor.timeLevels.skipLastSilence') }}</span>
+        </v-tooltip>
+      </div>
+      <v-btn
+        :prepend-icon="uiState.isEnvelopeVisible ? mdiEye : mdiEyeOff"
+        class="align-self-start"
+        density="compact"
+        color="white"
+        variant="outlined"
+        width="175px"
+        @click="uiState.isEnvelopeVisible = !uiState.isEnvelopeVisible"
+      >
+        {{ t('main.bottomEditor.timeLevels.envelopeVisible') }}
+      </v-btn>
+    </div>
     <div
       :style="{ height: `${props.heightPx}px` }"
       class="w-100 border-md"
@@ -56,6 +115,24 @@
           fill="blue"
         />
         <rect
+          :x="startPos - 10"
+          y="0"
+          width="20"
+          :height="contentHeight"
+          fill="transparent"
+          :style="{cursor: props.disabled ? '' : 'ew-resize'}"
+          @pointerdown="handlePointerDown($event, 0, 'hstart')"
+        />
+        <rect
+          :x="endPos - 10"
+          y="0"
+          width="20"
+          :height="contentHeight"
+          fill="transparent"
+          :style="{cursor: props.disabled ? '' : 'ew-resize'}"
+          @pointerdown="handlePointerDown($event, 0, 'hend')"
+        />
+        <rect
           v-show="position != 0"
           :style="playCursorStyle"
           x="0"
@@ -66,6 +143,7 @@
         />
         <g
           ref="parent"
+          v-show="uiState.isEnvelopeVisible"
         >
           <path
             :d="linePath.dot"
@@ -117,33 +195,32 @@
         </g>
       </svg>
     </div>
-    <v-btn
-      :icon="mdiPlus"
-      density="compact"
-      class="ma-2"
-      color="success"
-      variant="outlined"
-      :disabled="props.disabled"
-      @click="addSegment"
-    />
-    <v-btn
-      :icon="mdiMinus"
-      density="compact"
-      class="ma-2"
-      color="error"
-      variant="outlined"
-      :disabled="props.disabled || selectedIdx == null"
-      @click="removeSegment"
-    />
-    <v-btn
-      :icon="mdiTrashCan"
-      density="compact"
-      class="ma-2"
-      color="white"
-      variant="outlined"
-      :disabled="props.disabled"
-      @click="clearSegments"
-    />
+    <div class="d-flex flex-column ga-2 align-center justify-center">
+      <v-btn
+        :icon="mdiPlus"
+        density="compact"
+        color="success"
+        variant="outlined"
+        :disabled="props.disabled"
+        @click="addSegment"
+      />
+      <v-btn
+        :icon="mdiMinus"
+        density="compact"
+        color="error"
+        variant="outlined"
+        :disabled="props.disabled || selectedIdx == null"
+        @click="removeSegment"
+      />
+      <v-btn
+        :icon="mdiTrashCan"
+        density="compact"
+        color="white"
+        variant="outlined"
+        :disabled="props.disabled || !uiState.isEnvelopeVisible"
+        @click="clearSegments"
+      />
+    </div>
   </div>
 </template>
 
@@ -154,44 +231,81 @@ import { useShowState } from '../../stores/showstate';
 import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn, watchDebounced } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { Cue } from '../../types/Cue';
-import { mdiMinus, mdiPlus, mdiTrashCan } from '@mdi/js';
+import { mdiEye, mdiEyeOff, mdiMinus, mdiPlus, mdiSkipNext, mdiSkipPrevious, mdiTrashCan } from '@mdi/js';
 import { useApi } from '../../api';
+import { useI18n } from 'vue-i18n';
+import TimeInput from '../input/TimeInput.vue';
+import { useUiState } from '../../stores/uistate';
 
+const { t } = useI18n();
 const api = useApi();
 const showState = useShowState();
 const assetResult = useAssetResult();
+const uiState = useUiState();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 const envelopeParent = useTemplateRef('parent');
 const props = withDefaults(
   defineProps<{
-    startTime?: number | null;
-    endTime?: number | null;
     heightPx?: number;
     disabled?: boolean;
   }>(),
   {
-    startTime: 0,
-    endTime: 1,
     heightPx: 75,
     disabled: false,
   },
 );
 
-const contentHeight = computed(() => props.heightPx - 4);
+const MIN_GAP = 0.005;
 
+type Segment = {
+  start: number;
+  end: number;
+  volume: number;
+};
+
+const normSegments = (seg: Segment[]): Segment[] => {
+  let result = [...seg].sort((a, b) => a.start - b.start);
+  if (result.length > 0) {
+    result[0]!.start = 0;
+    result[result.length - 1]!.end = 1;
+  }
+  return result;
+};
+
+const buildTimeRange = () => {
+  const duration = metadata.value?.duration || 1;
+  const start = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.startTime || 0) / duration : 0;
+  const end = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
+  return { start, end, delta: end - start };
+};
+
+const dragging = ref<{
+  index: number;
+  type: 'volume' | 'start' | 'end' | 'hstart' | 'hend';
+  dragged: boolean;
+} | null>(null);
+const selectedIdx = ref<number | null>(null);
+const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
+
+watch(selectedCue, (newCue, oldCue) => {
+  if (newCue?.id != oldCue?.id || (selectedIdx.value != null && newCue?.params.type == 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
+    selectedIdx.value = null;
+  }
+  dragging.value = null;
+  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
+  timeRange.value = buildTimeRange();
+});
+
+const contentHeight = computed(() => props.heightPx - 4);
 const metadata = computed(() => (selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null));
-const timeRange = computed<{
+
+const timeRange = ref<{
   start: number;
   end: number;
   delta: number;
-}>(() => {
-  const duration = metadata.value?.duration || 1;
-  const start = props.startTime != null && duration != null ? props.startTime / duration : 0;
-  const end = props.endTime != null && duration != null ? props.endTime / duration : 1;
-  return { start, end, delta: end - start };
-});
+}>(buildTimeRange());
 
 const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
 const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
@@ -292,41 +406,12 @@ const saveEditorValue = () => {
   if (props.disabled) return;
   if (selectedCue.value?.params.type != 'audio') return;
   selectedCue.value.params.envelope = segments.value;
+
+  const duration = metadata.value?.duration || 1;
+  selectedCue.value.params.startTime = timeRange.value.start == 0 ? null : timeRange.value.start * duration;
+  selectedCue.value.params.endTime = timeRange.value.end == 1 ? null : timeRange.value.end * duration;
   emit('update');
 };
-
-const MIN_GAP = 0.005;
-
-type Segment = {
-  start: number;
-  end: number;
-  volume: number;
-};
-
-const normSegments = (seg: Segment[]): Segment[] => {
-  let result = [...seg].sort((a, b) => a.start - b.start);
-  if (result.length > 0) {
-    result[0]!.start = 0;
-    result[result.length - 1]!.end = 1;
-  }
-  return result;
-};
-
-const dragging = ref<{
-  index: number;
-  type: 'volume' | 'start' | 'end';
-  dragged: boolean;
-} | null>(null);
-const selectedIdx = ref<number | null>(null);
-const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
-
-watch(selectedCue, (newCue, oldCue) => {
-  if (newCue?.id != oldCue?.id || (selectedIdx.value != null && newCue?.params.type == 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
-    selectedIdx.value = null;
-  }
-  dragging.value = null;
-  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
-});
 
 const linePath = computed<{
   dot: string;
@@ -374,7 +459,7 @@ const getSVGCoords = (e: MouseEvent) => {
   return { x: clamp(svgPoint.x, 0, svgWidth.value), y: clamp(svgPoint.y, 0, contentHeight.value) };
 };
 
-const handlePointerDown = (e: PointerEvent, index: number, type: 'volume' | 'start' | 'end') => {
+const handlePointerDown = (e: PointerEvent, index: number, type: 'volume' | 'start' | 'end' | 'hstart' | 'hend') => {
   if (props.disabled) return;
   e.stopPropagation();
   if (type === 'start' && index === 0) return;
@@ -387,29 +472,54 @@ const handlePointerMove = (e: PointerEvent) => {
   dragging.value.dragged = true;
   const { x, y } = getSVGCoords(e);
 
-  const index = dragging.value.index;
-  const current = segments.value[index];
-  if (current == null) {
-    dragging.value = null;
-    return;
-  }
-  const prevSeg = segments.value[index - 1];
-  const nextSeg = segments.value[index + 1];
-
   switch (dragging.value.type) {
-    case 'volume':
+    case 'volume': {
+      const index = dragging.value.index;
+      const current = segments.value[index];
+      if (current == null) {
+        dragging.value = null;
+        return;
+      }
+
       current.volume = YToDecibels(y);
       break;
+    }
     case 'start': {
+      const index = dragging.value.index;
+      const current = segments.value[index];
+      if (current == null) {
+        dragging.value = null;
+        return;
+      }
+      const prevSeg = segments.value[index - 1];
+
       const minX = prevSeg ? prevSeg.end + MIN_GAP : 0;
       const maxX = current.end - MIN_GAP;
       current.start = clamp(((x / svgWidth.value) - timeRange.value.start) / timeRange.value.delta, minX, maxX);
       break;
     }
     case 'end': {
+      const index = dragging.value.index;
+      const current = segments.value[index];
+      if (current == null) {
+        dragging.value = null;
+        return;
+      }
+      const nextSeg = segments.value[index + 1];
+
       const minX = current.start + MIN_GAP;
       const maxX = nextSeg ? nextSeg.start - MIN_GAP : 1;
       current.end = clamp(((x / svgWidth.value) - timeRange.value.start) / timeRange.value.delta, minX, maxX);
+      break;
+    }
+    case 'hstart': {
+      timeRange.value.start = clamp(x / svgWidth.value, 0, timeRange.value.end);
+      timeRange.value.delta = timeRange.value.end - timeRange.value.start;
+      break;
+    }
+    case 'hend': {
+      timeRange.value.end = clamp(x / svgWidth.value, timeRange.value.start, 1);
+      timeRange.value.delta = timeRange.value.end - timeRange.value.start;
       break;
     }
   }
@@ -417,7 +527,7 @@ const handlePointerMove = (e: PointerEvent) => {
 
 const handlePointerUp = () => {
   if (dragging.value != null) {
-    if (!dragging.value.dragged) {
+    if (!dragging.value.dragged && !dragging.value.type.startsWith('h')) {
       selectedIdx.value = dragging.value.index;
     } else {
       saveEditorValue();
@@ -431,6 +541,7 @@ useEventListener(document, 'pointerup', handlePointerUp);
 
 const handleAddOrSplit = (svgX: number) => {
   if (props.disabled) return;
+  if (!uiState.isEnvelopeVisible) return;
   if (segments.value.length == 0) {
     segments.value.push({ start: 0, end: 1, volume: 0.5 });
     saveEditorValue();
@@ -471,7 +582,7 @@ const handleAddOrSplit = (svgX: number) => {
 };
 
 const clearSegments = () => {
-  if (props.disabled) return;
+  if (props.disabled || !uiState.isEnvelopeVisible) return;
   segments.value = [];
   selectedIdx.value = null;
   saveEditorValue();
@@ -479,12 +590,13 @@ const clearSegments = () => {
 
 const addSegment = () => {
   if (props.disabled) return;
+  uiState.isEnvelopeVisible = true;
   handleAddOrSplit(0.5);
   saveEditorValue();
 };
 
 const removeSegment = () => {
-  if (props.disabled) return;
+  if (props.disabled || !uiState.isEnvelopeVisible) return;
   if (selectedIdx.value != null) {
     segments.value.splice(selectedIdx.value, 1);
     if (selectedIdx.value == 0) {
@@ -517,6 +629,28 @@ const seek = (event: MouseEvent) => {
   if (position > 0 && position < 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
+};
+
+const skipFirstSilence = () => {
+  if (selectedCue.value == null) {
+    return;
+  }
+  const result = assetResult.get(selectedCue.value.id);
+  if (result == null || result.metadata.duration == null) return;
+  timeRange.value.start = clamp((result.startTime || 0) / result.metadata.duration, 0, timeRange.value.end);
+  timeRange.value.delta = timeRange.value.end - timeRange.value.start;
+  saveEditorValue();
+};
+
+const skipLastSilence = () => {
+  if (selectedCue.value == null) {
+    return;
+  }
+  const result = assetResult.get(selectedCue.value.id);
+  if (result == null || result.metadata.duration == null) return;
+  timeRange.value.end = clamp((result.endTime || 1) / result.metadata.duration, timeRange.value.start, 1);
+  timeRange.value.delta = timeRange.value.end - timeRange.value.start;
+  saveEditorValue();
 };
 </script>
 
