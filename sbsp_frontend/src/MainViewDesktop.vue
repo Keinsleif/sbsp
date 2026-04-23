@@ -140,6 +140,6 @@ const onCueEdited = debounce(() => {
     return;
   }
   api.updateCue(toRaw(selectedCue.value));
-}, 500);
+}, 200);
 
 </script>
