@@ -413,7 +413,6 @@ where
     settings: AudioSourceSettings,
     fadeout_param: FadeParam,
     current_channel: u16,
-    input_samples_counted: usize,
     offset_position: f64,
     frames_counted: usize,
     playing_frames_counted: usize,
@@ -475,7 +474,6 @@ where
                 fadeout_param,
                 current_channel: channels.get(),
                 output_buffer,
-                input_samples_counted: 0,
                 current_span_channels: channels,
                 current_span_sample_rate: sample_rate,
                 offset_position: 0.0,
@@ -676,19 +674,6 @@ where
                     self.shared.state.store(state as u8, Ordering::Release);
                 };
 
-                if Some(self.input_samples_counted) == self.current_span_len() {
-                    self.offset_position += self.playing_frames_counted as f64
-                        / self.current_span_sample_rate.get() as f64;
-                    self.playing_frames_counted = 0;
-
-                    self.input_samples_counted = 0;
-
-                    self.current_span_channels = self.channels();
-                    self.current_span_sample_rate = self.sample_rate();
-                    self.update_interval = Self::calculate_interval(&self.current_span_sample_rate);
-                }
-                self.input_samples_counted += self.current_span_channels.get() as usize;
-
                 self.playing_frames_counted += 1;
             }
 
@@ -714,7 +699,7 @@ where
 {
     #[inline]
     fn current_span_len(&self) -> Option<usize> {
-        self.input.current_span_len()
+        None
     }
 
     #[inline]
@@ -743,8 +728,6 @@ where
             self.playing_frames_counted = 0;
             self.frames_counted = 0;
             self.current_channel = 0;
-
-            self.input_samples_counted = 0;
         }
         result
     }
