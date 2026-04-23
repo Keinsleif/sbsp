@@ -80,7 +80,7 @@
           <g
             v-for="(seg, i) in segments"
             :key="i"
-            :class="selectedIdx == i ? $style['selected'] : ''"
+            :class="{[$style['selected']]: selectedIdx == i}"
           >
             <rect
               :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
@@ -94,22 +94,22 @@
               :y="decibelsToY(seg.volume) - 10"
               :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
               height="20"
-              style="cursor: ns-resize;"
+              :style="{cursor: props.disabled ? '' : 'ns-resize'}"
               fill="transparent"
               @pointerdown="handlePointerDown($event, i, 'volume')"
             />
             <circle
               :cx="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
               :cy="decibelsToY(seg.volume)"
-              :r="i == 0 ? 3 : 8"
-              :class="i == 0 ? $style['handle-locked'] : $style['handle']"
+              :r="i == 0 || props.disabled ? 3 : 8"
+              :class="i == 0 || props.disabled ? $style['handle-locked'] : $style['handle']"
               @pointerdown="handlePointerDown($event, i, 'start')"
             />
             <circle
               :cx="(timeRange.start + seg.end * timeRange.delta) * svgWidth"
               :cy="decibelsToY(seg.volume)"
-              :r="i == (segments.length - 1) ? 3 : 8"
-              :class="i == (segments.length - 1) ? $style['handle-locked'] : $style['handle']"
+              :r="i == (segments.length - 1) || props.disabled ? 3 : 8"
+              :class="i == (segments.length - 1) || props.disabled ? $style['handle-locked'] : $style['handle']"
               @pointerdown="handlePointerDown($event, i, 'end')"
             />
           </g>
@@ -122,15 +122,16 @@
       class="ma-2"
       color="success"
       variant="outlined"
+      :disabled="props.disabled"
       @click="addSegment"
     />
     <v-btn
       :icon="mdiMinus"
-      :disabled="selectedIdx == null"
       density="compact"
       class="ma-2"
       color="error"
       variant="outlined"
+      :disabled="props.disabled || selectedIdx == null"
       @click="removeSegment"
     />
     <v-btn
@@ -139,6 +140,7 @@
       class="ma-2"
       color="white"
       variant="outlined"
+      :disabled="props.disabled"
       @click="clearSegments"
     />
   </div>
@@ -164,11 +166,13 @@ const props = withDefaults(
     startTime?: number | null;
     endTime?: number | null;
     heightPx?: number;
+    disabled?: boolean;
   }>(),
   {
     startTime: 0,
     endTime: 1,
     heightPx: 75,
+    disabled: false,
   },
 );
 
@@ -282,6 +286,7 @@ const tooltipStyle = computed<StyleValue>(() => {
 });
 
 const saveEditorValue = () => {
+  if (props.disabled) return;
   if (selectedCue.value?.params.type != 'audio') return;
   selectedCue.value.params.envelope = segments.value;
   emit('update');
@@ -367,6 +372,7 @@ const getSVGCoords = (e: MouseEvent) => {
 };
 
 const handlePointerDown = (e: PointerEvent, index: number, type: 'volume' | 'start' | 'end') => {
+  if (props.disabled) return;
   e.stopPropagation();
   if (type === 'start' && index === 0) return;
   if (type === 'end' && index === segments.value.length - 1) return;
@@ -374,7 +380,7 @@ const handlePointerDown = (e: PointerEvent, index: number, type: 'volume' | 'sta
 };
 
 const handlePointerMove = (e: PointerEvent) => {
-  if (dragging.value == null) return;
+  if (dragging.value == null || props.disabled) return;
   dragging.value.dragged = true;
   const { x, y } = getSVGCoords(e);
 
@@ -421,6 +427,7 @@ useEventListener(document, 'pointermove', handlePointerMove);
 useEventListener(document, 'pointerup', handlePointerUp);
 
 const handleAddOrSplit = (svgX: number) => {
+  if (props.disabled) return;
   if (segments.value.length == 0) {
     segments.value.push({ start: 0, end: 1, volume: 0.5 });
     saveEditorValue();
@@ -461,17 +468,20 @@ const handleAddOrSplit = (svgX: number) => {
 };
 
 const clearSegments = () => {
+  if (props.disabled) return;
   segments.value = [];
   selectedIdx.value = null;
   saveEditorValue();
 };
 
 const addSegment = () => {
+  if (props.disabled) return;
   handleAddOrSplit(0.5);
   saveEditorValue();
 };
 
 const removeSegment = () => {
+  if (props.disabled) return;
   if (selectedIdx.value != null) {
     segments.value.splice(selectedIdx.value, 1);
     if (selectedIdx.value == 0) {
@@ -494,15 +504,20 @@ const removeSegment = () => {
   .waveform {
     stroke: rgb(var(--v-theme-surface-variant), 0.8);
   }
+  .disabled {
+    .bar {
+      fill: rgb(var(--v-theme-surface))
+    }
+    .handle:hover {
+      stroke: black;
+    }
+  }
   .selected {
     .bar {
       fill: rgb(var(--v-theme-warning));
     }
     .handle {
       fill: rgb(var(--v-theme-warning));
-    }
-    .handle:hover {
-      stroke: white;
     }
   }
   .bar {
