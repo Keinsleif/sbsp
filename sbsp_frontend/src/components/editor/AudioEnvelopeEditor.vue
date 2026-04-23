@@ -1,13 +1,11 @@
 <template>
-  <v-sheet class="d-flex flex-column pa-3 ga-3">
-    <waveform-envelope-editor
-      v-model="selectedCue"
-      :height-px="140"
-      :start-time="range[0]"
-      :end-time="range[1]"
-      @update="saveEditorValue"
-    />
-  </v-sheet>
+  <waveform-envelope-editor
+    v-model="selectedCue"
+    :height-px="100"
+    :start-time="range[0]"
+    :end-time="range[1]"
+    @update="saveEditorValue"
+  />
 </template>
 
 <script setup lang="ts">
