@@ -1,118 +1,146 @@
 <template>
-  <div
-    :style="{ height: `${props.heightPx}px` }"
-    class="w-100 border-md"
-  >
-    <v-sheet
-      v-show="!isOutside"
-      v-if="selectedCue != null && svgRef != null && parent != null"
-      style="position: absolute; top: 0px; left: 0px;"
-      :style="tooltipStyle"
-      class="pl-1 pr-1 rounded text-caption"
+  <div>
+    <div
+      :style="{ height: `${props.heightPx}px` }"
+      class="w-100 border-md"
     >
-      {{ tooltipText }}
-    </v-sheet>
-    <svg
-      v-show="selectedCue != null"
-      ref="svg"
-      preserveAspectRatio="none"
-      xmlns="http://www.w3.org/2000/svg"
-      :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
-      width="100%"
-      :height="`${contentHeight}px`"
-      @dblclick="(e: MouseEvent) => {
-        const {x} = getSVGCoords(e);
-        handleAddOrSplit(x);
-      }"
-    >
-      <rect
-        :class="$style.waveform"
-        x="0"
-        :y="contentHeight / 2"
-        height="1"
-        :width="svgWidth"
-      />
-      <path
-        v-if="waveformPath != null"
-        :d="waveformPath"
-        :transform="`translate(0, ${contentHeight * 0.125})`"
-        :class="$style.waveform"
-        transform-origin="center"
-      />
-      <rect
-        :x="startPos"
-        y="0"
-        width="2"
-        :height="contentHeight"
-        fill="blue"
-      />
-      <rect
-        :x="endPos"
-        y="0"
-        width="2"
-        :height="contentHeight"
-        fill="blue"
-      />
-      <rect
-        v-show="position != 0"
-        :style="playCursorStyle"
-        x="0"
-        y="0"
-        width="2"
-        :height="contentHeight"
-        fill="yellow"
-      />
-      <g
-        ref="parent"
+      <v-sheet
+        v-show="!isOutside"
+        v-if="selectedCue != null && svgRef != null && parent != null"
+        style="position: absolute; top: 0px; left: 0px;"
+        :style="tooltipStyle"
+        class="pl-1 pr-1 rounded text-caption"
       >
-        <path
-          :d="linePath.dot"
-          fill="none"
-          style="stroke: rgb(var(--v-theme-primary)); stroke-width: 3px; stroke-dasharray: 8, 4;"
-          :transform="`translate(${timeRange.start}, 0) scale(${timeRange.delta},1)`"
+        {{ tooltipText }}
+      </v-sheet>
+      <svg
+        v-show="selectedCue != null"
+        ref="svg"
+        preserveAspectRatio="none"
+        xmlns="http://www.w3.org/2000/svg"
+        :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
+        width="100%"
+        :height="`${contentHeight}px`"
+        @dblclick="(e: MouseEvent) => {
+          const {x} = getSVGCoords(e);
+          handleAddOrSplit(((x / svgWidth) - timeRange.start) / timeRange.delta);
+        }"
+      >
+        <rect
+          :class="$style.waveform"
+          x="0"
+          :y="contentHeight / 2"
+          height="1"
+          :width="svgWidth"
         />
-        <polyline
-          :points="linePath.fill"
-          style="fill: rgb(var(--v-theme-primary), 20%)"
-          :transform="`translate(${timeRange.start}, 0) scale(${timeRange.delta},1)`"
+        <path
+          v-if="waveformPath != null"
+          :d="waveformPath"
+          :transform="`translate(0, ${contentHeight * 0.125})`"
+          :class="$style.waveform"
+          transform-origin="center"
+        />
+        <rect
+          :x="startPos"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="blue"
+        />
+        <rect
+          :x="endPos"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="blue"
+        />
+        <rect
+          v-show="position != 0"
+          :style="playCursorStyle"
+          x="0"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="yellow"
         />
         <g
-          v-for="(seg, i) in segments"
-          :key="i"
+          ref="parent"
         >
           <path
-            :d="`M${seg.start * svgWidth},${decibelsToY(seg.volume)}H${seg.end * svgWidth}`"
-            :style="{
-              stroke: selectedIdx == i ? 'rgb(var(--v-theme-warning))' : 'rgb(var(--v-theme-primary))',
-            }"
-            stroke-width="4px"
+            :d="linePath.dot"
+            fill="none"
+            style="stroke: rgb(var(--v-theme-primary)); stroke-width: 3px; stroke-dasharray: 8, 4;"
+            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
           />
-          <rect
-            :x="(timeRange.start + seg.start) * svgWidth / timeRange.delta"
-            :y="decibelsToY(seg.volume) - 10"
-            :width="(seg.end - seg.start) * svgWidth / timeRange.delta"
-            height="20"
-            style="cursor: ns-resize;"
-            fill="transparent"
-            @pointerdown="handlePointerDown($event, i, 'volume')"
+          <polyline
+            :points="linePath.fill"
+            style="fill: rgb(var(--v-theme-primary), 20%)"
+            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
           />
-          <circle
-            :cx="(timeRange.start + seg.start) * svgWidth / timeRange.delta"
-            :cy="decibelsToY(seg.volume)"
-            :r="i == 0 ? 3 : 8"
-            :class="i == 0 ? $style['handle-locked'] : $style['handle']"
-            @pointerdown="handlePointerDown($event, i, 'start')"
-          />
-          <circle
-            :cx="(timeRange.start + seg.end) * svgWidth / timeRange.delta"
-            :cy="decibelsToY(seg.volume)"
-            :r="i == (segments.length - 1) ? 3 : 8"
-            :class="i == (segments.length - 1) ? $style['handle-locked'] : $style['handle']"
-            @pointerdown="handlePointerDown($event, i, 'end')"
-          />
+          <g
+            v-for="(seg, i) in segments"
+            :key="i"
+            :class="selectedIdx == i ? $style['selected'] : ''"
+          >
+            <rect
+              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :y="decibelsToY(seg.volume) - 2"
+              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
+              height="4"
+              :class="$style['bar']"
+            />
+            <rect
+              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :y="decibelsToY(seg.volume) - 10"
+              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
+              height="20"
+              style="cursor: ns-resize;"
+              fill="transparent"
+              @pointerdown="handlePointerDown($event, i, 'volume')"
+            />
+            <circle
+              :cx="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :cy="decibelsToY(seg.volume)"
+              :r="i == 0 ? 3 : 8"
+              :class="i == 0 ? $style['handle-locked'] : $style['handle']"
+              @pointerdown="handlePointerDown($event, i, 'start')"
+            />
+            <circle
+              :cx="(timeRange.start + seg.end * timeRange.delta) * svgWidth"
+              :cy="decibelsToY(seg.volume)"
+              :r="i == (segments.length - 1) ? 3 : 8"
+              :class="i == (segments.length - 1) ? $style['handle-locked'] : $style['handle']"
+              @pointerdown="handlePointerDown($event, i, 'end')"
+            />
+          </g>
         </g>
-      </g>
-    </svg>
+      </svg>
+    </div>
+    <v-btn
+      :icon="mdiPlus"
+      density="compact"
+      class="ma-2"
+      color="success"
+      variant="outlined"
+      @click="addSegment"
+    />
+    <v-btn
+      :icon="mdiMinus"
+      :disabled="selectedIdx == null"
+      density="compact"
+      class="ma-2"
+      color="error"
+      variant="outlined"
+      @click="removeSegment"
+    />
+    <v-btn
+      :icon="mdiTrashCan"
+      density="compact"
+      class="ma-2"
+      color="white"
+      variant="outlined"
+      @click="clearSegments"
+    />
   </div>
 </template>
 
@@ -123,6 +151,7 @@ import { useShowState } from '../../stores/showstate';
 import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn, watchDebounced } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { Cue } from '../../types/Cue';
+import { mdiMinus, mdiPlus, mdiTrashCan } from '@mdi/js';
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -266,17 +295,29 @@ type Segment = {
   volume: number;
 };
 
+const normSegments = (seg: Segment[]): Segment[] => {
+  let result = [...seg].sort((a, b) => a.start - b.start);
+  if (result.length > 0) {
+    result[0]!.start = 0;
+    result[result.length - 1]!.end = 1;
+  }
+  return result;
+};
+
 const dragging = ref<{
   index: number;
   type: 'volume' | 'start' | 'end';
   dragged: boolean;
 } | null>(null);
 const selectedIdx = ref<number | null>(null);
-const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : []);
-watch(selectedCue, () => {
+const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
+
+watch(selectedCue, (newCue, oldCue) => {
+  if (newCue?.id != oldCue?.id || (selectedIdx.value != null && newCue?.params.type == 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
+    selectedIdx.value = null;
+  }
   dragging.value = null;
-  selectedIdx.value = null;
-  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? [...selectedCue.value.params.envelope].sort((a, b) => a.start - b.start) : [];
+  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
 });
 
 const linePath = computed<{
@@ -379,8 +420,7 @@ const handlePointerUp = () => {
 useEventListener(document, 'pointermove', handlePointerMove);
 useEventListener(document, 'pointerup', handlePointerUp);
 
-const handleAddOrSplit = (clickX: number) => {
-  const svgX = clickX / svgWidth.value;
+const handleAddOrSplit = (svgX: number) => {
   if (segments.value.length == 0) {
     segments.value.push({ start: 0, end: 1, volume: 0.5 });
     saveEditorValue();
@@ -402,21 +442,50 @@ const handleAddOrSplit = (clickX: number) => {
     }
   }
 
-  for (let i = 0; i < segments.value.length - 2; i++) {
+  for (let i = 0; i < segments.value.length - 1; i++) {
     const gapStart = segments.value[i]!.end;
     const gapEnd = segments.value[i + 1]!.start;
     if (svgX > gapStart && svgX < gapEnd) {
       const availableWidth = gapEnd - gapStart;
       if (availableWidth > MIN_GAP + (MIN_GAP * 2)) {
-        const s = svgX - 0.05;
-        const e = svgX + 0.05;
+        const s = svgX - 0.04;
+        const e = svgX + 0.04;
         const finalS = Math.max(gapStart + MIN_GAP, s);
         const finalE = Math.min(gapEnd - MIN_GAP, e);
         segments.value.splice(i + 1, 0, { start: finalS, end: finalE, volume: 0.5 });
         saveEditorValue();
-        break;
+        return;
       }
     }
+  }
+};
+
+const clearSegments = () => {
+  segments.value = [];
+  selectedIdx.value = null;
+  saveEditorValue();
+};
+
+const addSegment = () => {
+  handleAddOrSplit(0.5);
+  saveEditorValue();
+};
+
+const removeSegment = () => {
+  if (selectedIdx.value != null) {
+    segments.value.splice(selectedIdx.value, 1);
+    if (selectedIdx.value == 0) {
+      const first = segments.value[0];
+      if (first != null) {
+        first.start = 0;
+      }
+    } else if (selectedIdx.value == segments.value.length) {
+      const last = segments.value[segments.value.length - 1];
+      if (last != null) {
+        last.end = 1;
+      }
+    }
+    saveEditorValue();
   }
 };
 </script>
@@ -425,12 +494,29 @@ const handleAddOrSplit = (clickX: number) => {
   .waveform {
     stroke: rgb(var(--v-theme-surface-variant), 0.8);
   }
+  .selected {
+    .bar {
+      fill: rgb(var(--v-theme-warning));
+    }
+    .handle {
+      fill: rgb(var(--v-theme-warning));
+    }
+    .handle:hover {
+      stroke: white;
+    }
+  }
+  .bar {
+    fill: rgb(var(--v-theme-primary));
+    stroke: rgb(var(--v-theme-surface-variant));
+    stroke-width: 1px;
+  }
   .handle {
+    stroke-width: 2px;
     cursor: ew-resize;
     fill: rgb(var(--v-theme-primary));
-    :hover {
-      fill: rgb(var(--v-theme-primary), 50%);
-    }
+  }
+  .handle:hover {
+    stroke: white;
   }
   .handle-locked {
     fill: #444;
