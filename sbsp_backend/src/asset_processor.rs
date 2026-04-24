@@ -20,7 +20,7 @@ use symphonia::core::{
     meta::MetadataOptions,
     probe::Hint,
 };
-use tokio::sync::{RwLock, broadcast, mpsc};
+use tokio::sync::{RwLock, Semaphore, broadcast, mpsc};
 
 use crate::event::BackendEvent;
 use crate::manager::ShowModelHandle;
@@ -60,6 +60,7 @@ pub struct AssetProcessor {
     event_tx: broadcast::Sender<BackendEvent>,
     result_tx: broadcast::Sender<ProcessResult>,
 
+    semaphore: Arc<Semaphore>,
     cache: Arc<RwLock<AssetCache>>,
     processing: Arc<RwLock<Vec<PathBuf>>>,
 }
@@ -72,12 +73,16 @@ impl AssetProcessor {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
         let (result_tx, _) = broadcast::channel(32);
+        let cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4);
         (
             Self {
                 model_handle,
                 command_rx,
                 event_tx,
                 result_tx,
+                semaphore: Arc::new(Semaphore::new((cores - 1).max(1))),
                 cache: cache.clone(),
                 processing: Arc::new(RwLock::new(Vec::new())),
             },
@@ -144,6 +149,7 @@ impl AssetProcessor {
         let actual_path_clone = actual_path.clone();
         let result_tx = self.result_tx.clone();
         let event_tx = self.event_tx.clone();
+        let permit = self.semaphore.clone().acquire_owned().await.unwrap();
         tokio::task::spawn_blocking(move || {
             let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
                 .map_err(|e| e.to_string());
@@ -153,6 +159,7 @@ impl AssetProcessor {
                     data: asset_data,
                 })
                 .unwrap();
+            drop(permit);
         });
         log::info!("Asset Process started. file={:?}", actual_path);
     }
