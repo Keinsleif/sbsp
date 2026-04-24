@@ -18,29 +18,29 @@
           indeterminate="disable-shrink"
         />
       </div>
-      <span :class="latestVersion == null ? 'text-red' : 'text-green'">
+      <span :class="update == null ? 'text-red' : 'text-green'">
         {{
           isCheckingUpdate
             ? ''
-            : latestVersion == null
+            : update == null
               ? t('dialog.update.noUpdates')
               : t('dialog.update.updatesAvailable')
         }}
       </span>
-      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
-      <span>{{ t('dialog.update.latestVersion') }}: {{ latestVersion != null ? latestVersion : '--' }}</span>
+      <span>{{ t('dialog.update.currentVersion') }}: {{ update != null ? update.currentVersion : '--' }}</span>
+      <span>{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span>
       <v-progress-linear
         height="8"
         color="primary"
         :model-value="calculateProgress()"
-        :indeterminate="total === 0n"
+        :indeterminate="total === 0"
       />
       <v-sheet class="mt-3 d-flex flex-row justify-end ga-2">
         <v-btn @click="isUpdateDialogOpen = false">
           {{ t('general.close') }}
         </v-btn>
         <v-btn
-          :disabled="latestVersion == null"
+          :disabled="update == null"
           :loading="progress != null && calculateProgress() == 100"
           color="primary"
           @click="installUpdate"
@@ -53,74 +53,60 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { UpdateMetadata } from '../../types/UpdateMetadata';
-import { Channel, invoke } from '@tauri-apps/api/core';
-import { DownloadEvent } from '../../types/DownloadEvent';
-import { getVersion } from '@tauri-apps/api/app';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { check, Update } from '@tauri-apps/plugin-updater';
 
 const { t } = useI18n();
 
 const isCheckingUpdate = ref<boolean>(true);
-const currentVersion = ref<string | null>(null);
-const latestVersion = ref<string | null>(null);
-const total = ref<bigint | null>(null);
-const progress = ref<bigint | null>(null);
+const total = ref<number | null>(null);
+const progress = ref<number | null>(null);
 
 const isUpdateDialogOpen = defineModel<boolean>({ required: true });
+const update = ref<Update | null>(null);
 
 const checkUpdate = () => {
   isCheckingUpdate.value = true;
-  invoke<UpdateMetadata>('fetch_update')
-    .then((value) => {
-      isCheckingUpdate.value = false;
-      if (value != null) {
-        currentVersion.value = value.currentVersion;
-        latestVersion.value = value.version;
-      }
-    })
-    .catch((e) => {
-      isCheckingUpdate.value = false;
-      console.error(e);
-    });
+  check().then((value) => {
+    isCheckingUpdate.value = false;
+    update.value = value;
+  }).catch((e) => {
+    isCheckingUpdate.value = false;
+    console.error(e);
+  });
 };
 
 const installUpdate = () => {
-  const downloadChannel = new Channel<DownloadEvent>();
-  downloadChannel.onmessage = (message) => {
-    switch (message.event) {
-      case 'started':
-        if (message.data.contentLength != null) {
-          total.value = message.data.contentLength;
-        } else {
-          total.value = 0n;
-        }
-        break;
-      case 'progress':
-        if (progress.value == null) {
-          progress.value = BigInt(message.data.chunkLength);
-        } else {
-          progress.value += BigInt(message.data.chunkLength);
-        }
-        break;
-      case 'finished':
-        break;
-    }
-  };
-  invoke('install_update', { onEvent: downloadChannel }).catch(e => console.error(e));
+  if (update.value != null) {
+    update.value.downloadAndInstall((event) => {
+      switch (event.event) {
+        case 'Started':
+          if (event.data.contentLength != null) {
+            total.value = event.data.contentLength;
+          } else {
+            total.value = 0;
+          }
+          break;
+        case 'Progress':
+          if (progress.value == null) {
+            progress.value = event.data.chunkLength;
+          } else {
+            progress.value += event.data.chunkLength;
+          }
+          break;
+        case 'Finished':
+          console.log('download finished');
+          break;
+      }
+    });
+  }
 };
 
 const calculateProgress = (): number => {
-  if (total.value === null || progress.value === null || total.value === 0n) {
+  if (total.value === null || progress.value === null || total.value === 0) {
     return 0;
   }
-  return Number(BigInt(progress.value) / total.value) * 100;
+  return progress.value / total.value * 100;
 };
-
-onMounted(() => {
-  getVersion()
-    .then(value => (currentVersion.value = value))
-    .catch(e => console.error(e));
-});
 </script>
