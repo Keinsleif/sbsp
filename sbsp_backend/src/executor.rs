@@ -195,6 +195,7 @@ impl Executor {
                 pan,
                 repeat,
                 sound_type,
+                envelope,
             }) => {
                 let filepath =
                     if let Some(asset_folder) = self.model_handle.get_asset_folder_path().await {
@@ -216,6 +217,7 @@ impl Executor {
                             fade_out_param: *fade_out_param,
                             repeat: *repeat,
                             sound_type: *sound_type,
+                            envelope: envelope.clone(),
                         },
                     })
                     .await?;
@@ -330,6 +332,7 @@ impl Executor {
                 pan,
                 repeat,
                 sound_type,
+                envelope,
             }) => {
                 let filepath =
                     if let Some(asset_folder) = self.model_handle.get_asset_folder_path().await {
@@ -350,6 +353,7 @@ impl Executor {
                         fade_out_param: *fade_out_param,
                         repeat: *repeat,
                         sound_type: *sound_type,
+                        envelope: envelope.clone(),
                     },
                 };
                 self.audio_tx.send(audio_command).await?;
@@ -373,7 +377,7 @@ impl Executor {
                     && active_instances.contains_key(target)
                 {
                     match cue.params {
-                        CueParam::Audio(_) => {
+                        CueParam::Audio(_)
                             if self
                                 .audio_tx
                                 .send(AudioCommand::FadeVolume {
@@ -383,10 +387,9 @@ impl Executor {
                                 })
                                 .await
                                 .is_err()
-                            {
+                            => {
                                 anyhow::bail!("cannot send AudioCommand");
                             }
-                        }
                         CueParam::Group { .. } => {
                             let children = self.model_handle.get_all_children_by_id(target).await;
                             for child in children {
@@ -1201,6 +1204,7 @@ mod tests {
                 pan: 0.0,
                 repeat: false,
                 sound_type: SoundType::Streaming,
+                envelope: Vec::new(),
             }),
         });
         drop(write_lock);

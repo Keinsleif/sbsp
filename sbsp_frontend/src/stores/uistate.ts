@@ -24,6 +24,7 @@ export const useUiState = defineStore(
     const fileListResolver = ref<((select: string[] | null) => void) | null>(null);
     const fileListOption = ref(false);
     const isBottomTabOpen = ref(true);
+    const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
@@ -129,6 +130,7 @@ export const useUiState = defineStore(
       fileListResolver,
       fileListOption,
       isBottomTabOpen,
+      isEnvelopeVisible,
       scaleWaveform,
       success_messages,
       error_messages,

@@ -65,6 +65,7 @@ const DEFAULT_SETTINGS: GlobalSettings = {
         pan: 0.0,
         repeat: false,
         soundType: 'streaming',
+        envelope: [],
       },
     },
     wait: {

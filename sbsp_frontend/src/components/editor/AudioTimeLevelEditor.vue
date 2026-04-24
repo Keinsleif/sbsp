@@ -3,50 +3,11 @@
     flat
     class="d-flex flex-column pa-3 ga-3"
   >
-    <v-sheet
-      flat
-      class="d-flex flex-row ga-2"
-    >
-      <time-range
-        v-model="range"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-        :duration="assetResult.getMetadata(selectedCue?.id)?.duration || undefined"
-        @update="saveEditorValue"
-      />
-      <v-btn-group
-        variant="tonal"
-        divided
-        density="compact"
-      >
-        <v-tooltip target="cursor">
-          <template #activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              :icon="mdiSkipNext"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="skipFirstSilence"
-            />
-          </template>
-          <span>{{ t('main.bottomEditor.timeLevels.skipFirstSilence') }}</span>
-        </v-tooltip>
-        <v-tooltip target="cursor">
-          <template #activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              :icon="mdiSkipPrevious"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="skipLastSilence"
-            />
-          </template>
-          <span>{{ t('main.bottomEditor.timeLevels.skipLastSilence') }}</span>
-        </v-tooltip>
-      </v-btn-group>
-    </v-sheet>
-    <waveform-viewer
-      :target-id="selectedCue != null ? selectedCue.id : null"
-      :volume="volume"
-      :start-time="range[0]"
-      :end-time="range[1]"
+    <waveform-editor
+      v-model="selectedCue"
+      :height-px="125"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      @update="emit('update')"
     />
     <div class="d-flex flex-column flex-sm-row ga-0 ga-sm-3 align-center">
       <responsive-control
@@ -144,18 +105,16 @@
 import { ref, watch } from 'vue';
 import VolumeFader from '../input/VolumeFader.vue';
 import PanningFader from '../input/PanningFader.vue';
-import WaveformViewer from './WaveformViewer.vue';
-import TimeRange from '../input/TimeRange.vue';
 import ResponsiveControl from '../input/ResponsiveControl.vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
-import { mdiSkipNext, mdiSkipPrevious } from '@mdi/js';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
 import { useShowModel } from '../../stores/showmodel';
 import { useApi } from '../../api';
 import { useUiState } from '../../stores/uistate';
+import WaveformEditor from './WaveformEditor.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -224,26 +183,6 @@ const changeActiveCueVolume = () => {
   if (activeCue != null) {
     api.sendSetVolume(activeCue.cueId, volume.value);
   }
-};
-
-const skipFirstSilence = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const startTime = assetResult.get(selectedCue.value.id)?.startTime;
-  if (startTime == null) return;
-  range.value[0] = startTime;
-  saveEditorValue();
-};
-
-const skipLastSilence = () => {
-  if (selectedCue.value == null) {
-    return;
-  }
-  const endTime = assetResult.get(selectedCue.value.id)?.endTime;
-  if (endTime == null) return;
-  range.value[1] = endTime;
-  saveEditorValue();
 };
 
 const setVolumeToLUFS = () => {

@@ -853,6 +853,7 @@ mod tests {
                         pan: 0.0,
                         repeat: false,
                         sound_type: SoundType::Streaming,
+                        envelope: Vec::new(),
                     }),
                 }],
                 settings: ShowSettings::default(),
@@ -881,6 +882,7 @@ mod tests {
                 pan: 0.0,
                 repeat: false,
                 sound_type: SoundType::Streaming,
+                envelope: Vec::new(),
             }),
         };
         model_handle.update_cue(new_cue.clone()).await.unwrap();
@@ -948,6 +950,7 @@ mod tests {
                 pan: 0.0,
                 repeat: false,
                 sound_type: SoundType::Streaming,
+                envelope: Vec::new(),
             }),
         };
         model_handle

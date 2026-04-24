@@ -81,6 +81,8 @@ pub struct AudioCueParam {
     pub pan: f32,
     pub repeat: bool,
     pub sound_type: SoundType,
+    #[serde(default)]
+    pub envelope: Vec<EnvelopeSegment>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
@@ -97,6 +99,14 @@ impl Default for FadeParam {
             easing: Easing::InOutPow(2.0),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvelopeSegment {
+    pub start: f64,
+    pub end: f64,
+    pub volume: Decibels,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
@@ -132,9 +142,10 @@ impl Easing {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS, Default)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,
+    #[default]
     Streaming,
 }

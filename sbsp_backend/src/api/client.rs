@@ -181,11 +181,9 @@ pub async fn create_remote_backend(
                             log::info!("WebSocket server sent close message.");
                             break;
                         }
-                        Message::Ping(bytes) => {
-                            if websocket.send(Message::Pong(bytes)).await.is_err() {
-                                log::info!("WebSocket client disconnected (send error).");
-                                break;
-                            }
+                        Message::Ping(bytes) if websocket.send(Message::Pong(bytes.clone())).await.is_err() => {
+                            log::info!("WebSocket client disconnected (send error).");
+                            break;
                         }
                         _ => {}
                     }

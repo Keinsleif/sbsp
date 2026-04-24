@@ -80,6 +80,7 @@ onMounted(() => {
             if (cueId != null) {
               if (uiState.selected != cueId) {
                 uiState.selected = cueId;
+                uiState.expandToVisible(cueId);
                 if (!uiState.selectedRows.includes(cueId)) {
                   uiState.selectedRows = [cueId];
                 }
@@ -87,9 +88,6 @@ onMounted(() => {
             } else {
               uiState.selectedRows = [];
               uiState.selected = null;
-            }
-            if (event.param.cueId != null) {
-              uiState.expandToVisible(event.param.cueId);
             }
           }
           break;
@@ -178,6 +176,21 @@ onMounted(() => {
     .then((fullState) => {
       showModel.updateAll(fullState.showModel);
       showState.update(fullState.showState);
+      if (getLockCursorToSelection()) {
+        const cueId = fullState.showState.playbackCursor;
+        if (cueId != null) {
+          if (uiState.selected != cueId) {
+            uiState.selected = cueId;
+            uiState.expandToVisible(cueId);
+            if (!uiState.selectedRows.includes(cueId)) {
+              uiState.selectedRows = [cueId];
+            }
+          }
+        } else {
+          uiState.selectedRows = [];
+          uiState.selected = null;
+        }
+      }
     })
     .catch(e => console.error(e.toString()));
 
