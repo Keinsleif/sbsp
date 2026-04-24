@@ -27,7 +27,7 @@
               : t('dialog.update.updatesAvailable')
         }}
       </span>
-      <span>{{ t('dialog.update.currentVersion') }}: {{ update != null ? update.currentVersion : '--' }}</span>
+      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
       <span>{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span>
       <v-progress-linear
         height="8"
@@ -53,9 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { check, Update } from '@tauri-apps/plugin-updater';
+import { getVersion } from '@tauri-apps/api/app';
 
 const { t } = useI18n();
 
@@ -64,6 +65,7 @@ const total = ref<number | null>(null);
 const progress = ref<number | null>(null);
 
 const isUpdateDialogOpen = defineModel<boolean>({ required: true });
+const currentVersion = ref<string | null>(null);
 const update = ref<Update | null>(null);
 
 const checkUpdate = () => {
@@ -71,6 +73,9 @@ const checkUpdate = () => {
   check().then((value) => {
     isCheckingUpdate.value = false;
     update.value = value;
+    if (value != null) {
+      currentVersion.value = value.currentVersion;
+    }
   }).catch((e) => {
     isCheckingUpdate.value = false;
     console.error(e);
@@ -109,4 +114,10 @@ const calculateProgress = (): number => {
   }
   return progress.value / total.value * 100;
 };
+
+onMounted(() => {
+  getVersion().then((version) => {
+    currentVersion.value = version;
+  }).catch(e => console.error(e));
+});
 </script>
