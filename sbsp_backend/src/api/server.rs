@@ -25,7 +25,7 @@ use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle,
     api::{
-        ApiServerOptions, AuthInfo, FileList,
+        ApiServerOptions, AuthInfo, FileList, ModelCommand,
         auth::{check_authentication_string, generate_salt, generate_secret},
     },
     asset_processor::AssetProcessorCommand,
@@ -242,9 +242,20 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                     }
                                 },
                                 WsCommand::Model(model_command) => {
-                                    if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
-                                        log::error!("Failed to send Model command to ShowModelManager.");
-                                        break;
+                                    match model_command.as_ref() {
+                                        ModelCommand::Reset |
+                                        ModelCommand::Save |
+                                        ModelCommand::SaveToFile(_)|
+                                        ModelCommand::ExportToFolder(_) |
+                                        ModelCommand::LoadFromFile(_) => {
+                                            log::warn!("File related operation not permitted.");
+                                        },
+                                        _ => {
+                                            if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
+                                                log::error!("Failed to send Model command to ShowModelManager.");
+                                                break;
+                                            }
+                                        }
                                     }
                                 },
                                 WsCommand::AssetProcessor(asset_processor_command) => {
