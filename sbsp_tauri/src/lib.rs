@@ -1,7 +1,5 @@
 mod command;
 mod settings;
-#[cfg(desktop)]
-pub mod update;
 
 use std::time::{Duration, SystemTime};
 
@@ -172,7 +170,6 @@ pub fn run() {
                 app_handle
                     .plugin(tauri_plugin_updater::Builder::new().build())
                     .unwrap();
-                app.manage(update::PendingUpdate::default());
             }
 
             let (settings_manager, settings_rx) = GlobalSettingsManager::new();
@@ -308,10 +305,6 @@ pub fn run() {
             command::settings::export_settings_to_file,
             command::license::activate_license,
             command::license::get_license_info,
-            #[cfg(desktop)]
-            update::fetch_update,
-            #[cfg(desktop)]
-            update::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
