@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use sbsp_backend::{FullShowState, event::BackendEvent};
-use tauri::{Manager as _, ipc::Channel, path::BaseDirectory};
+use tauri::{Manager as _, WebviewWindow, ipc::Channel, path::BaseDirectory};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
 
@@ -63,12 +63,13 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
 }
 
 #[tauri::command]
-pub async fn file_open(app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn file_open(app_handle: tauri::AppHandle, window: WebviewWindow) -> Result<(), String> {
     let model_handle = app_handle.state::<AppState>().get_handle().model_handle;
     let (result_tx, result_rx) = oneshot::channel();
     app_handle
         .dialog()
         .file()
+        .set_parent(&window)
         .add_filter("Show Model", &["sbsp"])
         .pick_file(|file_path_option| {
             result_tx.send(file_path_option).unwrap();
@@ -92,11 +93,13 @@ pub async fn file_new(handle: tauri::AppHandle) -> Result<(), String> {
 pub async fn file_save(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
+    window: WebviewWindow,
 ) -> Result<bool, String> {
     let handle = state.get_handle();
     let file_dialog_builder = app_handle
         .dialog()
         .file()
+        .set_parent(&window)
         .add_filter("Show Model", &["sbsp"]);
     if handle.model_handle.get_current_file_path().await.is_some() {
         handle
@@ -128,11 +131,13 @@ pub async fn file_save(
 pub async fn file_save_as(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
+    window: WebviewWindow,
 ) -> Result<bool, String> {
     let handle = state.get_handle();
     let file_dialog_builder = app_handle
         .dialog()
         .file()
+        .set_parent(&window)
         .add_filter("Show Model", &["sbsp"]);
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
         let (result_tx, result_rx) = oneshot::channel();
@@ -176,9 +181,10 @@ pub async fn file_save_as(
 pub async fn export_to_folder(
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
+    window: WebviewWindow,
 ) -> Result<bool, String> {
-    let handle = state.get_handle();
-    let file_dialog_builder = app_handle.dialog().file();
+    let handle: sbsp_backend::BackendHandle = state.get_handle();
+    let file_dialog_builder = app_handle.dialog().file().set_parent(&window);
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
         let (result_tx, result_rx) = oneshot::channel();
         file_dialog_builder

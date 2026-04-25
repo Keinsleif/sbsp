@@ -1,4 +1,4 @@
-use tauri::{Manager as _, State};
+use tauri::{Manager as _, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use tokio::sync::oneshot;
 
@@ -8,11 +8,13 @@ use sbsp_license::{LicenseManager, data::LicenseInformation};
 pub async fn activate_license(
     app_handle: tauri::AppHandle,
     license_manager: State<'_, LicenseManager>,
+    window: WebviewWindow,
 ) -> Result<bool, String> {
     let (result_tx, result_rx) = oneshot::channel();
     app_handle
         .dialog()
         .file()
+        .set_parent(&window)
         .add_filter("License File", &["json"])
         .pick_file(|file_path_opt| {
             if let Some(file_path) = file_path_opt
