@@ -3068,7 +3068,7 @@ limitations under the License.
 
 - Used by
 
-    - [typenum 1.19.0]( https://github.com/paholg/typenum )
+    - [typenum 1.20.0]( https://github.com/paholg/typenum )
 
 ```text
                               Apache License
@@ -4985,7 +4985,7 @@ limitations under the License.
 
 - Used by
 
-    - [rustls-pki-types 1.14.0]( https://github.com/rustls/pki-types )
+    - [rustls-pki-types 1.14.1]( https://github.com/rustls/pki-types )
 
 ```text
                               Apache License
@@ -5712,7 +5712,7 @@ limitations under the License.
     - [rtrb 0.3.3]( https://github.com/mgeier/rtrb )
     - [rustix 1.1.4]( https://github.com/bytecodealliance/rustix )
     - [rustls-native-certs 0.8.3]( https://github.com/rustls/rustls-native-certs )
-    - [rustls 0.23.38]( https://github.com/rustls/rustls )
+    - [rustls 0.23.39]( https://github.com/rustls/rustls )
     - [scopeguard 1.2.0]( https://github.com/bluss/scopeguard )
     - [security-framework-sys 2.17.0]( https://github.com/kornelski/rust-security-framework )
     - [security-framework 3.7.0]( https://github.com/kornelski/rust-security-framework )
@@ -5746,7 +5746,7 @@ limitations under the License.
     - [wasm-bindgen-shared 0.2.118]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared )
     - [wasm-bindgen 0.2.118]( https://github.com/wasm-bindgen/wasm-bindgen )
     - [web-sys 0.3.95]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys )
-    - [web_atoms 0.2.3]( https://github.com/servo/html5ever )
+    - [web_atoms 0.2.4]( https://github.com/servo/html5ever )
     - [window-vibrancy 0.6.0]( https://github.com/tauri-apps/tauri-plugin-vibrancy )
     - [wit-bindgen 0.51.0]( https://github.com/bytecodealliance/wit-bindgen )
     - [wit-bindgen 0.57.1]( https://github.com/bytecodealliance/wit-bindgen )
@@ -8996,7 +8996,7 @@ limitations under the License.
     - [ident_case 1.0.1]( https://github.com/TedDriggs/ident_case )
     - [itoa 1.0.18]( https://github.com/dtolnay/itoa )
     - [jni-sys-macros 0.4.1]( https://github.com/jni-rs/jni-sys )
-    - [libc 0.2.185]( https://github.com/rust-lang/libc )
+    - [libc 0.2.186]( https://github.com/rust-lang/libc )
     - [mac 0.1.1]( https://github.com/reem/rust-mac.git )
     - [mach2 0.5.0]( https://github.com/JohnTitor/mach2 )
     - [match_token 0.1.0]( https://github.com/servo/html5ever )
@@ -11478,7 +11478,7 @@ DEALINGS IN THE SOFTWARE.
 
     - [winnow 0.5.40]( https://github.com/winnow-rs/winnow )
     - [winnow 0.7.15]( https://github.com/winnow-rs/winnow )
-    - [winnow 1.0.1]( https://github.com/winnow-rs/winnow )
+    - [winnow 1.0.2]( https://github.com/winnow-rs/winnow )
 
 ```text
 Permission is hereby granted, free of charge, to any person obtaining
@@ -11875,7 +11875,7 @@ THE SOFTWARE.
 
 - Used by
 
-    - [data-encoding 2.10.0]( https://github.com/ia0/data-encoding )
+    - [data-encoding 2.11.0]( https://github.com/ia0/data-encoding )
 
 ```text
 The MIT License (MIT)
@@ -12045,7 +12045,7 @@ SOFTWARE.
 
 - Used by
 
-    - [open 5.3.3]( https://github.com/Byron/open-rs )
+    - [open 5.3.4]( https://github.com/Byron/open-rs )
 
 ```text
 The MIT License (MIT)
@@ -14024,7 +14024,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [vue@3.5.32](https://github.com/vuejs/core)
+### [vue@3.5.33](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -14052,7 +14052,7 @@ THE SOFTWARE.
 
 ```
 
-### [vuetify@4.0.5](https://github.com/vuetifyjs/vuetify)
+### [vuetify@4.0.6](https://github.com/vuetifyjs/vuetify)
 license: MIT
 
 ```text
