@@ -9609,7 +9609,7 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 - Used by
 
-    - [rustls-webpki 0.103.12]( https://github.com/rustls/webpki )
+    - [rustls-webpki 0.103.13]( https://github.com/rustls/webpki )
 
 ```text
 Except as otherwise noted, this project is licensed under the following
@@ -10065,6 +10065,7 @@ SOFTWARE.
 - Used by
 
     - [redox_syscall 0.5.18]( https://gitlab.redox-os.org/redox-os/syscall )
+    - [redox_syscall 0.7.4]( https://gitlab.redox-os.org/redox-os/syscall )
 
 ```text
 Copyright (c) 2017 Redox OS Developers
@@ -13980,7 +13981,7 @@ SOFTWARE.
 
 ```
 
-### [uuid@13.0.0](https://github.com/uuidjs/uuid)
+### [uuid@14.0.0](https://github.com/uuidjs/uuid)
 license: MIT
 
 ```text
