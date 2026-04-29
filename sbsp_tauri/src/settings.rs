@@ -8,12 +8,11 @@ use uuid::Uuid;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{
-    BackendSettings,
-    model::cue::{
+    BackendAudioSettings, BackendSettings, model::cue::{
         Cue, CueChain, CueParam,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
-    },
+    }
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
@@ -32,6 +31,7 @@ impl From<&GlobalSettings> for BackendSettings {
         BackendSettings {
             advance_cursor_when_go: from.general.advance_cursor_when_go,
             copy_assets_when_add: from.general.copy_assets_when_add,
+            audio: BackendAudioSettings::default(),
         }
     }
 }
