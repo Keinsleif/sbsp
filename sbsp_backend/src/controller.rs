@@ -31,6 +31,7 @@ pub struct CueController {
     event_tx: broadcast::Sender<BackendEvent>,
     event_rx: broadcast::Receiver<BackendEvent>,
 
+    advance_cursor_when_go: bool,
     wait_tasks: HashMap<Uuid, CueChain>,
 }
 
@@ -44,6 +45,7 @@ impl CueController {
         event_tx: broadcast::Sender<BackendEvent>,
     ) -> (Self, CueControllerHandle) {
         let event_rx = event_tx.subscribe();
+        let advance_cursor_when_go = settings_rx.borrow().advance_cursor_when_go;
         let (command_tx, command_rx) = mpsc::channel::<ControllerCommand>(32);
         (
             Self {
@@ -55,6 +57,7 @@ impl CueController {
                 state_tx,
                 event_tx,
                 event_rx,
+                advance_cursor_when_go,
                 wait_tasks: HashMap::new(),
             },
             CueControllerHandle { command_tx },
@@ -65,6 +68,9 @@ impl CueController {
         log::info!("CueController run loop started.");
         loop {
             tokio::select! {
+                Ok(_) = self.settings_rx.changed() => {
+                    self.advance_cursor_when_go = self.settings_rx.borrow().advance_cursor_when_go;
+                }
                 Some(command) = self.command_rx.recv() => {
                     if let Err(e) = self.handle_command(command).await {
                         log::error!("Error handling controller command: {}", e);
@@ -139,11 +145,8 @@ impl CueController {
                     return Err(anyhow::anyhow!("GO: Playback Cursor is unavailable."));
                 };
                 self.handle_go(cue_id).await?;
-                let advance_cursor_when_go = {
-                    let settings = self.settings_rx.borrow();
-                    settings.advance_cursor_when_go
-                };
-                if advance_cursor_when_go {
+
+                if self.advance_cursor_when_go {
                     self.update_playback_cursor().await?;
                 }
                 Ok(())
