@@ -75,11 +75,13 @@ pub struct BackendSettings {
     pub audio: BackendAudioSettings,
 }
 
+#[cfg(feature = "backend")]
+#[derive(Default)]
 pub struct BackendAudioSettings {
-    pub device_id: String,
-    pub channel_count: u16,
-    pub sample_rate: u32,
-    pub buffer_size: u32,
+    pub device_id: Option<String>,
+    pub channel_count: Option<u16>,
+    pub sample_rate: Option<u32>,
+    pub buffer_size: Option<u32>,
 }
 
 #[cfg(feature = "backend")]
