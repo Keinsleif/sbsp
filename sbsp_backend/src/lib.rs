@@ -72,6 +72,14 @@ pub struct FullShowState {
 pub struct BackendSettings {
     pub advance_cursor_when_go: bool,
     pub copy_assets_when_add: bool,
+    pub audio: BackendAudioSettings,
+}
+
+pub struct BackendAudioSettings {
+    pub device_id: String,
+    pub channel_count: u16,
+    pub sample_rate: u32,
+    pub buffer_size: u32,
 }
 
 #[cfg(feature = "backend")]

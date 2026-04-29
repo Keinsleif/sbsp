@@ -11,10 +11,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Source,
-    mixer::Mixer,
-    source::Zero,
-    stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, Source, cpal::{ChannelCount, DeviceId, FrameCount, SampleRate}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink}
 };
 use std::{
     collections::HashMap,
