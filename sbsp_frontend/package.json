@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev:web": "cross-env VITE_APP_TARGET=\"websocket\" vite --port 1424",
+    "predev:host": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"websocket\" vite build",
     "dev:host": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite",
     "dev:remote": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite",
     "prebuild:host": "vue-tsc --noEmit && cross-env VITE_APP_TARGET=\"websocket\" vite build",
