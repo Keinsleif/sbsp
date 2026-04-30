@@ -76,7 +76,7 @@ pub struct BackendSettings {
 }
 
 #[cfg(feature = "backend")]
-#[derive(Default)]
+#[derive(Default, Clone, PartialEq)]
 pub struct BackendAudioSettings {
     pub device_id: Option<String>,
     pub channel_count: Option<u16>,
@@ -136,7 +136,7 @@ pub fn start_backend(
         ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
-        settings_rx,
+        settings_rx.clone(),
         executor_command_tx,
         executor_event_rx,
         state_tx,
@@ -156,6 +156,7 @@ pub fn start_backend(
         let (engine, shared_level) = AudioEngine::new_with_level_meter(
             audio_rx,
             engine_event_tx.clone(),
+            settings_rx,
             ShowAudioSettings::default(),
         )?;
         (engine, Some(shared_level))
@@ -163,6 +164,7 @@ pub fn start_backend(
         let engine = AudioEngine::new(
             audio_rx,
             engine_event_tx.clone(),
+            settings_rx,
             ShowAudioSettings::default(),
         )?;
         (engine, None)
