@@ -8,7 +8,8 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { FileList } from '../types/FileList';
 import { ServiceEntry } from '../types/ServiceEntry';
 import { LicenseInformation } from '../types/LicenseInformation';
-import { GlobalSettings } from '../types/GlobalSettings';
+import type { GlobalHostSettings } from '../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
@@ -243,16 +244,16 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('update_show_settings', { newSettings: newSettings });
     },
 
-    getSettings: function (): Promise<GlobalSettings> {
-      return invoke<GlobalSettings>('get_settings');
+    getSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
+      return invoke<GlobalHostSettings | GlobalRemoteSettings>('get_settings');
     },
-    setSettings: function (newSettings: GlobalSettings): void {
+    setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
       invoke('set_settings', { newSettings: newSettings }).catch(e => console.error(e));
     },
-    reloadSettings: function (): Promise<GlobalSettings> {
-      return invoke<GlobalSettings>('reload_settings');
+    reloadSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
+      return invoke<GlobalHostSettings | GlobalRemoteSettings>('reload_settings');
     },
-    importSettingsFromFile: function (): Promise<GlobalSettings> {
+    importSettingsFromFile: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       return new Promise((resolve, reject) => {
         open({
           multiple: false,
@@ -260,7 +261,7 @@ export function useTauriApi(): IBackendAdapter {
         })
           .then((path) => {
             if (path != null) {
-              invoke<GlobalSettings>('import_settings_from_file', { path: path }).then(resolve).catch(reject);
+              invoke<GlobalHostSettings | GlobalRemoteSettings>('import_settings_from_file', { path: path }).then(resolve).catch(reject);
             }
           })
           .catch(e => console.error(e));

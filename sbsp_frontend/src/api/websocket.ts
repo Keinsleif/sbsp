@@ -8,7 +8,8 @@ import { WsCommand } from '../types/WsCommand';
 import { ProjectStatus } from '../types/ProjectStatus';
 import { v4 } from 'uuid';
 import { ServiceEntry } from '../types/ServiceEntry';
-import { GlobalSettings } from '../types/GlobalSettings';
+import type { GlobalHostSettings } from '../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import typia from 'typia';
 import { useUiState } from '../stores/uistate';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -16,7 +17,7 @@ import { FullShowState } from '../types/FullShowState';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
-const DEFAULT_SETTINGS: GlobalSettings = {
+const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
     advanceCursorWhenGo: false,
     lockCursorToSelection: true,
@@ -192,7 +193,7 @@ const DEFAULT_SETTINGS: GlobalSettings = {
   },
 };
 
-const settingsValidator = typia.createValidate<GlobalSettings>();
+const settingsValidator = typia.createValidate<GlobalHostSettings | GlobalRemoteSettings>();
 
 type UnlistenFn = () => void;
 
@@ -531,23 +532,23 @@ export function useWebsocketApi(): IBackendAdapter {
       this.sendCommand({ type: 'model', command: 'updateSettings', params: newSettings });
     },
 
-    getSettings: async function (): Promise<GlobalSettings> {
+    getSettings: async function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       const settings = localStorage.getItem(GLOBAL_SETTINGS_STORAGE_KEY);
       if (settings != null) {
-        return JSON.parse(settings) as GlobalSettings;
+        return JSON.parse(settings) as GlobalHostSettings | GlobalRemoteSettings;
       } else {
         localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
         return DEFAULT_SETTINGS;
       }
     },
-    setSettings: function (newSettings: GlobalSettings): void {
+    setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
       localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
     },
-    reloadSettings: function (): Promise<GlobalSettings> {
+    reloadSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       return this.getSettings();
     },
-    importSettingsFromFile: async function (): Promise<GlobalSettings> {
-      return new Promise<GlobalSettings>((resolve, reject) => {
+    importSettingsFromFile: async function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
+      return new Promise<GlobalHostSettings | GlobalRemoteSettings>((resolve, reject) => {
         openFileDialog()
           .then((files) => {
             const filepath = files != null ? files[0] : null;

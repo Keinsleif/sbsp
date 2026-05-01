@@ -4,7 +4,8 @@ import { ShowSettings } from '../types/ShowSettings';
 import { FileList } from '../types/FileList';
 import { ServiceEntry } from '../types/ServiceEntry';
 import { LicenseInformation } from '../types/LicenseInformation';
-import { GlobalSettings } from '../types/GlobalSettings';
+import type { GlobalHostSettings } from '../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import { ApiServerOptions } from '../types/ApiServerOptions';
 import { FullShowState } from '../types/FullShowState';
 
@@ -61,10 +62,10 @@ export interface IBackendAdapter {
   updateShowSettings(newSettings: ShowSettings): Promise<void>;
 
   // Settings
-  getSettings(): Promise<GlobalSettings>;
-  setSettings(newSettings: GlobalSettings): void;
-  reloadSettings(): Promise<GlobalSettings>;
-  importSettingsFromFile(): Promise<GlobalSettings>;
+  getSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
+  setSettings(newSettings: GlobalHostSettings | GlobalRemoteSettings): void;
+  reloadSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
+  importSettingsFromFile(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
   exportSettingsToFile(): void;
 
   onBackendEvent(callback: (event: BackendEvent) => void): Promise<UnlistenFn>;
