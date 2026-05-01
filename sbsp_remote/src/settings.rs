@@ -8,43 +8,22 @@ use uuid::Uuid;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{
-    BackendSettings,
     model::cue::{
         Cue, CueChain, CueParam,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
-    },
+    }
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase", default)]
-pub struct GlobalSettings {
+pub struct GlobalRemoteSettings {
     pub general: GeneralSettings,
     pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
     pub name_format: NameFormatSettings,
-}
-
-impl From<&GlobalSettings> for BackendSettings {
-    fn from(from: &GlobalSettings) -> BackendSettings {
-        BackendSettings {
-            advance_cursor_when_go: from.general.advance_cursor_when_go,
-            copy_assets_when_add: from.general.copy_assets_when_add,
-        }
-    }
-}
-
-impl PartialEq<BackendSettings> for GlobalSettings {
-    fn eq(&self, other: &BackendSettings) -> bool {
-        if self.general.advance_cursor_when_go == other.advance_cursor_when_go
-            && self.general.copy_assets_when_add == other.copy_assets_when_add
-        {
-            return true;
-        }
-        false
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

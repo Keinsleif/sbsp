@@ -1,11 +1,11 @@
 use std::path::Path;
 use tokio::sync::RwLock;
 
-use super::GlobalSettings;
+use super::GlobalRemoteSettings;
 
 #[derive(Default)]
 pub struct GlobalSettingsManager {
-    settings: RwLock<GlobalSettings>,
+    settings: RwLock<GlobalRemoteSettings>,
 }
 
 impl GlobalSettingsManager {
@@ -13,11 +13,11 @@ impl GlobalSettingsManager {
         Self::default()
     }
 
-    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, GlobalSettings> {
+    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, GlobalRemoteSettings> {
         self.settings.read().await
     }
 
-    pub async fn update(&self, new_settings: GlobalSettings) {
+    pub async fn update(&self, new_settings: GlobalRemoteSettings) {
         let mut settings = self.settings.write().await;
         *settings = new_settings.clone();
     }
@@ -26,7 +26,7 @@ impl GlobalSettingsManager {
         let content = tokio::fs::read_to_string(path).await?;
 
         let new_settings =
-            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalSettings>(&content))
+            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalRemoteSettings>(&content))
                 .await??;
 
         self.update(new_settings).await;

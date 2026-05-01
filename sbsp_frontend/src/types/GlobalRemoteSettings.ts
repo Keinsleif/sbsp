@@ -5,4 +5,4 @@ import type { HotkeySettings } from "./HotkeySettings";
 import type { NameFormatSettings } from "./NameFormatSettings";
 import type { TemplateSettings } from "./TemplateSettings";
 
-export type GlobalSettings = { general: GeneralSettings, appearance: AppearanceSettings, hotkey: HotkeySettings, template: TemplateSettings, nameFormat: NameFormatSettings, };
+export type GlobalRemoteSettings = { general: GeneralSettings, appearance: AppearanceSettings, hotkey: HotkeySettings, template: TemplateSettings, nameFormat: NameFormatSettings, };

@@ -1,17 +1,17 @@
 use std::path::Path;
 use tokio::sync::{RwLock, watch};
 
-use super::GlobalSettings;
+use super::GlobalHostSettings;
 use sbsp_backend::BackendSettings;
 
 pub struct GlobalSettingsManager {
-    settings: RwLock<GlobalSettings>,
+    settings: RwLock<GlobalHostSettings>,
     settings_tx: watch::Sender<BackendSettings>,
 }
 
 impl GlobalSettingsManager {
     pub fn new() -> (Self, watch::Receiver<BackendSettings>) {
-        let settings = GlobalSettings::default();
+        let settings = GlobalHostSettings::default();
         let (settings_tx, settings_rx) = watch::channel(BackendSettings::from(&settings));
         (
             Self {
@@ -22,11 +22,11 @@ impl GlobalSettingsManager {
         )
     }
 
-    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, GlobalSettings> {
+    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, GlobalHostSettings> {
         self.settings.read().await
     }
 
-    pub async fn update(&self, new_settings: GlobalSettings) {
+    pub async fn update(&self, new_settings: GlobalHostSettings) {
         {
             let mut settings = self.settings.write().await;
             *settings = new_settings.clone();
@@ -44,7 +44,7 @@ impl GlobalSettingsManager {
         let content = tokio::fs::read_to_string(path).await?;
 
         let new_settings =
-            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalSettings>(&content))
+            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalHostSettings>(&content))
                 .await??;
 
         self.update(new_settings).await;

@@ -18,25 +18,31 @@ use sbsp_backend::{
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase", default)]
-pub struct GlobalSettings {
+pub struct GlobalHostSettings {
     pub general: GeneralSettings,
+    pub audio: AudioHardwareSettings,
     pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
     pub name_format: NameFormatSettings,
 }
 
-impl From<&GlobalSettings> for BackendSettings {
-    fn from(from: &GlobalSettings) -> BackendSettings {
+impl From<&GlobalHostSettings> for BackendSettings {
+    fn from(from: &GlobalHostSettings) -> BackendSettings {
         BackendSettings {
             advance_cursor_when_go: from.general.advance_cursor_when_go,
             copy_assets_when_add: from.general.copy_assets_when_add,
-            audio: BackendAudioSettings::default(),
+            audio: BackendAudioSettings {
+                device_id: from.audio.device_id.clone(),
+                channel_count: from.audio.channel_count,
+                sample_rate: from.audio.sample_rate,
+                buffer_size: from.audio.buffer_size
+            },
         }
     }
 }
 
-impl PartialEq<BackendSettings> for GlobalSettings {
+impl PartialEq<BackendSettings> for GlobalHostSettings {
     fn eq(&self, other: &BackendSettings) -> bool {
         if self.general.advance_cursor_when_go == other.advance_cursor_when_go
             && self.general.copy_assets_when_add == other.copy_assets_when_add
@@ -65,6 +71,15 @@ impl Default for GeneralSettings {
             seek_amount: 5.0,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[serde(rename_all = "camelCase", default)]
+pub struct AudioHardwareSettings {
+    pub device_id: Option<String>,
+    pub channel_count: Option<u16>,
+    pub sample_rate: Option<u32>,
+    pub buffer_size: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
