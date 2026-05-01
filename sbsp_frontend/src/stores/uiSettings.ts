@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
 import { readonly, ref, toRaw } from 'vue';
-import { GlobalSettings } from '../types/GlobalSettings';
 import { useApi } from '../api';
+import type { GlobalHostSettings } from '../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
 export const useUiSettings = defineStore('uiSettings', () => {
-  const settings = ref<GlobalSettings>({
+  const settings = ref<GlobalHostSettings | GlobalRemoteSettings>({
     general: {
       advanceCursorWhenGo: false,
       lockCursorToSelection: true,
@@ -188,7 +189,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     })
     .catch(e => console.error(e));
 
-  const update = (newSettings: GlobalSettings) => {
+  const update = (newSettings: GlobalHostSettings | GlobalRemoteSettings) => {
     settings.value = newSettings;
     api.setSettings(newSettings);
   };

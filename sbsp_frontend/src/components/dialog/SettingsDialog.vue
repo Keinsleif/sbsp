@@ -978,7 +978,8 @@ import BottomEditor from '../pc/BottomEditor.vue';
 import type { Cue } from '../../types/Cue';
 import TextInput from '../input/TextInput.vue';
 import { useUiSettings } from '../../stores/uiSettings';
-import type { GlobalSettings } from '../../types/GlobalSettings';
+import type { GlobalHostSettings } from '../../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../../types/GlobalRemoteSettings';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 
@@ -994,7 +995,7 @@ const selectingTemplate = ref<'audio' | 'wait' | 'fade' | 'start' | 'stop' | 'pa
 const showModelName = ref<string>(showModel.name);
 const editingSettings = ref<{
   show: ShowSettings;
-  global: GlobalSettings;
+  global: GlobalHostSettings | GlobalRemoteSettings;
 }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 
 const getSelectingCue = () => {
