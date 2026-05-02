@@ -31,12 +31,8 @@ impl GlobalSettingsManager {
             let mut settings = self.settings.write().await;
             *settings = new_settings.clone();
         }
-        self.settings_tx.send_if_modified(|backend_state| {
-            if new_settings == *backend_state {
-                return false;
-            }
+        self.settings_tx.send_modify(|backend_state| {
             *backend_state = BackendSettings::from(&new_settings);
-            true
         });
     }
 
