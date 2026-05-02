@@ -134,6 +134,14 @@
           "stop": "停止キュー",
           "type": "種類",
           "wait": "待機キュー"
+        },
+        "audioHardware": {
+          "channelCount": "出力チャンネル数",
+          "warning": "設定を変更するとオーディオエンジンが再起動され、再生中のすべての音声キューが停止します。",
+          "saveWarning": "実行中の音声を停止して設定を適用しますか？\nこの操作により、再生中のすべてのオーディオが停止します。",
+          "bufferSize": "バッファサイズ",
+          "device": "出力デバイス",
+          "sampleRate": "サンプリングレート"
         }
       },
       "preset": {
@@ -148,11 +156,7 @@
         }
       },
       "show": {
-        "audio": {
-          "monoOutput": "ステレオをモノラルにダウンミックス",
-          "targetLufs": "目標 LUFS",
-          "outputChannels": "出力チャンネル数"
-        },
+        "audio": {},
         "general": {
           "assetsDirectory": {
             "description": "アセットをコピーするディレクトリへの相対パス (ShowModelごとの設定)",
@@ -162,11 +166,15 @@
         },
         "remote": {
           "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"
+        },
+        "audioHardware": {},
+        "audioLogic": {
+          "monoOutput": "ステレオをモノラルにダウンミックス",
+          "targetLufs": "目標 LUFS"
         }
       },
       "tab": {
         "appearance": "外観",
-        "audio": "音声",
         "category": {
           "global": "グローバル設定",
           "inThisShowModel": "ShowModelの設定"
@@ -176,7 +184,9 @@
         "nameFormat": "名前フォーマット",
         "preset": "プリセット",
         "remote": "リモート操作",
-        "template": "テンプレート"
+        "template": "テンプレート",
+        "audioLogic": "音声処理",
+        "audioHardware": "音声デバイス"
       }
     },
     "update": {
@@ -193,7 +203,10 @@
     "close": "閉じる",
     "done": "完了",
     "forExpertWarning": "何をしているのか理解している場合のみ、これを変更してください。",
-    "open": "開く"
+    "open": "開く",
+    "default": "既定",
+    "warning": "警告",
+    "confirm": "確認"
   },
   "main": {
     "bottomEditor": {

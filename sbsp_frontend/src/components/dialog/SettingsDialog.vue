@@ -25,8 +25,8 @@
             value="showGeneral"
           />
           <v-tab
-            :text="t('dialog.settings.tab.audio')"
-            value="audio"
+            :text="t('dialog.settings.tab.audioLogic')"
+            value="audioLogic"
           />
           <v-tab
             :text="t('dialog.settings.tab.remote')"
@@ -42,6 +42,11 @@
           <v-tab
             :text="t('dialog.settings.tab.appearance')"
             value="appearance"
+          />
+          <v-tab
+            v-if="'audio' in editingSettings.global"
+            :text="t('dialog.settings.tab.audioHardware')"
+            value="audioHardware"
           />
           <v-tab
             :text="t('dialog.settings.tab.hotkey')"
@@ -120,31 +125,18 @@
             />
           </v-tabs-window-item>
           <v-tabs-window-item
-            value="audio"
+            value="audioLogic"
             class="pa-4"
           >
-            <!-- <v-number-input
-              v-model="editingSettings.show.audio.outputChannels"
-              class="mt-4"
-              :label="t('dialog.settings.show.audio.outputChannels')"
-              density="compact"
-              variant="outlined"
-              hide-details
-              width="200px"
-              autocomplete="off"
-              :min="1"
-              :max="8"
-              :precision="0"
-            /> -->
             <v-checkbox
               v-model="editingSettings.show.audio.monoOutput"
-              :label="t('dialog.settings.show.audio.monoOutput')"
+              :label="t('dialog.settings.show.audioLogic.monoOutput')"
               hide-details
             />
             <v-number-input
               v-model="editingSettings.show.audio.lufsTarget"
               class="mt-4"
-              :label="t('dialog.settings.show.audio.targetLufs')"
+              :label="t('dialog.settings.show.audioLogic.targetLufs')"
               suffix="LUFS"
               density="compact"
               variant="outlined"
@@ -243,6 +235,72 @@
                 hide-details
               />
             </v-sheet>
+          </v-tabs-window-item>
+          <v-tabs-window-item
+            v-if="'audio' in editingSettings.global"
+            value="audioHardware"
+            class="d-flex flex-column pa-3 ga-4"
+          >
+            <div>
+              <v-alert
+                class="flex-shrink-0"
+                type="error"
+                icon="$warning"
+                :text="t('dialog.settings.global.audioHardware.warning')"
+              />
+            </div>
+            <v-select
+              v-model="editingSettings.global.audio.deviceId"
+              hide-details
+              persistent-placeholder
+              :label="t('dialog.settings.global.audioHardware.device')"
+              :items="devices"
+              item-value="value"
+              item-title="name"
+              variant="outlined"
+              density="compact"
+              autocomplete="off"
+              @keydown.stop
+            />
+            <v-select
+              v-model="editingSettings.global.audio.channelCount"
+              hide-details
+              persistent-placeholder
+              :label="t('dialog.settings.global.audioHardware.channelCount')"
+              :items="channelCounts"
+              item-value="value"
+              item-title="name"
+              variant="outlined"
+              density="compact"
+              autocomplete="off"
+              @keydown.stop
+            />
+            <v-select
+              v-model="editingSettings.global.audio.sampleRate"
+              hide-details
+              persistent-placeholder
+              :label="t('dialog.settings.global.audioHardware.sampleRate')"
+              :items="sampleRates"
+              item-value="value"
+              item-title="name"
+              variant="outlined"
+              density="compact"
+              autocomplete="off"
+              @keydown.stop
+            />
+            <v-select
+              v-model="editingSettings.global.audio.bufferSize"
+              hide-details
+              persistent-placeholder
+              :label="t('dialog.settings.global.audioHardware.bufferSize')"
+              :items="bufferSizes"
+              item-value="value"
+              item-title="name"
+              variant="outlined"
+              density="compact"
+              autocomplete="off"
+              @keydown.stop
+            />
           </v-tabs-window-item>
           <v-tabs-window-item
             value="hotkey"
@@ -423,8 +481,9 @@
           color="primary"
           :text="t('general.done')"
           @click="
-            saveSettings();
-            isSettingsDialogOpen = false;
+            saveSettings().then(value => {
+              if (value) isSettingsDialogOpen = false;
+            });
           "
         />
       </v-footer>
@@ -433,7 +492,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRaw, watch } from 'vue';
+import { computed, onMounted, ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import type { ShowSettings } from '../../types/ShowSettings';
 import HotkeyInput from '../input/HotkeyInput.vue';
@@ -442,13 +501,18 @@ import { useUiSettings } from '../../stores/uiSettings';
 import type { GlobalHostSettings } from '../../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../../types/GlobalRemoteSettings';
 import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+import { side, useApi } from '../../api';
 import TemplateSettings from './settings/TemplateSettings.vue';
+import { SupportedHardware } from '../../types/SupportedHardware';
+import { useShowState } from '../../stores/showstate';
+import { message } from '@tauri-apps/plugin-dialog';
+import { AudioHardwareSettings } from '../../types/AudioHardwareSettings';
 
 const { t } = useI18n();
 const api = useApi();
 const showModel = useShowModel();
 const uiSettings = useUiSettings();
+const showState = useShowState();
 
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
@@ -458,6 +522,70 @@ const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalHostSettings | GlobalRemoteSettings;
 }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
+const supportedHardware = ref<SupportedHardware | null>(null);
+
+const devices = computed(() => {
+  const supportedHW = supportedHardware.value;
+  if (supportedHW != null) {
+    let devices: { name: string; value: string | null }[] = [{ name: t('general.default'), value: null }];
+    for (const dev in supportedHW.devices) {
+      devices.push({ name: supportedHW.devices[dev]!.name, value: dev });
+    }
+    return devices;
+  }
+  return [];
+});
+const channelCounts = computed(() => {
+  const supportedHW = supportedHardware.value;
+  if ('audio' in editingSettings.value.global && supportedHW != null) {
+    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
+    const device = supportedHW.devices[id];
+    if (device != null) {
+      const channels: { name: string; value: number | null }[] = [{ name: `${t('general.default')} (${device.defaultChannelCount})`, value: null }];
+      device.supportedConfigs.forEach((fc) => {
+        channels.push({ value: fc.channelCount, name: fc.channelCount.toString() });
+      });
+      return channels;
+    }
+  }
+  return [];
+});
+const sampleRates = computed(() => {
+  const supportedHW = supportedHardware.value;
+  if ('audio' in editingSettings.value.global && supportedHW != null) {
+    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
+    const device = supportedHW.devices[id];
+    if (device != null) {
+      const channels = editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
+      let sampleRates: { name: string; value: number | null }[] = [{ name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null }];
+      for (const fc of device.supportedConfigs) {
+        if (fc.channelCount == channels) {
+          sampleRates = sampleRates.concat(fc.sampleRates.map(sr => ({ value: sr, name: (sr / 1000).toString() + ' kHz' })));
+        }
+      }
+      return sampleRates;
+    }
+  }
+  return [];
+});
+const bufferSizes = computed(() => {
+  const supportedHW = supportedHardware.value;
+  if ('audio' in editingSettings.value.global && supportedHW != null) {
+    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
+    const device = supportedHW.devices[id];
+    if (device != null) {
+      const channels = editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
+      let bufferSizes: { name: string; value: number | null }[] = [{ name: `${t('general.default')}`, value: null }];
+      for (const fc of device.supportedConfigs) {
+        if (fc.channelCount == channels) {
+          bufferSizes = bufferSizes.concat(fc.bufferSizes.map(bs => ({ value: bs, name: bs.toString() + ' Frames' })));
+        }
+      }
+      return bufferSizes;
+    }
+  }
+  return [];
+});
 
 watch(
   () => showModel.settings,
@@ -489,10 +617,41 @@ watch(isSettingsDialogOpen, (newState) => {
   }
 });
 
-const saveSettings = () => {
+onMounted(() => {
+  if (api.host) {
+    api.host.getHardware().then(value => supportedHardware.value = value);
+  }
+});
+
+const saveSettings = async (): Promise<boolean> => {
+  if (side == 'host' && 'audio' in uiSettings.settings && 'audio' in editingSettings.value.global && !isEqualAudioHardware(editingSettings.value.global.audio, uiSettings.settings.audio)) {
+    const activeIds = Object.keys(showState.activeCues);
+    let hasActiveAudioCue = false;
+    for (const id of activeIds) {
+      if (showModel.getCueById(id)?.params.type == 'audio') {
+        hasActiveAudioCue = true;
+        break;
+      };
+    }
+    if (hasActiveAudioCue) {
+      const result = await message(t('dialog.settings.global.audioHardware.saveWarning'), {
+        buttons: 'OkCancel',
+        kind: 'warning',
+        title: t('general.warning'),
+      });
+      if (result) {
+        return false;
+      }
+    }
+  }
   api.updateShowSettings(editingSettings.value.show);
   api.updateModelName(showModelName.value);
   uiSettings.update(editingSettings.value.global);
+  return true;
+};
+
+const isEqualAudioHardware = (a: AudioHardwareSettings, b: AudioHardwareSettings): boolean => {
+  return a.deviceId == b.deviceId && a.channelCount == b.channelCount && a.sampleRate == b.sampleRate && a.bufferSize == b.bufferSize;
 };
 
 const recallMusicBeePreset = () => {
