@@ -269,6 +269,7 @@ pub fn run() {
             command::file_save_as,
             command::export_to_folder,
             command::listen_level_meter,
+            command::get_hardware,
             command::controller::go,
             command::controller::pause,
             command::controller::resume,

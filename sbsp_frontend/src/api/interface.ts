@@ -1,13 +1,14 @@
 import type { Cue } from '../types/Cue';
 import type { BackendEvent } from '../types/BackendEvent';
-import { ShowSettings } from '../types/ShowSettings';
-import { FileList } from '../types/FileList';
-import { ServiceEntry } from '../types/ServiceEntry';
-import { LicenseInformation } from '../types/LicenseInformation';
+import type { ShowSettings } from '../types/ShowSettings';
+import type { FileList } from '../types/FileList';
+import type { ServiceEntry } from '../types/ServiceEntry';
+import type { LicenseInformation } from '../types/LicenseInformation';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import { ApiServerOptions } from '../types/ApiServerOptions';
-import { FullShowState } from '../types/FullShowState';
+import type { ApiServerOptions } from '../types/ApiServerOptions';
+import type { FullShowState } from '../types/FullShowState';
+import type { SupportedHardware } from '../types/SupportedHardware';
 
 type UnlistenFn = () => void;
 
@@ -89,6 +90,8 @@ export interface IBackendHostAdapter {
   getHostname(): Promise<string>;
   startServer(): Promise<void>;
   stopServer(): Promise<void>;
+
+  getHardware(): Promise<SupportedHardware>;
 
   onServerStatusChanged(callback: (status: 'started' | 'stopped') => void): Promise<UnlistenFn>;
 }

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use sbsp_backend::{FullShowState, event::BackendEvent};
+use sbsp_backend::{FullShowState, event::BackendEvent, helper::{SupportedHardware, get_supported_hardware}};
 use tauri::{Manager as _, WebviewWindow, ipc::Channel, path::BaseDirectory};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
@@ -232,4 +232,9 @@ pub async fn listen_level_meter(
         *channel = Some(level_listener);
     });
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_hardware() -> Result<SupportedHardware, String> {
+    get_supported_hardware().map_err(|e| e.to_string())
 }
