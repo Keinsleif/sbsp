@@ -3,7 +3,9 @@ use std::path::Path;
 use tauri::Manager as _;
 
 #[tauri::command]
-pub async fn get_settings(state: tauri::State<'_, AppState>) -> Result<GlobalRemoteSettings, String> {
+pub async fn get_settings(
+    state: tauri::State<'_, AppState>,
+) -> Result<GlobalRemoteSettings, String> {
     Ok(state.settings_manager.read().await.clone())
 }
 

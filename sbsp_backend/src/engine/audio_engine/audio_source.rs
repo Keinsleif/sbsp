@@ -1,5 +1,5 @@
-mod volume;
 mod envelope;
+mod volume;
 
 use std::{
     f32::consts::SQRT_2,
@@ -20,7 +20,8 @@ use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
 use crate::{
-    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope}, model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam}
+    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
+    model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam},
 };
 
 use super::lowcost_skip::SkipDuration;
@@ -575,8 +576,13 @@ where
             self.volume.update(dt);
 
             if Self::is_advancing(state) {
-                let factor = self.control_volume.volume + self.volume.volume + self.envelope.update(self.offset_position + self.playing_frames_counted as f64
-                        / self.current_span_sample_rate.get() as f64);
+                let factor = self.control_volume.volume
+                    + self.volume.volume
+                    + self.envelope.update(
+                        self.offset_position
+                            + self.playing_frames_counted as f64
+                                / self.current_span_sample_rate.get() as f64,
+                    );
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];
@@ -680,6 +686,8 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        self.shared.state.store(AudioPlaybackState::Stopped as u8, Ordering::Release);
+        self.shared
+            .state
+            .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
     }
 }

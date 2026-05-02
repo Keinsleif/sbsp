@@ -7,12 +7,10 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use hotkey::HotkeySettings;
-use sbsp_backend::{
-    model::cue::{
-        Cue, CueChain, CueParam,
-        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
-        group::GroupMode,
-    }
+use sbsp_backend::model::cue::{
+    Cue, CueChain, CueParam,
+    audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+    group::GroupMode,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]

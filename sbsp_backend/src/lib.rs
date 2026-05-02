@@ -28,10 +28,10 @@ mod engine;
 pub mod event;
 #[cfg(feature = "backend")]
 mod executor;
+pub mod helper;
 #[cfg(feature = "backend")]
 pub mod manager;
 pub mod model;
-pub mod helper;
 
 #[cfg(any(feature = "apiserver", feature = "apiclient"))]
 pub mod api;

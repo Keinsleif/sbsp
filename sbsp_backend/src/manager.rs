@@ -66,7 +66,7 @@ impl ShowModelManager {
 
     pub async fn run(mut self) {
         loop {
-            tokio::select!{
+            tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     if let Err(e) = self.process_command(command).await {
                         log::error!("Failed modifying show model: {}", e);
@@ -84,7 +84,6 @@ impl ShowModelManager {
         log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
-
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let mut new_cue = cue.clone();
                 if let CueParam::Audio(audio_param) = &mut new_cue.params

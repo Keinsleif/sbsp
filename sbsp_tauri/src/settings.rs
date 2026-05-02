@@ -8,11 +8,12 @@ use uuid::Uuid;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{
-    BackendAudioSettings, BackendSettings, model::cue::{
+    BackendAudioSettings, BackendSettings,
+    model::cue::{
         Cue, CueChain, CueParam,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
-    }
+    },
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
@@ -37,7 +38,7 @@ impl From<&GlobalHostSettings> for BackendSettings {
                 device_id: from.audio.device_id.clone(),
                 channel_count: from.audio.channel_count,
                 sample_rate: from.audio.sample_rate,
-                buffer_size: from.audio.buffer_size
+                buffer_size: from.audio.buffer_size,
             },
         }
     }

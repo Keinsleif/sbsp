@@ -386,10 +386,10 @@ impl Executor {
                                     fade_param: *fade_param,
                                 })
                                 .await
-                                .is_err()
-                            => {
-                                anyhow::bail!("cannot send AudioCommand");
-                            }
+                                .is_err() =>
+                        {
+                            anyhow::bail!("cannot send AudioCommand");
+                        }
                         CueParam::Group { .. } => {
                             let children = self.model_handle.get_all_children_by_id(target).await;
                             for child in children {

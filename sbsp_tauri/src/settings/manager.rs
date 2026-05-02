@@ -39,9 +39,10 @@ impl GlobalSettingsManager {
     pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
-        let new_settings =
-            tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalHostSettings>(&content))
-                .await??;
+        let new_settings = tokio::task::spawn_blocking(move || {
+            serde_json::from_str::<GlobalHostSettings>(&content)
+        })
+        .await??;
 
         self.update(new_settings).await;
 

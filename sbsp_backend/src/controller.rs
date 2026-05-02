@@ -244,8 +244,8 @@ impl CueController {
                 Some(first_cue.id)
             } else {
                 self.model_handle
-                .get_next_cue_id_by_id(&playback_cursor)
-                .await
+                    .get_next_cue_id_by_id(&playback_cursor)
+                    .await
             }
         } else {
             self.model_handle

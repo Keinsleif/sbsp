@@ -11,7 +11,11 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source, cpal::{DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink}
+    Decoder, Device, DeviceTrait, Source,
+    cpal::{DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
+    mixer::Mixer,
+    source::Zero,
+    stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -23,21 +27,28 @@ use std::{
     },
     time::Duration,
 };
-use tokio::{sync::{mpsc, watch}, time};
+use tokio::{
+    sync::{mpsc, watch},
+    time,
+};
 use uuid::Uuid;
 
 use super::EngineEvent;
 use crate::{
-    BackendAudioSettings, BackendSettings, action::AudioAction, controller::state::AudioStateParam, engine::audio_engine::{
+    BackendAudioSettings, BackendSettings,
+    action::AudioAction,
+    controller::state::AudioStateParam,
+    engine::audio_engine::{
         audio_source::{
             AudioPlaybackState, AudioSource, AudioSourceHandle, AudioSourceSettings, ChannelMapping,
         },
         level_meter::{LevelMeter, SharedLevel},
         static_source::StaticSource,
-    }, model::{
+    },
+    model::{
         cue::audio::{Decibels, FadeParam, SoundType},
         settings::ShowAudioSettings,
-    }
+    },
 };
 
 const NANOS_PER_SEC: u64 = 1_000_000_000;
@@ -50,7 +61,7 @@ struct AudioOutput {
 impl AudioOutput {
     fn add<T>(&self, source: T)
     where
-        T: Source + Send + 'static
+        T: Source + Send + 'static,
     {
         self.mixer.add(source);
     }
@@ -105,7 +116,10 @@ impl AudioEngine {
 
         sink.mixer().add(main_source);
 
-        let output = AudioOutput { _sink: sink, mixer: main_mixer };
+        let output = AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        };
 
         Ok(Self {
             output: Some(output),
@@ -146,7 +160,10 @@ impl AudioEngine {
         );
 
         sink.mixer().add(main_source);
-        let output = AudioOutput { _sink: sink, mixer: main_mixer };
+        let output = AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        };
 
         Ok((
             Self {
@@ -192,7 +209,10 @@ impl AudioEngine {
             sink.mixer().add(main_source);
         }
         self.backend_settings = backend.clone();
-        self.output = Some(AudioOutput { _sink: sink, mixer: main_mixer });
+        self.output = Some(AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        });
         Ok(())
     }
 
@@ -205,13 +225,20 @@ impl AudioEngine {
                     if config.sample_format() != SampleFormat::F32 {
                         continue;
                     }
-                    if let Some(channels) = settings.channel_count && config.channels() < channels {
+                    if let Some(channels) = settings.channel_count
+                        && config.channels() < channels
+                    {
                         continue;
                     }
-                    if let Some(buffer_size) = settings.buffer_size && let SupportedBufferSize::Range{min, max} = config.buffer_size() && (buffer_size <= *min || buffer_size >= *max) {
+                    if let Some(buffer_size) = settings.buffer_size
+                        && let SupportedBufferSize::Range { min, max } = config.buffer_size()
+                        && (buffer_size <= *min || buffer_size >= *max)
+                    {
                         continue;
                     }
-                    if let Some(sample_rate) = settings.sample_rate && let Some(config) = config.try_with_sample_rate(sample_rate) {
+                    if let Some(sample_rate) = settings.sample_rate
+                        && let Some(config) = config.try_with_sample_rate(sample_rate)
+                    {
                         matched_config = Some(config.config());
                     }
                 }
@@ -227,13 +254,16 @@ impl AudioEngine {
 
     fn get_device(device_id: &Option<String>) -> Result<Device> {
         if let Some(device_id) = device_id
-        && let Ok(id) = DeviceId::from_str(device_id)
-        && let Ok(host) = rodio::cpal::host_from_id(id.0)
-        && let Some(device) = host.device_by_id(&id) && device.supports_output() {
+            && let Ok(id) = DeviceId::from_str(device_id)
+            && let Ok(host) = rodio::cpal::host_from_id(id.0)
+            && let Some(device) = host.device_by_id(&id)
+            && device.supports_output()
+        {
             Ok(device)
         } else {
             let host = rodio::cpal::default_host();
-            host.default_output_device().ok_or(anyhow::anyhow!("No default device found."))
+            host.default_output_device()
+                .ok_or(anyhow::anyhow!("No default device found."))
         }
     }
 
