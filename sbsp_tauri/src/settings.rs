@@ -20,6 +20,7 @@ use sbsp_backend::{
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalHostSettings {
     pub general: GeneralSettings,
+    #[serde(default)]
     pub audio: AudioHardwareSettings,
     pub appearance: AppearanceSettings,
     pub hotkey: HotkeySettings,
