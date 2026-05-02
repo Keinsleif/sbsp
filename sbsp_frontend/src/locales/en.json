@@ -134,6 +134,14 @@
           "stop": "Stop Cue",
           "type": "Type",
           "wait": "Wait Cue"
+        },
+        "audioHardware": {
+          "channelCount": "Output channels",
+          "device": "Device",
+          "sampleRate": "Sample Rate",
+          "bufferSize": "Buffer Size",
+          "warning": "Applying changes will restart the engine and kill all audio cues.",
+          "saveWarning": "Stop playback and apply settings?\nAll active audio cues will be terminated."
         }
       },
       "preset": {
@@ -148,11 +156,7 @@
         }
       },
       "show": {
-        "audio": {
-          "monoOutput": "Downmix stereo to mono",
-          "targetLufs": "Target LUFS",
-          "outputChannels": "Output channels"
-        },
+        "audio": {},
         "general": {
           "assetsDirectory": {
             "description": "Relative path to the directory for copying assets. (per-show setting)",
@@ -162,11 +166,15 @@
         },
         "remote": {
           "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
+        },
+        "audioHardware": {},
+        "audioLogic": {
+          "monoOutput": "Downmix stereo to mono",
+          "targetLufs": "Target LUFS"
         }
       },
       "tab": {
         "appearance": "Appearance",
-        "audio": "Audio",
         "category": {
           "global": "Global",
           "inThisShowModel": "In this ShowModel"
@@ -176,7 +184,9 @@
         "nameFormat": "Name Format",
         "preset": "Preset",
         "remote": "Remote",
-        "template": "Template"
+        "template": "Template",
+        "audioLogic": "Audio Logic",
+        "audioHardware": "Audio Hardware"
       }
     },
     "update": {
@@ -193,7 +203,10 @@
     "close": "Close",
     "done": "Done",
     "forExpertWarning": "Change this only if you know what you're doing.",
-    "open": "Open"
+    "open": "Open",
+    "default": "Default",
+    "warning": "Warning",
+    "confirm": "Confirm"
   },
   "main": {
     "bottomEditor": {

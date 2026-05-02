@@ -11,7 +11,8 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Source,
+    Decoder, Device, DeviceTrait, Source,
+    cpal::{DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
     mixer::Mixer,
     source::Zero,
     stream::{DeviceSinkBuilder, MixerDeviceSink},
@@ -19,18 +20,22 @@ use rodio::{
 use std::{
     collections::HashMap,
     fs::File,
-    num::NonZero,
+    str::FromStr as _,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
-use tokio::{sync::mpsc, time};
+use tokio::{
+    sync::{mpsc, watch},
+    time,
+};
 use uuid::Uuid;
 
 use super::EngineEvent;
 use crate::{
+    BackendAudioSettings, BackendSettings,
     action::AudioAction,
     controller::state::AudioStateParam,
     engine::audio_engine::{
@@ -48,6 +53,20 @@ use crate::{
 
 const NANOS_PER_SEC: u64 = 1_000_000_000;
 
+struct AudioOutput {
+    _sink: MixerDeviceSink,
+    mixer: Mixer,
+}
+
+impl AudioOutput {
+    fn add<T>(&self, source: T)
+    where
+        T: Source + Send + 'static,
+    {
+        self.mixer.add(source);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 struct LastStatus {
     state: AudioPlaybackState,
@@ -61,12 +80,15 @@ struct PlayingSound {
 }
 
 pub struct AudioEngine {
-    _output: Option<MixerDeviceSink>,
-    audio_mixer: Option<Mixer>,
+    output: Option<AudioOutput>,
     is_mono: Arc<AtomicBool>,
-    settings: ShowAudioSettings,
+    show_settings: ShowAudioSettings,
+    backend_settings: BackendAudioSettings,
     command_rx: mpsc::Receiver<AudioCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
+    backend_settings_rx: watch::Receiver<BackendSettings>,
+    level_meter: Option<SharedLevel>,
+
     playing_sounds: HashMap<Uuid, PlayingSound>,
     loaded_sounds: HashMap<Uuid, AudioSourceHandle>,
 }
@@ -75,18 +97,15 @@ impl AudioEngine {
     pub fn new(
         command_rx: mpsc::Receiver<AudioCommand>,
         event_tx: mpsc::Sender<EngineEvent>,
-        settings: ShowAudioSettings,
+        backend_settings_rx: watch::Receiver<BackendSettings>,
+        show_settings: ShowAudioSettings,
     ) -> Result<Self> {
-        let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
-        let builder = DeviceSinkBuilder::from_default_device()?;
-        let output = builder
-            .with_channels(
-                NonZero::new(settings.output_channels)
-                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
-            )
-            .open_stream()?;
+        let backend_settings = backend_settings_rx.borrow().audio.clone();
+        let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
+        let builder = Self::get_builder(&backend_settings)?;
+        let sink = builder.open_stream()?;
         let (channel_count, sample_rate) = {
-            let output_config = output.config();
+            let output_config = sink.config();
             (output_config.channel_count(), output_config.sample_rate())
         };
 
@@ -95,15 +114,22 @@ impl AudioEngine {
 
         let main_source = mono::Mono::new(mixer_source, is_mono.clone());
 
-        output.mixer().add(main_source);
+        sink.mixer().add(main_source);
+
+        let output = AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        };
 
         Ok(Self {
-            _output: Some(output),
-            audio_mixer: Some(main_mixer),
+            output: Some(output),
             is_mono,
-            settings,
+            show_settings,
+            backend_settings,
             command_rx,
             event_tx,
+            backend_settings_rx,
+            level_meter: None,
             playing_sounds: HashMap::new(),
             loaded_sounds: HashMap::new(),
         })
@@ -112,19 +138,16 @@ impl AudioEngine {
     pub fn new_with_level_meter(
         command_rx: mpsc::Receiver<AudioCommand>,
         event_tx: mpsc::Sender<EngineEvent>,
-        settings: ShowAudioSettings,
+        backend_settings_rx: watch::Receiver<BackendSettings>,
+        show_settings: ShowAudioSettings,
     ) -> Result<(Self, SharedLevel)> {
         let shared_level = SharedLevel::default();
-        let is_mono = Arc::new(AtomicBool::new(settings.mono_output));
-        let builder = DeviceSinkBuilder::from_default_device()?;
-        let output = builder
-            .with_channels(
-                NonZero::new(settings.output_channels)
-                    .ok_or(anyhow::anyhow!("output_hannels must be NonZero value."))?,
-            )
-            .open_stream()?;
+        let backend_settings = backend_settings_rx.borrow().audio.clone();
+        let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
+        let builder = Self::get_builder(&backend_settings)?;
+        let sink = builder.open_stream()?;
         let (channel_count, sample_rate) = {
-            let output_config = output.config();
+            let output_config = sink.config();
             (output_config.channel_count(), output_config.sample_rate())
         };
 
@@ -136,16 +159,22 @@ impl AudioEngine {
             shared_level.clone(),
         );
 
-        output.mixer().add(main_source);
+        sink.mixer().add(main_source);
+        let output = AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        };
 
         Ok((
             Self {
-                _output: Some(output),
-                audio_mixer: Some(main_mixer),
+                output: Some(output),
                 is_mono,
-                settings,
+                show_settings,
+                backend_settings,
                 command_rx,
                 event_tx,
+                backend_settings_rx,
+                level_meter: Some(shared_level.clone()),
                 playing_sounds: HashMap::new(),
                 loaded_sounds: HashMap::new(),
             },
@@ -153,11 +182,104 @@ impl AudioEngine {
         ))
     }
 
+    fn rebuild_output(&mut self, backend: &BackendAudioSettings) -> Result<()> {
+        log::debug!("Rebuilding Audio Output...");
+        self.output = None;
+        let is_mono = self.is_mono.clone();
+        let builder = Self::get_builder(backend)?;
+        let sink = builder.open_stream()?;
+        let (channel_count, sample_rate) = {
+            let output_config = sink.config();
+            (output_config.channel_count(), output_config.sample_rate())
+        };
+
+        let (main_mixer, mixer_source) = rodio::mixer::mixer(channel_count, sample_rate);
+        main_mixer.add(Zero::new(channel_count, sample_rate));
+
+        if let Some(shared_level) = &self.level_meter {
+            let main_source = LevelMeter::new(
+                mono::Mono::new(mixer_source, is_mono.clone()),
+                shared_level.clone(),
+            );
+
+            sink.mixer().add(main_source);
+        } else {
+            let main_source = mono::Mono::new(mixer_source, is_mono.clone());
+
+            sink.mixer().add(main_source);
+        }
+        self.backend_settings = backend.clone();
+        self.output = Some(AudioOutput {
+            _sink: sink,
+            mixer: main_mixer,
+        });
+        Ok(())
+    }
+
+    fn get_builder(settings: &BackendAudioSettings) -> Result<DeviceSinkBuilder> {
+        if let Ok(device) = Self::get_device(&settings.device_id) {
+            let mut matched_config = None;
+
+            if let Ok(configs) = device.supported_output_configs() {
+                for config in configs {
+                    if config.sample_format() != SampleFormat::F32 {
+                        continue;
+                    }
+                    if let Some(channels) = settings.channel_count
+                        && config.channels() < channels
+                    {
+                        continue;
+                    }
+                    if let Some(buffer_size) = settings.buffer_size
+                        && let SupportedBufferSize::Range { min, max } = config.buffer_size()
+                        && (buffer_size <= *min || buffer_size >= *max)
+                    {
+                        continue;
+                    }
+                    if let Some(sample_rate) = settings.sample_rate
+                        && let Some(config) = config.try_with_sample_rate(sample_rate)
+                    {
+                        matched_config = Some(config.config());
+                    }
+                }
+            }
+            let mut builder = DeviceSinkBuilder::from_device(device)?;
+            if let Some(config) = matched_config {
+                builder = builder.with_config(&config);
+            }
+            return Ok(builder);
+        }
+        Err(anyhow::anyhow!("Failed to create DeviceSinkBuilder."))
+    }
+
+    fn get_device(device_id: &Option<String>) -> Result<Device> {
+        if let Some(device_id) = device_id
+            && let Ok(id) = DeviceId::from_str(device_id)
+            && let Ok(host) = rodio::cpal::host_from_id(id.0)
+            && let Some(device) = host.device_by_id(&id)
+            && device.supports_output()
+        {
+            Ok(device)
+        } else {
+            let host = rodio::cpal::default_host();
+            host.default_output_device()
+                .ok_or(anyhow::anyhow!("No default device found."))
+        }
+    }
+
     pub async fn run(mut self) {
         let mut poll_timer = time::interval(Duration::from_millis(50));
         log::info!("AudioEngine run loop started");
         loop {
             tokio::select! {
+                Ok(_) = self.backend_settings_rx.changed() => {
+                    log::debug!("BackendSettings change detected.");
+                    let settings = self.backend_settings_rx.borrow().audio.clone();
+                    if settings != self.backend_settings
+                    && let Err(e) = self.rebuild_output(&settings) {
+                        log::error!("Failed to rebuild output. e={}", e);
+                    }
+                }
                 Some(command) = self.command_rx.recv() => {
                     log::debug!("AudioEngine received command: {:?}", command);
                     let instance_id = command.id();
@@ -178,10 +300,10 @@ impl AudioEngine {
                         AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
-                            if settings.mono_output != self.settings.mono_output {
+                            if settings.mono_output != self.show_settings.mono_output {
                                 self.is_mono.store(settings.mono_output, Ordering::Release);
                             }
-                            self.settings = settings.clone();
+                            self.show_settings = settings.clone();
                             Ok(())
                         },
                     };
@@ -262,7 +384,7 @@ impl AudioEngine {
         }
 
         let mixer = self
-            .audio_mixer
+            .output
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Audio Mixer is not available"))?;
 

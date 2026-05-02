@@ -28,7 +28,6 @@ impl Default for ShowGeneralSettings {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct ShowAudioSettings {
-    pub output_channels: u16,
     pub mono_output: bool,
     pub lufs_target: f64,
 }
@@ -36,7 +35,6 @@ pub struct ShowAudioSettings {
 impl Default for ShowAudioSettings {
     fn default() -> Self {
         Self {
-            output_channels: 2,
             mono_output: false,
             lufs_target: -14.0,
         }

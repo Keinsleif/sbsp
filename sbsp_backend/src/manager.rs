@@ -35,6 +35,7 @@ pub struct ShowModelManager {
     command_rx: mpsc::Receiver<ModelCommand>,
     event_tx: broadcast::Sender<BackendEvent>,
 
+    copy_assets_when_add: bool,
     project_status: Arc<RwLock<ProjectStatus>>,
     modify_status: Arc<AtomicBool>,
 }
@@ -48,11 +49,13 @@ impl ShowModelManager {
         let model = Arc::new(RwLock::new(ShowModel::default()));
         let project_status = Arc::new(RwLock::new(ProjectStatus::Unsaved));
         let modify_status = Arc::new(AtomicBool::new(false));
+        let copy_assets_when_add = settings_rx.borrow().copy_assets_when_add;
         let manager = Self {
             model: model.clone(),
             settings_rx,
             command_rx,
             event_tx,
+            copy_assets_when_add,
             project_status: project_status.clone(),
             modify_status: modify_status.clone(),
         };
@@ -62,9 +65,17 @@ impl ShowModelManager {
     }
 
     pub async fn run(mut self) {
-        while let Some(command) = self.command_rx.recv().await {
-            if let Err(e) = self.process_command(command).await {
-                log::error!("Failed modifying show model: {}", e);
+        loop {
+            tokio::select! {
+                Some(command) = self.command_rx.recv() => {
+                    if let Err(e) = self.process_command(command).await {
+                        log::error!("Failed modifying show model: {}", e);
+                    }
+                },
+                Ok(_) = self.settings_rx.changed() => {
+                    self.copy_assets_when_add = self.settings_rx.borrow().copy_assets_when_add;
+                }
+                else => break,
             }
         }
     }
@@ -73,15 +84,11 @@ impl ShowModelManager {
         log::info!("Model Manager received command: {:?}", command);
         match command {
             ModelCommand::UpdateCue(cue) => {
-                let copy_assets_when_add = {
-                    let settings = self.settings_rx.borrow();
-                    settings.copy_assets_when_add
-                };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let mut new_cue = cue.clone();
                 if let CueParam::Audio(audio_param) = &mut new_cue.params
                     && let Some(model_path) = model_path_option.as_ref()
-                    && copy_assets_when_add
+                    && self.copy_assets_when_add
                 {
                     let import_destination = {
                         let model = self.model.read().await;
@@ -118,10 +125,7 @@ impl ShowModelManager {
                     let model = self.model.read().await;
                     model.cues.iter().any(|c| c.id == cue.id)
                 };
-                let copy_assets_when_add = {
-                    let settings = self.settings_rx.borrow();
-                    settings.copy_assets_when_add
-                };
+
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let event = if id_exists {
                     BackendEvent::OperationFailed {
@@ -133,7 +137,7 @@ impl ShowModelManager {
                     let mut new_cue = cue.clone();
                     if let CueParam::Audio(audio_param) = &mut new_cue.params
                         && let Some(model_path) = model_path_option.as_ref()
-                        && copy_assets_when_add
+                        && self.copy_assets_when_add
                     {
                         let import_destination = {
                             let model = self.model.read().await;
@@ -166,10 +170,6 @@ impl ShowModelManager {
                 Ok(())
             }
             ModelCommand::AddCues { cues, position } => {
-                let copy_assets_when_add = {
-                    let settings = self.settings_rx.borrow();
-                    settings.copy_assets_when_add
-                };
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let mut added_cues: Vec<Cue> = Vec::new();
                 for cue in cues.iter() {
@@ -187,7 +187,7 @@ impl ShowModelManager {
                         let mut new_cue = cue.clone();
                         if let CueParam::Audio(audio_param) = &mut new_cue.params
                             && let Some(model_path) = model_path_option.as_ref()
-                            && copy_assets_when_add
+                            && self.copy_assets_when_add
                         {
                             let import_destination = {
                                 let model = self.model.read().await;

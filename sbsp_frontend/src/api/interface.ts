@@ -1,12 +1,14 @@
 import type { Cue } from '../types/Cue';
 import type { BackendEvent } from '../types/BackendEvent';
-import { ShowSettings } from '../types/ShowSettings';
-import { FileList } from '../types/FileList';
-import { ServiceEntry } from '../types/ServiceEntry';
-import { LicenseInformation } from '../types/LicenseInformation';
-import { GlobalSettings } from '../types/GlobalSettings';
-import { ApiServerOptions } from '../types/ApiServerOptions';
-import { FullShowState } from '../types/FullShowState';
+import type { ShowSettings } from '../types/ShowSettings';
+import type { FileList } from '../types/FileList';
+import type { ServiceEntry } from '../types/ServiceEntry';
+import type { LicenseInformation } from '../types/LicenseInformation';
+import type { GlobalHostSettings } from '../types/GlobalHostSettings';
+import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
+import type { ApiServerOptions } from '../types/ApiServerOptions';
+import type { FullShowState } from '../types/FullShowState';
+import type { SupportedHardware } from '../types/SupportedHardware';
 
 type UnlistenFn = () => void;
 
@@ -61,10 +63,10 @@ export interface IBackendAdapter {
   updateShowSettings(newSettings: ShowSettings): Promise<void>;
 
   // Settings
-  getSettings(): Promise<GlobalSettings>;
-  setSettings(newSettings: GlobalSettings): void;
-  reloadSettings(): Promise<GlobalSettings>;
-  importSettingsFromFile(): Promise<GlobalSettings>;
+  getSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
+  setSettings(newSettings: GlobalHostSettings | GlobalRemoteSettings): void;
+  reloadSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
+  importSettingsFromFile(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
   exportSettingsToFile(): void;
 
   onBackendEvent(callback: (event: BackendEvent) => void): Promise<UnlistenFn>;
@@ -88,6 +90,8 @@ export interface IBackendHostAdapter {
   getHostname(): Promise<string>;
   startServer(): Promise<void>;
   stopServer(): Promise<void>;
+
+  getHardware(): Promise<SupportedHardware>;
 
   onServerStatusChanged(callback: (status: 'started' | 'stopped') => void): Promise<UnlistenFn>;
 }

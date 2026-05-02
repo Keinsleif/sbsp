@@ -3,6 +3,7 @@ use sbsp_backend::{
     asset_processor::AssetData,
     controller::state::ShowState,
     event::BackendEvent,
+    helper::SupportedHardware,
     model::ShowModel,
 };
 use sbsp_license::data::LicenseInformation;
@@ -17,6 +18,7 @@ fn main() {
     <WsCommand as TS>::export_all().unwrap();
     <WsFeedback as TS>::export_all().unwrap();
     <LicenseInformation as TS>::export_all().unwrap();
+    <SupportedHardware as TS>::export_all().unwrap();
 
     tauri_build::build()
 }

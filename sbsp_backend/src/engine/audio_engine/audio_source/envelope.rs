@@ -44,7 +44,7 @@ impl Envelope {
 
         if self.current_idx < n - 1 {
             let next = &self.segments[self.current_idx + 1];
-            
+
             if pos > seg.end {
                 let gap_duration = next.start - seg.end;
                 if gap_duration > 0.0 {
@@ -64,7 +64,10 @@ impl Envelope {
         }
         let pos = pos / self.duration;
 
-        self.current_idx = match self.segments.binary_search_by(|s| s.start.partial_cmp(&pos).unwrap()) {
+        self.current_idx = match self
+            .segments
+            .binary_search_by(|s| s.start.partial_cmp(&pos).unwrap())
+        {
             Ok(index) => index,
             Err(index) => index.saturating_sub(1),
         };
@@ -73,15 +76,33 @@ impl Envelope {
 
 #[cfg(test)]
 mod tests {
-    use crate::{engine::audio_engine::audio_source::envelope::Envelope, model::cue::audio::{Decibels, EnvelopeSegment}};
+    use crate::{
+        engine::audio_engine::audio_source::envelope::Envelope,
+        model::cue::audio::{Decibels, EnvelopeSegment},
+    };
 
     #[test]
     fn update_normal() {
-        let mut envelope = Envelope::new(vec![
-            EnvelopeSegment { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
-            EnvelopeSegment { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
-            EnvelopeSegment { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
-        ], 30.0);
+        let mut envelope = Envelope::new(
+            vec![
+                EnvelopeSegment {
+                    start: 0.0,
+                    end: 0.1,
+                    volume: Decibels::IDENTITY,
+                },
+                EnvelopeSegment {
+                    start: 0.3,
+                    end: 0.5,
+                    volume: Decibels::from(-10.0),
+                },
+                EnvelopeSegment {
+                    start: 0.8,
+                    end: 1.0,
+                    volume: Decibels::IDENTITY,
+                },
+            ],
+            30.0,
+        );
 
         // start point
         assert_eq!(envelope.update(0.0), Decibels::IDENTITY);
@@ -92,16 +113,31 @@ mod tests {
         // end of second segment
         assert_eq!(envelope.update(30.0 * 0.5), Decibels::from(-10.0));
         // end point
-        assert_eq!(envelope.update(30.0), Decibels::IDENTITY); 
+        assert_eq!(envelope.update(30.0), Decibels::IDENTITY);
     }
 
     #[test]
     fn seek() {
-        let mut envelope = Envelope::new(vec![
-            EnvelopeSegment { start: 0.0, end: 0.1, volume: Decibels::IDENTITY },
-            EnvelopeSegment { start: 0.3, end: 0.5, volume: Decibels::from(-10.0) },
-            EnvelopeSegment { start: 0.8, end: 1.0, volume: Decibels::IDENTITY },
-        ], 30.0);
+        let mut envelope = Envelope::new(
+            vec![
+                EnvelopeSegment {
+                    start: 0.0,
+                    end: 0.1,
+                    volume: Decibels::IDENTITY,
+                },
+                EnvelopeSegment {
+                    start: 0.3,
+                    end: 0.5,
+                    volume: Decibels::from(-10.0),
+                },
+                EnvelopeSegment {
+                    start: 0.8,
+                    end: 1.0,
+                    volume: Decibels::IDENTITY,
+                },
+            ],
+            30.0,
+        );
 
         // end of second segment
         assert_eq!(envelope.update(30.0 * 0.5), Decibels::from(-10.0));

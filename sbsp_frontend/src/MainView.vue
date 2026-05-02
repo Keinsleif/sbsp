@@ -156,6 +156,8 @@ onMounted(() => {
               no: t('dialog.saveConfirm.dontSave'),
               cancel: t('dialog.saveConfirm.cancel'),
             },
+            kind: 'warning',
+            title: t('general.confirm'),
           }).catch(e => console.error(e));
           switch (result) {
             case t('dialog.saveConfirm.save'):

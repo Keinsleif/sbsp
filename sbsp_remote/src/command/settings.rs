@@ -1,9 +1,11 @@
-use crate::{AppState, settings::GlobalSettings};
+use crate::{AppState, settings::GlobalRemoteSettings};
 use std::path::Path;
 use tauri::Manager as _;
 
 #[tauri::command]
-pub async fn get_settings(state: tauri::State<'_, AppState>) -> Result<GlobalSettings, String> {
+pub async fn get_settings(
+    state: tauri::State<'_, AppState>,
+) -> Result<GlobalRemoteSettings, String> {
     Ok(state.settings_manager.read().await.clone())
 }
 
@@ -11,7 +13,7 @@ pub async fn get_settings(state: tauri::State<'_, AppState>) -> Result<GlobalSet
 pub async fn set_settings(
     state: tauri::State<'_, AppState>,
     handle: tauri::AppHandle,
-    new_settings: GlobalSettings,
+    new_settings: GlobalRemoteSettings,
 ) -> Result<(), String> {
     if new_settings != *state.settings_manager.read().await {
         state.settings_manager.update(new_settings).await;
@@ -35,7 +37,7 @@ pub async fn set_settings(
 pub async fn reload_settings(
     handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
-) -> Result<GlobalSettings, String> {
+) -> Result<GlobalRemoteSettings, String> {
     if let Ok(path) = handle.path().app_config_dir() {
         let config_path = path.join("config.json");
         if let Err(e) = state
@@ -58,7 +60,7 @@ pub async fn import_settings_from_file(
     handle: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     path: &Path,
-) -> Result<GlobalSettings, String> {
+) -> Result<GlobalRemoteSettings, String> {
     state
         .settings_manager
         .load_from_file(path)

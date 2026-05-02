@@ -28,6 +28,7 @@ mod engine;
 pub mod event;
 #[cfg(feature = "backend")]
 mod executor;
+pub mod helper;
 #[cfg(feature = "backend")]
 pub mod manager;
 pub mod model;
@@ -72,6 +73,16 @@ pub struct FullShowState {
 pub struct BackendSettings {
     pub advance_cursor_when_go: bool,
     pub copy_assets_when_add: bool,
+    pub audio: BackendAudioSettings,
+}
+
+#[cfg(feature = "backend")]
+#[derive(Default, Clone, PartialEq)]
+pub struct BackendAudioSettings {
+    pub device_id: Option<String>,
+    pub channel_count: Option<u16>,
+    pub sample_rate: Option<u32>,
+    pub buffer_size: Option<u32>,
 }
 
 #[cfg(feature = "backend")]
@@ -126,7 +137,7 @@ pub fn start_backend(
         ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
-        settings_rx,
+        settings_rx.clone(),
         executor_command_tx,
         executor_event_rx,
         state_tx,
@@ -146,6 +157,7 @@ pub fn start_backend(
         let (engine, shared_level) = AudioEngine::new_with_level_meter(
             audio_rx,
             engine_event_tx.clone(),
+            settings_rx,
             ShowAudioSettings::default(),
         )?;
         (engine, Some(shared_level))
@@ -153,6 +165,7 @@ pub fn start_backend(
         let engine = AudioEngine::new(
             audio_rx,
             engine_event_tx.clone(),
+            settings_rx,
             ShowAudioSettings::default(),
         )?;
         (engine, None)
