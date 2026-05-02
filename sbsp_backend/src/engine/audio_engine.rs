@@ -91,7 +91,7 @@ impl AudioEngine {
     ) -> Result<Self> {
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let builder = DeviceSinkBuilder::from_default_device()?;
+        let builder = Self::get_builder(&backend_settings)?;
         let sink = builder.open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
@@ -130,7 +130,7 @@ impl AudioEngine {
         let shared_level = SharedLevel::default();
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let builder = DeviceSinkBuilder::from_default_device()?;
+        let builder = Self::get_builder(&backend_settings)?;
         let sink = builder.open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
@@ -166,9 +166,10 @@ impl AudioEngine {
     }
 
     fn rebuild_output(&mut self, backend: &BackendAudioSettings) -> Result<()> {
+        log::debug!("Rebuilding Audio Output...");
         self.output = None;
         let is_mono = self.is_mono.clone();
-        let builder = self.get_builder(backend)?;
+        let builder = Self::get_builder(backend)?;
         let sink = builder.open_stream()?;
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
@@ -195,8 +196,8 @@ impl AudioEngine {
         Ok(())
     }
 
-    fn get_builder(&self, settings: &BackendAudioSettings) -> Result<DeviceSinkBuilder> {
-        if let Ok(device) = self.get_device(&settings.device_id) {
+    fn get_builder(settings: &BackendAudioSettings) -> Result<DeviceSinkBuilder> {
+        if let Ok(device) = Self::get_device(&settings.device_id) {
             let mut matched_config = None;
 
             if let Ok(configs) = device.supported_output_configs() {
@@ -224,7 +225,7 @@ impl AudioEngine {
         Err(anyhow::anyhow!("Failed to create DeviceSinkBuilder."))
     }
 
-    fn get_device(&self, device_id: &Option<String>) -> Result<Device> {
+    fn get_device(device_id: &Option<String>) -> Result<Device> {
         if let Some(device_id) = device_id
         && let Ok(id) = DeviceId::from_str(device_id)
         && let Ok(host) = rodio::cpal::host_from_id(id.0)
@@ -242,6 +243,7 @@ impl AudioEngine {
         loop {
             tokio::select! {
                 Ok(_) = self.backend_settings_rx.changed() => {
+                    log::debug!("BackendSettings change detected.");
                     let settings = self.backend_settings_rx.borrow().audio.clone();
                     if settings != self.backend_settings
                     && let Err(e) = self.rebuild_output(&settings) {
