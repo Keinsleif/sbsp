@@ -1,5 +1,6 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "backend")]
 use anyhow::Result;
@@ -16,7 +17,7 @@ const SUPPORTED_SAMPLE_RATE: u32 = 192000;
 #[serde(rename_all = "camelCase")]
 pub struct SupportedHardware {
     pub default: String,
-    pub devices: HashMap<String, DeviceInformation>
+    pub devices: IndexMap<String, DeviceInformation>
 }
 
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -58,13 +59,13 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
     let host = rodio::cpal::default_host();
     let devices = host.devices()?;
     let default = host.default_output_device().ok_or(anyhow::anyhow!("Failed to get default device."))?.id()?;
-    let mut hardwares = HashMap::new();
+    let mut hardwares = IndexMap::new();
     for device in devices {
         if let Ok(id) = device.id()
         && let Ok(description) = device.description()
         && let Ok(supported_confs) = device.supported_output_configs()
         && let Ok(default_config) = device.default_output_config() {
-            let mut configs = HashMap::new();
+            let mut configs = IndexMap::new();
             for config in supported_confs {
                 if config.sample_format() != SampleFormat::F32
                 || config.max_sample_rate() > SUPPORTED_SAMPLE_RATE {
