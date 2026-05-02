@@ -20,8 +20,7 @@ use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
 use crate::{
-    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
-    model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam},
+    controller::state::PlaybackStatus, engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope}, model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam}
 };
 
 use super::lowcost_skip::SkipDuration;
@@ -673,5 +672,14 @@ where
             self.current_channel = 0;
         }
         result
+    }
+}
+
+impl<I> Drop for AudioSource<I>
+where
+    I: Source,
+{
+    fn drop(&mut self) {
+        self.shared.state.store(PlaybackStatus::Stopped as u8, Ordering::Release);
     }
 }
