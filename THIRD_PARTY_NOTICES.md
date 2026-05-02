@@ -13997,7 +13997,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ```
 
-### [vue-i18n@11.3.2](https://github.com/intlify/vue-i18n)
+### [vue-i18n@11.4.0](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
