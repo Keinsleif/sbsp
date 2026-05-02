@@ -1,7 +1,7 @@
 mod command;
 mod settings;
 
-use std::time::SystemTime;
+use std::{path::PathBuf, time::SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -201,24 +201,22 @@ pub fn run() {
                     .unwrap();
             }
 
-            let settings_manager = GlobalSettingsManager::new();
+            let settings_path = app
+                .path()
+                .app_config_dir()
+                .unwrap_or(PathBuf::from("."))
+                .join("config.json");
+            let settings_manager = GlobalSettingsManager::new(settings_path);
 
             app.manage(AppState::new(settings_manager));
 
-            if let Ok(path) = app.path().app_config_dir() {
-                let config_path = path.join("config.json");
-                let app_handle_clone = app.handle().clone();
-                tokio::spawn(async move {
-                    let state = app_handle_clone.state::<AppState>();
-                    if let Err(e) = state
-                        .settings_manager
-                        .load_from_file(config_path.as_path())
-                        .await
-                    {
-                        log::error!("Failed to load config on startup. {}", e);
-                    }
-                });
-            }
+            let app_handle_clone = app.handle().clone();
+            tokio::spawn(async move {
+                let state = app_handle_clone.state::<AppState>();
+                if let Err(e) = state.settings_manager.load().await {
+                    log::error!("Failed to load config on startup. error={}", e);
+                }
+            });
 
             #[cfg(debug_assertions)]
             {

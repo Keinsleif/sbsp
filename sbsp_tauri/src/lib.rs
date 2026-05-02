@@ -1,7 +1,10 @@
 mod command;
 mod settings;
 
-use std::time::{Duration, SystemTime};
+use std::{
+    path::PathBuf,
+    time::{Duration, SystemTime},
+};
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -172,7 +175,12 @@ pub fn run() {
                     .unwrap();
             }
 
-            let (settings_manager, settings_rx) = GlobalSettingsManager::new();
+            let settings_path = app
+                .path()
+                .app_config_dir()
+                .unwrap_or(PathBuf::from("."))
+                .join("config.json");
+            let (settings_manager, settings_rx) = GlobalSettingsManager::new(settings_path);
 
             let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, true) {
                 Ok(backends) => backends,
@@ -203,23 +211,14 @@ pub fn run() {
 
             app.manage(LicenseManager::new_from_pem(PUBLIC_KEY_PEM));
 
+            let app_handle_clone = app.handle().clone();
+            tokio::spawn(async move {
+                let state = app_handle_clone.state::<AppState>();
+                if let Err(e) = state.settings_manager.load().await {
+                    log::error!("Failed to load config on startup. error={}", e);
+                }
+            });
             if let Ok(path) = app.path().app_config_dir() {
-                let config_path = path.join("config.json");
-                let app_handle_clone = app_handle.clone();
-                tokio::spawn(async move {
-                    let state = app_handle_clone.state::<AppState>();
-                    if let Err(e) = state
-                        .settings_manager
-                        .load_from_file(config_path.as_path())
-                        .await
-                    {
-                        log::error!(
-                            "Failed to load config on startup. file={:?}, error={}",
-                            config_path,
-                            e
-                        );
-                    }
-                });
                 let license_path = path.join("license.json");
                 if license_path.exists() {
                     let license_manager = app_handle.state::<LicenseManager>();
