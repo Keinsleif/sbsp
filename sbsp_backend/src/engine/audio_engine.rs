@@ -11,7 +11,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source, cpal::{DeviceId, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink}
+    Decoder, Device, DeviceTrait, Source, cpal::{DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink}
 };
 use std::{
     collections::HashMap,
@@ -201,10 +201,13 @@ impl AudioEngine {
 
             if let Ok(configs) = device.supported_output_configs() {
                 for config in configs {
+                    if config.sample_format() != SampleFormat::F32 {
+                        continue;
+                    }
                     if let Some(channels) = settings.channel_count && config.channels() < channels {
                         continue;
                     }
-                    if let Some(buffer_size) = settings.buffer_size && let SupportedBufferSize::Range{min, max} = config.buffer_size() && (buffer_size < *min || buffer_size > *max) {
+                    if let Some(buffer_size) = settings.buffer_size && let SupportedBufferSize::Range{min, max} = config.buffer_size() && (buffer_size <= *min || buffer_size >= *max) {
                         continue;
                     }
                     if let Some(sample_rate) = settings.sample_rate && let Some(config) = config.try_with_sample_rate(sample_rate) {
