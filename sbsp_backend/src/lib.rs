@@ -31,7 +31,6 @@ mod executor;
 #[cfg(feature = "backend")]
 pub mod manager;
 pub mod model;
-#[cfg(feature = "backend")]
 pub mod helper;
 
 #[cfg(any(feature = "apiserver", feature = "apiclient"))]

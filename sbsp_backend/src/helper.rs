@@ -1,19 +1,27 @@
 use std::collections::{BTreeSet, HashMap};
 
-use anyhow::Result;
-use rodio::{DeviceTrait, cpal::{SampleFormat, SupportedBufferSize, traits::HostTrait}};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "backend")]
+use anyhow::Result;
+#[cfg(feature = "backend")]
+use rodio::{DeviceTrait, cpal::{SampleFormat, SupportedBufferSize, traits::HostTrait}};
 
+#[cfg(feature = "backend")]
 const FRAME_SIZES: &[u32] = &[32, 64, 128, 256, 512, 1024, 2048, 4096];
+#[cfg(feature = "backend")]
 const SUPPORTED_SAMPLE_RATE: u32 = 192000;
 
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct SupportedHardware {
     pub default: String,
     pub devices: HashMap<String, DeviceInformation>
 }
 
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct DeviceInformation {
     pub name: String,
     pub supported_configs: Vec<FrameConfig>,
@@ -21,13 +29,16 @@ pub struct DeviceInformation {
     pub default_sample_rate: u32,
 }
 
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct FrameConfig {
     pub channel_count: u16,
     pub sample_rates: BTreeSet<u32>,
     pub buffer_sizes: BTreeSet<u32>,
 }
 
+#[cfg(feature = "backend")]
 fn get_buffer_sizes(buf_conf: SupportedBufferSize) -> BTreeSet<u32> {
     match buf_conf {
         SupportedBufferSize::Range { min, max } => {
@@ -42,6 +53,7 @@ fn get_buffer_sizes(buf_conf: SupportedBufferSize) -> BTreeSet<u32> {
     }
 }
 
+#[cfg(feature = "backend")]
 pub fn get_supported_hardware() -> Result<SupportedHardware> {
     let host = rodio::cpal::default_host();
     let devices = host.devices()?;

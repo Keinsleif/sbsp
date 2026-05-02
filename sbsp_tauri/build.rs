@@ -1,9 +1,5 @@
 use sbsp_backend::{
-    api::{ApiServerOptions, WsCommand, WsFeedback},
-    asset_processor::AssetData,
-    controller::state::ShowState,
-    event::BackendEvent,
-    model::ShowModel,
+    api::{ApiServerOptions, WsCommand, WsFeedback}, asset_processor::AssetData, controller::state::ShowState, event::BackendEvent, helper::SupportedHardware, model::ShowModel
 };
 use sbsp_license::data::LicenseInformation;
 use ts_rs::TS;
@@ -17,6 +13,7 @@ fn main() {
     <WsCommand as TS>::export_all().unwrap();
     <WsFeedback as TS>::export_all().unwrap();
     <LicenseInformation as TS>::export_all().unwrap();
+    <SupportedHardware as TS>::export_all().unwrap();
 
     tauri_build::build()
 }
