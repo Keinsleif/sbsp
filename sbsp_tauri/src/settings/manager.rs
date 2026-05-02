@@ -74,6 +74,10 @@ impl GlobalSettingsManager {
         })
         .await??;
 
+        new_settings.audio.device_id = None;
+        new_settings.audio.channel_count = None;
+        new_settings.audio.sample_rate = None;
+        new_settings.audio.buffer_size = None;
 
         self.update(&new_settings).await;
 
@@ -86,6 +90,10 @@ impl GlobalSettingsManager {
     pub async fn export_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
         let mut settings = self.settings.read().await.clone();
 
+        settings.audio.device_id = None;
+        settings.audio.channel_count = None;
+        settings.audio.sample_rate = None;
+        settings.audio.buffer_size = None;
 
         let content =
             tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
