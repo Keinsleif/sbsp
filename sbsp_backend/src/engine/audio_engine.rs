@@ -273,7 +273,6 @@ impl AudioEngine {
         loop {
             tokio::select! {
                 Ok(_) = self.backend_settings_rx.changed() => {
-                    log::debug!("BackendSettings change detected.");
                     let settings = self.backend_settings_rx.borrow().audio.clone();
                     if settings != self.backend_settings
                     && let Err(e) = self.rebuild_output(&settings) {
