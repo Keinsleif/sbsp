@@ -1,6 +1,6 @@
 <template>
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
-    <v-sheet class="ml-0 mr-auto d-flex align-center">
+    <v-sheet class="px-2 mr-auto d-flex align-center">
       <v-switch
         v-model="uiState.mode"
         hide-details
@@ -11,6 +11,15 @@
         density="compact"
       />
     </v-sheet>
+    <v-btn
+      v-show="isUpdateAvailable"
+      class="position-absolute"
+      style="left: 75px"
+      variant="text"
+      :prepend-icon="mdiSync"
+      :text="t('dialog.update.updatesAvailable')"
+      @click="uiState.isUpdateDialogOpen = true"
+    />
     <v-sheet class="ml-auto mr-auto">
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </v-sheet>
@@ -52,13 +61,15 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer, mdiSync } from '@mdi/js';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side } from '../../api';
+import { useApi, side, target } from '../../api';
 import { useAssetResult } from '../../stores/assetResult';
+import { onMounted, ref } from 'vue';
+import { check } from '@tauri-apps/plugin-updater';
 
 const { t } = useI18n();
 
@@ -66,6 +77,18 @@ const showModel = useShowModel();
 const uiState = useUiState();
 const api = useApi();
 const assetResult = useAssetResult();
+
+const isUpdateAvailable = ref(false);
+
+onMounted(() => {
+  if (target == 'tauri') {
+    check().then((value) => {
+      if (value != null) {
+        isUpdateAvailable.value = true;
+      }
+    });
+  }
+});
 
 const openSettings = async () => {
   uiState.isSettingsDialogOpen = true;
