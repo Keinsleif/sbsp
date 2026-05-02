@@ -17,7 +17,7 @@
             :text="t('dialog.settings.tab.preset')"
             value="preset"
           />
-          <v-sheet class="pa-1 text-caption">
+          <v-sheet class="pa-1 text-caption bg-grey-darken-1">
             {{ t('dialog.settings.tab.category.inThisShowModel') }}
           </v-sheet>
           <v-tab
@@ -32,7 +32,7 @@
             :text="t('dialog.settings.tab.remote')"
             value="remote"
           />
-          <v-sheet class="pa-1 text-caption">
+          <v-sheet class="pa-1 text-caption bg-grey-darken-1">
             {{ t('dialog.settings.tab.category.global') }}
           </v-sheet>
           <v-tab
