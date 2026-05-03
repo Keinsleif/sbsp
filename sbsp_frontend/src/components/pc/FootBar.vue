@@ -86,6 +86,8 @@ onMounted(() => {
       if (value != null) {
         isUpdateAvailable.value = true;
       }
+    }).catch((e) => {
+      console.error(e);
     });
   }
 });
