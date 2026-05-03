@@ -1,20 +1,22 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::sync::{RwLock, watch};
 
 use super::GlobalHostSettings;
 use sbsp_backend::BackendSettings;
 
 pub struct GlobalSettingsManager {
+    path: Option<PathBuf>,
     settings: RwLock<GlobalHostSettings>,
     settings_tx: watch::Sender<BackendSettings>,
 }
 
 impl GlobalSettingsManager {
-    pub fn new() -> (Self, watch::Receiver<BackendSettings>) {
+    pub fn new(path: Option<PathBuf>) -> (Self, watch::Receiver<BackendSettings>) {
         let settings = GlobalHostSettings::default();
         let (settings_tx, settings_rx) = watch::channel(BackendSettings::from(&settings));
         (
             Self {
+                path,
                 settings: RwLock::new(settings),
                 settings_tx,
             },
@@ -26,32 +28,85 @@ impl GlobalSettingsManager {
         self.settings.read().await
     }
 
-    pub async fn update(&self, new_settings: GlobalHostSettings) {
+    pub async fn update(&self, new_settings: &GlobalHostSettings) {
         {
             let mut settings = self.settings.write().await;
             *settings = new_settings.clone();
         }
         self.settings_tx.send_modify(|backend_state| {
-            *backend_state = BackendSettings::from(&new_settings);
+            *backend_state = BackendSettings::from(new_settings);
         });
     }
 
-    pub async fn load_from_file(&self, path: &Path) -> Result<(), anyhow::Error> {
+    pub async fn load(&self) -> Result<GlobalHostSettings, anyhow::Error> {
+        if let Some(path) = &self.path {
+            let content = tokio::fs::read_to_string(path.clone()).await?;
+
+            let new_settings = tokio::task::spawn_blocking(move || {
+                serde_json::from_str::<GlobalHostSettings>(&content)
+            })
+            .await??;
+
+            self.update(&new_settings).await;
+
+            log::info!("GlobalSettings loaded from: {}", path.display());
+            Ok(new_settings)
+        } else {
+            Err(anyhow::anyhow!(
+                "Settings file unavailable. Settings only exist in memory."
+            ))
+        }
+    }
+
+    pub async fn save(&self) -> Result<(), anyhow::Error> {
+        if let Some(path) = &self.path {
+            let settings = self.settings.read().await.clone();
+
+            let content =
+                tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
+                    .await??;
+
+            if let Some(parent) = path.parent() {
+                tokio::fs::create_dir_all(parent).await?;
+            }
+            tokio::fs::write(path.clone(), content).await?;
+            log::info!("GlobalSettings saved to: {}", path.display());
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "Settings file unavailable. Settings only exist in memory."
+            ))
+        }
+    }
+
+    pub async fn import_from_file(&self, path: &Path) -> Result<GlobalHostSettings, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
-        let new_settings = tokio::task::spawn_blocking(move || {
+        let mut new_settings = tokio::task::spawn_blocking(move || {
             serde_json::from_str::<GlobalHostSettings>(&content)
         })
         .await??;
 
-        self.update(new_settings).await;
+        new_settings.audio.device_id = None;
+        new_settings.audio.channel_count = None;
+        new_settings.audio.sample_rate = None;
+        new_settings.audio.buffer_size = None;
 
-        log::info!("GlobalSettings loaded from: {}", path.display());
-        Ok(())
+        self.update(&new_settings).await;
+
+        self.save().await?;
+
+        log::info!("GlobalSettings imported from: {}", path.display());
+        Ok(new_settings)
     }
 
-    pub async fn save_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
-        let settings = self.settings.read().await.clone();
+    pub async fn export_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
+        let mut settings = self.settings.read().await.clone();
+
+        settings.audio.device_id = None;
+        settings.audio.channel_count = None;
+        settings.audio.sample_rate = None;
+        settings.audio.buffer_size = None;
 
         let content =
             tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
