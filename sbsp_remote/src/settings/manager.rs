@@ -4,12 +4,12 @@ use tokio::sync::RwLock;
 use super::GlobalRemoteSettings;
 
 pub struct GlobalSettingsManager {
-    path: PathBuf,
+    path: Option<PathBuf>,
     settings: RwLock<GlobalRemoteSettings>,
 }
 
 impl GlobalSettingsManager {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(path: Option<PathBuf>) -> Self {
         let settings = GlobalRemoteSettings::default();
         Self {
             path,
@@ -27,31 +27,39 @@ impl GlobalSettingsManager {
     }
 
     pub async fn load(&self) -> Result<GlobalRemoteSettings, anyhow::Error> {
-        let content = tokio::fs::read_to_string(self.path.clone()).await?;
+        if let Some(path) = &self.path {
+            let content = tokio::fs::read_to_string(path.clone()).await?;
 
-        let new_settings = tokio::task::spawn_blocking(move || {
-            serde_json::from_str::<GlobalRemoteSettings>(&content)
-        })
-        .await??;
+            let new_settings = tokio::task::spawn_blocking(move || {
+                serde_json::from_str::<GlobalRemoteSettings>(&content)
+            })
+            .await??;
 
-        self.update(&new_settings).await;
+            self.update(&new_settings).await;
 
-        log::info!("GlobalSettings loaded from: {}", self.path.display());
-        Ok(new_settings)
+            log::info!("GlobalSettings loaded from: {}", path.display());
+            Ok(new_settings)
+        } else {
+            Err(anyhow::anyhow!("Settings file unavailable. Settings only exist in memory."))
+        }
     }
 
     pub async fn save(&self) -> Result<(), anyhow::Error> {
-        let settings = self.settings.read().await.clone();
+        if let Some(path) = &self.path {
+            let settings = self.settings.read().await.clone();
 
-        let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
+            let content =
+                tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
 
-        if let Some(parent) = self.path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
+            if let Some(parent) = path.parent() {
+                tokio::fs::create_dir_all(parent).await?;
+            }
+            tokio::fs::write(path.clone(), content).await?;
+            log::info!("GlobalSettings saved to: {}", path.display());
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Settings file unavailable. Settings only exist in memory."))
         }
-        tokio::fs::write(self.path.clone(), content).await?;
-        log::info!("GlobalSettings saved to: {}", self.path.display());
-        Ok(())
     }
 
     pub async fn import_from_file(

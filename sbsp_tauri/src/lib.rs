@@ -1,10 +1,7 @@
 mod command;
 mod settings;
 
-use std::{
-    path::PathBuf,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 use log::LevelFilter;
 use sbsp_backend::{
@@ -178,8 +175,8 @@ pub fn run() {
             let settings_path = app
                 .path()
                 .app_config_dir()
-                .unwrap_or(PathBuf::from("."))
-                .join("config.json");
+                .ok()
+                .map(|path| path.join("config.json"));
             let (settings_manager, settings_rx) = GlobalSettingsManager::new(settings_path);
 
             let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, true) {
