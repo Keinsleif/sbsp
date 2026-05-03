@@ -41,11 +41,7 @@ pub async fn import_settings_from_file(
     state: tauri::State<'_, AppState>,
     path: &Path,
 ) -> Result<GlobalHostSettings, String> {
-    if let Err(e) = state
-        .settings_manager
-        .import_from_file(path)
-        .await
-    {
+    if let Err(e) = state.settings_manager.import_from_file(path).await {
         log::error!("Failed to imported config. {}", e);
         return Err(format!("Failed to imported config. {}", e));
     }

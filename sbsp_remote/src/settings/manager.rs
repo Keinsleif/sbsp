@@ -54,7 +54,10 @@ impl GlobalSettingsManager {
         Ok(())
     }
 
-    pub async fn import_from_file(&self, path: &Path) -> Result<GlobalRemoteSettings, anyhow::Error> {
+    pub async fn import_from_file(
+        &self,
+        path: &Path,
+    ) -> Result<GlobalRemoteSettings, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
 
         let new_settings = tokio::task::spawn_blocking(move || {

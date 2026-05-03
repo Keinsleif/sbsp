@@ -2,7 +2,9 @@ use crate::{AppState, settings::GlobalRemoteSettings};
 use std::path::Path;
 
 #[tauri::command]
-pub async fn get_settings(state: tauri::State<'_, AppState>) -> Result<GlobalRemoteSettings, String> {
+pub async fn get_settings(
+    state: tauri::State<'_, AppState>,
+) -> Result<GlobalRemoteSettings, String> {
     Ok(state.settings_manager.read().await.clone())
 }
 
@@ -41,11 +43,7 @@ pub async fn import_settings_from_file(
     state: tauri::State<'_, AppState>,
     path: &Path,
 ) -> Result<GlobalRemoteSettings, String> {
-    if let Err(e) = state
-        .settings_manager
-        .import_from_file(path)
-        .await
-    {
+    if let Err(e) = state.settings_manager.import_from_file(path).await {
         log::error!("Failed to imported config. {}", e);
         return Err(format!("Failed to imported config. {}", e));
     }
