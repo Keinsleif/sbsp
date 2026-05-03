@@ -1,5 +1,5 @@
 <template>
-  <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
+  <v-sheet class="d-flex align-center ml-0 mr-0 w-100 position-relative">
     <v-sheet class="px-2 mr-auto d-flex align-center">
       <v-switch
         v-model="uiState.mode"
