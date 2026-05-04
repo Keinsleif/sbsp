@@ -1,10 +1,10 @@
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sha2::{Digest, Sha256};
 
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 use rand::{Rng, rng};
 
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 pub fn generate_salt() -> String {
     let mut salt = [0u8; 32];
     rng().fill_bytes(&mut salt);
@@ -27,7 +27,7 @@ pub fn generate_authentication_string(secret: &String, challenge: &String) -> St
     STANDARD.encode(hasher.finalize())
 }
 
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 pub fn check_authentication_string(
     secret: &String,
     challenge: &String,

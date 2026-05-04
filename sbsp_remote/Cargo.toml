@@ -30,7 +30,7 @@ tauri-plugin-log = { version = "2", features = ["colored"] }
 tauri-plugin-os = "2"
 tauri-plugin-opener = "2"
 humantime = "2.3.0"
-sbsp_backend = { path = "../sbsp_backend", features = ["apiclient"] }
+sbsp_backend = { path = "../sbsp_backend", features = ["client"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync"] }
 uuid = { version = "1", features = ["serde"] }
 log = "0.4"

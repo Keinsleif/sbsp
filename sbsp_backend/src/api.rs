@@ -4,13 +4,13 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "apiclient")]
+#[cfg(feature = "client")]
 pub mod client;
 mod file_list;
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 pub mod server;
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 mod auth;
 
 #[cfg(feature = "type_export")]

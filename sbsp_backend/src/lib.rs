@@ -33,7 +33,7 @@ pub mod helper;
 pub mod manager;
 pub mod model;
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 pub mod api;
 
 #[cfg(feature = "type_export")]
