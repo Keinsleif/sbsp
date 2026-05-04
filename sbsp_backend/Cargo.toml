@@ -9,7 +9,7 @@ publish.workspace = true
 
 [[bin]]
 name = "apiserver"
-path = "src/main.rs"
+path = "src/bin/server.rs"
 required-features = ["backend", "apiserver", "cli"]
 
 [features]
