@@ -92,6 +92,7 @@ impl AssetProcessor {
 
     pub async fn run(mut self) {
         let mut result_rx = self.result_tx.subscribe();
+        let mut event_rx = self.event_tx.subscribe();
         loop {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
@@ -117,7 +118,16 @@ impl AssetProcessor {
                     if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
                         log::error!("Failed to send process result to event bus. {}", e);
                     }
-                }
+                },
+                Ok(event) = event_rx.recv() => {
+                    match event {
+                        BackendEvent::ShowModelLoaded { .. } |
+                        BackendEvent::ShowModelReset { .. } => {
+                            self.filter_current_assets().await;
+                        }
+                        _ => {}
+                    }
+                },
             }
         }
     }
@@ -157,6 +167,22 @@ impl AssetProcessor {
         });
         log::info!("Asset Process started. file={:?}", actual_path);
         Ok(())
+    }
+
+    async fn filter_current_assets(&self) {
+        let active_paths = self.model_handle.get_all_asset_paths().await;
+        
+        let mut cache = self.cache.write().await;
+        let before_count = cache.entries.len();
+        
+        cache.entries.retain(|path, _| active_paths.contains(path));
+        
+        let after_count = cache.entries.len();
+        log::info!(
+            "Asset cache filtered. Freed: {}, Remaining: {}", 
+            before_count - after_count, 
+            after_count
+        );
     }
 
     fn process_asset(

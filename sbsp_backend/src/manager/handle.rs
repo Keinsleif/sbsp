@@ -1,5 +1,5 @@
 use std::{
-    collections::VecDeque,
+    collections::{HashSet, VecDeque},
     path::PathBuf,
     sync::{
         Arc,
@@ -270,6 +270,25 @@ impl ShowModelHandle {
             }
         }
         None
+    }
+
+    pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
+        let model = self.read().await;
+        let mut result = HashSet::new();
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if let CueParam::Audio(param) = &cue.params {
+                if let Ok(path) = self.get_asset_standard_path(&param.target).await {
+                    result.insert(path);
+                }
+            } else if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        result
     }
 
     pub async fn get_current_file_path(&self) -> Option<PathBuf> {
