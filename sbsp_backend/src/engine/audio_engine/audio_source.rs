@@ -48,6 +48,22 @@ pub enum AudioPlaybackState {
     Completed,
 }
 
+impl AudioPlaybackState {
+    fn is_advancing(&self) -> bool {
+        match *self {
+            AudioPlaybackState::Loaded
+            | AudioPlaybackState::Paused
+            | AudioPlaybackState::Stopped
+            | AudioPlaybackState::Completed => false,
+            AudioPlaybackState::Playing
+            | AudioPlaybackState::Pausing
+            | AudioPlaybackState::Resuming
+            | AudioPlaybackState::SoftStopping
+            | AudioPlaybackState::HardStopping => true,
+        }
+    }
+}
+
 impl TryFrom<u8> for AudioPlaybackState {
     type Error = ();
     fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
@@ -437,20 +453,6 @@ where
     fn calculate_interval(sample_rate: &NonZero<u32>) -> usize {
         sample_rate.get() as usize / 1_000
     }
-
-    fn is_advancing(state: AudioPlaybackState) -> bool {
-        match state {
-            AudioPlaybackState::Loaded
-            | AudioPlaybackState::Paused
-            | AudioPlaybackState::Stopped
-            | AudioPlaybackState::Completed => false,
-            AudioPlaybackState::Playing
-            | AudioPlaybackState::Pausing
-            | AudioPlaybackState::Resuming
-            | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => true,
-        }
-    }
 }
 
 impl<I> Iterator for AudioSource<I>
@@ -470,7 +472,7 @@ where
             if self.frames_counted >= self.update_interval {
                 self.frames_counted = 0;
 
-                if Self::is_advancing(state) {
+                if state.is_advancing() {
                     self.shared.position.store(
                         (self.offset_position
                             + self.playing_frames_counted as f64
@@ -575,7 +577,7 @@ where
             }
             self.volume.update(dt);
 
-            if Self::is_advancing(state) {
+            if state.is_advancing() {
                 let factor = self.control_volume.volume
                     + self.volume.volume
                     + self.envelope.update(
@@ -686,8 +688,10 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        self.shared
-            .state
-            .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
+        if AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap().is_advancing() {
+            self.shared
+                .state
+                .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
+        }
     }
 }
