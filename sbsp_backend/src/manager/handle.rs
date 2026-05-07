@@ -296,6 +296,16 @@ impl ShowModelHandle {
         }
     }
 
+    pub async fn get_asset_standard_path(&self, path: &PathBuf) -> anyhow::Result<PathBuf> {
+        if let Some(model_path) = self.get_current_file_path().await
+            && let Some(parent) = model_path.parent()
+        {
+            Ok(parent.join(path).canonicalize()?)
+        } else {
+            Ok(path.canonicalize()?)
+        }
+    }
+
     pub async fn get_project_state(&self) -> tokio::sync::RwLockReadGuard<'_, ProjectStatus> {
         self.project_status.read().await
     }

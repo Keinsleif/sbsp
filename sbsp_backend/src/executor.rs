@@ -197,12 +197,7 @@ impl Executor {
                 sound_type,
                 envelope,
             }) => {
-                let filepath =
-                    if let Some(asset_folder) = self.model_handle.get_asset_folder_path().await {
-                        asset_folder.join(target)
-                    } else {
-                        target.clone()
-                    };
+                let filepath = self.model_handle.get_asset_standard_path(target).await?;
 
                 self.audio_tx
                     .send(AudioCommand::Load {
@@ -334,12 +329,7 @@ impl Executor {
                 sound_type,
                 envelope,
             }) => {
-                let filepath =
-                    if let Some(asset_folder) = self.model_handle.get_asset_folder_path().await {
-                        asset_folder.join(target)
-                    } else {
-                        target.clone()
-                    };
+                let filepath = self.model_handle.get_asset_standard_path(target).await?;
 
                 let audio_command = AudioCommand::Play {
                     id: cue.id,
