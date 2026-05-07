@@ -639,7 +639,7 @@ const saveSettings = async (): Promise<boolean> => {
         kind: 'warning',
         title: t('general.warning'),
       });
-      if (result) {
+      if (result == 'Cancel') {
         return false;
       }
     }
