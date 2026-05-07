@@ -52,14 +52,14 @@ impl AudioPlaybackState {
     fn is_stopped(&self) -> bool {
         match *self {
             AudioPlaybackState::Stopped
-            | AudioPlaybackState::Completed => false,
+            | AudioPlaybackState::Completed => true,
             AudioPlaybackState::Loaded
             | AudioPlaybackState::Playing
             | AudioPlaybackState::Pausing
             | AudioPlaybackState::Paused
             | AudioPlaybackState::Resuming
             | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => true,
+            | AudioPlaybackState::HardStopping => false,
         }
     }
 
