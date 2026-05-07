@@ -49,6 +49,20 @@ pub enum AudioPlaybackState {
 }
 
 impl AudioPlaybackState {
+    fn is_stopped(&self) -> bool {
+        match *self {
+            AudioPlaybackState::Stopped
+            | AudioPlaybackState::Completed => false,
+            AudioPlaybackState::Loaded
+            | AudioPlaybackState::Playing
+            | AudioPlaybackState::Pausing
+            | AudioPlaybackState::Paused
+            | AudioPlaybackState::Resuming
+            | AudioPlaybackState::SoftStopping
+            | AudioPlaybackState::HardStopping => true,
+        }
+    }
+
     fn is_advancing(&self) -> bool {
         match *self {
             AudioPlaybackState::Loaded
@@ -688,7 +702,7 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        if AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap().is_advancing() {
+        if !AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap().is_stopped() {
             self.shared
                 .state
                 .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
