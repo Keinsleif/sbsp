@@ -525,38 +525,36 @@ where
                             }
                         }
                         AudioSourceControlCommand::FadeOut => {
-                            if matches!(
-                                state,
+                            match state {
                                 AudioPlaybackState::Playing
                                     | AudioPlaybackState::Pausing
-                                    | AudioPlaybackState::Paused
-                                    | AudioPlaybackState::Resuming
-                            ) {
-                                if state == AudioPlaybackState::Paused {
-                                    state = AudioPlaybackState::Stopped;
-                                } else {
+                                    | AudioPlaybackState::Resuming => {
                                     state = AudioPlaybackState::SoftStopping;
                                     self.control_volume
                                         .set_volume(Decibels::MUTE, self.fadeout_param);
                                 }
+                                AudioPlaybackState::Loaded
+                                    | AudioPlaybackState::Paused => {
+                                    state = AudioPlaybackState::Stopped;
+                                }
+                                _ => {}
                             }
                         }
                         AudioSourceControlCommand::Stop => {
-                            if matches!(
-                                state,
+                            match state {
                                 AudioPlaybackState::Playing
                                     | AudioPlaybackState::Pausing
-                                    | AudioPlaybackState::Paused
                                     | AudioPlaybackState::Resuming
-                                    | AudioPlaybackState::SoftStopping
-                            ) {
-                                if state == AudioPlaybackState::Paused {
-                                    state = AudioPlaybackState::Stopped;
-                                } else {
+                                    | AudioPlaybackState::SoftStopping => {
                                     state = AudioPlaybackState::HardStopping;
                                     self.control_volume
                                         .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                                 }
+                                AudioPlaybackState::Paused
+                                    | AudioPlaybackState::Loaded => {
+                                    state = AudioPlaybackState::Stopped;
+                                }
+                                _ => {}
                             }
                         }
                         AudioSourceControlCommand::Seek { position, result } => {
