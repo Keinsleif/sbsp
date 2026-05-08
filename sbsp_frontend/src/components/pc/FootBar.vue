@@ -13,7 +13,7 @@
     </v-sheet>
     <v-btn
       class="ml-2"
-      :style="{ 'visibility': !isUpdateAvailable ? 'visible' : 'hidden' }"
+      :style="{ 'visibility': isUpdateAvailable ? 'visible' : 'hidden' }"
       variant="text"
       :prepend-icon="mdiSync"
       :text="t('dialog.update.updatesAvailable')"
