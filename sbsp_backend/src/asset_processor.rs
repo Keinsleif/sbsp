@@ -99,9 +99,7 @@ impl AssetProcessor {
                     match command {
                         AssetProcessorCommand::RequestFileAssetData{path} => {
                             log::info!("Asset Process requested. file={:?}", path);
-                            if let Err(e) = self.handle_process_file(path).await {
-                                log::error!("Error on starting asset process. e={}", e);
-                            }
+                            self.handle_process_file(path).await;
                         }
                     }
                 },
@@ -132,8 +130,16 @@ impl AssetProcessor {
         }
     }
 
-    async fn handle_process_file(&self, path: PathBuf) -> anyhow::Result<()> {
-        let actual_path = self.model_handle.get_asset_standard_path(&path).await?;
+    async fn handle_process_file(&self, path: PathBuf) {
+        let Ok(actual_path) = self.model_handle.get_asset_standard_path(&path).await else {
+            self.event_tx
+                .send(BackendEvent::AssetResult {
+                    path,
+                    data: Err("Failed to resolve path.".to_string()),
+                })
+                .unwrap();
+            return;
+        };
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&actual_path) {
             self.event_tx
@@ -142,11 +148,11 @@ impl AssetProcessor {
                     data: Ok(entry.data.clone()),
                 })
                 .unwrap();
-            return Ok(());
+            return;
         }
         let mut processing = self.processing.write().await;
         if processing.contains(&actual_path) {
-            return Ok(());
+            return;
         }
         processing.push(actual_path.clone());
 
@@ -166,7 +172,6 @@ impl AssetProcessor {
             drop(permit);
         });
         log::info!("Asset Process started. file={:?}", actual_path);
-        Ok(())
     }
 
     async fn filter_current_assets(&self) {
