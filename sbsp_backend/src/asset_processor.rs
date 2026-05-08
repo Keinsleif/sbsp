@@ -30,6 +30,7 @@ const AUDIO_THRESHOLD: f32 = 0.001_f32;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessResult {
+    pub actual_path: PathBuf,
     pub path: PathBuf,
     pub data: Result<AssetData, String>,
 }
@@ -112,7 +113,7 @@ impl AssetProcessor {
                             cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
                         }
                     }
-                    self.processing.write().await.retain(|value| *value != result.path);
+                    self.processing.write().await.retain(|value| *value != result.actual_path);
                     if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
                         log::error!("Failed to send process result to event bus. {}", e);
                     }
@@ -165,7 +166,8 @@ impl AssetProcessor {
                 .map_err(|e| e.to_string());
             result_tx
                 .send(ProcessResult {
-                    path: actual_path_clone,
+                    path,
+                    actual_path: actual_path_clone,
                     data: asset_data,
                 })
                 .unwrap();
