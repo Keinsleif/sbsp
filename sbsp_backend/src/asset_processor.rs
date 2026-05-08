@@ -30,6 +30,7 @@ const AUDIO_THRESHOLD: f32 = 0.001_f32;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessResult {
+    pub actual_path: PathBuf,
     pub path: PathBuf,
     pub data: Result<AssetData, String>,
 }
@@ -92,6 +93,7 @@ impl AssetProcessor {
 
     pub async fn run(mut self) {
         let mut result_rx = self.result_tx.subscribe();
+        let mut event_rx = self.event_tx.subscribe();
         loop {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
@@ -111,24 +113,33 @@ impl AssetProcessor {
                             cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
                         }
                     }
-                    self.processing.write().await.retain(|value| *value != result.path);
+                    self.processing.write().await.retain(|value| *value != result.actual_path);
                     if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
                         log::error!("Failed to send process result to event bus. {}", e);
                     }
-                }
+                },
+                Ok(event) = event_rx.recv() => {
+                    match event {
+                        BackendEvent::ShowModelLoaded { .. } |
+                        BackendEvent::ShowModelReset { .. } => {
+                            self.filter_current_assets().await;
+                        }
+                        _ => {}
+                    }
+                },
             }
         }
     }
 
     async fn handle_process_file(&self, path: PathBuf) {
-        let actual_path = {
-            if let Some(model_path) = self.model_handle.get_current_file_path().await
-                && let Some(parent) = model_path.parent()
-            {
-                parent.join(&path)
-            } else {
-                path.clone()
-            }
+        let Ok(actual_path) = self.model_handle.get_asset_standard_path(&path).await else {
+            self.event_tx
+                .send(BackendEvent::AssetResult {
+                    path,
+                    data: Err("Failed to resolve path.".to_string()),
+                })
+                .unwrap();
+            return;
         };
         let cache = self.cache.read().await;
         if let Some(entry) = cache.entries.get(&actual_path) {
@@ -156,12 +167,29 @@ impl AssetProcessor {
             result_tx
                 .send(ProcessResult {
                     path,
+                    actual_path: actual_path_clone,
                     data: asset_data,
                 })
                 .unwrap();
             drop(permit);
         });
         log::info!("Asset Process started. file={:?}", actual_path);
+    }
+
+    async fn filter_current_assets(&self) {
+        let active_paths = self.model_handle.get_all_asset_paths().await;
+        
+        let mut cache = self.cache.write().await;
+        let before_count = cache.entries.len();
+        
+        cache.entries.retain(|path, _| active_paths.contains(path));
+        
+        let after_count = cache.entries.len();
+        log::info!(
+            "Asset cache filtered. Freed: {}, Remaining: {}", 
+            before_count - after_count, 
+            after_count
+        );
     }
 
     fn process_asset(

@@ -1,5 +1,5 @@
 use std::{
-    collections::VecDeque,
+    collections::{HashSet, VecDeque},
     path::PathBuf,
     sync::{
         Arc,
@@ -272,6 +272,25 @@ impl ShowModelHandle {
         None
     }
 
+    pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
+        let model = self.read().await;
+        let mut result = HashSet::new();
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if let CueParam::Audio(param) = &cue.params {
+                if let Ok(path) = self.get_asset_standard_path(&param.target).await {
+                    result.insert(path);
+                }
+            } else if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        result
+    }
+
     pub async fn get_current_file_path(&self) -> Option<PathBuf> {
         if let ProjectStatus::Saved { path, .. } = self.project_status.read().await.to_owned() {
             Some(path)
@@ -293,6 +312,16 @@ impl ShowModelHandle {
             path.parent().map(|path| path.to_path_buf().join(asset_dir))
         } else {
             None
+        }
+    }
+
+    pub async fn get_asset_standard_path(&self, path: &PathBuf) -> anyhow::Result<PathBuf> {
+        if let Some(model_path) = self.get_current_file_path().await
+            && let Some(parent) = model_path.parent()
+        {
+            Ok(tokio::fs::canonicalize(parent.join(path)).await?)
+        } else {
+            Ok(tokio::fs::canonicalize(path).await?)
         }
     }
 
