@@ -159,7 +159,7 @@ impl AssetProcessor {
                 .map_err(|e| e.to_string());
             result_tx
                 .send(ProcessResult {
-                    path,
+                    path: actual_path_clone,
                     data: asset_data,
                 })
                 .unwrap();
