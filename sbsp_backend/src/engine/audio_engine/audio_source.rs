@@ -146,6 +146,7 @@ pub struct AudioSourceHandle {
     pub duration: f64,
     volume: Decibels,
     fade_volume: Decibels,
+    stop_triggered: bool,
 }
 
 impl AudioSourceHandle {
@@ -190,11 +191,12 @@ impl AudioSourceHandle {
         if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
             return;
         }
-        if self.state().eq(&AudioPlaybackState::SoftStopping) {
+        if self.stop_triggered {
             // Hard Stop
             let _ = self.control.push(AudioSourceControlCommand::Stop);
         } else {
             let _ = self.control.push(AudioSourceControlCommand::FadeOut);
+            self.stop_triggered = true;
         }
     }
 
@@ -460,6 +462,7 @@ where
                 duration,
                 volume: volume_db,
                 fade_volume: Decibels::IDENTITY,
+                stop_triggered: false,
             },
         )
     }
