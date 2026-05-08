@@ -1,6 +1,6 @@
 <template>
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100 position-relative">
-    <v-sheet class="px-2 mr-auto d-flex align-center">
+    <v-sheet class="px-2 d-flex align-center">
       <v-switch
         v-model="uiState.mode"
         hide-details
@@ -23,7 +23,7 @@
     <v-sheet class="ml-auto mr-auto">
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </v-sheet>
-    <v-sheet class="mr-0 ml-auto d-flex align-center">
+    <v-sheet class="d-flex align-center">
       <div
         v-show="assetResult.processing.size > 0"
         class="d-flex align-center ga-1 position-absolute"
