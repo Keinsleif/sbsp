@@ -1,5 +1,5 @@
 <template>
-  <v-sheet class="d-flex align-center ml-0 mr-0 w-100 position-relative">
+  <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="px-2 d-flex align-center">
       <v-switch
         v-model="uiState.mode"
@@ -12,9 +12,8 @@
       />
     </v-sheet>
     <v-btn
-      v-show="isUpdateAvailable"
-      class="position-absolute"
-      style="left: 75px"
+      class="ml-2"
+      :style="{ 'visibility': !isUpdateAvailable ? 'visible' : 'hidden' }"
       variant="text"
       :prepend-icon="mdiSync"
       :text="t('dialog.update.updatesAvailable')"
@@ -25,9 +24,8 @@
     </v-sheet>
     <v-sheet class="d-flex align-center">
       <div
-        v-show="assetResult.processing.size > 0"
-        class="d-flex align-center ga-1 position-absolute"
-        style="right: 175px"
+        :style="{ 'visibility': assetResult.processing.size > 0 ? 'visible' : 'hidden' }"
+        class="d-flex align-center ga-1 mr-2"
       >
         <v-progress-circular
           indeterminate="disable-shrink"
