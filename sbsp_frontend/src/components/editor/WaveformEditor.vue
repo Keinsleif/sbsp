@@ -316,7 +316,7 @@ const parent = useParentElement();
 const position = computed<number>(() => {
   if (selectedCue.value == null) return 0;
   const activeCue = showState.activeCues[selectedCue.value.id];
-  if (activeCue != null && activeCue.duration !== 0) {
+  if (activeCue != null && activeCue.duration !== 0 && activeCue.status != 'preWaiting' && activeCue.status != 'preWaitPaused') {
     return activeCue.position / activeCue.duration;
   } else {
     return 0;
