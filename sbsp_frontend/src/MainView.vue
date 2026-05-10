@@ -1,5 +1,5 @@
 <template>
-  <component :is="mobile ? MainViewMobile : MainViewDesktop" />
+  <component :is="xs ? MainViewMobile : MainViewDesktop" />
 </template>
 
 <script setup lang="ts">
@@ -28,7 +28,7 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t } = useI18n();
 const api = useApi();
-const { mobile } = useDisplay();
+const { xs } = useDisplay();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
