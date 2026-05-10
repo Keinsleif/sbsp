@@ -16,7 +16,6 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@noble/hashes": "^2.2.0",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "~2.6.0",
     "@tauri-apps/plugin-log": "~2.8.0",
@@ -26,6 +25,7 @@
     "@tauri-apps/plugin-window-state": "~2.4.1",
     "@types/markdown-it": "^14.1.2",
     "@vueuse/core": "^14.2.1",
+    "jssha": "^3.3.1",
     "markdown-it": "^14.1.1",
     "markdown-it-link-attributes": "^4.0.1",
     "pinia": "^3.0.4",

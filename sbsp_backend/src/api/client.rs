@@ -61,16 +61,12 @@ pub async fn create_remote_backend(
             && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
             && let WsFeedback::Hello { auth } = feedback
         {
-            let response = if let Some(auth_info) = auth {
-                if let Some(pass) = password {
-                    let secret = generate_secret(&pass, &auth_info.salt);
-                    Some(generate_authentication_string(
-                        &secret,
-                        &auth_info.challenge,
-                    ))
-                } else {
-                    anyhow::bail!("Password is required to connect.")
-                }
+            let response = if let Some(pass) = password {
+                let secret = generate_secret(&pass, &auth.salt);
+                Some(generate_authentication_string(
+                    &secret,
+                    &auth.challenge,
+                ))
             } else {
                 None
             };
@@ -90,7 +86,7 @@ pub async fn create_remote_backend(
         if let Ok(Some(message)) = websocket.try_next().await {
             if let Message::Text(text) = &message
                 && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated = feedback
+                && let WsFeedback::Authenticated {perm: _} = feedback
             {
                 break;
             } else if let Message::Close { .. } = &message {
@@ -171,7 +167,7 @@ pub async fn create_remote_backend(
                                         }
                                     }
                                     WsFeedback::Hello { .. } => {},
-                                    WsFeedback::Authenticated => {},
+                                    WsFeedback::Authenticated { .. } => {},
                                 }
                             } else {
                                 log::error!("Invalid command received.")

@@ -12,7 +12,7 @@ import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import typia from 'typia';
 import { useUiState } from '../stores/uistate';
-import { sha256 } from '@noble/hashes/sha2.js';
+import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
@@ -207,11 +207,14 @@ const openFileDialog = (): Promise<globalThis.FileList | null> =>
     input.click();
   });
 
-const encoder = new TextEncoder();
+// const encoder = new TextEncoder();
 const strToHashedBase64 = (src: string): string => {
-  const hash = sha256(encoder.encode(src));
+  const shaObj = new jsSHA('SHA-256', 'TEXT');
+  shaObj.update(src);
+  return shaObj.getHash('B64');
+  // const hash = sha256(encoder.encode(src));
 
-  return btoa(String.fromCharCode(...hash));
+  // return btoa(String.fromCharCode(...hash));
 };
 
 const websocketApiState: {
@@ -261,21 +264,18 @@ export function useWebsocketApi(): IBackendAdapter {
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
-          case 'hello':
-            if (msg.data.auth != null) {
-              if (password == null) {
-                websocketApiState.ws?.close();
-                return;
-              }
-
-              const secret = strToHashedBase64(password + msg.data.auth.salt);
-              const authString = strToHashedBase64(secret + msg.data.auth.challenge);
-
-              websocketApi.sendCommand({ type: 'authenticate', response: authString });
+          case 'hello': {
+            let authString;
+            if (password == null) {
+              authString = null;
             } else {
-              websocketApi.sendCommand({ type: 'authenticate', response: null });
+              const secret = strToHashedBase64(password + msg.data.auth.salt);
+              authString = strToHashedBase64(secret + msg.data.auth.challenge);
             }
+
+            websocketApi.sendCommand({ type: 'authenticate', response: authString });
             break;
+          }
           case 'authenticated':
             websocketApiState.ws?.addEventListener('message', mainEventListener);
             websocketApiState.ws?.removeEventListener('message', authEventListener);
