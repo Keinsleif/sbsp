@@ -8,13 +8,13 @@ use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot, watch};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use super::{WsCommand, WsFeedback};
+use super::{WsCommand, WsFeedback, WsError};
 use crate::{
     BackendHandle, FullShowState,
     api::auth::{generate_authentication_string, generate_secret},
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
-    event::BackendEvent,
+    event::{BackendError, BackendEvent},
     manager::{ModelCommand, ProjectStatus, ShowModelHandle},
     model::ShowModel,
 };
@@ -164,6 +164,32 @@ pub async fn create_remote_backend(
                                         {
                                             let mut project_status = project_status_clone.write().await;
                                             *project_status = full_state.project_status;
+                                        }
+                                    }
+                                    WsFeedback::Error(error) => {
+                                        match error {
+                                            WsError::AuthenticationFailed => {
+                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                    error: BackendError::Custom {
+                                                        id: 0,
+                                                        message: "Authentication Failed".to_string(),
+                                                    }
+                                                }).is_err() {
+                                                    log::error!("Failed to send BackendEvent to channel.");
+                                                    break;
+                                                }
+                                            },
+                                            WsError::PermissionDenied => {
+                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                    error: BackendError::Custom {
+                                                        id: 1,
+                                                        message: "Permission denied.".to_string(),
+                                                    }
+                                                }).is_err() {
+                                                    log::error!("Failed to send BackendEvent to channel.");
+                                                    break;
+                                                }
+                                            },
                                         }
                                     }
                                     WsFeedback::Hello { .. } => {},

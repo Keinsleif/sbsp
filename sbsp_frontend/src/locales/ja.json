@@ -342,7 +342,8 @@
   },
   "notification": {
     "modelLoaded": "正常にロードされました",
-    "modelSaved": "正常に保存されました"
+    "modelSaved": "正常に保存されました",
+    "permissionDenied": "権限がありません"
   },
   "view": {
     "connect": {

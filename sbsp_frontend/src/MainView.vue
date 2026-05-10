@@ -139,7 +139,23 @@ onMounted(() => {
         }
         case 'operationFailed':
           console.error(event.param.error);
-          uiState.error(event.param.error.message);
+          switch (event.param.error.type) {
+            case 'fileLoad':
+              uiState.error(event.param.error.message);
+              break;
+            case 'fileSave':
+              uiState.error(event.param.error.message);
+              break;
+            case 'cueEdit':
+              uiState.error(event.param.error.message);
+              break;
+            case 'custom':
+              switch (event.param.error.id) {
+                case 1:
+                  uiState.error(t('notification.permissionDenied'));
+                  break;
+              }
+          }
           break;
       }
     })

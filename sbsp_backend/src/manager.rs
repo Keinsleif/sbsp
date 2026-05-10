@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::{
     BackendSettings,
-    event::{BackendEvent, UiError},
+    event::{BackendEvent, BackendError},
     model::{
         ProjectType, ShowModel,
         cue::{Cue, CueParam},
@@ -107,7 +107,7 @@ impl ShowModelManager {
                 }
                 let event = if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
                     BackendEvent::OperationFailed {
-                        error: UiError::CueEdit {
+                        error: BackendError::CueEdit {
                             message: format!("Failed to update cue. {}", e),
                         },
                     }
@@ -129,7 +129,7 @@ impl ShowModelManager {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
                 let event = if id_exists {
                     BackendEvent::OperationFailed {
-                        error: UiError::CueEdit {
+                        error: BackendError::CueEdit {
                             message: format!("Cue already exist: cue_id={}", cue.id),
                         },
                     }
@@ -155,7 +155,7 @@ impl ShowModelManager {
                     }
                     if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
                         BackendEvent::OperationFailed {
-                            error: UiError::CueEdit {
+                            error: BackendError::CueEdit {
                                 message: format!("Failed to add cue. {}", e),
                             },
                         }
@@ -179,7 +179,7 @@ impl ShowModelManager {
                     };
                     if id_exists {
                         self.event_tx.send(BackendEvent::OperationFailed {
-                            error: UiError::CueEdit {
+                            error: BackendError::CueEdit {
                                 message: format!("Cue already exist. cue_id={}", cue.id),
                             },
                         })?;
@@ -219,7 +219,7 @@ impl ShowModelManager {
 
                         if let Err(e) = result {
                             let _ = self.event_tx.send(BackendEvent::OperationFailed {
-                                error: UiError::CueEdit {
+                                error: BackendError::CueEdit {
                                     message: format!("Failed to add cue. {}", e),
                                 },
                             });
@@ -239,7 +239,7 @@ impl ShowModelManager {
             ModelCommand::RemoveCue { cue_id } => {
                 let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
                     BackendEvent::OperationFailed {
-                        error: UiError::CueEdit {
+                        error: BackendError::CueEdit {
                             message: "Failed to remove cue. id not found.".into(),
                         },
                     }
@@ -257,7 +257,7 @@ impl ShowModelManager {
                 let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
                     if let Err(e) = self.insert_cue_at_position(cue, position).await {
                         BackendEvent::OperationFailed {
-                            error: UiError::CueEdit {
+                            error: BackendError::CueEdit {
                                 message: format!("Failed to mov cue. {}", e),
                             },
                         }
@@ -269,7 +269,7 @@ impl ShowModelManager {
                     }
                 } else {
                     BackendEvent::OperationFailed {
-                        error: UiError::CueEdit {
+                        error: BackendError::CueEdit {
                             message: format!("Cue already exist: cue_id={}", cue_id),
                         },
                     }
@@ -362,7 +362,7 @@ impl ShowModelManager {
                         Err(error) => {
                             log::error!("Failed to save model file: {}", error);
                             BackendEvent::OperationFailed {
-                                error: UiError::FileSave {
+                                error: BackendError::FileSave {
                                     path: path.to_path_buf(),
                                     message: error.to_string(),
                                 },
@@ -385,7 +385,7 @@ impl ShowModelManager {
                     log::warn!(
                         "Save command issued, but no file path is set. Use SaveToFile first."
                     );
-                    BackendEvent::OperationFailed { error: UiError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
+                    BackendEvent::OperationFailed { error: BackendError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
                 };
                 self.event_tx.send(event)?;
                 Ok(())
@@ -395,7 +395,7 @@ impl ShowModelManager {
                     Err(error) => {
                         log::error!("Failed to save model file: {}", error);
                         BackendEvent::OperationFailed {
-                            error: UiError::FileSave {
+                            error: BackendError::FileSave {
                                 path,
                                 message: error.to_string(),
                             },
@@ -436,7 +436,7 @@ impl ShowModelManager {
                     Err(error) => {
                         log::error!("Failed to export model to folder: {}", error);
                         BackendEvent::OperationFailed {
-                            error: UiError::FileSave {
+                            error: BackendError::FileSave {
                                 path: model_file_path.clone(),
                                 message: error.to_string(),
                             },
@@ -470,7 +470,7 @@ impl ShowModelManager {
                     Err(error) => {
                         log::error!("Failed to load model file: {}", error);
                         BackendEvent::OperationFailed {
-                            error: UiError::FileLoad {
+                            error: BackendError::FileLoad {
                                 path,
                                 message: error.to_string(),
                             },

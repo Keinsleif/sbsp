@@ -343,7 +343,8 @@
   },
   "notification": {
     "modelLoaded": "Show model loaded.",
-    "modelSaved": "Show model saved."
+    "modelSaved": "Show model saved.",
+    "permissionDenied": "Permission denied."
   },
   "view": {
     "connect": {

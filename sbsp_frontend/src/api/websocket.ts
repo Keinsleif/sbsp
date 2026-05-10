@@ -318,6 +318,19 @@ export function useWebsocketApi(): IBackendAdapter {
               websocketApiState.fullStateResolver[0](msg.data);
             }
             websocketApiState.projectStatus = msg.data.projectStatus;
+            break;
+          case 'error':
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
+              type: 'operationFailed',
+              param: {
+                error: {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Permission Denied.',
+                },
+              },
+            }));
+            break;
         }
       };
       websocketApiState.ws.addEventListener('message', authEventListener);

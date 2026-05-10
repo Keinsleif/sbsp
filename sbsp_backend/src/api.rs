@@ -71,6 +71,7 @@ pub enum WsFeedback {
     Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
     FullShowState(FullShowState),
+    Error(WsError)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,4 +85,12 @@ pub enum WsCommand {
     RequestAssetList,
     RequestFullShowState,
     RequestSyncState,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum WsError {
+    AuthenticationFailed,
+    PermissionDenied,
 }
