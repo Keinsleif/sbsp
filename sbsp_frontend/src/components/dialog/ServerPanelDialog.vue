@@ -47,10 +47,10 @@
           <thead>
             <tr>
               <th width="200">
-                Password
+                {{ t('dialog.server.password') }}
               </th>
               <th width="240">
-                Permission
+                {{ t('dialog.server.permission') }}
               </th>
               <th width="108" />
               <th width="45" />
@@ -65,7 +65,7 @@
               v-model:permission="info.permission"
               :is-running="isRunning || false"
               :is-visible="true"
-              @delete="server_authMap.splice(i, 1)"
+              @delete="() => {if (server_authMap.length > 1) {server_authMap.splice(i, 1)}}"
               @open-info="generateServerUrl(info.password).then(() => {
                 isServerInfoDialogOpen = true;
               })"
@@ -74,6 +74,7 @@
               <td colspan="5" class="text-center py-1">
                 <v-btn
                   :icon="mdiPlus"
+                  :disabled="isRunning || false"
                   density="compact"
                   color="success"
                   variant="outlined"
@@ -106,7 +107,7 @@
         class="d-flex flex-column pa-3 ga-3 align-stretch"
         width="480px"
       >
-        <h3>Connect Information</h3>
+        <h3>t('dialog.server.connectInfo')</h3>
         <div class="d-flex flex-row align-center mt-2">
           <copy-text-input
             v-model="server_hostname"

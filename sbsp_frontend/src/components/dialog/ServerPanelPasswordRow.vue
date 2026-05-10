@@ -12,6 +12,7 @@
     </td>
     <td class="pa-2">
       <v-btn
+        width="100%"
         :disabled="props.isRunning || false"
         :text="t('dialog.server.generate')"
         color="primary"

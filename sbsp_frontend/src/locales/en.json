@@ -58,7 +58,14 @@
       "status": "Status",
       "stop": "Stop",
       "stopped": "Stopped",
-      "title": "Server Management"
+      "title": "Server Management",
+      "connectInfo": "Connect Information",
+      "permission": "Permission",
+      "permissions": {
+        "read": "Read",
+        "edit": "Edit",
+        "control": "Control"
+      }
     },
     "settings": {
       "global": {

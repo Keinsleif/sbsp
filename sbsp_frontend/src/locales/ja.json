@@ -58,7 +58,14 @@
       "status": "状態",
       "stop": "停止",
       "stopped": "停止中",
-      "title": "サーバー管理"
+      "title": "サーバー管理",
+      "connectInfo": "接続情報",
+      "permission": "権限",
+      "permissions": {
+        "control": "操作",
+        "edit": "編集",
+        "read": "読み取り"
+      }
     },
     "settings": {
       "global": {

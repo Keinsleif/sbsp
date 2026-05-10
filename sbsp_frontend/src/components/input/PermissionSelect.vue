@@ -2,9 +2,9 @@
   <v-select
     v-model="innerPerm"
     :items="[
-      { title: 'Read', value: 1},
-      { title: 'Edit', value: 2},
-      { title: 'Control', value: 4},
+      { title: t('dialog.server.permissions.read'), value: 1},
+      { title: t('dialog.server.permissions.edit'), value: 2},
+      { title: t('dialog.server.permissions.control'), value: 4},
     ]"
     density="compact"
     variant="outlined"
@@ -18,7 +18,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const perm = defineModel<number>({ required: true });
 
 const permToInner = (perm: number): number[] => {
