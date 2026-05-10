@@ -6,82 +6,98 @@
     @keydown.stop
     @contextmenu.prevent
   >
-    <v-sheet class="d-flex flex-column">
-      <div class="d-flex flex-column pa-4 ga-4">
-        <h2>{{ t('dialog.server.title') }}</h2>
-        <div>
-          <span>
-            {{ t('dialog.server.status') }} :
-            <span :class="isRunning == null ? '' : isRunning ? 'text-green' : 'text-red'">
-              {{ isRunning == null ? '' : isRunning ? t('dialog.server.running') : t('dialog.server.stopped') }}
+    <v-sheet class="d-flex flex-column pa-4 ga-4">
+      <h2 class="ma-2">
+        {{ t('dialog.server.title') }}
+      </h2>
+      <div class="d-flex flex-row ga-4">
+        <div class="d-flex flex-column ga-4">
+          <div>
+            <span>
+              {{ t('dialog.server.status') }} :
+              <span :class="isRunning == null ? '' : isRunning ? 'text-green' : 'text-red'">
+                {{ isRunning == null ? '' : isRunning ? t('dialog.server.running') : t('dialog.server.stopped') }}
+              </span>
             </span>
-          </span>
-        </div>
-        <text-input
-          v-model="server_port"
-          :disabled="isRunning"
-          class="flex-grow-0"
-          :label="t('dialog.server.port')"
-          width="100px"
-        />
-        <v-checkbox
-          v-model="isDiscoverable"
-          :disabled="isRunning"
-          :label="t('dialog.server.discoverable')"
-          density="compact"
-          hide-details
-        />
-        <text-input
-          v-model="server_name"
-          :disabled="!isDiscoverable || isRunning"
-          align-input="left"
-          class="flex-grow-0 mt-1"
-          :label="t('dialog.server.serverName')"
-          width="480px"
-        />
-        <div class="d-flex flex-row align-center ga-3 mt-1">
+          </div>
           <text-input
-            v-model="server_password"
+            v-model="server_port"
             :disabled="isRunning"
-            :type="isPasswordVisible ? 'text' : 'password'"
-            :placeholder="t('dialog.server.info.passwordNotSet')"
-            :append-inner-icon="isPasswordVisible ? mdiEye : mdiEyeOff"
-            align-input="left"
-            class="flex-grow-1"
-            :label="t('dialog.server.password')"
-            @click:append-inner="isPasswordVisible = !isPasswordVisible"
+            class="flex-grow-0"
+            :label="t('dialog.server.port')"
+            width="100px"
           />
-          <v-btn
-            :text="t('dialog.server.generate')"
-            color="primary"
-            @click="server_password = generateRandomPassword()"
+          <v-checkbox
+            v-model="isDiscoverable"
+            :disabled="isRunning"
+            :label="t('dialog.server.discoverable')"
+            density="compact"
+            hide-details
+          />
+          <text-input
+            v-model="server_name"
+            :disabled="!isDiscoverable || isRunning"
+            align-input="left"
+            class="flex-grow-0 mt-1"
+            :label="t('dialog.server.serverName')"
+            width="320px"
           />
         </div>
-        <v-btn
-          :text="t('dialog.server.showInfo')"
-          :disabled="!isRunning"
-          variant="tonal"
-          @click="
-            generateServerUrl().then(() => {
-              isServerInfoDialogOpen = true;
-            })
-          "
-        />
+        <v-table density="compact" class="border flex-grow-1">
+          <thead>
+            <tr>
+              <th width="200">
+                Password
+              </th>
+              <th width="240">
+                Permission
+              </th>
+              <th width="108" />
+              <th width="45" />
+              <th width="45" />
+            </tr>
+          </thead>
+          <tbody>
+            <server-panel-password-row
+              v-for="(info, i) in server_authMap"
+              :key="i"
+              v-model:password="info.password"
+              v-model:permission="info.permission"
+              :is-running="isRunning || false"
+              :is-visible="true"
+              @delete="server_authMap.splice(i, 1)"
+              @open-info="generateServerUrl(info.password).then(() => {
+                isServerInfoDialogOpen = true;
+              })"
+            />
+            <tr>
+              <td colspan="5" class="text-center py-1">
+                <v-btn
+                  :icon="mdiPlus"
+                  density="compact"
+                  color="success"
+                  variant="outlined"
+                  @click="server_authMap.push({ password: generateRandomPassword(), permission: 0b0001 })"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
       </div>
-      <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 mt-auto ga-3">
-        <v-btn
-          class="ml-auto"
-          :text="isRunning ? t('dialog.server.stop') : t('dialog.server.start')"
-          :color="isRunning ? 'red' : 'green'"
-          @click="toggleServer"
-        />
-        <v-btn
-          :text="t('general.close')"
-          variant="outlined"
-          @click="isServerPanelOpen = false"
-        />
-      </v-footer>
     </v-sheet>
+    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 mt-auto ga-3">
+      <v-btn
+        class="ml-auto"
+        :text="isRunning ? t('dialog.server.stop') : t('dialog.server.start')"
+        :color="isRunning ? 'red' : 'green'"
+        @click="toggleServer"
+      />
+      <v-btn
+        :text="t('general.close')"
+        variant="outlined"
+        @click="isServerPanelOpen = false"
+      />
+    </v-footer>
     <v-dialog
       v-model="isServerInfoDialogOpen"
       width="auto"
@@ -90,7 +106,7 @@
         class="d-flex flex-column pa-3 ga-3 align-stretch"
         width="480px"
       >
-        <h3>Server Information</h3>
+        <h3>Connect Information</h3>
         <div class="d-flex flex-row align-center mt-2">
           <copy-text-input
             v-model="server_hostname"
@@ -171,11 +187,12 @@ import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 import { ApiServerOptions } from '../../types/ApiServerOptions';
 import { useUiState } from '../../stores/uistate';
-import { mdiCheck, mdiContentCopy, mdiEye, mdiEyeOff } from '@mdi/js';
+import { mdiCheck, mdiContentCopy, mdiPlus } from '@mdi/js';
 import CopyTextInput from '../input/CopyTextInput.vue';
 import QrViewer from '../input/QrViewer.vue';
-
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+import { generateRandomPassword } from '../../utils';
+import ServerPanelPasswordRow from './ServerPanelPasswordRow.vue';
+import { PermissionInfo } from '../../types/PermissionInfo';
 
 const { t } = useI18n();
 const api = useApi();
@@ -192,15 +209,21 @@ const isRunning = ref<boolean | null>(null);
 const isDiscoverable = ref<boolean | null>(null);
 const server_port = ref<string>('');
 const server_name = ref<string>('Untitled SBS Player Server');
-const server_password = ref<string>('');
+const server_authMap = ref<PermissionInfo[]>([]);
 
 const server_hostname = ref<string | null>(null);
+const server_password = ref<string>('');
 const server_url = ref<string | null>(null);
 
 let server_options: ApiServerOptions = {
   port: 5800,
   discoverry: null,
-  password: null,
+  authMap: [
+    {
+      password: '',
+      permission: 0b0001,
+    },
+  ],
 };
 
 let unlisten: (() => void) | null = null;
@@ -212,11 +235,7 @@ const saveServerOptions = async () => {
     server_options.discoverry = null;
   }
   server_options.port = parseInt(server_port.value);
-  let new_password: string | null = server_password.value.trim();
-  if (new_password === '') {
-    new_password = null;
-  }
-  server_options.password = new_password;
+  server_options.authMap = server_authMap.value;
   await api.host?.setServerOptions(server_options);
 };
 
@@ -236,25 +255,14 @@ const toggleServer = async () => {
   }
 };
 
-const generateRandomPassword = (): string => {
-  const array = new Uint32Array(16);
-  crypto.getRandomValues(array);
-
-  let password = '';
-  for (let i = 0; i < 16; i++) {
-    password += CHARSET[array[i]! % CHARSET.length];
-  }
-
-  return password;
-};
-
-const generateServerUrl = async () => {
+const generateServerUrl = async (password: string) => {
   const hostname = await api.host?.getHostname();
   server_hostname.value = hostname || null;
   if (hostname) {
     const address = `${hostname}:${server_options.port}`;
-    if (server_options.password) {
-      server_url.value = `http://${address}/?address=${address}#${server_options.password}`;
+    server_password.value = password;
+    if (password) {
+      server_url.value = `http://${address}/?address=${address}#${password}`;
     } else {
       server_url.value = `http://${address}/?address=${address}#`;
     }
@@ -308,7 +316,7 @@ onMounted(() => {
         isDiscoverable.value = false;
       }
       server_port.value = options.port.toString();
-      server_password.value = options.password || '';
+      server_authMap.value = options.authMap;
     })
     .catch(e => console.error(e));
   api.host

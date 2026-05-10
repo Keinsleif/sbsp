@@ -311,3 +311,17 @@ export const decibelsToFader = (decibels: number): number => {
     return (decibels + 40) / 4 - 25;
   }
 };
+
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+export const generateRandomPassword = (): string => {
+  const array = new Uint32Array(16);
+  crypto.getRandomValues(array);
+
+  let password = '';
+  for (let i = 0; i < 16; i++) {
+    password += CHARSET[array[i]! % CHARSET.length];
+  }
+
+  return password;
+};
