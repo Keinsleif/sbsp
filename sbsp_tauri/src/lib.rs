@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime};
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::{ApiServerOptions, server::start_apiserver_with},
+    api::{ApiServerOptions, PermissionInfo, Permissions, server::start_apiserver_with},
     controller::state::ShowState,
     event::BackendEvent,
     start_backend,
@@ -60,7 +60,12 @@ impl AppState {
             server_option: RwLock::new(ApiServerOptions {
                 port: 5800,
                 discoverry: None,
-                password: None,
+                auth_map: vec![
+                    PermissionInfo {
+                        password: "".to_string(),
+                        permission: Permissions::READ,
+                    }
+                ],
             }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,

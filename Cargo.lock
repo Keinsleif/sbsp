@@ -4372,6 +4372,7 @@ dependencies = [
  "async-recursion",
  "axum",
  "base64 0.22.1",
+ "bitflags 2.11.1",
  "clap",
  "ebur128",
  "env_logger",
