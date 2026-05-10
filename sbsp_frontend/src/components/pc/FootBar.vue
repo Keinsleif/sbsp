@@ -83,11 +83,12 @@ const assetResult = useAssetResult();
 const isUpdateAvailable = ref(false);
 
 onMounted(() => {
-  if (target == 'tauri') {
+  if (target == 'tauri' && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
     check().then((value) => {
       if (value != null) {
         isUpdateAvailable.value = true;
       }
+      uiState.lastUpdateCheckDate = Date.now();
     }).catch((e) => {
       console.error(e);
     });

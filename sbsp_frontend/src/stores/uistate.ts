@@ -26,6 +26,7 @@ export const useUiState = defineStore(
     const isBottomTabOpen = ref(true);
     const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
+    const lastUpdateCheckDate = ref<number>(Date.now());
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
@@ -132,6 +133,7 @@ export const useUiState = defineStore(
       isBottomTabOpen,
       isEnvelopeVisible,
       scaleWaveform,
+      lastUpdateCheckDate,
       success_messages,
       error_messages,
       setPlaybackCursor,
@@ -159,6 +161,7 @@ export const useUiState = defineStore(
         'isRightSidebarOpen',
         'isBottomTabOpen',
         'scaleWaveform',
+        'lastUpdateCheckDate',
       ],
     },
   },
