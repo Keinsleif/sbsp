@@ -72,9 +72,11 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
 import { target, useApi } from './api';
+import { useUiState } from './stores/uistate';
 
 const { t } = useI18n();
 const api = useApi();
+const uiState = useUiState();
 
 const host = ref('');
 const port = ref('');
@@ -84,16 +86,24 @@ const connect = (host: string, port: string | number) => {
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
   if (window.location.hash != '') {
-    api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
+    api.remote?.connectToServer(address, window.location.hash.substring(1).trim()).then((perm) => {
+      uiState.setPermission(perm);
+    }).catch(e => console.error(e));
   } else if (window.location.href.endsWith('#')) {
-    api.remote?.connectToServer(address, null);
+    api.remote?.connectToServer(address, null).then((perm) => {
+      uiState.setPermission(perm);
+    }).catch(e => console.error(e));
   } else {
     let password = prompt(t('view.connect.passwordPrompt'));
     if (password == null) return;
     if (password != '') {
-      api.remote?.connectToServer(address, password);
+      api.remote?.connectToServer(address, password).then((perm) => {
+        uiState.setPermission(perm);
+      }).catch(e => console.error(e));
     } else {
-      api.remote?.connectToServer(address, null);
+      api.remote?.connectToServer(address, null).then((perm) => {
+        uiState.setPermission(perm);
+      }).catch(e => console.error(e));
     }
   }
 };

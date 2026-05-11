@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getLockCursorToSelection } from '../utils';
+import { getLockCursorToSelection, PERMISSIONS } from '../utils';
 import { useApi } from '../api';
 import { useShowModel } from './showmodel';
+import { Permissions } from '../types/Permissions';
 
 export const useUiState = defineStore(
   'uistate',
   () => {
-    const mode = ref<'edit' | 'run' | 'view'>('edit');
+    const permission = ref<Permissions | null>(null);
+    const mode = ref<'edit' | 'control' | 'read'>('edit');
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
     const expandedRows = ref<string[]>([]);
@@ -113,7 +115,42 @@ export const useUiState = defineStore(
       error_messages.value.push(message);
     };
 
+    const setPermission = (perm: Permissions) => {
+      permission.value = perm;
+      validateMode();
+    };
+
+    const validateMode = () => {
+      if (permission.value == null) return;
+      if (!(permission.value & modeAsPerm())) {
+        const highestBitPos = 31 - Math.clz32(permission.value);
+        switch (highestBitPos) {
+          case 1:
+            mode.value = 'read';
+            break;
+          case 2:
+            mode.value = 'edit';
+            break;
+          case 3:
+            mode.value = 'control';
+            break;
+        }
+      }
+    };
+
+    const modeAsPerm = () => {
+      switch (mode.value) {
+        case 'edit':
+          return PERMISSIONS.EDIT;
+        case 'control':
+          return PERMISSIONS.CONTROL;
+        case 'read':
+          return PERMISSIONS.READ;
+      }
+    };
+
     return {
+      permission,
       mode,
       selected,
       selectedRows,
@@ -136,6 +173,7 @@ export const useUiState = defineStore(
       lastUpdateCheckDate,
       success_messages,
       error_messages,
+      setPermission,
       setPlaybackCursor,
       clearSelected,
       setSelected,

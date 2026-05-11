@@ -7,7 +7,7 @@
         :true-icon="mdiPencil"
         :false-icon="mdiEye"
         true-value="edit"
-        false-value="run"
+        false-value="control"
         density="compact"
       />
     </v-sheet>
