@@ -1,4 +1,4 @@
-use sbsp_backend::api::client::ServiceEntry;
+use sbsp_backend::api::{Permissions, client::ServiceEntry};
 use tauri::{AppHandle, ipc::Channel};
 
 use crate::AppState;
@@ -21,7 +21,7 @@ pub async fn connect_to_server(
     state: tauri::State<'_, AppState>,
     address: String,
     password: Option<String>,
-) -> Result<(), String> {
+) -> Result<Permissions, String> {
     state
         .connect(app_handle.clone(), address, password)
         .await

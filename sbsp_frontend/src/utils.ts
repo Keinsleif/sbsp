@@ -8,6 +8,7 @@ import type { Easing } from './types/Easing';
 import { side } from './api';
 import { storeToRefs } from 'pinia';
 import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
+import { Permissions } from './types/Permissions';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -324,4 +325,10 @@ export const generateRandomPassword = (): string => {
   }
 
   return password;
+};
+
+export const PERMISSIONS = {
+  READ: 1 << 0 as Permissions,
+  EDIT: 1 << 1 as Permissions,
+  CONTROL: 1 << 2 as Permissions,
 };

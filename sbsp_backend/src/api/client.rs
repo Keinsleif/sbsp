@@ -11,7 +11,7 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 use super::{WsCommand, WsFeedback, WsError};
 use crate::{
     BackendHandle, FullShowState,
-    api::auth::{generate_authentication_string, generate_secret},
+    api::{Permissions, auth::{generate_authentication_string, generate_secret}},
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
     event::{BackendError, BackendEvent},
@@ -26,6 +26,7 @@ type ConnectionHandles = (
     broadcast::Sender<BackendEvent>,
     FileListHandle,
     mpsc::Sender<()>,
+    Permissions,
 );
 
 pub async fn create_remote_backend(
@@ -55,6 +56,8 @@ pub async fn create_remote_backend(
     let event_tx_clone = event_tx.clone();
 
     let (mut websocket, _) = connect_async(format!("ws://{}/ws", address)).await?;
+
+    let permission;
 
     if let Ok(Some(message)) = websocket.try_next().await {
         if let Message::Text(text) = &message
@@ -86,8 +89,9 @@ pub async fn create_remote_backend(
         if let Ok(Some(message)) = websocket.try_next().await {
             if let Message::Text(text) = &message
                 && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated {perm: _} = feedback
+                && let WsFeedback::Authenticated {perm} = feedback
             {
+                permission = perm;
                 break;
             } else if let Message::Close { .. } = &message {
                 log::info!("WebSocket server sent close message.");
@@ -284,6 +288,7 @@ pub async fn create_remote_backend(
         event_tx,
         asset_list_handle,
         shutdown_tx,
+        permission,
     ))
 }
 

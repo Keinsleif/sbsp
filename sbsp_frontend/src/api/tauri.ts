@@ -17,6 +17,7 @@ import { useUiState } from '../stores/uistate';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import { SupportedHardware } from '../types/SupportedHardware';
+import { Permissions } from '../types/Permissions';
 
 const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
@@ -86,8 +87,8 @@ export function useTauriApi(): IBackendAdapter {
             getServerAddress: function (): Promise<string | null> {
               return invoke<string | null>('get_server_address');
             },
-            connectToServer: function (address: string, password: string | null): Promise<void> {
-              return invoke('connect_to_server', { address: address, password: password });
+            connectToServer: function (address: string, password: string | null): Promise<Permissions> {
+              return invoke<Permissions>('connect_to_server', { address: address, password: password });
             },
             disconnectFromServer: function (): void {
               invoke('disconnect_from_server').catch(e => console.error(e));

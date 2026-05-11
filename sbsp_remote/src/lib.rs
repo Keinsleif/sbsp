@@ -6,7 +6,7 @@ use std::time::SystemTime;
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
+    api::{Permissions, client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery}},
     event::BackendEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
@@ -89,8 +89,8 @@ impl AppState {
         app_handle: AppHandle,
         address: String,
         password: Option<String>,
-    ) -> anyhow::Result<()> {
-        let (remote_handle, event_tx, asset_list_handle, shutdown_tx) =
+    ) -> anyhow::Result<Permissions> {
+        let (remote_handle, event_tx, asset_list_handle, shutdown_tx, permission) =
             create_remote_backend(address.clone(), password).await?;
         let mut connection_data_lock = self.connection_data.write().await;
         *connection_data_lock = Some(ConnectionData {
@@ -115,7 +115,7 @@ impl AppState {
             state.disconnect_cleanup().await;
             app_handle.emit("connection_status_changed", false).ok();
         });
-        Ok(())
+        Ok(permission)
     }
 
     pub async fn disconnect(&self) {

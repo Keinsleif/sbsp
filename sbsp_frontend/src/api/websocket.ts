@@ -248,92 +248,95 @@ export function useWebsocketApi(): IBackendAdapter {
       return websocketApiState.address;
     },
     connectToServer: async function (address: string, password: string | null) {
-      try {
-        websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-      websocketApiState.ws.addEventListener('close', () => {
-        console.log('Disconnected.');
-        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
-        websocketApiState.ws = null;
-        websocketApiState.address = null;
-      });
-      websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
-      const authEventListener = (e: MessageEvent<string>) => {
-        const msg = JSON.parse(e.data) as WsFeedback;
-        switch (msg.type) {
-          case 'hello': {
-            let authString;
-            if (password == null) {
-              authString = null;
-            } else {
-              const secret = strToHashedBase64(password + msg.data.auth.salt);
-              authString = strToHashedBase64(secret + msg.data.auth.challenge);
-            }
+      return new Promise((resolve) => {
+        try {
+          websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
+        } catch (e) {
+          console.error(e);
+          return;
+        }
+        websocketApiState.ws.addEventListener('close', () => {
+          console.log('Disconnected.');
+          Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
+          websocketApiState.ws = null;
+          websocketApiState.address = null;
+        });
+        websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
+        const authEventListener = (e: MessageEvent<string>) => {
+          const msg = JSON.parse(e.data) as WsFeedback;
+          switch (msg.type) {
+            case 'hello': {
+              let authString;
+              if (password == null) {
+                authString = null;
+              } else {
+                const secret = strToHashedBase64(password + msg.data.auth.salt);
+                authString = strToHashedBase64(secret + msg.data.auth.challenge);
+              }
 
-            websocketApi.sendCommand({ type: 'authenticate', response: authString });
-            break;
+              websocketApi.sendCommand({ type: 'authenticate', response: authString });
+              break;
+            }
+            case 'authenticated':
+              resolve(msg.data.perm);
+              websocketApiState.ws?.addEventListener('message', mainEventListener);
+              websocketApiState.ws?.removeEventListener('message', authEventListener);
+              websocketApiState.address = address;
+              Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
+              break;
           }
-          case 'authenticated':
-            websocketApiState.ws?.addEventListener('message', mainEventListener);
-            websocketApiState.ws?.removeEventListener('message', authEventListener);
-            websocketApiState.address = address;
-            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
-            break;
-        }
-      };
-      const mainEventListener = (e: MessageEvent<string>) => {
-        const msg = JSON.parse(e.data) as WsFeedback;
-        switch (msg.type) {
-          case 'event':
-            switch (msg.data.type) {
-              case 'showModelLoaded':
-                websocketApiState.projectStatus = {
-                  status: 'saved',
-                  projectType: msg.data.param.projectType,
-                  path: msg.data.param.path,
-                };
-                break;
-              case 'showModelReset':
-                websocketApiState.projectStatus = {
-                  status: 'unsaved',
-                };
-                break;
-              case 'showModelSaved':
-                websocketApiState.projectStatus = {
-                  status: 'saved',
-                  projectType: msg.data.param.projectType,
-                  path: msg.data.param.path,
-                };
-            }
-            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
-            break;
-          case 'assetList':
-            Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
-            break;
-          case 'fullShowState':
-            if (websocketApiState.fullStateResolver != null) {
-              websocketApiState.fullStateResolver[0](msg.data);
-            }
-            websocketApiState.projectStatus = msg.data.projectStatus;
-            break;
-          case 'error':
-            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
-              type: 'operationFailed',
-              param: {
-                error: {
-                  type: 'custom',
-                  id: 1,
-                  message: 'Permission Denied.',
+        };
+        const mainEventListener = (e: MessageEvent<string>) => {
+          const msg = JSON.parse(e.data) as WsFeedback;
+          switch (msg.type) {
+            case 'event':
+              switch (msg.data.type) {
+                case 'showModelLoaded':
+                  websocketApiState.projectStatus = {
+                    status: 'saved',
+                    projectType: msg.data.param.projectType,
+                    path: msg.data.param.path,
+                  };
+                  break;
+                case 'showModelReset':
+                  websocketApiState.projectStatus = {
+                    status: 'unsaved',
+                  };
+                  break;
+                case 'showModelSaved':
+                  websocketApiState.projectStatus = {
+                    status: 'saved',
+                    projectType: msg.data.param.projectType,
+                    path: msg.data.param.path,
+                  };
+              }
+              Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
+              break;
+            case 'assetList':
+              Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
+              break;
+            case 'fullShowState':
+              if (websocketApiState.fullStateResolver != null) {
+                websocketApiState.fullStateResolver[0](msg.data);
+              }
+              websocketApiState.projectStatus = msg.data.projectStatus;
+              break;
+            case 'error':
+              Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
+                type: 'operationFailed',
+                param: {
+                  error: {
+                    type: 'custom',
+                    id: 1,
+                    message: 'Permission Denied.',
+                  },
                 },
-              },
-            }));
-            break;
-        }
-      };
-      websocketApiState.ws.addEventListener('message', authEventListener);
+              }));
+              break;
+          }
+        };
+        websocketApiState.ws.addEventListener('message', authEventListener);
+      });
     },
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();

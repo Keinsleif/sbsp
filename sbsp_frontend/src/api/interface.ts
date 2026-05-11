@@ -9,6 +9,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import type { SupportedHardware } from '../types/SupportedHardware';
+import { Permissions } from '../types/Permissions';
 
 type UnlistenFn = () => void;
 
@@ -100,7 +101,7 @@ export interface IBackendRemoteAdapter {
   // Client Specific
   isConnected(): Promise<boolean>;
   getServerAddress(): Promise<string | null>;
-  connectToServer(address: string, password: string | null): Promise<void>;
+  connectToServer(address: string, password: string | null): Promise<Permissions>;
   disconnectFromServer(): void;
   startServerDiscovery(callback: (serviceEntry: ServiceEntry[]) => void): void;
   stopServerDiscovery(): void;
