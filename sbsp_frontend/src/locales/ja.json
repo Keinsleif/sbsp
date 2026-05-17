@@ -286,7 +286,12 @@
     "duration": "長さ",
     "footBar": {
       "cueCountSuffix": "キュー",
-      "processingIndicator": "{size} 個のファイルを処理中"
+      "processingIndicator": "{size} 個のファイルを処理中",
+      "modes": {
+        "edit": "編集",
+        "run": "実行",
+        "view": "表示"
+      }
     },
     "name": "名前",
     "notes": "備考",

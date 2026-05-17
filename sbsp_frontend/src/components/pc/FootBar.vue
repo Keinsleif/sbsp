@@ -82,9 +82,9 @@ const assetResult = useAssetResult();
 const isUpdateAvailable = ref(false);
 
 const ALL_MODES = [
-  { title: 'View', value: 'view' },
-  { title: 'Run', value: 'run' },
-  { title: 'Edit', value: 'edit' },
+  { title: t('main.footBar.modes.view'), value: 'view' },
+  { title: t('main.footBar.modes.run'), value: 'run' },
+  { title: t('main.footBar.modes.edit'), value: 'edit' },
 ];
 
 const modes = computed(() => {

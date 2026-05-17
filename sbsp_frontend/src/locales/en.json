@@ -287,7 +287,12 @@
     "duration": "Duration",
     "footBar": {
       "cueCountSuffix": "cues",
-      "processingIndicator": "Processing {size} files"
+      "processingIndicator": "Processing {size} files",
+      "modes": {
+        "view": "View",
+        "run": "Run",
+        "edit": "Edit"
+      }
     },
     "name": "Name",
     "notes": "Notes",
