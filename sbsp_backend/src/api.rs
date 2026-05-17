@@ -79,7 +79,7 @@ pub enum WsFeedback {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsCommand {
     Authenticate { response: Option<String> },
-    Controll(ControllerCommand),
+    Control(ControllerCommand),
     Model(Box<ModelCommand>),
     AssetProcessor(AssetProcessorCommand),
     RequestAssetList,

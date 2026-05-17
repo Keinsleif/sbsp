@@ -247,7 +247,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                     Message::Text(text) => {
                         if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
                             match command_request {
-                                WsCommand::Controll(controller_command) => {
+                                WsCommand::Control(controller_command) => {
                                     if permission.contains(Permissions::CONTROL) {
                                         if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
                                             log::error!("Failed to send Go command to CueController.");

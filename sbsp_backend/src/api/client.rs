@@ -223,7 +223,7 @@ pub async fn create_remote_backend(
                     }
                 }
                 Some(controller_command) = controller_rx.recv() => {
-                    let api_command = WsCommand::Controll(controller_command);
+                    let api_command = WsCommand::Control(controller_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
                     && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");

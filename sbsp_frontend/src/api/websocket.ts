@@ -431,48 +431,48 @@ export function useWebsocketApi(): IBackendAdapter {
       this.sendCommand({ type: 'assetProcessor', command: 'requestFileAssetData', path: path });
     },
     setPlaybackCursor: async function (cueId: string | null): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'setPlaybackCursor', params: { cueId: cueId } });
+      this.sendCommand({ type: 'control', command: 'setPlaybackCursor', params: { cueId: cueId } });
     },
     sendGo: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'go' });
+      this.sendCommand({ type: 'control', command: 'go' });
     },
     sendLoad: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'load', params: cueId });
+      this.sendCommand({ type: 'control', command: 'load', params: cueId });
     },
     sendPause: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'pause', params: cueId });
+      this.sendCommand({ type: 'control', command: 'pause', params: cueId });
     },
     sendResume: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'resume', params: cueId });
+      this.sendCommand({ type: 'control', command: 'resume', params: cueId });
     },
     sendStop: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'stop', params: cueId });
+      this.sendCommand({ type: 'control', command: 'stop', params: cueId });
     },
     sendPauseAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'pauseAll' });
+      this.sendCommand({ type: 'control', command: 'pauseAll' });
     },
     sendResumeAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'resumeAll' });
+      this.sendCommand({ type: 'control', command: 'resumeAll' });
     },
     sendStopAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'stopAll' });
+      this.sendCommand({ type: 'control', command: 'stopAll' });
     },
     sendSeekTo: async function (cueId: string, position: number): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'seekTo', params: [cueId, position] });
+      this.sendCommand({ type: 'control', command: 'seekTo', params: [cueId, position] });
     },
     sendSeekBy: async function (cueId: string, amount: number): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'seekBy', params: [cueId, amount] });
+      this.sendCommand({ type: 'control', command: 'seekBy', params: [cueId, amount] });
     },
     sendToggleRepeat: async function (cueId: string): Promise<void> {
       this.sendCommand({
-        type: 'controll',
+        type: 'control',
         command: 'performAction',
         params: [cueId, { type: 'audio', action: 'toggleRepeat' }],
       });
     },
     sendSetVolume: async function (cueId: string, volume: number): Promise<void> {
       this.sendCommand({
-        type: 'controll',
+        type: 'control',
         command: 'performAction',
         params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
       });
