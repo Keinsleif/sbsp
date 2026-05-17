@@ -13,7 +13,7 @@
         </div>
       </div>
       <div
-        :class="uiSettings.settings.appearance.hideControls || uiState.mode == 'read' ? 'd-none' : 'd-flex'"
+        :class="uiSettings.settings.appearance.hideControls || uiState.mode == 'view' ? 'd-none' : 'd-flex'"
         class="flex-column ga-3"
       >
         <v-btn-group

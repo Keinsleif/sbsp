@@ -8,8 +8,8 @@ import { Permissions } from '../types/Permissions';
 export const useUiState = defineStore(
   'uistate',
   () => {
-    const permission = ref<Permissions | null>(null);
-    const mode = ref<'edit' | 'control' | 'read'>('edit');
+    const permission = ref<Permissions>(0b0111);
+    const mode = ref<'edit' | 'run' | 'view'>('edit');
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
     const expandedRows = ref<string[]>([]);
@@ -126,13 +126,13 @@ export const useUiState = defineStore(
         const highestBitPos = 31 - Math.clz32(permission.value);
         switch (highestBitPos) {
           case 1:
-            mode.value = 'read';
+            mode.value = 'view';
             break;
           case 2:
-            mode.value = 'edit';
+            mode.value = 'run';
             break;
           case 3:
-            mode.value = 'control';
+            mode.value = 'edit';
             break;
         }
       }
@@ -142,9 +142,9 @@ export const useUiState = defineStore(
       switch (mode.value) {
         case 'edit':
           return PERMISSIONS.EDIT;
-        case 'control':
+        case 'run':
           return PERMISSIONS.CONTROL;
-        case 'read':
+        case 'view':
           return PERMISSIONS.READ;
       }
     };

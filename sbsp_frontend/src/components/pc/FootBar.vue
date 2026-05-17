@@ -1,14 +1,13 @@
 <template>
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="px-2 d-flex align-center">
-      <v-switch
-        v-model="uiState.mode"
+      <v-select
         hide-details
-        :true-icon="mdiPencil"
-        :false-icon="mdiEye"
-        true-value="edit"
-        false-value="control"
+        v-model="uiState.mode"
+        :items="modes"
+        variant="outlined"
         density="compact"
+        autocomplete="off"
       />
     </v-sheet>
     <v-btn
@@ -63,14 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { mdiCog, mdiDockBottom, mdiDockRight, mdiEye, mdiPencil, mdiServer, mdiSync } from '@mdi/js';
+import { mdiCog, mdiDockBottom, mdiDockRight, mdiServer, mdiSync } from '@mdi/js';
 import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useApi, side, target } from '../../api';
 import { useAssetResult } from '../../stores/assetResult';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { check } from '@tauri-apps/plugin-updater';
 
 const { t } = useI18n();
@@ -81,6 +80,28 @@ const api = useApi();
 const assetResult = useAssetResult();
 
 const isUpdateAvailable = ref(false);
+
+const ALL_MODES = [
+  { title: 'View', value: 'view' },
+  { title: 'Run', value: 'run' },
+  { title: 'Edit', value: 'edit' },
+];
+
+const modes = computed(() => {
+  return ALL_MODES.filter((val) => {
+    if (uiState.permission == null) return false;
+    if (val.value == 'view' && uiState.permission & 0b0001) {
+      return true;
+    }
+    if (val.value == 'run' && uiState.permission & 0b0010) {
+      return true;
+    }
+    if (val.value == 'edit' && uiState.permission & 0b0100) {
+      return true;
+    }
+    return false;
+  });
+});
 
 onMounted(() => {
   if (target == 'tauri' && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
