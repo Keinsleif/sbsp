@@ -32,8 +32,8 @@ pub struct Permissions(u8);
 bitflags! {
     impl Permissions: u8 {
         const READ = 0b0001;
-        const EDIT = 0b0010;
-        const CONTROL = 0b0100;
+        const CONTROL = 0b0010;
+        const EDIT = 0b0100;
     }
 }
 

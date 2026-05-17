@@ -3,8 +3,8 @@
     v-model="innerPerm"
     :items="[
       { title: t('dialog.server.permissions.read'), value: 1},
-      { title: t('dialog.server.permissions.edit'), value: 2},
-      { title: t('dialog.server.permissions.control'), value: 4},
+      { title: t('dialog.server.permissions.control'), value: 2},
+      { title: t('dialog.server.permissions.edit'), value: 4},
     ]"
     density="compact"
     variant="outlined"
