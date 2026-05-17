@@ -101,12 +101,12 @@ export interface IBackendRemoteAdapter {
   // Client Specific
   isConnected(): Promise<boolean>;
   getServerAddress(): Promise<string | null>;
-  connectToServer(address: string, password: string | null): Promise<Permissions>;
+  connectToServer(address: string, password: string | null): Promise<void>;
   disconnectFromServer(): void;
   startServerDiscovery(callback: (serviceEntry: ServiceEntry[]) => void): void;
   stopServerDiscovery(): void;
   requestFileList(): void;
 
-  onConnectionStatusChanged(callback: (isConnected: boolean) => void): Promise<UnlistenFn>;
+  onConnectionStatusChanged(callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn>;
   onFileListUpdate(callback: (fileList: FileList[]) => void): Promise<UnlistenFn>;
 }

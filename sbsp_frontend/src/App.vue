@@ -80,8 +80,9 @@ onMounted(() => {
   windowMenu?.init();
   if (side == 'remote') {
     api.remote
-      ?.onConnectionStatusChanged((isConnected) => {
+      ?.onConnectionStatusChanged((isConnected, perm) => {
         connected.value = isConnected;
+        uiState.setPermission(perm || 0);
         windowMenu?.updateConnectionStatus(isConnected);
       })
       .then(ulfn => (unlisten = ulfn));

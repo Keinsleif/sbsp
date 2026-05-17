@@ -14,6 +14,7 @@ import typia from 'typia';
 import { useUiState } from '../stores/uistate';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
+import { Permissions } from '../types/Permissions';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
@@ -223,7 +224,7 @@ const websocketApiState: {
   projectStatus: ProjectStatus | null;
   backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
-  connectionStatusListeners: { [key: string]: (isConnected: boolean) => void };
+  connectionStatusListeners: { [key: string]: (isConnected: boolean, perm: Permissions | null) => void };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
 } = {
   address: null,
@@ -248,95 +249,108 @@ export function useWebsocketApi(): IBackendAdapter {
       return websocketApiState.address;
     },
     connectToServer: async function (address: string, password: string | null) {
-      return new Promise((resolve) => {
-        try {
-          websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
-        } catch (e) {
-          console.error(e);
-          return;
-        }
-        websocketApiState.ws.addEventListener('close', () => {
-          console.log('Disconnected.');
-          Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
-          websocketApiState.ws = null;
-          websocketApiState.address = null;
-        });
-        websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
-        const authEventListener = (e: MessageEvent<string>) => {
-          const msg = JSON.parse(e.data) as WsFeedback;
-          switch (msg.type) {
-            case 'hello': {
-              let authString;
-              if (password == null) {
-                authString = null;
-              } else {
-                const secret = strToHashedBase64(password + msg.data.auth.salt);
-                authString = strToHashedBase64(secret + msg.data.auth.challenge);
-              }
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(`ws://${address}/ws`);
+        websocketApiState.ws = ws;
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+      let isAuthenticated = false;
 
-              websocketApi.sendCommand({ type: 'authenticate', response: authString });
-              break;
+      const closeEventListener = () => {
+        console.log('Disconnected.');
+        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false, null));
+        ws.removeEventListener('close', closeEventListener);
+        ws.removeEventListener('error', errorEventListener);
+        if (isAuthenticated) {
+          ws.removeEventListener('message', mainEventListener);
+        } else {
+          ws.removeEventListener('message', authEventListener);
+        }
+        websocketApiState.ws = null;
+        websocketApiState.address = null;
+      };
+      websocketApiState.ws.addEventListener('close', closeEventListener);
+      const errorEventListener = (event: unknown) => {
+        console.error('Websocket error: ', event);
+      };
+      websocketApiState.ws.addEventListener('error', errorEventListener);
+      const authEventListener = (e: MessageEvent<string>) => {
+        const msg = JSON.parse(e.data) as WsFeedback;
+        switch (msg.type) {
+          case 'hello': {
+            let authString;
+            if (password == null) {
+              authString = null;
+            } else {
+              const secret = strToHashedBase64(password + msg.data.auth.salt);
+              authString = strToHashedBase64(secret + msg.data.auth.challenge);
             }
-            case 'authenticated':
-              resolve(msg.data.perm);
-              websocketApiState.ws?.addEventListener('message', mainEventListener);
-              websocketApiState.ws?.removeEventListener('message', authEventListener);
-              websocketApiState.address = address;
-              Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
-              break;
+
+            websocketApi.sendCommand({ type: 'authenticate', response: authString });
+            break;
           }
-        };
-        const mainEventListener = (e: MessageEvent<string>) => {
-          const msg = JSON.parse(e.data) as WsFeedback;
-          switch (msg.type) {
-            case 'event':
-              switch (msg.data.type) {
-                case 'showModelLoaded':
-                  websocketApiState.projectStatus = {
-                    status: 'saved',
-                    projectType: msg.data.param.projectType,
-                    path: msg.data.param.path,
-                  };
-                  break;
-                case 'showModelReset':
-                  websocketApiState.projectStatus = {
-                    status: 'unsaved',
-                  };
-                  break;
-                case 'showModelSaved':
-                  websocketApiState.projectStatus = {
-                    status: 'saved',
-                    projectType: msg.data.param.projectType,
-                    path: msg.data.param.path,
-                  };
-              }
-              Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
-              break;
-            case 'assetList':
-              Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
-              break;
-            case 'fullShowState':
-              if (websocketApiState.fullStateResolver != null) {
-                websocketApiState.fullStateResolver[0](msg.data);
-              }
-              websocketApiState.projectStatus = msg.data.projectStatus;
-              break;
-            case 'error':
-              Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
-                type: 'operationFailed',
-                param: {
-                  error: {
-                    type: 'custom',
-                    id: 1,
-                    message: 'Permission Denied.',
-                  },
+          case 'authenticated':
+            isAuthenticated = true;
+            websocketApiState.ws?.addEventListener('message', mainEventListener);
+            websocketApiState.ws?.removeEventListener('message', authEventListener);
+            websocketApiState.address = address;
+            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true, msg.data.perm));
+            break;
+        }
+      };
+      const mainEventListener = (e: MessageEvent<string>) => {
+        const msg = JSON.parse(e.data) as WsFeedback;
+        switch (msg.type) {
+          case 'event':
+            switch (msg.data.type) {
+              case 'showModelLoaded':
+                websocketApiState.projectStatus = {
+                  status: 'saved',
+                  projectType: msg.data.param.projectType,
+                  path: msg.data.param.path,
+                };
+                break;
+              case 'showModelReset':
+                websocketApiState.projectStatus = {
+                  status: 'unsaved',
+                };
+                break;
+              case 'showModelSaved':
+                websocketApiState.projectStatus = {
+                  status: 'saved',
+                  projectType: msg.data.param.projectType,
+                  path: msg.data.param.path,
+                };
+            }
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
+            break;
+          case 'assetList':
+            Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
+            break;
+          case 'fullShowState':
+            if (websocketApiState.fullStateResolver != null) {
+              websocketApiState.fullStateResolver[0](msg.data);
+            }
+            websocketApiState.projectStatus = msg.data.projectStatus;
+            break;
+          case 'error':
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
+              type: 'operationFailed',
+              param: {
+                error: {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Permission Denied.',
                 },
-              }));
-              break;
-          }
-        };
-        websocketApiState.ws.addEventListener('message', authEventListener);
-      });
+              },
+            }));
+            break;
+        }
+      };
+      websocketApiState.ws.addEventListener('message', authEventListener);
     },
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
@@ -351,7 +365,7 @@ export function useWebsocketApi(): IBackendAdapter {
     requestFileList: function (): void {
       websocketApi.sendCommand({ type: 'requestAssetList' });
     },
-    onConnectionStatusChanged: async function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
+    onConnectionStatusChanged: async function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.connectionStatusListeners[id] = callback;
       return () => {

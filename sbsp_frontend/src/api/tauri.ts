@@ -87,8 +87,8 @@ export function useTauriApi(): IBackendAdapter {
             getServerAddress: function (): Promise<string | null> {
               return invoke<string | null>('get_server_address');
             },
-            connectToServer: function (address: string, password: string | null): Promise<Permissions> {
-              return invoke<Permissions>('connect_to_server', { address: address, password: password });
+            connectToServer: function (address: string, password: string | null): Promise<void> {
+              return invoke<void>('connect_to_server', { address: address, password: password });
             },
             disconnectFromServer: function (): void {
               invoke('disconnect_from_server').catch(e => console.error(e));
@@ -103,9 +103,9 @@ export function useTauriApi(): IBackendAdapter {
             requestFileList: function (): void {
               invoke('request_file_list').catch(e => console.error(e));
             },
-            onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
-              return listen<boolean>('connection_status_changed', (event) => {
-                callback(event.payload);
+            onConnectionStatusChanged: function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
+              return listen<[boolean, Permissions]>('connection_status_changed', (event) => {
+                callback(event.payload[0], event.payload[1]);
               });
             },
             onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {

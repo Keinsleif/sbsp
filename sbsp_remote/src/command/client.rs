@@ -4,7 +4,7 @@ use tauri::{AppHandle, ipc::Channel};
 use crate::AppState;
 
 #[tauri::command]
-pub async fn is_connected(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub async fn is_connected(state: tauri::State<'_, AppState>) -> Result<(bool, Option<Permissions>), String> {
     Ok(state.is_connected().await)
 }
 
@@ -21,7 +21,7 @@ pub async fn connect_to_server(
     state: tauri::State<'_, AppState>,
     address: String,
     password: Option<String>,
-) -> Result<Permissions, String> {
+) -> Result<(), String> {
     state
         .connect(app_handle.clone(), address, password)
         .await
