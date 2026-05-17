@@ -3,6 +3,7 @@
     <td class="pa-0">
       <copy-text-input
         :placeholder="t('dialog.server.info.passwordNotSet')"
+        :type="props.isVisible ? 'text' : 'password'"
         align-input="left"
         v-model="password"
       />

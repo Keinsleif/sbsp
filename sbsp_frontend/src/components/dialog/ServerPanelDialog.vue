@@ -48,6 +48,11 @@
             <tr>
               <th width="200">
                 {{ t('dialog.server.password') }}
+                <v-icon
+                  class="ml-2"
+                  :icon="isPasswordVisible ? mdiEye : mdiEyeOff"
+                  @click="isPasswordVisible = !isPasswordVisible"
+                />
               </th>
               <th width="240">
                 {{ t('dialog.server.permission') }}
@@ -64,7 +69,7 @@
               v-model:password="info.password"
               v-model:permission="info.permission"
               :is-running="isRunning || false"
-              :is-visible="true"
+              :is-visible="isPasswordVisible"
               @delete="() => {if (server_authMap.length > 1) {server_authMap.splice(i, 1)}}"
               @open-info="generateServerUrl(info.password).then(() => {
                 isServerInfoDialogOpen = true;
@@ -188,7 +193,7 @@ import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 import { ApiServerOptions } from '../../types/ApiServerOptions';
 import { useUiState } from '../../stores/uistate';
-import { mdiCheck, mdiContentCopy, mdiPlus } from '@mdi/js';
+import { mdiCheck, mdiContentCopy, mdiEye, mdiEyeOff, mdiPlus } from '@mdi/js';
 import CopyTextInput from '../input/CopyTextInput.vue';
 import QrViewer from '../input/QrViewer.vue';
 import { generateRandomPassword } from '../../utils';
