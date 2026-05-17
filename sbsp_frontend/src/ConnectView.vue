@@ -64,6 +64,17 @@
         @click="connect(host, port)"
       />
     </v-footer>
+    <v-overlay
+      :model-value="overlay"
+      persistent
+      class="align-center justify-center"
+    >
+      <v-progress-circular
+        color="primary"
+        size="64"
+        indeterminate
+      />
+    </v-overlay>
   </div>
 </template>
 
@@ -80,7 +91,10 @@ const host = ref('');
 const port = ref('');
 const services = ref<ServiceEntry[]>([]);
 
+const overlay = ref(false);
+
 const connect = (host: string, port: string | number) => {
+  overlay.value = true;
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
   if (window.location.hash != '') {
@@ -98,11 +112,20 @@ const connect = (host: string, port: string | number) => {
   }
 };
 
+let unlisten: (() => void) | null;
+
 onMounted(() => {
+  api.remote
+    ?.onConnectionStatusChanged(() => {
+      overlay.value = false;
+    })
+    .then(ulfn => (unlisten = ulfn));
+
   if (target == 'websocket') {
     const searchParams = new URLSearchParams(window.location.search);
     const address = searchParams.get('address');
     if (address != null) {
+      overlay.value = true;
       console.log(`Connecting to ${address}`);
       host.value = address.split(':')[0] || '';
       port.value = address.split(':')[1] || '5800';
@@ -128,6 +151,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (unlisten != null) {
+    unlisten();
+  }
   api.remote?.stopServerDiscovery();
 });
 </script>
