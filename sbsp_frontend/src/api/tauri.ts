@@ -81,8 +81,8 @@ export function useTauriApi(): IBackendAdapter {
     remote:
       side == 'remote'
         ? {
-            isConnected: function (): Promise<boolean> {
-              return invoke<boolean>('is_connected');
+            isConnected: function (): Promise<[boolean, Permissions | null]> {
+              return invoke<[boolean, Permissions | null]>('is_connected');
             },
             getServerAddress: function (): Promise<string | null> {
               return invoke<string | null>('get_server_address');

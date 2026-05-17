@@ -86,8 +86,9 @@ onMounted(() => {
         windowMenu?.updateConnectionStatus(isConnected);
       })
       .then(ulfn => (unlisten = ulfn));
-    api.remote?.isConnected().then((isConnected) => {
+    api.remote?.isConnected().then(([isConnected, perm]) => {
       connected.value = isConnected;
+      uiState.setPermission(perm || 0);
       windowMenu?.updateConnectionStatus(isConnected);
     });
   }

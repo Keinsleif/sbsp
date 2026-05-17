@@ -99,7 +99,7 @@ export interface IBackendHostAdapter {
 
 export interface IBackendRemoteAdapter {
   // Client Specific
-  isConnected(): Promise<boolean>;
+  isConnected(): Promise<[boolean, Permissions | null]>;
   getServerAddress(): Promise<string | null>;
   connectToServer(address: string, password: string | null): Promise<void>;
   disconnectFromServer(): void;

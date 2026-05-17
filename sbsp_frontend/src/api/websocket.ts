@@ -220,16 +220,20 @@ const strToHashedBase64 = (src: string): string => {
 
 const websocketApiState: {
   address: string | null;
+  permission: Permissions | null;
   ws: WebSocket | null;
   projectStatus: ProjectStatus | null;
+  sendQueue: string[];
   backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
   connectionStatusListeners: { [key: string]: (isConnected: boolean, perm: Permissions | null) => void };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
 } = {
   address: null,
+  permission: null,
   ws: null,
   projectStatus: null,
+  sendQueue: [],
   backendEventListeners: {},
   assetListListeners: {},
   connectionStatusListeners: {},
@@ -238,18 +242,21 @@ const websocketApiState: {
 
 interface IWebsocketBackendAdapter extends IBackendAdapter {
   sendCommand: (command: WsCommand) => void;
+  flushQueue: () => void;
 }
 
 export function useWebsocketApi(): IBackendAdapter {
   const remoteApi: IBackendRemoteAdapter = {
-    isConnected: async function (): Promise<boolean> {
-      return websocketApiState.address != null;
+    isConnected: async function (): Promise<[boolean, Permissions | null]> {
+      return [websocketApiState.address != null, websocketApiState.permission];
     },
     getServerAddress: async function (): Promise<string | null> {
       return websocketApiState.address;
     },
     connectToServer: async function (address: string, password: string | null) {
+      if (websocketApiState.ws != null) return;
       let ws: WebSocket;
+      websocketApiState.sendQueue = [];
       try {
         ws = new WebSocket(`ws://${address}/ws`);
         websocketApiState.ws = ws;
@@ -259,11 +266,13 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       let isAuthenticated = false;
 
+      websocketApiState.address = address;
       const closeEventListener = () => {
         console.log('Disconnected.');
         Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false, null));
         ws.removeEventListener('close', closeEventListener);
         ws.removeEventListener('error', errorEventListener);
+        ws.removeEventListener('open', websocketApi.flushQueue);
         if (isAuthenticated) {
           ws.removeEventListener('message', mainEventListener);
         } else {
@@ -271,12 +280,14 @@ export function useWebsocketApi(): IBackendAdapter {
         }
         websocketApiState.ws = null;
         websocketApiState.address = null;
+        websocketApiState.permission = null;
       };
-      websocketApiState.ws.addEventListener('close', closeEventListener);
+      ws.addEventListener('close', closeEventListener);
       const errorEventListener = (event: unknown) => {
         console.error('Websocket error: ', event);
       };
-      websocketApiState.ws.addEventListener('error', errorEventListener);
+      ws.addEventListener('open', websocketApi.flushQueue);
+      ws.addEventListener('error', errorEventListener);
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
@@ -289,14 +300,15 @@ export function useWebsocketApi(): IBackendAdapter {
               authString = strToHashedBase64(secret + msg.data.auth.challenge);
             }
 
-            websocketApi.sendCommand({ type: 'authenticate', response: authString });
+            const command: WsCommand = { type: 'authenticate', response: authString };
+            ws.send(JSON.stringify(command));
             break;
           }
           case 'authenticated':
             isAuthenticated = true;
-            websocketApiState.ws?.addEventListener('message', mainEventListener);
-            websocketApiState.ws?.removeEventListener('message', authEventListener);
-            websocketApiState.address = address;
+            websocketApiState.permission = msg.data.perm;
+            ws.addEventListener('message', mainEventListener);
+            ws.removeEventListener('message', authEventListener);
             Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true, msg.data.perm));
             break;
         }
@@ -350,7 +362,7 @@ export function useWebsocketApi(): IBackendAdapter {
             break;
         }
       };
-      websocketApiState.ws.addEventListener('message', authEventListener);
+      ws.addEventListener('message', authEventListener);
     },
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
@@ -383,8 +395,24 @@ export function useWebsocketApi(): IBackendAdapter {
 
   const websocketApi: IWebsocketBackendAdapter = {
     sendCommand: function (command: WsCommand): void {
-      if (websocketApiState.ws) {
-        websocketApiState.ws.send(JSON.stringify(command));
+      const ws = websocketApiState.ws;
+      if (ws && ws.readyState == WebSocket.OPEN) {
+        ws.send(JSON.stringify(command));
+      } else if (ws && ws.readyState == WebSocket.CONNECTING) {
+        websocketApiState.sendQueue.push(JSON.stringify(command));
+      } else {
+        console.error('Not connected.');
+      }
+    },
+    flushQueue: function (): void {
+      const ws = websocketApiState.ws;
+      const sendQueue = websocketApiState.sendQueue;
+      if (ws && ws.readyState === WebSocket.OPEN && sendQueue.length > 0) {
+        console.log(`Flushing ${sendQueue.length} queued messages...`);
+        while (sendQueue.length > 0) {
+          const payload = sendQueue.shift();
+          if (payload) ws.send(payload);
+        }
       }
     },
 
