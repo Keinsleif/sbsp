@@ -107,7 +107,7 @@
         class="d-flex flex-column pa-3 ga-3 align-stretch"
         width="480px"
       >
-        <h3>t('dialog.server.connectInfo')</h3>
+        <h3>{{ t('dialog.server.connectInfo') }}</h3>
         <div class="d-flex flex-row align-center mt-2">
           <copy-text-input
             v-model="server_hostname"
