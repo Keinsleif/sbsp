@@ -125,13 +125,13 @@ export const useUiState = defineStore(
       if (!(permission.value & modeAsPerm())) {
         const highestBitPos = 31 - Math.clz32(permission.value);
         switch (highestBitPos) {
-          case 1:
+          case 0:
             mode.value = 'view';
             break;
-          case 2:
+          case 1:
             mode.value = 'run';
             break;
-          case 3:
+          case 2:
             mode.value = 'edit';
             break;
         }
