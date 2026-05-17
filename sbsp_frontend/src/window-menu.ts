@@ -17,7 +17,7 @@ export const createWindowMenu = () => {
   const isMacOs = api.isMacOs();
   let connected = api.remote ? false : true;
   const uiState = useUiState();
-  let mode: 'edit' | 'control' | 'read' = uiState.mode;
+  let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
   const items = {
     file: {
@@ -85,7 +85,7 @@ export const createWindowMenu = () => {
     }
   };
 
-  const updateEditMode = (newMode: 'edit' | 'control' | 'read') => {
+  const updateEditMode = (newMode: 'edit' | 'run' | 'view') => {
     mode = newMode;
     updateEditMenuItemStats();
   };
