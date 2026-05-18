@@ -377,16 +377,34 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                     }
                                 },
                                 WsCommand::Authenticate { response } => {
+                                    let mut reauth = false;
                                     for PermissionInfo { password, permission: perm } in &state.options.auth_map {
                                         if let Some(auth_str) = &response {
                                             let secret = generate_secret(password, &state.salt);
                                             if check_authentication_string(&secret, &challenge, auth_str) {
                                                 permission = *perm;
+                                                reauth = true;
                                                 break;
                                             }
                                         } else if password.is_empty() {
                                             permission = *perm;
+                                            reauth = true;
                                             break;
+                                        }
+                                    }
+                                    if reauth {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
+                                        && socket.send(Message::Text(payload.into())).await.is_err()
+                                        {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            return;
+                                        }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationFailed))
+                                        && socket.send(Message::Text(payload.into())).await.is_err()
+                                        {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            return;
                                         }
                                     }
                                 },
