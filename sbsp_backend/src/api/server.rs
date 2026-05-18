@@ -167,7 +167,6 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                 if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
                     && let WsCommand::Authenticate { response } = command
                 {
-                    log::debug!("perms: {:?}", state.options.auth_map);
                     for PermissionInfo {
                         password,
                         permission: perm,
