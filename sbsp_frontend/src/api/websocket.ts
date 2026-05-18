@@ -248,7 +248,7 @@ interface IWebsocketBackendAdapter extends IBackendAdapter {
 export function useWebsocketApi(): IBackendAdapter {
   const remoteApi: IBackendRemoteAdapter = {
     isConnected: async function (): Promise<[boolean, Permissions | null]> {
-      return [websocketApiState.address != null, websocketApiState.permission];
+      return [websocketApiState.permission != null, websocketApiState.permission];
     },
     getServerAddress: async function (): Promise<string | null> {
       return websocketApiState.address;
