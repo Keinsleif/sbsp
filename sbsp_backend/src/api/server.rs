@@ -233,12 +233,6 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
-                } else {
-                    if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
-                    && let Err(e) = socket.send(Message::Text(payload.into())).await {
-                        log::error!("Error on responding error. e={}", e);
-                        return;
-                    }
                 }
             }
             _ = ping_timer.tick() => {
