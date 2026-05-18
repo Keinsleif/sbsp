@@ -348,7 +348,7 @@ export function useWebsocketApi(): IBackendAdapter {
             }
             websocketApiState.projectStatus = msg.data.projectStatus;
             break;
-          case 'error':
+          case 'error': {
             let error: BackendError = {
               type: 'custom',
               id: 0,
@@ -377,6 +377,7 @@ export function useWebsocketApi(): IBackendAdapter {
               },
             }));
             break;
+          }
         }
       };
       ws.addEventListener('message', authEventListener);
