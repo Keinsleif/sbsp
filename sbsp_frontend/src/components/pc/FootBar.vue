@@ -125,7 +125,7 @@ const openServerPanel = () => {
     if (info != null && info.edition == 'Pro') {
       uiState.isServerPanelOpen = true;
     } else {
-      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+      message(t('dialog.message.license.serverPanel'), { kind: 'info', title: t('dialog.message.license.proTitle') });
     }
   });
 };
