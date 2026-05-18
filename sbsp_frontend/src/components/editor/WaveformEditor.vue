@@ -8,6 +8,7 @@
           :label="t('main.bottomEditor.timeLevels.startTime')"
           :multiply="metadata?.duration || 1"
           :default-value="0"
+          @update="saveEditorValue"
           @pointerdown.stop
         />
         <v-tooltip target="cursor">
@@ -31,6 +32,7 @@
           :label="t('main.bottomEditor.timeLevels.endTime')"
           :multiply="metadata?.duration || 1"
           :default-value="1"
+          @update="saveEditorValue"
           @pointerdown.stop
         />
         <v-tooltip target="cursor">
