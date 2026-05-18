@@ -7,7 +7,8 @@
           width="175px"
           :label="t('main.bottomEditor.timeLevels.startTime')"
           :multiply="metadata?.duration || 1"
-          @update="emit('update')"
+          :default-value="0"
+          @update="saveEditorValue"
           @pointerdown.stop
         />
         <v-tooltip target="cursor">
@@ -30,7 +31,8 @@
           width="175px"
           :label="t('main.bottomEditor.timeLevels.endTime')"
           :multiply="metadata?.duration || 1"
-          @update="emit('update')"
+          :default-value="1"
+          @update="saveEditorValue"
           @pointerdown.stop
         />
         <v-tooltip target="cursor">

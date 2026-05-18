@@ -27,11 +27,13 @@ const props = withDefaults(
     acceptMinus?: boolean;
     multiply?: number;
     max?: number | null;
+    defaultValue?: number;
   }>(),
   {
     max: null,
     multiply: 1,
     acceptMinus: false,
+    defaultValue: 0,
   },
 );
 const emit = defineEmits(['update']);
@@ -43,7 +45,12 @@ watch([seconds, () => props.multiply], () => {
 });
 
 const save = () => {
-  let innerValue = formatToSeconds(formattedValue.value, props.acceptMinus) / props.multiply;
+  let innerValue: number;
+  if (formattedValue.value.trim() == '') {
+    innerValue = props.defaultValue;
+  } else {
+    innerValue = formatToSeconds(formattedValue.value, props.acceptMinus) / props.multiply;
+  }
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
   }
