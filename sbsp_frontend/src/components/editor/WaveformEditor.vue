@@ -1,5 +1,11 @@
 <template>
-  <div class="d-flex flex-row ga-2">
+  <div
+    class="d-flex flex-row ga-2"
+    @contextmenu.prevent="
+      contextMenuPosition = [$event.clientX, $event.clientY];
+      isContextMenuOpen = true;
+    "
+  >
     <div class="d-flex flex-column align-center justify-center ga-2 mb-2">
       <div class="d-flex flex-row align-center ga-2">
         <time-input
@@ -98,7 +104,7 @@
         <path
           v-if="waveformPath != null"
           :d="waveformPath"
-          :transform="`translate(0, ${contentHeight * 0.125})`"
+          :transform="waveformTransform"
           :class="$style.waveform"
           transform-origin="center"
         />
@@ -223,6 +229,30 @@
         @click="clearSegments"
       />
     </div>
+    <v-menu
+      v-model="isContextMenuOpen"
+      :target="contextMenuPosition || undefined"
+      density="compact"
+    >
+      <v-list
+        density="compact"
+        class="pa-0 border"
+        @contextmenu.prevent
+      >
+        <v-list-item
+          height="40px"
+          density="compact"
+        >
+          <v-checkbox
+            v-model="uiState.scaleWaveform"
+            style="font-size: 0.8em"
+            :label="t('main.bottomEditor.timeLevels.scaleWaveform')"
+            density="compact"
+            hide-details
+          />
+        </v-list-item>
+      </v-list>
+    </v-menu>
   </div>
 </template>
 
@@ -251,10 +281,12 @@ const envelopeParent = useTemplateRef('parent');
 const props = withDefaults(
   defineProps<{
     heightPx?: number;
+    volume?: number;
     disabled?: boolean;
   }>(),
   {
     heightPx: 75,
+    volume: 0,
     disabled: false,
   },
 );
@@ -282,6 +314,9 @@ const buildTimeRange = () => {
   const end = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
   return { start, end, delta: end - start };
 };
+
+const isContextMenuOpen = ref(false);
+const contextMenuPosition = ref<[number, number] | null>(null);
 
 const dragging = ref<{
   index: number;
@@ -377,6 +412,14 @@ const updateWaveformPath = async () => {
 };
 
 watchDebounced([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], updateWaveformPath, { debounce: 200 });
+
+const waveformTransform = computed(() => {
+  if (uiState.scaleWaveform) {
+    return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
+  } else {
+    return `translate(0, ${contentHeight.value * 0.125})`;
+  }
+});
 
 const {
   x: mouseX,
