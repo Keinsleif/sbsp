@@ -83,9 +83,11 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
 import { target, useApi } from './api';
+import { useUiState } from './stores/uistate';
 
 const { t } = useI18n();
 const api = useApi();
+const uiState = useUiState();
 
 const host = ref('');
 const port = ref('');
@@ -93,23 +95,31 @@ const services = ref<ServiceEntry[]>([]);
 
 const overlay = ref(false);
 
+const errorHandler = (e: unknown) => {
+  overlay.value = false;
+  console.error(e);
+  uiState.error(`${e}`);
+};
+
 const connect = (host: string, port: string | number) => {
-  overlay.value = true;
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
+  let password: string | null;
   if (window.location.hash != '') {
-    api.remote?.connectToServer(address, window.location.hash.substring(1).trim()).catch(e => console.error(e));
+    password = window.location.hash.substring(1).trim();
   } else if (window.location.href.endsWith('#')) {
-    api.remote?.connectToServer(address, null).catch(e => console.error(e));
+    password = null;
   } else {
-    let password = prompt(t('view.connect.passwordPrompt'));
-    if (password == null) return;
-    if (password != '') {
-      api.remote?.connectToServer(address, password).catch(e => console.error(e));
+    let ps_string = prompt(t('view.connect.passwordPrompt'));
+    if (ps_string == null) return;
+    if (ps_string != '') {
+      password = ps_string;
     } else {
-      api.remote?.connectToServer(address, null).catch(e => console.error(e));
+      password = null;
     }
   }
+  overlay.value = true;
+  api.remote?.connectToServer(address, password).catch(errorHandler);
 };
 
 let unlisten: (() => void) | null;
@@ -129,19 +139,7 @@ onMounted(() => {
       console.log(`Connecting to ${address}`);
       host.value = address.split(':')[0] || '';
       port.value = address.split(':')[1] || '5800';
-      if (window.location.hash != '') {
-        api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
-      } else if (window.location.href.endsWith('#')) {
-        api.remote?.connectToServer(address, null);
-      } else {
-        let password = prompt(t('view.connect.passwordPrompt'));
-        if (password == null) return;
-        if (password != '') {
-          api.remote?.connectToServer(address, password);
-        } else {
-          api.remote?.connectToServer(address, null);
-        }
-      }
+      connect(host.value, port.value);
     }
   }
 
