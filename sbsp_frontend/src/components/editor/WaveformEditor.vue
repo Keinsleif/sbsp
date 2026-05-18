@@ -260,7 +260,7 @@
 import { computed, ref, shallowRef, StyleValue, toRaw, useTemplateRef, watch } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
-import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn, watchDebounced } from '@vueuse/core';
+import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { Cue } from '../../types/Cue';
 import { mdiEye, mdiEyeOff, mdiMinus, mdiPlus, mdiSkipNext, mdiSkipPrevious, mdiTrashCan } from '@mdi/js';
@@ -411,7 +411,12 @@ const updateWaveformPath = async () => {
   }
 };
 
-watchDebounced([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], updateWaveformPath, { debounce: 200 });
+watch([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], (newValue, oldValue) => {
+  if (newValue[2] != oldValue[2]) {
+    waveformPath.value = '';
+  }
+  updateWaveformPath();
+});
 
 const waveformTransform = computed(() => {
   if (uiState.scaleWaveform) {
