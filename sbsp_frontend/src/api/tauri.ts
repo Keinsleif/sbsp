@@ -10,7 +10,7 @@ import type { ServiceEntry } from '../types/ServiceEntry';
 import type { LicenseInformation } from '../types/LicenseInformation';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import { open, save } from '@tauri-apps/plugin-dialog';
+import { message, open, save } from '@tauri-apps/plugin-dialog';
 import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useUiState } from '../stores/uistate';
@@ -233,8 +233,17 @@ export function useTauriApi(): IBackendAdapter {
     addCues: function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void> {
       return invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
     },
-    removeCue: function (cueId: string): Promise<void> {
-      return invoke('remove_cue', { cueId: cueId });
+    removeCue: async function (cueId: string, confirm_remove: boolean = true) {
+      if (confirm_remove) {
+        const removeOk = await message(t('dialog.message.removeCue'), {
+          kind: 'warning',
+          buttons: 'OkCancel',
+        });
+        if (removeOk != 'Ok') {
+          return;
+        }
+      }
+      await invoke('remove_cue', { cueId: cueId });
     },
     moveCue: function (cueId: string, targetId: string | null): Promise<void> {
       return invoke('move_cue', { cueId: cueId, targetId: targetId });

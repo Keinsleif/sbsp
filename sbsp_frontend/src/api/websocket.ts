@@ -16,8 +16,10 @@ import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
 import { Permissions } from '../types/Permissions';
 import { BackendError } from '../types/BackendError';
+import { i18n } from '../i18n';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
+const { t } = i18n.global;
 
 const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
@@ -576,7 +578,13 @@ export function useWebsocketApi(): IBackendAdapter {
         });
       }
     },
-    removeCue: async function (cueId: string): Promise<void> {
+    removeCue: async function (cueId: string, confirm_remove: boolean = true): Promise<void> {
+      if (confirm_remove) {
+        const removeOk = confirm(t('dialog.message.removeCue'));
+        if (!removeOk) {
+          return;
+        }
+      }
       this.sendCommand({ type: 'model', command: 'removeCue', params: { cueId: cueId } });
     },
     moveCue: async function (cueId: string, targetId: string | null): Promise<void> {

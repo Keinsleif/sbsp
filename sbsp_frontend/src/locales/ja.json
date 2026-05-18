@@ -18,7 +18,8 @@
       "license": {
         "proTitle": "ライセンスエラー",
         "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。"
-      }
+      },
+      "removeCue": "キューを削除してもよろしいですか？"
     },
     "renumber": {
       "increment": "増分",

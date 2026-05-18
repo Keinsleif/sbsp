@@ -216,7 +216,7 @@ export const useShowModel = defineStore('showmodel', {
           }
         }
         for (const cue of newCue.params.children) {
-          api.removeCue(cue.id);
+          api.removeCue(cue.id, false);
         }
         api.addCue(newCue, null, false);
       }

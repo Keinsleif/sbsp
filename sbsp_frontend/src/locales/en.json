@@ -18,7 +18,8 @@
       "license": {
         "proTitle": "License Error",
         "serverPanel": "Pro License is required to use Server Panel."
-      }
+      },
+      "removeCue": "Are you shure want to remove?"
     },
     "renumber": {
       "increment": "Increment",
