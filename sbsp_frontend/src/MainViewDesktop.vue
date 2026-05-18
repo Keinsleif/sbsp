@@ -13,9 +13,7 @@
     </v-app-bar>
 
     <v-main style="height: 100vh">
-      <v-sheet class="d-flex h-100">
-        <CueList />
-      </v-sheet>
+      <CueList />
     </v-main>
 
     <v-footer

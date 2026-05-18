@@ -1,107 +1,136 @@
 <template>
-  <v-table
-    fixed-header
-    density="compact"
-    class="flex-grow-1"
-    :class="$style['cuelist']"
-    height="100%"
-  >
-    <thead>
-      <tr>
-        <th
-          id="cuelist_cursor"
-          width="32px"
+  <v-sheet class="d-flex h-100">
+    <v-table
+      fixed-header
+      density="compact"
+      class="flex-grow-1"
+      :class="$style['cuelist']"
+      height="100%"
+    >
+      <thead>
+        <tr>
+          <th
+            id="cuelist_cursor"
+            width="32px"
+          />
+          <th
+            id="cuelist_status"
+            width="32px"
+          />
+          <th
+            id="cuelist_type"
+            width="24px"
+          />
+          <th
+            id="cuelist_number"
+            class="text-center border-s"
+            width="54px"
+            style="padding: 0"
+          >
+            #
+          </th>
+          <th
+            id="cuelist_name"
+            class="border overflow-hidden text-no-wrap"
+            style="padding-left: 24px"
+          >
+            {{ t('main.name') }}
+          </th>
+          <th
+            id="cuelist_pre_wait"
+            class="text-center"
+            width="124px"
+            style="padding: 0px 8px"
+          >
+            <div class="d-flex flex-row justify-center ga-1">
+              {{ t('main.preWait') }}
+              <v-icon
+                class="mt-auto mb-auto"
+                :icon="uiState.preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+                @click.stop="uiState.togglePreWaitDisplayMode"
+              />
+            </div>
+          </th>
+          <th
+            id="cuelist_duration"
+            class="text-center"
+            width="124px"
+            style="padding: 0px 8px"
+          >
+            <div class="d-flex flex-row justify-center ga-1">
+              {{ t('main.duration') }}
+              <v-icon
+                class="mt-auto mb-auto"
+                :icon="uiState.durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
+                @click.stop="uiState.toggleDurationDisplayMode"
+              />
+            </div>
+          </th>
+          <th
+            id="cuelist_repeat"
+            width="32px"
+          >
+            <v-icon :icon="mdiRepeat" />
+          </th>
+          <th
+            id="cuelist_chain"
+            width="54px"
+          >
+            <v-icon :icon="mdiChevronDoubleDown" />
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <cue-list-row
+          ref="cuelistItem"
+          v-for="(item, i) in showModel.flatCueList"
+          v-show="!item.isHidden"
+          :key="item.cue.id"
+          :item="item"
+          :is-drag-over="dragOverIndex == i"
+          @dragstart="dragStart($event, i)"
+          @dragover="dragOver($event, i)"
+          @dragend="dragEnd"
+          @drop="drop($event, i)"
+          @pointerdown.stop="click($event, i)"
+          @contextmenu.prevent="
+            contextMenuPosition = [$event.clientX, $event.clientY];
+            contextMenuCueId = item.cue.id;
+            isContextMenuOpen = true;
+          "
         />
-        <th
-          id="cuelist_status"
-          width="32px"
-        />
-        <th
-          id="cuelist_type"
-          width="24px"
-        />
-        <th
-          id="cuelist_number"
-          class="text-center border-s"
-          width="54px"
-          style="padding: 0"
+        <tr
+          :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
+          @dragover="dragOver($event, showModel.flatCueList.length)"
+          @drop="drop($event, showModel.flatCueList.length)"
         >
-          #
-        </th>
-        <th
-          id="cuelist_name"
-          class="border overflow-hidden text-no-wrap"
-          style="padding-left: 24px"
-        >
-          {{ t('main.name') }}
-        </th>
-        <th
-          id="cuelist_pre_wait"
-          class="text-center"
-          width="124px"
-          style="padding: 0px 8px"
-        >
-          <div class="d-flex flex-row justify-center ga-1">
-            {{ t('main.preWait') }}
-            <v-icon
-              class="mt-auto mb-auto"
-              :icon="uiState.preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click.stop="uiState.togglePreWaitDisplayMode"
-            />
-          </div>
-        </th>
-        <th
-          id="cuelist_duration"
-          class="text-center"
-          width="124px"
-          style="padding: 0px 8px"
-        >
-          <div class="d-flex flex-row justify-center ga-1">
-            {{ t('main.duration') }}
-            <v-icon
-              class="mt-auto mb-auto"
-              :icon="uiState.durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-              @click.stop="uiState.toggleDurationDisplayMode"
-            />
-          </div>
-        </th>
-        <th
-          id="cuelist_repeat"
-          width="32px"
-        >
-          <v-icon :icon="mdiRepeat" />
-        </th>
-        <th
-          id="cuelist_chain"
-          width="54px"
-        >
-          <v-icon :icon="mdiChevronDoubleDown" />
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <cue-list-row
-        ref="cuelistItem"
-        v-for="(item, i) in showModel.flatCueList"
-        v-show="!item.isHidden"
-        :key="item.cue.id"
-        :item="item"
-        :is-drag-over="dragOverIndex == i"
-        @dragstart="dragStart($event, i)"
-        @dragover="dragOver($event, i)"
-        @dragend="dragEnd"
-        @drop="drop($event, i)"
-        @pointerdown.stop="click($event, i)"
-      />
-      <tr
-        :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
-        @dragover="dragOver($event, showModel.flatCueList.length)"
-        @drop="drop($event, showModel.flatCueList.length)"
+          <td colspan="9" />
+        </tr>
+      </tbody>
+    </v-table>
+    <v-menu
+      v-model="isContextMenuOpen"
+      :target="contextMenuPosition || undefined"
+      density="compact"
+    >
+      <v-list
+        density="compact"
+        class="pa-0 border"
+        @contextmenu.prevent
       >
-        <td colspan="9" />
-      </tr>
-    </tbody>
-  </v-table>
+        <v-list-item
+          class="px-1"
+          height="40px"
+          density="compact"
+        >
+          <v-btn
+            :text="'Delete Cue'"
+            @click="contextMenuCueId != null && api.removeCue(contextMenuCueId)"
+          />
+        </v-list-item>
+      </v-list>
+    </v-menu>
+  </v-sheet>
 </template>
 
 <script setup lang="ts">
@@ -127,6 +156,10 @@ const showModel = useShowModel();
 const uiState = useUiState();
 
 const cueListItemRefs = useTemplateRef('cuelistItem');
+
+const isContextMenuOpen = ref(false);
+const contextMenuCueId = ref<string | null>(null);
+const contextMenuPosition = ref<[number, number] | null>(null);
 
 const scrollIntoIndex = (index: number) => {
   if (cueListItemRefs.value != null) {
