@@ -71,7 +71,7 @@ pub enum WsFeedback {
     Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
     FullShowState(FullShowState),
-    Error(WsError)
+    Error(WsError),
 }
 
 #[derive(Serialize, Deserialize)]

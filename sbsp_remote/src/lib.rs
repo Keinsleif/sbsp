@@ -6,7 +6,10 @@ use std::time::SystemTime;
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::{Permissions, client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery}},
+    api::{
+        Permissions,
+        client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
+    },
     event::BackendEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
@@ -74,7 +77,12 @@ impl AppState {
     }
 
     pub async fn is_connected(&self) -> (bool, Option<Permissions>) {
-        self.connection_data.read().await.as_ref().map(|val| (true, Some(val.permission))).unwrap_or((false, None))
+        self.connection_data
+            .read()
+            .await
+            .as_ref()
+            .map(|val| (true, Some(val.permission)))
+            .unwrap_or((false, None))
     }
 
     pub async fn get_address(&self) -> Option<String> {
@@ -103,7 +111,9 @@ impl AppState {
         });
         drop(connection_data_lock);
 
-        app_handle.emit("connection_status_changed", (true, Some(permission))).ok();
+        app_handle
+            .emit("connection_status_changed", (true, Some(permission)))
+            .ok();
 
         tokio::spawn(forward_backend_event(
             app_handle.clone(),
@@ -115,7 +125,9 @@ impl AppState {
             shutdown_tx.closed().await;
             let state = app_handle.state::<AppState>();
             state.disconnect_cleanup().await;
-            app_handle.emit::<(bool, Option<Permissions>)>("connection_status_changed", (false, None)).ok();
+            app_handle
+                .emit::<(bool, Option<Permissions>)>("connection_status_changed", (false, None))
+                .ok();
         });
         Ok(())
     }

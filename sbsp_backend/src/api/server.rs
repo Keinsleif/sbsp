@@ -25,7 +25,8 @@ use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle,
     api::{
-        ApiServerOptions, AuthInfo, FileList, ModelCommand, PermissionInfo, Permissions, WsError, auth::{check_authentication_string, generate_salt, generate_secret}
+        ApiServerOptions, AuthInfo, FileList, ModelCommand, PermissionInfo, Permissions, WsError,
+        auth::{check_authentication_string, generate_salt, generate_secret},
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
@@ -158,7 +159,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         return;
     }
 
-    let mut permission ;
+    let mut permission;
 
     'auth: loop {
         if let Some(Ok(msg)) = socket.recv().await {
@@ -167,7 +168,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                     && let WsCommand::Authenticate { response } = command
                 {
                     log::debug!("perms: {:?}", state.options.auth_map);
-                    for PermissionInfo { password, permission: perm } in &state.options.auth_map {
+                    for PermissionInfo {
+                        password,
+                        permission: perm,
+                    } in &state.options.auth_map
+                    {
                         if let Some(auth_str) = &response {
                             let secret = generate_secret(password, &state.salt);
                             if check_authentication_string(&secret, &challenge, auth_str) {
@@ -179,8 +184,10 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                             break 'auth;
                         }
                     }
-                    if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationFailed))
-                    && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                    if let Ok(payload) =
+                        serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationFailed))
+                        && let Err(e) = socket.send(Message::Text(payload.into())).await
+                    {
                         log::error!("Error on responding error. e={}", e);
                         return;
                     }

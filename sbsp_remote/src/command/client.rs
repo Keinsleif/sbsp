@@ -4,7 +4,9 @@ use tauri::{AppHandle, ipc::Channel};
 use crate::AppState;
 
 #[tauri::command]
-pub async fn is_connected(state: tauri::State<'_, AppState>) -> Result<(bool, Option<Permissions>), String> {
+pub async fn is_connected(
+    state: tauri::State<'_, AppState>,
+) -> Result<(bool, Option<Permissions>), String> {
     Ok(state.is_connected().await)
 }
 

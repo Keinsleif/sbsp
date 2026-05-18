@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::{
     BackendSettings,
-    event::{BackendEvent, BackendError},
+    event::{BackendError, BackendEvent},
     model::{
         ProjectType, ShowModel,
         cue::{Cue, CueParam},

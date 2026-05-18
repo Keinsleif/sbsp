@@ -8,10 +8,13 @@ use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot, watch};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use super::{WsCommand, WsFeedback, WsError};
+use super::{WsCommand, WsError, WsFeedback};
 use crate::{
     BackendHandle, FullShowState,
-    api::{Permissions, auth::{generate_authentication_string, generate_secret}},
+    api::{
+        Permissions,
+        auth::{generate_authentication_string, generate_secret},
+    },
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
     event::{BackendError, BackendEvent},
@@ -66,10 +69,7 @@ pub async fn create_remote_backend(
         {
             let response = if let Some(pass) = password {
                 let secret = generate_secret(&pass, &auth.salt);
-                Some(generate_authentication_string(
-                    &secret,
-                    &auth.challenge,
-                ))
+                Some(generate_authentication_string(&secret, &auth.challenge))
             } else {
                 None
             };
@@ -89,7 +89,7 @@ pub async fn create_remote_backend(
         if let Ok(Some(message)) = websocket.try_next().await {
             if let Message::Text(text) = &message
                 && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated {perm} = feedback
+                && let WsFeedback::Authenticated { perm } = feedback
             {
                 permission = perm;
                 break;
