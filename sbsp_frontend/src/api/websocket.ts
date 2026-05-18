@@ -272,7 +272,6 @@ export function useWebsocketApi(): IBackendAdapter {
         Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false, null));
         ws.removeEventListener('close', closeEventListener);
         ws.removeEventListener('error', errorEventListener);
-        ws.removeEventListener('open', websocketApi.flushQueue);
         if (isAuthenticated) {
           ws.removeEventListener('message', mainEventListener);
         } else {
@@ -286,7 +285,6 @@ export function useWebsocketApi(): IBackendAdapter {
       const errorEventListener = (event: unknown) => {
         console.error('Websocket error: ', event);
       };
-      ws.addEventListener('open', websocketApi.flushQueue);
       ws.addEventListener('error', errorEventListener);
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
@@ -309,6 +307,7 @@ export function useWebsocketApi(): IBackendAdapter {
             websocketApiState.permission = msg.data.perm;
             ws.addEventListener('message', mainEventListener);
             ws.removeEventListener('message', authEventListener);
+            websocketApi.flushQueue();
             Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true, msg.data.perm));
             break;
         }
