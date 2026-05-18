@@ -58,7 +58,14 @@
       "status": "Status",
       "stop": "Stop",
       "stopped": "Stopped",
-      "title": "Server Management"
+      "title": "Server Management",
+      "connectInfo": "Connect Information",
+      "permission": "Permission",
+      "permissions": {
+        "read": "Read",
+        "edit": "Edit",
+        "control": "Control"
+      }
     },
     "settings": {
       "global": {
@@ -280,7 +287,12 @@
     "duration": "Duration",
     "footBar": {
       "cueCountSuffix": "cues",
-      "processingIndicator": "Processing {size} files"
+      "processingIndicator": "Processing {size} files",
+      "modes": {
+        "view": "View",
+        "run": "Run",
+        "edit": "Edit"
+      }
     },
     "name": "Name",
     "notes": "Notes",
@@ -343,7 +355,9 @@
   },
   "notification": {
     "modelLoaded": "Show model loaded.",
-    "modelSaved": "Show model saved."
+    "modelSaved": "Show model saved.",
+    "permissionDenied": "Permission denied.",
+    "authenticationFailed": "Authentication failed."
   },
   "view": {
     "connect": {

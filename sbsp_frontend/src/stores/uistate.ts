@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getLockCursorToSelection } from '../utils';
+import { getLockCursorToSelection, PERMISSIONS } from '../utils';
 import { useApi } from '../api';
 import { useShowModel } from './showmodel';
+import { Permissions } from '../types/Permissions';
 
 export const useUiState = defineStore(
   'uistate',
   () => {
+    const permission = ref<Permissions>(0b0111);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
     const selected = ref<string | null>(null);
     const selectedRows = ref<string[]>([]);
@@ -26,6 +28,7 @@ export const useUiState = defineStore(
     const isBottomTabOpen = ref(true);
     const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
+    const lastUpdateCheckDate = ref<number>(0);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
@@ -112,7 +115,42 @@ export const useUiState = defineStore(
       error_messages.value.push(message);
     };
 
+    const setPermission = (perm: Permissions) => {
+      permission.value = perm;
+      validateMode();
+    };
+
+    const validateMode = () => {
+      if (permission.value == null) return;
+      if (!(permission.value & modeAsPerm())) {
+        const highestBitPos = 31 - Math.clz32(permission.value);
+        switch (highestBitPos) {
+          case 0:
+            mode.value = 'view';
+            break;
+          case 1:
+            mode.value = 'run';
+            break;
+          case 2:
+            mode.value = 'edit';
+            break;
+        }
+      }
+    };
+
+    const modeAsPerm = () => {
+      switch (mode.value) {
+        case 'edit':
+          return PERMISSIONS.EDIT;
+        case 'run':
+          return PERMISSIONS.CONTROL;
+        case 'view':
+          return PERMISSIONS.READ;
+      }
+    };
+
     return {
+      permission,
       mode,
       selected,
       selectedRows,
@@ -132,8 +170,10 @@ export const useUiState = defineStore(
       isBottomTabOpen,
       isEnvelopeVisible,
       scaleWaveform,
+      lastUpdateCheckDate,
       success_messages,
       error_messages,
+      setPermission,
       setPlaybackCursor,
       clearSelected,
       setSelected,
@@ -159,6 +199,7 @@ export const useUiState = defineStore(
         'isRightSidebarOpen',
         'isBottomTabOpen',
         'scaleWaveform',
+        'lastUpdateCheckDate',
       ],
     },
   },

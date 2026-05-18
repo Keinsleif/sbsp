@@ -25,7 +25,7 @@ use super::{FullShowState, WsCommand, WsFeedback};
 use crate::{
     BackendHandle,
     api::{
-        ApiServerOptions, AuthInfo, FileList, ModelCommand,
+        ApiServerOptions, AuthInfo, FileList, ModelCommand, PermissionInfo, Permissions, WsError,
         auth::{check_authentication_string, generate_salt, generate_secret},
     },
     asset_processor::AssetProcessorCommand,
@@ -146,13 +146,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let base_time = Instant::now();
     let mut latency = 0.0;
     let challenge = generate_salt();
-    let auth_info = if state.options.password.is_some() {
-        Some(AuthInfo {
-            challenge: challenge.clone(),
-            salt: state.salt.clone(),
-        })
-    } else {
-        None
+    let auth_info = AuthInfo {
+        challenge: challenge.clone(),
+        salt: state.salt.clone(),
     };
 
     if let Ok(payload) = serde_json::to_string(&WsFeedback::Hello {
@@ -163,29 +159,43 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         return;
     }
 
-    loop {
+    let mut permission;
+
+    'auth: loop {
         if let Some(Ok(msg)) = socket.recv().await {
             if let Message::Text(text) = msg {
                 if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
                     && let WsCommand::Authenticate { response } = command
                 {
-                    if let Some(password) = &state.options.password {
-                        let secret = generate_secret(password, &state.salt);
-                        if let Some(auth_str) = response
-                            && check_authentication_string(&secret, &challenge, &auth_str)
-                        {
-                            break;
-                        } else {
-                            if let Err(e) = socket.send(Message::Close(None)).await {
-                                log::error!("Error on closing socket. e={}", e);
-                                return;
+                    for PermissionInfo {
+                        password,
+                        permission: perm,
+                    } in &state.options.auth_map
+                    {
+                        if let Some(auth_str) = &response {
+                            let secret = generate_secret(password, &state.salt);
+                            if check_authentication_string(&secret, &challenge, auth_str) {
+                                permission = *perm;
+                                break 'auth;
                             }
-                            log::debug!("Close message sent.");
-                            return;
+                        } else if password.is_empty() {
+                            permission = *perm;
+                            break 'auth;
                         }
-                    } else {
-                        break;
                     }
+                    if let Ok(payload) =
+                        serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationFailed))
+                        && let Err(e) = socket.send(Message::Text(payload.into())).await
+                    {
+                        log::error!("Error on responding error. e={}", e);
+                        return;
+                    }
+                    if let Err(e) = socket.send(Message::Close(None)).await {
+                        log::error!("Error on closing socket. e={}", e);
+                        return;
+                    }
+                    log::warn!("Failed to authenticate, connection closed.");
+                    return;
                 } else {
                     continue;
                 }
@@ -196,7 +206,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
         }
     }
 
-    if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated)
+    if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
         && socket.send(Message::Text(payload.into())).await.is_err()
     {
         log::info!("WebSocket client disconnected (send error).");
@@ -215,13 +225,15 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     loop {
         tokio::select! {
             Ok(event) = event_rx.recv() => {
-                let ws_message = WsFeedback::Event(Box::new(event));
+                if permission.contains(Permissions::READ) {
+                    let ws_message = WsFeedback::Event(Box::new(event));
 
-                if let Ok(payload) = serde_json::to_string(&ws_message)
-                    && socket.send(Message::Text(payload.into())).await.is_err() {
+                    if let Ok(payload) = serde_json::to_string(&ws_message)
+                        && socket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
                         break;
                     }
+                }
             }
             _ = ping_timer.tick() => {
                 let time_bytes = base_time.elapsed().as_secs_f64().to_le_bytes();
@@ -235,10 +247,19 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                     Message::Text(text) => {
                         if let Ok(command_request) = serde_json::from_str::<WsCommand>(&text) {
                             match command_request {
-                                WsCommand::Controll(controller_command) => {
-                                    if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
-                                        log::error!("Failed to send Go command to CueController.");
-                                        break;
+                                WsCommand::Control(controller_command) => {
+                                    if permission.contains(Permissions::CONTROL) {
+                                        if state.backend_handle.controller_handle.send_command(controller_command).await.is_err() {
+                                            log::error!("Failed to send Go command to CueController.");
+                                            break;
+                                        }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
                                     }
                                 },
                                 WsCommand::Model(model_command) => {
@@ -251,9 +272,18 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                             log::warn!("File related operation not permitted.");
                                         },
                                         _ => {
-                                            if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
-                                                log::error!("Failed to send Model command to ShowModelManager.");
-                                                break;
+                                            if permission.contains(Permissions::EDIT) {
+                                                if state.backend_handle.model_handle.send_command(*model_command).await.is_err() {
+                                                    log::error!("Failed to send Model command to ShowModelManager.");
+                                                    break;
+                                                }
+                                            } else {
+                                                if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                                && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                                    log::error!("Error on responding error. e={}", e);
+                                                    return;
+                                                }
+                                                log::warn!("Permission denied.");
                                             }
                                         }
                                     }
@@ -261,56 +291,123 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                 WsCommand::AssetProcessor(asset_processor_command) => {
                                     match asset_processor_command {
                                         AssetProcessorCommand::RequestFileAssetData { path } => {
-                                            state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
+                                            if permission.contains(Permissions::READ) {
+                                                state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
+                                            } else {
+                                                if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                                && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                                    log::error!("Error on responding error. e={}", e);
+                                                    return;
+                                                }
+                                                log::warn!("Permission denied.");
+                                            }
                                         },
                                     }
                                 },
                                 WsCommand::RequestAssetList => {
-                                    log::info!("Asset List reqested.");
-                                    if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
-                                    && project_type == ProjectType::ProjectFolder
-                                    && let Some(parent) = path.parent()
-                                    && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
-                                        let ws_message = WsFeedback::AssetList(file_list);
+                                    if permission.contains(Permissions::READ) {
+                                        log::info!("Asset List reqested.");
+                                        if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
+                                        && project_type == ProjectType::ProjectFolder
+                                        && let Some(parent) = path.parent()
+                                        && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
+                                            let ws_message = WsFeedback::AssetList(file_list);
+                                            if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                                log::info!("WebSocket client disconnected (send error).");
+                                                break;
+                                            }
+                                        }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
+                                    }
+                                }
+                                WsCommand::RequestFullShowState => {
+                                    if permission.contains(Permissions::READ) {
+                                        let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
+                                        let show_model = state.backend_handle.model_handle.read().await.clone();
+                                        let show_state = state.state_rx.borrow().clone();
+
+                                        let full_state = FullShowState {
+                                            project_status,
+                                            show_model,
+                                            show_state,
+                                        };
+
+                                        let ws_message = WsFeedback::FullShowState(full_state);
                                         if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                             log::info!("WebSocket client disconnected (send error).");
                                             break;
                                         }
-                                    }
-                                }
-                                WsCommand::RequestFullShowState => {
-                                    let project_status = state.backend_handle.model_handle.get_project_state().await.clone();
-                                    let show_model = state.backend_handle.model_handle.read().await.clone();
-                                    let show_state = state.state_rx.borrow().clone();
-
-                                    let full_state = FullShowState {
-                                        project_status,
-                                        show_model,
-                                        show_state,
-                                    };
-
-                                    let ws_message = WsFeedback::FullShowState(full_state);
-                                    if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
-                                        log::info!("WebSocket client disconnected (send error).");
-                                        break;
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
                                     }
                                 }
                                 WsCommand::RequestSyncState => {
-                                    let mut cues = Vec::new();
-                                    {
-                                        let state = state_rx.borrow();
-                                        for (id, active_cue) in &state.active_cues {
-                                            cues.push(CueState { id: *id, position: active_cue.position })
+                                    if permission.contains(Permissions::READ) {
+                                        let mut cues = Vec::new();
+                                        {
+                                            let state = state_rx.borrow();
+                                            for (id, active_cue) in &state.active_cues {
+                                                cues.push(CueState { id: *id, position: active_cue.position })
+                                            }
                                         }
-                                    }
 
-                                    let ws_message = WsFeedback::Event(Box::new(BackendEvent::SyncState(SyncData { latency, cues})));
-                                    if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
-                                        log::info!("WebSocket client disconnected (send error).");
-                                        break;
+                                        let ws_message = WsFeedback::Event(Box::new(BackendEvent::SyncState(SyncData { latency, cues})));
+                                        if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            break;
+                                        }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
                                     }
                                 },
-                                WsCommand::Authenticate { .. } => {},
+                                WsCommand::Authenticate { response } => {
+                                    let mut reauth = false;
+                                    for PermissionInfo { password, permission: perm } in &state.options.auth_map {
+                                        if let Some(auth_str) = &response {
+                                            let secret = generate_secret(password, &state.salt);
+                                            if check_authentication_string(&secret, &challenge, auth_str) {
+                                                permission = *perm;
+                                                reauth = true;
+                                                break;
+                                            }
+                                        } else if password.is_empty() {
+                                            permission = *perm;
+                                            reauth = true;
+                                            break;
+                                        }
+                                    }
+                                    if reauth {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
+                                        && socket.send(Message::Text(payload.into())).await.is_err()
+                                        {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            return;
+                                        }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationFailed))
+                                        && socket.send(Message::Text(payload.into())).await.is_err()
+                                        {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            return;
+                                        }
+                                    }
+                                },
                             }
                         } else {
                             log::error!("Invalid command received.")

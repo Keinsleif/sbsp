@@ -12,8 +12,10 @@ import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import typia from 'typia';
 import { useUiState } from '../stores/uistate';
-import { sha256 } from '@noble/hashes/sha2.js';
+import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
+import { Permissions } from '../types/Permissions';
+import { BackendError } from '../types/BackendError';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
@@ -207,25 +209,32 @@ const openFileDialog = (): Promise<globalThis.FileList | null> =>
     input.click();
   });
 
-const encoder = new TextEncoder();
+// const encoder = new TextEncoder();
 const strToHashedBase64 = (src: string): string => {
-  const hash = sha256(encoder.encode(src));
+  const shaObj = new jsSHA('SHA-256', 'TEXT');
+  shaObj.update(src);
+  return shaObj.getHash('B64');
+  // const hash = sha256(encoder.encode(src));
 
-  return btoa(String.fromCharCode(...hash));
+  // return btoa(String.fromCharCode(...hash));
 };
 
 const websocketApiState: {
   address: string | null;
+  permission: Permissions | null;
   ws: WebSocket | null;
   projectStatus: ProjectStatus | null;
+  sendQueue: string[];
   backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
-  connectionStatusListeners: { [key: string]: (isConnected: boolean) => void };
+  connectionStatusListeners: { [key: string]: (isConnected: boolean, perm: Permissions | null) => void };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
 } = {
   address: null,
+  permission: null,
   ws: null,
   projectStatus: null,
+  sendQueue: [],
   backendEventListeners: {},
   assetListListeners: {},
   connectionStatusListeners: {},
@@ -234,53 +243,73 @@ const websocketApiState: {
 
 interface IWebsocketBackendAdapter extends IBackendAdapter {
   sendCommand: (command: WsCommand) => void;
+  flushQueue: () => void;
 }
 
 export function useWebsocketApi(): IBackendAdapter {
   const remoteApi: IBackendRemoteAdapter = {
-    isConnected: async function (): Promise<boolean> {
-      return websocketApiState.address != null;
+    isConnected: async function (): Promise<[boolean, Permissions | null]> {
+      return [websocketApiState.permission != null, websocketApiState.permission];
     },
     getServerAddress: async function (): Promise<string | null> {
       return websocketApiState.address;
     },
     connectToServer: async function (address: string, password: string | null) {
+      if (websocketApiState.ws != null) return;
+      let ws: WebSocket;
+      websocketApiState.sendQueue = [];
       try {
-        websocketApiState.ws = new WebSocket(`ws://${address}/ws`);
+        ws = new WebSocket(`ws://${address}/ws`);
+        websocketApiState.ws = ws;
       } catch (e) {
         console.error(e);
         return;
       }
-      websocketApiState.ws.addEventListener('close', () => {
+      let isAuthenticated = false;
+
+      websocketApiState.address = address;
+      const closeEventListener = () => {
         console.log('Disconnected.');
-        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false));
+        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false, null));
+        ws.removeEventListener('close', closeEventListener);
+        ws.removeEventListener('error', errorEventListener);
+        if (isAuthenticated) {
+          ws.removeEventListener('message', mainEventListener);
+        } else {
+          ws.removeEventListener('message', authEventListener);
+        }
         websocketApiState.ws = null;
         websocketApiState.address = null;
-      });
-      websocketApiState.ws.addEventListener('error', event => console.error('Websocket error: ', event));
+        websocketApiState.permission = null;
+      };
+      ws.addEventListener('close', closeEventListener);
+      const errorEventListener = (event: unknown) => {
+        console.error('Websocket error: ', event);
+      };
+      ws.addEventListener('error', errorEventListener);
       const authEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
         switch (msg.type) {
-          case 'hello':
-            if (msg.data.auth != null) {
-              if (password == null) {
-                websocketApiState.ws?.close();
-                return;
-              }
-
-              const secret = strToHashedBase64(password + msg.data.auth.salt);
-              const authString = strToHashedBase64(secret + msg.data.auth.challenge);
-
-              websocketApi.sendCommand({ type: 'authenticate', response: authString });
+          case 'hello': {
+            let authString;
+            if (password == null) {
+              authString = null;
             } else {
-              websocketApi.sendCommand({ type: 'authenticate', response: null });
+              const secret = strToHashedBase64(password + msg.data.auth.salt);
+              authString = strToHashedBase64(secret + msg.data.auth.challenge);
             }
+
+            const command: WsCommand = { type: 'authenticate', response: authString };
+            ws.send(JSON.stringify(command));
             break;
+          }
           case 'authenticated':
-            websocketApiState.ws?.addEventListener('message', mainEventListener);
-            websocketApiState.ws?.removeEventListener('message', authEventListener);
-            websocketApiState.address = address;
-            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true));
+            isAuthenticated = true;
+            websocketApiState.permission = msg.data.perm;
+            ws.addEventListener('message', mainEventListener);
+            ws.removeEventListener('message', authEventListener);
+            websocketApi.flushQueue();
+            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true, msg.data.perm));
             break;
         }
       };
@@ -318,9 +347,40 @@ export function useWebsocketApi(): IBackendAdapter {
               websocketApiState.fullStateResolver[0](msg.data);
             }
             websocketApiState.projectStatus = msg.data.projectStatus;
+            break;
+          case 'error': {
+            let error: BackendError = {
+              type: 'custom',
+              id: 0,
+              message: 'Unknown error occured.',
+            };
+            switch (msg.data.type) {
+              case 'permissionDenied':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Permission Denied.',
+                };
+                break;
+              case 'authenticationFailed':
+                error = {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Authentication Failed.',
+                };
+                break;
+            }
+            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
+              type: 'operationFailed',
+              param: {
+                error: error,
+              },
+            }));
+            break;
+          }
         }
       };
-      websocketApiState.ws.addEventListener('message', authEventListener);
+      ws.addEventListener('message', authEventListener);
     },
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
@@ -335,7 +395,7 @@ export function useWebsocketApi(): IBackendAdapter {
     requestFileList: function (): void {
       websocketApi.sendCommand({ type: 'requestAssetList' });
     },
-    onConnectionStatusChanged: async function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
+    onConnectionStatusChanged: async function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.connectionStatusListeners[id] = callback;
       return () => {
@@ -353,8 +413,24 @@ export function useWebsocketApi(): IBackendAdapter {
 
   const websocketApi: IWebsocketBackendAdapter = {
     sendCommand: function (command: WsCommand): void {
-      if (websocketApiState.ws) {
-        websocketApiState.ws.send(JSON.stringify(command));
+      const ws = websocketApiState.ws;
+      if (ws && ws.readyState == WebSocket.OPEN) {
+        ws.send(JSON.stringify(command));
+      } else if (ws && ws.readyState == WebSocket.CONNECTING) {
+        websocketApiState.sendQueue.push(JSON.stringify(command));
+      } else {
+        console.error('Not connected.');
+      }
+    },
+    flushQueue: function (): void {
+      const ws = websocketApiState.ws;
+      const sendQueue = websocketApiState.sendQueue;
+      if (ws && ws.readyState === WebSocket.OPEN && sendQueue.length > 0) {
+        console.log(`Flushing ${sendQueue.length} queued messages...`);
+        while (sendQueue.length > 0) {
+          const payload = sendQueue.shift();
+          if (payload) ws.send(payload);
+        }
       }
     },
 
@@ -401,48 +477,48 @@ export function useWebsocketApi(): IBackendAdapter {
       this.sendCommand({ type: 'assetProcessor', command: 'requestFileAssetData', path: path });
     },
     setPlaybackCursor: async function (cueId: string | null): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'setPlaybackCursor', params: { cueId: cueId } });
+      this.sendCommand({ type: 'control', command: 'setPlaybackCursor', params: { cueId: cueId } });
     },
     sendGo: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'go' });
+      this.sendCommand({ type: 'control', command: 'go' });
     },
     sendLoad: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'load', params: cueId });
+      this.sendCommand({ type: 'control', command: 'load', params: cueId });
     },
     sendPause: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'pause', params: cueId });
+      this.sendCommand({ type: 'control', command: 'pause', params: cueId });
     },
     sendResume: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'resume', params: cueId });
+      this.sendCommand({ type: 'control', command: 'resume', params: cueId });
     },
     sendStop: async function (cueId: string): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'stop', params: cueId });
+      this.sendCommand({ type: 'control', command: 'stop', params: cueId });
     },
     sendPauseAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'pauseAll' });
+      this.sendCommand({ type: 'control', command: 'pauseAll' });
     },
     sendResumeAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'resumeAll' });
+      this.sendCommand({ type: 'control', command: 'resumeAll' });
     },
     sendStopAll: async function (): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'stopAll' });
+      this.sendCommand({ type: 'control', command: 'stopAll' });
     },
     sendSeekTo: async function (cueId: string, position: number): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'seekTo', params: [cueId, position] });
+      this.sendCommand({ type: 'control', command: 'seekTo', params: [cueId, position] });
     },
     sendSeekBy: async function (cueId: string, amount: number): Promise<void> {
-      this.sendCommand({ type: 'controll', command: 'seekBy', params: [cueId, amount] });
+      this.sendCommand({ type: 'control', command: 'seekBy', params: [cueId, amount] });
     },
     sendToggleRepeat: async function (cueId: string): Promise<void> {
       this.sendCommand({
-        type: 'controll',
+        type: 'control',
         command: 'performAction',
         params: [cueId, { type: 'audio', action: 'toggleRepeat' }],
       });
     },
     sendSetVolume: async function (cueId: string, volume: number): Promise<void> {
       this.sendCommand({
-        type: 'controll',
+        type: 'control',
         command: 'performAction',
         params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
       });

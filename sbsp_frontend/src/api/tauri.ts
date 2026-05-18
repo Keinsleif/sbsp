@@ -17,6 +17,7 @@ import { useUiState } from '../stores/uistate';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import { SupportedHardware } from '../types/SupportedHardware';
+import { Permissions } from '../types/Permissions';
 
 const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
@@ -80,14 +81,14 @@ export function useTauriApi(): IBackendAdapter {
     remote:
       side == 'remote'
         ? {
-            isConnected: function (): Promise<boolean> {
-              return invoke<boolean>('is_connected');
+            isConnected: function (): Promise<[boolean, Permissions | null]> {
+              return invoke<[boolean, Permissions | null]>('is_connected');
             },
             getServerAddress: function (): Promise<string | null> {
               return invoke<string | null>('get_server_address');
             },
             connectToServer: function (address: string, password: string | null): Promise<void> {
-              return invoke('connect_to_server', { address: address, password: password });
+              return invoke<void>('connect_to_server', { address: address, password: password });
             },
             disconnectFromServer: function (): void {
               invoke('disconnect_from_server').catch(e => console.error(e));
@@ -102,9 +103,9 @@ export function useTauriApi(): IBackendAdapter {
             requestFileList: function (): void {
               invoke('request_file_list').catch(e => console.error(e));
             },
-            onConnectionStatusChanged: function (callback: (isConnected: boolean) => void): Promise<UnlistenFn> {
-              return listen<boolean>('connection_status_changed', (event) => {
-                callback(event.payload);
+            onConnectionStatusChanged: function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
+              return listen<[boolean, Permissions | null]>('connection_status_changed', (event) => {
+                callback(event.payload[0], event.payload[1]);
               });
             },
             onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {

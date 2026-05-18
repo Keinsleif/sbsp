@@ -60,7 +60,7 @@ impl AppState {
             server_option: RwLock::new(ApiServerOptions {
                 port: 5800,
                 discoverry: None,
-                password: None,
+                auth_map: vec![],
             }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,

@@ -51,8 +51,7 @@ pub enum AudioPlaybackState {
 impl AudioPlaybackState {
     fn is_stopped(&self) -> bool {
         match *self {
-            AudioPlaybackState::Stopped
-            | AudioPlaybackState::Completed => true,
+            AudioPlaybackState::Stopped | AudioPlaybackState::Completed => true,
             AudioPlaybackState::Loaded
             | AudioPlaybackState::Playing
             | AudioPlaybackState::Pausing
@@ -524,39 +523,33 @@ where
                                     .set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
-                        AudioSourceControlCommand::FadeOut => {
-                            match state {
-                                AudioPlaybackState::Playing
-                                    | AudioPlaybackState::Pausing
-                                    | AudioPlaybackState::Resuming => {
-                                    state = AudioPlaybackState::SoftStopping;
-                                    self.control_volume
-                                        .set_volume(Decibels::MUTE, self.fadeout_param);
-                                }
-                                AudioPlaybackState::Loaded
-                                    | AudioPlaybackState::Paused => {
-                                    state = AudioPlaybackState::Stopped;
-                                }
-                                _ => {}
+                        AudioSourceControlCommand::FadeOut => match state {
+                            AudioPlaybackState::Playing
+                            | AudioPlaybackState::Pausing
+                            | AudioPlaybackState::Resuming => {
+                                state = AudioPlaybackState::SoftStopping;
+                                self.control_volume
+                                    .set_volume(Decibels::MUTE, self.fadeout_param);
                             }
-                        }
-                        AudioSourceControlCommand::Stop => {
-                            match state {
-                                AudioPlaybackState::Playing
-                                    | AudioPlaybackState::Pausing
-                                    | AudioPlaybackState::Resuming
-                                    | AudioPlaybackState::SoftStopping => {
-                                    state = AudioPlaybackState::HardStopping;
-                                    self.control_volume
-                                        .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
-                                }
-                                AudioPlaybackState::Paused
-                                    | AudioPlaybackState::Loaded => {
-                                    state = AudioPlaybackState::Stopped;
-                                }
-                                _ => {}
+                            AudioPlaybackState::Loaded | AudioPlaybackState::Paused => {
+                                state = AudioPlaybackState::Stopped;
                             }
-                        }
+                            _ => {}
+                        },
+                        AudioSourceControlCommand::Stop => match state {
+                            AudioPlaybackState::Playing
+                            | AudioPlaybackState::Pausing
+                            | AudioPlaybackState::Resuming
+                            | AudioPlaybackState::SoftStopping => {
+                                state = AudioPlaybackState::HardStopping;
+                                self.control_volume
+                                    .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
+                            }
+                            AudioPlaybackState::Paused | AudioPlaybackState::Loaded => {
+                                state = AudioPlaybackState::Stopped;
+                            }
+                            _ => {}
+                        },
                         AudioSourceControlCommand::Seek { position, result } => {
                             let _ = result.send(match Duration::try_from_secs_f64(position) {
                                 Ok(duration) => self.try_seek(duration).map_err(|err| err.into()),
@@ -703,7 +696,10 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        if !AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap().is_stopped() {
+        if !AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire))
+            .unwrap()
+            .is_stopped()
+        {
             self.shared
                 .state
                 .store(AudioPlaybackState::Stopped as u8, Ordering::Release);

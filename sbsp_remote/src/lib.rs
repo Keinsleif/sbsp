@@ -6,7 +6,10 @@ use std::time::SystemTime;
 use log::LevelFilter;
 use sbsp_backend::{
     BackendHandle,
-    api::client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
+    api::{
+        Permissions,
+        client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
+    },
     event::BackendEvent,
 };
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
@@ -43,6 +46,7 @@ async fn forward_backend_event(
 pub struct ConnectionData {
     backend_handle: BackendHandle,
     address: String,
+    permission: Permissions,
     asset_list_handle: FileListHandle,
     disconnect_tx: mpsc::Sender<()>,
 }
@@ -72,8 +76,13 @@ impl AppState {
             .map(|connection_data| connection_data.backend_handle.clone())
     }
 
-    pub async fn is_connected(&self) -> bool {
-        self.connection_data.read().await.is_some()
+    pub async fn is_connected(&self) -> (bool, Option<Permissions>) {
+        self.connection_data
+            .read()
+            .await
+            .as_ref()
+            .map(|val| (true, Some(val.permission)))
+            .unwrap_or((false, None))
     }
 
     pub async fn get_address(&self) -> Option<String> {
@@ -90,18 +99,21 @@ impl AppState {
         address: String,
         password: Option<String>,
     ) -> anyhow::Result<()> {
-        let (remote_handle, event_tx, asset_list_handle, shutdown_tx) =
+        let (remote_handle, event_tx, asset_list_handle, shutdown_tx, permission) =
             create_remote_backend(address.clone(), password).await?;
         let mut connection_data_lock = self.connection_data.write().await;
         *connection_data_lock = Some(ConnectionData {
             backend_handle: remote_handle,
             address,
+            permission,
             asset_list_handle: asset_list_handle.clone(),
             disconnect_tx: shutdown_tx.clone(),
         });
         drop(connection_data_lock);
 
-        app_handle.emit("connection_status_changed", true).ok();
+        app_handle
+            .emit("connection_status_changed", (true, Some(permission)))
+            .ok();
 
         tokio::spawn(forward_backend_event(
             app_handle.clone(),
@@ -113,7 +125,9 @@ impl AppState {
             shutdown_tx.closed().await;
             let state = app_handle.state::<AppState>();
             state.disconnect_cleanup().await;
-            app_handle.emit("connection_status_changed", false).ok();
+            app_handle
+                .emit::<(bool, Option<Permissions>)>("connection_status_changed", (false, None))
+                .ok();
         });
         Ok(())
     }

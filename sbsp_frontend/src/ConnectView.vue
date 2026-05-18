@@ -64,6 +64,17 @@
         @click="connect(host, port)"
       />
     </v-footer>
+    <v-overlay
+      :model-value="overlay"
+      persistent
+      class="align-center justify-center"
+    >
+      <v-progress-circular
+        color="primary"
+        size="64"
+        indeterminate
+      />
+    </v-overlay>
   </div>
 </template>
 
@@ -72,53 +83,61 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
 import { target, useApi } from './api';
+import { useUiState } from './stores/uistate';
 
 const { t } = useI18n();
 const api = useApi();
+const uiState = useUiState();
 
 const host = ref('');
 const port = ref('');
 const services = ref<ServiceEntry[]>([]);
 
+const overlay = ref(false);
+
 const connect = (host: string, port: string | number) => {
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
+  let password: string | null;
   if (window.location.hash != '') {
-    api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
+    password = window.location.hash.substring(1).trim();
   } else if (window.location.href.endsWith('#')) {
-    api.remote?.connectToServer(address, null);
+    password = null;
   } else {
-    let password = prompt(t('view.connect.passwordPrompt'));
-    if (password == null) return;
-    if (password != '') {
-      api.remote?.connectToServer(address, password);
+    let ps_string = prompt(t('view.connect.passwordPrompt'));
+    if (ps_string == null) return;
+    if (ps_string != '') {
+      password = ps_string;
     } else {
-      api.remote?.connectToServer(address, null);
+      password = null;
     }
   }
+  overlay.value = true;
+  api.remote?.connectToServer(address, password).catch((e) => {
+    overlay.value = false;
+    console.error(e);
+    uiState.error(`${e}`);
+  });
 };
 
+let unlisten: (() => void) | null;
+
 onMounted(() => {
+  api.remote
+    ?.onConnectionStatusChanged(() => {
+      overlay.value = false;
+    })
+    .then(ulfn => (unlisten = ulfn));
+
   if (target == 'websocket') {
     const searchParams = new URLSearchParams(window.location.search);
     const address = searchParams.get('address');
     if (address != null) {
+      overlay.value = true;
       console.log(`Connecting to ${address}`);
       host.value = address.split(':')[0] || '';
       port.value = address.split(':')[1] || '5800';
-      if (window.location.hash != '') {
-        api.remote?.connectToServer(address, window.location.hash.substring(1).trim());
-      } else if (window.location.href.endsWith('#')) {
-        api.remote?.connectToServer(address, null);
-      } else {
-        let password = prompt(t('view.connect.passwordPrompt'));
-        if (password == null) return;
-        if (password != '') {
-          api.remote?.connectToServer(address, password);
-        } else {
-          api.remote?.connectToServer(address, null);
-        }
-      }
+      connect(host.value, port.value);
     }
   }
 
@@ -128,6 +147,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (unlisten != null) {
+    unlisten();
+  }
   api.remote?.stopServerDiscovery();
 });
 </script>

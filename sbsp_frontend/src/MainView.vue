@@ -1,5 +1,5 @@
 <template>
-  <component :is="mobile ? MainViewMobile : MainViewDesktop" />
+  <component :is="xs ? MainViewMobile : MainViewDesktop" />
 </template>
 
 <script setup lang="ts">
@@ -28,7 +28,7 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t } = useI18n();
 const api = useApi();
-const { mobile } = useDisplay();
+const { xs } = useDisplay();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -139,7 +139,29 @@ onMounted(() => {
         }
         case 'operationFailed':
           console.error(event.param.error);
-          uiState.error(event.param.error.message);
+          switch (event.param.error.type) {
+            case 'fileLoad':
+              uiState.error(event.param.error.message);
+              break;
+            case 'fileSave':
+              uiState.error(event.param.error.message);
+              break;
+            case 'cueEdit':
+              uiState.error(event.param.error.message);
+              break;
+            case 'custom':
+              switch (event.param.error.id) {
+                case 1:
+                  uiState.error(t('notification.authenticationFailed'));
+                  break;
+                case 2:
+                  uiState.error(t('notification.permissionDenied'));
+                  break;
+                default:
+                  uiState.error(event.param.error.message);
+                  break;
+              }
+          }
           break;
       }
     })
@@ -249,44 +271,36 @@ if (api.host) {
   );
 }
 
-const goHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.go != null ? uiSettings.settings.hotkey.playback.go : undefined,
-);
-const loadHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.load != null ? uiSettings.settings.hotkey.playback.load : undefined,
-);
-const pauseAndResumeHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.pauseAndResume != null
-    ? uiSettings.settings.hotkey.playback.pauseAndResume
-    : undefined,
-);
-const pauseAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.pauseAll != null ? uiSettings.settings.hotkey.playback.pauseAll : undefined,
-);
-const resumeAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.resumeAll != null ? uiSettings.settings.hotkey.playback.resumeAll : undefined,
-);
-const stopHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.stop != null ? uiSettings.settings.hotkey.playback.stop : undefined,
-);
-const stopAllHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.stopAll != null ? uiSettings.settings.hotkey.playback.stopAll : undefined,
-);
-const seekForwardHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.seekForward != null
-    ? uiSettings.settings.hotkey.playback.seekForward
-    : undefined,
-);
-const seekBackwardHotkey = computed(() =>
-  uiSettings.settings.hotkey.playback.seekBackward != null
-    ? uiSettings.settings.hotkey.playback.seekBackward
-    : undefined,
-);
-const audioToggleRepeatHotkey = computed(() =>
-  uiSettings.settings.hotkey.audioAction.toggleRepeat != null
-    ? uiSettings.settings.hotkey.audioAction.toggleRepeat
-    : undefined,
-);
+const goHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.go) || undefined;
+});
+const loadHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.load) || undefined;
+});
+const pauseAndResumeHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.pauseAndResume) || undefined;
+});
+const pauseAllHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.pauseAll) || undefined;
+});
+const resumeAllHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.resumeAll) || undefined;
+});
+const stopHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.stop) || undefined;
+});
+const stopAllHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.stopAll) || undefined;
+});
+const seekForwardHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.seekForward) || undefined;
+});
+const seekBackwardHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.seekBackward) || undefined;
+});
+const audioToggleRepeatHotkey = computed(() => {
+  return (uiState.mode != 'view' && uiSettings.settings.hotkey.audioAction.toggleRepeat) || undefined;
+});
 
 useHotkey(
   goHotkey,

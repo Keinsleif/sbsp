@@ -40,7 +40,9 @@ impl GlobalSettingsManager {
             log::info!("GlobalSettings loaded from: {}", path.display());
             Ok(new_settings)
         } else {
-            Err(anyhow::anyhow!("Settings file unavailable. Settings only exist in memory."))
+            Err(anyhow::anyhow!(
+                "Settings file unavailable. Settings only exist in memory."
+            ))
         }
     }
 
@@ -49,7 +51,8 @@ impl GlobalSettingsManager {
             let settings = self.settings.read().await.clone();
 
             let content =
-                tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
+                tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
+                    .await??;
 
             if let Some(parent) = path.parent() {
                 tokio::fs::create_dir_all(parent).await?;
@@ -58,7 +61,9 @@ impl GlobalSettingsManager {
             log::info!("GlobalSettings saved to: {}", path.display());
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Settings file unavailable. Settings only exist in memory."))
+            Err(anyhow::anyhow!(
+                "Settings file unavailable. Settings only exist in memory."
+            ))
         }
     }
 

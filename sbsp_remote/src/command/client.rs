@@ -1,10 +1,12 @@
-use sbsp_backend::api::client::ServiceEntry;
+use sbsp_backend::api::{Permissions, client::ServiceEntry};
 use tauri::{AppHandle, ipc::Channel};
 
 use crate::AppState;
 
 #[tauri::command]
-pub async fn is_connected(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+pub async fn is_connected(
+    state: tauri::State<'_, AppState>,
+) -> Result<(bool, Option<Permissions>), String> {
     Ok(state.is_connected().await)
 }
 

@@ -3,5 +3,7 @@ import type { AuthInfo } from "./AuthInfo";
 import type { BackendEvent } from "./BackendEvent";
 import type { FileList } from "./FileList";
 import type { FullShowState } from "./FullShowState";
+import type { Permissions } from "./Permissions";
+import type { WsError } from "./WsError";
 
-export type WsFeedback = { "type": "hello", "data": { auth: AuthInfo | null, } } | { "type": "authenticated" } | { "type": "event", "data": BackendEvent } | { "type": "assetList", "data": Array<FileList> } | { "type": "fullShowState", "data": FullShowState };
+export type WsFeedback = { "type": "hello", "data": { auth: AuthInfo, } } | { "type": "authenticated", "data": { perm: Permissions, } } | { "type": "event", "data": BackendEvent } | { "type": "assetList", "data": Array<FileList> } | { "type": "fullShowState", "data": FullShowState } | { "type": "error", "data": WsError };

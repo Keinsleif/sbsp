@@ -8,13 +8,16 @@ use mdns_sd::{Error, ServiceDaemon, ServiceEvent};
 use tokio::sync::{RwLock, broadcast, mpsc, oneshot, watch};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use super::{WsCommand, WsFeedback};
+use super::{WsCommand, WsError, WsFeedback};
 use crate::{
     BackendHandle, FullShowState,
-    api::auth::{generate_authentication_string, generate_secret},
+    api::{
+        Permissions,
+        auth::{generate_authentication_string, generate_secret},
+    },
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
-    event::BackendEvent,
+    event::{BackendError, BackendEvent},
     manager::{ModelCommand, ProjectStatus, ShowModelHandle},
     model::ShowModel,
 };
@@ -26,6 +29,7 @@ type ConnectionHandles = (
     broadcast::Sender<BackendEvent>,
     FileListHandle,
     mpsc::Sender<()>,
+    Permissions,
 );
 
 pub async fn create_remote_backend(
@@ -56,21 +60,16 @@ pub async fn create_remote_backend(
 
     let (mut websocket, _) = connect_async(format!("ws://{}/ws", address)).await?;
 
+    let permission;
+
     if let Ok(Some(message)) = websocket.try_next().await {
         if let Message::Text(text) = &message
             && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
             && let WsFeedback::Hello { auth } = feedback
         {
-            let response = if let Some(auth_info) = auth {
-                if let Some(pass) = password {
-                    let secret = generate_secret(&pass, &auth_info.salt);
-                    Some(generate_authentication_string(
-                        &secret,
-                        &auth_info.challenge,
-                    ))
-                } else {
-                    anyhow::bail!("Password is required to connect.")
-                }
+            let response = if let Some(pass) = password {
+                let secret = generate_secret(&pass, &auth.salt);
+                Some(generate_authentication_string(&secret, &auth.challenge))
             } else {
                 None
             };
@@ -90,8 +89,9 @@ pub async fn create_remote_backend(
         if let Ok(Some(message)) = websocket.try_next().await {
             if let Message::Text(text) = &message
                 && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated = feedback
+                && let WsFeedback::Authenticated { perm } = feedback
             {
+                permission = perm;
                 break;
             } else if let Message::Close { .. } = &message {
                 log::info!("WebSocket server sent close message.");
@@ -170,8 +170,34 @@ pub async fn create_remote_backend(
                                             *project_status = full_state.project_status;
                                         }
                                     }
+                                    WsFeedback::Error(error) => {
+                                        match error {
+                                            WsError::AuthenticationFailed => {
+                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                    error: BackendError::Custom {
+                                                        id: 1,
+                                                        message: "Authentication Failed".to_string(),
+                                                    }
+                                                }).is_err() {
+                                                    log::error!("Failed to send BackendEvent to channel.");
+                                                    break;
+                                                }
+                                            },
+                                            WsError::PermissionDenied => {
+                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                    error: BackendError::Custom {
+                                                        id: 2,
+                                                        message: "Permission denied.".to_string(),
+                                                    }
+                                                }).is_err() {
+                                                    log::error!("Failed to send BackendEvent to channel.");
+                                                    break;
+                                                }
+                                            },
+                                        }
+                                    }
                                     WsFeedback::Hello { .. } => {},
-                                    WsFeedback::Authenticated => {},
+                                    WsFeedback::Authenticated { .. } => {},
                                 }
                             } else {
                                 log::error!("Invalid command received.")
@@ -197,7 +223,7 @@ pub async fn create_remote_backend(
                     }
                 }
                 Some(controller_command) = controller_rx.recv() => {
-                    let api_command = WsCommand::Controll(controller_command);
+                    let api_command = WsCommand::Control(controller_command);
                     if let Ok(payload) = serde_json::to_string(&api_command)
                     && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
@@ -262,6 +288,7 @@ pub async fn create_remote_backend(
         event_tx,
         asset_list_handle,
         shutdown_tx,
+        permission,
     ))
 }
 

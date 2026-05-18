@@ -58,7 +58,14 @@
       "status": "状態",
       "stop": "停止",
       "stopped": "停止中",
-      "title": "サーバー管理"
+      "title": "サーバー管理",
+      "connectInfo": "接続情報",
+      "permission": "権限",
+      "permissions": {
+        "control": "操作",
+        "edit": "編集",
+        "read": "読み取り"
+      }
     },
     "settings": {
       "global": {
@@ -279,7 +286,12 @@
     "duration": "長さ",
     "footBar": {
       "cueCountSuffix": "キュー",
-      "processingIndicator": "{size} 個のファイルを処理中"
+      "processingIndicator": "{size} 個のファイルを処理中",
+      "modes": {
+        "edit": "編集",
+        "run": "実行",
+        "view": "表示"
+      }
     },
     "name": "名前",
     "notes": "備考",
@@ -342,7 +354,9 @@
   },
   "notification": {
     "modelLoaded": "正常にロードされました",
-    "modelSaved": "正常に保存されました"
+    "modelSaved": "正常に保存されました",
+    "permissionDenied": "権限がありません",
+    "authenticationFailed": "認証に失敗しました"
   },
   "view": {
     "connect": {

@@ -8,6 +8,7 @@ import type { Easing } from './types/Easing';
 import { side } from './api';
 import { storeToRefs } from 'pinia';
 import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
+import { Permissions } from './types/Permissions';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -310,4 +311,24 @@ export const decibelsToFader = (decibels: number): number => {
   } else {
     return (decibels + 40) / 4 - 25;
   }
+};
+
+const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+export const generateRandomPassword = (): string => {
+  const array = new Uint32Array(16);
+  crypto.getRandomValues(array);
+
+  let password = '';
+  for (let i = 0; i < 16; i++) {
+    password += CHARSET[array[i]! % CHARSET.length];
+  }
+
+  return password;
+};
+
+export const PERMISSIONS = {
+  READ: 1 << 0 as Permissions,
+  CONTROL: 1 << 1 as Permissions,
+  EDIT: 1 << 2 as Permissions,
 };

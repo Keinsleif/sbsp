@@ -66,7 +66,7 @@ pub enum BackendEvent {
     },
 
     OperationFailed {
-        error: UiError,
+        error: BackendError,
     },
 }
 
@@ -143,10 +143,11 @@ pub enum CueStatusEventParam {
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
-pub enum UiError {
+pub enum BackendError {
     FileSave { path: PathBuf, message: String },
     FileLoad { path: PathBuf, message: String },
     CueEdit { message: String },
+    Custom { id: usize, message: String },
 }
 
 #[cfg(not(feature = "type_export"))]

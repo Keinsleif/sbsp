@@ -178,16 +178,16 @@ impl AssetProcessor {
 
     async fn filter_current_assets(&self) {
         let active_paths = self.model_handle.get_all_asset_paths().await;
-        
+
         let mut cache = self.cache.write().await;
         let before_count = cache.entries.len();
-        
+
         cache.entries.retain(|path, _| active_paths.contains(path));
-        
+
         let after_count = cache.entries.len();
         log::info!(
-            "Asset cache filtered. Freed: {}, Remaining: {}", 
-            before_count - after_count, 
+            "Asset cache filtered. Freed: {}, Remaining: {}",
+            before_count - after_count,
             after_count
         );
     }

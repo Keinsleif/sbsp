@@ -9,6 +9,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import type { SupportedHardware } from '../types/SupportedHardware';
+import { Permissions } from '../types/Permissions';
 
 type UnlistenFn = () => void;
 
@@ -98,7 +99,7 @@ export interface IBackendHostAdapter {
 
 export interface IBackendRemoteAdapter {
   // Client Specific
-  isConnected(): Promise<boolean>;
+  isConnected(): Promise<[boolean, Permissions | null]>;
   getServerAddress(): Promise<string | null>;
   connectToServer(address: string, password: string | null): Promise<void>;
   disconnectFromServer(): void;
@@ -106,6 +107,6 @@ export interface IBackendRemoteAdapter {
   stopServerDiscovery(): void;
   requestFileList(): void;
 
-  onConnectionStatusChanged(callback: (isConnected: boolean) => void): Promise<UnlistenFn>;
+  onConnectionStatusChanged(callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn>;
   onFileListUpdate(callback: (fileList: FileList[]) => void): Promise<UnlistenFn>;
 }

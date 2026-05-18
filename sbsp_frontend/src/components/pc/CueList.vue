@@ -303,7 +303,7 @@ const click = (event: MouseEvent, index: number) => {
     table {
       table-layout: fixed;
       font-size: 0.9em;
-      min-width: 920px;
+      min-width: 800px;
     }
     > div {
       scroll-padding-top: 34px;
