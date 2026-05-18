@@ -95,12 +95,6 @@ const services = ref<ServiceEntry[]>([]);
 
 const overlay = ref(false);
 
-const errorHandler = (e: unknown) => {
-  overlay.value = false;
-  console.error(e);
-  uiState.error(`${e}`);
-};
-
 const connect = (host: string, port: string | number) => {
   if (host == '' || port == '') return;
   const address = `${host}:${port}`;
@@ -119,7 +113,11 @@ const connect = (host: string, port: string | number) => {
     }
   }
   overlay.value = true;
-  api.remote?.connectToServer(address, password).catch(errorHandler);
+  api.remote?.connectToServer(address, password).catch((e) => {
+    overlay.value = false;
+    console.error(e);
+    uiState.error(`${e}`);
+  });
 };
 
 let unlisten: (() => void) | null;
