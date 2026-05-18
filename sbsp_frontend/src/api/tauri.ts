@@ -104,7 +104,7 @@ export function useTauriApi(): IBackendAdapter {
               invoke('request_file_list').catch(e => console.error(e));
             },
             onConnectionStatusChanged: function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
-              return listen<[boolean, Permissions]>('connection_status_changed', (event) => {
+              return listen<[boolean, Permissions | null]>('connection_status_changed', (event) => {
                 callback(event.payload[0], event.payload[1]);
               });
             },
