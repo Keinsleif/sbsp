@@ -175,7 +175,7 @@ pub async fn create_remote_backend(
                                             WsError::AuthenticationFailed => {
                                                 if event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
-                                                        id: 0,
+                                                        id: 1,
                                                         message: "Authentication Failed".to_string(),
                                                     }
                                                 }).is_err() {
@@ -186,7 +186,7 @@ pub async fn create_remote_backend(
                                             WsError::PermissionDenied => {
                                                 if event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
-                                                        id: 1,
+                                                        id: 2,
                                                         message: "Permission denied.".to_string(),
                                                     }
                                                 }).is_err() {

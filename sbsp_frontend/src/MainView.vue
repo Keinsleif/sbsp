@@ -152,6 +152,9 @@ onMounted(() => {
             case 'custom':
               switch (event.param.error.id) {
                 case 1:
+                  uiState.error(t('notification.authenticationFailed'));
+                  break;
+                case 2:
                   uiState.error(t('notification.permissionDenied'));
                   break;
                 default:

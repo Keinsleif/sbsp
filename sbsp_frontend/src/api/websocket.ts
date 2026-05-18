@@ -15,6 +15,7 @@ import { useUiState } from '../stores/uistate';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
 import { Permissions } from '../types/Permissions';
+import { BackendError } from '../types/BackendError';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 
@@ -348,14 +349,31 @@ export function useWebsocketApi(): IBackendAdapter {
             websocketApiState.projectStatus = msg.data.projectStatus;
             break;
           case 'error':
+            let error: BackendError = {
+              type: 'custom',
+              id: 0,
+              message: 'Unknown error occured.',
+            };
+            switch (msg.data.type) {
+              case 'permissionDenied':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Permission Denied.',
+                };
+                break;
+              case 'authenticationFailed':
+                error = {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Authentication Failed.',
+                };
+                break;
+            }
             Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
               type: 'operationFailed',
               param: {
-                error: {
-                  type: 'custom',
-                  id: 1,
-                  message: 'Permission Denied.',
-                },
+                error: error,
               },
             }));
             break;

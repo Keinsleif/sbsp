@@ -355,7 +355,8 @@
   "notification": {
     "modelLoaded": "正常にロードされました",
     "modelSaved": "正常に保存されました",
-    "permissionDenied": "権限がありません"
+    "permissionDenied": "権限がありません",
+    "authenticationFailed": "認証に失敗しました"
   },
   "view": {
     "connect": {

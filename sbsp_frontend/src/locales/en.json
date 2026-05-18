@@ -356,7 +356,8 @@
   "notification": {
     "modelLoaded": "Show model loaded.",
     "modelSaved": "Show model saved.",
-    "permissionDenied": "Permission denied."
+    "permissionDenied": "Permission denied.",
+    "authenticationFailed": "Authentication failed."
   },
   "view": {
     "connect": {
