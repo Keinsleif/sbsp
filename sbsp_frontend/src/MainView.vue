@@ -154,6 +154,9 @@ onMounted(() => {
                 case 1:
                   uiState.error(t('notification.permissionDenied'));
                   break;
+                default:
+                  uiState.error(event.param.error.message);
+                  break;
               }
           }
           break;
