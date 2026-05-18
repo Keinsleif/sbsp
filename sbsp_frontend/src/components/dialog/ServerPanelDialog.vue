@@ -272,6 +272,8 @@ const generateServerUrl = async (password: string) => {
     } else {
       server_url.value = `http://${address}/?address=${address}#`;
     }
+  } else {
+    server_url.value = '';
   }
 };
 
