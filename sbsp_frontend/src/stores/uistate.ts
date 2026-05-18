@@ -28,7 +28,7 @@ export const useUiState = defineStore(
     const isBottomTabOpen = ref(true);
     const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
-    const lastUpdateCheckDate = ref<number>(Date.now());
+    const lastUpdateCheckDate = ref<number>(0);
     const success_messages = ref<string[]>([]);
     const error_messages = ref<string[]>([]);
 
