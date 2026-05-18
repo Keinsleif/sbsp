@@ -329,6 +329,6 @@ export const generateRandomPassword = (): string => {
 
 export const PERMISSIONS = {
   READ: 1 << 0 as Permissions,
-  EDIT: 1 << 1 as Permissions,
-  CONTROL: 1 << 2 as Permissions,
+  CONTROL: 1 << 1 as Permissions,
+  EDIT: 1 << 2 as Permissions,
 };
