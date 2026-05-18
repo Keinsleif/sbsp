@@ -19,7 +19,8 @@
         "proTitle": "ライセンスエラー",
         "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。"
       },
-      "removeCue": "キューを削除してもよろしいですか？"
+      "removeCue": "キューを削除してもよろしいですか？",
+      "confirmation": "確認"
     },
     "renumber": {
       "increment": "増分",

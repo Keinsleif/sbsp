@@ -236,6 +236,7 @@ export function useTauriApi(): IBackendAdapter {
     removeCue: async function (cueId: string, confirm_remove: boolean = true) {
       if (confirm_remove) {
         const removeOk = await message(t('dialog.message.removeCue'), {
+          title: t('dialog.message.confirmation'),
           kind: 'warning',
           buttons: 'OkCancel',
         });
