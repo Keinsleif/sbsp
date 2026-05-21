@@ -144,8 +144,9 @@ pub enum CueStatusEventParam {
     rename_all_fields = "camelCase"
 )]
 pub enum BackendError {
-    FileSave { path: PathBuf, message: String },
-    FileLoad { path: PathBuf, message: String },
+    SaveToFile { path: PathBuf, message: String },
+    LoadFromFile { path: PathBuf, message: String },
+    ExportToFolder { path: PathBuf, message: String },
     CueEdit { message: String },
     Custom { id: usize, message: String },
 }

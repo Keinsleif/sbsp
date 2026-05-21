@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -41,14 +41,14 @@ pub enum ModelCommand {
         cue_id: Uuid,
     },
     RemoveCues {
-        cue_ids: Vec<Uuid>,
+        cue_ids: HashSet<Uuid>,
     },
     MoveCue {
         cue_id: Uuid,
         position: InsertPosition,
     },
     MoveCues {
-        cue_ids: Vec<Uuid>,
+        cue_ids: HashSet<Uuid>,
         position: InsertPosition,
     },
 
