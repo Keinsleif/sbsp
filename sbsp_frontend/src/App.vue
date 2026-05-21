@@ -1,15 +1,15 @@
 <template>
   <component :is="connected ? MainView : ConnectView" />
   <update-dialog
-    v-if="target == 'tauri'"
+    v-if="isTauri"
     v-model="uiState.isUpdateDialogOpen"
   />
   <credits-dialog
-    v-if="target == 'tauri'"
+    v-if="isTauri"
     v-model="uiState.isCreditsDialogOpen"
   />
   <license-dialog
-    v-if="side == 'host'"
+    v-if="isHost"
     v-model="uiState.isLicenseDialogOpen"
   />
 </template>
@@ -19,7 +19,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useUiSettings } from './stores/uiSettings';
 import { useI18n } from 'vue-i18n';
 import { useTheme } from 'vuetify';
-import { useApi, side, target } from './api';
+import { useApi } from './api';
 import MainView from './MainView.vue';
 import ConnectView from './ConnectView.vue';
 import { createWindowMenu } from './window-menu';
@@ -29,13 +29,16 @@ import LicenseDialog from './components/dialog/LicenseDialog.vue';
 import { useUiState } from './stores/uistate';
 import { setTheme } from '@tauri-apps/api/app';
 
+const isTauri = __IS_TAURI__;
+const isHost = __IS_HOST__;
+
 const { locale } = useI18n({ useScope: 'global' });
 const windowMenu = createWindowMenu();
 const theme = useTheme();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
 const api = useApi();
-const connected = ref(side != 'remote');
+const connected = ref(__IS_HOST__);
 let unlisten: (() => void) | null = null;
 
 watch(
@@ -45,7 +48,7 @@ watch(
       setLanguage(newSettings.language);
     }
     if (newSettings.darkMode != oldSettings.darkMode) {
-      if (target == 'tauri') {
+      if (__IS_TAURI__) {
         setTheme(newSettings.darkMode == 'system' ? null : newSettings.darkMode);
       } else {
         theme.change(newSettings.darkMode);
@@ -72,13 +75,13 @@ const setLanguage = (language: string | null) => {
 
 onMounted(() => {
   setLanguage(uiSettings.settings.appearance.language);
-  if (target == 'tauri') {
+  if (__IS_TAURI__) {
     setTheme(uiSettings.settings.appearance.darkMode == 'system' ? null : uiSettings.settings.appearance.darkMode);
   } else {
     theme.change(uiSettings.settings.appearance.darkMode);
   }
   windowMenu?.init();
-  if (side == 'remote') {
+  if (__IS_REMOTE__) {
     api.remote
       ?.onConnectionStatusChanged((isConnected, perm) => {
         connected.value = isConnected;

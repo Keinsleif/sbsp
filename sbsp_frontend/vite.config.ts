@@ -26,6 +26,10 @@ export default defineConfig(async () => ({
   ],
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
+    __IS_WEBSOCKET__: JSON.stringify(process.env.VITE_APP_TARGET == 'websocket'),
+    __IS_TAURI__: JSON.stringify(process.env.VITE_APP_TARGET == 'tauri'),
+    __IS_REMOTE__: JSON.stringify(process.env.VITE_APP_TARGET == 'websocket' || process.env.VITE_APP_SIDE == 'remote'),
+    __IS_HOST__: JSON.stringify(process.env.VITE_APP_TARGET != 'websocket' && process.env.VITE_APP_SIDE == 'host'),
   },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

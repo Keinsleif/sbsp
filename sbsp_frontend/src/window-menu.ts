@@ -4,7 +4,7 @@ import { useShowModel } from './stores/showmodel';
 import { i18n } from './i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
-import { useApi, side, target } from './api';
+import { useApi } from './api';
 import { appLogDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
 
@@ -12,7 +12,7 @@ type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
 export const createWindowMenu = () => {
   const api = useApi();
-  if (target != 'tauri') return;
+  if (__IS_WEBSOCKET__) return;
   const { t } = i18n.global;
   const isMacOs = api.isMacOs();
   let connected = api.remote ? false : true;
@@ -78,7 +78,7 @@ export const createWindowMenu = () => {
   };
 
   const updateConnectionStatus = (isConnected: boolean) => {
-    if (side == 'remote') {
+    if (__IS_REMOTE__) {
       connected = isConnected;
       (items.file.disconnect as MenuItem | null)?.setEnabled(connected);
       updateEditMenuItemStats();
@@ -106,7 +106,7 @@ export const createWindowMenu = () => {
 
   const init = async () => {
     let remoteFileMenuItem: (PredefinedMenuItem | MenuItem)[] = [];
-    if (side == 'remote') {
+    if (__IS_REMOTE__) {
       items.file.disconnect = await MenuItem.new({
         id: 'id_disconnect',
         text: t('menu.file.disconnect'),
@@ -126,7 +126,7 @@ export const createWindowMenu = () => {
     items.file.new = await MenuItem.new({
       id: 'id_new',
       text: t('menu.file.new'),
-      enabled: side == 'host',
+      enabled: __IS_HOST__,
       action: () => {
         api.isModified().then((isModified) => {
           if (isModified) {
@@ -167,7 +167,7 @@ export const createWindowMenu = () => {
     items.file.open = await MenuItem.new({
       id: 'id_open',
       text: t('menu.file.open'),
-      enabled: side == 'host',
+      enabled: __IS_HOST__,
       accelerator: isMacOs ? '⌘ + O' : 'Ctrl + O',
       action: () => {
         api.host?.fileOpen();
@@ -177,7 +177,7 @@ export const createWindowMenu = () => {
     items.file.save = await MenuItem.new({
       id: 'id_save',
       text: t('menu.file.save'),
-      enabled: side == 'host',
+      enabled: __IS_HOST__,
       accelerator: isMacOs ? '⌘ + S' : 'Ctrl + S',
       action: () => {
         api.host?.fileSave();
@@ -187,7 +187,7 @@ export const createWindowMenu = () => {
     items.file.saveAs = await MenuItem.new({
       id: 'id_save_as',
       text: t('menu.file.saveAs'),
-      enabled: side == 'host',
+      enabled: __IS_HOST__,
       accelerator: isMacOs ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
       action: () => {
         api.host?.fileSaveAs();
@@ -197,7 +197,7 @@ export const createWindowMenu = () => {
     items.file.exportToFolder = await MenuItem.new({
       id: 'id_export_to_folder',
       text: t('menu.file.exportToFolder'),
-      enabled: side == 'host',
+      enabled: __IS_HOST__,
       action: () => {
         api.host?.exportToFolder();
       },
@@ -400,7 +400,7 @@ export const createWindowMenu = () => {
     });
 
     let mainHelpMenu: (MenuItem | PredefinedMenuItem)[] = [];
-    if (side == 'host') {
+    if (__IS_HOST__) {
       items.help.license = await MenuItem.new({
         id: 'id_license',
         text: t('menu.help.license'),

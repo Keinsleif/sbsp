@@ -66,12 +66,12 @@
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
     <settings-dialog v-model="uiState.isSettingsDialogOpen" />
     <file-list-dialog
-      v-if="side == 'remote'"
+      v-if="!isHost"
       v-model="uiState.fileListResolver"
       :multiple="uiState.fileListOption"
     />
     <server-panel-dialog
-      v-if="side == 'host'"
+      v-if="isHost"
       v-model="uiState.isServerPanelOpen"
     />
   </v-app>
@@ -89,12 +89,14 @@ import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
 import FileListDialog from './components/dialog/FileListDialog.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
-import { useApi, side } from './api';
+import { useApi } from './api';
 import { useDisplay } from 'vuetify/lib/composables/display.mjs';
 import { storeToRefs } from 'pinia';
 import { computed, ref, toRaw, watch } from 'vue';
 import type { Cue } from './types/Cue';
 import { debounce } from './utils';
+
+const isHost = __IS_HOST__;
 
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);

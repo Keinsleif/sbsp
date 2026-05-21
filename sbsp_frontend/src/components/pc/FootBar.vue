@@ -33,7 +33,7 @@
         {{ t('main.footBar.processingIndicator', { size: assetResult.processing.size }) }}
       </div>
       <v-btn
-        v-if="side == 'host'"
+        v-if="isHost"
         :icon="mdiServer"
         size="small"
         variant="text"
@@ -67,10 +67,12 @@ import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side, target } from '../../api';
+import { useApi } from '../../api';
 import { useAssetResult } from '../../stores/assetResult';
 import { computed, onMounted, ref } from 'vue';
 import { check } from '@tauri-apps/plugin-updater';
+
+const isHost = __IS_HOST__;
 
 const { t } = useI18n();
 
@@ -104,7 +106,7 @@ const modes = computed(() => {
 });
 
 onMounted(() => {
-  if (target == 'tauri' && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
+  if (__IS_TAURI__ && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
     check().then((value) => {
       if (value != null) {
         isUpdateAvailable.value = true;

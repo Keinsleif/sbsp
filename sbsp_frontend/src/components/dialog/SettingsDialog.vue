@@ -501,7 +501,7 @@ import { useUiSettings } from '../../stores/uiSettings';
 import type { GlobalHostSettings } from '../../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../../types/GlobalRemoteSettings';
 import { useI18n } from 'vue-i18n';
-import { side, useApi } from '../../api';
+import { useApi } from '../../api';
 import TemplateSettings from './settings/TemplateSettings.vue';
 import { SupportedHardware } from '../../types/SupportedHardware';
 import { useShowState } from '../../stores/showstate';
@@ -624,7 +624,7 @@ onMounted(() => {
 });
 
 const saveSettings = async (): Promise<boolean> => {
-  if (side == 'host' && 'audio' in uiSettings.settings && 'audio' in editingSettings.value.global && !isEqualAudioHardware(editingSettings.value.global.audio, uiSettings.settings.audio)) {
+  if (__IS_HOST__ && 'audio' in uiSettings.settings && 'audio' in editingSettings.value.global && !isEqualAudioHardware(editingSettings.value.global.audio, uiSettings.settings.audio)) {
     const activeIds = Object.keys(showState.activeCues);
     let hasActiveAudioCue = false;
     for (const id of activeIds) {
