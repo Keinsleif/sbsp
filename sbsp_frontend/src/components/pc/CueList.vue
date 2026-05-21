@@ -1,8 +1,9 @@
 <template>
   <v-sheet
     class="d-flex h-100"
-    @paste="pasteHandler"
     @copy="copyHandler"
+    @cut="cutHandler"
+    @paste="pasteHandler"
     tabindex="-1"
   >
     <v-table
@@ -129,6 +130,36 @@
           density="compact"
         >
           <v-btn
+            :text="'Copy Cue'"
+            @click="copy"
+          />
+        </v-list-item>
+        <v-list-item
+          class="px-1"
+          height="40px"
+          density="compact"
+        >
+          <v-btn
+            :text="'Cut Cue'"
+            @click="cut"
+          />
+        </v-list-item>
+        <v-list-item
+          class="px-1"
+          height="40px"
+          density="compact"
+        >
+          <v-btn
+            :text="'Paste Cue'"
+            @click="paste"
+          />
+        </v-list-item>
+        <v-list-item
+          class="px-1"
+          height="40px"
+          density="compact"
+        >
+          <v-btn
             :text="'Delete Cue'"
             @click="contextMenuCueId != null && api.removeCue(contextMenuCueId)"
           />
@@ -155,7 +186,7 @@ import { useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
 import type { Cue } from '../../types/Cue';
 import { v4 } from 'uuid';
-import { cueParser, cueStringify } from '../../typia';
+// import { cueParser, cueStringify } from '../../typia';
 
 const { t } = useI18n();
 const api = useApi();
@@ -201,16 +232,58 @@ const pasteHandler = (e: ClipboardEvent) => {
   if (isUserTyping(e)) return;
 
   let cues: Cue[] = [];
-  if (navigator.clipboard && e.clipboardData) {
-    const rawText = e.clipboardData.getData('application/x-sbsp-cue');
-    if (!rawText) return;
-    cues = cueParser(rawText) || [];
-  } else {
-    cues = internalClipboard.value;
-  }
+  // if (navigator.clipboard && e.clipboardData) {
+  //   const rawText = e.clipboardData.getData('application/x-sbsp-cue');
+  //   if (!rawText) return;
+  //   cues = cueParser(rawText) || [];
+  // } else {
+  //   cues = internalClipboard.value;
+  // }
+  cues = internalClipboard.value;
 
   if (cues.length > 0) {
     e.preventDefault();
+    for (let cue of cues) {
+      cue.id = v4();
+    }
+    api.addCues(cues, uiState.selected, true);
+  }
+};
+
+const cutHandler = (e: ClipboardEvent) => {
+  if (isUserTyping(e)) return;
+  const cues = showModel.getSelectedCues;
+
+  if (cues.length > 0) {
+    e.preventDefault();
+    internalClipboard.value = cues;
+    for (let cue of cues) {
+      api.removeCue(cue.id, false);
+    }
+  }
+};
+
+const copyHandler = (e: ClipboardEvent) => {
+  if (isUserTyping(e)) return;
+  const cues = showModel.getSelectedCues;
+
+  if (cues.length > 0) {
+    e.preventDefault();
+    internalClipboard.value = cues;
+    // if (navigator.clipboard && e.clipboardData) {
+    //   const text = cueStringify(cues);
+    //   if (!text) return;
+    //   e.clipboardData.setData('application/x-sbsp-cue', text);
+    // } else {
+    //   internalClipboard.value = cues;
+    // }
+  }
+};
+
+const paste = () => {
+  let cues = internalClipboard.value;
+
+  if (cues.length > 0) {
     for (let cue of cues) {
       cue.id = v4();
     }
@@ -218,20 +291,21 @@ const pasteHandler = (e: ClipboardEvent) => {
   }
 };
 
-const copyHandler = (e: ClipboardEvent) => {
-  console.log('copied');
-  if (isUserTyping(e)) return;
+const cut = () => {
+  const cues = showModel.getSelectedCues;
+  if (cues.length > 0) {
+    internalClipboard.value = cues;
+    for (let cue of cues) {
+      api.removeCue(cue.id, false);
+    }
+  }
+};
+
+const copy = () => {
   const cues = showModel.getSelectedCues;
 
   if (cues.length > 0) {
-    e.preventDefault();
-    if (navigator.clipboard && e.clipboardData) {
-      const text = cueStringify(cues);
-      if (!text) return;
-      e.clipboardData.setData('application/x-sbsp-cue', text);
-    } else {
-      internalClipboard.value = cues;
-    }
+    internalClipboard.value = cues;
   }
 };
 
