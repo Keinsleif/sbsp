@@ -10,13 +10,13 @@ import { v4 } from 'uuid';
 import type { ServiceEntry } from '../types/ServiceEntry';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import typia from 'typia';
 import { useUiState } from '../stores/uistate';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
 import { Permissions } from '../types/Permissions';
 import { BackendError } from '../types/BackendError';
 import { i18n } from '../i18n';
+import { settingsValidator } from '../typia';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 const { t } = i18n.global;
@@ -196,8 +196,6 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
     group: 'Group',
   },
 };
-
-const settingsValidator = typia.createValidate<GlobalHostSettings | GlobalRemoteSettings>();
 
 type UnlistenFn = () => void;
 

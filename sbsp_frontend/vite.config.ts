@@ -15,7 +15,12 @@ const outDir = process.env.VITE_APP_SIDE
 export default defineConfig(async () => ({
   plugins: [
     vue(),
-    UnpluginTyia({ cache: true }),
+    UnpluginTyia({
+      include: [
+        'src/typia.ts',
+      ],
+      cache: true,
+    }),
     vuetify({
       styles: {
         configFile: 'src/styles/settings.scss',
