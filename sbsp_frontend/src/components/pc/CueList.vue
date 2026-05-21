@@ -1,5 +1,10 @@
 <template>
-  <v-sheet class="d-flex h-100">
+  <v-sheet
+    class="d-flex h-100"
+    @paste="pasteHandler"
+    @copy="copyHandler"
+    tabindex="-1"
+  >
     <v-table
       fixed-header
       density="compact"
@@ -148,6 +153,9 @@ import { useI18n } from 'vue-i18n';
 import { throttle } from 'vuetify/lib/util/throttle.mjs';
 import { useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
+import type { Cue } from '../../types/Cue';
+import { v4 } from 'uuid';
+import { cueParser, cueStringify } from '../../typia';
 
 const { t } = useI18n();
 const api = useApi();
@@ -160,10 +168,70 @@ const cueListItemRefs = useTemplateRef('cuelistItem');
 const isContextMenuOpen = ref(false);
 const contextMenuCueId = ref<string | null>(null);
 const contextMenuPosition = ref<[number, number] | null>(null);
+const internalClipboard = ref<Cue[]>([]);
 
 const scrollIntoIndex = (index: number) => {
   if (cueListItemRefs.value != null) {
     cueListItemRefs.value[index]?.$el.scrollIntoView({ block: 'nearest' });
+  }
+};
+
+const isUserTyping = (e: ClipboardEvent): boolean => {
+  const target = (e.target || document.activeElement) as HTMLElement | null;
+  if (!target) return false;
+
+  const tagName = target.tagName.toUpperCase();
+
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+    return true;
+  }
+
+  if (target.closest('input, textarea')) {
+    return true;
+  }
+
+  if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
+    return true;
+  }
+
+  return false;
+};
+
+const pasteHandler = (e: ClipboardEvent) => {
+  if (isUserTyping(e)) return;
+
+  let cues: Cue[] = [];
+  if (navigator.clipboard && e.clipboardData) {
+    const rawText = e.clipboardData.getData('application/x-sbsp-cue');
+    if (!rawText) return;
+    cues = cueParser(rawText) || [];
+  } else {
+    cues = internalClipboard.value;
+  }
+
+  if (cues.length > 0) {
+    e.preventDefault();
+    for (let cue of cues) {
+      cue.id = v4();
+    }
+    api.addCues(cues, uiState.selected, false);
+  }
+};
+
+const copyHandler = (e: ClipboardEvent) => {
+  console.log('copied');
+  if (isUserTyping(e)) return;
+  const cues = showModel.getSelectedCues;
+
+  if (cues.length > 0) {
+    e.preventDefault();
+    if (navigator.clipboard && e.clipboardData) {
+      const text = cueStringify(cues);
+      if (!text) return;
+      e.clipboardData.setData('application/x-sbsp-cue', text);
+    } else {
+      internalClipboard.value = cues;
+    }
   }
 };
 

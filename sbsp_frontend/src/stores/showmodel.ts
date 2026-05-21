@@ -90,6 +90,10 @@ export const useShowModel = defineStore('showmodel', {
         return this.flatCueList.find(entry => entry.cue.id == cue_id)?.cue;
       };
     },
+    getSelectedCues(): Cue[] {
+      const uiState = useUiState();
+      return this.flatCueList.filter(entry => uiState.selectedRows.includes(entry.cue.id)).map(entry => entry.cue);
+    },
     flatCueList(state) {
       const uiState = useUiState();
       return recursiveCueCheck(state.cues, uiState.expandedRows);
