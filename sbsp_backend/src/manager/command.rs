@@ -40,8 +40,15 @@ pub enum ModelCommand {
     RemoveCue {
         cue_id: Uuid,
     },
+    RemoveCues {
+        cue_ids: Vec<Uuid>,
+    },
     MoveCue {
         cue_id: Uuid,
+        position: InsertPosition,
+    },
+    MoveCues {
+        cue_ids: Vec<Uuid>,
         position: InsertPosition,
     },
 
