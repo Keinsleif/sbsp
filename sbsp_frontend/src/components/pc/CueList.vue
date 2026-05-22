@@ -185,7 +185,6 @@ import { throttle } from 'vuetify/lib/util/throttle.mjs';
 import { useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
 import type { Cue } from '../../types/Cue';
-import { v4 } from 'uuid';
 // import { cueParser, cueStringify } from '../../typia';
 
 const { t } = useI18n();
@@ -243,9 +242,6 @@ const pasteHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    for (let cue of cues) {
-      cue.id = v4();
-    }
     api.addCues(cues, uiState.selected, true);
   }
 };
@@ -282,9 +278,6 @@ const paste = () => {
   let cues = internalClipboard.value;
 
   if (cues.length > 0) {
-    for (let cue of cues) {
-      cue.id = v4();
-    }
     api.addCues(cues, uiState.selected, false);
   }
 };

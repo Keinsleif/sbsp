@@ -4,7 +4,6 @@ import type { ShowModel } from '../types/ShowModel';
 import type { Cue } from '../types/Cue';
 import { useUiState } from './uistate';
 import { useUiSettings } from './uiSettings';
-import { v4 } from 'uuid';
 import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
@@ -129,7 +128,6 @@ export const useShowModel = defineStore('showmodel', {
         .then((assets) => {
           if (assets.length == 1) {
             const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
-            newCue.id = v4();
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0]!;
             }
@@ -138,7 +136,6 @@ export const useShowModel = defineStore('showmodel', {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
               const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
-              newCue.id = v4();
               if (newCue.params.type == 'audio') {
                 newCue.params.target = asset_path;
               }
@@ -154,7 +151,6 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      newCue.id = v4();
       api.addCue(newCue, uiState.selected, false);
     },
     addEmptyFadeCue() {
@@ -162,7 +158,6 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
-      newCue.id = v4();
       if (newCue.params.type == 'fade' && uiState.selected != null) {
         const targetCue = this.getCueById(uiState.selected);
         if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
@@ -193,7 +188,6 @@ export const useShowModel = defineStore('showmodel', {
           newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
           break;
       }
-      newCue.id = v4();
       const targetCue = this.cues.find(cue => cue.id == uiState.selected);
       if (
         targetCue != null
@@ -212,7 +206,6 @@ export const useShowModel = defineStore('showmodel', {
       const showModel = useShowModel();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
-      newCue.id = v4();
       if (newCue.params.type == 'group') {
         for (const item of showModel.flatCueList) {
           if (uiState.selectedRows.has(item.cue.id)) {
