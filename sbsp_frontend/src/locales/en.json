@@ -285,7 +285,14 @@
       "doNotChain": "DoNotChain",
       "title": "Continue Mode"
     },
-    "cueList": {},
+    "cueList": {
+      "contextMenu": {
+        "copy": "Copy",
+        "cut": "Cut",
+        "paste": "Paste",
+        "delete": "Delete"
+      }
+    },
     "duration": "Duration",
     "footBar": {
       "cueCountSuffix": "cues",

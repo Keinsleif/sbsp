@@ -309,6 +309,14 @@
       "list": "リスト",
       "controls": "操作",
       "active": "実行中"
+    },
+    "cueList": {
+      "contextMenu": {
+        "copy": "コピー",
+        "cut": "カット",
+        "delete": "削除",
+        "paste": "貼り付け"
+      }
     }
   },
   "menu": {

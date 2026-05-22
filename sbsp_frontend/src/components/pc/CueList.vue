@@ -126,7 +126,7 @@
         @contextmenu.prevent
       >
         <v-list-item
-          :title="'Copy Cue'"
+          :title="t('main.cueList.contextMenu.copy')"
           density="compact"
           :disabled="uiState.mode != 'edit'"
           :prepend-icon="mdiContentCopy"
@@ -134,14 +134,14 @@
         />
         <v-list-item
           density="compact"
-          :title="'Cut Cue'"
+          :title="t('main.cueList.contextMenu.cut')"
           :disabled="uiState.mode != 'edit'"
           :prepend-icon="mdiContentCut"
           @click="cut"
         />
         <v-list-item
           density="compact"
-          :title="'Paste Cue'"
+          :title="t('main.cueList.contextMenu.paste')"
           :disabled="uiState.mode != 'edit'"
           :prepend-icon="mdiContentPaste"
           @click="paste"
@@ -149,7 +149,7 @@
         <v-divider />
         <v-list-item
           density="compact"
-          :title="'Delete Cue'"
+          :title="t('main.cueList.contextMenu.delete')"
           :disabled="uiState.mode != 'edit'"
           :prepend-icon="mdiTrashCan"
           @click="api.removeCues(Array.from(uiState.selectedRows))"
