@@ -98,7 +98,7 @@
           @dragover="dragOver($event, i)"
           @dragend="dragEnd"
           @drop="drop($event, i)"
-          @pointerdown.stop="click($event, i)"
+          @click.stop="click($event, i)"
           @contextmenu.prevent="
             contextMenuPosition = [$event.clientX, $event.clientY];
             contextMenuCueId = item.cue.id;
@@ -396,14 +396,15 @@ const drop = (event: DragEvent, index: number) => {
     if (fromIndex === index) {
       return;
     }
-    const srcCueId = showModel.flatCueList[fromIndex]?.cue.id;
-    if (srcCueId == undefined) return;
+    console.log(uiState.selectedRows);
+    // const srcCueId = showModel.flatCueList[fromIndex]?.cue.id;
+    // if (srcCueId == undefined) return;
     if (index < showModel.flatCueList.length) {
       const targetId = showModel.flatCueList[index]?.cue.id;
       if (targetId == null) return;
-      api.moveCue(srcCueId, targetId);
+      api.moveCues(Array.from(uiState.selectedRows), { type: 'before', target: targetId });
     } else {
-      api.moveCue(srcCueId, null);
+      api.moveCues(Array.from(uiState.selectedRows), { type: 'last' });
     }
     // showModel.moveCue(cue_id, newIndex);
   }
