@@ -79,10 +79,9 @@ impl ShowModelManager {
     async fn process_command(&self, command: ModelCommand) {
         log::debug!("Model Manager received command: {:?}", command);
         match command {
-            ModelCommand::UpdateCue(cue) => {
+            ModelCommand::UpdateCue(mut cue) => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut new_cue = cue.clone();
-                if let CueParam::Audio(audio_param) = &mut new_cue.params
+                if let CueParam::Audio(audio_param) = &mut cue.params
                     && let Some(model_path) = model_path_option.as_ref()
                     && self.copy_assets_when_add
                 {
@@ -101,7 +100,7 @@ impl ShowModelManager {
                         audio_param.target = target;
                     } // ignore failed to import asset. use absolute path
                 }
-                if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
+                if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit { message: format!("Failed to update cue, {}.", e) }
                     }) {
@@ -118,7 +117,14 @@ impl ShowModelManager {
             }
             ModelCommand::AddCue { mut cue, position } => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                cue.id = Uuid::new_v4();
+                if self.is_cue_exists(&cue.id).await {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit { message: "Failed to add cue, id already exists.".into() }
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                    return;
+                }
                 if let CueParam::Audio(audio_param) = &mut cue.params
                     && let Some(model_path) = model_path_option.as_ref()
                     && self.copy_assets_when_add
@@ -156,7 +162,14 @@ impl ShowModelManager {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
 
                 for cue in cues.iter_mut() {
-                    cue.id = Uuid::new_v4();
+                    if self.is_cue_exists(&cue.id).await {
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueEdit { message: "Failed to add cue, id already exists.".into() }
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
+                        }
+                        continue;
+                    }
                     if let CueParam::Audio(audio_param) = &mut cue.params
                         && let Some(model_path) = model_path_option.as_ref()
                         && self.copy_assets_when_add
@@ -522,6 +535,24 @@ impl ShowModelManager {
     #[cfg(test)]
     pub async fn write(&self) -> tokio::sync::RwLockWriteGuard<'_, ShowModel> {
         self.model.write().await
+    }
+
+    async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
+        let model = self.read().await;
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if cue.id == *cue_id {
+                return true;
+            }
+
+            if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        false
     }
 
     async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
