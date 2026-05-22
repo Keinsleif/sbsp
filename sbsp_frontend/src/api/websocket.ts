@@ -532,6 +532,7 @@ export function useWebsocketApi(): IBackendAdapter {
       this.sendCommand({ type: 'model', command: 'updateCue', params: cue });
     },
     addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+      cue.id = v4();
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({

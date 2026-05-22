@@ -230,6 +230,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('update_cue', { cue: cue });
     },
     addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+      cue.id = v4();
       await invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore });
       return cue.id;
     },
