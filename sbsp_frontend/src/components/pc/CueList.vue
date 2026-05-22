@@ -361,6 +361,7 @@ useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
+  uiState.selectedRows.clear();
   showModel.flatCueList.filter(item => !item.isHidden).forEach(value => uiState.selectedRows.add(value.cue.id));
 });
 
