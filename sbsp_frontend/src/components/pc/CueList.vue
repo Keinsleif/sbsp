@@ -1,6 +1,7 @@
 <template>
   <v-sheet
     class="d-flex h-100"
+    :class="$style['cuelist-wrapper']"
     @copy="copyHandler"
     @cut="cutHandler"
     @paste="pasteHandler"
@@ -100,9 +101,10 @@
           @drop="drop($event, i)"
           @click.stop="click($event, i)"
           @contextmenu.prevent="
-            contextMenuPosition = [$event.clientX, $event.clientY];
-            contextMenuCueId = item.cue.id;
-            isContextMenuOpen = true;
+            if (uiState.mode == 'edit') {
+              contextMenuPosition = [$event.clientX, $event.clientY];
+              isContextMenuOpen = true;
+            }
           "
         />
         <tr
@@ -121,49 +123,37 @@
     >
       <v-list
         density="compact"
-        class="pa-0 border"
         @contextmenu.prevent
       >
         <v-list-item
-          class="px-1"
-          height="40px"
+          :title="'Copy Cue'"
           density="compact"
-        >
-          <v-btn
-            :text="'Copy Cue'"
-            @click="copy"
-          />
-        </v-list-item>
+          :disabled="uiState.mode != 'edit'"
+          :prepend-icon="mdiContentCopy"
+          @click="copy"
+        />
         <v-list-item
-          class="px-1"
-          height="40px"
           density="compact"
-        >
-          <v-btn
-            :text="'Cut Cue'"
-            @click="cut"
-          />
-        </v-list-item>
+          :title="'Cut Cue'"
+          :disabled="uiState.mode != 'edit'"
+          :prepend-icon="mdiContentCut"
+          @click="cut"
+        />
         <v-list-item
-          class="px-1"
-          height="40px"
           density="compact"
-        >
-          <v-btn
-            :text="'Paste Cue'"
-            @click="paste"
-          />
-        </v-list-item>
+          :title="'Paste Cue'"
+          :disabled="uiState.mode != 'edit'"
+          :prepend-icon="mdiContentPaste"
+          @click="paste"
+        />
+        <v-divider />
         <v-list-item
-          class="px-1"
-          height="40px"
           density="compact"
-        >
-          <v-btn
-            :text="'Delete Cue'"
-            @click="api.removeCues(Array.from(uiState.selectedRows))"
-          />
-        </v-list-item>
+          :title="'Delete Cue'"
+          :disabled="uiState.mode != 'edit'"
+          :prepend-icon="mdiTrashCan"
+          @click="api.removeCues(Array.from(uiState.selectedRows))"
+        />
       </v-list>
     </v-menu>
   </v-sheet>
@@ -176,7 +166,11 @@ import {
   mdiAlphaEBoxOutline,
   mdiAlphaRBoxOutline,
   mdiChevronDoubleDown,
+  mdiContentCopy,
+  mdiContentCut,
+  mdiContentPaste,
   mdiRepeat,
+  mdiTrashCan,
 } from '@mdi/js';
 import { useUiState } from '../../stores/uistate';
 import { useHotkey } from 'vuetify';
@@ -196,7 +190,6 @@ const uiState = useUiState();
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
 const isContextMenuOpen = ref(false);
-const contextMenuCueId = ref<string | null>(null);
 const contextMenuPosition = ref<[number, number] | null>(null);
 const internalClipboard = ref<Cue[]>([]);
 
@@ -463,6 +456,9 @@ const click = (event: MouseEvent, index: number) => {
 </script>
 
 <style lang="css" module>
+  .cuelist-wrapper:focus {
+    outline: none;
+  }
   .cuelist {
     table {
       table-layout: fixed;
