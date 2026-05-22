@@ -257,9 +257,7 @@ const cutHandler = (e: ClipboardEvent) => {
   if (cues.length > 0) {
     e.preventDefault();
     internalClipboard.value = cues;
-    for (let cue of cues) {
-      api.removeCue(cue.id, false);
-    }
+    api.removeCues(cues.map(cue => cue.id), false);
   }
 };
 
@@ -295,9 +293,7 @@ const cut = () => {
   const cues = showModel.getSelectedCues;
   if (cues.length > 0) {
     internalClipboard.value = cues;
-    for (let cue of cues) {
-      api.removeCue(cue.id, false);
-    }
+    api.removeCues(cues.map(cue => cue.id), false);
   }
 };
 
@@ -372,14 +368,12 @@ useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
-  uiState.selectedRows = showModel.flatCueList.filter(item => !item.isHidden).map(item => item.cue.id);
+  showModel.flatCueList.filter(item => !item.isHidden).forEach(value => uiState.selectedRows.add(value.cue.id));
 });
 
 useHotkey('cmd+backspace', () => {
   if (uiState.mode == 'edit') {
-    for (const row of uiState.selectedRows) {
-      api.removeCue(row);
-    }
+    api.removeCues(Array.from(uiState.selectedRows));
   }
 });
 
@@ -430,19 +424,19 @@ const click = (event: MouseEvent, index: number) => {
   if (clickedId == null) return;
   if (event.shiftKey) {
     if (uiState.selected != null) {
-      uiState.selectedRows = [];
+      uiState.selectedRows.clear();
       const prevIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected);
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
           const targetCueId = showModel.flatCueList[i]?.cue.id;
           if (targetCueId == null) continue;
-          uiState.selectedRows.push(targetCueId);
+          uiState.selectedRows.add(targetCueId);
         }
       } else {
         for (let i = index; i <= prevIndex; i++) {
           const targetCueId = showModel.flatCueList[i]?.cue.id;
           if (targetCueId == null) continue;
-          uiState.selectedRows.push(targetCueId);
+          uiState.selectedRows.add(targetCueId);
         }
       }
       uiState.selected = clickedId;
@@ -452,8 +446,8 @@ const click = (event: MouseEvent, index: number) => {
     }
   } else if (event.ctrlKey) {
     if (uiState.selected != null) {
-      if (uiState.selectedRows.includes(clickedId)) {
-        uiState.removeFromSelected(clickedId);
+      if (uiState.selectedRows.has(clickedId)) {
+        uiState.removeFromSelected([clickedId]);
       } else {
         uiState.addSelected(clickedId);
       }

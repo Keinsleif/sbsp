@@ -237,9 +237,7 @@ export const createWindowMenu = () => {
       accelerator: isMacOs ? '⌘ + ⌫' : 'Ctrl + Backspace',
       action: () => {
         const uiState = useUiState();
-        for (const row of uiState.selectedRows) {
-          api.removeCue(row);
-        }
+        api.removeCues(Array.from(uiState.selectedRows));
       },
     });
 
@@ -251,7 +249,7 @@ export const createWindowMenu = () => {
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
-        uiState.selectedRows = showModel.flatCueList.filter(item => !item.isHidden).map(item => item.cue.id);
+        showModel.flatCueList.filter(item => !item.isHidden).forEach(item => uiState.selectedRows.add(item.cue.id));
       },
     });
 

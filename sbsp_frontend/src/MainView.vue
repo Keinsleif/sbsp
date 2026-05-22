@@ -81,12 +81,13 @@ onMounted(() => {
               if (uiState.selected != cueId) {
                 uiState.selected = cueId;
                 uiState.expandToVisible(cueId);
-                if (!uiState.selectedRows.includes(cueId)) {
-                  uiState.selectedRows = [cueId];
+                if (!uiState.selectedRows.has(cueId)) {
+                  uiState.selectedRows.clear();
+                  uiState.selectedRows.add(cueId);
                 }
               }
             } else {
-              uiState.selectedRows = [];
+              uiState.selectedRows.clear();
               uiState.selected = null;
             }
           }
@@ -108,9 +109,7 @@ onMounted(() => {
           api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'cueRemoved':
-          if (uiState.selectedRows.includes(event.param.cueId)) {
-            uiState.removeFromSelected(event.param.cueId);
-          }
+          uiState.removeFromSelected(event.param.cueIds);
           break;
         case 'cueListUpdated':
           showModel.$patch({ cues: event.param.cues });
@@ -140,10 +139,13 @@ onMounted(() => {
         case 'operationFailed':
           console.error(event.param.error);
           switch (event.param.error.type) {
-            case 'fileLoad':
+            case 'saveToFile':
               uiState.error(event.param.error.message);
               break;
-            case 'fileSave':
+            case 'loadFromFile':
+              uiState.error(event.param.error.message);
+              break;
+            case 'exportToFolder':
               uiState.error(event.param.error.message);
               break;
             case 'cueEdit':
@@ -206,12 +208,13 @@ onMounted(() => {
           if (uiState.selected != cueId) {
             uiState.selected = cueId;
             uiState.expandToVisible(cueId);
-            if (!uiState.selectedRows.includes(cueId)) {
-              uiState.selectedRows = [cueId];
+            if (!uiState.selectedRows.has(cueId)) {
+              uiState.selectedRows.clear();
+              uiState.selectedRows.add(cueId);
             }
           }
         } else {
-          uiState.selectedRows = [];
+          uiState.selectedRows.clear();
           uiState.selected = null;
         }
       }

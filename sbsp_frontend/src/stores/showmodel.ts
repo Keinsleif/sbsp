@@ -92,7 +92,7 @@ export const useShowModel = defineStore('showmodel', {
     },
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
-      return this.flatCueList.filter(entry => uiState.selectedRows.includes(entry.cue.id)).map(entry => entry.cue);
+      return this.flatCueList.filter(entry => uiState.selectedRows.has(entry.cue.id)).map(entry => entry.cue);
     },
     flatCueList(state) {
       const uiState = useUiState();
@@ -215,7 +215,7 @@ export const useShowModel = defineStore('showmodel', {
       newCue.id = v4();
       if (newCue.params.type == 'group') {
         for (const item of showModel.flatCueList) {
-          if (uiState.selectedRows.includes(item.cue.id)) {
+          if (uiState.selectedRows.has(item.cue.id)) {
             newCue.params.children.push(item.cue);
           }
         }

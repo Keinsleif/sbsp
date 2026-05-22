@@ -153,7 +153,7 @@ const props = defineProps<{
   isDragOver: boolean;
 }>();
 
-const isSelected = computed(() => uiState.selectedRows.includes(props.item.cue.id));
+const isSelected = computed(() => uiState.selectedRows.has(props.item.cue.id));
 const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
 const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
