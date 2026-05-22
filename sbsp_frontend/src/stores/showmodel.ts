@@ -203,19 +203,12 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyGroupCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      const showModel = useShowModel();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type == 'group') {
-        for (const item of showModel.flatCueList) {
-          if (uiState.selectedRows.has(item.cue.id)) {
-            newCue.params.children.push(item.cue);
-          }
-        }
-        for (const cue of newCue.params.children) {
-          api.removeCue(cue.id, false);
-        }
-        api.addCue(newCue, null, false);
+        api.addCue(newCue, null, false).then((id) => {
+          api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0});
+        });
       }
     },
   },
