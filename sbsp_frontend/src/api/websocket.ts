@@ -13,8 +13,9 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import { useUiState } from '../stores/uistate';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
-import { Permissions } from '../types/Permissions';
-import { BackendError } from '../types/BackendError';
+import type { Permissions } from '../types/Permissions';
+import type { BackendError } from '../types/BackendError';
+import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
 import { settingsValidator } from '../typia';
 
@@ -530,7 +531,7 @@ export function useWebsocketApi(): IBackendAdapter {
     updateCue: async function (cue: Cue): Promise<void> {
       this.sendCommand({ type: 'model', command: 'updateCue', params: cue });
     },
-    addCue: function (cue: Cue, targetId: string | null, toBefore: boolean): void {
+    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -552,8 +553,10 @@ export function useWebsocketApi(): IBackendAdapter {
           params: { cue: cue, position: { type: 'last' } },
         });
       }
+      return cue.id;
     },
-    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void> {
+    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
+      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -575,6 +578,7 @@ export function useWebsocketApi(): IBackendAdapter {
           params: { cues: cues, position: { type: 'last' } },
         });
       }
+      return cueIds;
     },
     removeCue: async function (cueId: string, confirm_remove: boolean = true): Promise<void> {
       if (confirm_remove) {
@@ -594,35 +598,19 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds }})
     },
-    moveCue: async function (cueId: string, targetId: string | null): Promise<void> {
-      if (targetId != null) {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCue',
-          params: { cueId: cueId, position: { type: 'before', target: targetId } },
-        });
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCue',
-          params: { cueId: cueId, position: { type: 'last' } },
-        });
-      }
+    moveCue: async function (cueId: string, position: InsertPosition): Promise<void> {
+      this.sendCommand({
+        type: 'model',
+        command: 'moveCue',
+        params: { cueId: cueId, position: position },
+      });
     },
-    moveCues: async function (cueIds: string[], targetId: string | null): Promise<void> {
-      if (targetId != null) {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCues',
-          params: { cueIds, position: { type: 'before', target: targetId } },
-        });
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCues',
-          params: { cueIds, position: { type: 'last' } },
-        });
-      }
+    moveCues: async function (cueIds: string[], position: InsertPosition): Promise<void> {
+      this.sendCommand({
+        type: 'model',
+        command: 'moveCues',
+        params: { cueIds, position: position },
+      });
     },
     renumberCues: async function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       this.sendCommand({

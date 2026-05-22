@@ -115,44 +115,28 @@ pub async fn remove_cues(state: tauri::State<'_, AppState>, cue_ids: HashSet<Uui
 pub async fn move_cue(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
-    target_id: Option<Uuid>,
+    position: InsertPosition,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    if let Some(target) = target_id {
-        handle
-            .model_handle
-            .move_cue(cue_id, InsertPosition::Before { target })
-            .await
-            .map_err(|e| e.to_string())
-    } else {
-        handle
-            .model_handle
-            .move_cue(cue_id, InsertPosition::Last)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    handle
+        .model_handle
+        .move_cue(cue_id, position)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn move_cues(
     state: tauri::State<'_, AppState>,
     cue_ids: HashSet<Uuid>,
-    target_id: Option<Uuid>,
+    position: InsertPosition,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    if let Some(target) = target_id {
-        handle
-            .model_handle
-            .move_cues(cue_ids, InsertPosition::Before { target })
-            .await
-            .map_err(|e| e.to_string())
-    } else {
-        handle
-            .model_handle
-            .move_cues(cue_ids, InsertPosition::Last)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    handle
+        .model_handle
+        .move_cues(cue_ids, position)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
