@@ -99,8 +99,9 @@ impl CueController {
                                 log::error!("Failed to stop active cues before load. {}", e);
                             }
                         },
-                        BackendEvent::CueRemoved{cue_id} => {
-                            if self.state_tx.borrow().playback_cursor.eq(&Some(cue_id)) {
+                        BackendEvent::CueRemoved{cue_ids} => {
+                            let state = self.state_tx.borrow().clone();
+                            if let Some(cursor) = state.playback_cursor && cue_ids.contains(&cursor) {
                                 let model = self.model_handle.read().await;
                                 if let Some(first_cue) = model.cues.first() {
                                     self.state_tx.send_modify(|state| {
@@ -112,12 +113,14 @@ impl CueController {
                                     });
                                 }
                             }
-                            if self.state_tx.borrow().active_cues.contains_key(&cue_id) {
-                                if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
-                                    log::error!("Failed to stop removed cue. {}", e);
-                                }
-                                if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(cue_id)).await {
-                                    log::error!("Failed to stop removed cue. {}", e);
+                            for rm_id in cue_ids {
+                                if state.active_cues.contains_key(&rm_id) {
+                                    if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
+                                        log::error!("Failed to stop removed cue. {}", e);
+                                    }
+                                    if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
+                                        log::error!("Failed to stop removed cue. {}", e);
+                                    }
                                 }
                             }
                         }

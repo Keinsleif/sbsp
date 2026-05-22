@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -43,7 +43,7 @@ pub enum BackendEvent {
         model: ShowModel,
     },
     CueRemoved {
-        cue_id: Uuid,
+        cue_ids: HashSet<Uuid>,
     },
     CueListUpdated {
         cues: Vec<Cue>,
