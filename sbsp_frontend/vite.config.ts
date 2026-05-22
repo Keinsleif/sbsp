@@ -53,7 +53,7 @@ export default defineConfig({
         }
       : undefined,
   },
-  envPrefix: ['VITE_', 'TAURI_ENV_*'],
+  envPrefix: ['VITE_', 'TAURI_ENV_'],
   build: {
     outDir: outDir,
     rollupOptions: {
