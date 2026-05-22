@@ -70,8 +70,20 @@ impl ShowModelHandle {
         Ok(())
     }
 
+    pub async fn remove_cues(&self, cue_ids: HashSet<Uuid>) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::RemoveCues { cue_ids })
+            .await?;
+        Ok(())
+    }
+
     pub async fn move_cue(&self, cue_id: Uuid, position: InsertPosition) -> anyhow::Result<()> {
         self.send_command(ModelCommand::MoveCue { cue_id, position })
+            .await?;
+        Ok(())
+    }
+
+    pub async fn move_cues(&self, cue_ids: HashSet<Uuid>, position: InsertPosition) -> anyhow::Result<()> {
+        self.send_command(ModelCommand::MoveCues { cue_ids, position })
             .await?;
         Ok(())
     }

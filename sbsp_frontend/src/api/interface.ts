@@ -58,7 +58,9 @@ export interface IBackendAdapter {
   addCue(cue: Cue, targetId: string | null, toBefore: boolean): void;
   addCues(cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void>;
   removeCue(cueId: string, confirm_remove?: boolean): Promise<void>;
+  removeCues(cueIds: string[], confirm_remove?: boolean): Promise<void>;
   moveCue(cueId: string, targetId: string | null): Promise<void>;
+  moveCues(cueIds: string[], targetId: string | null): Promise<void>;
   renumberCues(cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void>;
   updateModelName(newName: string): Promise<void>;
   updateShowSettings(newSettings: ShowSettings): Promise<void>;

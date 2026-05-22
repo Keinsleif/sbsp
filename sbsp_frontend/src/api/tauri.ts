@@ -246,8 +246,24 @@ export function useTauriApi(): IBackendAdapter {
       }
       await invoke('remove_cue', { cueId: cueId });
     },
+    removeCues: async function (cueIds: string[], confirm_remove: boolean = true) {
+      if (confirm_remove) {
+        const removeOk = await message(t('dialog.message.removeCue'), {
+          title: t('dialog.message.confirmation'),
+          kind: 'warning',
+          buttons: 'OkCancel',
+        });
+        if (removeOk != 'Ok') {
+          return;
+        }
+      }
+      await invoke('remove_cues', { cueIds: cueIds });
+    },
     moveCue: function (cueId: string, targetId: string | null): Promise<void> {
       return invoke('move_cue', { cueId: cueId, targetId: targetId });
+    },
+    moveCues: function (cueIds: string[], targetId: string | null): Promise<void> {
+      return invoke('move_cues', { cueIds: cueIds, targetId: targetId });
     },
     renumberCues: function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       return invoke('renumber_cues', { cues, startFrom, increment, prefix, suffix });

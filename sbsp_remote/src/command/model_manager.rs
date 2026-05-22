@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::AppState;
 use sbsp_backend::{
     manager::InsertPosition,
@@ -109,6 +111,19 @@ pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
+pub async fn remove_cues(state: tauri::State<'_, AppState>, cue_ids: HashSet<Uuid>) -> Result<(), String> {
+    if let Some(handle) = state.get_handle().await {
+        handle
+            .model_handle
+            .remove_cues(cue_ids)
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Err("Not connected.".into())
+    }
+}
+
+#[tauri::command]
 pub async fn move_cue(
     state: tauri::State<'_, AppState>,
     cue_id: Uuid,
@@ -125,6 +140,31 @@ pub async fn move_cue(
             handle
                 .model_handle
                 .move_cue(cue_id, InsertPosition::Last)
+                .await
+                .map_err(|e| e.to_string())
+        }
+    } else {
+        Err("Not connected.".into())
+    }
+}
+
+#[tauri::command]
+pub async fn move_cues(
+    state: tauri::State<'_, AppState>,
+    cue_ids: HashSet<Uuid>,
+    target_id: Option<Uuid>,
+) -> Result<(), String> {
+    if let Some(handle) = state.get_handle().await {
+        if let Some(target) = target_id {
+            handle
+                .model_handle
+                .move_cues(cue_ids, InsertPosition::Before { target })
+                .await
+                .map_err(|e| e.to_string())
+        } else {
+            handle
+                .model_handle
+                .move_cues(cue_ids, InsertPosition::Last)
                 .await
                 .map_err(|e| e.to_string())
         }

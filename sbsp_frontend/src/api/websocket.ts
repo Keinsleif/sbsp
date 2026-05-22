@@ -585,6 +585,15 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       this.sendCommand({ type: 'model', command: 'removeCue', params: { cueId: cueId } });
     },
+    removeCues: async function (cueIds: string[], confirm_remove: boolean = true): Promise<void> {
+      if (confirm_remove) {
+        const removeOk = confirm(t('dialog.message.removeCue'));
+        if (!removeOk) {
+          return;
+        }
+      }
+      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds }})
+    },
     moveCue: async function (cueId: string, targetId: string | null): Promise<void> {
       if (targetId != null) {
         this.sendCommand({
@@ -597,6 +606,21 @@ export function useWebsocketApi(): IBackendAdapter {
           type: 'model',
           command: 'moveCue',
           params: { cueId: cueId, position: { type: 'last' } },
+        });
+      }
+    },
+    moveCues: async function (cueIds: string[], targetId: string | null): Promise<void> {
+      if (targetId != null) {
+        this.sendCommand({
+          type: 'model',
+          command: 'moveCues',
+          params: { cueIds, position: { type: 'before', target: targetId } },
+        });
+      } else {
+        this.sendCommand({
+          type: 'model',
+          command: 'moveCues',
+          params: { cueIds, position: { type: 'last' } },
         });
       }
     },
