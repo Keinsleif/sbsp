@@ -393,7 +393,7 @@ const buildWaveformPath = (source: number[], height: number, width: number) => {
   return result;
 };
 
-const { workerFn, workerStatus } = useWebWorkerFn(buildWaveformPath);
+const { workerFn, workerStatus, workerTerminate } = useWebWorkerFn(buildWaveformPath);
 
 const updateWaveformPath = async () => {
   if (svgWidth.value < 1 || selectedCue.value == null) {
@@ -406,8 +406,15 @@ const updateWaveformPath = async () => {
     waveformPath.value = '';
     return;
   }
-  if (workerStatus.value != 'RUNNING') {
+
+  if (workerStatus.value == 'RUNNING') {
+    workerTerminate();
+  }
+
+  try {
     waveformPath.value = await workerFn(toRaw(source), contentHeight.value, svgWidth.value);
+  } catch (error) {
+    console.error(error);
   }
 };
 
