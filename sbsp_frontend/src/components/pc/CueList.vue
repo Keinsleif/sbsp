@@ -161,7 +161,7 @@
         >
           <v-btn
             :text="'Delete Cue'"
-            @click="contextMenuCueId != null && api.removeCue(contextMenuCueId)"
+            @click="api.removeCues(Array.from(uiState.selectedRows))"
           />
         </v-list-item>
       </v-list>
