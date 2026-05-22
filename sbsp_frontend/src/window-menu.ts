@@ -249,6 +249,7 @@ export const createWindowMenu = () => {
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
+        uiState.selectedRows.clear();
         showModel.flatCueList.filter(item => !item.isHidden).forEach(item => uiState.selectedRows.add(item.cue.id));
       },
     });
