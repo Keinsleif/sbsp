@@ -591,6 +591,9 @@ export function useWebsocketApi(): IBackendAdapter {
       this.sendCommand({ type: 'model', command: 'removeCue', params: { cueId: cueId } });
     },
     removeCues: async function (cueIds: string[], confirm_remove: boolean = true): Promise<void> {
+      if (cueIds.length === 0) {
+        return;
+      }
       if (confirm_remove) {
         const removeOk = confirm(t('dialog.message.removeCue'));
         if (!removeOk) {
