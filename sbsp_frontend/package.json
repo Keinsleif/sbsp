@@ -13,7 +13,10 @@
     "build:remote": "pnpm typecheck && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "typecheck": "ts-patch uninstall && (vue-tsc --noEmit || true) && ts-patch install",
+    "typecheck": "run-s --continue-on-error typecheck:pre typecheck:exec typecheck:post",
+    "typecheck:pre": "ts-patch uninstall",
+    "typecheck:exec": "vue-tsc --noEmit",
+    "typecheck:post": "ts-patch install",
     "prepare": "ts-patch install"
   },
   "dependencies": {
@@ -51,6 +54,7 @@
     "eslint-plugin-vue": "^10.9.1",
     "globals": "^17.6.0",
     "license-checker-rseidelsohn": "^4.4.2",
+    "npm-run-all2": "^9.0.0",
     "rollup-plugin-visualizer": "^7.0.1",
     "sass-embedded": "^1.99.0",
     "sass-loader": "^16.0.8",
