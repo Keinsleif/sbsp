@@ -12,7 +12,7 @@ const outDir = process.env.VITE_APP_SIDE
   : `dist/${process.env.VITE_APP_TARGET}`;
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig({
   plugins: [
     vue(),
     UnpluginTyia({
@@ -53,6 +53,7 @@ export default defineConfig(async () => ({
         }
       : undefined,
   },
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: {
     outDir: outDir,
     rollupOptions: {
@@ -67,6 +68,12 @@ export default defineConfig(async () => ({
         },
       },
     },
-    target: ['es2022', 'chrome89', 'safari15'],
+    target: process.env.VITE_APP_TARGET === 'tauri' ?
+      process.env.TAURI_ENV_PLATFORM == 'windows'
+        ? 'chrome105'
+        : 'safari13'
+      : 'baseline-widely-available',
+    minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
-}));
+});

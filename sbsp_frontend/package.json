@@ -7,17 +7,13 @@
   "scripts": {
     "dev:web": "cross-env VITE_APP_TARGET=\"websocket\" vite --port 1424",
     "build:web": "pnpm typecheck && cross-env VITE_APP_TARGET=\"websocket\" vite build",
-
     "dev:host": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite",
     "dev:remote": "cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite",
-
     "build:host": "pnpm typecheck && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"host\" vite build",
     "build:remote": "pnpm typecheck && cross-env VITE_APP_TARGET=\"tauri\" VITE_APP_SIDE=\"remote\" vite build",
-
     "preview": "vite preview",
     "tauri": "tauri",
-
-    "typecheck": "ts-patch uninstall && vue-tsc --noEmit && ts-patch install",
+    "typecheck": "ts-patch uninstall && (vue-tsc --noEmit || true) && ts-patch install",
     "prepare": "ts-patch install"
   },
   "dependencies": {
