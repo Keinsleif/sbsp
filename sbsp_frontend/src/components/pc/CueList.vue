@@ -354,6 +354,7 @@ useHotkey('arrowdown', onArrowDown);
 useHotkey('shift+arrowdown', onArrowDown);
 
 useHotkey('cmd+a', () => {
+  // This operation not set uiState.selected. But selecting all will includes uiState.selected
   uiState.selectedRows.clear();
   showModel.flatCueList.filter(item => !item.isHidden).forEach(value => uiState.selectedRows.add(value.cue.id));
 });
@@ -416,6 +417,7 @@ const click = (event: MouseEvent, index: number) => {
   if (clickedId == null) return;
   if (event.shiftKey) {
     if (uiState.selected != null) {
+      // This operation manually add multiple cues and update playback cursor.
       uiState.selectedRows.clear();
       const prevIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected);
       if (index >= prevIndex) {

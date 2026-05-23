@@ -81,12 +81,14 @@ onMounted(() => {
               if (uiState.selected != cueId) {
                 uiState.selected = cueId;
                 uiState.expandToVisible(cueId);
+                // This operation not using uiState.addSelected to avoid updating playbackcursor.
                 if (!uiState.selectedRows.has(cueId)) {
                   uiState.selectedRows.clear();
                   uiState.selectedRows.add(cueId);
                 }
               }
             } else {
+              // This operation not using uiState.addSelected to avoid updating playbackcursor.
               uiState.selectedRows.clear();
               uiState.selected = null;
             }
@@ -208,12 +210,14 @@ onMounted(() => {
           if (uiState.selected != cueId) {
             uiState.selected = cueId;
             uiState.expandToVisible(cueId);
+            // This operation not using uiState.addSelected to avoid updating playbackcursor.
             if (!uiState.selectedRows.has(cueId)) {
               uiState.selectedRows.clear();
               uiState.selectedRows.add(cueId);
             }
           }
         } else {
+          // This operation not using uiState.addSelected to avoid updating playbackcursor.
           uiState.selectedRows.clear();
           uiState.selected = null;
         }
