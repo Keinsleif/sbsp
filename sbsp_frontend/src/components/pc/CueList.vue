@@ -100,7 +100,7 @@
           :key="item.cue.id"
           :item="item"
           :is-drag-over="dragOverIndex == i"
-          @dragover="dragOver($event, i)"
+          @dragover="dragOver($event, i, item.cue.id)"
           @dragend="dragEnd"
           @drop="drop($event, i)"
           @pointerdown.stop="click($event, i)"
@@ -113,7 +113,7 @@
         />
         <tr
           :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
-          @dragover="dragOver($event, showModel.flatCueList.length)"
+          @dragover="dragOver($event, showModel.flatCueList.length, '')"
           @drop="drop($event, showModel.flatCueList.length)"
         >
           <td colspan="10" />
@@ -371,9 +371,13 @@ useHotkey('cmd+backspace', () => {
 
 const dragOverIndex = ref<number | null>(null);
 
-const dragOver = (event: DragEvent, index: number) => {
-  event.preventDefault();
-  dragOverIndex.value = index;
+const dragOver = (event: DragEvent, index: number, id: string) => {
+  if (uiState.selectedRows.has(id)) {
+    dragOverIndex.value = null;
+  } else {
+    event.preventDefault();
+    dragOverIndex.value = index;
+  }
 };
 
 const dragEnd = () => {

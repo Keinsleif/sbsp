@@ -9,6 +9,7 @@
       headers="cuelist_handle"
       class="px-0 cursor-grab"
       @dragstart="dragStart($event, props.item.cue.id)"
+      @pointerdown.stop
       :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
     >
       <v-icon :icon="mdiDragVertical" />
