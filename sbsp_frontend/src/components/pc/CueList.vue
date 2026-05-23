@@ -367,7 +367,11 @@ useHotkey('cmd+backspace', () => {
 const dragOverIndex = ref<number | null>(null);
 
 const dragStart = (event: DragEvent, index: number) => {
-  if (event.dataTransfer) {
+  const targetId = showModel.flatCueList[index]?.cue.id;
+  if (targetId && event.dataTransfer) {
+    if (!uiState.selectedRows.has(targetId)) {
+      uiState.setSelected(targetId);
+    }
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.dropEffect = 'move';
     event.dataTransfer.setData('text/plain', index.toString());
