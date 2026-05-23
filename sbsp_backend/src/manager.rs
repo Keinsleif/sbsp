@@ -160,6 +160,7 @@ impl ShowModelManager {
             }
             ModelCommand::AddCues { mut cues, position } => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
+                let mut non_valid_cues = HashSet::new();
 
                 for cue in cues.iter_mut() {
                     if self.is_cue_exists(&cue.id).await {
@@ -168,6 +169,7 @@ impl ShowModelManager {
                         }) {
                             log::warn!("Failed to send event, {}", e);
                         }
+                        non_valid_cues.insert(cue.id);
                         continue;
                     }
                     if let CueParam::Audio(audio_param) = &mut cue.params
@@ -189,6 +191,7 @@ impl ShowModelManager {
                         } // ignore failed to import asset. use absolute path
                     }
                 }
+                cues.retain(|cue| !non_valid_cues.contains(&cue.id));
                 if let Err(e) = self.insert_cues_at_position(cues, position.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit { message: format!("Failed to add cues, {}.", e) }
