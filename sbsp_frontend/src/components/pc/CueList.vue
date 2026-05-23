@@ -413,15 +413,15 @@ const click = (event: MouseEvent, index: number) => {
       const prevIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected);
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
-          const targetCueId = showModel.flatCueList[i]?.cue.id;
-          if (targetCueId == null) continue;
-          uiState.selectedRows.add(targetCueId);
+          const targetCue = showModel.flatCueList[i];
+          if (targetCue == null || targetCue.isHidden) continue;
+          uiState.selectedRows.add(targetCue.cue.id);
         }
       } else {
         for (let i = index; i <= prevIndex; i++) {
-          const targetCueId = showModel.flatCueList[i]?.cue.id;
-          if (targetCueId == null) continue;
-          uiState.selectedRows.add(targetCueId);
+          const targetCue = showModel.flatCueList[i];
+          if (targetCue == null || targetCue.isHidden) continue;
+          uiState.selectedRows.add(targetCue.cue.id);
         }
       }
       uiState.selected = clickedId;
