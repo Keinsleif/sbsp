@@ -17,6 +17,11 @@
       <thead>
         <tr>
           <th
+            id="cuelist_handle"
+            class="pa-0"
+            width="19px"
+          />
+          <th
             id="cuelist_cursor"
             width="32px"
           />
@@ -95,11 +100,10 @@
           :key="item.cue.id"
           :item="item"
           :is-drag-over="dragOverIndex == i"
-          @dragstart="dragStart($event, i)"
           @dragover="dragOver($event, i)"
           @dragend="dragEnd"
           @drop="drop($event, i)"
-          @click.stop="click($event, i)"
+          @pointerdown.stop="click($event, i)"
           @contextmenu.prevent="
             if (uiState.mode == 'edit') {
               contextMenuPosition = [$event.clientX, $event.clientY];
@@ -112,7 +116,7 @@
           @dragover="dragOver($event, showModel.flatCueList.length)"
           @drop="drop($event, showModel.flatCueList.length)"
         >
-          <td colspan="9" />
+          <td colspan="10" />
         </tr>
       </tbody>
     </v-table>
@@ -160,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue';
+import { ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import {
   mdiAlphaEBoxOutline,
@@ -367,18 +371,6 @@ useHotkey('cmd+backspace', () => {
 
 const dragOverIndex = ref<number | null>(null);
 
-const dragStart = (event: DragEvent, index: number) => {
-  const targetId = showModel.flatCueList[index]?.cue.id;
-  if (targetId && event.dataTransfer) {
-    if (!uiState.selectedRows.has(targetId)) {
-      uiState.setSelected(targetId);
-    }
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.dropEffect = 'move';
-    event.dataTransfer.setData('text/plain', index.toString());
-  }
-};
-
 const dragOver = (event: DragEvent, index: number) => {
   event.preventDefault();
   dragOverIndex.value = index;
@@ -391,11 +383,10 @@ const dragEnd = () => {
 const drop = (event: DragEvent, index: number) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    if (fromIndex === index) {
-      return;
-    }
-    console.log(uiState.selectedRows);
+    // const fromIndex = Number(event.dataTransfer.getData('text/plain'));
+    // if (fromIndex === index) {
+    //   return;
+    // }
     // const srcCueId = showModel.flatCueList[fromIndex]?.cue.id;
     // if (srcCueId == undefined) return;
     if (index < showModel.flatCueList.length) {

@@ -4,8 +4,15 @@
       props.isDragOver ? $style['drag-over-row'] : '',
       isSelected ? $style['selected-row'] : '',
     ]"
-    :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
   >
+    <td
+      headers="cuelist_handle"
+      class="px-0 cursor-grab"
+      @dragstart="dragStart($event, props.item.cue.id)"
+      :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
+    >
+      <v-icon :icon="mdiDragVertical" />
+    </td>
     <td
       headers="cuelist_cursor"
       style="padding-left: 12px; padding-right: 0px"
@@ -133,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
+import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiDragVertical, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
 import { FlatCueEntry } from '../../stores/showmodel';
 import { computed, toRaw } from 'vue';
 import { useUiState } from '../../stores/uistate';
@@ -209,6 +216,17 @@ const durationProgressStyle = computed(() => {
 const setPlaybackCursor = (cueId: string) => {
   if (!getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
+  }
+};
+
+const dragStart = (event: DragEvent, targetId: string) => {
+  if (targetId && event.dataTransfer) {
+    if (!uiState.selectedRows.has(targetId)) {
+      uiState.setSelected(targetId);
+    }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.dropEffect = 'move';
+    // event.dataTransfer.setData('text/plain', index.toString());
   }
 };
 
