@@ -245,7 +245,7 @@ const cutHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = cues;
+    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
     api.removeCues(cues.map(cue => cue.id), false);
   }
 };
@@ -256,7 +256,7 @@ const copyHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = cues;
+    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
     // if (navigator.clipboard && e.clipboardData) {
     //   const text = cueStringify(cues);
     //   if (!text) return;
