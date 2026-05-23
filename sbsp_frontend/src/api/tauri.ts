@@ -253,6 +253,9 @@ export function useTauriApi(): IBackendAdapter {
       await invoke('remove_cue', { cueId: cueId });
     },
     removeCues: async function (cueIds: string[], confirm_remove: boolean = true) {
+      if (cueIds.length === 0) {
+        return;
+      }
       if (confirm_remove) {
         const removeOk = await message(t('dialog.message.removeCue'), {
           title: t('dialog.message.confirmation'),
