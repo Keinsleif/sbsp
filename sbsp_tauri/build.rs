@@ -1,11 +1,11 @@
 use sbsp_backend::{
-    ts_rs::{TS, Config},
     api::{ApiServerOptions, WsCommand, WsFeedback},
     asset_processor::AssetData,
     controller::state::ShowState,
     event::BackendEvent,
     helper::SupportedHardware,
     model::ShowModel,
+    ts_rs::{Config, TS},
 };
 use sbsp_license::data::LicenseInformation;
 

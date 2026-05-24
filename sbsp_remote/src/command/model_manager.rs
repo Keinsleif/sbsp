@@ -3,7 +3,11 @@ use std::collections::HashSet;
 use crate::AppState;
 use sbsp_backend::{
     manager::InsertPosition,
-    model::{ShowModel, cue::{Cue, Uuid}, settings::ShowSettings},
+    model::{
+        ShowModel,
+        cue::{Cue, Uuid},
+        settings::ShowSettings,
+    },
 };
 
 #[tauri::command]
@@ -110,7 +114,10 @@ pub async fn remove_cue(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Resu
 }
 
 #[tauri::command]
-pub async fn remove_cues(state: tauri::State<'_, AppState>, cue_ids: HashSet<Uuid>) -> Result<(), String> {
+pub async fn remove_cues(
+    state: tauri::State<'_, AppState>,
+    cue_ids: HashSet<Uuid>,
+) -> Result<(), String> {
     if let Some(handle) = state.get_handle().await {
         handle
             .model_handle

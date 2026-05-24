@@ -9,7 +9,9 @@ use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendAudioSettings, BackendSettings,
     model::cue::{
-        Cue, CueChain, CueColor, CueParam, Uuid, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::GroupMode
+        Cue, CueChain, CueColor, CueParam, Uuid,
+        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+        group::GroupMode,
     },
 };
 

@@ -614,7 +614,8 @@ mod tests {
         model::{
             self,
             cue::{
-                Cue, CueColor, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}
+                Cue, CueColor,
+                audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
         },
     };

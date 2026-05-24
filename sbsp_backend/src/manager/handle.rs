@@ -82,7 +82,11 @@ impl ShowModelHandle {
         Ok(())
     }
 
-    pub async fn move_cues(&self, cue_ids: HashSet<Uuid>, position: InsertPosition) -> anyhow::Result<()> {
+    pub async fn move_cues(
+        &self,
+        cue_ids: HashSet<Uuid>,
+        position: InsertPosition,
+    ) -> anyhow::Result<()> {
         self.send_command(ModelCommand::MoveCues { cue_ids, position })
             .await?;
         Ok(())

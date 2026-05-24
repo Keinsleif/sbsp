@@ -1147,7 +1147,10 @@ mod tests {
         manager::ShowModelManager,
         model::{
             self,
-            cue::{CueColor, audio::{Decibels, Easing, FadeParam, SoundType}},
+            cue::{
+                CueColor,
+                audio::{Decibels, Easing, FadeParam, SoundType},
+            },
         },
     };
 

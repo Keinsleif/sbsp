@@ -1,10 +1,10 @@
 use sbsp_backend::{
-    ts_rs::{TS, Config},
     api::{FileList, client::ServiceEntry},
     asset_processor::AssetData,
     controller::state::ShowState,
     event::BackendEvent,
     model::ShowModel,
+    ts_rs::{Config, TS},
 };
 
 fn main() {

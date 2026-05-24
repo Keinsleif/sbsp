@@ -26,10 +26,7 @@ pub struct Cue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
-#[serde(
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum CueColor {
     #[default]
     None,
