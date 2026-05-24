@@ -51,17 +51,6 @@
       />
     </v-navigation-drawer>
 
-    <v-snackbar-queue
-      v-model="uiState.success_messages"
-      timeout="2000"
-      color="success"
-    />
-    <v-snackbar-queue
-      v-model="uiState.error_messages"
-      timeout="2000"
-      color="error"
-    />
-
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
     <settings-dialog v-model="uiState.isSettingsDialogOpen" />
     <file-list-dialog

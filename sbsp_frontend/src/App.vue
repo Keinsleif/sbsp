@@ -1,5 +1,15 @@
 <template>
   <component :is="connected ? MainView : ConnectView" />
+  <v-snackbar-queue
+    v-model="uiState.success_messages"
+    timeout="2000"
+    color="success"
+  />
+  <v-snackbar-queue
+    v-model="uiState.error_messages"
+    timeout="2000"
+    color="error"
+  />
   <update-dialog
     v-if="isTauri"
     v-model="uiState.isUpdateDialogOpen"
