@@ -18,7 +18,7 @@
       :text="t('dialog.update.updatesAvailable')"
       @click="uiState.isUpdateDialogOpen = true"
     />
-    <v-sheet class="ml-auto mr-auto">
+    <v-sheet class="ml-auto mr-auto text-no-wrap">
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </v-sheet>
     <v-sheet class="d-flex align-center">
