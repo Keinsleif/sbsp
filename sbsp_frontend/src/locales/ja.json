@@ -231,7 +231,8 @@
       "basics": {
         "nextCue": "次のキュー",
         "timestamp": "タイムスタンプ",
-        "title": "基本"
+        "title": "基本",
+        "color": "色"
       },
       "continueTargetCue": "連鎖対象キュー",
       "fade": {

@@ -88,7 +88,7 @@
             class="ml-auto flex-grow-0"
             hide-details
             persistent-placeholder
-            :label="'Color'"
+            :label="t('main.bottomEditor.basics.color')"
             :items="[
               {value: 'none', title: 'None', props: {baseColor: 'text'}},
               {value: 'red', title: 'Red', props: {baseColor: 'red'}},

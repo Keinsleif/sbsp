@@ -231,7 +231,8 @@
       "basics": {
         "nextCue": "Next Cue",
         "timestamp": "Timestamp",
-        "title": "Basics"
+        "title": "Basics",
+        "color": "Color"
       },
       "continueTargetCue": "Continue Target Cue",
       "fade": {
