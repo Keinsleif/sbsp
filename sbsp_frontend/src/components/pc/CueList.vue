@@ -282,7 +282,7 @@ const paste = () => {
 const cut = () => {
   const cues = showModel.getSelectedCues;
   if (cues.length > 0) {
-    internalClipboard.value = cues;
+    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
     api.removeCues(cues.map(cue => cue.id), false);
   }
 };
@@ -291,7 +291,7 @@ const copy = () => {
   const cues = showModel.getSelectedCues;
 
   if (cues.length > 0) {
-    internalClipboard.value = cues;
+    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
   }
 };
 
