@@ -1,6 +1,5 @@
 <template>
   <v-app
-    height="100vh"
     @contextmenu.prevent
   >
     <v-app-bar

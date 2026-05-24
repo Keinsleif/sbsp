@@ -43,7 +43,7 @@
           </th>
           <th
             id="cuelist_name"
-            class="border overflow-hidden text-no-wrap"
+            class="border-s border-e overflow-hidden text-no-wrap"
             style="padding-left: 24px"
           >
             {{ t('main.name') }}
@@ -463,6 +463,7 @@ const click = (event: MouseEvent, index: number) => {
   .cuelist {
     table {
       table-layout: fixed;
+      border-collapse: collapse;
       font-size: 0.9em;
       min-width: 800px;
     }

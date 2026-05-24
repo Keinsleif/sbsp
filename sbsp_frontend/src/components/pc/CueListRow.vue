@@ -344,7 +344,7 @@ const isActive = computed((): boolean => {
   .drag-over-row > td {
     border-top: 2px solid rgb(var(--v-theme-primary)) !important;
   }
-  .selected-row > td {
+  .selected-row {
     background-color: rgb(var(--v-theme-primary), 0.2);
   }
 </style>
