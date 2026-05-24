@@ -5,7 +5,7 @@
   "identifier": "com.keinsleif.sbsp",
   "build": {
     "beforeDevCommand": {
-      "script": "pnpm build:web && pnpm dev:host",
+      "script": "pnpm dev:host",
       "cwd": "../sbsp_frontend"
     },
     "devUrl": "http://localhost:1420",
