@@ -348,7 +348,7 @@ const isActive = computed((): boolean => {
     border-top: 2px solid rgb(var(--v-theme-primary)) !important;
   }
   .selected-row {
-    background-color: rgb(var(--v-theme-primary), 0.2) !important;
+    background-color: rgb(var(--v-theme-primary), 0.3) !important;
   }
 
   .color-row[data-cue-color="red"] {

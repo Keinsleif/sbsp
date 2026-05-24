@@ -88,9 +88,11 @@
             class="ml-auto flex-grow-0"
             hide-details
             persistent-placeholder
+            width="150px"
+            :style="{'color': color != null && color != 'none' ? colors[color].base : ''}"
             :label="t('main.bottomEditor.basics.color')"
             :items="[
-              {value: 'none', title: 'None', props: {baseColor: 'text'}},
+              {value: 'none', title: t('general.none'), props: {baseColor: 'text'}},
               {value: 'red', title: 'Red', props: {baseColor: 'red'}},
               {value: 'purple', title: 'Purple', props: {baseColor: 'purple'}},
               {value: 'blue', title: 'Blue', props: {baseColor: 'blue'}},
@@ -101,6 +103,7 @@
               {value: 'grey', title: 'Grey', props: {baseColor: 'grey'}},
             ]"
             variant="outlined"
+            :prepend-inner-icon="mdiCircle"
             density="compact"
             autocomplete="off"
             @update:model-value="saveEditorValue"
@@ -130,6 +133,8 @@ import { useI18n } from 'vue-i18n';
 import { NIL } from 'uuid';
 import CueSelect from '../input/CueSelect.vue';
 import type { CueChain } from '../../types/CueChain';
+import { mdiCircle } from '@mdi/js';
+import colors from 'vuetify/util/colors';
 
 const { t } = useI18n();
 

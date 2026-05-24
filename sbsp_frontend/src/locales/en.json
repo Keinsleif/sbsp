@@ -215,7 +215,8 @@
     "open": "Open",
     "default": "Default",
     "warning": "Warning",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "none": "None"
   },
   "main": {
     "bottomEditor": {

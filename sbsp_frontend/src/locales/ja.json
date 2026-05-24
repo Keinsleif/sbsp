@@ -215,7 +215,8 @@
     "open": "開く",
     "default": "既定",
     "warning": "警告",
-    "confirm": "確認"
+    "confirm": "確認",
+    "none": "なし"
   },
   "main": {
     "bottomEditor": {
