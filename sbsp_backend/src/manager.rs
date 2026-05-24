@@ -247,8 +247,10 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::MoveCue { cue_id, position } => {
+                let orig_cues = self.model.read().await.cues.clone();
                 if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
                     if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
+                        self.model.write().await.cues = orig_cues;
                         if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit { message: format!("Failed to move cue, {}.", e) }
                         }) {
@@ -271,6 +273,7 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::MoveCues { cue_ids, position } => {
+                let orig_cues = self.model.read().await.cues.clone();
                 let removed_cues = self.remove_cues_by_id(cue_ids).await;
                 if removed_cues.is_empty() {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
@@ -280,6 +283,8 @@ impl ShowModelManager {
                     }
                 } else {
                     if let Err(e) = self.insert_cues_at_position(removed_cues, position).await {
+                        // rollback
+                        self.model.write().await.cues = orig_cues;
                         if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit { message: format!("Failed to add cue, {}.", e) }
                         }) {
