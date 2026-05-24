@@ -3,16 +3,19 @@
     :class="[
       props.isDragOver ? $style['drag-over-row'] : '',
       isSelected ? $style['selected-row'] : '',
+      $style['color-row']
     ]"
+    :data-cue-color="item.cue.color"
   >
     <td
       headers="cuelist_handle"
-      class="px-0 cursor-grab"
+      class="px-0"
+      :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
       @dragstart="dragStart($event, props.item.cue.id)"
-      @pointerdown.stop
+      @pointerdown="(e) => {if (uiState.mode == 'edit') { e.stopPropagation() }}"
       :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
     >
-      <v-icon :icon="mdiDragVertical" />
+      <v-icon v-show="uiState.mode == 'edit'" :icon="mdiDragVertical" />
     </td>
     <td
       headers="cuelist_cursor"
@@ -341,10 +344,41 @@ const isActive = computed((): boolean => {
 </script>
 
 <style lang="css" module>
-  .drag-over-row > td {
+  .drag-over-row {
     border-top: 2px solid rgb(var(--v-theme-primary)) !important;
   }
   .selected-row {
-    background-color: rgb(var(--v-theme-primary), 0.2);
+    background-color: rgb(var(--v-theme-primary), 0.2) !important;
+  }
+
+  .color-row[data-cue-color="red"] {
+    --row-color: 244 67 54;
+  }
+  .color-row[data-cue-color="purple"] {
+    --row-color: 156 39 176;
+  }
+  .color-row[data-cue-color="blue"] {
+    --row-color: 33 150 243;
+  }
+  .color-row[data-cue-color="cyan"] {
+    --row-color: 0 188 212;
+  }
+  .color-row[data-cue-color="green"] {
+    --row-color: 76 175 80;
+  }
+  .color-row[data-cue-color="yellow"] {
+    --row-color: 255 235 59;
+  }
+  .color-row[data-cue-color="orange"] {
+    --row-color: 255 152 0;
+  }
+  .color-row[data-cue-color="grey"] {
+    --row-color: 158 158 158;
+  }
+  .color-row:not([data-cue-color="none"]) {
+    background-color: rgb(var(--row-color) / 0.2);
+  }
+  .color-row:not([data-cue-color="none"]) > td:nth-child(1) {
+    background-color: rgb(var(--row-color) / 0.5);
   }
 </style>

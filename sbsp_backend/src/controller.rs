@@ -614,8 +614,7 @@ mod tests {
         model::{
             self,
             cue::{
-                Cue,
-                audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+                Cue, CueColor, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}
             },
         },
     };
@@ -656,6 +655,7 @@ mod tests {
                 number: "1".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: model::cue::CueChain::DoNotChain,
                 params: model::cue::CueParam::Audio(AudioCueParam {

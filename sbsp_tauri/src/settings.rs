@@ -10,9 +10,7 @@ use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendAudioSettings, BackendSettings,
     model::cue::{
-        Cue, CueChain, CueParam,
-        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
-        group::GroupMode,
+        Cue, CueChain, CueColor, CueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::GroupMode
     },
 };
 
@@ -122,6 +120,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Audio(AudioCueParam {
@@ -142,6 +141,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Wait { duration: 5.0 },
@@ -151,6 +151,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Fade {
@@ -167,6 +168,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Start {
@@ -178,6 +180,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Stop {
@@ -190,6 +193,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Pause {
@@ -201,6 +205,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Load {
@@ -212,6 +217,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Group {

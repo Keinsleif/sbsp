@@ -871,8 +871,7 @@ mod tests {
         model::{
             ShowModel,
             cue::{
-                Cue, CueChain, CueParam,
-                audio::{AudioCueParam, Decibels, SoundType},
+                Cue, CueChain, CueColor, CueParam, audio::{AudioCueParam, Decibels, SoundType}
             },
             settings::ShowSettings,
         },
@@ -917,6 +916,7 @@ mod tests {
                     number: "1".into(),
                     name: Some("test cue".into()),
                     notes: "note".into(),
+                    color: CueColor::None,
                     pre_wait: 0.0,
                     chain: CueChain::DoNotChain,
                     params: CueParam::Audio(AudioCueParam {
@@ -946,6 +946,7 @@ mod tests {
             number: "1".into(),
             name: Some("test cue".into()),
             notes: "note".into(),
+            color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {
@@ -1014,6 +1015,7 @@ mod tests {
             number: "1".into(),
             name: Some("test cue".into()),
             notes: "note".into(),
+            color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {

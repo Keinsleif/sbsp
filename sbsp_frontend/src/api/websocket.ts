@@ -56,6 +56,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -79,6 +80,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -93,6 +95,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -115,6 +118,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -129,6 +133,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -144,6 +149,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -158,6 +164,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -172,6 +179,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
