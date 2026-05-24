@@ -80,7 +80,7 @@ axum = { version = "0.8", default-features = false, features = ["tokio", "http1"
 tokio-tungstenite = { version = "*", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["sink"], optional = true }
 
-ts-rs = { version = "11", features = ["uuid-impl", "indexmap-impl"] }
+ts-rs = { version = "12", features = ["uuid-impl", "indexmap-impl"] }
 
 [dev-dependencies]
 tempfile = "3.22.0"

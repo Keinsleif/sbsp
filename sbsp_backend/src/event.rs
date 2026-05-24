@@ -3,7 +3,7 @@ use std::{collections::HashSet, path::PathBuf};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 use crate::executor::ExecutorEvent;
 use crate::{
     asset_processor::{AssetData, AssetMetadata},
@@ -151,7 +151,7 @@ pub enum BackendError {
     Custom { id: usize, message: String },
 }
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 impl TryFrom<ExecutorEvent> for BackendEvent {
     type Error = ();
 

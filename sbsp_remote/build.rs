@@ -1,11 +1,11 @@
 use sbsp_backend::{
+    ts_rs::{TS, Config},
     api::{FileList, client::ServiceEntry},
     asset_processor::AssetData,
     controller::state::ShowState,
     event::BackendEvent,
     model::ShowModel,
 };
-use ts_rs::TS;
 
 fn main() {
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/model.rs");
@@ -14,12 +14,14 @@ fn main() {
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/event.rs");
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/asset_processor/data.rs");
 
-    <ShowModel as TS>::export_all().unwrap();
-    <ShowState as TS>::export_all().unwrap();
-    <BackendEvent as TS>::export_all().unwrap();
-    <AssetData as TS>::export_all().unwrap();
-    <ServiceEntry as TS>::export_all().unwrap();
-    <FileList as TS>::export_all().unwrap();
+    let config = Config::from_env();
+
+    <ShowModel as TS>::export_all(&config).unwrap();
+    <ShowState as TS>::export_all(&config).unwrap();
+    <BackendEvent as TS>::export_all(&config).unwrap();
+    <AssetData as TS>::export_all(&config).unwrap();
+    <ServiceEntry as TS>::export_all(&config).unwrap();
+    <FileList as TS>::export_all(&config).unwrap();
 
     tauri_build::build()
 }
