@@ -4,11 +4,10 @@ pub mod manager;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use ts_rs::TS;
-use uuid::Uuid;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::model::cue::{
-    Cue, CueChain, CueColor, CueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::GroupMode
+    Cue, CueChain, CueColor, CueParam, Uuid, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::GroupMode
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]

@@ -2,9 +2,8 @@ use std::collections::HashSet;
 
 use sbsp_backend::{
     manager::InsertPosition,
-    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    model::{ShowModel, cue::{Cue, Uuid}, settings::ShowSettings},
 };
-use uuid::Uuid;
 
 use crate::AppState;
 

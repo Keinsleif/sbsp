@@ -3,9 +3,8 @@ use std::collections::HashSet;
 use crate::AppState;
 use sbsp_backend::{
     manager::InsertPosition,
-    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    model::{ShowModel, cue::{Cue, Uuid}, settings::ShowSettings},
 };
-use uuid::Uuid;
 
 #[tauri::command]
 pub async fn get_show_model(state: tauri::State<'_, AppState>) -> Result<ShowModel, String> {

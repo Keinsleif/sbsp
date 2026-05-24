@@ -3,7 +3,7 @@ pub mod group;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use uuid::Uuid;
+pub use uuid::Uuid;
 
 use crate::model::cue::{
     audio::{AudioCueParam, Decibels, FadeParam},
