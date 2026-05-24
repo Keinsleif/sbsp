@@ -59,7 +59,6 @@
         :prepend-icon="uiState.isEnvelopeVisible ? mdiEye : mdiEyeOff"
         class="align-self-start"
         density="compact"
-        color="white"
         variant="outlined"
         width="175px"
         @click="uiState.isEnvelopeVisible = !uiState.isEnvelopeVisible"
