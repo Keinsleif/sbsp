@@ -83,8 +83,34 @@
           :disabled="props.chainOverride != null || selectedCue == null || selectedCue.id in showState.activeCues || chain == 'doNotChain'"
           @update="saveEditorValue"
         />
+          <v-select
+            v-model="color"
+            class="ml-auto flex-grow-0"
+            hide-details
+            persistent-placeholder
+            width="150px"
+            :style="{'color': color != null && color != 'none' ? colors[color].base : ''}"
+            :label="t('main.bottomEditor.basics.color')"
+            :items="[
+              {value: 'none', title: t('general.none'), props: {baseColor: 'text'}},
+              {value: 'red', title: 'Red', props: {baseColor: 'red'}},
+              {value: 'purple', title: 'Purple', props: {baseColor: 'purple'}},
+              {value: 'blue', title: 'Blue', props: {baseColor: 'blue'}},
+              {value: 'cyan', title: 'Cyan', props: {baseColor: 'cyan'}},
+              {value: 'green', title: 'Green', props: {baseColor: 'green'}},
+              {value: 'yellow', title: 'Yellow', props: {baseColor: 'yellow'}},
+              {value: 'orange', title: 'Orange', props: {baseColor: 'orange'}},
+              {value: 'grey', title: 'Grey', props: {baseColor: 'grey'}},
+            ]"
+            variant="outlined"
+            :prepend-inner-icon="mdiCircle"
+            density="compact"
+            autocomplete="off"
+            @update:model-value="saveEditorValue"
+            @keydown.stop
+          />
         <v-btn
-          class="ml-auto mr-0 flex-grow-0"
+          class="flex-grow-0"
           density="compact"
           :disabled="selectedCue != null && !(selectedCue.id in showState.activeCues)"
           @click="insertTimestampToNote"
@@ -107,6 +133,8 @@ import { useI18n } from 'vue-i18n';
 import { NIL } from 'uuid';
 import CueSelect from '../input/CueSelect.vue';
 import type { CueChain } from '../../types/CueChain';
+import { mdiCircle } from '@mdi/js';
+import colors from 'vuetify/util/colors';
 
 const { t } = useI18n();
 
@@ -138,6 +166,7 @@ const chain = ref(overridedChain.value != null ? overridedChain.value.type : nul
 
 const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
+const color = ref(selectedCue.value != null ? selectedCue.value.color : null);
 const target = ref(
   overridedChain.value != null
   && overridedChain.value.type != 'doNotChain'
@@ -153,6 +182,7 @@ watch(selectedCue, () => {
   chain.value = overridedChain.value != null ? overridedChain.value.type : null;
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
+  color.value = selectedCue.value != null ? selectedCue.value.color : null;
   target.value
     = overridedChain.value != null && overridedChain.value.type != 'doNotChain'
       ? overridedChain.value.targetId
@@ -196,6 +226,9 @@ const saveEditorValue = () => {
   }
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
+  }
+  if (color.value != null) {
+    selectedCue.value.color = color.value;
   }
   emit('update');
 };

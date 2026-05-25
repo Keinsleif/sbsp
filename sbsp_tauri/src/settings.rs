@@ -4,13 +4,12 @@ pub mod manager;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use ts_rs::TS;
-use uuid::Uuid;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendAudioSettings, BackendSettings,
     model::cue::{
-        Cue, CueChain, CueParam,
+        Cue, CueChain, CueColor, CueParam, Uuid,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
         group::GroupMode,
     },
@@ -122,6 +121,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Audio(AudioCueParam {
@@ -142,6 +142,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Wait { duration: 5.0 },
@@ -151,6 +152,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Fade {
@@ -167,6 +169,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Start {
@@ -178,6 +181,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Stop {
@@ -190,6 +194,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Pause {
@@ -201,6 +206,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Load {
@@ -212,6 +218,7 @@ impl Default for TemplateSettings {
                 number: "".to_string(),
                 name: None,
                 notes: "".to_string(),
+                color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 params: CueParam::Group {

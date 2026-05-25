@@ -39,6 +39,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -62,6 +63,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -76,6 +78,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -98,6 +101,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -112,6 +116,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -127,6 +132,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -141,6 +147,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',
@@ -155,6 +162,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         number: '',
         name: null,
         notes: '',
+        color: 'none',
         preWait: 0.0,
         chain: {
           type: 'doNotChain',

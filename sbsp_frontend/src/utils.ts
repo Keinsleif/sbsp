@@ -5,7 +5,6 @@ import { useUiSettings } from './stores/uiSettings';
 import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
-import { side } from './api';
 import { storeToRefs } from 'pinia';
 import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
 import { Permissions } from './types/Permissions';
@@ -222,12 +221,10 @@ export const curveToEasing = (curve: Curve): Easing => {
 };
 
 export const getLockCursorToSelection = () => {
-  if (side == 'host') {
+  if (__IS_HOST__) {
     return useUiSettings().settings.general.lockCursorToSelection;
-  } else if (side == 'remote') {
-    return useShowModel().settings.remote.lockCursorToSelection;
   } else {
-    return false;
+    return useShowModel().settings.remote.lockCursorToSelection;
   }
 };
 

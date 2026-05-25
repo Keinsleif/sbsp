@@ -18,7 +18,9 @@
       "license": {
         "proTitle": "ライセンスエラー",
         "serverPanel": "サーバーパネルを利用するには Pro ライセンスが必要です。"
-      }
+      },
+      "removeCue": "キューを削除してもよろしいですか？",
+      "confirmation": "確認"
     },
     "renumber": {
       "increment": "増分",
@@ -213,7 +215,8 @@
     "open": "開く",
     "default": "既定",
     "warning": "警告",
-    "confirm": "確認"
+    "confirm": "確認",
+    "none": "なし"
   },
   "main": {
     "bottomEditor": {
@@ -229,7 +232,8 @@
       "basics": {
         "nextCue": "次のキュー",
         "timestamp": "タイムスタンプ",
-        "title": "基本"
+        "title": "基本",
+        "color": "色"
       },
       "continueTargetCue": "連鎖対象キュー",
       "fade": {
@@ -307,6 +311,14 @@
       "list": "リスト",
       "controls": "操作",
       "active": "実行中"
+    },
+    "cueList": {
+      "contextMenu": {
+        "copy": "コピー",
+        "cut": "カット",
+        "delete": "削除",
+        "paste": "貼り付け"
+      }
     }
   },
   "menu": {

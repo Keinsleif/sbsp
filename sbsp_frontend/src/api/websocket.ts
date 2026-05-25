@@ -10,14 +10,17 @@ import { v4 } from 'uuid';
 import type { ServiceEntry } from '../types/ServiceEntry';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import typia from 'typia';
 import { useUiState } from '../stores/uistate';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
-import { Permissions } from '../types/Permissions';
-import { BackendError } from '../types/BackendError';
+import type { Permissions } from '../types/Permissions';
+import type { BackendError } from '../types/BackendError';
+import type { InsertPosition } from '../types/InsertPosition';
+import { i18n } from '../i18n';
+import { settingsValidator } from '../typia';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
+const { t } = i18n.global;
 
 const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
@@ -53,6 +56,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -76,6 +80,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -90,6 +95,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -112,6 +118,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -126,6 +133,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -141,6 +149,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -155,6 +164,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -169,6 +179,7 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       number: '',
       name: null,
       notes: '',
+      color: 'none',
       preWait: 0,
       chain: {
         type: 'doNotChain',
@@ -194,8 +205,6 @@ const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
     group: 'Group',
   },
 };
-
-const settingsValidator = typia.createValidate<GlobalHostSettings | GlobalRemoteSettings>();
 
 type UnlistenFn = () => void;
 
@@ -530,7 +539,8 @@ export function useWebsocketApi(): IBackendAdapter {
     updateCue: async function (cue: Cue): Promise<void> {
       this.sendCommand({ type: 'model', command: 'updateCue', params: cue });
     },
-    addCue: function (cue: Cue, targetId: string | null, toBefore: boolean): void {
+    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+      cue.id = v4();
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -552,8 +562,10 @@ export function useWebsocketApi(): IBackendAdapter {
           params: { cue: cue, position: { type: 'last' } },
         });
       }
+      return cue.id;
     },
-    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void> {
+    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
+      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -575,24 +587,42 @@ export function useWebsocketApi(): IBackendAdapter {
           params: { cues: cues, position: { type: 'last' } },
         });
       }
+      return cueIds;
     },
-    removeCue: async function (cueId: string): Promise<void> {
+    removeCue: async function (cueId: string, confirm_remove: boolean = true): Promise<void> {
+      if (confirm_remove) {
+        const removeOk = confirm(t('dialog.message.removeCue'));
+        if (!removeOk) {
+          return;
+        }
+      }
       this.sendCommand({ type: 'model', command: 'removeCue', params: { cueId: cueId } });
     },
-    moveCue: async function (cueId: string, targetId: string | null): Promise<void> {
-      if (targetId != null) {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCue',
-          params: { cueId: cueId, position: { type: 'before', target: targetId } },
-        });
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'moveCue',
-          params: { cueId: cueId, position: { type: 'last' } },
-        });
+    removeCues: async function (cueIds: string[], confirm_remove: boolean = true): Promise<void> {
+      if (cueIds.length === 0) {
+        return;
       }
+      if (confirm_remove) {
+        const removeOk = confirm(t('dialog.message.removeCue'));
+        if (!removeOk) {
+          return;
+        }
+      }
+      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds }})
+    },
+    moveCue: async function (cueId: string, position: InsertPosition): Promise<void> {
+      this.sendCommand({
+        type: 'model',
+        command: 'moveCue',
+        params: { cueId: cueId, position: position },
+      });
+    },
+    moveCues: async function (cueIds: string[], position: InsertPosition): Promise<void> {
+      this.sendCommand({
+        type: 'model',
+        command: 'moveCues',
+        params: { cueIds, position: position },
+      });
     },
     renumberCues: async function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       this.sendCommand({

@@ -67,11 +67,7 @@ impl ShowModelManager {
     pub async fn run(mut self) {
         loop {
             tokio::select! {
-                Some(command) = self.command_rx.recv() => {
-                    if let Err(e) = self.process_command(command).await {
-                        log::error!("Failed modifying show model: {}", e);
-                    }
-                },
+                Some(command) = self.command_rx.recv() => self.process_command(command).await,
                 Ok(_) = self.settings_rx.changed() => {
                     self.copy_assets_when_add = self.settings_rx.borrow().copy_assets_when_add;
                 }
@@ -80,13 +76,12 @@ impl ShowModelManager {
         }
     }
 
-    async fn process_command(&self, command: ModelCommand) -> anyhow::Result<()> {
-        log::info!("Model Manager received command: {:?}", command);
+    async fn process_command(&self, command: ModelCommand) {
+        log::debug!("Model Manager received command: {:?}", command);
         match command {
-            ModelCommand::UpdateCue(cue) => {
+            ModelCommand::UpdateCue(mut cue) => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut new_cue = cue.clone();
-                if let CueParam::Audio(audio_param) = &mut new_cue.params
+                if let CueParam::Audio(audio_param) = &mut cue.params
                     && let Some(model_path) = model_path_option.as_ref()
                     && self.copy_assets_when_add
                 {
@@ -105,37 +100,96 @@ impl ShowModelManager {
                         audio_param.target = target;
                     } // ignore failed to import asset. use absolute path
                 }
-                let event = if let Err(e) = self.update_cue_by_id(&cue.id, new_cue.clone()).await {
-                    BackendEvent::OperationFailed {
+                if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: format!("Failed to update cue. {}", e),
+                            message: format!("Failed to update cue, {}.", e),
                         },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
-                } else {
-                    self.modify_status.store(true, Ordering::Release);
-                    BackendEvent::CueListUpdated {
-                        cues: self.model.read().await.cues.clone(),
-                    }
-                };
-                self.event_tx.send(event)?;
-                Ok(())
+                    return;
+                }
+                self.modify_status.store(true, Ordering::Release);
+                if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                    cues: self.model.read().await.cues.clone(),
+                }) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
-            ModelCommand::AddCue { cue, position } => {
-                let id_exists = {
-                    let model = self.model.read().await;
-                    model.cues.iter().any(|c| c.id == cue.id)
-                };
-
+            ModelCommand::AddCue { mut cue, position } => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let event = if id_exists {
-                    BackendEvent::OperationFailed {
+                if self.is_cue_exists(&cue.id).await {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: format!("Cue already exist: cue_id={}", cue.id),
+                            message: "Failed to add cue, id already exists.".into(),
                         },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
-                } else {
-                    let mut new_cue = cue.clone();
-                    if let CueParam::Audio(audio_param) = &mut new_cue.params
+                    return;
+                }
+                if let CueParam::Audio(audio_param) = &mut cue.params
+                    && let Some(model_path) = model_path_option.as_ref()
+                    && self.copy_assets_when_add
+                {
+                    let import_destination = {
+                        let model = self.model.read().await;
+                        model.settings.general.copy_assets_destination.clone()
+                    };
+                    let new_target = Self::import_asset_file(
+                        &audio_param.target,
+                        model_path,
+                        &import_destination,
+                    )
+                    .await;
+                    if let Ok(target) = new_target {
+                        audio_param.target = target;
+                    } // ignore failed to import asset. use absolute path
+                }
+                if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: format!("Failed to add cue, {}.", e),
+                        },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                    return;
+                }
+                self.modify_status.store(true, Ordering::Release);
+                if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                    cues: self.model.read().await.cues.clone(),
+                }) {
+                    log::warn!("Failed to send event, {}", e);
+                }
+            }
+            ModelCommand::AddCues { cues, position } => {
+                let model_path_option = self.project_status.read().await.to_model_path_option();
+                let mut valid_cues = Vec::new();
+                let mut valid_cue_ids = HashSet::new();
+
+                for mut cue in cues {
+                    if self.is_cue_exists(&cue.id).await {
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueEdit {
+                                message: "Failed to add cue, id already exists.".into(),
+                            },
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
+                        }
+                        continue;
+                    } else if !valid_cue_ids.insert(cue.id) {
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueEdit {
+                                message: "Failed to add cue, duplicate id found.".into(),
+                            },
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
+                        }
+                        continue;
+                    }
+                    if let CueParam::Audio(audio_param) = &mut cue.params
                         && let Some(model_path) = model_path_option.as_ref()
                         && self.copy_assets_when_add
                     {
@@ -153,129 +207,137 @@ impl ShowModelManager {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
                     }
-                    if let Err(e) = self.insert_cue_at_position(new_cue, position).await {
-                        BackendEvent::OperationFailed {
-                            error: BackendError::CueEdit {
-                                message: format!("Failed to add cue. {}", e),
-                            },
-                        }
-                    } else {
-                        self.modify_status.store(true, Ordering::Release);
-                        BackendEvent::CueListUpdated {
-                            cues: self.model.read().await.cues.clone(),
-                        }
-                    }
-                };
-                self.event_tx.send(event)?;
-                Ok(())
-            }
-            ModelCommand::AddCues { cues, position } => {
-                let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut added_cues: Vec<Cue> = Vec::new();
-                for cue in cues.iter() {
-                    let id_exists = {
-                        let model = self.model.read().await;
-                        model.cues.iter().any(|c| c.id == cue.id)
-                    };
-                    if id_exists {
-                        self.event_tx.send(BackendEvent::OperationFailed {
-                            error: BackendError::CueEdit {
-                                message: format!("Cue already exist. cue_id={}", cue.id),
-                            },
-                        })?;
-                    } else {
-                        let mut new_cue = cue.clone();
-                        if let CueParam::Audio(audio_param) = &mut new_cue.params
-                            && let Some(model_path) = model_path_option.as_ref()
-                            && self.copy_assets_when_add
-                        {
-                            let import_destination = {
-                                let model = self.model.read().await;
-                                model.settings.general.copy_assets_destination.clone()
-                            };
-                            let new_target = Self::import_asset_file(
-                                &audio_param.target,
-                                model_path,
-                                &import_destination,
-                            )
-                            .await;
-                            if let Ok(target) = new_target {
-                                audio_param.target = target;
-                            } // ignore failed to import asset. use absolute path
-                        }
-
-                        let result = if added_cues.is_empty() {
-                            self.insert_cue_at_position(new_cue.clone(), position.clone())
-                                .await
-                        } else {
-                            self.insert_cue_at_position(
-                                new_cue.clone(),
-                                InsertPosition::After {
-                                    target: added_cues.last().unwrap().id,
-                                },
-                            )
-                            .await
-                        };
-
-                        if let Err(e) = result {
-                            let _ = self.event_tx.send(BackendEvent::OperationFailed {
-                                error: BackendError::CueEdit {
-                                    message: format!("Failed to add cue. {}", e),
-                                },
-                            });
-                        } else {
-                            added_cues.push(new_cue.clone());
-                        }
-                    }
+                    valid_cues.push(cue);
                 }
-                if !added_cues.is_empty() {
-                    self.modify_status.store(true, Ordering::Release);
-                    self.event_tx.send(BackendEvent::CueListUpdated {
-                        cues: self.model.read().await.cues.clone(),
-                    })?;
+                if valid_cues.is_empty() {
+                    return;
                 }
-                Ok(())
+                if let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: format!("Failed to add cues, {}.", e),
+                        },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                    return;
+                }
+
+                self.modify_status.store(true, Ordering::Release);
+                if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                    cues: self.model.read().await.cues.clone(),
+                }) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::RemoveCue { cue_id } => {
-                let event = if self.remove_cue_by_id(&cue_id).await.is_none() {
-                    BackendEvent::OperationFailed {
+                if self.remove_cue_by_id(&cue_id).await.is_none() {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: "Failed to remove cue. id not found.".into(),
+                            message: "Failed to remove cue, id not found.".to_string(),
                         },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
                 } else {
-                    self.event_tx.send(BackendEvent::CueRemoved { cue_id })?;
-                    self.modify_status.store(true, Ordering::Release);
-                    BackendEvent::CueListUpdated {
-                        cues: self.model.read().await.cues.clone(),
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved {
+                        cue_ids: HashSet::from_iter([cue_id]),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
-                };
-                self.event_tx.send(event)?;
-                Ok(())
+                    self.modify_status.store(true, Ordering::Release);
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                }
+            }
+            ModelCommand::RemoveCues { cue_ids } => {
+                let removed_cues = self.remove_cues_by_id(cue_ids.clone()).await;
+                if removed_cues.is_empty() {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: "Failed to remove cues, id not found.".to_string(),
+                        },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                } else {
+                    let removed_ids = removed_cues.iter().map(|val| val.id).collect();
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved { cue_ids: removed_ids }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                    self.modify_status.store(true, Ordering::Release);
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                }
             }
             ModelCommand::MoveCue { cue_id, position } => {
-                let event = if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
-                    if let Err(e) = self.insert_cue_at_position(cue, position).await {
-                        BackendEvent::OperationFailed {
+                let orig_cues = self.model.read().await.cues.clone();
+                if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
+                    if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
+                        self.model.write().await.cues = orig_cues;
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit {
-                                message: format!("Failed to mov cue. {}", e),
+                                message: format!("Failed to move cue, {}.", e),
                             },
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
                         }
-                    } else {
-                        self.modify_status.store(true, Ordering::Release);
-                        BackendEvent::CueListUpdated {
-                            cues: self.model.read().await.cues.clone(),
-                        }
+                        return;
+                    }
+                    self.modify_status.store(true, Ordering::Release);
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
                 } else {
-                    BackendEvent::OperationFailed {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: format!("Cue already exist: cue_id={}", cue_id),
+                            message: "Failed to move cue, id not found.".to_string(),
                         },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
                     }
-                };
-                self.event_tx.send(event)?;
-                Ok(())
+                }
+            }
+            ModelCommand::MoveCues { cue_ids, position } => {
+                let orig_cues = self.model.read().await.cues.clone();
+                let removed_cues = self.remove_cues_by_id(cue_ids).await;
+                if removed_cues.is_empty() {
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: "Failed to move cues, id not found.".to_string(),
+                        },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                } else {
+                    if let Err(e) = self.insert_cues_at_position(removed_cues, position).await {
+                        // rollback
+                        self.model.write().await.cues = orig_cues;
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueEdit {
+                                message: format!("Failed to move cues, {}.", e),
+                            },
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
+                        }
+                        return;
+                    }
+                    self.modify_status.store(true, Ordering::Release);
+
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                }
             }
             ModelCommand::RenumberCues {
                 cues,
@@ -316,28 +378,35 @@ impl ShowModelManager {
 
                 if number != start_from {
                     self.modify_status.store(true, Ordering::Release);
-                    self.event_tx.send(BackendEvent::CueListUpdated {
-                        cues: model.cues.clone(),
-                    })?;
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                        cues: self.model.read().await.cues.clone(),
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
                 }
-                Ok(())
             }
             ModelCommand::UpdateModelName(new_name) => {
                 let mut model = self.model.write().await;
                 model.name = new_name.clone();
                 self.modify_status.store(true, Ordering::Release);
-                self.event_tx
-                    .send(BackendEvent::ModelNameUpdated { new_name })?;
-                Ok(())
+                if let Err(e) = self
+                    .event_tx
+                    .send(BackendEvent::ModelNameUpdated { new_name })
+                {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::UpdateSettings(new_settings) => {
                 let mut model = self.model.write().await;
                 // TODO setting validation
                 model.settings = *new_settings.clone();
                 self.modify_status.store(true, Ordering::Release);
-                self.event_tx
-                    .send(BackendEvent::SettingsUpdated { new_settings })?;
-                Ok(())
+                if let Err(e) = self
+                    .event_tx
+                    .send(BackendEvent::SettingsUpdated { new_settings })
+                {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::Reset => {
                 {
@@ -349,10 +418,11 @@ impl ShowModelManager {
                     let mut project_status_lock = self.project_status.write().await;
                     *project_status_lock = ProjectStatus::Unsaved;
                 }
-                self.event_tx.send(BackendEvent::ShowModelReset {
+                if let Err(e) = self.event_tx.send(BackendEvent::ShowModelReset {
                     model: self.read().await.clone(),
-                })?;
-                Ok(())
+                }) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::Save => {
                 let event = if let ProjectStatus::Saved { project_type, path } =
@@ -362,7 +432,7 @@ impl ShowModelManager {
                         Err(error) => {
                             log::error!("Failed to save model file: {}", error);
                             BackendEvent::OperationFailed {
-                                error: BackendError::FileSave {
+                                error: BackendError::SaveToFile {
                                     path: path.to_path_buf(),
                                     message: error.to_string(),
                                 },
@@ -385,27 +455,30 @@ impl ShowModelManager {
                     log::warn!(
                         "Save command issued, but no file path is set. Use SaveToFile first."
                     );
-                    BackendEvent::OperationFailed { error: BackendError::FileSave { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
+                    BackendEvent::OperationFailed { error: BackendError::SaveToFile { path: PathBuf::new(), message: "Save command issued, but no file path is set. Use SaveToFile first.".to_string() } }
                 };
-                self.event_tx.send(event)?;
-                Ok(())
+                if let Err(e) = self.event_tx.send(event) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::SaveToFile(path) => {
                 let event = match self.save_to_file(&path, &ProjectType::SingleFile).await {
                     Err(error) => {
                         log::error!("Failed to save model file: {}", error);
                         BackendEvent::OperationFailed {
-                            error: BackendError::FileSave {
+                            error: BackendError::SaveToFile {
                                 path,
                                 message: error.to_string(),
                             },
                         }
                     }
                     Ok(modified) => {
-                        if modified {
-                            let _ = self.event_tx.send(BackendEvent::CueListUpdated {
+                        if modified
+                            && let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
                                 cues: self.model.read().await.cues.clone(),
-                            });
+                            })
+                        {
+                            log::warn!("Failed to send event, {}", e);
                         }
                         self.modify_status.store(false, Ordering::Release);
                         {
@@ -421,12 +494,22 @@ impl ShowModelManager {
                         }
                     }
                 };
-                self.event_tx.send(event)?;
-                Ok(())
+                if let Err(e) = self.event_tx.send(event) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::ExportToFolder(path) => {
                 if !path.is_dir() {
-                    anyhow::bail!("Failed to export to folder. path is not directory.");
+                    if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                        error: BackendError::ExportToFolder {
+                            path,
+                            message: "Failed to export to folder. path is not directory."
+                                .to_string(),
+                        },
+                    }) {
+                        log::warn!("Failed to send event, {}", e);
+                    }
+                    return;
                 }
                 let model_file_path = path.join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME);
                 let event = match self
@@ -436,17 +519,19 @@ impl ShowModelManager {
                     Err(error) => {
                         log::error!("Failed to export model to folder: {}", error);
                         BackendEvent::OperationFailed {
-                            error: BackendError::FileSave {
+                            error: BackendError::SaveToFile {
                                 path: model_file_path.clone(),
                                 message: error.to_string(),
                             },
                         }
                     }
                     Ok(modified) => {
-                        if modified {
-                            let _ = self.event_tx.send(BackendEvent::CueListUpdated {
+                        if modified
+                            && let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
                                 cues: self.model.read().await.cues.clone(),
-                            });
+                            })
+                        {
+                            log::warn!("Failed to send event, {}", e);
                         }
                         self.modify_status.store(false, Ordering::Release);
                         {
@@ -462,15 +547,16 @@ impl ShowModelManager {
                         }
                     }
                 };
-                self.event_tx.send(event)?;
-                Ok(())
+                if let Err(e) = self.event_tx.send(event) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
             ModelCommand::LoadFromFile(path) => {
                 let event = match self.load_from_file(path.as_path()).await {
                     Err(error) => {
                         log::error!("Failed to load model file: {}", error);
                         BackendEvent::OperationFailed {
-                            error: BackendError::FileLoad {
+                            error: BackendError::LoadFromFile {
                                 path,
                                 message: error.to_string(),
                             },
@@ -493,8 +579,9 @@ impl ShowModelManager {
                         }
                     }
                 };
-                self.event_tx.send(event)?;
-                Ok(())
+                if let Err(e) = self.event_tx.send(event) {
+                    log::warn!("Failed to send event, {}", e);
+                }
             }
         }
     }
@@ -506,6 +593,24 @@ impl ShowModelManager {
     #[cfg(test)]
     pub async fn write(&self) -> tokio::sync::RwLockWriteGuard<'_, ShowModel> {
         self.model.write().await
+    }
+
+    async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
+        let model = self.read().await;
+        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
+
+        while let Some(cue) = queue.pop_front() {
+            if cue.id == *cue_id {
+                return true;
+            }
+
+            if let CueParam::Group { children, .. } = &cue.params {
+                for child in children.iter() {
+                    queue.push_back(child);
+                }
+            }
+        }
+        false
     }
 
     async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
@@ -528,7 +633,27 @@ impl ShowModelManager {
         None
     }
 
-    async fn update_cue_by_id(&self, cue_id: &Uuid, new_cue: Cue) -> Result<(), String> {
+    async fn remove_cues_by_id(&self, mut cue_ids: HashSet<Uuid>) -> Vec<Cue> {
+        let mut model = self.model.write().await;
+        let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
+        let mut removed_cues = Vec::new();
+
+        while let Some(cues) = queue.pop_front() {
+            removed_cues.extend(cues.extract_if(.., |cue| cue_ids.remove(&cue.id)));
+            if cue_ids.is_empty() {
+                return removed_cues;
+            }
+
+            for cue in cues.iter_mut() {
+                if let CueParam::Group { children, .. } = &mut cue.params {
+                    queue.push_back(children);
+                }
+            }
+        }
+        removed_cues
+    }
+
+    async fn update_cue_by_id(&self, cue_id: &Uuid, new_cue: Cue) -> anyhow::Result<()> {
         let mut model = self.model.write().await;
         let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
 
@@ -546,14 +671,14 @@ impl ShowModelManager {
                 }
             }
         }
-        Err(format!("cue not found. id={}", cue_id))
+        Err(anyhow::anyhow!("cue not found. id={}", cue_id))
     }
 
-    async fn insert_cue_at_position(
+    async fn insert_cues_at_position(
         &self,
-        insert_cue: Cue,
+        insert_cues: Vec<Cue>,
         position: InsertPosition,
-    ) -> Result<(), String> {
+    ) -> anyhow::Result<()> {
         let mut model = self.model.write().await;
         match position {
             InsertPosition::Before { target } => {
@@ -562,7 +687,7 @@ impl ShowModelManager {
                 while let Some(cues) = queue.pop_front() {
                     for (index, cue) in cues.iter().enumerate() {
                         if cue.id == target {
-                            cues.insert(index, insert_cue);
+                            cues.splice(index..index, insert_cues);
                             return Ok(());
                         }
                     }
@@ -573,7 +698,7 @@ impl ShowModelManager {
                         }
                     }
                 }
-                Err("target id not found.".into())
+                Err(anyhow::anyhow!("target id not found."))
             }
             InsertPosition::After { target } => {
                 let mut queue: VecDeque<&mut Vec<Cue>> = VecDeque::from([&mut model.cues]);
@@ -581,7 +706,8 @@ impl ShowModelManager {
                 while let Some(cues) = queue.pop_front() {
                     for (index, cue) in cues.iter().enumerate() {
                         if cue.id == target {
-                            cues.insert(index + 1, insert_cue);
+                            let i = index + 1;
+                            cues.splice(i..i, insert_cues);
                             return Ok(());
                         }
                     }
@@ -592,7 +718,7 @@ impl ShowModelManager {
                         }
                     }
                 }
-                Err("target id not found.".into())
+                Err(anyhow::anyhow!("target id not found."))
             }
             InsertPosition::Inside { target, index } => {
                 if let Some(parent_id) = target {
@@ -603,10 +729,10 @@ impl ShowModelManager {
                             if let CueParam::Group { children, .. } = &mut cue.params {
                                 if cue.id == parent_id {
                                     if index <= children.len() {
-                                        children.insert(index, insert_cue);
+                                        children.splice(index..index, insert_cues);
                                         return Ok(());
                                     } else {
-                                        return Err("insert index out of range.".into());
+                                        return Err(anyhow::anyhow!("insert index out of range."));
                                     }
                                 } else {
                                     queue.push_back(children);
@@ -614,16 +740,16 @@ impl ShowModelManager {
                             }
                         }
                     }
-                    Err("target id not found.".into())
+                    Err(anyhow::anyhow!("target id not found."))
                 } else if index <= model.cues.len() {
-                    model.cues.insert(index, insert_cue);
+                    model.cues.splice(index..index, insert_cues);
                     Ok(())
                 } else {
-                    Err("insert index out of range.".into())
+                    Err(anyhow::anyhow!("insert index out of range."))
                 }
             }
             InsertPosition::Last => {
-                model.cues.push(insert_cue);
+                model.cues.extend(insert_cues);
                 Ok(())
             }
         }
@@ -795,7 +921,7 @@ mod tests {
         model::{
             ShowModel,
             cue::{
-                Cue, CueChain, CueParam,
+                Cue, CueChain, CueColor, CueParam,
                 audio::{AudioCueParam, Decibels, SoundType},
             },
             settings::ShowSettings,
@@ -841,6 +967,7 @@ mod tests {
                     number: "1".into(),
                     name: Some("test cue".into()),
                     notes: "note".into(),
+                    color: CueColor::None,
                     pre_wait: 0.0,
                     chain: CueChain::DoNotChain,
                     params: CueParam::Audio(AudioCueParam {
@@ -870,6 +997,7 @@ mod tests {
             number: "1".into(),
             name: Some("test cue".into()),
             notes: "note".into(),
+            color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {
@@ -938,6 +1066,7 @@ mod tests {
             number: "1".into(),
             name: Some("test cue".into()),
             notes: "note".into(),
+            color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             params: CueParam::Audio(AudioCueParam {

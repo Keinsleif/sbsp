@@ -11,7 +11,7 @@ export const useUiState = defineStore(
     const permission = ref<Permissions>(0b0111);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
     const selected = ref<string | null>(null);
-    const selectedRows = ref<string[]>([]);
+    const selectedRows = ref<Set<string>>(new Set());
     const expandedRows = ref<string[]>([]);
     const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
@@ -43,25 +43,30 @@ export const useUiState = defineStore(
 
     const clearSelected = () => {
       selected.value = null;
-      selectedRows.value = [];
+      selectedRows.value.clear();
       setPlaybackCursor(null);
     };
     const setSelected = (id: string) => {
       selected.value = id;
-      selectedRows.value = [id];
+      selectedRows.value.clear();
+      selectedRows.value.add(id);
       setPlaybackCursor(id);
     };
     const addSelected = (id: string) => {
       selected.value = id;
-      if (!selectedRows.value.includes(id)) {
-        selectedRows.value.push(id);
-      }
+      selectedRows.value.add(id);
       setPlaybackCursor(id);
     };
-    const removeFromSelected = (id: string) => {
-      if (selectedRows.value.includes(id)) {
-        selectedRows.value = selectedRows.value.filter(selected => selected != id);
-        const newValue = selectedRows.value[selectedRows.value.length - 1] || null;
+    const removeFromSelected = (ids: string[]) => {
+      let rm_selected = false;
+      for (let id of ids) {
+        selectedRows.value.delete(id);
+        if (!rm_selected && id == selected.value) {
+          rm_selected = true;
+        }
+      }
+      if (rm_selected) {
+        const newValue = selectedRows.value.values().next().value || null;
         selected.value = newValue;
         setPlaybackCursor(selected.value);
       }

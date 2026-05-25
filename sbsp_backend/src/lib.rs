@@ -18,6 +18,9 @@ use crate::{
 };
 use crate::{controller::state::ShowState, manager::ProjectStatus, model::ShowModel};
 
+#[cfg(feature = "type_export")]
+pub use ts_rs;
+
 pub mod action;
 #[cfg(feature = "backend")]
 pub mod asset_processor;

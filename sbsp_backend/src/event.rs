@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 use crate::executor::ExecutorEvent;
 use crate::{
     asset_processor::{AssetData, AssetMetadata},
@@ -43,7 +43,7 @@ pub enum BackendEvent {
         model: ShowModel,
     },
     CueRemoved {
-        cue_id: Uuid,
+        cue_ids: HashSet<Uuid>,
     },
     CueListUpdated {
         cues: Vec<Cue>,
@@ -144,13 +144,14 @@ pub enum CueStatusEventParam {
     rename_all_fields = "camelCase"
 )]
 pub enum BackendError {
-    FileSave { path: PathBuf, message: String },
-    FileLoad { path: PathBuf, message: String },
+    SaveToFile { path: PathBuf, message: String },
+    LoadFromFile { path: PathBuf, message: String },
+    ExportToFolder { path: PathBuf, message: String },
     CueEdit { message: String },
     Custom { id: usize, message: String },
 }
 
-#[cfg(not(feature = "type_export"))]
+#[cfg(feature = "backend")]
 impl TryFrom<ExecutorEvent> for BackendEvent {
     type Error = ();
 

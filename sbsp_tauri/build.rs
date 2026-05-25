@@ -5,20 +5,22 @@ use sbsp_backend::{
     event::BackendEvent,
     helper::SupportedHardware,
     model::ShowModel,
+    ts_rs::{Config, TS},
 };
 use sbsp_license::data::LicenseInformation;
-use ts_rs::TS;
 
 fn main() {
-    <ShowModel as TS>::export_all().unwrap();
-    <ShowState as TS>::export_all().unwrap();
-    <BackendEvent as TS>::export_all().unwrap();
-    <AssetData as TS>::export_all().unwrap();
-    <ApiServerOptions as TS>::export_all().unwrap();
-    <WsCommand as TS>::export_all().unwrap();
-    <WsFeedback as TS>::export_all().unwrap();
-    <LicenseInformation as TS>::export_all().unwrap();
-    <SupportedHardware as TS>::export_all().unwrap();
+    let config = Config::from_env();
+
+    <ShowModel as TS>::export_all(&config).unwrap();
+    <ShowState as TS>::export_all(&config).unwrap();
+    <BackendEvent as TS>::export_all(&config).unwrap();
+    <AssetData as TS>::export_all(&config).unwrap();
+    <ApiServerOptions as TS>::export_all(&config).unwrap();
+    <WsCommand as TS>::export_all(&config).unwrap();
+    <WsFeedback as TS>::export_all(&config).unwrap();
+    <LicenseInformation as TS>::export_all(&config).unwrap();
+    <SupportedHardware as TS>::export_all(&config).unwrap();
 
     tauri_build::build()
 }

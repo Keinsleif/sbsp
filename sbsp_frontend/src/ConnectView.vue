@@ -82,7 +82,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
-import { target, useApi } from './api';
+import { useApi } from './api';
 import { useUiState } from './stores/uistate';
 
 const { t } = useI18n();
@@ -129,7 +129,7 @@ onMounted(() => {
     })
     .then(ulfn => (unlisten = ulfn));
 
-  if (target == 'websocket') {
+  if (__IS_WEBSOCKET__) {
     const searchParams = new URLSearchParams(window.location.search);
     const address = searchParams.get('address');
     if (address != null) {

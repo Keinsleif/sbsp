@@ -1,9 +1,8 @@
 use crate::AppState;
 use sbsp_backend::{
     action::{AudioAction, CueAction},
-    model::cue::audio::Decibels,
+    model::cue::{Uuid, audio::Decibels},
 };
-use uuid::Uuid;
 
 #[tauri::command]
 pub async fn go(state: tauri::State<'_, AppState>) -> Result<(), String> {

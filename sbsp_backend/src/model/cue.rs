@@ -3,7 +3,7 @@ pub mod group;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use uuid::Uuid;
+pub use uuid::Uuid;
 
 use crate::model::cue::{
     audio::{AudioCueParam, Decibels, FadeParam},
@@ -17,10 +17,27 @@ pub struct Cue {
     pub number: String,
     pub name: Option<String>,
     pub notes: String,
+    #[serde(default)]
+    pub color: CueColor,
     pub pre_wait: f64,
     #[serde(default)]
     pub chain: CueChain,
     pub params: CueParam,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum CueColor {
+    #[default]
+    None,
+    Red,
+    Purple,
+    Blue,
+    Cyan,
+    Green,
+    Yellow,
+    Orange,
+    Grey,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]

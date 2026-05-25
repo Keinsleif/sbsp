@@ -9,7 +9,8 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import type { SupportedHardware } from '../types/SupportedHardware';
-import { Permissions } from '../types/Permissions';
+import type { Permissions } from '../types/Permissions';
+import type { InsertPosition } from '../types/InsertPosition';
 
 type UnlistenFn = () => void;
 
@@ -55,10 +56,12 @@ export interface IBackendAdapter {
 
   // Model commands
   updateCue(cue: Cue): Promise<void>;
-  addCue(cue: Cue, targetId: string | null, toBefore: boolean): void;
-  addCues(cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void>;
-  removeCue(cueId: string): Promise<void>;
-  moveCue(cueId: string, targetId: string | null): Promise<void>;
+  addCue(cue: Cue, targetId: string | null, toBefore: boolean): Promise<string>;
+  addCues(cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]>;
+  removeCue(cueId: string, confirm_remove?: boolean): Promise<void>;
+  removeCues(cueIds: string[], confirm_remove?: boolean): Promise<void>;
+  moveCue(cueId: string, position: InsertPosition): Promise<void>;
+  moveCues(cueIds: string[], position: InsertPosition): Promise<void>;
   renumberCues(cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void>;
   updateModelName(newName: string): Promise<void>;
   updateShowSettings(newSettings: ShowSettings): Promise<void>;

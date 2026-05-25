@@ -1,6 +1,5 @@
 <template>
   <v-app
-    height="100vh"
     @contextmenu.prevent
   >
     <v-app-bar
@@ -13,9 +12,7 @@
     </v-app-bar>
 
     <v-main style="height: 100vh">
-      <v-sheet class="d-flex h-100">
-        <CueList />
-      </v-sheet>
+      <CueList />
     </v-main>
 
     <v-footer
@@ -54,26 +51,15 @@
       />
     </v-navigation-drawer>
 
-    <v-snackbar-queue
-      v-model="uiState.success_messages"
-      timeout="2000"
-      color="success"
-    />
-    <v-snackbar-queue
-      v-model="uiState.error_messages"
-      timeout="2000"
-      color="error"
-    />
-
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
     <settings-dialog v-model="uiState.isSettingsDialogOpen" />
     <file-list-dialog
-      v-if="side == 'remote'"
+      v-if="!isHost"
       v-model="uiState.fileListResolver"
       :multiple="uiState.fileListOption"
     />
     <server-panel-dialog
-      v-if="side == 'host'"
+      v-if="isHost"
       v-model="uiState.isServerPanelOpen"
     />
   </v-app>
@@ -91,12 +77,14 @@ import RenumberDialog from './components/dialog/RenumberDialog.vue';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
 import FileListDialog from './components/dialog/FileListDialog.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
-import { useApi, side } from './api';
+import { useApi } from './api';
 import { useDisplay } from 'vuetify/lib/composables/display.mjs';
 import { storeToRefs } from 'pinia';
 import { computed, ref, toRaw, watch } from 'vue';
 import type { Cue } from './types/Cue';
 import { debounce } from './utils';
+
+const isHost = __IS_HOST__;
 
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);

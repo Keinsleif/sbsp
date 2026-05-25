@@ -1,6 +1,6 @@
 [tools]
 node = "lts"
-pnpm = "10"
+pnpm = "11"
 rust = "latest"
 "cargo:tauri-cli" = { version = "latest", depends = ["rust"]}
 "cargo:cargo-about" = { version = "latest", depends = ["rust"]}

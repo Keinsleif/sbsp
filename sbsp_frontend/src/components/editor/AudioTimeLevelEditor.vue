@@ -7,6 +7,7 @@
       v-model="selectedCue"
       :height-px="125"
       :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :volume="volume"
       @update="emit('update')"
     />
     <div class="d-flex flex-column flex-sm-row ga-0 ga-sm-3 align-center">

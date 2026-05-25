@@ -86,7 +86,7 @@ const preview = computed(() => {
 
 const onDone = () => {
   api
-    .renumberCues(uiState.selectedRows, startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
+    .renumberCues(Array.from(uiState.selectedRows), startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
     .then(() => {
       isRenumberDialogOpen.value = false;
     })

@@ -76,13 +76,15 @@ import { useShowModel } from '../../stores/showmodel';
 import CueListRow from './CueListRow.vue';
 import { getLockCursorToSelection } from '../../utils';
 import { useApi } from '../../api';
+import { useUiState } from '../../stores/uistate';
 
 const { t } = useI18n();
 const api = useApi();
 const showModel = useShowModel();
+const uiState = useUiState();
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!getLockCursorToSelection()) {
+  if (uiState.mode != 'view' && !getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
   }
 };

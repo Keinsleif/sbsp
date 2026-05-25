@@ -18,7 +18,7 @@
       :text="t('dialog.update.updatesAvailable')"
       @click="uiState.isUpdateDialogOpen = true"
     />
-    <v-sheet class="ml-auto mr-auto">
+    <v-sheet class="ml-auto mr-auto text-no-wrap">
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </v-sheet>
     <v-sheet class="d-flex align-center">
@@ -33,7 +33,7 @@
         {{ t('main.footBar.processingIndicator', { size: assetResult.processing.size }) }}
       </div>
       <v-btn
-        v-if="side == 'host'"
+        v-if="isHost"
         :icon="mdiServer"
         size="small"
         variant="text"
@@ -67,10 +67,12 @@ import { useUiState } from '../../stores/uistate';
 import { useShowModel } from '../../stores/showmodel';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side, target } from '../../api';
+import { useApi } from '../../api';
 import { useAssetResult } from '../../stores/assetResult';
 import { computed, onMounted, ref } from 'vue';
 import { check } from '@tauri-apps/plugin-updater';
+
+const isHost = __IS_HOST__;
 
 const { t } = useI18n();
 
@@ -81,14 +83,14 @@ const assetResult = useAssetResult();
 
 const isUpdateAvailable = ref(false);
 
-const ALL_MODES = [
+const ALL_MODES = computed(() => [
   { title: t('main.footBar.modes.view'), value: 'view' },
   { title: t('main.footBar.modes.run'), value: 'run' },
   { title: t('main.footBar.modes.edit'), value: 'edit' },
-];
+]);
 
 const modes = computed(() => {
-  return ALL_MODES.filter((val) => {
+  return ALL_MODES.value.filter((val) => {
     if (uiState.permission == null) return false;
     if (val.value == 'view' && uiState.permission & 0b0001) {
       return true;
@@ -104,7 +106,7 @@ const modes = computed(() => {
 });
 
 onMounted(() => {
-  if (target == 'tauri' && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
+  if (__IS_TAURI__ && Date.now() - uiState.lastUpdateCheckDate > 86400000) {
     check().then((value) => {
       if (value != null) {
         isUpdateAvailable.value = true;
@@ -125,7 +127,7 @@ const openServerPanel = () => {
     if (info != null && info.edition == 'Pro') {
       uiState.isServerPanelOpen = true;
     } else {
-      message(t('dialog.message.license.serverPanel'), { title: t('dialog.message.license.proTitle') });
+      message(t('dialog.message.license.serverPanel'), { kind: 'info', title: t('dialog.message.license.proTitle') });
     }
   });
 };

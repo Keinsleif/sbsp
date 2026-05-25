@@ -4,7 +4,6 @@ import type { ShowModel } from '../types/ShowModel';
 import type { Cue } from '../types/Cue';
 import { useUiState } from './uistate';
 import { useUiSettings } from './uiSettings';
-import { v4 } from 'uuid';
 import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
@@ -90,6 +89,10 @@ export const useShowModel = defineStore('showmodel', {
         return this.flatCueList.find(entry => entry.cue.id == cue_id)?.cue;
       };
     },
+    getSelectedCues(): Cue[] {
+      const uiState = useUiState();
+      return this.flatCueList.filter(entry => uiState.selectedRows.has(entry.cue.id)).map(entry => entry.cue);
+    },
     flatCueList(state) {
       const uiState = useUiState();
       return recursiveCueCheck(state.cues, uiState.expandedRows);
@@ -125,7 +128,6 @@ export const useShowModel = defineStore('showmodel', {
         .then((assets) => {
           if (assets.length == 1) {
             const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
-            newCue.id = v4();
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0]!;
             }
@@ -134,7 +136,6 @@ export const useShowModel = defineStore('showmodel', {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
               const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
-              newCue.id = v4();
               if (newCue.params.type == 'audio') {
                 newCue.params.target = asset_path;
               }
@@ -150,7 +151,6 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      newCue.id = v4();
       api.addCue(newCue, uiState.selected, false);
     },
     addEmptyFadeCue() {
@@ -158,7 +158,6 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
-      newCue.id = v4();
       if (newCue.params.type == 'fade' && uiState.selected != null) {
         const targetCue = this.getCueById(uiState.selected);
         if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
@@ -189,7 +188,6 @@ export const useShowModel = defineStore('showmodel', {
           newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
           break;
       }
-      newCue.id = v4();
       const targetCue = this.cues.find(cue => cue.id == uiState.selected);
       if (
         targetCue != null
@@ -205,20 +203,12 @@ export const useShowModel = defineStore('showmodel', {
     addEmptyGroupCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
-      const showModel = useShowModel();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
-      newCue.id = v4();
       if (newCue.params.type == 'group') {
-        for (const item of showModel.flatCueList) {
-          if (uiState.selectedRows.includes(item.cue.id)) {
-            newCue.params.children.push(item.cue);
-          }
-        }
-        for (const cue of newCue.params.children) {
-          api.removeCue(cue.id);
-        }
-        api.addCue(newCue, null, false);
+        api.addCue(newCue, null, false).then((id) => {
+          api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0});
+        });
       }
     },
   },

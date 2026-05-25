@@ -10,14 +10,16 @@ import type { ServiceEntry } from '../types/ServiceEntry';
 import type { LicenseInformation } from '../types/LicenseInformation';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import { open, save } from '@tauri-apps/plugin-dialog';
+import { message, open, save } from '@tauri-apps/plugin-dialog';
 import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useUiState } from '../stores/uistate';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
-import { SupportedHardware } from '../types/SupportedHardware';
-import { Permissions } from '../types/Permissions';
+import type { SupportedHardware } from '../types/SupportedHardware';
+import type { Permissions } from '../types/Permissions';
+import type { InsertPosition } from '../types/InsertPosition';
+import { v4 } from 'uuid';
 
 const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
@@ -227,17 +229,50 @@ export function useTauriApi(): IBackendAdapter {
     updateCue: function (cue: Cue): Promise<void> {
       return invoke('update_cue', { cue: cue });
     },
-    addCue: function (cue: Cue, targetId: string | null, toBefore: boolean): void {
-      invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore }).catch(e => console.error(e));
+    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+      cue.id = v4();
+      await invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore });
+      return cue.id;
     },
-    addCues: function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<void> {
-      return invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
+    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
+      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
+      await invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
+      return cueIds;
     },
-    removeCue: function (cueId: string): Promise<void> {
-      return invoke('remove_cue', { cueId: cueId });
+    removeCue: async function (cueId: string, confirm_remove: boolean = true) {
+      if (confirm_remove) {
+        const removeOk = await message(t('dialog.message.removeCue'), {
+          title: t('dialog.message.confirmation'),
+          kind: 'warning',
+          buttons: 'OkCancel',
+        });
+        if (removeOk != 'Ok') {
+          return;
+        }
+      }
+      await invoke('remove_cue', { cueId: cueId });
     },
-    moveCue: function (cueId: string, targetId: string | null): Promise<void> {
-      return invoke('move_cue', { cueId: cueId, targetId: targetId });
+    removeCues: async function (cueIds: string[], confirm_remove: boolean = true) {
+      if (cueIds.length === 0) {
+        return;
+      }
+      if (confirm_remove) {
+        const removeOk = await message(t('dialog.message.removeCue'), {
+          title: t('dialog.message.confirmation'),
+          kind: 'warning',
+          buttons: 'OkCancel',
+        });
+        if (removeOk != 'Ok') {
+          return;
+        }
+      }
+      await invoke('remove_cues', { cueIds: cueIds });
+    },
+    moveCue: function (cueId: string, position: InsertPosition): Promise<void> {
+      return invoke('move_cue', { cueId: cueId, position: position });
+    },
+    moveCues: function (cueIds: string[], position: InsertPosition): Promise<void> {
+      return invoke('move_cues', { cueIds: cueIds, position: position });
     },
     renumberCues: function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
       return invoke('renumber_cues', { cues, startFrom, increment, prefix, suffix });

@@ -10,7 +10,7 @@
     },
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": {
-      "script": "pnpm build:host",
+      "script": "pnpm build:web && pnpm build:host",
       "cwd": "../sbsp_frontend"
     },
     "frontendDist": "../sbsp_frontend/dist/tauri/host",

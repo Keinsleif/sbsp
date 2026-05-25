@@ -1,5 +1,11 @@
 <template>
-  <div class="d-flex flex-row ga-2">
+  <div
+    class="d-flex flex-row ga-2"
+    @contextmenu.prevent="
+      contextMenuPosition = [$event.clientX, $event.clientY];
+      isContextMenuOpen = true;
+    "
+  >
     <div class="d-flex flex-column align-center justify-center ga-2 mb-2">
       <div class="d-flex flex-row align-center ga-2">
         <time-input
@@ -53,7 +59,6 @@
         :prepend-icon="uiState.isEnvelopeVisible ? mdiEye : mdiEyeOff"
         class="align-self-start"
         density="compact"
-        color="white"
         variant="outlined"
         width="175px"
         @click="uiState.isEnvelopeVisible = !uiState.isEnvelopeVisible"
@@ -98,7 +103,7 @@
         <path
           v-if="waveformPath != null"
           :d="waveformPath"
-          :transform="`translate(0, ${contentHeight * 0.125})`"
+          :transform="waveformTransform"
           :class="$style.waveform"
           transform-origin="center"
         />
@@ -223,6 +228,30 @@
         @click="clearSegments"
       />
     </div>
+    <v-menu
+      v-model="isContextMenuOpen"
+      :target="contextMenuPosition || undefined"
+      density="compact"
+    >
+      <v-list
+        density="compact"
+        class="pa-0 border"
+        @contextmenu.prevent
+      >
+        <v-list-item
+          height="40px"
+          density="compact"
+        >
+          <v-checkbox
+            v-model="uiState.scaleWaveform"
+            style="font-size: 0.8em"
+            :label="t('main.bottomEditor.timeLevels.scaleWaveform')"
+            density="compact"
+            hide-details
+          />
+        </v-list-item>
+      </v-list>
+    </v-menu>
   </div>
 </template>
 
@@ -230,7 +259,7 @@
 import { computed, ref, shallowRef, StyleValue, toRaw, useTemplateRef, watch } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showstate';
-import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn, watchDebounced } from '@vueuse/core';
+import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import { Cue } from '../../types/Cue';
 import { mdiEye, mdiEyeOff, mdiMinus, mdiPlus, mdiSkipNext, mdiSkipPrevious, mdiTrashCan } from '@mdi/js';
@@ -251,10 +280,12 @@ const envelopeParent = useTemplateRef('parent');
 const props = withDefaults(
   defineProps<{
     heightPx?: number;
+    volume?: number;
     disabled?: boolean;
   }>(),
   {
     heightPx: 75,
+    volume: 0,
     disabled: false,
   },
 );
@@ -282,6 +313,9 @@ const buildTimeRange = () => {
   const end = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
   return { start, end, delta: end - start };
 };
+
+const isContextMenuOpen = ref(false);
+const contextMenuPosition = ref<[number, number] | null>(null);
 
 const dragging = ref<{
   index: number;
@@ -358,7 +392,7 @@ const buildWaveformPath = (source: number[], height: number, width: number) => {
   return result;
 };
 
-const { workerFn, workerStatus } = useWebWorkerFn(buildWaveformPath);
+const { workerFn, workerStatus, workerTerminate } = useWebWorkerFn(buildWaveformPath);
 
 const updateWaveformPath = async () => {
   if (svgWidth.value < 1 || selectedCue.value == null) {
@@ -371,12 +405,32 @@ const updateWaveformPath = async () => {
     waveformPath.value = '';
     return;
   }
-  if (workerStatus.value != 'RUNNING') {
+
+  if (workerStatus.value == 'RUNNING') {
+    workerTerminate();
+  }
+
+  try {
     waveformPath.value = await workerFn(toRaw(source), contentHeight.value, svgWidth.value);
+  } catch (error) {
+    console.error(error);
   }
 };
 
-watchDebounced([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], updateWaveformPath, { debounce: 200 });
+watch([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], (newValue, oldValue) => {
+  if (newValue[2] != oldValue[2]) {
+    waveformPath.value = '';
+  }
+  updateWaveformPath();
+});
+
+const waveformTransform = computed(() => {
+  if (uiState.scaleWaveform) {
+    return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
+  } else {
+    return `translate(0, ${contentHeight.value * 0.125})`;
+  }
+});
 
 const {
   x: mouseX,

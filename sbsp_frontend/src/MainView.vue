@@ -15,7 +15,7 @@ import { useUiSettings } from './stores/uiSettings';
 import { getLockCursorToSelection } from './utils';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi, side } from './api';
+import { useApi } from './api';
 import { useIntervalFn } from '@vueuse/core';
 import MainViewDesktop from './MainViewDesktop.vue';
 import { useDisplay } from 'vuetify';
@@ -45,7 +45,7 @@ let rafNumber: number | null = null;
 
 onMounted(() => {
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+  api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   useIntervalFn(
     () => {
@@ -81,12 +81,15 @@ onMounted(() => {
               if (uiState.selected != cueId) {
                 uiState.selected = cueId;
                 uiState.expandToVisible(cueId);
-                if (!uiState.selectedRows.includes(cueId)) {
-                  uiState.selectedRows = [cueId];
+                // This operation not using uiState.addSelected to avoid updating playbackcursor.
+                if (!uiState.selectedRows.has(cueId)) {
+                  uiState.selectedRows.clear();
+                  uiState.selectedRows.add(cueId);
                 }
               }
             } else {
-              uiState.selectedRows = [];
+              // This operation not using uiState.addSelected to avoid updating playbackcursor.
+              uiState.selectedRows.clear();
               uiState.selected = null;
             }
           }
@@ -98,26 +101,24 @@ onMounted(() => {
         case 'showModelLoaded':
           showModel.updateAll(event.param.model);
           uiState.success(t('notification.modelLoaded'));
-          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'showModelSaved':
           uiState.success(t('notification.modelSaved'));
           break;
         case 'showModelReset':
           showModel.updateAll(event.param.model);
-          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'cueRemoved':
-          if (uiState.selectedRows.includes(event.param.cueId)) {
-            uiState.removeFromSelected(event.param.cueId);
-          }
+          uiState.removeFromSelected(event.param.cueIds);
           break;
         case 'cueListUpdated':
           showModel.$patch({ cues: event.param.cues });
           break;
         case 'modelNameUpdated':
           showModel.$patch({ name: event.param.newName });
-          api.setTitle((side == 'host' ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           break;
         case 'settingsUpdated': {
           const settings = event.param.newSettings;
@@ -140,10 +141,13 @@ onMounted(() => {
         case 'operationFailed':
           console.error(event.param.error);
           switch (event.param.error.type) {
-            case 'fileLoad':
+            case 'saveToFile':
               uiState.error(event.param.error.message);
               break;
-            case 'fileSave':
+            case 'loadFromFile':
+              uiState.error(event.param.error.message);
+              break;
+            case 'exportToFolder':
               uiState.error(event.param.error.message);
               break;
             case 'cueEdit':
@@ -167,7 +171,7 @@ onMounted(() => {
     })
     .then(unlistenFn => unlistenFuncs.push(unlistenFn));
 
-  if (side == 'host') {
+  if (__IS_HOST__) {
     getCurrentWebviewWindow()
       .onCloseRequested(async (event) => {
         const isModified = await api.isModified();
@@ -206,12 +210,15 @@ onMounted(() => {
           if (uiState.selected != cueId) {
             uiState.selected = cueId;
             uiState.expandToVisible(cueId);
-            if (!uiState.selectedRows.includes(cueId)) {
-              uiState.selectedRows = [cueId];
+            // This operation not using uiState.addSelected to avoid updating playbackcursor.
+            if (!uiState.selectedRows.has(cueId)) {
+              uiState.selectedRows.clear();
+              uiState.selectedRows.add(cueId);
             }
           }
         } else {
-          uiState.selectedRows = [];
+          // This operation not using uiState.addSelected to avoid updating playbackcursor.
+          uiState.selectedRows.clear();
           uiState.selected = null;
         }
       }

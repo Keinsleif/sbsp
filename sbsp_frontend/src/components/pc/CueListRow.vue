@@ -3,9 +3,20 @@
     :class="[
       props.isDragOver ? $style['drag-over-row'] : '',
       isSelected ? $style['selected-row'] : '',
+      $style['color-row']
     ]"
-    :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
+    :data-cue-color="item.cue.color"
   >
+    <td
+      headers="cuelist_handle"
+      class="px-0"
+      :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
+      @dragstart="dragStart($event, props.item.cue.id)"
+      @pointerdown="(e) => {if (uiState.mode == 'edit') { e.stopPropagation() }}"
+      :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
+    >
+      <v-icon v-show="uiState.mode == 'edit'" :icon="mdiDragVertical" />
+    </td>
     <td
       headers="cuelist_cursor"
       style="padding-left: 12px; padding-right: 0px"
@@ -133,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
+import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiDragVertical, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
 import { FlatCueEntry } from '../../stores/showmodel';
 import { computed, toRaw } from 'vue';
 import { useUiState } from '../../stores/uistate';
@@ -153,7 +164,7 @@ const props = defineProps<{
   isDragOver: boolean;
 }>();
 
-const isSelected = computed(() => uiState.selectedRows.includes(props.item.cue.id));
+const isSelected = computed(() => uiState.selectedRows.has(props.item.cue.id));
 const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
 const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
@@ -209,6 +220,17 @@ const durationProgressStyle = computed(() => {
 const setPlaybackCursor = (cueId: string) => {
   if (!getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
+  }
+};
+
+const dragStart = (event: DragEvent, targetId: string) => {
+  if (targetId && event.dataTransfer) {
+    if (!uiState.selectedRows.has(targetId)) {
+      uiState.setSelected(targetId);
+    }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.dropEffect = 'move';
+    // event.dataTransfer.setData('text/plain', index.toString());
   }
 };
 
@@ -322,10 +344,41 @@ const isActive = computed((): boolean => {
 </script>
 
 <style lang="css" module>
-  .drag-over-row > td {
+  .drag-over-row {
     border-top: 2px solid rgb(var(--v-theme-primary)) !important;
   }
-  .selected-row > td {
-    background-color: rgb(var(--v-theme-primary), 0.2);
+  .selected-row {
+    background-color: rgb(var(--v-theme-primary), 0.3) !important;
+  }
+
+  .color-row[data-cue-color="red"] {
+    --row-color: 244 67 54;
+  }
+  .color-row[data-cue-color="purple"] {
+    --row-color: 156 39 176;
+  }
+  .color-row[data-cue-color="blue"] {
+    --row-color: 33 150 243;
+  }
+  .color-row[data-cue-color="cyan"] {
+    --row-color: 0 188 212;
+  }
+  .color-row[data-cue-color="green"] {
+    --row-color: 76 175 80;
+  }
+  .color-row[data-cue-color="yellow"] {
+    --row-color: 255 235 59;
+  }
+  .color-row[data-cue-color="orange"] {
+    --row-color: 255 152 0;
+  }
+  .color-row[data-cue-color="grey"] {
+    --row-color: 158 158 158;
+  }
+  .color-row:not([data-cue-color="none"]) {
+    background-color: rgb(var(--row-color) / 0.2);
+  }
+  .color-row:not([data-cue-color="none"]) > td:nth-child(1) {
+    background-color: rgb(var(--row-color) / 0.5);
   }
 </style>

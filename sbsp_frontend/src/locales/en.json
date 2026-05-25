@@ -18,7 +18,9 @@
       "license": {
         "proTitle": "License Error",
         "serverPanel": "Pro License is required to use Server Panel."
-      }
+      },
+      "removeCue": "Are you sure you want to remove?",
+      "confirmation": "Confirmation"
     },
     "renumber": {
       "increment": "Increment",
@@ -213,7 +215,8 @@
     "open": "Open",
     "default": "Default",
     "warning": "Warning",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "none": "None"
   },
   "main": {
     "bottomEditor": {
@@ -229,7 +232,8 @@
       "basics": {
         "nextCue": "Next Cue",
         "timestamp": "Timestamp",
-        "title": "Basics"
+        "title": "Basics",
+        "color": "Color"
       },
       "continueTargetCue": "Continue Target Cue",
       "fade": {
@@ -283,7 +287,14 @@
       "doNotChain": "DoNotChain",
       "title": "Continue Mode"
     },
-    "cueList": {},
+    "cueList": {
+      "contextMenu": {
+        "copy": "Copy",
+        "cut": "Cut",
+        "paste": "Paste",
+        "delete": "Delete"
+      }
+    },
     "duration": "Duration",
     "footBar": {
       "cueCountSuffix": "cues",
