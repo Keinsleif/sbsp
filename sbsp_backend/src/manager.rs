@@ -209,7 +209,10 @@ impl ShowModelManager {
                     }
                     valid_cues.push(cue);
                 }
-                if !valid_cues.is_empty() && let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
+                if !valid_cues.is_empty() {
+                    return;
+                }
+                if let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: format!("Failed to add cues, {}.", e),
