@@ -309,7 +309,7 @@ impl ShowModelManager {
                         self.model.write().await.cues = orig_cues;
                         if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit {
-                                message: format!("Failed to add cue, {}.", e),
+                                message: format!("Failed to move cues, {}.", e),
                             },
                         }) {
                             log::warn!("Failed to send event, {}", e);
