@@ -209,7 +209,7 @@ impl ShowModelManager {
                     }
                     valid_cues.push(cue);
                 }
-                if !valid_cues.is_empty() {
+                if valid_cues.is_empty() {
                     return;
                 }
                 if let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
