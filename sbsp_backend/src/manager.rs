@@ -242,7 +242,8 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::RemoveCues { cue_ids } => {
-                if self.remove_cues_by_id(cue_ids.clone()).await.is_empty() {
+                let removed_cues = self.remove_cues_by_id(cue_ids.clone()).await;
+                if removed_cues.is_empty() {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: "Failed to remove cues, id not found.".to_string(),
@@ -251,7 +252,8 @@ impl ShowModelManager {
                         log::warn!("Failed to send event, {}", e);
                     }
                 } else {
-                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved { cue_ids }) {
+                    let removed_ids = removed_cues.iter().map(|val| val.id).collect();
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved { cue_ids: removed_ids }) {
                         log::warn!("Failed to send event, {}", e);
                     }
                     self.modify_status.store(true, Ordering::Release);
