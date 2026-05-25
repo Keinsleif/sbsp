@@ -83,14 +83,14 @@ const assetResult = useAssetResult();
 
 const isUpdateAvailable = ref(false);
 
-const ALL_MODES = [
+const ALL_MODES = computed(() => [
   { title: t('main.footBar.modes.view'), value: 'view' },
   { title: t('main.footBar.modes.run'), value: 'run' },
   { title: t('main.footBar.modes.edit'), value: 'edit' },
-];
+]);
 
 const modes = computed(() => {
-  return ALL_MODES.filter((val) => {
+  return ALL_MODES.value.filter((val) => {
     if (uiState.permission == null) return false;
     if (val.value == 'view' && uiState.permission & 0b0001) {
       return true;

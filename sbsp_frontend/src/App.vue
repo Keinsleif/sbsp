@@ -84,13 +84,14 @@ const setLanguage = (language: string | null) => {
 };
 
 onMounted(() => {
-  setLanguage(uiSettings.settings.appearance.language);
   if (__IS_TAURI__) {
     setTheme(uiSettings.settings.appearance.darkMode == 'system' ? null : uiSettings.settings.appearance.darkMode);
   } else {
     theme.change(uiSettings.settings.appearance.darkMode);
   }
-  windowMenu?.init();
+  windowMenu?.init().then(() => {
+    setLanguage(uiSettings.settings.appearance.language);
+  });
   if (__IS_REMOTE__) {
     api.remote
       ?.onConnectionStatusChanged((isConnected, perm) => {
