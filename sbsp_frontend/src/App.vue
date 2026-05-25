@@ -89,7 +89,7 @@ onMounted(() => {
   } else {
     theme.change(uiSettings.settings.appearance.darkMode);
   }
-  windowMenu?.init().then(() => {
+  void Promise.resolve(windowMenu?.init()).then(() => {
     setLanguage(uiSettings.settings.appearance.language);
   });
   if (__IS_REMOTE__) {
