@@ -164,11 +164,12 @@ impl ShowModelManager {
                     log::warn!("Failed to send event, {}", e);
                 }
             }
-            ModelCommand::AddCues { mut cues, position } => {
+            ModelCommand::AddCues { cues, position } => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                let mut non_valid_cues = HashSet::new();
+                let mut valid_cues = Vec::new();
+                let mut valid_cue_ids = HashSet::new();
 
-                for cue in cues.iter_mut() {
+                for mut cue in cues {
                     if self.is_cue_exists(&cue.id).await {
                         if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit {
@@ -177,7 +178,15 @@ impl ShowModelManager {
                         }) {
                             log::warn!("Failed to send event, {}", e);
                         }
-                        non_valid_cues.insert(cue.id);
+                        continue;
+                    } else if !valid_cue_ids.insert(cue.id) {
+                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueEdit {
+                                message: "Failed to add cue, duplicate id found.".into(),
+                            },
+                        }) {
+                            log::warn!("Failed to send event, {}", e);
+                        }
                         continue;
                     }
                     if let CueParam::Audio(audio_param) = &mut cue.params
@@ -198,9 +207,9 @@ impl ShowModelManager {
                             audio_param.target = target;
                         } // ignore failed to import asset. use absolute path
                     }
+                    valid_cues.push(cue);
                 }
-                cues.retain(|cue| !non_valid_cues.contains(&cue.id));
-                if let Err(e) = self.insert_cues_at_position(cues, position.clone()).await {
+                if !valid_cues.is_empty() && let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: format!("Failed to add cues, {}.", e),
