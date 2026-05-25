@@ -11491,8 +11491,8 @@ SOFTWARE.
     - [objc2-encode 4.1.0]( https://github.com/madsmtm/objc2 )
     - [objc2-foundation 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2 0.6.4]( https://github.com/madsmtm/objc2 )
-    - [ts-rs-macros 11.1.0]( https://github.com/Aleph-Alpha/ts-rs )
-    - [ts-rs 11.1.0]( https://github.com/Aleph-Alpha/ts-rs )
+    - [ts-rs-macros 12.0.1]( https://github.com/Aleph-Alpha/ts-rs )
+    - [ts-rs 12.0.1]( https://github.com/Aleph-Alpha/ts-rs )
     - [webview2-com-macros 0.8.1]( https://github.com/wravery/webview2-rs )
     - [webview2-com-sys 0.38.2]( https://github.com/wravery/webview2-rs )
     - [webview2-com 0.38.2]( https://github.com/wravery/webview2-rs )
@@ -13662,7 +13662,7 @@ the following restrictions:
 
 ## Node.js Dependencies
 
-### [@tauri-apps/api@2.10.1](https://github.com/tauri-apps/tauri)
+### [@tauri-apps/api@2.11.0](https://github.com/tauri-apps/tauri)
 license: Apache-2.0 OR MIT
 
 ```text
@@ -13721,7 +13721,7 @@ Logo: CC-BY-NC-ND
 
 ```
 
-### [@tauri-apps/plugin-dialog@2.6.0](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-dialog@2.7.1](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -13773,7 +13773,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@tauri-apps/plugin-opener@2.5.3](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-opener@2.5.4](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -13877,35 +13877,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@types/markdown-it@14.1.2](https://github.com/DefinitelyTyped/DefinitelyTyped)
-license: MIT
-
-```text
-    MIT License
-
-    Copyright (c) Microsoft Corporation.
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE
-
-```
-
-### [@vueuse/core@14.2.1](https://github.com/vueuse/vueuse)
+### [@vueuse/core@14.3.0](https://github.com/vueuse/vueuse)
 license: MIT
 
 ```text
@@ -14079,7 +14051,7 @@ SOFTWARE.
 
 ```
 
-### [typia@12.0.2](https://github.com/samchon/typia)
+### [typia@12.1.1](https://github.com/samchon/typia)
 license: MIT
 
 ```text
@@ -14152,7 +14124,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ```
 
-### [vue-i18n@11.4.0](https://github.com/intlify/vue-i18n)
+### [vue-i18n@11.4.4](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -14179,7 +14151,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [vue@3.5.33](https://github.com/vuejs/core)
+### [vue@3.5.34](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -14207,7 +14179,7 @@ THE SOFTWARE.
 
 ```
 
-### [vuetify@4.0.6](https://github.com/vuetifyjs/vuetify)
+### [vuetify@4.0.7](https://github.com/vuetifyjs/vuetify)
 license: MIT
 
 ```text
