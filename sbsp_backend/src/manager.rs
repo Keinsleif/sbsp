@@ -212,7 +212,10 @@ impl ShowModelManager {
                 if valid_cues.is_empty() {
                     return;
                 }
-                if let Err(e) = self.insert_cues_at_position(valid_cues, position.clone()).await {
+                if let Err(e) = self
+                    .insert_cues_at_position(valid_cues, position.clone())
+                    .await
+                {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: format!("Failed to add cues, {}.", e),
@@ -265,7 +268,9 @@ impl ShowModelManager {
                     }
                 } else {
                     let removed_ids = removed_cues.iter().map(|val| val.id).collect();
-                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved { cue_ids: removed_ids }) {
+                    if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved {
+                        cue_ids: removed_ids,
+                    }) {
                         log::warn!("Failed to send event, {}", e);
                     }
                     self.modify_status.store(true, Ordering::Release);
