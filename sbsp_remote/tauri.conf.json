@@ -10,7 +10,7 @@
     },
     "devUrl": "http://localhost:1422",
     "beforeBuildCommand": {
-      "script": "pnpm build:remote",
+      "script": "pnpm run-s typecheck build:remote",
       "cwd": "../sbsp_frontend"
     },
     "frontendDist": "../sbsp_frontend/dist/tauri/remote",
