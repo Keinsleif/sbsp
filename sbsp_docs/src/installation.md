@@ -21,7 +21,7 @@ macOS向けには for macOS
 
 上記のページの`Assets`より、OSに応じたファイルをダウンロードします。
 
-Windows向けには `SBS.Player_x.x.x_x64_en-US.msi`
+Windows向けには `SBS Player_x.x.x_x64-setup.exe`
 
 macOS向けには `SBS.Player_x.x.x_universal.dmg`
 

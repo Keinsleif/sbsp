@@ -10,7 +10,7 @@
     },
     "devUrl": "http://localhost:1422",
     "beforeBuildCommand": {
-      "script": "pnpm build:remote",
+      "script": "pnpm run-s typecheck build:remote",
       "cwd": "../sbsp_frontend"
     },
     "frontendDist": "../sbsp_frontend/dist/tauri/remote",
@@ -41,7 +41,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+    "targets": ["deb", "rpm", "appimage", "nsis", "dmg"],
     "resources": {
       "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     },
@@ -50,7 +50,13 @@
     "copyright": "© 2025 Keinsleif",
     "publisher": "Keinsleif",
     "shortDescription": "A SBS Player Remote Control App powered by tauri.",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "languages": ["English", "Japanese"]
+      }
+    }
   },
   "plugins": {
     "updater": {
