@@ -1,31 +1,31 @@
 {
-  "version": "2.3.0",
+  "version": "2.4.0",
   "notes": "See the assets to download this version and install.",
-  "pub_date": "2026-04-25T00:34:03.806Z",
+  "pub_date": "2026-05-28T04:06:40.508Z",
   "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTBMTUJnVzVUOHpjT0RWM1d4NGc4UDQwRVNacG5YYU5maUV5bkRCSm1LNGk4cTRjdHBlQTJHUUJFeHR6YVF6SVVEdC8rU1dXRWhSOVJRekdSaGoyV1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQwNzgwCWZpbGU6U0JTIFBsYXllcl8yLjQuMF94NjQtc2V0dXAuZXhlCnFGb0JWazRLS2czQTVlcHJvS2IwbWtUZTFsM0tNRUFRcmZhVlEvYklJLzRUaDJ0akFuMWlkeUZoakEySlhyWG9icjVoSWluUHpLaEYwZlo4eXN4ckF3PT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player_2.4.0_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTBMTUJnVzVUOHpjT0RWM1d4NGc4UDQwRVNacG5YYU5maUV5bkRCSm1LNGk4cTRjdHBlQTJHUUJFeHR6YVF6SVVEdC8rU1dXRWhSOVJRekdSaGoyV1E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQwNzgwCWZpbGU6U0JTIFBsYXllcl8yLjQuMF94NjQtc2V0dXAuZXhlCnFGb0JWazRLS2czQTVlcHJvS2IwbWtUZTFsM0tNRUFRcmZhVlEvYklJLzRUaDJ0akFuMWlkeUZoakEySlhyWG9icjVoSWluUHpLaEYwZlo4eXN4ckF3PT0K",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player_2.4.0_x64-setup.exe"
+    },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUXprMVhvZVVjUTF4TG42ZWdsdzlCQU92aW1Wem8rRUlqYVdjcDl4RnkzR2xiejAvL2daTXB4Y0IzM3duSHRTRlVMVzNXcUhrSGdXanVGK3dNUE9JK0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MTQyCWZpbGU6U0JTIFBsYXllcl8yLjMuMF9hbWQ2NC5BcHBJbWFnZQpnL2NTZ3RSek1YdU1hZ2ZvWFRFdG0zRkhwWnZPZFh4NTQvOFZvbUVFbjRnZERFdk1mTEQyS1dyZWttOTdKd1hKQzcybjdhUndPcEFWbTdReHNLekJEUT09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player_2.3.0_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTU4OUlHaVR3c3NGYzliZWlUckd0YzgrZFlhUzVNSkJ5ZFZ0ZE5tVENnZitDQy90T1JQYUxhczlNb2dDTkNoUEtwUkJnQ1RtUElTbVNaWGcrTEQ4UVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQxMTkxCWZpbGU6U0JTIFBsYXllcl8yLjQuMF9hbWQ2NC5BcHBJbWFnZQpMNERyMmJwTE5sQUZqRnhsWnpTUnA1NjB2VjczV1QwTHZ0RzNORXlaTW5CMnJqRytxWjREYTc1cmYyWkVKNEFEOS9za2lZbXdQbDRqNUZWVVdEV1NCZz09Cg==",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player_2.4.0_amd64.AppImage"
     },
     "linux-x86_64-appimage": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUXprMVhvZVVjUTF4TG42ZWdsdzlCQU92aW1Wem8rRUlqYVdjcDl4RnkzR2xiejAvL2daTXB4Y0IzM3duSHRTRlVMVzNXcUhrSGdXanVGK3dNUE9JK0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MTQyCWZpbGU6U0JTIFBsYXllcl8yLjMuMF9hbWQ2NC5BcHBJbWFnZQpnL2NTZ3RSek1YdU1hZ2ZvWFRFdG0zRkhwWnZPZFh4NTQvOFZvbUVFbjRnZERFdk1mTEQyS1dyZWttOTdKd1hKQzcybjdhUndPcEFWbTdReHNLekJEUT09Cg==",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player_2.3.0_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTU4OUlHaVR3c3NGYzliZWlUckd0YzgrZFlhUzVNSkJ5ZFZ0ZE5tVENnZitDQy90T1JQYUxhczlNb2dDTkNoUEtwUkJnQ1RtUElTbVNaWGcrTEQ4UVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQxMTkxCWZpbGU6U0JTIFBsYXllcl8yLjQuMF9hbWQ2NC5BcHBJbWFnZQpMNERyMmJwTE5sQUZqRnhsWnpTUnA1NjB2VjczV1QwTHZ0RzNORXlaTW5CMnJqRytxWjREYTc1cmYyWkVKNEFEOS9za2lZbXdQbDRqNUZWVVdEV1NCZz09Cg==",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player_2.4.0_amd64.AppImage"
     },
     "linux-x86_64-deb": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUThWcUUzT2Y1SDVCWWtSNllOa29FYzVlaFcxVC9lbWpzUXgxUmx5Rjlkb0p0QjEwNWJjUnoxbENVZzhqZE9nQktNeHZwaERMM2diejNYTGEwV2RLYmd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MTQyCWZpbGU6U0JTIFBsYXllcl8yLjMuMF9hbWQ2NC5kZWIKQ3VRTDNIeFAvN2ZwZ2NwTTFwbDFJREJGUE1DazNDUldsVGZ6OTRVWFpzL0dyNmZ5QmhKUzVBRXJtclMwR2M4VE1iK1QxSUhDSFRGUFRQSTlyU21KQnc9PQo=",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player_2.3.0_amd64.deb"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTVXMlhpSDJMdTZXdTlJckREVm4xMDNESW94NTI2cmozbGk4RE9NZTJBdldZY2k4VnRScUhCc2VaT0JyV003MS91WEo5M1hBYmh2ZWhzTk9EVXBmNkFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQxMTkxCWZpbGU6U0JTIFBsYXllcl8yLjQuMF9hbWQ2NC5kZWIKQzFXR3V4ZXcvOGl0dnhqVXpKNVo0NzA0a2pYTHdVZXRhWjY5UVIyanY4N3YwbUdQUnYza1JHbHFiQWlUZGJ6RE9nYU51UmdJQTFJK2lnV29iK1JVQXc9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player_2.4.0_amd64.deb"
     },
     "linux-x86_64-rpm": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTFkNkowK1FGRC91VXJkZ0Y0QmVzbkNOYkRyS3dvZ1BlR2xIMFJUUThHZ2piRmpaZ3VpS3RLUE5BMTZqWG5XTWNiclU5L3VCTUJjeTBlOXpFUldEaXcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MTQyCWZpbGU6U0JTIFBsYXllci0yLjMuMC0xLng4Nl82NC5ycG0Kb01vZ0hZZEZ0dkFjT3dvQUYwcnkvNGdDNkllNEFpSllZVk92Q2JVZkcxMmR2V1hCUmlCWmpLaWdyUEl2WVlhOFE3RGc2Y0FQNVE4ZEFDcWNYb2srQ3c9PQo=",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player-2.3.0-1.x86_64.rpm"
-    },
-    "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTNDNDNseFJFcDJCOGpvU3diNVl5QTRHSEJ0VTdsRzhRbUFCRnRwRHp2eWd2WGY2b05BZlRwdFB3UU8rK0NkVUtRWUh3TTE5UjM1Ni9JV0hWWTlZN2dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MjQxCWZpbGU6U0JTIFBsYXllcl8yLjMuMF94NjRfZW4tVVMubXNpClAxMnhyOTNrTFNnaWR4d05KNVdReUFSMkZqdkNoR29XcGFYdnVzdVRIYlVCQ3YzYlprUUdzSndwT3AyOU14YTBnQm8yeUJBNXJCb3lPZnIrMCtNdkFnPT0K",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player_2.3.0_x64_en-US.msi"
-    },
-    "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTNDNDNseFJFcDJCOGpvU3diNVl5QTRHSEJ0VTdsRzhRbUFCRnRwRHp2eWd2WGY2b05BZlRwdFB3UU8rK0NkVUtRWUh3TTE5UjM1Ni9JV0hWWTlZN2dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3MDc3MjQxCWZpbGU6U0JTIFBsYXllcl8yLjMuMF94NjRfZW4tVVMubXNpClAxMnhyOTNrTFNnaWR4d05KNVdReUFSMkZqdkNoR29XcGFYdnVzdVRIYlVCQ3YzYlprUUdzSndwT3AyOU14YTBnQm8yeUJBNXJCb3lPZnIrMCtNdkFnPT0K",
-      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.3.0/SBS.Player_2.3.0_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMEs4Nk5OajFBUTg0SnEwdFJKTTFlSC9kN3hsNVcrN0pQQXY1YUtRdWsvZW80Y0VVanFlK1MwbWdZUysrOHJOcFFEQjBEUGtRZHBrNVUrWURhR0g0S3pXcTVtdDVYVndRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc5OTQxMTkxCWZpbGU6U0JTIFBsYXllci0yLjQuMC0xLng4Nl82NC5ycG0KbElBWE9BNFlrUktjdTZQSlhDZzh2RmhJY3QydmwxalFHSnF6UXRpY1p1Nk9VWTQ1RHVVVmJudE56RDNZS0o3K1RJcWF0SlVaUXBnSS93cVBzcmZkRHc9PQo=",
+      "url": "https://github.com/Keinsleif/sbsp/releases/download/sbsp-v2.4.0/SBS.Player-2.4.0-1.x86_64.rpm"
     }
   }
 }
