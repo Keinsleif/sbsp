@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, toRaw } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
@@ -84,7 +84,7 @@ const checkUpdate = () => {
 
 const installUpdate = () => {
   if (update.value != null) {
-    update.value.downloadAndInstall((event) => {
+    toRaw(update.value).downloadAndInstall((event) => {
       switch (event.event) {
         case 'Started':
           if (event.data.contentLength != null) {
