@@ -22,7 +22,7 @@ impl FileListHandle {
         Ok(())
     }
 
-    pub async fn recv_file_list(&mut self) -> anyhow::Result<Vec<FileList>> {
+    pub async fn recv_file_list(&mut self) -> Result<Vec<FileList>, watch::error::RecvError> {
         self.file_list_rx.changed().await?;
         Ok(self.file_list_rx.borrow().clone())
     }

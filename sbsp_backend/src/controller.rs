@@ -81,55 +81,63 @@ impl CueController {
                         log::error!("Error handling playback event: {}", e);
                     }
                 },
-                Ok(event) = self.event_rx.recv() => {
-                    match event {
-                        BackendEvent::ShowModelLoaded{..} => {
-                            if self.state_tx.borrow().playback_cursor.is_none() {
-                                let model = self.model_handle.read().await;
-                                if let Some(first_cue) = model.cues.first() {
-                                    self.state_tx.send_modify(|state| {
-                                        state.playback_cursor = Some(first_cue.id);
-                                    });
+                result = self.event_rx.recv() => {
+                    match result {
+                        Ok(event) => {
+                            match event {
+                                BackendEvent::ShowModelLoaded{..} => {
+                                    if self.state_tx.borrow().playback_cursor.is_none() {
+                                        let model = self.model_handle.read().await;
+                                        if let Some(first_cue) = model.cues.first() {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = Some(first_cue.id);
+                                            });
+                                        }
+                                    }
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before load. {}", e);
+                                    }
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before load. {}", e);
+                                    }
+                                },
+                                BackendEvent::CueRemoved{cue_ids} => {
+                                    let state = self.state_tx.borrow().clone();
+                                    if let Some(cursor) = state.playback_cursor && cue_ids.contains(&cursor) {
+                                        let model = self.model_handle.read().await;
+                                        if let Some(first_cue) = model.cues.first() {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = Some(first_cue.id);
+                                            });
+                                        } else {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = None;
+                                            });
+                                        }
+                                    }
+                                    for rm_id in cue_ids {
+                                        if state.active_cues.contains_key(&rm_id) {
+                                            if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
+                                                log::error!("Failed to stop removed cue. {}", e);
+                                            }
+                                            if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
+                                                log::error!("Failed to stop removed cue. {}", e);
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-                            if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
-                                log::error!("Failed to stop active cues before load. {}", e);
-                            }
-                            if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
-                                log::error!("Failed to stop active cues before load. {}", e);
+                                BackendEvent::SettingsUpdated{ new_settings } => {
+                                    if let Err(e) = self.executor_tx.send(ExecutorCommand::ReconfigureEngines(new_settings)).await {
+                                        log::error!("{}", e);
+                                    }
+                                }
+                                _ => {}
                             }
                         },
-                        BackendEvent::CueRemoved{cue_ids} => {
-                            let state = self.state_tx.borrow().clone();
-                            if let Some(cursor) = state.playback_cursor && cue_ids.contains(&cursor) {
-                                let model = self.model_handle.read().await;
-                                if let Some(first_cue) = model.cues.first() {
-                                    self.state_tx.send_modify(|state| {
-                                        state.playback_cursor = Some(first_cue.id);
-                                    });
-                                } else {
-                                    self.state_tx.send_modify(|state| {
-                                        state.playback_cursor = None;
-                                    });
-                                }
-                            }
-                            for rm_id in cue_ids {
-                                if state.active_cues.contains_key(&rm_id) {
-                                    if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
-                                        log::error!("Failed to stop removed cue. {}", e);
-                                    }
-                                    if let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id)).await {
-                                        log::error!("Failed to stop removed cue. {}", e);
-                                    }
-                                }
-                            }
-                        }
-                        BackendEvent::SettingsUpdated{ new_settings } => {
-                            if let Err(e) = self.executor_tx.send(ExecutorCommand::ReconfigureEngines(new_settings)).await {
-                                log::error!("{}", e);
-                            }
-                        }
-                        _ => {}
+                        Err(broadcast::error::RecvError::Closed) => break,
+                        Err(_) => {
+                            log::warn!("Event monitoring receiver Lagged.");
+                        },
                     }
                 }
                 else => break,

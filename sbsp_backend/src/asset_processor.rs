@@ -104,27 +104,39 @@ impl AssetProcessor {
                         }
                     }
                 },
-                Ok(result) = result_rx.recv() => {
-                    let mut cache = self.cache.write().await;
-                    if let Ok(data) = &result.data {
-                        if let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
-                            cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified, data: data.clone() });
-                        } else {
-                            cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
+                result = result_rx.recv() => {
+                    match result {
+                        Ok(result) => {
+                            let mut cache = self.cache.write().await;
+                            if let Ok(data) = &result.data {
+                                if let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
+                                    cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified, data: data.clone() });
+                                } else {
+                                    cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
+                                }
+                            }
+                            self.processing.write().await.retain(|value| *value != result.actual_path);
+                            if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
+                                log::error!("Failed to send process result to event bus. {}", e);
+                            }
                         }
-                    }
-                    self.processing.write().await.retain(|value| *value != result.actual_path);
-                    if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
-                        log::error!("Failed to send process result to event bus. {}", e);
+                        Err(broadcast::error::RecvError::Closed) => break,
+                        Err(_) => {
+                            log::warn!("AssetResult receiver Lagged.");
+                        }
                     }
                 },
-                Ok(event) = event_rx.recv() => {
-                    match event {
-                        BackendEvent::ShowModelLoaded { .. } |
-                        BackendEvent::ShowModelReset { .. } => {
+                result = event_rx.recv() => {
+                    match result {
+                        Ok(BackendEvent::ShowModelLoaded { .. }) |
+                        Ok(BackendEvent::ShowModelReset { .. }) => {
                             self.filter_current_assets().await;
                         }
-                        _ => {}
+                        Ok(_) => {},
+                        Err(broadcast::error::RecvError::Closed) => break,
+                        Err(_) => {
+                            log::warn!("Event monitoring receiver Lagged.");
+                        }
                     }
                 },
             }
