@@ -29,7 +29,7 @@ use std::{
 };
 use tokio::{
     sync::{mpsc, watch},
-    time,
+    time::{self, MissedTickBehavior},
 };
 use uuid::Uuid;
 
@@ -269,6 +269,7 @@ impl AudioEngine {
 
     pub async fn run(mut self) {
         let mut poll_timer = time::interval(Duration::from_millis(50));
+        poll_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
         log::info!("AudioEngine run loop started");
         loop {
             tokio::select! {

@@ -17,7 +17,7 @@ use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{
     sync::{Mutex, RwLock, broadcast, watch},
-    time::interval,
+    time::{MissedTickBehavior, interval},
 };
 use tower_http::services::ServeDir;
 
@@ -226,6 +226,7 @@ pub fn run() {
             let app_handle_clone = app_handle.clone();
             tokio::spawn(async move {
                 let mut ticker = interval(Duration::from_millis(33)); // about 30fps
+                ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
                 if let Some(shared_level) = app_handle_clone
                     .state::<AppState>()
                     .get_handle()

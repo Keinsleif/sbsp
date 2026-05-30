@@ -18,7 +18,7 @@ use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use tokio::{
     sync::{broadcast, watch},
-    time::interval,
+    time::{MissedTickBehavior, interval},
 };
 
 use super::{FullShowState, WsCommand, WsFeedback};
@@ -217,6 +217,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let mut event_rx = state.event_rx_factory.subscribe();
 
     let mut ping_timer = interval(Duration::from_secs(10));
+    ping_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     log::info!("New WebSocket client connected.");
 
