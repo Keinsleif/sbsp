@@ -9,6 +9,7 @@ on:
       - 'sbsp_frontend/pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
+      - 'scripts/notice_json2md.js'
       - .github/workflows/generate-notices.yml
   workflow_dispatch:
 
@@ -75,4 +76,4 @@ jobs:
       - name: commit
         run: |
           git add THIRD_PARTY_NOTICES.md
-          git diff-index --quiet HEAD || (git commit -m "[update] THIRD_PARTY_NOTICES.md" && git pull && git push origin master)
+          git diff-index --quiet HEAD || (git commit -m "update: THIRD_PARTY_NOTICES.md" && git pull && git push origin master)
