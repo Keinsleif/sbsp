@@ -538,6 +538,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { mdiChevronDoubleDown, mdiRepeat, mdiArrowExpandDown, mdiArrowDown } from '@mdi/js';
 import { secondsToFormat, calculateDuration } from '../../../utils';
 import BottomEditor from '../../pc/BottomEditor.vue';

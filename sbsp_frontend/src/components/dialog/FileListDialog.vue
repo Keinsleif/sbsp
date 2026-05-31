@@ -49,6 +49,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { computed, ref, watch } from 'vue';
 import type { FileList } from '../../types/FileList.ts';
 import { useI18n } from 'vue-i18n';

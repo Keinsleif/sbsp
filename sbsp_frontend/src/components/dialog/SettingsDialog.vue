@@ -492,6 +492,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { computed, onMounted, ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showmodel';
 import type { ShowSettings } from '../../types/ShowSettings';

@@ -187,6 +187,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import TextInput from '../input/TextInput.vue';
 import { useI18n } from 'vue-i18n';
