@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 use std::time::Duration;
 
 use rodio::{ChannelCount, Sample, SampleRate, Source, source::SeekError};

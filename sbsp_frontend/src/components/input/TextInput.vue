@@ -46,6 +46,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { nextTick, ref, watch } from 'vue';
 
 const text = defineModel<string | null>({ default: '' });

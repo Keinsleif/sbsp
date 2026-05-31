@@ -82,6 +82,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { ref, watch } from 'vue';
 import { curveToEasing, easingToCurve } from '../../utils';
 import CurveViewer from './CurveViewer.vue';

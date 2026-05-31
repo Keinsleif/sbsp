@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 use crate::AppState;
 use sbsp_backend::{
     action::{AudioAction, CueAction},

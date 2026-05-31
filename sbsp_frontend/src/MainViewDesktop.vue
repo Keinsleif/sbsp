@@ -66,6 +66,9 @@
 </template>
 
 <script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import ToolHeader from './components/pc/ToolHeader.vue';
 import CueList from './components/pc/CueList.vue';
 import SideBar from './components/pc/SideBar.vue';
