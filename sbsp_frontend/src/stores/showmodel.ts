@@ -206,7 +206,7 @@ export const useShowModel = defineStore('showmodel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type == 'group') {
-        api.addCue(newCue, null, false).then((id) => {
+        api.addCue(newCue, uiState.selected, false).then((id) => {
           api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0});
         });
       }
