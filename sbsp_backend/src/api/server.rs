@@ -18,7 +18,7 @@ use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use tokio::{
     sync::{broadcast, watch},
-    time::interval,
+    time::{MissedTickBehavior, interval},
 };
 
 use super::{FullShowState, WsCommand, WsFeedback};
@@ -217,6 +217,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     let mut event_rx = state.event_rx_factory.subscribe();
 
     let mut ping_timer = interval(Duration::from_secs(10));
+    ping_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     log::info!("New WebSocket client connected.");
 
@@ -224,15 +225,23 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
 
     loop {
         tokio::select! {
-            Ok(event) = event_rx.recv() => {
-                if permission.contains(Permissions::READ) {
-                    let ws_message = WsFeedback::Event(Box::new(event));
+            result = event_rx.recv() => {
+                match result {
+                    Ok(event) => {
+                        if permission.contains(Permissions::READ) {
+                            let ws_message = WsFeedback::Event(Box::new(event));
 
-                    if let Ok(payload) = serde_json::to_string(&ws_message)
-                        && socket.send(Message::Text(payload.into())).await.is_err() {
-                        log::info!("WebSocket client disconnected (send error).");
-                        break;
+                            if let Ok(payload) = serde_json::to_string(&ws_message)
+                                && socket.send(Message::Text(payload.into())).await.is_err() {
+                                log::info!("WebSocket client disconnected (send error).");
+                                break;
+                            }
+                        }
                     }
+                    Err(broadcast::error::RecvError::Closed) => break,
+                    Err(_) => {
+                        log::warn!("Event serving receiver Lagged.");
+                    },
                 }
             }
             _ = ping_timer.tick() => {

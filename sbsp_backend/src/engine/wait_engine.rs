@@ -7,7 +7,10 @@ pub use event::WaitEvent;
 use std::{collections::HashMap, time::Duration};
 
 use anyhow::Result;
-use tokio::{sync::mpsc, time::Instant};
+use tokio::{
+    sync::mpsc,
+    time::{Instant, MissedTickBehavior},
+};
 use uuid::Uuid;
 
 use super::EngineEvent;
@@ -74,6 +77,7 @@ impl WaitEngine {
 
     pub async fn run(mut self) {
         let mut push_timer = tokio::time::interval(Duration::from_millis(50));
+        push_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
         loop {
             tokio::select! {

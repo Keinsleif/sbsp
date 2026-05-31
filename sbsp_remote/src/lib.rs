@@ -31,9 +31,17 @@ async fn forward_backend_event(
 ) {
     loop {
         tokio::select! {
-            Ok(event) = event_rx.recv() => {
-                if let Some(handler) = app_handle.state::<AppState>().event_handler.lock().await.as_ref() {
-                    handler.send(event).ok();
+            result = event_rx.recv() => {
+                match result {
+                    Ok(event) => {
+                        if let Some(handler) = app_handle.state::<AppState>().event_handler.lock().await.as_ref() {
+                            handler.send(event).ok();
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Closed) => break,
+                    Err(_) => {
+                        log::warn!("Event forwarding receiver Lagged.");
+                    },
                 }
             }
             Ok(list) = asset_list_handle.recv_file_list() => {
