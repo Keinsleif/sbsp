@@ -141,7 +141,7 @@ export const useShowModel = defineStore('showmodel', {
               }
               newCues.push(newCue);
             }
-            api.addCues(newCues, uiState.selected, false);
+            api.addCues(newCues, uiState.selected, false).catch((e) => console.error(e));
           }
         })
         .catch(e => console.error(e));
@@ -151,7 +151,7 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      api.addCue(newCue, uiState.selected, false);
+      api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
@@ -162,7 +162,7 @@ export const useShowModel = defineStore('showmodel', {
         const targetCue = this.getCueById(uiState.selected);
         if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
           newCue.params.target = uiState.selected;
-          api.addCue(newCue, uiState.selected, false);
+          api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
         }
       }
     },
@@ -197,7 +197,7 @@ export const useShowModel = defineStore('showmodel', {
           || newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
-        api.addCue(newCue, uiState.selected, type == 'load' || type == 'start');
+        api.addCue(newCue, uiState.selected, type == 'load' || type == 'start').catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
@@ -207,8 +207,8 @@ export const useShowModel = defineStore('showmodel', {
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type == 'group') {
         api.addCue(newCue, uiState.selected, false).then((id) => {
-          api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0});
-        });
+          api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0}).catch((e) => console.error(e));
+        }).catch((e) => console.error(e));
       }
     },
   },
