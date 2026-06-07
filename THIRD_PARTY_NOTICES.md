@@ -1129,7 +1129,7 @@
 
 - Used by
 
-    - [zerocopy 0.8.48]( https://github.com/google/zerocopy )
+    - [zerocopy 0.8.50]( https://github.com/google/zerocopy )
 
 ```text
                                  Apache License
@@ -2214,7 +2214,7 @@
     - [toml_datetime 1.1.1+spec-1.1.0]( https://github.com/toml-rs/toml )
     - [toml_edit 0.19.15]( https://github.com/toml-rs/toml )
     - [toml_edit 0.20.2]( https://github.com/toml-rs/toml )
-    - [toml_edit 0.25.11+spec-1.1.0]( https://github.com/toml-rs/toml )
+    - [toml_edit 0.25.12+spec-1.1.0]( https://github.com/toml-rs/toml )
     - [toml_parser 1.1.2+spec-1.1.0]( https://github.com/toml-rs/toml )
     - [toml_writer 1.1.1+spec-1.1.0]( https://github.com/toml-rs/toml )
 
@@ -3066,7 +3066,7 @@ limitations under the License.
 
 - Used by
 
-    - [typenum 1.20.0]( https://github.com/paholg/typenum )
+    - [typenum 1.20.1]( https://github.com/paholg/typenum )
 
 ```text
                               Apache License
@@ -5635,7 +5635,7 @@ limitations under the License.
     - [base64 0.21.7]( https://github.com/marshallpierce/rust-base64 )
     - [base64 0.22.1]( https://github.com/marshallpierce/rust-base64 )
     - [bitflags 1.3.2]( https://github.com/bitflags/bitflags )
-    - [bitflags 2.11.1]( https://github.com/bitflags/bitflags )
+    - [bitflags 2.13.0]( https://github.com/bitflags/bitflags )
     - [blocking 1.6.2]( https://github.com/smol-rs/blocking )
     - [bumpalo 3.20.3]( https://github.com/fitzgen/bumpalo )
     - [camino 1.2.2]( https://github.com/camino-rs/camino )
@@ -5650,7 +5650,7 @@ limitations under the License.
     - [crossbeam-utils 0.8.21]( https://github.com/crossbeam-rs/crossbeam )
     - [curve25519-dalek-derive 0.1.1]( https://github.com/dalek-cryptography/curve25519-dalek )
     - [derive_arbitrary 1.4.2]( https://github.com/rust-fuzz/arbitrary )
-    - [displaydoc 0.2.5]( https://github.com/yaahc/displaydoc )
+    - [displaydoc 0.2.6]( https://github.com/yaahc/displaydoc )
     - [equivalent 1.0.2]( https://github.com/indexmap-rs/equivalent )
     - [errno 0.3.14]( https://github.com/lambda-fairy/rust-errno )
     - [event-listener-strategy 0.5.4]( https://github.com/smol-rs/event-listener-strategy )
@@ -5678,7 +5678,7 @@ limitations under the License.
     - [lazy_static 1.5.0]( https://github.com/rust-lang-nursery/lazy-static.rs )
     - [linux-raw-sys 0.12.1]( https://github.com/sunfishcode/linux-raw-sys )
     - [lock_api 0.4.14]( https://github.com/Amanieu/parking_lot )
-    - [log 0.4.30]( https://github.com/rust-lang/log )
+    - [log 0.4.32]( https://github.com/rust-lang/log )
     - [markup5ever 0.38.0]( https://github.com/servo/html5ever )
     - [mime 0.3.17]( https://github.com/hyperium/mime )
     - [muda 0.19.2]( https://github.com/tauri-apps/muda )
@@ -5704,18 +5704,18 @@ limitations under the License.
     - [ring 0.17.14]( https://github.com/briansmith/ring )
     - [rtrb 0.3.4]( https://github.com/mgeier/rtrb )
     - [rustix 1.1.4]( https://github.com/bytecodealliance/rustix )
-    - [rustls-native-certs 0.8.3]( https://github.com/rustls/rustls-native-certs )
+    - [rustls-native-certs 0.8.4]( https://github.com/rustls/rustls-native-certs )
     - [rustls 0.23.40]( https://github.com/rustls/rustls )
     - [scopeguard 1.2.0]( https://github.com/bluss/scopeguard )
     - [security-framework-sys 2.17.0]( https://github.com/kornelski/rust-security-framework )
     - [security-framework 3.7.0]( https://github.com/kornelski/rust-security-framework )
-    - [serde_with 3.20.0]( https://github.com/jonasbb/serde_with/ )
-    - [serde_with_macros 3.20.0]( https://github.com/jonasbb/serde_with/ )
+    - [serde_with 3.21.0]( https://github.com/jonasbb/serde_with/ )
+    - [serde_with_macros 3.21.0]( https://github.com/jonasbb/serde_with/ )
     - [servo_arc 0.4.3]( https://github.com/servo/stylo )
     - [signal-hook-registry 1.4.8]( https://github.com/vorner/signal-hook )
     - [simd_cesu8 1.1.1]( https://github.com/seancroach/simd_cesu8 )
     - [smallvec 1.15.1]( https://github.com/servo/rust-smallvec )
-    - [socket2 0.6.3]( https://github.com/rust-lang/socket2 )
+    - [socket2 0.6.4]( https://github.com/rust-lang/socket2 )
     - [stable_deref_trait 1.2.1]( https://github.com/storyyeller/stable_deref_trait )
     - [string_cache 0.9.0]( https://github.com/servo/string-cache )
     - [syn 1.0.109]( https://github.com/dtolnay/syn )
@@ -5725,9 +5725,9 @@ limitations under the License.
     - [toml_datetime 0.6.3]( https://github.com/toml-rs/toml )
     - [tungstenite 0.29.0]( https://github.com/snapview/tungstenite-rs )
     - [unicase 2.9.0]( https://github.com/seanmonstar/unicase )
-    - [unicode-segmentation 1.13.2]( https://github.com/unicode-rs/unicode-segmentation )
+    - [unicode-segmentation 1.13.3]( https://github.com/unicode-rs/unicode-segmentation )
     - [url 2.5.8]( https://github.com/servo/rust-url )
-    - [uuid 1.23.1]( https://github.com/uuid-rs/uuid )
+    - [uuid 1.23.2]( https://github.com/uuid-rs/uuid )
     - [value-bag 1.12.0]( https://github.com/sval-rs/value-bag )
     - [wasi 0.11.1+wasi-snapshot-preview1]( https://github.com/bytecodealliance/wasi )
     - [wasip2 1.0.3+wasi-0.2.9]( https://github.com/bytecodealliance/wasi-rs )
@@ -9414,6 +9414,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - Used by
 
     - [alloc-no-stdlib 2.0.4]( https://github.com/dropbox/rust-alloc-no-stdlib )
+    - [brotli 8.0.3]( https://github.com/dropbox/rust-brotli )
 
 ```text
 Copyright (c) 2016 Dropbox, Inc.
@@ -9519,7 +9520,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - Used by
 
     - [alloc-stdlib 0.2.2]( https://github.com/dropbox/rust-alloc-no-stdlib )
-    - [brotli 8.0.2]( https://github.com/dropbox/rust-brotli )
     - [curve25519-dalek 4.1.3]( https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek )
 
 ```text
@@ -9876,7 +9876,7 @@ third-party/chromium/LICENSE.
 
 - Used by
 
-    - [brotli 8.0.2]( https://github.com/dropbox/rust-brotli )
+    - [brotli 8.0.3]( https://github.com/dropbox/rust-brotli )
 
 ```text
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
@@ -9939,7 +9939,7 @@ THE SOFTWARE.
 
 - Used by
 
-    - [mio 1.2.0]( https://github.com/tokio-rs/mio )
+    - [mio 1.2.1]( https://github.com/tokio-rs/mio )
 
 ```text
 Copyright (c) 2014 Carl Lerche and other MIO contributors
@@ -9989,7 +9989,7 @@ THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRES
 
 - Used by
 
-    - [hyper 1.9.0]( https://github.com/hyperium/hyper )
+    - [hyper 1.10.1]( https://github.com/hyperium/hyper )
 
 ```text
 Copyright (c) 2014-2026 Sean McArthur
@@ -10697,11 +10697,11 @@ THE SOFTWARE.
 
 - Used by
 
-    - [zbus 5.15.0]( https://github.com/z-galaxy/zbus/ )
-    - [zbus_macros 5.15.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus 5.16.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus_macros 5.16.0]( https://github.com/z-galaxy/zbus/ )
     - [zbus_names 4.3.2]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant 5.11.0]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant_derive 5.11.0]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant 5.12.0]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant_derive 5.12.0]( https://github.com/z-galaxy/zbus/ )
 
 ```text
 Copyright (c) 2024 Zeeshan Ali Khan &amp; zbus contributors
@@ -11312,7 +11312,7 @@ SOFTWARE.
 
 - Used by
 
-    - [libredox 0.1.16]( https://gitlab.redox-os.org/redox-os/libredox.git )
+    - [libredox 0.1.17]( https://gitlab.redox-os.org/redox-os/libredox.git )
 
 ```text
 MIT License
@@ -11484,7 +11484,7 @@ SOFTWARE.
 - Used by
 
     - [block2 0.6.2]( https://github.com/madsmtm/objc2 )
-    - [brotli-decompressor 5.0.0]( https://github.com/dropbox/rust-brotli-decompressor )
+    - [brotli-decompressor 5.0.1]( https://github.com/dropbox/rust-brotli-decompressor )
     - [dlopen2 0.8.2]( https://github.com/OpenByteDev/dlopen2 )
     - [dlopen2_derive 0.4.3]( https://github.com/OpenByteDev/dlopen2 )
     - [dpi 0.1.2]( https://github.com/rust-windowing/winit )
@@ -11598,7 +11598,7 @@ SOFTWARE.
     - [x11-dl 2.21.0]( https://github.com/AltF02/x11-rs.git )
     - [x11 2.21.0]( https://github.com/AltF02/x11-rs.git )
     - [zmij 1.0.21]( https://github.com/dtolnay/zmij )
-    - [zvariant_utils 3.3.1]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant_utils 3.4.0]( https://github.com/z-galaxy/zbus/ )
 
 ```text
 Permission is hereby granted, free of charge, to any
@@ -11890,7 +11890,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     - [aho-corasick 1.1.4]( https://github.com/BurntSushi/aho-corasick )
     - [byteorder 1.5.0]( https://github.com/BurntSushi/byteorder )
-    - [memchr 2.8.0]( https://github.com/BurntSushi/memchr )
+    - [memchr 2.8.1]( https://github.com/BurntSushi/memchr )
     - [termcolor 1.4.1]( https://github.com/BurntSushi/termcolor )
     - [walkdir 2.5.0]( https://github.com/BurntSushi/walkdir )
 
@@ -13571,7 +13571,7 @@ authorization of the copyright holder.
     - [tinystr 0.8.3]( https://github.com/unicode-org/icu4x )
     - [writeable 0.6.3]( https://github.com/unicode-org/icu4x )
     - [yoke-derive 0.8.2]( https://github.com/unicode-org/icu4x )
-    - [yoke 0.8.2]( https://github.com/unicode-org/icu4x )
+    - [yoke 0.8.3]( https://github.com/unicode-org/icu4x )
     - [zerofrom-derive 0.1.7]( https://github.com/unicode-org/icu4x )
     - [zerofrom 0.1.8]( https://github.com/unicode-org/icu4x )
     - [zerotrie 0.2.4]( https://github.com/unicode-org/icu4x )
@@ -14124,7 +14124,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ```
 
-### [vue-i18n@11.4.4](https://github.com/intlify/vue-i18n)
+### [vue-i18n@11.4.5](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -14151,7 +14151,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [vue@3.5.34](https://github.com/vuejs/core)
+### [vue@3.5.35](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -14179,7 +14179,7 @@ THE SOFTWARE.
 
 ```
 
-### [vuetify@4.0.7](https://github.com/vuetifyjs/vuetify)
+### [vuetify@4.1.0](https://github.com/vuetifyjs/vuetify)
 license: MIT
 
 ```text
