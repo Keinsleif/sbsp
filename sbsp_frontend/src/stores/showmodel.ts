@@ -134,7 +134,7 @@ export const useShowModel = defineStore('showmodel', {
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0]!;
             }
-            api.addCue(newCue, uiState.selected, false);
+            api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
