@@ -44,9 +44,12 @@ export const useUiState = defineStore(
       }
     };
 
-    const clearSelected = () => {
+    const resetSelected = () => {
       selected.value = null;
       selectedRows.value.clear();
+    };
+    const clearSelected = () => {
+      resetSelected();
       setPlaybackCursor(null);
     };
     const setSelected = (id: string) => {
@@ -183,6 +186,7 @@ export const useUiState = defineStore(
       error_messages,
       setPermission,
       setPlaybackCursor,
+      resetSelected,
       clearSelected,
       setSelected,
       addSelected,

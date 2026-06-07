@@ -105,6 +105,7 @@ onMounted(() => {
           showModel.updateAll(event.param.model);
           uiState.success(t('notification.modelLoaded'));
           api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          uiState.resetSelected();
           break;
         case 'showModelSaved':
           uiState.success(t('notification.modelSaved'));
@@ -112,6 +113,7 @@ onMounted(() => {
         case 'showModelReset':
           showModel.updateAll(event.param.model);
           api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+          uiState.resetSelected();
           break;
         case 'cueRemoved':
           uiState.removeFromSelected(event.param.cueIds);
