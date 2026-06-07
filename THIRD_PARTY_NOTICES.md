@@ -9656,8 +9656,8 @@ insights.
 
     - [sbsp_backend 1.5.1]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote 2.4.2]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_tauri 2.4.2]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote 2.4.3]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_tauri 2.4.3]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
