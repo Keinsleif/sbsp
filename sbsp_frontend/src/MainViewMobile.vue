@@ -39,7 +39,7 @@
         <v-icon :icon="mdiFormatListBulleted" />
         <span>{{ t('main.mobile.list') }}</span>
       </v-btn>
-      <v-btn v-show="uiState.mode != 'view'" @click="activeTab = 'controls'">
+      <v-btn v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0" @click="activeTab = 'controls'">
         <v-icon :icon="mdiRemote" />
         <span>{{ t('main.mobile.controls') }}</span>
       </v-btn>
@@ -63,6 +63,7 @@ import MonitorPanel from './components/mobile/MonitorPanel.vue';
 import CueList from './components/mobile/CueList.vue';
 import { useI18n } from 'vue-i18n';
 import { useUiState } from './stores/uistate';
+import { PERMISSIONS } from './utils.ts';
 
 const uiState = useUiState();
 
