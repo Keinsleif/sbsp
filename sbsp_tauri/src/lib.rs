@@ -15,7 +15,7 @@ use sbsp_backend::{
     start_backend,
 };
 use sbsp_license::LicenseManager;
-use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel, path::BaseDirectory};
+use tauri::{AppHandle, Emitter as _, Manager as _, ipc::{Channel, Response}, path::BaseDirectory};
 use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{
@@ -43,7 +43,7 @@ pub struct AppState {
     pub settings_manager: GlobalSettingsManager,
     server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
-    level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
+    level_meter_tx: watch::Sender<Option<Channel<Response>>>,
     event_handler: Mutex<Option<Channel<BackendEvent>>>,
 }
 
@@ -53,7 +53,7 @@ impl AppState {
         state_rx: watch::Receiver<ShowState>,
         event_tx: broadcast::Sender<BackendEvent>,
         settings_manager: GlobalSettingsManager,
-        level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
+        level_meter_tx: watch::Sender<Option<Channel<Response>>>,
     ) -> Self {
         Self {
             backend_handle,
@@ -201,7 +201,7 @@ pub fn run() {
                 }
             };
             let (level_meter_tx, level_meter_rx) =
-                watch::channel::<Option<Channel<(f32, f32)>>>(None);
+                watch::channel::<Option<Channel<Response>>>(None);
 
             tokio::spawn(forward_backend_event(
                 app_handle.clone(),
@@ -237,6 +237,7 @@ pub fn run() {
             tokio::spawn(async move {
                 let mut ticker = interval(Duration::from_millis(33)); // about 30fps
                 ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+                let mut bytes = Vec::with_capacity(8);
                 if let Some(shared_level) = app_handle_clone
                     .state::<AppState>()
                     .get_handle()
@@ -247,7 +248,10 @@ pub fn run() {
                         if let Some(level_meter) = level_meter_rx.borrow().as_ref() {
                             let (l, r) = shared_level.get();
                             if l > 0.001 || r > 0.001 {
-                                level_meter.send((l, r)).ok();
+                                bytes.clear();
+                                bytes.extend_from_slice(&l.to_le_bytes());
+                                bytes.extend_from_slice(&r.to_le_bytes());
+                                let _ = level_meter.send(Response::new(bytes.clone()));
                             }
                         }
                     }

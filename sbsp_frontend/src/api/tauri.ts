@@ -135,12 +135,15 @@ export function useTauriApi(): IBackendAdapter {
       return invoke<string>('get_third_party_notices');
     },
     listenLevelMeter: function (levelListener: (levels: [number, number]) => void): Promise<void> {
-      const channel = new Channel<[number, number]>(levelListener);
+      const channel = new Channel<ArrayBuffer>((value) => {
+        const dv = new DataView(value);
+        return levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
+      });
       return invoke('listen_level_meter', { levelListener: channel });
     },
-    pickAudioAssets: function (options: IPickAudioAssetsOptions): Promise<string[]> {
+    pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       if (side == 'host') {
-        return open({
+        const paths = await open({
           multiple: options.multiple,
           directory: false,
           filters: [
@@ -165,9 +168,8 @@ export function useTauriApi(): IBackendAdapter {
               ],
             },
           ],
-        }).then((paths) => {
-          return typeof paths == 'string' ? [paths] : paths || [];
         });
+        return typeof paths == 'string' ? [paths] : paths || [];
       } else {
         const uiState = useUiState();
         return new Promise((resolve) => {
