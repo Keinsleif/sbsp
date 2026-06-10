@@ -37,7 +37,7 @@ export const usePosition = (domTickFn: PositionCallback) => {
     callbacks.delete(domTickFn);
     if (callbacks.size === 0 && rafId != null) {
       cancelAnimationFrame(rafId);
-      rafId == null;
+      rafId = null;
     }
   });
 };
