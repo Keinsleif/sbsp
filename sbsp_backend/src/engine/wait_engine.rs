@@ -150,7 +150,7 @@ impl WaitEngine {
                                     Err(anyhow::anyhow!("Instance with ID {} is playing.", instance_id))
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} not found for resume.", instance_id))
                             }
                         },
                         WaitCommand::SeekTo {wait_type, instance_id, position} => {
@@ -166,7 +166,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} not found for seek to.", instance_id))
                             }
                         },
                         WaitCommand::SeekBy {wait_type, instance_id, amount} => {
@@ -189,7 +189,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} not found for seek by.", instance_id))
                             }
                         },
                         WaitCommand::Stop{wait_type, instance_id} => {
@@ -202,7 +202,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} not found for stop.", instance_id))
                             }
                         }
                     };
