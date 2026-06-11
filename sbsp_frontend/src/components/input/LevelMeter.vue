@@ -22,7 +22,7 @@
           <div
             ref="left"
             class="position-relative top-0 left-0 bg-surface"
-            style="transition: height 60ms ease-out; height: 100%; transform-origin: top;"
+            style="height: 100%; transform-origin: top;"
             :style="{
               width: props.width,
             }"
@@ -100,7 +100,7 @@
           <div
             ref="right"
             class="position-relative top-0 left-0 bg-surface"
-            style="transition: height 40ms ease-out; height: 100%; transform-origin: top;"
+            style="height: 100%; transform-origin: top;"
             :style="{
               width: props.width,
             }"
