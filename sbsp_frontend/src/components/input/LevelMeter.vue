@@ -189,10 +189,12 @@ const decayLoop = (timestamp: DOMHighResTimeStamp) => {
   animationFrameId = requestAnimationFrame(decayLoop);
 };
 
+const toDb = (sample: number) => Number.isFinite(sample) && sample > 0 ? 20 * Math.log10(sample) : -60;
+
 onMounted(() => {
   useLevelMeterListener((message) => {
-    levels.left = Math.max(levels.left, Math.log10(message[0]) * 20);
-    levels.right = Math.max(levels.right, Math.log10(message[1]) * 20);
+    levels.left = Math.max(levels.left, toDb(message[0]));
+    levels.right = Math.max(levels.right, toDb(message[1]));
   });
   animationFrameId = requestAnimationFrame(decayLoop);
 });
