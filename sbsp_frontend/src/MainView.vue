@@ -23,6 +23,7 @@ import { useIntervalFn } from '@vueuse/core';
 import MainViewDesktop from './MainViewDesktop.vue';
 import { useDisplay } from 'vuetify';
 import MainViewMobile from './MainViewMobile.vue';
+import { usePositionTicker } from './composables/usePosition.ts';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -60,11 +61,7 @@ onMounted(() => {
     },
   );
 
-  const updateLoop = () => {
-    showState.handleRAF();
-    rafNumber = requestAnimationFrame(updateLoop);
-  };
-  rafNumber = requestAnimationFrame(updateLoop);
+  usePositionTicker();
 
   api
     .onBackendEvent((event) => {
