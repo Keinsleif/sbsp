@@ -136,8 +136,11 @@ export function useTauriApi(): IBackendAdapter {
     },
     listenLevelMeter: function (levelListener: (levels: [number, number]) => void): Promise<void> {
       const channel = new Channel<ArrayBuffer>((value) => {
+        if (value.byteLength != 8) {
+          return; // ignore invalid ipc value
+        }
         const dv = new DataView(value);
-        return levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
+        levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
       });
       return invoke('listen_level_meter', { levelListener: channel });
     },
