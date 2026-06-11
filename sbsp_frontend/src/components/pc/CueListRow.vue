@@ -127,7 +127,7 @@ const preWaitRef = useTemplateRef('preWait');
 const durationRef = useTemplateRef('duration');
 
 usePosition((pos) => {
-  if (preWaitRef.value == null || durationRef.value == null) return;
+  if (preWaitRef.value == null || durationRef.value == null || preWaitRef.value.children.length < 2 || durationRef.value.children.length < 2) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
