@@ -57,7 +57,7 @@
 
 import { useNow } from '@vueuse/core';
 import { mdiFormatListBulleted, mdiMonitor, mdiRemote } from '@mdi/js';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import ControlsPanel from './components/mobile/ControlsPanel.vue';
 import MonitorPanel from './components/mobile/MonitorPanel.vue';
 import CueList from './components/mobile/CueList.vue';
@@ -70,4 +70,10 @@ const uiState = useUiState();
 const activeTab = ref('list');
 const { t } = useI18n();
 const time = useNow();
+
+watch(() => uiState.permission, (newValue) => {
+  if ((newValue & PERMISSIONS.CONTROL) == 0 && activeTab.value == 'controls') {
+    activeTab.value = 'list';
+  }
+})
 </script>
