@@ -16,7 +16,6 @@ pub enum EngineEvent {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EngineType {
-    PreWait,
     Audio,
     Wait,
     Fade,
