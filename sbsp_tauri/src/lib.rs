@@ -237,7 +237,6 @@ pub fn run() {
             tokio::spawn(async move {
                 let mut ticker = interval(Duration::from_millis(33)); // about 30fps
                 ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
-                let mut bytes = Vec::with_capacity(8);
                 if let Some(shared_level) = app_handle_clone
                     .state::<AppState>()
                     .get_handle()
@@ -248,10 +247,10 @@ pub fn run() {
                         if let Some(level_meter) = level_meter_rx.borrow().as_ref() {
                             let (l, r) = shared_level.get();
                             if l > 0.001 || r > 0.001 {
-                                bytes.clear();
-                                bytes.extend_from_slice(&l.to_le_bytes());
-                                bytes.extend_from_slice(&r.to_le_bytes());
-                                let _ = level_meter.send(Response::new(bytes.clone()));
+                                let mut bytes = [0; 8];
+                                bytes[..4].copy_from_slice(&l.to_le_bytes());
+                                bytes[4..].copy_from_slice(&r.to_le_bytes());
+                                let _ = level_meter.send(Response::new(bytes.to_vec())); // Response::new only accept Vec<u8> for bytes and consume it.
                             }
                         } else {
                             log::debug!("level_meter unregistered.");
