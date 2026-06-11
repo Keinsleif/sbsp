@@ -15,7 +15,11 @@ use sbsp_backend::{
     start_backend,
 };
 use sbsp_license::LicenseManager;
-use tauri::{AppHandle, Emitter as _, Manager as _, ipc::{Channel, Response}, path::BaseDirectory};
+use tauri::{
+    AppHandle, Emitter as _, Manager as _,
+    ipc::{Channel, Response},
+    path::BaseDirectory,
+};
 use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{
@@ -254,7 +258,11 @@ pub fn run() {
                             }
                         } else {
                             log::debug!("level_meter unregistered.");
-                            if level_meter_rx.wait_for(|meter| meter.is_some()).await.is_err() {
+                            if level_meter_rx
+                                .wait_for(|meter| meter.is_some())
+                                .await
+                                .is_err()
+                            {
                                 break; // level_meter_tx is dropped.
                             }
                             log::debug!("level_meter registered.");
