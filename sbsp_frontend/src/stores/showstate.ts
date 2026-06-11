@@ -29,7 +29,7 @@ export const useShowState = defineStore('showstate', () => {
         syncedData.value[cue.id] = { position: 0.0, status: 'playing', lastSyncedAt };
       }
     }
-    for (const cueId in activeCues) {
+    for (const cueId in activeCues.value) {
       if (!(cueId in syncedData.value)) {
         delete activeCues.value[cueId];
       }
