@@ -18,7 +18,7 @@ use uuid::Uuid;
 
 use super::EngineEvent;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum WaitType {
     PreWait,
     Wait,
@@ -26,7 +26,6 @@ pub enum WaitType {
 }
 
 pub struct WaitingInstance {
-    wait_type: WaitType,
     status: WaitingStatus,
     total_duration: Duration,
     start_time: Instant,
@@ -34,7 +33,6 @@ pub struct WaitingInstance {
 }
 
 pub struct LoadedInstance {
-    wait_type: WaitType,
     total_duration: Duration,
     remaining_duration: Duration,
 }
@@ -42,7 +40,6 @@ pub struct LoadedInstance {
 impl LoadedInstance {
     fn start_waiting(&self) -> WaitingInstance {
         WaitingInstance {
-            wait_type: self.wait_type,
             status: WaitingStatus::Waiting,
             total_duration: self.total_duration,
             start_time: Instant::now(),
@@ -61,8 +58,8 @@ pub enum WaitingStatus {
 pub struct WaitEngine {
     command_rx: mpsc::Receiver<WaitCommand>,
     event_tx: mpsc::Sender<EngineEvent>,
-    waiting_instances: HashMap<Uuid, WaitingInstance>,
-    loaded_instances: HashMap<Uuid, LoadedInstance>,
+    waiting_instances: HashMap<(WaitType, Uuid), WaitingInstance>,
+    loaded_instances: HashMap<(WaitType, Uuid), LoadedInstance>,
 }
 
 impl WaitEngine {
@@ -88,7 +85,7 @@ impl WaitEngine {
                     let result: Result<()> = match command {
                         WaitCommand::Load { wait_type, instance_id, duration } => {
                             if wait_type.eq(&WaitType::Wait) {
-                                self.loaded_instances.insert(instance_id, LoadedInstance { wait_type, total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
+                                self.loaded_instances.insert((wait_type, instance_id), LoadedInstance { total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
                                 if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
                                     Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
                                 } else {
@@ -99,11 +96,10 @@ impl WaitEngine {
                             }
                         }
                         WaitCommand::Start{wait_type, instance_id, duration} => {
-                            if let Some(loaded_instance) = self.loaded_instances.remove(&instance_id) {
-                                self.waiting_instances.insert(instance_id, loaded_instance.start_waiting());
+                            if let Some(loaded_instance) = self.loaded_instances.remove(&(wait_type, instance_id)) {
+                                self.waiting_instances.insert((wait_type, instance_id), loaded_instance.start_waiting());
                             } else {
-                                self.waiting_instances.insert(instance_id, WaitingInstance {
-                                    wait_type,
+                                self.waiting_instances.insert((wait_type, instance_id), WaitingInstance {
                                     status: WaitingStatus::Waiting,
                                     total_duration: Duration::from_secs_f64(duration),
                                     start_time: Instant::now(),
@@ -118,89 +114,95 @@ impl WaitEngine {
                                 Ok(())
                             }
                         },
-                        WaitCommand::Pause{instance_id, ..} => {
-                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
+                        WaitCommand::Pause{wait_type, instance_id} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&(wait_type, instance_id)) {
                                 if !waiting_instance.status.eq(&WaitingStatus::Paused) {
                                     let elapsed = waiting_instance.start_time.elapsed();
                                     waiting_instance.status = WaitingStatus::Paused;
                                     waiting_instance.remaining_duration -= elapsed;
                                     let wait_event = WaitEvent::Paused { instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
-                                    let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                    let event = Self::wrap_wait_event(wait_type, wait_event);
                                     if let Err(e) = self.event_tx.send(event).await {
                                         Err(anyhow::anyhow!("Error polling Wait event: {:?}", e))
                                     } else {
                                         Ok(())
                                     }
                                 } else {
-                                    Err(anyhow::anyhow!("Instance with ID {} has already paused.", instance_id))
+                                    Err(anyhow::anyhow!("Instance with ID {} with {:?} has already paused.", instance_id, wait_type))
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for pause.", instance_id, wait_type))
                             }
                         },
-                        WaitCommand::Resume{instance_id, ..} => {
-                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
+                        WaitCommand::Resume{wait_type, instance_id} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&(wait_type, instance_id)) {
                                 if waiting_instance.status.eq(&WaitingStatus::Paused) {
                                     waiting_instance.status = WaitingStatus::Waiting;
                                     waiting_instance.start_time = Instant::now();
                                     let wait_event = WaitEvent::Resumed { instance_id };
-                                    let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                    let event = Self::wrap_wait_event(wait_type, wait_event);
                                     if let Err(e) = self.event_tx.send(event).await {
                                         Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                     } else {
                                         Ok(())
                                     }
                                 } else {
-                                    Err(anyhow::anyhow!("Instance with ID {} is playing.", instance_id))
+                                    Err(anyhow::anyhow!("Instance with ID {} with {:?} is playing.", instance_id, wait_type))
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for resume.", instance_id, wait_type))
                             }
                         },
-                        WaitCommand::SeekTo {instance_id, position} => {
-                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
+                        WaitCommand::SeekTo {wait_type, instance_id, position} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&(wait_type, instance_id)) {
                                 let new_duration = (waiting_instance.total_duration.as_secs_f64() - position).clamp(0.0, waiting_instance.total_duration.as_secs_f64());
                                 waiting_instance.remaining_duration = Duration::from_secs_f64(new_duration);
+                                waiting_instance.start_time = Instant::now();
                                 let wait_event = WaitEvent::Seeked { instance_id, position };
-                                let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                let event = Self::wrap_wait_event(wait_type, wait_event);
                                 if let Err(e) = self.event_tx.send(event).await {
                                     Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                 } else {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for seek to.", instance_id, wait_type))
                             }
                         },
-                        WaitCommand::SeekBy {instance_id, amount} => {
-                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&instance_id) {
-                                let new_duration = (waiting_instance.remaining_duration.as_secs_f64() - amount).clamp(0.0, waiting_instance.total_duration.as_secs_f64());
-                                waiting_instance.remaining_duration = Duration::from_secs_f64(new_duration);
+                        WaitCommand::SeekBy {wait_type, instance_id, amount} => {
+                            if let Some(waiting_instance) = self.waiting_instances.get_mut(&(wait_type, instance_id)) {
+                                let elapsed = if waiting_instance.status == WaitingStatus::Waiting {
+                                    waiting_instance.start_time.elapsed()
+                                } else {
+                                    Duration::ZERO
+                                };
+                                let current_remaining = waiting_instance.remaining_duration.saturating_sub(elapsed);
+                                let new_remaining = (current_remaining.as_secs_f64() - amount).clamp(0.0, waiting_instance.total_duration.as_secs_f64());
+                                waiting_instance.remaining_duration = Duration::from_secs_f64(new_remaining);
+                                waiting_instance.start_time = Instant::now();
                                 let position = (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64();
                                 let wait_event = WaitEvent::Seeked { instance_id, position };
-                                let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                                let event = Self::wrap_wait_event(wait_type, wait_event);
                                 if let Err(e) = self.event_tx.send(event).await {
                                     Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                 } else {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for seek by.", instance_id, wait_type))
                             }
                         },
-                        WaitCommand::Stop{instance_id, ..} => {
-                            if let Some(waiting_instance) = self.waiting_instances.remove(&instance_id) {
-                                let wait_event = WaitEvent::Stopped { instance_id };
-                                let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                        WaitCommand::Stop{wait_type, instance_id} => {
+                            let wait_event = WaitEvent::Stopped { instance_id };
+                            let event = Self::wrap_wait_event(wait_type, wait_event);
+                            if self.waiting_instances.remove(&(wait_type, instance_id)).is_some() || self.loaded_instances.remove(&(wait_type, instance_id)).is_some() {
                                 if let Err(e) = self.event_tx.send(event).await {
                                     Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                                 } else {
                                     Ok(())
                                 }
-                            } else if self.loaded_instances.remove(&instance_id).is_some() {
-                                Ok(())
-                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                            } else {
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for stop.", instance_id, wait_type))
                             }
                         }
                     };
@@ -210,14 +212,14 @@ impl WaitEngine {
                     }
                 },
                 _  = push_timer.tick() => {
-                    for (instance_id, waiting_instance) in &mut self.waiting_instances {
+                    for (instance_key, waiting_instance) in &mut self.waiting_instances {
                         let elapsed = waiting_instance.start_time.elapsed();
                         let wait_event;
                         if elapsed >= waiting_instance.remaining_duration {
 
                             if waiting_instance.status.eq(&WaitingStatus::Waiting) {
                                 waiting_instance.status = WaitingStatus::Completed;
-                                wait_event = WaitEvent::Completed { instance_id: *instance_id }
+                                wait_event = WaitEvent::Completed { instance_id: instance_key.1 }
                             } else {
                                 continue;
                             }
@@ -225,14 +227,14 @@ impl WaitEngine {
                             if waiting_instance.status.ne(&WaitingStatus::Waiting) {
                                 continue;
                             }
-                            wait_event = WaitEvent::Progress { instance_id: *instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
-                            let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                            wait_event = WaitEvent::Progress { instance_id: instance_key.1, position: (waiting_instance.total_duration - waiting_instance.remaining_duration + elapsed).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
+                            let event = Self::wrap_wait_event(instance_key.0, wait_event);
                             if let Err(e) = self.event_tx.try_send(event) {
                                 log::warn!("EngineEvent dropped: {:?}", e);
                             }
                             continue;
                         }
-                        let event = Self::wrap_wait_event(waiting_instance.wait_type, wait_event);
+                        let event = Self::wrap_wait_event(instance_key.0, wait_event);
                         if let Err(e) = self.event_tx.send(event).await {
                             log::error!("Error sending Wait event: {:?}", e);
                         }
