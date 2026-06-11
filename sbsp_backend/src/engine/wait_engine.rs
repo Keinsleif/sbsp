@@ -128,10 +128,10 @@ impl WaitEngine {
                                         Ok(())
                                     }
                                 } else {
-                                    Err(anyhow::anyhow!("Instance with ID {} has already paused.", instance_id))
+                                    Err(anyhow::anyhow!("Instance with ID {} with {:?} has already paused.", instance_id, wait_type))
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for pause.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for pause.", instance_id, wait_type))
                             }
                         },
                         WaitCommand::Resume{wait_type, instance_id} => {
@@ -147,10 +147,10 @@ impl WaitEngine {
                                         Ok(())
                                     }
                                 } else {
-                                    Err(anyhow::anyhow!("Instance with ID {} is playing.", instance_id))
+                                    Err(anyhow::anyhow!("Instance with ID {} with {:?} is playing.", instance_id, wait_type))
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for resume.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for resume.", instance_id, wait_type))
                             }
                         },
                         WaitCommand::SeekTo {wait_type, instance_id, position} => {
@@ -166,7 +166,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for seek to.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for seek to.", instance_id, wait_type))
                             }
                         },
                         WaitCommand::SeekBy {wait_type, instance_id, amount} => {
@@ -189,7 +189,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for seek by.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for seek by.", instance_id, wait_type))
                             }
                         },
                         WaitCommand::Stop{wait_type, instance_id} => {
@@ -202,7 +202,7 @@ impl WaitEngine {
                                     Ok(())
                                 }
                             } else {
-                                Err(anyhow::anyhow!("Instance with ID {} not found for stop.", instance_id))
+                                Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for stop.", instance_id, wait_type))
                             }
                         }
                     };
