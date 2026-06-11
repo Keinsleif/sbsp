@@ -15,7 +15,7 @@ export const useLevelMeterListener = (listener: LevelMeterListener) => {
   api.listenLevelMeter(listener);
 
   onUnmounted(() => {
-    console.debug('unregistered.');
     api.unlistenLevelMeter();
+    listenerRegistered = false;
   });
 };
