@@ -142,7 +142,6 @@
         <rect
           ref="position"
           v-show="selectedCue != null && selectedCue.id in showState.activeCues"
-          style="transition: transform 10ms linear"
           x="0"
           y="0"
           width="2"
