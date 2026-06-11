@@ -231,24 +231,22 @@ pub async fn export_to_folder(
 }
 
 #[tauri::command]
-pub async fn listen_level_meter(
+pub fn listen_level_meter(
     state: tauri::State<'_, AppState>,
     level_listener: Channel<Response>,
-) -> Result<(), String> {
+) {
     state.level_meter_tx.send_modify(|channel| {
         *channel = Some(level_listener);
     });
-    Ok(())
 }
 
 #[tauri::command]
-pub async fn unlisten_level_meter(
+pub fn unlisten_level_meter(
     state: tauri::State<'_, AppState>,
-) -> Result<(), String> {
+) {
     state.level_meter_tx.send_modify(|channel| {
         *channel = None;
     });
-    Ok(())
 }
 
 #[tauri::command]

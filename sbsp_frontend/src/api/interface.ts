@@ -29,8 +29,8 @@ export interface IBackendAdapter {
 
   isMacOs(): boolean;
   getThirdPartyNotices(): Promise<string>;
-  listenLevelMeter(levelListener: LevelMeterListener): Promise<void>;
-  unlistenLevelMeter(): Promise<void>;
+  listenLevelMeter(levelListener: LevelMeterListener): void;
+  unlistenLevelMeter(): void;
   pickAudioAssets(options: IPickAudioAssetsOptions): Promise<string[]>;
 
   setTitle(title: string): void;

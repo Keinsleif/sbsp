@@ -9,13 +9,14 @@ export const useLevelMeterListener = (listener: LevelMeterListener) => {
     console.warn('Multiple Level Meter listener is not supported. ignoring...');
     return; // ignore more than one level meter listener
   }
-  listenerRegistered = true;
 
   const api = useApi();
   api.listenLevelMeter(listener);
 
+  listenerRegistered = true;
+
   onUnmounted(() => {
-    api.unlistenLevelMeter();
     listenerRegistered = false;
+    api.unlistenLevelMeter();
   });
 };

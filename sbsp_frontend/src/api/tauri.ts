@@ -134,7 +134,7 @@ export function useTauriApi(): IBackendAdapter {
     getThirdPartyNotices: function (): Promise<string> {
       return invoke<string>('get_third_party_notices');
     },
-    listenLevelMeter: function (levelListener: LevelMeterListener): Promise<void> {
+    listenLevelMeter: function (levelListener: LevelMeterListener): void {
       const channel = new Channel<ArrayBuffer>((value) => {
         if (value.byteLength != 8) {
           return; // ignore invalid ipc value
@@ -142,10 +142,10 @@ export function useTauriApi(): IBackendAdapter {
         const dv = new DataView(value);
         levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
       });
-      return invoke('listen_level_meter', { levelListener: channel });
+      invoke('listen_level_meter', { levelListener: channel });
     },
-    unlistenLevelMeter: function (): Promise<void> {
-      return invoke('unlisten_level_meter');
+    unlistenLevelMeter: function (): void {
+      invoke('unlisten_level_meter');
     },
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       if (side == 'host') {

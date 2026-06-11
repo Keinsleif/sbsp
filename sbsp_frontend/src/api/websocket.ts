@@ -468,10 +468,10 @@ export function useWebsocketApi(): IBackendAdapter {
       return 'Not Available. To read third party notices, please use host app.';
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    listenLevelMeter: async function (_levelListener: LevelMeterListener): Promise<void> {
+    listenLevelMeter: function (_levelListener: LevelMeterListener): void {
       console.warn('Not implemented');
     },
-    unlistenLevelMeter: async function (): Promise<void> {
+    unlistenLevelMeter: function (): void {
       console.warn('Not implemented');
     },
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
