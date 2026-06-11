@@ -7,8 +7,10 @@ const callbacks = new Set<PositionCallback>();
 let rafId: number | null = null;
 let lastFlush = 0;
 
+let showState: ReturnType<typeof useShowState> | null = null;
+
 const loop = (timestamp: DOMHighResTimeStamp) => {
-  const showState = useShowState();
+  if (showState == null) return;
   let positions;
 
   // 100ms for reactive update
@@ -25,6 +27,9 @@ const loop = (timestamp: DOMHighResTimeStamp) => {
 };
 
 export const usePosition = (domTickFn: PositionCallback) => {
+  if (showState == null) {
+    showState = useShowState();
+  }
   if (domTickFn) {
     callbacks.add(domTickFn);
   }
@@ -43,6 +48,9 @@ export const usePosition = (domTickFn: PositionCallback) => {
 };
 
 export const usePositionTicker = () => {
+  if (showState == null) {
+    showState = useShowState();
+  }
   if (rafId == null) {
     rafId = requestAnimationFrame(loop);
   }
