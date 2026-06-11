@@ -121,7 +121,7 @@ import { useApi } from '../../api';
 
 const api = useApi();
 
-const DECAY_STEP = 0.5;
+const DECAY_PER_SEC = 30;
 
 const props = withDefaults(
   defineProps<{
@@ -158,12 +158,17 @@ const { start: startRightClipReset, stop: stopRightClipReset } = useTimeoutFn(()
 
 let animationFrameId: number;
 
-const decayLoop = () => {
+let lastTime = 0;
+const decayLoop = (timestamp: DOMHighResTimeStamp) => {
+  if (!lastTime) lastTime = timestamp;
+  const deltaTime = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
   if (levels.left > -60) {
-    levels.left = Math.max(-60, levels.left - DECAY_STEP); // TODO: variable decay step for high refresh rate
+    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime );
   }
   if (levels.right > -60) {
-    levels.right = Math.max(-60, levels.right - DECAY_STEP);
+    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime );
   }
 
   if (levels.left > 0) {
