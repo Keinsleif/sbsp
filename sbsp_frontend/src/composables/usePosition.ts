@@ -50,7 +50,7 @@ export const usePositionTicker = () => {
   onUnmounted(() => {
     if (callbacks.size === 0 && rafId != null) {
       cancelAnimationFrame(rafId);
-      rafId == null;
+      rafId = null;
     }
   });
 }
