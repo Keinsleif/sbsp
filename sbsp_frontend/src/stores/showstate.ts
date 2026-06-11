@@ -227,7 +227,7 @@ export const useShowState = defineStore('showstate', () => {
           position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
         }
       } else {
-        position = lastSyncCue.position + latency.value;
+        position = lastSyncCue.position;
       }
       if (updateActiveCues && position != activeCue.position) {
         activeCue.position = position;
