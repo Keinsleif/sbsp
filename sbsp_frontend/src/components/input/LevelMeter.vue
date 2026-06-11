@@ -20,11 +20,11 @@
           :style="{ width: props.width, height: props.height }"
         >
           <div
+            ref="left"
             class="position-relative top-0 left-0 bg-surface"
-            style="transition: height 60ms ease-out"
+            style="transition: height 60ms ease-out; height: 100%; transform-origin: top;"
             :style="{
               width: props.width,
-              height: Math.min(levels.left * 100, 0) / -60 + '%',
             }"
           />
         </div>
@@ -98,11 +98,11 @@
           :style="{ width: props.width, height: props.height }"
         >
           <div
+            ref="right"
             class="position-relative top-0 left-0 bg-surface"
-            style="transition: height 40ms ease-out"
+            style="transition: height 40ms ease-out; height: 100%; transform-origin: top;"
             :style="{
               width: props.width,
-              height: Math.min(levels.right * 100, 0) / -60 + '%',
             }"
           />
         </div>
@@ -116,7 +116,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { useTimeoutFn } from '@vueuse/core';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import { useApi } from '../../api';
 
 const api = useApi();
@@ -136,10 +136,13 @@ const props = withDefaults(
   },
 );
 
-const levels = ref({
+const leftRef = useTemplateRef('left');
+const rightRef = useTemplateRef('right');
+
+const levels = {
   left: -60,
   right: -60,
-});
+};
 
 const clipping = ref({
   left: false,
@@ -156,23 +159,28 @@ const { start: startRightClipReset, stop: stopRightClipReset } = useTimeoutFn(()
 let animationFrameId: number;
 
 const decayLoop = () => {
-  if (levels.value.left > -60) {
-    levels.value.left = Math.max(-60, levels.value.left - DECAY_STEP);
+  if (levels.left > -60) {
+    levels.left = Math.max(-60, levels.left - DECAY_STEP); // TODO: variable decay step for high refresh rate
   }
-  if (levels.value.right > -60) {
-    levels.value.right = Math.max(-60, levels.value.right - DECAY_STEP);
+  if (levels.right > -60) {
+    levels.right = Math.max(-60, levels.right - DECAY_STEP);
   }
 
-  if (levels.value.left > 0) {
+  if (levels.left > 0) {
     clipping.value.left = true;
     stopLeftClipReset();
     startLeftClipReset();
   }
 
-  if (levels.value.right > 0) {
+  if (levels.right > 0) {
     clipping.value.right = true;
     stopRightClipReset();
     startRightClipReset();
+  }
+
+  if (leftRef.value != null && rightRef.value != null) {
+    leftRef.value.style.transform = `scaleY(${Math.min(levels.left, 0) / -60})`;
+    rightRef.value.style.transform = `scaleY(${Math.min(levels.right, 0) / -60})`;
   }
 
   animationFrameId = requestAnimationFrame(decayLoop);
@@ -180,8 +188,8 @@ const decayLoop = () => {
 
 onMounted(() => {
   api.listenLevelMeter((message) => {
-    levels.value.left = Math.max(levels.value.left, Math.log10(message[0]) * 20);
-    levels.value.right = Math.max(levels.value.right, Math.log10(message[1]) * 20);
+    levels.left = Math.max(levels.left, Math.log10(message[0]) * 20);
+    levels.right = Math.max(levels.right, Math.log10(message[1]) * 20);
   });
   animationFrameId = requestAnimationFrame(decayLoop);
 });
