@@ -242,6 +242,16 @@ pub async fn listen_level_meter(
 }
 
 #[tauri::command]
+pub async fn unlisten_level_meter(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state.level_meter_tx.send_modify(|channel| {
+        *channel = None;
+    });
+    Ok(())
+}
+
+#[tauri::command]
 pub fn get_hardware() -> Result<SupportedHardware, String> {
     get_supported_hardware().map_err(|e| e.to_string())
 }

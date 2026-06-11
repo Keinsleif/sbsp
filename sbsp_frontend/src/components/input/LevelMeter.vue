@@ -117,9 +117,7 @@
 
 import { useTimeoutFn } from '@vueuse/core';
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
-import { useApi } from '../../api';
-
-const api = useApi();
+import { useLevelMeterListener } from '../../composables/useLevelMeterListener';
 
 const DECAY_PER_SEC = 30;
 
@@ -192,7 +190,7 @@ const decayLoop = (timestamp: DOMHighResTimeStamp) => {
 };
 
 onMounted(() => {
-  api.listenLevelMeter((message) => {
+  useLevelMeterListener((message) => {
     levels.left = Math.max(levels.left, Math.log10(message[0]) * 20);
     levels.right = Math.max(levels.right, Math.log10(message[1]) * 20);
   });

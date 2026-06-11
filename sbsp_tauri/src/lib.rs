@@ -200,7 +200,7 @@ pub fn run() {
                     return Err(e.into());
                 }
             };
-            let (level_meter_tx, level_meter_rx) =
+            let (level_meter_tx, mut level_meter_rx) =
                 watch::channel::<Option<Channel<Response>>>(None);
 
             tokio::spawn(forward_backend_event(
@@ -253,6 +253,12 @@ pub fn run() {
                                 bytes.extend_from_slice(&r.to_le_bytes());
                                 let _ = level_meter.send(Response::new(bytes.clone()));
                             }
+                        } else {
+                            log::debug!("level_meter unregistered.");
+                            if level_meter_rx.wait_for(|meter| meter.is_some()).await.is_err() {
+                                break; // level_meter_tx is dropped.
+                            }
+                            log::debug!("level_meter registered.");
                         }
                     }
                 } else {
@@ -280,6 +286,7 @@ pub fn run() {
             command::file_save_as,
             command::export_to_folder,
             command::listen_level_meter,
+            command::unlisten_level_meter,
             command::get_hardware,
             command::controller::go,
             command::controller::pause,

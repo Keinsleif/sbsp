@@ -5,7 +5,7 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import { IBackendAdapter, IPickAudioAssetsOptions } from './interface';
+import { IBackendAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
 import { type } from '@tauri-apps/plugin-os';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { FileList } from '../types/FileList';
@@ -134,7 +134,7 @@ export function useTauriApi(): IBackendAdapter {
     getThirdPartyNotices: function (): Promise<string> {
       return invoke<string>('get_third_party_notices');
     },
-    listenLevelMeter: function (levelListener: (levels: [number, number]) => void): Promise<void> {
+    listenLevelMeter: function (levelListener: LevelMeterListener): Promise<void> {
       const channel = new Channel<ArrayBuffer>((value) => {
         if (value.byteLength != 8) {
           return; // ignore invalid ipc value
@@ -143,6 +143,9 @@ export function useTauriApi(): IBackendAdapter {
         levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
       });
       return invoke('listen_level_meter', { levelListener: channel });
+    },
+    unlistenLevelMeter: function (): Promise<void> {
+      return invoke('unlisten_level_meter');
     },
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       if (side == 'host') {
