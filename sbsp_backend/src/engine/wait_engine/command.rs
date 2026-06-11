@@ -18,20 +18,25 @@ pub enum WaitCommand {
         duration: f64,
     },
     Pause {
+        wait_type: WaitType,
         instance_id: Uuid,
     },
     Resume {
+        wait_type: WaitType,
         instance_id: Uuid,
     },
     SeekTo {
+        wait_type: WaitType,
         instance_id: Uuid,
         position: f64,
     },
     SeekBy {
+        wait_type: WaitType,
         instance_id: Uuid,
         amount: f64,
     },
     Stop {
+        wait_type: WaitType,
         instance_id: Uuid,
     },
 }
