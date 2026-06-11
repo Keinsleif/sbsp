@@ -121,7 +121,7 @@ usePosition((pos) => {
   if (rowRef.value == null) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
-  if (activeCue == null || position == null) {
+  if (activeCue == null || position == null || activeCue.duration == 0) {
     if (rowRef.value.style.background != '') {
       rowRef.value.style.background = '';
     }

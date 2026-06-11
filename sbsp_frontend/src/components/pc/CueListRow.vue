@@ -130,7 +130,7 @@ usePosition((pos) => {
   if (preWaitRef.value == null || durationRef.value == null) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
-  if (position != null && activeCue != null) {
+  if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
       if (durationRef.value.children[1]!.textContent != durationText.value) {
         durationRef.value.children[1]!.textContent = durationText.value;
