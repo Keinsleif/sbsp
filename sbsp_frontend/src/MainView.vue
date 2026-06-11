@@ -45,7 +45,6 @@ const onVisibilityChange = () => {
 };
 
 const unlistenFuncs: (() => void)[] = [];
-let rafNumber: number | null = null;
 
 onMounted(() => {
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
@@ -248,9 +247,6 @@ onUnmounted(() => {
         wakeLock.value = null;
       })
       .catch(e => console.error(e));
-  }
-  if (rafNumber != null) {
-    cancelAnimationFrame(rafNumber);
   }
 });
 
