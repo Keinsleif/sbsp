@@ -6,6 +6,7 @@ type PositionCallback = (positions: { [id: string]: number }) => void;
 const callbacks = new Set<PositionCallback>();
 let rafId: number | null = null;
 let lastFlush = 0;
+let tickerUsers = 0;
 
 let showState: ReturnType<typeof useShowState> | null = null;
 
@@ -40,7 +41,7 @@ export const usePosition = (domTickFn: PositionCallback) => {
 
   onUnmounted(() => {
     callbacks.delete(domTickFn);
-    if (callbacks.size === 0 && rafId != null) {
+    if (callbacks.size === 0 && tickerUsers === 0 && rafId != null) {
       cancelAnimationFrame(rafId);
       rafId = null;
     }
@@ -51,12 +52,15 @@ export const usePositionTicker = () => {
   if (showState == null) {
     showState = useShowState();
   }
+  tickerUsers++;
+
   if (rafId == null) {
     rafId = requestAnimationFrame(loop);
   }
 
   onUnmounted(() => {
-    if (callbacks.size === 0 && rafId != null) {
+    tickerUsers--;
+    if (callbacks.size === 0 && tickerUsers === 0 && rafId != null) {
       cancelAnimationFrame(rafId);
       rafId = null;
     }
