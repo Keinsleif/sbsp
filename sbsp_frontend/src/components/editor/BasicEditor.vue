@@ -243,7 +243,11 @@ const insertTimestampToNote = () => {
   const position = showState.getPosition(selectedCue.value.id);
   if (position == null) return;
 
-  if (notes.value != null && (notes.value.endsWith('\n') || notes.value == '')) {
+  if (notes.value == null) {
+    notes.value = '';
+  }
+
+  if (notes.value.endsWith('\n') || notes.value == '') {
     notes.value += `[${secondsToFormat(position)}] `;
   } else {
     notes.value += `\n[${secondsToFormat(position)}] `;
