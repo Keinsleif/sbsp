@@ -26,7 +26,7 @@
         <v-window-item value="list" class="d-flex h-100">
           <cue-list />
         </v-window-item>
-        <v-window-item value="controls" class="h-100">
+        <v-window-item v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0" value="controls" class="h-100">
           <controls-panel />
         </v-window-item>
         <v-window-item value="monitor" class="h-100">
