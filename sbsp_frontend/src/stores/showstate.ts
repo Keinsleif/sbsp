@@ -257,7 +257,7 @@ export const useShowState = defineStore('showstate', () => {
         return Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
       }
     } else {
-      return lastSyncCue.position + latency.value;
+      return lastSyncCue.position;
     }
   }
 
