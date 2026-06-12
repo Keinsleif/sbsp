@@ -15,8 +15,8 @@
       />
     </div>
     <div class="pa-0 d-flex flex-row justify-space-between">
-      <div class="px-3 py-2" ref="elapsed"></div>
-      <div class="px-3 py-2" ref="remain"></div>
+      <div ref="elapsed" class="px-3 py-2" />
+      <div ref="remain" class="px-3 py-2" />
     </div>
     <v-progress-linear
       :color="activeCue.status == 'paused' || activeCue.status == 'stopping' ? 'warning' : 'primary'"
@@ -50,7 +50,7 @@ const title = computed(() => {
   const activeCue = getCueById.value(props.activeCue.cueId);
   if (activeCue == null) return;
   let result = '';
-  if (activeCue.number.trim() != '') {
+  if (activeCue.number.trim() !== '') {
     result = activeCue.number + '・';
   }
   if (activeCue.name != null) {

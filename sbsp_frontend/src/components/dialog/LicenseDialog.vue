@@ -2,8 +2,7 @@
   <v-dialog
     v-model="isLicenseDialogOpen"
     width="auto"
-    @keydown.esc.stop="isLicenseDialogOpen = false"
-    @keydown.stop
+    @keydown.stop.esc="isLicenseDialogOpen = false"
     @contextmenu.prevent
   >
     <v-sheet
@@ -62,8 +61,7 @@
     <v-dialog
       v-model="isLicenseActivateInfoDialogOpen"
       width="600px"
-      @keydown.esc.stop="isLicenseActivateInfoDialogOpen = false"
-      @keydown.stop
+      @keydown.stop.esc="isLicenseActivateInfoDialogOpen = false"
     >
       <v-card>
         <v-card-title class="d-flex flex-row text-success pa-4">

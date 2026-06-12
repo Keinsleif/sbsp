@@ -8,12 +8,7 @@
     width="100px"
     autocomplete="off"
     @blur="saveValue"
-    @keydown.enter="$event.target.blur()"
-    @keydown.esc="
-      innerVolume = validateVolume(volume);
-      $event.target.blur();
-    "
-    @keydown.stop
+    @keydown.stop="onKeydown"
   />
 </template>
 
@@ -44,6 +39,16 @@ const innerVolume = ref(validateVolume(volume.value));
 watch(volume, () => {
   innerVolume.value = validateVolume(volume.value);
 });
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (!(e.target instanceof HTMLElement)) return;
+  if (e.key === 'Enter') {
+    return;
+  } else if (e.key === 'Escape') {
+    innerVolume.value = validateVolume(volume.value);
+    e.target.blur();
+  }
+};
 
 const saveValue = () => {
   const newVolume = Number(innerVolume.value);

@@ -79,7 +79,7 @@ const faderPosition = computed({
 });
 
 const thumbLabel = (value: number): string => {
-  if (value == 0) {
+  if (value === 0) {
     return 'Center';
   } else if (value > 0) {
     return 'R' + Math.abs(value);

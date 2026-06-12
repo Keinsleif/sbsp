@@ -2,10 +2,10 @@
   <v-sheet
     class="d-flex h-100"
     :class="$style['cuelist-wrapper']"
+    tabindex="-1"
     @copy="copyHandler"
     @cut="cutHandler"
     @paste="pasteHandler"
-    tabindex="-1"
   >
     <v-table
       fixed-header
@@ -94,9 +94,9 @@
       </thead>
       <tbody>
         <cue-list-row
-          ref="cuelistItem"
           v-for="(item, i) in showModel.flatCueList"
           v-show="!item.isHidden"
+          ref="cuelistItem"
           :key="item.cue.id"
           :item="item"
           :is-drag-over="dragOverIndex == i"
@@ -230,7 +230,7 @@ const isUserTyping = (e: ClipboardEvent): boolean => {
 const pasteHandler = (e: ClipboardEvent) => {
   if (isUserTyping(e)) return;
 
-  let cues: Cue[] = [];
+  const cues: Cue[] = internalClipboard.value;
   // if (navigator.clipboard && e.clipboardData) {
   //   const rawText = e.clipboardData.getData('application/x-sbsp-cue');
   //   if (!rawText) return;
@@ -238,7 +238,6 @@ const pasteHandler = (e: ClipboardEvent) => {
   // } else {
   //   cues = internalClipboard.value;
   // }
-  cues = internalClipboard.value;
 
   if (cues.length > 0) {
     e.preventDefault();
@@ -300,7 +299,7 @@ const copy = () => {
 
 const onArrowUp = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == uiState.selected) - 1;
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) - 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -331,7 +330,7 @@ useHotkey('shift+arrowup', onArrowUp);
 
 const onArrowDown = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == uiState.selected) + 1;
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) + 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -367,7 +366,7 @@ useHotkey('cmd+a', () => {
 });
 
 useHotkey('cmd+backspace', () => {
-  if (uiState.mode == 'edit') {
+  if (uiState.mode === 'edit') {
     api.removeCues(Array.from(uiState.selectedRows));
   }
 });
@@ -408,7 +407,7 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
-  if (event.button != 0) {
+  if (event.button !== 0) {
     return;
   }
   const clickedId = showModel.flatCueList[index]?.cue.id;

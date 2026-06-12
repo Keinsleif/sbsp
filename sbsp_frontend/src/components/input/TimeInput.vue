@@ -8,12 +8,7 @@
     :class="$style['centered-input']"
     autocomplete="off"
     @blur="save"
-    @keydown.enter="$event.target.blur()"
-    @keydown.esc="
-      reset();
-      $event.target.blur();
-    "
-    @keydown.stop
+    @keydown.stop="onKeydown"
   />
 </template>
 
@@ -47,9 +42,20 @@ watch([seconds, () => props.multiply], () => {
   formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null);
 });
 
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' && e.target instanceof HTMLElement) {
+    e.target.blur();
+    return;
+  }
+  if (e.key === 'Escape' && e.target instanceof HTMLElement) {
+    formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null); // reset
+    e.target.blur();
+  }
+};
+
 const save = () => {
   let innerValue: number;
-  if (formattedValue.value.trim() == '') {
+  if (formattedValue.value.trim() === '') {
     innerValue = props.defaultValue;
   } else {
     innerValue = formatToSeconds(formattedValue.value, props.acceptMinus) / props.multiply;
@@ -57,14 +63,10 @@ const save = () => {
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
   }
-  if (seconds.value != innerValue) {
+  if (seconds.value !== innerValue) {
     seconds.value = innerValue;
     emit('update');
   }
-};
-
-const reset = () => {
-  formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null);
 };
 </script>
 

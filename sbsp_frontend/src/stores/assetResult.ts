@@ -32,7 +32,7 @@ export const useAssetResult = defineStore(
       const { getCueById } = storeToRefs(showModel);
       const api = useApi();
       const targetCue = getCueById.value(cueId);
-      if (targetCue != null && targetCue.params.type == 'audio') {
+      if (targetCue != null && targetCue.params.type === 'audio') {
         const result = results.value[targetCue.params.target];
         if (result != null) {
           return result;
@@ -56,7 +56,7 @@ export const useAssetResult = defineStore(
       const { getCueById } = storeToRefs(showModel);
       const api = useApi();
       const targetCue = getCueById.value(cueId);
-      if (targetCue != null && targetCue.params.type == 'audio') {
+      if (targetCue != null && targetCue.params.type === 'audio') {
         const result = metadatas.value[targetCue.params.target];
         if (result != null) {
           return result;

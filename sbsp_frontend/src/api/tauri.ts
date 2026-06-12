@@ -24,13 +24,12 @@ import type { Permissions } from '../types/Permissions';
 import type { InsertPosition } from '../types/InsertPosition';
 import { v4 } from 'uuid';
 
-const side = import.meta.env.VITE_APP_SIDE;
 const { t } = i18n.global;
 
 export function useTauriApi(): IBackendAdapter {
   const tauriApi: IBackendAdapter = {
     host:
-      side == 'host'
+      __IS_HOST__
         ? {
             getLicenseInfo: function (): Promise<LicenseInformation | null> {
               return invoke<LicenseInformation | null>('get_license_info');
@@ -84,7 +83,7 @@ export function useTauriApi(): IBackendAdapter {
         : undefined,
 
     remote:
-      side == 'remote'
+      __IS_REMOTE__
         ? {
             isConnected: function (): Promise<[boolean, Permissions | null]> {
               return invoke<[boolean, Permissions | null]>('is_connected');
@@ -121,7 +120,7 @@ export function useTauriApi(): IBackendAdapter {
           }
         : undefined,
     isMacOs: function (): boolean {
-      return type() == 'macos';
+      return type() === 'macos';
     },
 
     requestStateSync() {
@@ -136,7 +135,7 @@ export function useTauriApi(): IBackendAdapter {
     },
     listenLevelMeter: function (levelListener: LevelMeterListener): void {
       const channel = new Channel<ArrayBuffer>((value) => {
-        if (value.byteLength != 8) {
+        if (value.byteLength !== 8) {
           return; // ignore invalid ipc value
         }
         const dv = new DataView(value);
@@ -148,7 +147,7 @@ export function useTauriApi(): IBackendAdapter {
       invoke('unlisten_level_meter');
     },
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
-      if (side == 'host') {
+      if (__IS_HOST__) {
         const paths = await open({
           multiple: options.multiple,
           directory: false,
@@ -175,7 +174,7 @@ export function useTauriApi(): IBackendAdapter {
             },
           ],
         });
-        return typeof paths == 'string' ? [paths] : paths || [];
+        return typeof paths === 'string' ? [paths] : paths || [];
       } else {
         const uiState = useUiState();
         return new Promise((resolve) => {
@@ -246,7 +245,10 @@ export function useTauriApi(): IBackendAdapter {
       return cue.id;
     },
     addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
-      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
+      const cueIds = cues.map((cue) => {
+        cue.id = v4();
+        return cue.id;
+      });
       await invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
       return cueIds;
     },
@@ -257,7 +259,7 @@ export function useTauriApi(): IBackendAdapter {
           kind: 'warning',
           buttons: 'OkCancel',
         });
-        if (removeOk != 'Ok') {
+        if (removeOk !== 'Ok') {
           return;
         }
       }
@@ -273,7 +275,7 @@ export function useTauriApi(): IBackendAdapter {
           kind: 'warning',
           buttons: 'OkCancel',
         });
-        if (removeOk != 'Ok') {
+        if (removeOk !== 'Ok') {
           return;
         }
       }

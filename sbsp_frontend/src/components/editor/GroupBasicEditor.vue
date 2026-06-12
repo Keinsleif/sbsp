@@ -54,58 +54,58 @@ const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
 const mode = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'group' ? selectedCue.value.params.mode.type : null,
+  selectedCue.value != null && selectedCue.value.params.type === 'group' ? selectedCue.value.params.mode.type : null,
 );
 
 const repeat = ref(
   selectedCue.value != null
-  && selectedCue.value.params.type == 'group'
-  && selectedCue.value.params.mode.type == 'playlist'
+  && selectedCue.value.params.type === 'group'
+  && selectedCue.value.params.mode.type === 'playlist'
     ? selectedCue.value.params.mode.repeat
     : null,
 );
 
 const enter = ref(
   selectedCue.value != null
-  && selectedCue.value.params.type == 'group'
-  && selectedCue.value.params.mode.type == 'startFirst'
+  && selectedCue.value.params.type === 'group'
+  && selectedCue.value.params.mode.type === 'startFirst'
     ? selectedCue.value.params.mode.enter
     : null,
 );
 
 watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
+  if (selectedCue.value == null || selectedCue.value.params.type !== 'group') {
     return;
   }
   mode.value = selectedCue.value.params.mode.type;
-  repeat.value = selectedCue.value.params.mode.type == 'playlist' ? selectedCue.value.params.mode.repeat : null;
-  enter.value = selectedCue.value.params.mode.type == 'startFirst' ? selectedCue.value.params.mode.enter : null;
+  repeat.value = selectedCue.value.params.mode.type === 'playlist' ? selectedCue.value.params.mode.repeat : null;
+  enter.value = selectedCue.value.params.mode.type === 'startFirst' ? selectedCue.value.params.mode.enter : null;
 });
 
 const saveEditorValue = () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'group') {
+  if (selectedCue.value == null || selectedCue.value.params.type !== 'group') {
     return;
   }
   if (mode.value != null) {
-    if (mode.value != selectedCue.value.params.mode.type) {
+    if (mode.value !== selectedCue.value.params.mode.type) {
       selectedCue.value.params.mode.type = mode.value;
-      if (selectedCue.value.params.mode.type == 'playlist') {
+      if (selectedCue.value.params.mode.type === 'playlist') {
         selectedCue.value.params.mode.repeat = true;
-      } else if (selectedCue.value.params.mode.type == 'startFirst') {
+      } else if (selectedCue.value.params.mode.type === 'startFirst') {
         selectedCue.value.params.mode.enter = false;
       }
     }
     if (
-      selectedCue.value.params.mode.type == 'playlist'
+      selectedCue.value.params.mode.type === 'playlist'
       && repeat.value != null
-      && repeat.value != selectedCue.value.params.mode.repeat
+      && repeat.value !== selectedCue.value.params.mode.repeat
     ) {
       selectedCue.value.params.mode.repeat = repeat.value;
     }
     if (
-      selectedCue.value.params.mode.type == 'startFirst'
+      selectedCue.value.params.mode.type === 'startFirst'
       && enter.value != null
-      && enter.value != selectedCue.value.params.mode.enter
+      && enter.value !== selectedCue.value.params.mode.enter
     ) {
       selectedCue.value.params.mode.enter = enter.value;
     }

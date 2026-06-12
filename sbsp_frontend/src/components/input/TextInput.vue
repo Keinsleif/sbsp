@@ -16,12 +16,7 @@
           : $style['right-input']
     "
     @blur="save"
-    @keydown.enter="$event.target.blur()"
-    @keydown.esc="
-      reset();
-      $event.target.blur();
-    "
-    @keydown.stop
+    @keydown.stop="onKeydown"
   />
   <v-textarea
     v-else-if="props.textType == 'area'"
@@ -36,12 +31,7 @@
     auto-grow
     no-resize
     @blur="save"
-    @keydown.esc="
-      reset();
-      $event.target.blur();
-    "
-    @keydown.tab.prevent="onTabInput"
-    @keydown.stop
+    @keydown.stop="onKeydown"
   />
 </template>
 
@@ -73,28 +63,40 @@ watch(text, () => {
 });
 
 const save = () => {
-  if (text.value != innerText.value) {
+  if (text.value !== innerText.value) {
     text.value = innerText.value;
     emit('update');
   }
 };
 
-const reset = () => {
-  innerText.value = text.value != null ? text.value : '';
-};
+const onKeydown = (e: KeyboardEvent) => {
+  if (!(e.target instanceof HTMLElement)) return;
+  switch (e.key) {
+    case 'Enter':
+      if (props.textType === 'single') {
+        e.target.blur();
+      }
+      break;
+    case 'Escape':
+      innerText.value = text.value != null ? text.value : ''; // reset
+      e.target.blur();
+      break;
+    case 'Tab':
+      if (e.target instanceof HTMLTextAreaElement) {
+        e.preventDefault();
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
 
-const onTabInput = (event: KeyboardEvent) => {
-  event.preventDefault();
-  const textarea = event.target as HTMLTextAreaElement;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+        const value = innerText.value;
+        innerText.value = value.substring(0, start) + '\t' + value.substring(end);
 
-  const value = innerText.value;
-  innerText.value = value.substring(0, start) + '\t' + value.substring(end);
-
-  nextTick(() => {
-    textarea.selectionStart = textarea.selectionEnd = start + 1;
-  });
+        nextTick(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + 1;
+        });
+        break;
+      }
+  }
 };
 </script>
 

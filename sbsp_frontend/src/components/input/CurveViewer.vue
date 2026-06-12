@@ -167,27 +167,27 @@ const command = computed(() => {
     return '';
   }
   let result;
-  if (props.type == 'in') {
+  if (props.type === 'in') {
     result = 'M 0 100';
   } else {
     result = 'M 0 0';
   }
   for (let i = 1; i < 100; i++) {
     let y = 0;
-    if (props.curve == 'linear') {
+    if (props.curve === 'linear') {
       y = i / 100;
-    } else if (props.curve == 'inPow') {
+    } else if (props.curve === 'inPow') {
       y = Math.pow(i / 100, Number(props.power));
-    } else if (props.curve == 'outPow') {
+    } else if (props.curve === 'outPow') {
       y = 1 - Math.pow(1 - i / 100, Number(props.power));
-    } else if (props.curve == 'inOutPow') {
+    } else if (props.curve === 'inOutPow') {
       if (i < 50) {
         y = 0.5 * Math.pow(i / 50, Number(props.power));
       } else {
         y = 0.5 * (1 - Math.pow(2 - i / 50, Number(props.power))) + 0.5;
       }
     }
-    if (props.type == 'in') {
+    if (props.type === 'in') {
       result += ` L ${i} ${100 - y * 100}`;
     } else {
       result += ` L ${i} ${y * 100}`;

@@ -3,8 +3,7 @@
     v-model="isSettingsDialogOpen"
     width="auto"
     fullscreen
-    @keydown.esc.stop="isSettingsDialogOpen = false"
-    @keydown.stop
+    @keydown.stop.esc="isSettingsDialogOpen = false"
     @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column w-100 h-100">
@@ -186,8 +185,8 @@
               density="compact"
               variant="outlined"
               autocomplete="off"
-              @keydown.stop
               :precision="2"
+              @keydown.stop
             />
           </v-tabs-window-item>
           <v-tabs-window-item
@@ -562,7 +561,7 @@ const sampleRates = computed(() => {
       const channels = editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
       let sampleRates: { name: string; value: number | null }[] = [{ name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null }];
       for (const fc of device.supportedConfigs) {
-        if (fc.channelCount == channels) {
+        if (fc.channelCount === channels) {
           sampleRates = sampleRates.concat(fc.sampleRates.map(sr => ({ value: sr, name: (sr / 1000).toString() + ' kHz' })));
         }
       }
@@ -580,7 +579,7 @@ const bufferSizes = computed(() => {
       const channels = editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
       let bufferSizes: { name: string; value: number | null }[] = [{ name: `${t('general.default')}`, value: null }];
       for (const fc of device.supportedConfigs) {
-        if (fc.channelCount == channels) {
+        if (fc.channelCount === channels) {
           bufferSizes = bufferSizes.concat(fc.bufferSizes.map(bs => ({ value: bs, name: bs.toString() + ' Frames' })));
         }
       }
@@ -631,7 +630,7 @@ const saveSettings = async (): Promise<boolean> => {
     const activeIds = Object.keys(showState.activeCues);
     let hasActiveAudioCue = false;
     for (const id of activeIds) {
-      if (showModel.getCueById(id)?.params.type == 'audio') {
+      if (showModel.getCueById(id)?.params.type === 'audio') {
         hasActiveAudioCue = true;
         break;
       };
@@ -642,7 +641,7 @@ const saveSettings = async (): Promise<boolean> => {
         kind: 'warning',
         title: t('general.warning'),
       });
-      if (result == 'Cancel') {
+      if (result === 'Cancel') {
         return false;
       }
     }
@@ -654,7 +653,7 @@ const saveSettings = async (): Promise<boolean> => {
 };
 
 const isEqualAudioHardware = (a: AudioHardwareSettings, b: AudioHardwareSettings): boolean => {
-  return a.deviceId == b.deviceId && a.channelCount == b.channelCount && a.sampleRate == b.sampleRate && a.bufferSize == b.bufferSize;
+  return a.deviceId === b.deviceId && a.channelCount === b.channelCount && a.sampleRate === b.sampleRate && a.bufferSize === b.bufferSize;
 };
 
 const recallMusicBeePreset = () => {

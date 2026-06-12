@@ -2,10 +2,10 @@
   <tr>
     <td class="pa-0">
       <copy-text-input
+        v-model="password"
         :placeholder="t('dialog.server.info.passwordNotSet')"
         :type="props.isVisible ? 'text' : 'password'"
         align-input="left"
-        v-model="password"
       />
     </td>
     <td class="pa-0">

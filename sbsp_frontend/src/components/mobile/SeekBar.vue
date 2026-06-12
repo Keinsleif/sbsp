@@ -7,9 +7,9 @@
       :color="activeTargetCue?.status.startsWith('pre') ? 'warning' : 'primary'"
       min="0"
       :max="activeTargetCue?.duration || 0"
+      hide-details
       @pointerdown="sliderChanging = true"
       @pointerup="onpointerup"
-      hide-details
     />
     <div class="text-right">
       <span class="px-1">{{ secondsToFormat(activeTargetCue?.position || null) }}</span>

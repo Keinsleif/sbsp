@@ -140,8 +140,8 @@
           @pointerdown="handlePointerDown($event, 0, 'hend')"
         />
         <rect
-          ref="position"
           v-show="selectedCue != null && selectedCue.id in showState.activeCues"
+          ref="position"
           x="0"
           y="0"
           width="2"
@@ -149,8 +149,8 @@
           fill="yellow"
         />
         <g
-          ref="parent"
           v-show="uiState.isEnvelopeVisible"
+          ref="parent"
         >
           <path
             :d="linePath.dot"
@@ -313,8 +313,8 @@ const normSegments = (seg: Segment[]): Segment[] => {
 
 const buildTimeRange = () => {
   const duration = metadata.value?.duration || 1;
-  const start = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.startTime || 0) / duration : 0;
-  const end = selectedCue.value?.params.type == 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
+  const start = selectedCue.value?.params.type === 'audio' ? (selectedCue.value.params.startTime || 0) / duration : 0;
+  const end = selectedCue.value?.params.type === 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
   return { start, end, delta: end - start };
 };
 
@@ -327,14 +327,14 @@ const dragging = ref<{
   dragged: boolean;
 } | null>(null);
 const selectedIdx = ref<number | null>(null);
-const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
+const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type === 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
 
 watch(selectedCue, (newCue, oldCue) => {
-  if (newCue?.id != oldCue?.id || (selectedIdx.value != null && newCue?.params.type == 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
+  if (newCue?.id !== oldCue?.id || (selectedIdx.value != null && newCue?.params.type === 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
     selectedIdx.value = null;
   }
   dragging.value = null;
-  segments.value = selectedCue.value != null && selectedCue.value.params.type == 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
+  segments.value = selectedCue.value != null && selectedCue.value.params.type === 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
   timeRange.value = buildTimeRange();
 });
 
@@ -361,7 +361,7 @@ usePosition((pos) => {
   const activeCue = showState.activeCues[selectedCue.value.id];
   let position = pos[selectedCue.value.id];
   if (activeCue == null || position == null) return;
-  if (activeCue.duration !== 0 && activeCue.status != 'preWaiting' && activeCue.status != 'preWaitPaused') {
+  if (activeCue.duration !== 0 && activeCue.status !== 'preWaiting' && activeCue.status !== 'preWaitPaused') {
     position = position / activeCue.duration;
   } else {
     position = 0;
@@ -409,7 +409,7 @@ const updateWaveformPath = async () => {
     return;
   }
 
-  if (workerStatus.value == 'RUNNING') {
+  if (workerStatus.value === 'RUNNING') {
     workerTerminate();
   }
 
@@ -421,7 +421,7 @@ const updateWaveformPath = async () => {
 };
 
 watch([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], (newValue, oldValue) => {
-  if (newValue[2] != oldValue[2]) {
+  if (newValue[2] !== oldValue[2]) {
     waveformPath.value = '';
   }
   updateWaveformPath();
@@ -463,12 +463,12 @@ const tooltipStyle = computed<StyleValue>(() => {
 
 const saveEditorValue = () => {
   if (props.disabled) return;
-  if (selectedCue.value?.params.type != 'audio') return;
+  if (selectedCue.value?.params.type !== 'audio') return;
   selectedCue.value.params.envelope = segments.value;
 
   const duration = metadata.value?.duration || 1;
-  selectedCue.value.params.startTime = timeRange.value.start == 0 ? null : timeRange.value.start * duration;
-  selectedCue.value.params.endTime = timeRange.value.end == 1 ? null : timeRange.value.end * duration;
+  selectedCue.value.params.startTime = timeRange.value.start === 0 ? null : timeRange.value.start * duration;
+  selectedCue.value.params.endTime = timeRange.value.end === 1 ? null : timeRange.value.end * duration;
   emit('update');
 };
 
@@ -476,7 +476,7 @@ const linePath = computed<{
   dot: string;
   fill: string;
 }>(() => {
-  if (segments.value.length == 0) return {
+  if (segments.value.length === 0) return {
     dot: '',
     fill: '',
   };
@@ -484,9 +484,9 @@ const linePath = computed<{
   return {
     dot: segments.value.map((value, i) => {
       const y = decibelsToY(value.volume);
-      if (i == 0) {
+      if (i === 0) {
         return `M${value.end * svgWidth.value},${y}`;
-      } else if (i == segments.value.length - 1) {
+      } else if (i === segments.value.length - 1) {
         return `L${value.start * svgWidth.value},${y}`;
       } else {
         return `L${value.start * svgWidth.value},${y}M${value.end * svgWidth.value},${y}`;
@@ -601,7 +601,7 @@ useEventListener(document, 'pointerup', handlePointerUp);
 const handleAddOrSplit = (svgX: number) => {
   if (props.disabled) return;
   if (!uiState.isEnvelopeVisible) return;
-  if (segments.value.length == 0) {
+  if (segments.value.length === 0) {
     segments.value.push({ start: 0, end: 1, volume: 0.5 });
     saveEditorValue();
     return;
@@ -658,12 +658,12 @@ const removeSegment = () => {
   if (props.disabled || !uiState.isEnvelopeVisible) return;
   if (selectedIdx.value != null) {
     segments.value.splice(selectedIdx.value, 1);
-    if (selectedIdx.value == 0) {
+    if (selectedIdx.value === 0) {
       const first = segments.value[0];
       if (first != null) {
         first.start = 0;
       }
-    } else if (selectedIdx.value == segments.value.length) {
+    } else if (selectedIdx.value === segments.value.length) {
       const last = segments.value[segments.value.length - 1];
       if (last != null) {
         last.end = 1;
@@ -675,7 +675,7 @@ const removeSegment = () => {
 
 const seek = (event: MouseEvent) => {
   if (!props.disabled) return;
-  if (selectedCue.value == null || event.button != 0) {
+  if (selectedCue.value == null || event.button !== 0) {
     return;
   }
   const activeCue = showState.activeCues[selectedCue.value.id];

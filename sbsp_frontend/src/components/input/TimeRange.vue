@@ -62,8 +62,8 @@ const innerRange = computed({
     return [range.value[0] != null ? range.value[0] : 0, range.value[1] != null ? range.value[1] : props.duration];
   },
   set(newValue) {
-    range.value[0] = newValue[0] != 0 ? newValue[0]! : null;
-    range.value[1] = newValue[1] != props.duration ? newValue[1]! : null;
+    range.value[0] = newValue[0] !== 0 ? newValue[0]! : null;
+    range.value[1] = newValue[1] !== props.duration ? newValue[1]! : null;
   },
 });
 </script>

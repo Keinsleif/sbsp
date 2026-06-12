@@ -83,32 +83,32 @@
           :disabled="props.chainOverride != null || selectedCue == null || selectedCue.id in showState.activeCues || chain == 'doNotChain'"
           @update="saveEditorValue"
         />
-          <v-select
-            v-model="color"
-            class="ml-auto flex-grow-0"
-            hide-details
-            persistent-placeholder
-            width="150px"
-            :style="{'color': color != null && color != 'none' ? colors[color].base : ''}"
-            :label="t('main.bottomEditor.basics.color')"
-            :items="[
-              {value: 'none', title: t('general.none'), props: {baseColor: 'text'}},
-              {value: 'red', title: 'Red', props: {baseColor: 'red'}},
-              {value: 'purple', title: 'Purple', props: {baseColor: 'purple'}},
-              {value: 'blue', title: 'Blue', props: {baseColor: 'blue'}},
-              {value: 'cyan', title: 'Cyan', props: {baseColor: 'cyan'}},
-              {value: 'green', title: 'Green', props: {baseColor: 'green'}},
-              {value: 'yellow', title: 'Yellow', props: {baseColor: 'yellow'}},
-              {value: 'orange', title: 'Orange', props: {baseColor: 'orange'}},
-              {value: 'grey', title: 'Grey', props: {baseColor: 'grey'}},
-            ]"
-            variant="outlined"
-            :prepend-inner-icon="mdiCircle"
-            density="compact"
-            autocomplete="off"
-            @update:model-value="saveEditorValue"
-            @keydown.stop
-          />
+        <v-select
+          v-model="color"
+          class="ml-auto flex-grow-0"
+          hide-details
+          persistent-placeholder
+          width="150px"
+          :style="{'color': color != null && color != 'none' ? colors[color].base : ''}"
+          :label="t('main.bottomEditor.basics.color')"
+          :items="[
+            {value: 'none', title: t('general.none'), props: {baseColor: 'text'}},
+            {value: 'red', title: 'Red', props: {baseColor: 'red'}},
+            {value: 'purple', title: 'Purple', props: {baseColor: 'purple'}},
+            {value: 'blue', title: 'Blue', props: {baseColor: 'blue'}},
+            {value: 'cyan', title: 'Cyan', props: {baseColor: 'cyan'}},
+            {value: 'green', title: 'Green', props: {baseColor: 'green'}},
+            {value: 'yellow', title: 'Yellow', props: {baseColor: 'yellow'}},
+            {value: 'orange', title: 'Orange', props: {baseColor: 'orange'}},
+            {value: 'grey', title: 'Grey', props: {baseColor: 'grey'}},
+          ]"
+          variant="outlined"
+          :prepend-inner-icon="mdiCircle"
+          density="compact"
+          autocomplete="off"
+          @update:model-value="saveEditorValue"
+          @keydown.stop
+        />
         <v-btn
           class="flex-grow-0"
           density="compact"
@@ -172,8 +172,8 @@ const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 const color = ref(selectedCue.value != null ? selectedCue.value.color : null);
 const target = ref(
   overridedChain.value != null
-  && overridedChain.value.type != 'doNotChain'
-  && overridedChain.value.targetId != NIL
+  && overridedChain.value.type !== 'doNotChain'
+  && overridedChain.value.targetId !== NIL
     ? overridedChain.value.targetId
     : null,
 );
@@ -187,7 +187,7 @@ watch(selectedCue, () => {
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   color.value = selectedCue.value != null ? selectedCue.value.color : null;
   target.value
-    = overridedChain.value != null && overridedChain.value.type != 'doNotChain'
+    = overridedChain.value != null && overridedChain.value.type !== 'doNotChain' && overridedChain.value.targetId !== NIL
       ? overridedChain.value.targetId
       : null;
 });
@@ -212,7 +212,7 @@ const saveEditorValue = () => {
   }
   if (chain.value != null && props.chainOverride == null) {
     selectedCue.value.chain.type = chain.value;
-    if (selectedCue.value.chain.type == 'doNotChain') {
+    if (selectedCue.value.chain.type === 'doNotChain') {
       target.value = null;
     } else {
       console.log(target.value);
@@ -221,7 +221,7 @@ const saveEditorValue = () => {
   }
   if (name.value != null) {
     const newName = name.value.trim();
-    if (newName == '') {
+    if (newName === '') {
       selectedCue.value.name = null;
     } else {
       selectedCue.value.name = newName;
@@ -247,7 +247,7 @@ const insertTimestampToNote = () => {
     notes.value = '';
   }
 
-  if (notes.value.endsWith('\n') || notes.value == '') {
+  if (notes.value.endsWith('\n') || notes.value === '') {
     notes.value += `[${secondsToFormat(position)}] `;
   } else {
     notes.value += `\n[${secondsToFormat(position)}] `;

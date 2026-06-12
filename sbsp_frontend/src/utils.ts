@@ -74,7 +74,7 @@ const secondsToHMR = (source_seconds: number): string => {
     time = `${hh}h ${mm}m ${ss}s`;
   } else if (minute > 0) {
     time = `${mm}m ${ss}.${ms}s`;
-  } else if (milliseconds == 0) {
+  } else if (milliseconds === 0) {
     time = `${seconds}s`;
   } else {
     time = `${seconds}.${ms}s`;

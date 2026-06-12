@@ -30,7 +30,7 @@ const permToInner = (perm: number): number[] => {
   const permList = [];
   for (let i = 0; i < 4; i++) {
     const value = ((perm >> i) & 1) * Math.pow(2, i);
-    if (value != 0) {
+    if (value !== 0) {
       permList.push(value);
     }
   }
@@ -39,7 +39,7 @@ const permToInner = (perm: number): number[] => {
 const innerPerm = ref<number[]>(permToInner(perm.value));
 
 watch(perm, (newValue, oldValue) => {
-  if (newValue == oldValue) return;
+  if (newValue === oldValue) return;
   innerPerm.value = permToInner(newValue);
 });
 

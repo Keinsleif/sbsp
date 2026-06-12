@@ -1,3 +1,4 @@
+import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import pluginVue from 'eslint-plugin-vue';
@@ -8,12 +9,26 @@ export default defineConfig([
   globalIgnores(['node_modules/', 'dist/', 'src/types/']),
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+    plugins: {
+      js,
+    },
+    extends: ['js/recommended'],
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        APP_VERSION: 'readonly',
+        __IS_WEBSOCKET__: 'readonly',
+        __IS_TAURI__: 'readonly',
+        __IS_REMOTE__: 'readonly',
+        __IS_HOST__: 'readonly',
+      },
+    },
+    rules: {
+      eqeqeq: ['warn', 'smart'],
     },
   },
   tseslint.configs.recommended,
-  pluginVue.configs['flat/strongly-recommended'],
+  pluginVue.configs['flat/recommended'],
   {
     files: ['**/*.vue'],
     languageOptions: {

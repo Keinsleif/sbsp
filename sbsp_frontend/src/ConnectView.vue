@@ -99,17 +99,17 @@ const services = ref<ServiceEntry[]>([]);
 const overlay = ref(false);
 
 const connect = (host: string, port: string | number) => {
-  if (host == '' || port == '') return;
+  if (host === '' || port === '') return;
   const address = `${host}:${port}`;
   let password: string | null;
-  if (window.location.hash != '') {
+  if (window.location.hash !== '') {
     password = window.location.hash.substring(1).trim();
   } else if (window.location.href.endsWith('#')) {
     password = null;
   } else {
     let ps_string = prompt(t('view.connect.passwordPrompt'));
     if (ps_string == null) return;
-    if (ps_string != '') {
+    if (ps_string !== '') {
       password = ps_string;
     } else {
       password = null;

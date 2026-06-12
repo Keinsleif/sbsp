@@ -87,7 +87,7 @@ const showModel = useShowModel();
 const uiState = useUiState();
 
 const setPlaybackCursor = (cueId: string) => {
-  if (uiState.mode != 'view' && !getLockCursorToSelection()) {
+  if (uiState.mode !== 'view' && !getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
   }
 };

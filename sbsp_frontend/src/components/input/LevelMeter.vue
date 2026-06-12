@@ -157,16 +157,16 @@ const { start: startRightClipReset, stop: stopRightClipReset } = useTimeoutFn(()
 let animationFrameId: number;
 
 let lastTime = 0;
-const decayLoop = (timestamp: DOMHighResTimeStamp) => {
+const decayLoop = (timestamp: number) => {
   if (!lastTime) lastTime = timestamp;
   const deltaTime = (timestamp - lastTime) / 1000;
   lastTime = timestamp;
 
   if (levels.left > -60) {
-    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime );
+    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime);
   }
   if (levels.right > -60) {
-    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime );
+    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime);
   }
 
   if (levels.left > 0) {

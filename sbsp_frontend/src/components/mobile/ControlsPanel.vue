@@ -155,7 +155,7 @@ const activeTargetCue = computed(() => {
 const playbackCursorCueTitle = computed(() => {
   if (playbackCursorCue.value != null) {
     let text = '';
-    if (playbackCursorCue.value.number.trim() != '') {
+    if (playbackCursorCue.value.number.trim() !== '') {
       text = playbackCursorCue.value.number + '・';
     }
     text += playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value);
@@ -168,7 +168,7 @@ const isCueStatus = computed(() => {
   if (showState.playbackCursor != null) {
     const activeCue = showState.activeCues[showState.playbackCursor];
     if (activeCue != null) {
-      return (status: PlaybackStatus) => activeCue.status == status;
+      return (status: PlaybackStatus) => activeCue.status === status;
     }
   }
   return () => false;
@@ -197,14 +197,15 @@ const handleReadyPauseButton = () => {
 
 const skipPrevious = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
     cursorIndex--;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
-    while (cursorCueRef.level != currentLevel) {
+    while (cursorCueRef.level !== currentLevel) {
       cursorIndex--;
       cursorCueRef = showModel.flatCueList[cursorIndex];
       if (cursorCueRef == null) {
@@ -222,14 +223,15 @@ const skipPrevious = () => {
 
 const skipNext = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
     cursorIndex++;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
-    while (cursorCueRef.level != currentLevel) {
+    while (cursorCueRef.level !== currentLevel) {
       cursorIndex++;
       cursorCueRef = showModel.flatCueList[cursorIndex];
       if (cursorCueRef == null) {
@@ -246,15 +248,15 @@ const skipNext = () => {
 };
 
 const skipToParent = () => {
-  let cursorEntry = showModel.flatCueList.find(item => item.cue.id == showState.playbackCursor);
+  let cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
   if (cursorEntry == null || cursorEntry.parent == null) return;
 
   api.setPlaybackCursor(cursorEntry.parent);
 };
 
 const skipToChild = () => {
-  let cursorEntry = showModel.flatCueList.find(item => item.cue.id == showState.playbackCursor);
-  if (cursorEntry == null || cursorEntry.cue.params.type != 'group') return;
+  let cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
+  if (cursorEntry == null || cursorEntry.cue.params.type !== 'group') return;
   const firstChild = cursorEntry.cue.params.children[0];
   if (firstChild != null) {
     api.setPlaybackCursor(firstChild.id);

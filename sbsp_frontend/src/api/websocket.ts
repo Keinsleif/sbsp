@@ -426,9 +426,9 @@ export function useWebsocketApi(): IBackendAdapter {
   const websocketApi: IWebsocketBackendAdapter = {
     sendCommand: function (command: WsCommand): void {
       const ws = websocketApiState.ws;
-      if (ws && ws.readyState == WebSocket.OPEN) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(command));
-      } else if (ws && ws.readyState == WebSocket.CONNECTING) {
+      } else if (ws && ws.readyState === WebSocket.CONNECTING) {
         websocketApiState.sendQueue.push(JSON.stringify(command));
       } else {
         console.error('Not connected.');
@@ -571,7 +571,10 @@ export function useWebsocketApi(): IBackendAdapter {
       return cue.id;
     },
     addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
-      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
+      const cueIds = cues.map((cue) => {
+        cue.id = v4();
+        return cue.id;
+      });
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -614,7 +617,7 @@ export function useWebsocketApi(): IBackendAdapter {
           return;
         }
       }
-      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds }})
+      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds } });
     },
     moveCue: async function (cueId: string, position: InsertPosition): Promise<void> {
       this.sendCommand({

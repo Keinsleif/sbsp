@@ -93,10 +93,10 @@ export const createWindowMenu = () => {
     updateEditMenuItemStats();
   };
 
-  let lastEditEnableStats = connected && mode == 'edit';
+  let lastEditEnableStats = connected && mode === 'edit';
   const updateEditMenuItemStats = () => {
-    const enabled = connected && mode == 'edit';
-    if (lastEditEnableStats == enabled) return;
+    const enabled = connected && mode === 'edit';
+    if (lastEditEnableStats === enabled) return;
     lastEditEnableStats = enabled;
 
     (items.edit.deleteCue as MenuItem | null)?.setEnabled(enabled);
