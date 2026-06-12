@@ -73,7 +73,7 @@ const { t } = useI18n();
 const api = useApi();
 const uiState = useUiState();
 
-const isRenumberDialogOpen = defineModel<boolean>({ required: true });
+const isRenumberDialogOpen = defineModel <boolean> ({ required: true });
 const startFrom = ref(1);
 const increment = ref(1);
 const prefix = ref('');

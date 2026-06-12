@@ -571,7 +571,10 @@ export function useWebsocketApi(): IBackendAdapter {
       return cue.id;
     },
     addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
-      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
+      const cueIds = cues.map((cue) => {
+        cue.id = v4();
+        return cue.id;
+      });
       if (targetId != null) {
         if (toBefore) {
           this.sendCommand({
@@ -614,7 +617,7 @@ export function useWebsocketApi(): IBackendAdapter {
           return;
         }
       }
-      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds }})
+      this.sendCommand({ type: 'model', command: 'removeCues', params: { cueIds: cueIds } });
     },
     moveCue: async function (cueId: string, position: InsertPosition): Promise<void> {
       this.sendCommand({

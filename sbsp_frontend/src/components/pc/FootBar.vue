@@ -2,8 +2,8 @@
   <v-sheet class="d-flex align-center ml-0 mr-0 w-100">
     <v-sheet class="px-2 d-flex align-center">
       <v-select
-        hide-details
         v-model="uiState.mode"
+        hide-details
         :items="modes"
         variant="outlined"
         density="compact"

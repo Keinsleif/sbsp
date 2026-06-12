@@ -75,5 +75,5 @@ watch(() => uiState.permission, (newValue) => {
   if ((newValue & PERMISSIONS.CONTROL) == 0 && activeTab.value == 'controls') {
     activeTab.value = 'list';
   }
-})
+});
 </script>

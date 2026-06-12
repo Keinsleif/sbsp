@@ -126,12 +126,12 @@ usePosition((pos) => {
     return;
   };
   rowRef.value.style.background = (activeCue.status.startsWith('pre')
-          ? 'linear-gradient(to right, rgba(var(--v-theme-warning), 0.5) '
-          : 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ')
-        + (position * 100) / activeCue.duration
-        + '%, transparent '
-        + (position * 100) / activeCue.duration
-        + '%) no-repeat';
+    ? 'linear-gradient(to right, rgba(var(--v-theme-warning), 0.5) '
+    : 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ')
+  + (position * 100) / activeCue.duration
+  + '%, transparent '
+  + (position * 100) / activeCue.duration
+  + '%) no-repeat';
 });
 
 const isStatusIn = (statusList: PlaybackStatus[]): boolean => {

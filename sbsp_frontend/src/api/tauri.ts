@@ -246,7 +246,10 @@ export function useTauriApi(): IBackendAdapter {
       return cue.id;
     },
     addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
-      const cueIds = cues.map(cue => {cue.id = v4(); return cue.id;});
+      const cueIds = cues.map((cue) => {
+        cue.id = v4();
+        return cue.id;
+      });
       await invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
       return cueIds;
     },

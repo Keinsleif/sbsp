@@ -134,7 +134,7 @@ export const useShowModel = defineStore('showmodel', {
             if (newCue.params.type == 'audio') {
               newCue.params.target = assets[0]!;
             }
-            api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+            api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -144,7 +144,7 @@ export const useShowModel = defineStore('showmodel', {
               }
               newCues.push(newCue);
             }
-            api.addCues(newCues, uiState.selected, false).catch((e) => console.error(e));
+            api.addCues(newCues, uiState.selected, false).catch(e => console.error(e));
           }
         })
         .catch(e => console.error(e));
@@ -154,7 +154,7 @@ export const useShowModel = defineStore('showmodel', {
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+      api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
@@ -165,7 +165,7 @@ export const useShowModel = defineStore('showmodel', {
         const targetCue = this.getCueById(uiState.selected);
         if (targetCue != null && (targetCue.params.type == 'audio' || targetCue.params.type == 'group')) {
           newCue.params.target = uiState.selected;
-          api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+          api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
         }
       }
     },
@@ -200,7 +200,7 @@ export const useShowModel = defineStore('showmodel', {
           || newCue.params.type == 'load')
       ) {
         newCue.params.target = uiState.selected;
-        api.addCue(newCue, uiState.selected, type == 'load' || type == 'start').catch((e) => console.error(e));
+        api.addCue(newCue, uiState.selected, type == 'load' || type == 'start').catch(e => console.error(e));
       }
     },
     addEmptyGroupCue() {
@@ -211,10 +211,10 @@ export const useShowModel = defineStore('showmodel', {
       if (newCue.params.type == 'group') {
         api.addCue(newCue, uiState.selected, false).then((id) => {
           if (uiState.selectedRows.size > 0) {
-            api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0}).catch((e) => console.error(e));
+            api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0 }).catch(e => console.error(e));
             uiState.expandedRows.push(id);
           }
-        }).catch((e) => console.error(e));
+        }).catch(e => console.error(e));
       }
     },
   },

@@ -2,10 +2,10 @@
   <v-sheet
     class="d-flex h-100"
     :class="$style['cuelist-wrapper']"
+    tabindex="-1"
     @copy="copyHandler"
     @cut="cutHandler"
     @paste="pasteHandler"
-    tabindex="-1"
   >
     <v-table
       fixed-header
@@ -94,9 +94,9 @@
       </thead>
       <tbody>
         <cue-list-row
-          ref="cuelistItem"
           v-for="(item, i) in showModel.flatCueList"
           v-show="!item.isHidden"
+          ref="cuelistItem"
           :key="item.cue.id"
           :item="item"
           :is-drag-over="dragOverIndex == i"
@@ -230,7 +230,7 @@ const isUserTyping = (e: ClipboardEvent): boolean => {
 const pasteHandler = (e: ClipboardEvent) => {
   if (isUserTyping(e)) return;
 
-  let cues: Cue[] = [];
+  const cues: Cue[] = internalClipboard.value;
   // if (navigator.clipboard && e.clipboardData) {
   //   const rawText = e.clipboardData.getData('application/x-sbsp-cue');
   //   if (!rawText) return;
@@ -238,7 +238,6 @@ const pasteHandler = (e: ClipboardEvent) => {
   // } else {
   //   cues = internalClipboard.value;
   // }
-  cues = internalClipboard.value;
 
   if (cues.length > 0) {
     e.preventDefault();

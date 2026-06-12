@@ -65,7 +65,7 @@ export const useUiState = defineStore(
     };
     const removeFromSelected = (ids: string[]) => {
       let rm_selected = false;
-      for (let id of ids) {
+      for (const id of ids) {
         selectedRows.value.delete(id);
         if (!rm_selected && id == selected.value) {
           rm_selected = true;

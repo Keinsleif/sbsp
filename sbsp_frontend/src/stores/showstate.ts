@@ -259,7 +259,7 @@ export const useShowState = defineStore('showstate', () => {
     } else {
       return lastSyncCue.position;
     }
-  }
+  };
 
   return { playbackCursor, activeCues, update, handleSyncEvent, updatePlaybackCursor, calculatePosition, handleCueStateEvent, getPosition };
 });

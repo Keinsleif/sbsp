@@ -68,8 +68,8 @@ export default defineConfig({
         },
       },
     },
-    target: process.env.VITE_APP_TARGET === 'tauri' ?
-      process.env.TAURI_ENV_PLATFORM == 'windows'
+    target: process.env.VITE_APP_TARGET === 'tauri'
+      ? process.env.TAURI_ENV_PLATFORM == 'windows'
         ? 'chrome105'
         : 'safari13'
       : 'baseline-widely-available',

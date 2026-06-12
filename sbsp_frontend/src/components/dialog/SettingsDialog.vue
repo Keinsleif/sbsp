@@ -186,8 +186,8 @@
               density="compact"
               variant="outlined"
               autocomplete="off"
-              @keydown.stop
               :precision="2"
+              @keydown.stop
             />
           </v-tabs-window-item>
           <v-tabs-window-item

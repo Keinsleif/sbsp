@@ -140,8 +140,8 @@
           @pointerdown="handlePointerDown($event, 0, 'hend')"
         />
         <rect
-          ref="position"
           v-show="selectedCue != null && selectedCue.id in showState.activeCues"
+          ref="position"
           x="0"
           y="0"
           width="2"
@@ -149,8 +149,8 @@
           fill="yellow"
         />
         <g
-          ref="parent"
           v-show="uiState.isEnvelopeVisible"
+          ref="parent"
         >
           <path
             :d="linePath.dot"

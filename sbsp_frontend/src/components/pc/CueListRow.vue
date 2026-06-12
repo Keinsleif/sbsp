@@ -1,13 +1,20 @@
 <template>
-  <tr :class="[
-    props.isDragOver ? $style['drag-over-row'] : '',
-    isSelected ? $style['selected-row'] : '',
-    $style['color-row']
-  ]" :data-cue-color="item.cue.color">
-    <td headers="cuelist_handle" class="px-0" :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
+  <tr
+    :class="[
+      props.isDragOver ? $style['drag-over-row'] : '',
+      isSelected ? $style['selected-row'] : '',
+      $style['color-row']
+    ]"
+    :data-cue-color="item.cue.color"
+  >
+    <td
+      headers="cuelist_handle"
+      class="px-0"
+      :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
+      :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
       @dragstart="dragStart($event, props.item.cue.id)"
       @pointerdown="(e) => { if (uiState.mode == 'edit') { e.stopPropagation() } }"
-      :draggable="uiState.mode == 'edit' ? 'true' : 'false'">
+    >
       <v-icon v-show="uiState.mode == 'edit'" :icon="mdiDragVertical" />
     </td>
     <td headers="cuelist_cursor" style="padding-left: 12px; padding-right: 0px">
@@ -17,26 +24,43 @@
       <v-icon v-show="isStatusIn(['playing', 'preWaiting'])" :icon="mdiPlay" color="success" />
       <v-icon v-show="isStatusIn(['paused', 'preWaitPaused'])" :icon="mdiPause" color="warning" />
       <v-icon v-show="status == 'loaded'" :icon="mdiUpload" color="warning" />
-      <v-progress-circular v-show="status == 'stopping'" indeterminate="disable-shrink" size="16" color="warning" />
+      <v-progress-circular
+        v-show="status == 'stopping'"
+        indeterminate="disable-shrink"
+        size="16"
+        color="warning"
+      />
     </td>
     <td headers="cuelist_type" class="text-center" style="padding: 0px">
       <v-icon :icon="cueIcon" />
     </td>
-    <td headers="cuelist_number" class="text-center" @dblclick="openEditable($event, 'cuelist_number')"
+    <td
+      headers="cuelist_number"
+      class="text-center"
+      @dblclick="openEditable($event, 'cuelist_number')"
       @blur="closeEditable($event.target, true, 'cuelist_number')"
       @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_number')"
-      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_number')">
+      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_number')"
+    >
       {{ item.cue.number }}
     </td>
-    <td headers="cuelist_name" class="overflow-hidden text-no-wrap" :style="{
-      paddingLeft: `${item.level}em`,
-    }" @dblclick="openEditable($event, 'cuelist_name')" @blur="closeEditable($event.target, true, 'cuelist_name')"
+    <td
+      headers="cuelist_name"
+      class="overflow-hidden text-no-wrap"
+      :style="{
+        paddingLeft: `${item.level}em`,
+      }"
+      @dblclick="openEditable($event, 'cuelist_name')"
+      @blur="closeEditable($event.target, true, 'cuelist_name')"
       @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_name')"
-      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')">
+      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')"
+    >
       <v-icon
         :icon="item.isGroup ? (isExpanded ? mdiMenuDown : mdiMenuRight) : undefined"
         :tabindex="item.isGroup ? 0 : -1"
-        @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);" @pointerdown.stop />
+        @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
+        @pointerdown.stop
+      />
       {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
     </td>
     <td headers="cuelist_pre_wait" class="text-center" style="padding: 4px 4px">
@@ -48,7 +72,7 @@
         <div
           class="top-0 left-0 w-100 h-100"
           style="transform-origin: left; background-color: rgba(var(--v-theme-primary), 0.5); transform: scaleX(0)"
-        ></div>
+        />
         <div
           class="position-absolute left-0 w-100"
           style="top: 50%; transform: translateY(-50%);"
@@ -56,7 +80,7 @@
           @blur="closeEditable($event.target, true, 'cuelist_pre_wait')"
           @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_pre_wait')"
           @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_pre_wait')"
-        ></div>
+        />
       </div>
     </td>
     <td headers="cuelist_duration" class="text-center" style="padding: 0px 4px">
@@ -68,7 +92,7 @@
         <div
           class="top-0 left-0 w-100 h-100"
           style="transform-origin: left; background-color: rgba(var(--v-theme-primary), 0.5); transform: scaleX(0)"
-        ></div>
+        />
         <div
           class="position-absolute left-0 w-100"
           style="top: 50%; transform: translateY(-50%);"
@@ -76,15 +100,18 @@
           @blur="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_duration')"
-        ></div>
+        />
       </div>
     </td>
     <td headers="cuelist_repeat">
-      <v-icon v-show="(item.cue.params.type == 'audio' && item.cue.params.repeat) ||
-        (item.cue.params.type == 'group' &&
-          item.cue.params.mode.type == 'playlist' &&
-          item.cue.params.mode.repeat)
-        " :icon="mdiRepeat" />
+      <v-icon
+        v-show="(item.cue.params.type == 'audio' && item.cue.params.repeat) ||
+          (item.cue.params.type == 'group' &&
+            item.cue.params.mode.type == 'playlist' &&
+            item.cue.params.mode.repeat)
+        "
+        :icon="mdiRepeat"
+      />
     </td>
     <td headers="cuelist_chain">
       <v-icon v-show="item.chain.type == 'afterComplete'" :icon="mdiArrowCollapseDown" />
@@ -169,7 +196,7 @@ usePosition((pos) => {
 let preWaitText = '--:--.--';
 watch(() => props.item.cue.preWait, () => {
   preWaitText = secondsToFormat(props.item.cue.preWait == 0.0 ? null : props.item.cue.preWait);
-}, {immediate: true});
+}, { immediate: true });
 
 const durationText = computed(() => {
   return secondsToFormat(calculateDuration(props.item.cue.params, assetResult.getMetadata(props.item.cue.id)?.duration));
