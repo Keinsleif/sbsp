@@ -198,6 +198,7 @@ const handleReadyPauseButton = () => {
 const skipPrevious = () => {
   if (showState.playbackCursor != null) {
     let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
     cursorIndex--;
@@ -223,6 +224,7 @@ const skipPrevious = () => {
 const skipNext = () => {
   if (showState.playbackCursor != null) {
     let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
     cursorIndex++;
