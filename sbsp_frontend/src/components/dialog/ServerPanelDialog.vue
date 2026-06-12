@@ -2,8 +2,7 @@
   <v-dialog
     v-model="isServerPanelOpen"
     width="auto"
-    @keydown.esc.stop="isServerPanelOpen = false"
-    @keydown.stop
+    @keydown.stop.esc="isServerPanelOpen = false"
     @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column pa-4 ga-4">

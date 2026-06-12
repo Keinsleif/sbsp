@@ -3,8 +3,7 @@
     v-model="isSettingsDialogOpen"
     width="auto"
     fullscreen
-    @keydown.esc.stop="isSettingsDialogOpen = false"
-    @keydown.stop
+    @keydown.stop.esc="isSettingsDialogOpen = false"
     @contextmenu.prevent
   >
     <v-sheet class="d-flex flex-column w-100 h-100">

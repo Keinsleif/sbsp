@@ -13,11 +13,7 @@
       :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       :class="$style['centered-input']"
       @blur="saveEditorValue"
-      @keydown.enter="$event.target.blur()"
-      @keydown.esc="
-        resetEditorValue('target');
-        $event.target.blur();
-      "
+      @keydown="onTargetFieldKeyDown"
     >
       <template #append>
         <v-btn
@@ -132,6 +128,18 @@ watch(selectedCue, () => {
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
 
+const onTargetFieldKeyDown = (e: KeyboardEvent) => {
+  if (!(e.target instanceof HTMLElement) || selectedCue.value == null || selectedCue.value.params.type !== 'audio') {
+    return;
+  }
+  if (e.key === 'Enter') {
+    e.target.blur();
+  } else if (e.key === 'Escape') {
+    target.value = selectedCue.value.params.target;
+    e.target.blur();
+  }
+};
+
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
@@ -144,17 +152,6 @@ const saveEditorValue = () => {
   selectedCue.value.params.fadeInParam = fadeInParam.value;
   selectedCue.value.params.fadeOutParam = fadeOutParam.value;
   emit('update');
-};
-
-const resetEditorValue = (name: string) => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
-    return;
-  }
-  switch (name) {
-    case 'target':
-      target.value = selectedCue.value.params.target;
-      break;
-  }
 };
 
 const pickFile = () => {

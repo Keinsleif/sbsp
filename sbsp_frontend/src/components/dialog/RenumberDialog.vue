@@ -2,9 +2,7 @@
   <v-dialog
     v-model="isRenumberDialogOpen"
     width="auto"
-    @keydown.enter.stop="onDone"
-    @keydown.esc.stop="isRenumberDialogOpen = false"
-    @keydown.stop
+    @keydown.stop="onKeydown"
     @contextmenu.prevent
   >
     <v-sheet
@@ -86,6 +84,14 @@ const preview = computed(() => {
   }
   return result + '...';
 });
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    onDone();
+  } else if (e.key === 'Escape') {
+    isRenumberDialogOpen.value = false;
+  }
+};
 
 const onDone = () => {
   api
