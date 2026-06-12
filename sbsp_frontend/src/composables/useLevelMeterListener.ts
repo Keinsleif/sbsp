@@ -1,6 +1,9 @@
-import { onUnmounted } from "vue";
-import { useApi } from "../api";
-import { LevelMeterListener } from "../api/interface";
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
+import { onUnmounted } from 'vue';
+import { useApi } from '../api';
+import { LevelMeterListener } from '../api/interface';
 
 let listenerRegistered = false;
 

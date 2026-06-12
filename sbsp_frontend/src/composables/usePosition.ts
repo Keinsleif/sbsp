@@ -1,5 +1,8 @@
-import { onUnmounted } from "vue";
-import { useShowState } from "../stores/showstate";
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
+import { onUnmounted } from 'vue';
+import { useShowState } from '../stores/showstate';
 
 type PositionCallback = (positions: { [id: string]: number }) => void;
 
