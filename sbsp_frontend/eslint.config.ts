@@ -23,6 +23,9 @@ export default defineConfig([
         __IS_HOST__: 'readonly',
       },
     },
+    rules: {
+      eqeqeq: ['warn', 'smart'],
+    },
   },
   tseslint.configs.recommended,
   pluginVue.configs['flat/recommended'],

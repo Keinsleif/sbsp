@@ -57,12 +57,12 @@ let unlisten: (() => void) | null = null;
 watch(
   () => uiSettings.settings.appearance,
   (newSettings, oldSettings) => {
-    if (newSettings.language != oldSettings.language) {
+    if (newSettings.language !== oldSettings.language) {
       setLanguage(newSettings.language);
     }
-    if (newSettings.darkMode != oldSettings.darkMode) {
+    if (newSettings.darkMode !== oldSettings.darkMode) {
       if (__IS_TAURI__) {
-        setTheme(newSettings.darkMode == 'system' ? null : newSettings.darkMode);
+        setTheme(newSettings.darkMode === 'system' ? null : newSettings.darkMode);
       } else {
         theme.change(newSettings.darkMode);
       }
@@ -88,7 +88,7 @@ const setLanguage = (language: string | null) => {
 
 onMounted(() => {
   if (__IS_TAURI__) {
-    setTheme(uiSettings.settings.appearance.darkMode == 'system' ? null : uiSettings.settings.appearance.darkMode);
+    setTheme(uiSettings.settings.appearance.darkMode === 'system' ? null : uiSettings.settings.appearance.darkMode);
   } else {
     theme.change(uiSettings.settings.appearance.darkMode);
   }

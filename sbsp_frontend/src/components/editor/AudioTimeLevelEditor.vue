@@ -135,26 +135,26 @@ const emit = defineEmits(['update']);
 const sliderChanging = ref(false);
 
 const range = ref([
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.startTime : 0,
-  selectedCue.value != null && selectedCue.value.params.type == 'audio'
+  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.startTime : 0,
+  selectedCue.value != null && selectedCue.value.params.type === 'audio'
     ? selectedCue.value.params.endTime
     : assetResult.getMetadata(selectedCue.value?.id)?.duration,
 ] as [number | null, number | null]);
 
 const volume = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.volume : 0,
+  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.volume : 0,
 );
 
 const panning = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.pan : 0,
+  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.pan : 0,
 );
 
 const repeat = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'audio' ? selectedCue.value.params.repeat : false,
+  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.repeat : false,
 );
 
 watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'audio') {
+  if (selectedCue.value == null || selectedCue.value.params.type !== 'audio') {
     return;
   }
   range.value = [selectedCue.value.params.startTime, selectedCue.value.params.endTime] as [
@@ -170,7 +170,7 @@ const saveEditorValue = () => {
   if (selectedCue.value == null || sliderChanging.value === true) {
     return;
   }
-  if (selectedCue.value.params.type != 'audio') {
+  if (selectedCue.value.params.type !== 'audio') {
     return;
   }
   selectedCue.value.params.startTime = range.value[0];

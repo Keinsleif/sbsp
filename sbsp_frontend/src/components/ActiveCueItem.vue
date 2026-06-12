@@ -50,7 +50,7 @@ const title = computed(() => {
   const activeCue = getCueById.value(props.activeCue.cueId);
   if (activeCue == null) return;
   let result = '';
-  if (activeCue.number.trim() != '') {
+  if (activeCue.number.trim() !== '') {
     result = activeCue.number + '・';
   }
   if (activeCue.name != null) {

@@ -172,8 +172,8 @@ const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 const color = ref(selectedCue.value != null ? selectedCue.value.color : null);
 const target = ref(
   overridedChain.value != null
-  && overridedChain.value.type != 'doNotChain'
-  && overridedChain.value.targetId != NIL
+  && overridedChain.value.type !== 'doNotChain'
+  && overridedChain.value.targetId !== NIL
     ? overridedChain.value.targetId
     : null,
 );
@@ -187,7 +187,7 @@ watch(selectedCue, () => {
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   color.value = selectedCue.value != null ? selectedCue.value.color : null;
   target.value
-    = overridedChain.value != null && overridedChain.value.type != 'doNotChain'
+    = overridedChain.value != null && overridedChain.value.type !== 'doNotChain'
       ? overridedChain.value.targetId
       : null;
 });
@@ -212,7 +212,7 @@ const saveEditorValue = () => {
   }
   if (chain.value != null && props.chainOverride == null) {
     selectedCue.value.chain.type = chain.value;
-    if (selectedCue.value.chain.type == 'doNotChain') {
+    if (selectedCue.value.chain.type === 'doNotChain') {
       target.value = null;
     } else {
       console.log(target.value);
@@ -221,7 +221,7 @@ const saveEditorValue = () => {
   }
   if (name.value != null) {
     const newName = name.value.trim();
-    if (newName == '') {
+    if (newName === '') {
       selectedCue.value.name = null;
     } else {
       selectedCue.value.name = newName;
@@ -247,7 +247,7 @@ const insertTimestampToNote = () => {
     notes.value = '';
   }
 
-  if (notes.value.endsWith('\n') || notes.value == '') {
+  if (notes.value.endsWith('\n') || notes.value === '') {
     notes.value += `[${secondsToFormat(position)}] `;
   } else {
     notes.value += `\n[${secondsToFormat(position)}] `;

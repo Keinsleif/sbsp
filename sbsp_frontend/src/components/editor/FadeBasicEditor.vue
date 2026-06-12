@@ -55,23 +55,23 @@ const emit = defineEmits(['update']);
 const sliderChanging = ref(false);
 
 const target = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'fade' && selectedCue.value.params.target != NIL
+  selectedCue.value != null && selectedCue.value.params.type === 'fade' && selectedCue.value.params.target !== NIL
     ? selectedCue.value.params.target
     : '',
 );
 
 const volume = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'fade' ? selectedCue.value.params.volume : 0,
+  selectedCue.value != null && selectedCue.value.params.type === 'fade' ? selectedCue.value.params.volume : 0,
 );
 
 const fadeParam = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'fade'
+  selectedCue.value != null && selectedCue.value.params.type === 'fade'
     ? selectedCue.value.params.fadeParam
     : ({ duration: 3.0, easing: { type: 'inOutPow', intensity: 2 } } as FadeParam),
 );
 
 watch(selectedCue, () => {
-  if (selectedCue.value == null || selectedCue.value.params.type != 'fade') {
+  if (selectedCue.value == null || selectedCue.value.params.type !== 'fade') {
     return;
   }
 
@@ -84,7 +84,7 @@ const saveEditorValue = () => {
   if (selectedCue.value == null || sliderChanging.value === true) {
     return;
   }
-  if (selectedCue.value.params.type != 'fade') {
+  if (selectedCue.value.params.type !== 'fade') {
     return;
   }
   selectedCue.value.params.target = target.value;

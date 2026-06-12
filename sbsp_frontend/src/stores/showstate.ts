@@ -210,7 +210,7 @@ export const useShowState = defineStore('showstate', () => {
           params: { type: 'none' },
         };
         activeCue = activeCues.value[cueId]!;
-      } else if (activeCue.status != lastSyncCue.status) {
+      } else if (activeCue.status !== lastSyncCue.status) {
         activeCue.status = lastSyncCue.status;
       }
 
@@ -221,7 +221,7 @@ export const useShowState = defineStore('showstate', () => {
         && activeCue.duration > 0
       ) {
         const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
-        if (activeCue.params.type == 'audio' && activeCue.params.repeating) {
+        if (activeCue.params.type === 'audio' && activeCue.params.repeating) {
           position = (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
         } else {
           position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
@@ -229,7 +229,7 @@ export const useShowState = defineStore('showstate', () => {
       } else {
         position = lastSyncCue.position;
       }
-      if (updateActiveCues && position != activeCue.position) {
+      if (updateActiveCues && position !== activeCue.position) {
         activeCue.position = position;
       }
       positions[cueId] = position;
@@ -251,7 +251,7 @@ export const useShowState = defineStore('showstate', () => {
       && activeCue.duration > 0
     ) {
       const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
-      if (activeCue.params.type == 'audio' && activeCue.params.repeating) {
+      if (activeCue.params.type === 'audio' && activeCue.params.repeating) {
         return (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
       } else {
         return Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);

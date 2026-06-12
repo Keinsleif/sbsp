@@ -336,9 +336,9 @@ onMounted(() => {
     .catch(e => console.error(e));
   api.host
     ?.onServerStatusChanged((status) => {
-      if (status == 'started') {
+      if (status === 'started') {
         isRunning.value = true;
-      } else if (status == 'stopped') {
+      } else if (status === 'stopped') {
         isRunning.value = false;
       }
     })

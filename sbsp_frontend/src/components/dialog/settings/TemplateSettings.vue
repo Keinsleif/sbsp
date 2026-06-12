@@ -559,21 +559,21 @@ const editingSettings = defineModel<{
 const selectingTemplate = ref<'audio' | 'wait' | 'fade' | 'start' | 'stop' | 'pause' | 'load' | 'group' | null>(null);
 
 const getSelectingCue = () => {
-  if (selectingTemplate.value == 'audio') {
+  if (selectingTemplate.value === 'audio') {
     return editingSettings.value.global.template.audio;
-  } else if (selectingTemplate.value == 'wait') {
+  } else if (selectingTemplate.value === 'wait') {
     return editingSettings.value.global.template.wait;
-  } else if (selectingTemplate.value == 'fade') {
+  } else if (selectingTemplate.value === 'fade') {
     return editingSettings.value.global.template.fade;
-  } else if (selectingTemplate.value == 'start') {
+  } else if (selectingTemplate.value === 'start') {
     return editingSettings.value.global.template.start;
-  } else if (selectingTemplate.value == 'stop') {
+  } else if (selectingTemplate.value === 'stop') {
     return editingSettings.value.global.template.stop;
-  } else if (selectingTemplate.value == 'pause') {
+  } else if (selectingTemplate.value === 'pause') {
     return editingSettings.value.global.template.pause;
-  } else if (selectingTemplate.value == 'load') {
+  } else if (selectingTemplate.value === 'load') {
     return editingSettings.value.global.template.load;
-  } else if (selectingTemplate.value == 'group') {
+  } else if (selectingTemplate.value === 'group') {
     return editingSettings.value.global.template.group;
   }
   return null;

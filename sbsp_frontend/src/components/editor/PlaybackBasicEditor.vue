@@ -41,33 +41,33 @@ const sliderChanging = ref(false);
 
 const target = ref(
   selectedCue.value != null
-  && (selectedCue.value.params.type == 'start'
-    || selectedCue.value.params.type == 'stop'
-    || selectedCue.value.params.type == 'pause'
-    || selectedCue.value.params.type == 'load')
-  && selectedCue.value.params.target != NIL
+  && (selectedCue.value.params.type === 'start'
+    || selectedCue.value.params.type === 'stop'
+    || selectedCue.value.params.type === 'pause'
+    || selectedCue.value.params.type === 'load')
+  && selectedCue.value.params.target !== NIL
     ? selectedCue.value.params.target
     : '',
 );
 const hard = ref(
-  selectedCue.value != null && selectedCue.value.params.type == 'stop' ? selectedCue.value.params.hard : null,
+  selectedCue.value != null && selectedCue.value.params.type === 'stop' ? selectedCue.value.params.hard : null,
 );
 
 watch(selectedCue, () => {
   if (
     selectedCue.value == null
     || !(
-      selectedCue.value.params.type == 'start'
-      || selectedCue.value.params.type == 'stop'
-      || selectedCue.value.params.type == 'pause'
-      || selectedCue.value.params.type == 'load'
+      selectedCue.value.params.type === 'start'
+      || selectedCue.value.params.type === 'stop'
+      || selectedCue.value.params.type === 'pause'
+      || selectedCue.value.params.type === 'load'
     )
   ) {
     return;
   }
 
   target.value = selectedCue.value.params.target;
-  hard.value = selectedCue.value.params.type == 'stop' ? selectedCue.value.params.hard : null;
+  hard.value = selectedCue.value.params.type === 'stop' ? selectedCue.value.params.hard : null;
 });
 
 const saveEditorValue = () => {
@@ -76,16 +76,16 @@ const saveEditorValue = () => {
   }
   if (
     !(
-      selectedCue.value.params.type == 'start'
-      || selectedCue.value.params.type == 'stop'
-      || selectedCue.value.params.type == 'pause'
-      || selectedCue.value.params.type == 'load'
+      selectedCue.value.params.type === 'start'
+      || selectedCue.value.params.type === 'stop'
+      || selectedCue.value.params.type === 'pause'
+      || selectedCue.value.params.type === 'load'
     )
   ) {
     return;
   }
   selectedCue.value.params.target = target.value;
-  if (selectedCue.value.params.type == 'stop') {
+  if (selectedCue.value.params.type === 'stop') {
     selectedCue.value.params.hard = hard.value || false;
   }
   emit('update');

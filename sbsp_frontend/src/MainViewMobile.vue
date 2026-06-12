@@ -72,7 +72,7 @@ const { t } = useI18n();
 const time = useNow();
 
 watch(() => uiState.permission, (newValue) => {
-  if ((newValue & PERMISSIONS.CONTROL) == 0 && activeTab.value == 'controls') {
+  if ((newValue & PERMISSIONS.CONTROL) === 0 && activeTab.value === 'controls') {
     activeTab.value = 'list';
   }
 });

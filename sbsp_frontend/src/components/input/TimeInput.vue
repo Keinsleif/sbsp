@@ -49,7 +49,7 @@ watch([seconds, () => props.multiply], () => {
 
 const save = () => {
   let innerValue: number;
-  if (formattedValue.value.trim() == '') {
+  if (formattedValue.value.trim() === '') {
     innerValue = props.defaultValue;
   } else {
     innerValue = formatToSeconds(formattedValue.value, props.acceptMinus) / props.multiply;
@@ -57,7 +57,7 @@ const save = () => {
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
   }
-  if (seconds.value != innerValue) {
+  if (seconds.value !== innerValue) {
     seconds.value = innerValue;
     emit('update');
   }

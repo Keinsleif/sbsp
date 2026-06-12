@@ -29,13 +29,13 @@ const keyinput = (event: KeyboardEvent) => {
   if (event.shiftKey) {
     shortcut += 'Shift+';
   }
-  if (event.key == 'Control') {
+  if (event.key === 'Control') {
     shortcut = 'Ctrl';
-  } else if (event.key == 'Alt') {
+  } else if (event.key === 'Alt') {
     shortcut = 'Alt';
-  } else if (event.key == 'Shift') {
+  } else if (event.key === 'Shift') {
     shortcut = 'Shift';
-  } else if (event.key == ' ') {
+  } else if (event.key === ' ') {
     shortcut += 'Space';
   } else if (event.key.length === 1) {
     shortcut += event.key.toUpperCase();

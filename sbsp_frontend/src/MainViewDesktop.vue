@@ -100,7 +100,7 @@ const selectedCueChainOverride = computed(() => {
   if (selectedCue.value == null) {
     return null;
   }
-  const flatEntry = showModel.flatCueList.find(item => item.cue.id == selectedCue.value!.id);
+  const flatEntry = showModel.flatCueList.find(item => item.cue.id === selectedCue.value!.id);
   if (flatEntry == null) {
     return null;
   }

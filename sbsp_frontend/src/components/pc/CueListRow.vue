@@ -159,34 +159,34 @@ usePosition((pos) => {
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
-      if (durationRef.value.children[1]!.textContent != durationText.value) {
+      if (durationRef.value.children[1]!.textContent !== durationText.value) {
         durationRef.value.children[1]!.textContent = durationText.value;
         (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
       }
       preWaitRef.value.children[1]!.textContent = secondsToFormat(
-        uiState.preWaitDisplayMode == 'elapsed'
+        uiState.preWaitDisplayMode === 'elapsed'
           ? position
           : activeCue.duration - position,
       );
       (preWaitRef.value.children[0]! as HTMLElement).style.transform = `scaleX(${position / activeCue.duration})`;
     } else {
-      if (preWaitRef.value.children[1]!.textContent != preWaitText) {
+      if (preWaitRef.value.children[1]!.textContent !== preWaitText) {
         preWaitRef.value.children[1]!.textContent = preWaitText;
         (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
       }
       durationRef.value.children[1]!.textContent = secondsToFormat(
-        uiState.durationDisplayMode == 'elapsed'
+        uiState.durationDisplayMode === 'elapsed'
           ? position
           : activeCue.duration - position,
       );
       (durationRef.value.children[0]! as HTMLElement).style.transform = `scaleX(${position / activeCue.duration})`;
     }
   } else {
-    if ((preWaitRef.value.children[1]! as HTMLElement).contentEditable != 'true' && preWaitRef.value.children[1]!.textContent != preWaitText) {
+    if ((preWaitRef.value.children[1]! as HTMLElement).contentEditable !== 'true' && preWaitRef.value.children[1]!.textContent !== preWaitText) {
       preWaitRef.value.children[1]!.textContent = preWaitText;
       (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
     }
-    if ((durationRef.value.children[1]! as HTMLElement).contentEditable != 'true' && durationRef.value.children[1]!.textContent != durationText.value) {
+    if ((durationRef.value.children[1]! as HTMLElement).contentEditable !== 'true' && durationRef.value.children[1]!.textContent !== durationText.value) {
       durationRef.value.children[1]!.textContent = durationText.value;
       (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
     }
@@ -195,7 +195,7 @@ usePosition((pos) => {
 
 let preWaitText = '--:--.--';
 watch(() => props.item.cue.preWait, () => {
-  preWaitText = secondsToFormat(props.item.cue.preWait == 0.0 ? null : props.item.cue.preWait);
+  preWaitText = secondsToFormat(props.item.cue.preWait === 0.0 ? null : props.item.cue.preWait);
 }, { immediate: true });
 
 const durationText = computed(() => {
@@ -220,24 +220,24 @@ const dragStart = (event: DragEvent, targetId: string) => {
 };
 
 const openEditable = (e: MouseEvent, editType: string) => {
-  if (uiState.mode != 'edit') {
+  if (uiState.mode !== 'edit') {
     return;
   }
   if (e.target == null || !(e.target instanceof HTMLElement) || e.target.contentEditable === 'true') {
     return;
   }
   if (props.item == null) return;
-  if (editType == 'cuelist_duration') {
+  if (editType === 'cuelist_duration') {
     const cueType = props.item.cue.params.type;
-    if (cueType != 'wait' && cueType != 'fade') {
+    if (cueType !== 'wait' && cueType !== 'fade') {
       return;
     }
   }
-  if (editType == 'cuelist_post_wait') {
+  if (editType === 'cuelist_post_wait') {
     if (props.item.isChainOverrided) {
       return;
     }
-    if (props.item.chain.type != 'afterStart') {
+    if (props.item.chain.type !== 'afterStart') {
       return;
     }
   }
@@ -270,7 +270,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         break;
       case 'cuelist_name': {
         const newText = target.innerText.trim();
-        if (newText == '') {
+        if (newText === '') {
           newCue.name = null;
         } else {
           newCue.name = newText;
@@ -283,10 +283,10 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         break;
       }
       case 'cuelist_duration': {
-        if (newCue.params.type == 'wait') {
+        if (newCue.params.type === 'wait') {
           let newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
-        } else if (newCue.params.type == 'fade') {
+        } else if (newCue.params.type === 'fade') {
           let newDuration = formatToSeconds(target.innerText, false);
           newCue.params.fadeParam.duration = newDuration;
         }
@@ -295,7 +295,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
     }
     api.updateCue(newCue);
   } else {
-    if (target.dataset.prevText != undefined) {
+    if (target.dataset.prevText !== undefined) {
       target.innerText = target.dataset.prevText;
     }
   }

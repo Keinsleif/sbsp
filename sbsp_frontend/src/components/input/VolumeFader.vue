@@ -80,14 +80,14 @@ const onPointerUp = debounce(() => {
 }, 300);
 
 const tickLabels = computed(() => {
-  if (props.thumbAmount == 'decreased') {
+  if (props.thumbAmount === 'decreased') {
     return {
       '10': '10',
       '0': '0',
       '-10': '-10',
       '-30': '-60',
     } as Record<number, string>;
-  } else if (props.thumbAmount == 'baseOnly') {
+  } else if (props.thumbAmount === 'baseOnly') {
     return {
       0: '0',
     } as Record<number, string>;

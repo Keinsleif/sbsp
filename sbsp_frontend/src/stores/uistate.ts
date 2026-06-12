@@ -67,7 +67,7 @@ export const useUiState = defineStore(
       let rm_selected = false;
       for (const id of ids) {
         selectedRows.value.delete(id);
-        if (!rm_selected && id == selected.value) {
+        if (!rm_selected && id === selected.value) {
           rm_selected = true;
         }
       }
@@ -81,7 +81,7 @@ export const useUiState = defineStore(
     const toggleExpand = (id: string) => {
       if (expandedRows.value.includes(id)) {
         expandedRows.value.splice(
-          expandedRows.value.findIndex(value => value == id),
+          expandedRows.value.findIndex(value => value === id),
           1,
         );
       } else {
@@ -93,7 +93,7 @@ export const useUiState = defineStore(
       const showModel = useShowModel();
       let target_id: string | null = id;
       while (target_id != null) {
-        const target_cue = showModel.flatCueList.find(value => value.cue.id == target_id);
+        const target_cue = showModel.flatCueList.find(value => value.cue.id === target_id);
         if (target_cue != null && target_cue.parent != null) {
           if (!expandedRows.value.includes(target_cue.parent)) {
             expandedRows.value.push(target_cue.parent);
@@ -106,11 +106,11 @@ export const useUiState = defineStore(
     };
 
     const togglePreWaitDisplayMode = () => {
-      preWaitDisplayMode.value = preWaitDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
+      preWaitDisplayMode.value = preWaitDisplayMode.value === 'elapsed' ? 'remain' : 'elapsed';
     };
 
     const toggleDurationDisplayMode = () => {
-      durationDisplayMode.value = durationDisplayMode.value == 'elapsed' ? 'remain' : 'elapsed';
+      durationDisplayMode.value = durationDisplayMode.value === 'elapsed' ? 'remain' : 'elapsed';
     };
 
     const toggleRightSidebar = () => {

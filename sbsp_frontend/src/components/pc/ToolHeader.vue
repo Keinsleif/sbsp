@@ -191,7 +191,7 @@ const isCueStatus = computed(() => {
   if (showState.playbackCursor != null) {
     const activeCue = showState.activeCues[showState.playbackCursor];
     if (activeCue != null) {
-      return (status: PlaybackStatus) => activeCue.status == status;
+      return (status: PlaybackStatus) => activeCue.status === status;
     }
   }
   return () => false;

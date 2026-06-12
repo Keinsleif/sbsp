@@ -147,7 +147,7 @@ const saveValues = () => {
       if (duration.value != null) {
         param.value.duration = duration.value;
       }
-      if (easingType.value == 'linear') {
+      if (easingType.value === 'linear') {
         easingPower.value = null;
       } else if (easingPower.value == null) {
         easingPower.value = 2;

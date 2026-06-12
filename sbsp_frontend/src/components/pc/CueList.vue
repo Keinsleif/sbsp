@@ -299,7 +299,7 @@ const copy = () => {
 
 const onArrowUp = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == uiState.selected) - 1;
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) - 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -330,7 +330,7 @@ useHotkey('shift+arrowup', onArrowUp);
 
 const onArrowDown = throttle((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id == uiState.selected) + 1;
+    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) + 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -366,7 +366,7 @@ useHotkey('cmd+a', () => {
 });
 
 useHotkey('cmd+backspace', () => {
-  if (uiState.mode == 'edit') {
+  if (uiState.mode === 'edit') {
     api.removeCues(Array.from(uiState.selectedRows));
   }
 });
@@ -407,7 +407,7 @@ const drop = (event: DragEvent, index: number) => {
 };
 
 const click = (event: MouseEvent, index: number) => {
-  if (event.button != 0) {
+  if (event.button !== 0) {
     return;
   }
   const clickedId = showModel.flatCueList[index]?.cue.id;

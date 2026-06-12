@@ -66,7 +66,7 @@ onMounted(() => {
     .onBackendEvent((event) => {
       switch (event.type) {
         case 'cueStatus':
-          if (event.param.type == 'error') {
+          if (event.param.type === 'error') {
             console.error(event.param.error);
             uiState.error(event.param.error);
           }
@@ -77,7 +77,7 @@ onMounted(() => {
           if (getLockCursorToSelection()) {
             const cueId = event.param.cueId;
             if (cueId != null) {
-              if (uiState.selected != cueId) {
+              if (uiState.selected !== cueId) {
                 uiState.selected = cueId;
                 uiState.expandToVisible(cueId);
                 // This operation not using uiState.addSelected to avoid updating playbackcursor.
@@ -208,7 +208,7 @@ onMounted(() => {
       if (getLockCursorToSelection()) {
         const cueId = fullState.showState.playbackCursor;
         if (cueId != null) {
-          if (uiState.selected != cueId) {
+          if (uiState.selected !== cueId) {
             uiState.selected = cueId;
             uiState.expandToVisible(cueId);
             // This operation not using uiState.addSelected to avoid updating playbackcursor.
@@ -277,34 +277,34 @@ if (api.host) {
 }
 
 const goHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.go) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.go) || undefined;
 });
 const loadHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.load) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.load) || undefined;
 });
 const pauseAndResumeHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.pauseAndResume) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAndResume) || undefined;
 });
 const pauseAllHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.pauseAll) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAll) || undefined;
 });
 const resumeAllHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.resumeAll) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.resumeAll) || undefined;
 });
 const stopHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.stop) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stop) || undefined;
 });
 const stopAllHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.stopAll) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stopAll) || undefined;
 });
 const seekForwardHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.seekForward) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekForward) || undefined;
 });
 const seekBackwardHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.playback.seekBackward) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekBackward) || undefined;
 });
 const audioToggleRepeatHotkey = computed(() => {
-  return (uiState.mode != 'view' && uiSettings.settings.hotkey.audioAction.toggleRepeat) || undefined;
+  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.audioAction.toggleRepeat) || undefined;
 });
 
 useHotkey(
@@ -429,7 +429,7 @@ useHotkey(
 useHotkey(
   'cmd+r',
   () => {
-    if (uiState.mode == 'edit') {
+    if (uiState.mode === 'edit') {
       uiState.isRenumberCueDialogOpen = true;
     }
   },

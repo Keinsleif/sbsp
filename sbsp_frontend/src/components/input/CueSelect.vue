@@ -54,10 +54,10 @@ const cueList = computed(() => {
 });
 
 const filterCue = (cue: Cue): boolean => {
-  if (cue.id == props.exclude) {
+  if (cue.id === props.exclude) {
     return false;
   }
-  if (props.cueType == null || props.cueType == 'all') {
+  if (props.cueType == null || props.cueType === 'all') {
     return true;
   } else {
     return props.cueType.includes(cue.params.type);

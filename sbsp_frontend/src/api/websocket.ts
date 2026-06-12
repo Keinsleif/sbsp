@@ -426,9 +426,9 @@ export function useWebsocketApi(): IBackendAdapter {
   const websocketApi: IWebsocketBackendAdapter = {
     sendCommand: function (command: WsCommand): void {
       const ws = websocketApiState.ws;
-      if (ws && ws.readyState == WebSocket.OPEN) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(command));
-      } else if (ws && ws.readyState == WebSocket.CONNECTING) {
+      } else if (ws && ws.readyState === WebSocket.CONNECTING) {
         websocketApiState.sendQueue.push(JSON.stringify(command));
       } else {
         console.error('Not connected.');
