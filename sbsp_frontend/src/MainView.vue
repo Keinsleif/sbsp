@@ -23,6 +23,7 @@ import { useIntervalFn } from '@vueuse/core';
 import MainViewDesktop from './MainViewDesktop.vue';
 import { useDisplay } from 'vuetify';
 import MainViewMobile from './MainViewMobile.vue';
+import { usePositionTicker } from './composables/usePosition.ts';
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -44,7 +45,6 @@ const onVisibilityChange = () => {
 };
 
 const unlistenFuncs: (() => void)[] = [];
-let rafNumber: number | null = null;
 
 onMounted(() => {
   document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
@@ -60,11 +60,7 @@ onMounted(() => {
     },
   );
 
-  const updateLoop = () => {
-    showState.handleRAF();
-    rafNumber = requestAnimationFrame(updateLoop);
-  };
-  rafNumber = requestAnimationFrame(updateLoop);
+  usePositionTicker();
 
   api
     .onBackendEvent((event) => {
@@ -251,9 +247,6 @@ onUnmounted(() => {
         wakeLock.value = null;
       })
       .catch(e => console.error(e));
-  }
-  if (rafNumber != null) {
-    cancelAnimationFrame(rafNumber);
   }
 });
 

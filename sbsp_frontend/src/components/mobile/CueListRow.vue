@@ -1,6 +1,6 @@
 <template>
   <tr
-    :style="backgroundStyle"
+    ref="row"
   >
     <td
       headers="cuelist_cursor"
@@ -93,11 +93,12 @@
 
 import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
 import { FlatCueEntry } from '../../stores/showmodel';
-import { computed } from 'vue';
+import { computed, useTemplateRef } from 'vue';
 import { useUiState } from '../../stores/uistate';
 import { useShowState } from '../../stores/showstate';
 import { buildCueName, getCueIcon } from '../../utils';
 import { PlaybackStatus } from '../../types/PlaybackStatus';
+import { usePosition } from '../../composables/usePosition';
 
 const uiState = useUiState();
 const showState = useShowState();
@@ -115,18 +116,22 @@ const status = computed(() => {
   return activeCue != null ? activeCue.status : null;
 });
 
-const backgroundStyle = computed(() => {
-  return {
-    background: showState.activeCues[props.item.cue.id] != null
-      ? (showState.activeCues[props.item.cue.id]!.status.startsWith('pre')
+const rowRef = useTemplateRef('row');
+usePosition((pos) => {
+  if (rowRef.value == null) return;
+  const position = pos[props.item.cue.id];
+  const activeCue = showState.activeCues[props.item.cue.id];
+  if (activeCue == null || position == null || activeCue.duration == 0) {
+    rowRef.value.style.background = '';
+    return;
+  };
+  rowRef.value.style.background = (activeCue.status.startsWith('pre')
           ? 'linear-gradient(to right, rgba(var(--v-theme-warning), 0.5) '
           : 'linear-gradient(to right, rgba(var(--v-theme-primary), 0.5) ')
-        + (showState.activeCues[props.item.cue.id]!.position * 100) / showState.activeCues[props.item.cue.id]!.duration
+        + (position * 100) / activeCue.duration
         + '%, transparent '
-        + (showState.activeCues[props.item.cue.id]!.position * 100) / showState.activeCues[props.item.cue.id]!.duration
-        + '%) no-repeat'
-      : '',
-  };
+        + (position * 100) / activeCue.duration
+        + '%) no-repeat';
 });
 
 const isStatusIn = (statusList: PlaybackStatus[]): boolean => {

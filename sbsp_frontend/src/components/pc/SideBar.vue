@@ -57,7 +57,7 @@ import { useShowState } from '../../stores/showstate';
 import { useUiState } from '../../stores/uistate';
 import { useI18n } from 'vue-i18n';
 import LevelMeter from '../input/LevelMeter.vue';
-import ActiveCueItem from './ActiveCueItem.vue';
+import ActiveCueItem from '../ActiveCueItem.vue';
 
 const { t } = useI18n();
 const showState = useShowState();

@@ -140,8 +140,8 @@
           @pointerdown="handlePointerDown($event, 0, 'hend')"
         />
         <rect
-          v-show="position != 0"
-          :style="playCursorStyle"
+          ref="position"
+          v-show="selectedCue != null && selectedCue.id in showState.activeCues"
           x="0"
           y="0"
           width="2"
@@ -270,6 +270,7 @@ import { useApi } from '../../api';
 import { useI18n } from 'vue-i18n';
 import TimeInput from '../input/TimeInput.vue';
 import { useUiState } from '../../stores/uistate';
+import { usePosition } from '../../composables/usePosition.ts';
 
 const { t } = useI18n();
 const api = useApi();
@@ -352,23 +353,22 @@ const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1)
 const svgRef = useTemplateRef('svg');
 const { width: svgWidth } = useElementSize(svgRef);
 const parent = useParentElement();
-const position = computed<number>(() => {
-  if (selectedCue.value == null) return 0;
-  const activeCue = showState.activeCues[selectedCue.value.id];
-  if (activeCue != null && activeCue.duration !== 0 && activeCue.status != 'preWaiting' && activeCue.status != 'preWaitPaused') {
-    return activeCue.position / activeCue.duration;
-  } else {
-    return 0;
-  }
-});
 
-const playCursorStyle = computed(() => {
+const positionRef = useTemplateRef('position');
+
+usePosition((pos) => {
+  if (positionRef.value == null || selectedCue.value == null) return;
+  const activeCue = showState.activeCues[selectedCue.value.id];
+  let position = pos[selectedCue.value.id];
+  if (activeCue == null || position == null) return;
+  if (activeCue.duration !== 0 && activeCue.status != 'preWaiting' && activeCue.status != 'preWaitPaused') {
+    position = position / activeCue.duration;
+  } else {
+    position = 0;
+  }
   const range = timeRange.value;
-  const x = (range.start + position.value * range.delta) * (svgWidth.value - 1);
-  return {
-    transform: `translateX(${x}px)`,
-    transition: 'transform 10ms linear',
-  };
+  const x = (range.start + position * range.delta) * (svgWidth.value - 1);
+  positionRef.value.style.transform = `translateX(${x}px)`;
 });
 
 const waveformPath = shallowRef('');

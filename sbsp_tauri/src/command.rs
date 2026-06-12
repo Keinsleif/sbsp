@@ -8,7 +8,11 @@ use sbsp_backend::{
     event::BackendEvent,
     helper::{SupportedHardware, get_supported_hardware},
 };
-use tauri::{Manager as _, WebviewWindow, ipc::Channel, path::BaseDirectory};
+use tauri::{
+    Manager as _, WebviewWindow,
+    ipc::{Channel, Response},
+    path::BaseDirectory,
+};
 use tauri_plugin_dialog::DialogExt as _;
 use tokio::sync::oneshot;
 
@@ -231,14 +235,17 @@ pub async fn export_to_folder(
 }
 
 #[tauri::command]
-pub async fn listen_level_meter(
-    state: tauri::State<'_, AppState>,
-    level_listener: Channel<(f32, f32)>,
-) -> Result<(), String> {
+pub fn listen_level_meter(state: tauri::State<'_, AppState>, level_listener: Channel<Response>) {
     state.level_meter_tx.send_modify(|channel| {
         *channel = Some(level_listener);
     });
-    Ok(())
+}
+
+#[tauri::command]
+pub fn unlisten_level_meter(state: tauri::State<'_, AppState>) {
+    state.level_meter_tx.send_modify(|channel| {
+        *channel = None;
+    });
 }
 
 #[tauri::command]

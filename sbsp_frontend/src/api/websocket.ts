@@ -4,7 +4,7 @@
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions } from './interface';
+import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
 import type { WsFeedback } from '../types/WsFeedback';
 import type { FileList } from '../types/FileList';
 import type { WsCommand } from '../types/WsCommand';
@@ -468,8 +468,11 @@ export function useWebsocketApi(): IBackendAdapter {
       return 'Not Available. To read third party notices, please use host app.';
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    listenLevelMeter: async function (_levelListener: (levels: [number, number]) => void): Promise<void> {
-      console.error('Not implemented');
+    listenLevelMeter: function (_levelListener: LevelMeterListener): void {
+      console.warn('Not implemented');
+    },
+    unlistenLevelMeter: function (): void {
+      console.warn('Not implemented');
     },
     pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       const uiState = useUiState();

@@ -57,6 +57,7 @@ const activeTargetCue = computed(() => {
   return activeCue;
 });
 
+// use throttle value for v-model value
 watch(() => activeTargetCue.value?.position, (newposition) => {
   if (!sliderChanging.value) {
     position.value = newposition || 0;

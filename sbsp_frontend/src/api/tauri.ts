@@ -5,7 +5,7 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import { IBackendAdapter, IPickAudioAssetsOptions } from './interface';
+import { IBackendAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
 import { type } from '@tauri-apps/plugin-os';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { FileList } from '../types/FileList';
@@ -134,13 +134,22 @@ export function useTauriApi(): IBackendAdapter {
     getThirdPartyNotices: function (): Promise<string> {
       return invoke<string>('get_third_party_notices');
     },
-    listenLevelMeter: function (levelListener: (levels: [number, number]) => void): Promise<void> {
-      const channel = new Channel<[number, number]>(levelListener);
-      return invoke('listen_level_meter', { levelListener: channel });
+    listenLevelMeter: function (levelListener: LevelMeterListener): void {
+      const channel = new Channel<ArrayBuffer>((value) => {
+        if (value.byteLength != 8) {
+          return; // ignore invalid ipc value
+        }
+        const dv = new DataView(value);
+        levelListener([dv.getFloat32(0, true), dv.getFloat32(4, true)]);
+      });
+      invoke('listen_level_meter', { levelListener: channel });
     },
-    pickAudioAssets: function (options: IPickAudioAssetsOptions): Promise<string[]> {
+    unlistenLevelMeter: function (): void {
+      invoke('unlisten_level_meter');
+    },
+    pickAudioAssets: async function (options: IPickAudioAssetsOptions): Promise<string[]> {
       if (side == 'host') {
-        return open({
+        const paths = await open({
           multiple: options.multiple,
           directory: false,
           filters: [
@@ -165,9 +174,8 @@ export function useTauriApi(): IBackendAdapter {
               ],
             },
           ],
-        }).then((paths) => {
-          return typeof paths == 'string' ? [paths] : paths || [];
         });
+        return typeof paths == 'string' ? [paths] : paths || [];
       } else {
         const uiState = useUiState();
         return new Promise((resolve) => {

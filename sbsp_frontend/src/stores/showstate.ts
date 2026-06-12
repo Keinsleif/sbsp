@@ -29,6 +29,11 @@ export const useShowState = defineStore('showstate', () => {
         syncedData.value[cue.id] = { position: 0.0, status: 'playing', lastSyncedAt };
       }
     }
+    for (const cueId in activeCues.value) {
+      if (!(cueId in syncedData.value)) {
+        delete activeCues.value[cueId];
+      }
+    }
   };
 
   const update = (state: ShowState) => {
@@ -91,13 +96,18 @@ export const useShowState = defineStore('showstate', () => {
           params: { type: 'none' },
         };
         break;
-      case 'preWaitPaused':
+      case 'preWaitPaused': {
         syncedData.value[data.cueId] = {
           position: data.position,
           status: 'preWaitPaused',
           lastSyncedAt,
         };
+        const activeCue = activeCues.value[data.cueId];
+        if (activeCue != null) {
+          activeCue.position = data.position;
+        }
         break;
+      }
       case 'preWaitResumed': {
         const targetData = syncedData.value[data.cueId];
         if (targetData != null) {
@@ -108,6 +118,7 @@ export const useShowState = defineStore('showstate', () => {
       }
       case 'preWaitStopped': {
         delete syncedData.value[data.cueId];
+        delete activeCues.value[data.cueId];
         break;
       }
       case 'preWaitCompleted':
@@ -171,6 +182,7 @@ export const useShowState = defineStore('showstate', () => {
       case 'completed':
       case 'error':
         delete syncedData.value[data.cueId];
+        delete activeCues.value[data.cueId];
         break;
       case 'stateParamUpdated': {
         const activeCue = activeCues.value[data.cueId];
@@ -184,7 +196,8 @@ export const useShowState = defineStore('showstate', () => {
     }
   };
 
-  const handleRAF = () => {
+  const calculatePosition = (updateActiveCues: boolean): { [id: string]: number } => {
+    const positions: { [id: string]: number } = {};
     Object.entries(syncedData.value).forEach(([cueId, lastSyncCue]) => {
       let activeCue = activeCues.value[cueId];
 
@@ -197,9 +210,11 @@ export const useShowState = defineStore('showstate', () => {
           params: { type: 'none' },
         };
         activeCue = activeCues.value[cueId]!;
+      } else if (activeCue.status != lastSyncCue.status) {
+        activeCue.status = lastSyncCue.status;
       }
 
-      activeCue.status = lastSyncCue.status;
+      let position;
 
       if (
         (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
@@ -207,18 +222,44 @@ export const useShowState = defineStore('showstate', () => {
       ) {
         const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
         if (activeCue.params.type == 'audio' && activeCue.params.repeating) {
-          activeCue.position = (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
+          position = (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
         } else {
-          activeCue.position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
+          position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
         }
+      } else {
+        position = lastSyncCue.position;
       }
-    });
-    Object.keys(activeCues.value).forEach((cueId) => {
-      if (!(cueId in syncedData.value)) {
-        delete activeCues.value[cueId];
+      if (updateActiveCues && position != activeCue.position) {
+        activeCue.position = position;
       }
+      positions[cueId] = position;
     });
+    return positions;
   };
 
-  return { playbackCursor, activeCues, update, handleSyncEvent, updatePlaybackCursor, handleRAF, handleCueStateEvent };
+  const getPosition = (id: string): number | null => {
+    const lastSyncCue = syncedData.value[id];
+    const activeCue = activeCues.value[id];
+
+    if (lastSyncCue == null) return null;
+    if (activeCue == null) {
+      console.warn('ShowState sync broken.');
+      return null;
+    }
+    if (
+      (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
+      && activeCue.duration > 0
+    ) {
+      const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
+      if (activeCue.params.type == 'audio' && activeCue.params.repeating) {
+        return (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
+      } else {
+        return Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
+      }
+    } else {
+      return lastSyncCue.position;
+    }
+  }
+
+  return { playbackCursor, activeCues, update, handleSyncEvent, updatePlaybackCursor, calculatePosition, handleCueStateEvent, getPosition };
 });

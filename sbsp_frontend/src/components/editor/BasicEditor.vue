@@ -237,17 +237,20 @@ const saveEditorValue = () => {
 };
 
 const insertTimestampToNote = () => {
-  if (selectedCue.value == null || !(selectedCue.value.id in showState.activeCues)) {
+  if (selectedCue.value == null) {
     return;
   }
-  const activeCue = showState.activeCues[selectedCue.value.id];
-  if (activeCue == null) {
-    return;
+  const position = showState.getPosition(selectedCue.value.id);
+  if (position == null) return;
+
+  if (notes.value == null) {
+    notes.value = '';
   }
-  if (notes.value != null && (notes.value.endsWith('\n') || notes.value == '')) {
-    notes.value += `[${secondsToFormat(activeCue.position)}] `;
+
+  if (notes.value.endsWith('\n') || notes.value == '') {
+    notes.value += `[${secondsToFormat(position)}] `;
   } else {
-    notes.value += `\n[${secondsToFormat(activeCue.position)}] `;
+    notes.value += `\n[${secondsToFormat(position)}] `;
   }
   saveEditorValue();
 };

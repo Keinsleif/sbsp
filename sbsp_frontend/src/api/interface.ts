@@ -17,6 +17,8 @@ import type { InsertPosition } from '../types/InsertPosition';
 
 type UnlistenFn = () => void;
 
+export type LevelMeterListener = (levels: [number, number]) => void;
+
 export interface IPickAudioAssetsOptions {
   multiple: boolean;
 }
@@ -27,7 +29,8 @@ export interface IBackendAdapter {
 
   isMacOs(): boolean;
   getThirdPartyNotices(): Promise<string>;
-  listenLevelMeter(levelListener: (levels: [number, number]) => void): Promise<void>;
+  listenLevelMeter(levelListener: LevelMeterListener): void;
+  unlistenLevelMeter(): void;
   pickAudioAssets(options: IPickAudioAssetsOptions): Promise<string[]>;
 
   setTitle(title: string): void;

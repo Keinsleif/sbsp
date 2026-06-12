@@ -15,7 +15,11 @@ use sbsp_backend::{
     start_backend,
 };
 use sbsp_license::LicenseManager;
-use tauri::{AppHandle, Emitter as _, Manager as _, ipc::Channel, path::BaseDirectory};
+use tauri::{
+    AppHandle, Emitter as _, Manager as _,
+    ipc::{Channel, Response},
+    path::BaseDirectory,
+};
 use tauri_plugin_dialog::{DialogExt as _, MessageDialogKind};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::{
@@ -43,7 +47,7 @@ pub struct AppState {
     pub settings_manager: GlobalSettingsManager,
     server_option: RwLock<ApiServerOptions>,
     shutdown_tx: Mutex<Option<broadcast::Sender<()>>>,
-    level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
+    level_meter_tx: watch::Sender<Option<Channel<Response>>>,
     event_handler: Mutex<Option<Channel<BackendEvent>>>,
 }
 
@@ -53,7 +57,7 @@ impl AppState {
         state_rx: watch::Receiver<ShowState>,
         event_tx: broadcast::Sender<BackendEvent>,
         settings_manager: GlobalSettingsManager,
-        level_meter_tx: watch::Sender<Option<Channel<(f32, f32)>>>,
+        level_meter_tx: watch::Sender<Option<Channel<Response>>>,
     ) -> Self {
         Self {
             backend_handle,
@@ -200,8 +204,8 @@ pub fn run() {
                     return Err(e.into());
                 }
             };
-            let (level_meter_tx, level_meter_rx) =
-                watch::channel::<Option<Channel<(f32, f32)>>>(None);
+            let (level_meter_tx, mut level_meter_rx) =
+                watch::channel::<Option<Channel<Response>>>(None);
 
             tokio::spawn(forward_backend_event(
                 app_handle.clone(),
@@ -247,8 +251,21 @@ pub fn run() {
                         if let Some(level_meter) = level_meter_rx.borrow().as_ref() {
                             let (l, r) = shared_level.get();
                             if l > 0.001 || r > 0.001 {
-                                level_meter.send((l, r)).ok();
+                                let mut bytes = [0; 8];
+                                bytes[..4].copy_from_slice(&l.to_le_bytes());
+                                bytes[4..].copy_from_slice(&r.to_le_bytes());
+                                let _ = level_meter.send(Response::new(bytes.to_vec())); // Response::new only accept Vec<u8> for bytes and consume it.
                             }
+                        } else {
+                            log::debug!("level_meter unregistered.");
+                            if level_meter_rx
+                                .wait_for(|meter| meter.is_some())
+                                .await
+                                .is_err()
+                            {
+                                break; // level_meter_tx is dropped.
+                            }
+                            log::debug!("level_meter registered.");
                         }
                     }
                 } else {
@@ -276,6 +293,7 @@ pub fn run() {
             command::file_save_as,
             command::export_to_folder,
             command::listen_level_meter,
+            command::unlisten_level_meter,
             command::get_hardware,
             command::controller::go,
             command::controller::pause,

@@ -26,7 +26,7 @@
         <v-window-item value="list" class="d-flex h-100">
           <cue-list />
         </v-window-item>
-        <v-window-item value="controls" class="h-100">
+        <v-window-item v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0" value="controls" class="h-100">
           <controls-panel />
         </v-window-item>
         <v-window-item value="monitor" class="h-100">
@@ -39,7 +39,7 @@
         <v-icon :icon="mdiFormatListBulleted" />
         <span>{{ t('main.mobile.list') }}</span>
       </v-btn>
-      <v-btn v-show="uiState.mode != 'view'" @click="activeTab = 'controls'">
+      <v-btn v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0" @click="activeTab = 'controls'">
         <v-icon :icon="mdiRemote" />
         <span>{{ t('main.mobile.controls') }}</span>
       </v-btn>
@@ -57,16 +57,23 @@
 
 import { useNow } from '@vueuse/core';
 import { mdiFormatListBulleted, mdiMonitor, mdiRemote } from '@mdi/js';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import ControlsPanel from './components/mobile/ControlsPanel.vue';
 import MonitorPanel from './components/mobile/MonitorPanel.vue';
 import CueList from './components/mobile/CueList.vue';
 import { useI18n } from 'vue-i18n';
 import { useUiState } from './stores/uistate';
+import { PERMISSIONS } from './utils.ts';
 
 const uiState = useUiState();
 
 const activeTab = ref('list');
 const { t } = useI18n();
 const time = useNow();
+
+watch(() => uiState.permission, (newValue) => {
+  if ((newValue & PERMISSIONS.CONTROL) == 0 && activeTab.value == 'controls') {
+    activeTab.value = 'list';
+  }
+})
 </script>
