@@ -187,7 +187,7 @@ watch(selectedCue, () => {
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   color.value = selectedCue.value != null ? selectedCue.value.color : null;
   target.value
-    = overridedChain.value != null && overridedChain.value.type !== 'doNotChain'
+    = overridedChain.value != null && overridedChain.value.type !== 'doNotChain' && overridedChain.value.targetId !== NIL
       ? overridedChain.value.targetId
       : null;
 });
