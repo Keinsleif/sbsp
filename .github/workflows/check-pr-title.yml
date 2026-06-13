@@ -1,0 +1,22 @@
+name: Check PR Title
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Conventional Commits format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          scopes: |
+            app
+            remote_app
+            backend
+            frontend
+            license
+            docs
+            deps
