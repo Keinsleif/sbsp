@@ -1,26 +1,23 @@
-name: 'generate-notices'
+name: 'check-license-notices'
 
 on:
-  push:
+  pull_request:
     branches:
       - master
     paths:
       - 'Cargo.lock'
+      - 'THIRD_PARTY_NOTICES.md'
       - 'sbsp_frontend/pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
       - 'scripts/notice_json2md.js'
-      - .github/workflows/generate-notices.yml
+      - .github/workflows/check-license-notices.yml
   workflow_dispatch:
-
-concurrency:
-  group: generate-notices
-  cancel-in-progress: true
 
 jobs:
   generate:
     permissions:
-      contents: write
+      contents: read
 
     runs-on: ubuntu-latest
     steps:
@@ -68,12 +65,9 @@ jobs:
           rm ./tmp.json
         working-directory: ./scripts
 
-      - name: setup git
+      - name: Verify no changes
         run: |
-          git config --local user.email "mountaindull@gmail.com"
-          git config --local user.name "Keinsleif (Github Actions)"
-
-      - name: commit
-        run: |
-          git add THIRD_PARTY_NOTICES.md
-          git diff-index --quiet HEAD || (git commit -m "update: THIRD_PARTY_NOTICES.md" && git pull && git push origin master)
+          if ! git diff --exit-code THIRD_PARTY_NOTICES.md; then
+            echo "::error::THIRD_PARTY_NOTICES.md is not latest. please update via mise generate_notices manually."
+            exit 1
+          fi

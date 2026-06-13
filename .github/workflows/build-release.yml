@@ -78,7 +78,7 @@ jobs:
         with:
           tagName: sbsp-v__VERSION__
           releaseName: 'SBS Player v__VERSION__'
-          projectPath: ./sbsp_tauri
+          projectPath: ./sbsp_app
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
@@ -95,7 +95,7 @@ jobs:
         with:
           tagName: sbsp_remote-v__VERSION__
           releaseName: 'SBS Player Remote v__VERSION__'
-          projectPath: ./sbsp_remote
+          projectPath: ./sbsp_remote_app
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false

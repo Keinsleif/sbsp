@@ -4065,6 +4065,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "sbsp_app"
+version = "2.4.3"
+dependencies = [
+ "anyhow",
+ "humantime",
+ "log",
+ "sbsp_backend",
+ "sbsp_license",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-updater",
+ "tauri-plugin-window-state",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower-http",
+ "ts-rs",
+]
+
+[[package]]
 name = "sbsp_backend"
 version = "1.5.1"
 dependencies = [
@@ -4110,7 +4135,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sbsp_remote"
+name = "sbsp_remote_app"
 version = "2.4.3"
 dependencies = [
  "anyhow",
@@ -4128,31 +4153,6 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
  "tokio",
- "ts-rs",
-]
-
-[[package]]
-name = "sbsp_tauri"
-version = "2.4.3"
-dependencies = [
- "anyhow",
- "humantime",
- "log",
- "sbsp_backend",
- "sbsp_license",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-updater",
- "tauri-plugin-window-state",
- "thiserror 2.0.18",
- "tokio",
- "tower-http",
  "ts-rs",
 ]
 

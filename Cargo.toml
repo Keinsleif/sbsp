@@ -3,8 +3,8 @@ resolver = "3"
 members = [
     "sbsp_backend",
     "sbsp_license",
-    "sbsp_tauri",
-    "sbsp_remote",
+    "sbsp_app",
+    "sbsp_remote_app",
 ]
 
 [workspace.package]

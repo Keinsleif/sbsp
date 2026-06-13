@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "mainBinaryName": "sbsp_tauri",
+  "mainBinaryName": "sbsp",
   "productName": "SBS Player",
   "identifier": "com.keinsleif.sbsp",
   "build": {

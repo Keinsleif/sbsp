@@ -6,5 +6,5 @@
 
 #[tokio::main]
 async fn main() {
-    sbsp_remote_lib::run()
+    sbsp_app_lib::run()
 }

@@ -1,5 +1,5 @@
 [package]
-name = "sbsp_remote"
+name = "sbsp_remote_app"
 description = "A SBS Player Remote Control App powered by tauri."
 authors.workspace = true
 version.workspace = true
@@ -15,7 +15,7 @@ publish.workspace = true
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "sbsp_remote_lib"
+name = "sbsp_remote_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
