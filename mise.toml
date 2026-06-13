@@ -1,7 +1,15 @@
 [tools]
-node = "lts"
+node = "24"
 pnpm = "11"
 rust = "latest"
 "cargo:tauri-cli" = { version = "latest", depends = ["rust"] }
 "cargo:cargo-about" = { version = "latest", depends = ["rust"] }
 "cargo:cargo-audit" = { version = "latest", depends = ["rust"] }
+
+[tasks.generate_notices]
+run = [
+'cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md',
+'cd ./sbsp_frontend && pnpm exec license-checker-rseidelsohn --excludePackages sbsp_frontend --direct false --production --json --out ../scripts/tmp.json',
+'cd ./scripts && node notice_json2md.js',
+'rm ./scripts/tmp.json',
+]

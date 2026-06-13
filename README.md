@@ -55,12 +55,12 @@ cargo install tauri-cli --version "^2.0.0" --locked
 
     ```bash
     # SBS Player をビルド
-    cd ../sbsp_tauri
+    cd ../sbsp_app
 
     cargo tauri build
 
     # SBS Player Remote をビルド
-    cd ../sbsp_remote
+    cd ../sbsp_remote_app
 
     cargo tauri build
     ```
