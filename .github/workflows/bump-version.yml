@@ -1,0 +1,26 @@
+name: Bump Version
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cocogitto/cocogitto-action@v4
+        with:
+          command: bump
+          args: --auto
+          git-user: github-actions[bot]
+          git-user-email: github-actions[bot]@users.noreply.github.com
+
+      - name: Push tags
+        run: git push --follow-tags
