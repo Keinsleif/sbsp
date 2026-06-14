@@ -2,8 +2,7 @@ name: 'check-license-notices'
 
 on:
   pull_request:
-    branches:
-      - master
+    branches: [dev]
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
