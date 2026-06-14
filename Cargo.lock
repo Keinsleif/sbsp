@@ -4066,7 +4066,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_app"
-version = "2.4.3"
+version = "2.4.4"
 dependencies = [
  "anyhow",
  "humantime",
@@ -4091,7 +4091,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_backend"
-version = "1.5.1"
+version = "1.5.2"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -4136,7 +4136,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_remote_app"
-version = "2.4.3"
+version = "2.4.4"
 dependencies = [
  "anyhow",
  "humantime",

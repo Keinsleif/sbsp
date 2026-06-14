@@ -1,8 +1,8 @@
 [package]
 name = "sbsp_remote_app"
 description = "A SBS Player Remote Control App powered by tauri."
+version = "2.4.4"
 authors.workspace = true
-version.workspace = true
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
