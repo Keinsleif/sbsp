@@ -186,7 +186,8 @@ impl CueController {
                 let state = self.state_tx.borrow().clone();
 
                 for cue_id in state.active_cues.keys() {
-                    if let Some(cue) = self.model_handle.get_cue_by_id(cue_id).await && !matches!(cue.params, CueParam::Group { .. }) {
+                    let is_group = self.model_handle.get_cue_by_id(cue_id).await.is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
+                    if !is_group {
                         let executor_command = command.try_all_into_single_executor_command(*cue_id);
                         self.executor_tx.send(executor_command).await?;
                     }
