@@ -89,11 +89,15 @@ impl CueController {
                         Ok(event) => {
                             match event {
                                 BackendEvent::ShowModelLoaded{..} => {
-                                    if self.state_tx.borrow().playback_cursor.is_none() {
+                                    {
                                         let model = self.model_handle.read().await;
                                         if let Some(first_cue) = model.cues.first() {
                                             self.state_tx.send_modify(|state| {
                                                 state.playback_cursor = Some(first_cue.id);
+                                            });
+                                        } else {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = None;
                                             });
                                         }
                                     }
@@ -105,14 +109,9 @@ impl CueController {
                                     }
                                 },
                                 BackendEvent::ShowModelReset{..} => {
-                                    if self.state_tx.borrow().playback_cursor.is_none() {
-                                        let model = self.model_handle.read().await;
-                                        if let Some(first_cue) = model.cues.first() {
-                                            self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = Some(first_cue.id);
-                                            });
-                                        }
-                                    }
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = None;
+                                    });
                                     if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
                                         log::error!("Failed to stop active cues before load. {}", e);
                                     }
