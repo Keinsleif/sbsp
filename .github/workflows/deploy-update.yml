@@ -9,7 +9,7 @@ on:
         description: 'Target Release Tag'
         required: true
         type: string
-        default: 'sbsp-v1.2.1'
+        default: 'app-1.2.1'
 
 jobs:
   upload:
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - run: mkdir upload
 

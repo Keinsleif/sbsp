@@ -2,8 +2,7 @@ name: 'check-license-notices'
 
 on:
   pull_request:
-    branches:
-      - master
+    branches: [dev]
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
@@ -22,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: setup pnpm
         uses: pnpm/action-setup@v6
