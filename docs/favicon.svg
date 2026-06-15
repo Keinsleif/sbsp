@@ -1,17 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="160" height="160" viewBox="0 0 160 160">
-  <rect x="2" y="2" width="156" height="156" rx="20" stroke="black" stroke-width="2" fill="#E0F2F7"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
 
-  <polygon points="60,50 110,80 60,110" fill="#1976D2"/>
-
-  <rect x="22" y="50" width="8" height="60" rx="2" fill="#607D8B"/>
-  <rect x="37" y="60" width="8" height="40" rx="2" fill="#607D8B"/>
-  <rect x="7" y="70" width="8" height="20" rx="2" fill="#607D8B"/>
-
-  <rect x="130" y="50" width="8" height="60" rx="2" fill="#42A5F5"/>
-  <rect x="145" y="60" width="8" height="40" rx="2" fill="#42A5F5"/>
-  <rect x="115" y="70" width="8" height="20" rx="2" fill="#42A5F5"/>
-
-  <text x="80" y="40" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#333333" text-anchor="middle">SBS</text>
-
-  <text x="80" y="145" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#333333" text-anchor="middle">Player</text>
+<svg width="512" height="512" viewBox="0 0 512 512" version="1.1" id="svg1" xml:space="preserve"
+  xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+  <metadata>
+    SPDX-License-Identifier: Elastic-2.0
+    Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+  </metadata>
+  <defs id="defs1" />
+  <g id="layer1">
+    <rect
+      style="display:inline;fill:#102039;fill-opacity:1;stroke:#5b6b84;stroke-width:9.92195;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+      id="rect7" width="502.07806" height="502.07806" x="4.9609752" y="4.9609752" rx="88.255913" ry="88.255913" />
+    <path id="path6"
+      style="baseline-shift:baseline;display:inline;overflow:visible;opacity:1;vector-effect:none;fill:#f6ffd5;stroke-linecap:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1"
+      d="m 207.12695,244 a 115,115 0 0 1 46.59961,32 H 340 c 23.79743,0 40.07671,8.96468 51.51758,22.01953 C 402.95845,311.07438 409,328.8076 409,345 c 0,31.54392 -25.07301,69 -69,69 h -75.88672 a 115,115 0 0 1 -30.6914,32 H 340 c 62.02113,0 101,-52.40516 101,-101 0,-23.87698 -8.39204,-48.64446 -25.41797,-68.07227 C 398.5561,257.49993 372.33539,244 340,244 Z" />
+    <path id="path5"
+      style="display:inline;fill:none;stroke:#00c9cb;stroke-width:32;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+      d="m 90,350 c 0,45.87364 30.32386,79.99999 80,80 49.67614,0 80,-32.38706 80,-80 0,-45.67491 -35.03897,-72.8142 -80,-90 -44.96103,-17.1858 -79.296152,-39.42902 -80,-90 -0.661818,-47.55121 35.99176,-79.370236 80,-80 44.00824,-0.629764 80,33.15328 80,80" />
+    <path id="path7"
+      style="display:inline;fill:#5fd35f;fill-opacity:1;stroke:none;stroke-width:42.581;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+      d="m 310,75 v 150 l 122,-75 z m 22,40 60,35 -60,35 z" />
+    <path
+      style="display:inline;fill:none;fill-opacity:1;stroke:#ffcc00;stroke-width:29.818;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+      d="m 294.909,344.90689 40,-40 v 80 l 40,-40" id="path8" />
+  </g>
 </svg>
