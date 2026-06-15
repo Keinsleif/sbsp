@@ -2,8 +2,6 @@ name: 'build-remote-release'
 
 on:
   push:
-    branches:
-      - master
     tags:
       - remote_app-**
 
