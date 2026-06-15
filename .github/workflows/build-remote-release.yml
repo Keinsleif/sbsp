@@ -7,7 +7,7 @@ on:
 
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 concurrency:
-  group: build-remote-release
+  group: ${{ github.workflow }}-${{ github.ref }}  
   cancel-in-progress: true
 
 jobs:
