@@ -66,8 +66,8 @@
     </v-footer>
     <v-overlay
       :model-value="overlay"
+      location="center"
       persistent
-      class="align-center justify-center"
     >
       <v-progress-circular
         color="primary"
