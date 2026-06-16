@@ -8,9 +8,9 @@ repository.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "apiserver"
+name = "server"
 path = "src/main.rs"
-required-features = ["backend", "apiserver", "cli"]
+required-features = ["backend", "server", "cli"]
 
 [features]
 default = ["backend"]
@@ -25,7 +25,7 @@ backend = [
     "dep:ebur128",
     "dep:normpath",
 ]
-apiserver = [
+server = [
     "backend",
     "dep:axum",
     "dep:rand",
@@ -36,7 +36,7 @@ apiserver = [
     "dep:gethostname",
     "dep:serde_json",
 ]
-apiclient = [
+client = [
     "backend",
     "dep:tokio-tungstenite",
     "dep:futures-util",

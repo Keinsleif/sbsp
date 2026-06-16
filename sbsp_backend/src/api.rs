@@ -6,17 +6,17 @@ use crate::{
     event::BackendEvent, manager::ModelCommand,
 };
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "apiclient")]
+#[cfg(feature = "client")]
 pub mod client;
 mod file_list;
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 pub mod server;
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 mod auth;
 
 #[cfg(feature = "type_export")]
@@ -31,7 +31,7 @@ pub use file_list::FileList;
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct Permissions(u8);
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 bitflags! {
     impl Permissions: u8 {
         const READ = 0b0001;
