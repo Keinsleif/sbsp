@@ -89,11 +89,15 @@ impl CueController {
                         Ok(event) => {
                             match event {
                                 BackendEvent::ShowModelLoaded{..} => {
-                                    if self.state_tx.borrow().playback_cursor.is_none() {
+                                    {
                                         let model = self.model_handle.read().await;
                                         if let Some(first_cue) = model.cues.first() {
                                             self.state_tx.send_modify(|state| {
                                                 state.playback_cursor = Some(first_cue.id);
+                                            });
+                                        } else {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = None;
                                             });
                                         }
                                     }
@@ -102,6 +106,17 @@ impl CueController {
                                     }
                                     if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
                                         log::error!("Failed to stop active cues before load. {}", e);
+                                    }
+                                },
+                                BackendEvent::ShowModelReset{..} => {
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = None;
+                                    });
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before reset. {}", e);
+                                    }
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before reset. {}", e);
                                     }
                                 },
                                 BackendEvent::CueRemoved{cue_ids} => {
@@ -186,8 +201,11 @@ impl CueController {
                 let state = self.state_tx.borrow().clone();
 
                 for cue_id in state.active_cues.keys() {
-                    let executor_command = command.try_all_into_single_executor_command(*cue_id);
-                    self.executor_tx.send(executor_command).await?;
+                    let is_group = self.model_handle.get_cue_by_id(cue_id).await.is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
+                    if !is_group {
+                        let executor_command = command.try_all_into_single_executor_command(*cue_id);
+                        self.executor_tx.send(executor_command).await?;
+                    }
                 }
                 Ok(())
             }
