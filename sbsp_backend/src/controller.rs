@@ -113,10 +113,10 @@ impl CueController {
                                         state.playback_cursor = None;
                                     });
                                     if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
-                                        log::error!("Failed to stop active cues before load. {}", e);
+                                        log::error!("Failed to stop active cues before reset. {}", e);
                                     }
                                     if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
-                                        log::error!("Failed to stop active cues before load. {}", e);
+                                        log::error!("Failed to stop active cues before reset. {}", e);
                                     }
                                 },
                                 BackendEvent::CueRemoved{cue_ids} => {
