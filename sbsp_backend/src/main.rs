@@ -5,9 +5,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use sbsp_backend::{
-    BackendSettings,
-    api::{ApiServerOptions, server::start_apiserver},
-    start_backend,
+    BackendAudioSettings, BackendSettings, api::{ApiServerOptions, server::start_apiserver}, start_backend
 };
 use tokio::sync::watch;
 
@@ -22,15 +20,45 @@ struct Args {
     #[arg(short, long, default_value = "SBS Player API Server")]
     discovery: Option<String>,
 
-    #[arg(short, long)]
-    password: Option<String>,
+    #[arg(long, long_about = "")]
+    auth: Option<String>,
+
+    #[arg(long)]
+    advance_cursor_when_go: bool,
+
+    #[arg(long)]
+    copy_assets_when_add: bool,
+
+    #[arg(long)]
+    get_hardware: bool,
+
+    #[args(long)]
+    device_id: Option<String>,
+
+    #[args(long)]
+    channel_count: Option<u16>,
+
+    #[args(long)]
+    sample_rate: Option<u32>,
+
+    #[args(long)]
+    buffer_size: Option<u32>,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
     let args = Args::parse();
-    let (_, settings_rx) = watch::channel(BackendSettings::default());
+    let (_, settings_rx) = watch::channel(BackendSettings {
+        advance_cursor_when_go: args.advance_cursor_when_go,
+        copy_assets_when_add: args.copy_assets_when_add,
+        audio: BackendAudioSettings {
+            device_id: args.device_id,
+            channel_count: args.channel_count,
+            sample_rate: args.channel_count,
+            buffer_size: args.buffer_size
+        },
+    });
 
     let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, false) {
         Ok(backends) => backends,
