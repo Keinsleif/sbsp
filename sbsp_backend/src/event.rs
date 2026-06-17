@@ -11,7 +11,8 @@ use crate::executor::ExecutorEvent;
 use crate::{
     asset_processor::{AssetData, AssetMetadata},
     controller::state::StateParam,
-    model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings},
+    model::{ShowModel, cue::Cue, settings::ShowSettings},
+    manager::ProjectType,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

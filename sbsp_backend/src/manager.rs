@@ -8,7 +8,7 @@ mod project;
 use anyhow::anyhow;
 pub use command::{InsertPosition, ModelCommand};
 pub use handle::ShowModelHandle;
-pub use project::{ProjectFile, ProjectStatus};
+pub use project::{ProjectType, ProjectFile, ProjectStatus};
 
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
@@ -25,7 +25,7 @@ use crate::{
     BackendSettings,
     event::{BackendError, BackendEvent},
     model::{
-        ProjectType, ShowModel,
+        ShowModel,
         cue::{Cue, CueParam},
     },
 };

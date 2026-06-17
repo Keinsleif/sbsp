@@ -5,7 +5,16 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::model::{ProjectType, ShowModel};
+use crate::model::ShowModel;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub enum ProjectType {
+    #[default]
+    SingleFile,
+    ProjectFolder,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -33,7 +42,6 @@ impl ProjectStatus {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct ProjectFile {
     pub project_type: ProjectType,
     pub model: ShowModel,

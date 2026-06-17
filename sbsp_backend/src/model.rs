@@ -26,12 +26,3 @@ impl Default for ShowModel {
         }
     }
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub enum ProjectType {
-    #[default]
-    SingleFile,
-    ProjectFolder,
-}

@@ -34,8 +34,7 @@ use crate::{
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
     event::{BackendEvent, CueState, SyncData},
-    manager::ProjectStatus,
-    model::ProjectType,
+    manager::{ProjectStatus, ProjectType},
 };
 
 const SMOOTH_FACTOR: f64 = 0.2;

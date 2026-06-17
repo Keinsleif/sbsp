@@ -60,7 +60,7 @@ pub mod manager {
     mod command;
     pub use command::{InsertPosition, ModelCommand};
     mod project;
-    pub use project::{ProjectFile, ProjectStatus};
+    pub use project::{ProjectType, ProjectFile, ProjectStatus};
 }
 #[cfg(feature = "type_export")]
 pub mod api;
