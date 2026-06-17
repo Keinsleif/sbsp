@@ -332,7 +332,7 @@ impl CueController {
                 if let Some(chain) = self.model_handle.get_cue_chain_by_id(cue_id).await {
                     match &chain {
                         CueChain::AfterComplete { .. } => {
-                            self.wait_tasks.insert(*cue_id, chain.clone());
+                            self.wait_tasks.insert(*cue_id, chain);
                         }
                         CueChain::AfterStart { target_id } => {
                             if let Some(target) = target_id {

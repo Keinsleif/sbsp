@@ -274,12 +274,12 @@ impl ShowModelHandle {
                                     }
                                 }
                                 GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
-                                    return Some(cue.chain.clone());
+                                    return Some(cue.chain);
                                 }
                             }
                         }
                     } else {
-                        return Some(cue.chain.clone());
+                        return Some(cue.chain);
                     }
                 }
 
