@@ -10,7 +10,7 @@ pub use uuid::Uuid;
 
 use crate::model::cue::{
     audio::{AudioCueParam, Decibels, FadeParam},
-    group::GroupMode,
+    group::GroupCueParamBase,
 };
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
@@ -68,30 +68,55 @@ pub enum CueChain {
 )]
 pub enum CueParam {
     Audio(AudioCueParam),
-    Wait {
-        duration: f64,
-    },
-    Fade {
-        target: Uuid,
-        volume: Decibels,
-        fade_param: FadeParam,
-    },
-    Start {
-        target: Uuid,
-    },
-    Stop {
-        target: Uuid,
-        #[serde(default)]
-        hard: bool,
-    },
-    Pause {
-        target: Uuid,
-    },
-    Load {
-        target: Uuid,
-    },
+    Wait (WaitCueParam),
+    Fade (FadeCueParam),
+    Start (StartCueParam),
+    Stop (StopCueParam),
+    Pause (PauseCueParam),
+    Load (LoadCueParam),
     Group {
-        mode: GroupMode,
+        #[serde(flatten)]
+        base: GroupCueParamBase,
         children: Box<Vec<Cue>>,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct WaitCueParam {
+    pub duration: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct FadeCueParam {
+    pub target: Uuid,
+    pub volume: Decibels,
+    pub fade_param: FadeParam,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct StartCueParam {
+    pub target: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct StopCueParam {
+    pub target: Uuid,
+    #[serde(default)]
+    pub hard: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct PauseCueParam {
+    pub target: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct LoadCueParam {
+    pub target: Uuid,
 }

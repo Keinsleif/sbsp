@@ -256,8 +256,8 @@ impl ShowModelHandle {
             for (index, cue) in cues.iter().enumerate() {
                 if cue.id == *cue_id {
                     if let Some(parent_cue) = parent {
-                        if let CueParam::Group { mode, .. } = &parent_cue.params {
-                            match mode {
+                        if let CueParam::Group { base, .. } = &parent_cue.params {
+                            match &base.mode {
                                 GroupMode::Playlist { repeat } => {
                                     if (index + 1) == cues.len()
                                         && let Some(first_cue) = cues.first()

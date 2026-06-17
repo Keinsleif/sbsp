@@ -266,9 +266,9 @@ impl CueController {
             anyhow::bail!("Playback cursor unavailable.");
         };
         let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await
-            && let CueParam::Group { mode, children } = &cue.params
-            && let GroupMode::StartFirst { enter } = mode
-            && *enter
+            && let CueParam::Group { base, children } = &cue.params
+            && let GroupMode::StartFirst { enter } = base.mode
+            && enter
         {
             if let Some(target_cue) = children.get(1) {
                 Some(target_cue.id)
