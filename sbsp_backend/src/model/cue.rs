@@ -150,6 +150,7 @@ pub enum CueParam {
     Pause (PauseCueParam),
     Load (LoadCueParam),
     Group {
+        #[serde(flatten)]
         base: GroupCueParamBase,
         children: Vec<Uuid>,
     },
