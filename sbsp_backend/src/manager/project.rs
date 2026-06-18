@@ -4,8 +4,9 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::model::ShowModel;
+use crate::model::{ShowModel, cue::{CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase}, settings::ShowSettings};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -44,5 +45,71 @@ impl ProjectStatus {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ProjectFile {
     pub project_type: ProjectType,
-    pub model: ShowModel,
+    pub model: ProjectShowModel,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectShowModel {
+    name: String,
+    cues: Vec<ProjectCue>,
+    settings: ShowSettings,
+}
+
+impl Default for ProjectShowModel {
+    fn default() -> Self {
+        Self {
+            name: "Untitled".into(),
+            cues: Vec::new(),
+            settings: ShowSettings::default(),
+        }
+    }
+}
+
+impl From<ShowModel> for ProjectShowModel {
+    fn from(value: ShowModel) -> Self {
+        Self { name: value.name, cues: value.cue_list.into(), settings: value.settings }
+    }
+}
+
+impl From<ProjectShowModel> for ShowModel {
+    fn from(value: ProjectShowModel) -> Self {
+        Self { name: value.name, cue_list: value.cues.into(), settings: value.settings }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectCue {
+    pub id: Uuid,
+    pub number: String,
+    pub name: Option<String>,
+    pub notes: String,
+    #[serde(default)]
+    pub color: CueColor,
+    pub pre_wait: f64,
+    #[serde(default)]
+    pub chain: CueChain,
+    pub params: ProjectCueParam,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(
+    tag = "type",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum ProjectCueParam {
+    Audio(AudioCueParam),
+    Wait (WaitCueParam),
+    Fade (FadeCueParam),
+    Start (StartCueParam),
+    Stop (StopCueParam),
+    Pause (PauseCueParam),
+    Load (LoadCueParam),
+    Group {
+        #[serde(flatten)]
+        base: GroupCueParamBase,
+        children: Box<Vec<ProjectCue>>,
+    },
 }

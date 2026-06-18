@@ -21,7 +21,7 @@ use crate::{
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
     event::{BackendError, BackendEvent},
-    manager::{ModelCommand, ProjectStatus, ShowModelHandle},
+    manager::{ModelCommand, ShowModelHandle, project::ProjectStatus},
     model::ShowModel,
 };
 pub use file_list_handler::FileListHandle;
@@ -160,7 +160,7 @@ pub async fn create_remote_backend(
                                     }
                                     WsFeedback::FullShowState(full_state) => {
                                         if let Some(responder) = full_state_responder.take()
-                                        && responder.send(full_state.clone()).is_err() {
+                                        && responder.send(*full_state.clone()).is_err() {
                                             log::error!("Error while responding full state request.");
                                         }
 

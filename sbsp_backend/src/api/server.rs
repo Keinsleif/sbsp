@@ -33,8 +33,7 @@ use crate::{
     },
     asset_processor::AssetProcessorCommand,
     controller::state::ShowState,
-    event::{BackendEvent, CueState, SyncData},
-    manager::{ProjectStatus, ProjectType},
+    event::{BackendEvent, CueState, SyncData}, manager::project::{ProjectStatus, ProjectType},
 };
 
 const SMOOTH_FACTOR: f64 = 0.2;
@@ -349,7 +348,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                             show_state,
                                         };
 
-                                        let ws_message = WsFeedback::FullShowState(full_state);
+                                        let ws_message = WsFeedback::FullShowState(Box::new(full_state));
                                         if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                             log::info!("WebSocket client disconnected (send error).");
                                             break;

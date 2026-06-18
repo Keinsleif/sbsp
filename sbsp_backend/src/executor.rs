@@ -251,8 +251,8 @@ impl Executor {
             }
             CueParam::Group { base, children } => match base.mode {
                 GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
-                    if let Some(first_cue) = children.first() {
-                        self.process_command(ExecutorCommand::Load(first_cue.id))
+                    if let Some(first_id) = children.first() {
+                        self.process_command(ExecutorCommand::Load(*first_id))
                             .await?;
                         self.executor_event_tx
                             .send(ExecutorEvent::Loaded {
@@ -274,8 +274,8 @@ impl Executor {
                 }
                 GroupMode::Concurrency => {
                     if !children.is_empty() {
-                        for cue in children.iter() {
-                            self.process_command(ExecutorCommand::Load(cue.id)).await?;
+                        for cue_id in children.iter() {
+                            self.process_command(ExecutorCommand::Load(*cue_id)).await?;
                         }
                         self.executor_event_tx
                             .send(ExecutorEvent::Loaded {
@@ -504,7 +504,7 @@ impl Executor {
             }
             CueParam::Group { base, children } => match base.mode {
                 GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
-                    if let Some(first_cue) = children.first() {
+                    if let Some(first_id) = children.first() {
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
@@ -513,7 +513,7 @@ impl Executor {
                                 initial_params: StateParam::None,
                             })
                             .await?;
-                        self.process_command(ExecutorCommand::Execute(first_cue.id))
+                        self.process_command(ExecutorCommand::Execute(*first_id))
                             .await?;
                         self.active_instances.insert(
                             cue.id,
@@ -548,8 +548,8 @@ impl Executor {
                                 initial_params: StateParam::None,
                             })
                             .await?;
-                        for cue in children.iter() {
-                            self.process_command(ExecutorCommand::Execute(cue.id))
+                        for cue_id in children.iter() {
+                            self.process_command(ExecutorCommand::Execute(*cue_id))
                                 .await?;
                         }
                         self.active_instances.insert(
@@ -615,9 +615,9 @@ impl Executor {
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                         && let CueParam::Group { children, .. } = cue.params
                     {
-                        for child in children.iter() {
-                            if self.active_instances.contains_key(&child.id) {
-                                self.process_command(ExecutorCommand::Pause(child.id))
+                        for child_id in children.iter() {
+                            if self.active_instances.contains_key(child_id) {
+                                self.process_command(ExecutorCommand::Pause(*child_id))
                                     .await?;
                             }
                         }
@@ -663,9 +663,9 @@ impl Executor {
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                         && let CueParam::Group { children, .. } = cue.params
                     {
-                        for child in children.iter() {
-                            if self.active_instances.contains_key(&child.id) {
-                                self.process_command(ExecutorCommand::Resume(child.id))
+                        for child_id in children.iter() {
+                            if self.active_instances.contains_key(child_id) {
+                                self.process_command(ExecutorCommand::Resume(*child_id))
                                     .await?;
                             }
                         }
@@ -711,9 +711,9 @@ impl Executor {
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                         && let CueParam::Group { children, .. } = cue.params
                     {
-                        for child in children.iter() {
-                            if self.active_instances.contains_key(&child.id) {
-                                self.process_command(ExecutorCommand::Stop(child.id))
+                        for child_id in children.iter() {
+                            if self.active_instances.contains_key(child_id) {
+                                self.process_command(ExecutorCommand::Stop(*child_id))
                                     .await?;
                                 stop_sent = true;
                             }
@@ -1062,8 +1062,8 @@ impl Executor {
         let mut stack = VecDeque::from([cue_id]);
 
         while let Some(target_id) = stack.pop_back() {
-            if let Some((_, Some(parent))) =
-                self.model_handle.get_cue_and_parent_by_id(&target_id).await
+            if let Some(parent) =
+                self.model_handle.get_parent_by_id(&target_id).await
             {
                 let mut need_notify_event = false;
                 self.active_instances
@@ -1108,14 +1108,14 @@ impl Executor {
         let mut stack = VecDeque::from([cue_id]);
 
         while let Some(target_id) = stack.pop_back() {
-            if let Some((_, Some(parent))) =
-                self.model_handle.get_cue_and_parent_by_id(&target_id).await
+            if let Some(parent) =
+                self.model_handle.get_parent_by_id(&target_id).await
                 && let CueParam::Group { children, .. } = parent.params
             {
                 let need_to_stop_parent = {
                     !children
                         .iter()
-                        .any(|cue| self.active_instances.contains_key(&cue.id))
+                        .any(|cue_id| self.active_instances.contains_key(cue_id))
                         && self.active_instances.contains_key(&parent.id)
                 };
 
@@ -1185,7 +1185,8 @@ mod tests {
         let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx);
         let mut write_lock = manager.write().await;
         write_lock.name = "TestShowModel".to_string();
-        write_lock.cues.push(Cue {
+        write_lock.cue_list.root_ids.push(cue_id);
+        write_lock.cue_list.cues.insert(cue_id, Cue {
             id: cue_id,
             number: "1".to_string(),
             name: None,
@@ -1193,6 +1194,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: model::cue::CueChain::DoNotChain,
+            parent_id: None,
             params: model::cue::CueParam::Audio(AudioCueParam {
                 target: PathBuf::from("./I.G.Y.flac"),
                 start_time: Some(5.0),

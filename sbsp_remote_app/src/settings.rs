@@ -85,6 +85,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
                     start_time: None,
@@ -106,6 +107,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Wait (WaitCueParam { duration: 5.0 }),
             },
             fade: Cue {
@@ -116,6 +118,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Fade ( FadeCueParam {
                     target: Uuid::nil(),
                     volume: Decibels::IDENTITY,
@@ -133,6 +136,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Start ( StartCueParam {
                     target: Uuid::nil(),
                 }),
@@ -145,6 +149,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Stop ( StopCueParam {
                     target: Uuid::nil(),
                     hard: false,
@@ -158,6 +163,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Pause ( PauseCueParam {
                     target: Uuid::nil(),
                 }),
@@ -170,6 +176,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Load ( LoadCueParam {
                     target: Uuid::nil(),
                 }),
@@ -182,11 +189,12 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Group {
                     base: GroupCueParamBase {
                         mode: GroupMode::Playlist { repeat: true },
                     },
-                    children: Box::new(Vec::new()),
+                    children: Vec::new(),
                 },
             },
         }

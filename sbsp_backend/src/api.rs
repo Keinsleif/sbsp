@@ -73,7 +73,7 @@ pub enum WsFeedback {
     Authenticated { perm: Permissions },
     Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
-    FullShowState(FullShowState),
+    FullShowState(Box<FullShowState>),
     Error(WsError),
 }
 

@@ -14,7 +14,7 @@ use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
 
 use crate::{
-    manager::{ModelCommand, ProjectStatus, command::InsertPosition},
+    manager::{ModelCommand, project::ProjectStatus, command::InsertPosition},
     model::{
         ShowModel,
         cue::{Cue, CueChain, CueParam, group::GroupMode},
@@ -154,71 +154,39 @@ impl ShowModelHandle {
 
     pub async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
         let model = self.read().await;
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
-
-        while let Some(cue) = queue.pop_front() {
-            if cue.id == *cue_id {
-                return true;
-            }
-
-            if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
-            }
-        }
-        false
+        model.cue_list.cues.contains_key(cue_id)
     }
 
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
-        let model = self.read().await;
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
-
-        while let Some(cue) = queue.pop_front() {
-            if cue.id == *cue_id {
-                return Some(cue.clone());
-            }
-
-            if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
-            }
-        }
-        None
+        self.read().await.cue_list.cues.get(cue_id).cloned()
     }
 
-    pub async fn get_cue_and_parent_by_id(&self, cue_id: &Uuid) -> Option<(Cue, Option<Cue>)> {
+    pub async fn get_parent_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
         let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
 
-        while let Some((cues, parent)) = queue.pop_front() {
-            for cue in cues {
-                if cue.id == *cue_id {
-                    return Some((cue.clone(), parent.cloned()));
-                }
-
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
-                }
-            }
-        }
-        None
+        model.cue_list.cues.get(cue_id).and_then(|cue| {
+            cue.parent_id.and_then(|parent_id| {
+                model.cue_list.cues.get(&parent_id).cloned()
+            })
+        })
     }
 
     pub async fn get_all_children_by_id(&self, cue_id: &Uuid) -> Vec<Cue> {
+        let model = self.model.read().await;
         let mut result = Vec::new();
-        let target_cue = self.get_cue_by_id(cue_id).await;
+        let target_cue = model.cue_list.cues.get(cue_id);
         if let Some(target) = target_cue
             && let CueParam::Group { children, .. } = &target.params
         {
-            let mut queue: VecDeque<&Vec<Cue>> = VecDeque::from([children.as_ref()]);
-            while let Some(cues) = queue.pop_front() {
-                for cue in cues {
-                    if let CueParam::Group { children, .. } = &cue.params {
-                        queue.push_back(children);
-                    } else {
-                        result.push(cue.clone());
+            let mut queue: VecDeque<&Vec<Uuid>> = VecDeque::from([children]);
+            while let Some(cue_ids) = queue.pop_front() {
+                for id in cue_ids {
+                    if let Some(cue) = model.cue_list.cues.get(id) {
+                        if let CueParam::Group { children, .. } = &cue.params {
+                            queue.push_back(children);
+                        } else {
+                            result.push(cue.clone());
+                        }
                     }
                 }
             }
@@ -227,21 +195,16 @@ impl ShowModelHandle {
     }
 
     pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
-        let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
-
-        while let Some((cues, _parent)) = queue.pop_front() {
-            for (index, cue) in cues.iter().enumerate() {
-                if cue.id == *cue_id {
-                    if index + 1 < cues.len() {
-                        return Some(cues[index + 1].id);
-                    } else {
-                        return None;
+        let model = self.model.read().await;
+        if let Some(cue) = model.cue_list.cues.get(cue_id) {
+            if let Some(parent_id) = cue.parent_id {
+                if let Some(parent) = model.cue_list.cues.get(&parent_id) && let CueParam::Group { children, .. } = &parent.params
+                    && let Some(idx) = children.iter().position(|id| id == cue_id) {
+                        return children.get(idx + 1).copied()
                     }
-                }
-
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
+            } else {
+                if let Some(idx) = model.cue_list.root_ids.iter().position(|id| id == cue_id) {
+                    return model.cue_list.root_ids.get(idx + 1).copied()
                 }
             }
         }
@@ -250,42 +213,36 @@ impl ShowModelHandle {
 
     pub async fn get_cue_chain_by_id(&self, cue_id: &Uuid) -> Option<CueChain> {
         let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
 
-        while let Some((cues, parent)) = queue.pop_front() {
-            for (index, cue) in cues.iter().enumerate() {
-                if cue.id == *cue_id {
-                    if let Some(parent_cue) = parent {
-                        if let CueParam::Group { base, .. } = &parent_cue.params {
-                            match &base.mode {
-                                GroupMode::Playlist { repeat } => {
-                                    if (index + 1) == cues.len()
-                                        && let Some(first_cue) = cues.first()
-                                    {
-                                        if *repeat {
-                                            return Some(CueChain::AfterComplete {
-                                                target_id: Some(first_cue.id),
-                                            });
-                                        } else {
-                                            return Some(CueChain::DoNotChain);
-                                        }
+        if let Some(cue) = model.cue_list.cues.get(cue_id) {
+            if let Some(parent_id) = cue.parent_id {
+                if let Some(parent) = model.cue_list.cues.get(&parent_id) {
+                    if let CueParam::Group { base, children } = &parent.params {
+                        match base.mode {
+                            GroupMode::Playlist { repeat } => {
+                                if children.last() == Some(cue_id)
+                                    && let Some(first_id) = children.first()
+                                {
+                                    if repeat {
+                                        return Some(CueChain::AfterComplete {
+                                            target_id: Some(*first_id),
+                                        });
                                     } else {
-                                        return Some(CueChain::AfterComplete { target_id: None });
+                                        return Some(CueChain::DoNotChain);
                                     }
+                                } else {
+                                    return Some(CueChain::AfterComplete { target_id: None });
                                 }
-                                GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
-                                    return Some(cue.chain);
-                                }
-                            }
+                            },
+                            GroupMode::Concurrency |
+                            GroupMode::StartFirst { .. } => return Some(cue.chain),
                         }
                     } else {
-                        return Some(cue.chain);
+                        log::warn!("broken cues, invalid parent_id.");
                     }
                 }
-
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
-                }
+            } else {
+                return Some(cue.chain)
             }
         }
         None
@@ -294,19 +251,14 @@ impl ShowModelHandle {
     pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
         let model = self.read().await;
         let mut result = HashSet::new();
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
 
-        while let Some(cue) = queue.pop_front() {
-            if let CueParam::Audio(param) = &cue.params {
-                if let Ok(path) = self.get_asset_standard_path(&param.target).await {
+        for cue in model.cue_list.cues.values() {
+            if let CueParam::Audio(params) = &cue.params
+                && let Ok(path) = self.get_asset_standard_path(&params.target).await {
                     result.insert(path);
                 }
-            } else if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
-            }
         }
+
         result
     }
 
