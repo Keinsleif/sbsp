@@ -610,8 +610,10 @@ impl ShowModelManager {
 
     async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
         let mut model = self.model.write().await;
-        if let Some(parent_id) = model.cue_list.cues.get(cue_id).and_then(|cue| cue.parent_id) && let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
-            children.retain(|id| id != cue_id);
+        if let Some(parent_id) = model.cue_list.cues.get(cue_id).and_then(|cue| cue.parent_id) {
+            if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
+                children.retain(|id| id != cue_id);
+            }
         } else {
             model.cue_list.root_ids.retain(|id| id != cue_id);
         }
@@ -624,6 +626,13 @@ impl ShowModelManager {
 
         cue_ids.retain(|cue_id| {
             if let Some(cue) = model.cue_list.cues.remove(cue_id) {
+                if let Some(parent_id) = &cue.parent_id {
+                    if let Some(parent) = model.cue_list.cues.get_mut(parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
+                        children.retain(|id| id != cue_id);
+                    }
+                } else {
+                    model.cue_list.root_ids.retain(|id| id != cue_id);
+                }
                 removed_cues.push(cue);
                 false
             } else {
