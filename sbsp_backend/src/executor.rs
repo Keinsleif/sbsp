@@ -234,10 +234,10 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Start { .. }
-            | CueParam::Stop { .. }
-            | CueParam::Pause { .. }
-            | CueParam::Load { .. } => {
+            CueParam::Start(_)
+            | CueParam::Stop(_)
+            | CueParam::Pause(_)
+            | CueParam::Load(_) => {
                 log::warn!("Loading transport cues is not available. ignoring...");
                 self.active_instances.insert(
                     cue.id,
