@@ -10,6 +10,7 @@ use anyhow::anyhow;
 pub use command::{InsertPosition, ModelCommand};
 pub use handle::ShowModelHandle;
 
+use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::{
@@ -945,38 +946,66 @@ impl ShowModelManager {
                     && *project_type == ProjectType::ProjectFolder
                     && path != saved_path
                 {
-                    let mut model = self.model.write().await;
+                    let Some(parent) = saved_path.parent() else {
+                        return Err(anyhow!("Invalid project folder path."));
+                    };
+                    let mut targets: HashMap<_, _> = {
+                        let model = self.read().await;
+                        model.cue_list.cues.values().filter_map(|cue| {
+                            if let CueParam::Audio(params) = &cue.params {
+                                Some((cue.id, params.target.clone()))
+                            } else {
+                                None
+                            }
+                        }).collect()
+                    };
 
-                    for cue in model.cue_list.cues.values_mut() {
-                        if let CueParam::Audio(audio_param) = &mut cue.params
-                            && let Some(parent) = saved_path.parent()
-                        {
-                            let asset_path = parent.join(&audio_param.target);
-                            let new_path = Self::import_asset_file(
-                                &asset_path,
-                                project_dir,
-                                &import_destination,
-                            )
-                            .await?;
-                            audio_param.target = new_path;
+                    for target in targets.values_mut() {
+                        let asset_path = parent.join(&*target);
+                        let new_path = Self::import_asset_file(
+                            &asset_path,
+                            project_dir,
+                            &import_destination,
+                        )
+                        .await?;
+                        *target = new_path;
+                    }
+
+                    let mut model = self.model.write().await;
+                    for (id, target) in targets {
+                        if let Some(cue) = model.cue_list.cues.get_mut(&id) && let CueParam::Audio(params) = &mut cue.params {
+                            params.target = target;
                         }
                     }
                 } else {
-                    let mut model = self.model.write().await;
+                    let mut targets: HashMap<_, _> = {
+                        let model = self.read().await;
+                        model.cue_list.cues.values().filter_map(|cue| {
+                            if let CueParam::Audio(params) = &cue.params && params.target.is_absolute() {
+                                Some((cue.id, params.target.clone()))
+                            } else {
+                                None
+                            }
+                        }).collect()
+                    };
 
-                    for cue in model.cue_list.cues.values_mut() {
-                        if let CueParam::Audio(audio_param) = &mut cue.params
-                            && audio_param.target.is_absolute()
-                        {
-                            let new_path = Self::import_asset_file(
-                                &audio_param.target,
-                                project_dir,
-                                &import_destination,
-                            )
-                            .await?;
-                            audio_param.target = new_path;
+                    for target in targets.values_mut() {
+                        let new_path = Self::import_asset_file(
+                            &*target,
+                            project_dir,
+                            &import_destination,
+                        )
+                        .await?;
+                        *target = new_path;
+                    }
+
+                    let mut model = self.model.write().await;
+                    for (id, target) in targets {
+                        if let Some(cue) = model.cue_list.cues.get_mut(&id) && let CueParam::Audio(params) = &mut cue.params {
+                            params.target = target;
                         }
                     }
+
                 }
                 model_modified = true;
             } else {

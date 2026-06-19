@@ -249,14 +249,22 @@ impl ShowModelHandle {
     }
 
     pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
-        let model = self.read().await;
+        let targets: HashSet<_> = {
+            let model = self.read().await;
+            model.cue_list.cues.values().filter_map(|cue| {
+                if let CueParam::Audio(params) = &cue.params {
+                    Some(params.target.clone())
+                } else {
+                    None
+                }
+            }).collect()
+        };
         let mut result = HashSet::new();
 
-        for cue in model.cue_list.cues.values() {
-            if let CueParam::Audio(params) = &cue.params
-                && let Ok(path) = self.get_asset_standard_path(&params.target).await {
-                    result.insert(path);
-                }
+        for target in targets {
+            if let Ok(path) = self.get_asset_standard_path(&target).await {
+                result.insert(path);
+            }
         }
 
         result
