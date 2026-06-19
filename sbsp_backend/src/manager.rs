@@ -4,6 +4,7 @@
 mod command;
 mod handle;
 pub mod project;
+mod guard;
 
 use anyhow::anyhow;
 pub use command::{InsertPosition, ModelCommand};
@@ -20,6 +21,7 @@ use std::{
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
+use crate::manager::guard::RollbackGuard;
 use crate::manager::project::ProjectFile;
 use crate::manager::project::ProjectStatus;
 use crate::manager::project::ProjectType;
@@ -239,7 +241,8 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::RemoveCue { cue_id } => {
-                if self.remove_cue_by_id(&cue_id).await.is_none() {
+                let removed_ids = self.remove_cues_by_id(HashSet::from([cue_id])).await;
+                if removed_ids.is_empty() {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: "Failed to remove cue, id not found.".to_string(),
@@ -249,7 +252,7 @@ impl ShowModelManager {
                     }
                 } else {
                     if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved {
-                        cue_ids: HashSet::from_iter([cue_id]),
+                        cue_ids: removed_ids,
                     }) {
                         log::warn!("Failed to send event, {}", e);
                     }
@@ -262,8 +265,8 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::RemoveCues { cue_ids } => {
-                let removed_cues = self.remove_cues_by_id(cue_ids.clone()).await;
-                if removed_cues.is_empty() {
+                let removed_ids = self.remove_cues_by_id(cue_ids.clone()).await;
+                if removed_ids.is_empty() {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
                             message: "Failed to remove cues, id not found.".to_string(),
@@ -272,7 +275,6 @@ impl ShowModelManager {
                         log::warn!("Failed to send event, {}", e);
                     }
                 } else {
-                    let removed_ids = removed_cues.iter().map(|val| val.id).collect();
                     if let Err(e) = self.event_tx.send(BackendEvent::CueRemoved {
                         cue_ids: removed_ids,
                     }) {
@@ -287,66 +289,40 @@ impl ShowModelManager {
                 }
             }
             ModelCommand::MoveCue { cue_id, position } => {
-                let orig_cues = self.model.read().await.cue_list.clone();
-                if let Some(cue) = self.remove_cue_by_id(&cue_id).await {
-                    if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
-                        self.model.write().await.cue_list = orig_cues;
-                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
-                            error: BackendError::CueEdit {
-                                message: format!("Failed to move cue, {}.", e),
-                            },
-                        }) {
-                            log::warn!("Failed to send event, {}", e);
-                        }
-                        return;
-                    }
-                    self.modify_status.store(true, Ordering::Release);
-                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
-                        cue_list: self.model.read().await.cue_list.clone(),
-                    }) {
-                        log::warn!("Failed to send event, {}", e);
-                    }
-                } else {
+                if let Err(e) = self.move_cues_at_position(HashSet::from([cue_id]), position).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: "Failed to move cue, id not found.".to_string(),
+                            message: format!("Failed to move cue, {}.", e),
                         },
                     }) {
                         log::warn!("Failed to send event, {}", e);
                     }
+                    return;
+                }
+                self.modify_status.store(true, Ordering::Release);
+                if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                    cue_list: self.model.read().await.cue_list.clone(),
+                }) {
+                    log::warn!("Failed to send event, {}", e);
                 }
             }
             ModelCommand::MoveCues { cue_ids, position } => {
-                let orig_cues = self.model.read().await.cue_list.clone();
-                let removed_cues = self.remove_cues_by_id(cue_ids).await;
-                if removed_cues.is_empty() {
+                if let Err(e) = self.move_cues_at_position(cue_ids, position).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
-                            message: "Failed to move cues, id not found.".to_string(),
+                            message: format!("Failed to move cues, {}.", e),
                         },
                     }) {
                         log::warn!("Failed to send event, {}", e);
                     }
-                } else {
-                    if let Err(e) = self.insert_cues_at_position(removed_cues, position).await {
-                        // rollback
-                        self.model.write().await.cue_list = orig_cues;
-                        if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
-                            error: BackendError::CueEdit {
-                                message: format!("Failed to move cues, {}.", e),
-                            },
-                        }) {
-                            log::warn!("Failed to send event, {}", e);
-                        }
-                        return;
-                    }
-                    self.modify_status.store(true, Ordering::Release);
+                    return;
+                }
+                self.modify_status.store(true, Ordering::Release);
 
-                    if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
-                        cue_list: self.model.read().await.cue_list.clone(),
-                    }) {
-                        log::warn!("Failed to send event, {}", e);
-                    }
+                if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
+                    cue_list: self.model.read().await.cue_list.clone(),
+                }) {
+                    log::warn!("Failed to send event, {}", e);
                 }
             }
             ModelCommand::RenumberCues {
@@ -608,38 +584,25 @@ impl ShowModelManager {
         self.read().await.cue_list.cues.contains_key(cue_id)
     }
 
-    async fn remove_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
+    async fn remove_cues_by_id(&self, cue_ids: HashSet<Uuid>) -> HashSet<Uuid> {
         let mut model = self.model.write().await;
-        if let Some(parent_id) = model.cue_list.cues.get(cue_id).and_then(|cue| cue.parent_id) {
-            if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
-                children.retain(|id| id != cue_id);
-            }
-        } else {
-            model.cue_list.root_ids.retain(|id| id != cue_id);
-        }
-        model.cue_list.cues.remove(cue_id)
-    }
+        let mut removed_cues = HashSet::new();
+        let mut queue: VecDeque<_> = cue_ids.into_iter().collect();
 
-    async fn remove_cues_by_id(&self, mut cue_ids: HashSet<Uuid>) -> Vec<Cue> {
-        let mut model = self.model.write().await;
-        let mut removed_cues = Vec::with_capacity(cue_ids.len());
-
-        cue_ids.retain(|cue_id| {
-            if let Some(cue) = model.cue_list.cues.remove(cue_id) {
-                if let Some(parent_id) = &cue.parent_id {
-                    if let Some(parent) = model.cue_list.cues.get_mut(parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
-                        children.retain(|id| id != cue_id);
-                    }
-                } else {
-                    model.cue_list.root_ids.retain(|id| id != cue_id);
+        while let Some(target_id) = queue.pop_front() {
+            if let Some(parent_id) = model.cue_list.cues.get(&target_id).and_then(|cue| cue.parent_id) {
+                if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
+                    children.retain(|&id| id != target_id);
                 }
-                removed_cues.push(cue);
-                false
             } else {
-                true
+                model.cue_list.root_ids.retain(|&id| id != target_id);
             }
-        });
-
+            let cue = model.cue_list.cues.remove(&target_id);
+            if let Some(target_cue) = &cue && let CueParam::Group { children, .. } = &target_cue.params {
+                queue.extend(children);
+            }
+            removed_cues.insert(target_id);
+        }
         removed_cues
     }
 
@@ -690,6 +653,122 @@ impl ShowModelManager {
         }
     }
 
+    async fn move_cues_at_position(&self, mut cue_ids: HashSet<Uuid>, position: InsertPosition) -> anyhow::Result<()> {
+        let mut model_guard = self.model.write().await;
+        let mut model = RollbackGuard::from(&mut model_guard.cue_list);
+        let mut move_ids = Vec::new();
+
+        let mut queue: VecDeque<_> = model.cue_list.root_ids.iter().rev().copied().collect();
+        while let Some(target_id) = queue.pop_back() {
+            if cue_ids.remove(&target_id) {
+                move_ids.push(target_id);
+
+                if cue_ids.is_empty() {
+                    break;
+                }
+            } else if let Some(cue) = model.cue_list.cues.get(&target_id) && let CueParam::Group { children, .. } = &cue.params {
+                queue.extend(children.iter().rev());
+            }
+        }
+        if move_ids.is_empty() {
+            return Err(anyhow::anyhow!("No valid cues found to move."));
+        }
+
+        let move_set: HashSet<Uuid> = move_ids.iter().copied().collect();
+
+        for id in &move_ids {
+            if let Some(parent_id) = model.cue_list.cues.get(id).and_then(|cue| cue.parent_id) {
+                if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
+                    children.retain(|x| !move_set.contains(x));
+                }
+            } else {
+                model.cue_list.root_ids.retain(|x| !move_set.contains(x));
+            }
+        }
+
+        let (new_parent_id, start_idx) = match position {
+            InsertPosition::Before { target } => {
+                if let Some(parent_id) = model.cue_list.cues.get(&target).and_then(|cue| cue.parent_id) {
+                    if let Some(parent) = model.cue_list.cues.get(&parent_id) && let CueParam::Group { children, .. } = &parent.params
+                    && let Some(index) = children.iter().position(|&id| id == target) {
+                        (Some(parent_id), index)
+                    } else {
+                        return Err(anyhow::anyhow!("Invalid tree structure"));
+                    }
+                } else {
+                    if let Some(index) = model.cue_list.root_ids.iter().position(|&id| id == target) {
+                        (None, index)
+                    } else {
+                        return Err(anyhow::anyhow!("Invalid tree structure"));
+                    }
+                }
+            }
+            InsertPosition::After { target } => {
+                if let Some(parent_id) = model.cue_list.cues.get(&target).and_then(|cue| cue.parent_id) {
+                    if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params
+                    && let Some(mut index) = children.iter().position(|&id| id == target) {
+                        index += 1;
+                        (Some(parent_id), index)
+                    } else {
+                        return Err(anyhow::anyhow!("Invalid tree structure"));
+                    }
+                } else {
+                    if let Some(mut index) = model.cue_list.root_ids.iter().position(|&id| id == target) {
+                        index += 1;
+                        (None, index)
+                    } else {
+                        return Err(anyhow::anyhow!("Invalid tree structure"));
+                    }
+                }
+            }
+            InsertPosition::Inside { target, index } => {
+                if let Some(parent_id) = target {
+                    if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
+                        if index <= children.len() {
+                            (Some(parent_id), index)
+                        } else {
+                            return Err(anyhow::anyhow!("insert index out of range."))
+                        }
+                    } else {
+                        return Err(anyhow::anyhow!("target id not found."))
+                    }
+                } else if index <= model.cue_list.root_ids.len() {
+                    (None, index)
+                } else {
+                    return Err(anyhow::anyhow!("insert index out of range."));
+                }
+            }
+            InsertPosition::Last => {
+                (None, model.cue_list.root_ids.len())
+            }
+        };
+
+        let mut ancestor_id = new_parent_id;
+        while let Some(ancestor) = ancestor_id {
+            if move_set.contains(&ancestor) {
+                return Err(anyhow::anyhow!("Cannot move a cue into its own descendant."));
+            }
+            ancestor_id = model.cue_list.cues.get(&ancestor).and_then(|cue| cue.parent_id);
+        }
+
+        for id in &move_ids {
+            if let Some(cue) = model.cue_list.cues.get_mut(id) {
+                cue.parent_id = new_parent_id;
+            }
+        }
+
+        if let Some(pid) = new_parent_id {
+            if let Some(parent) = model.cue_list.cues.get_mut(&pid) && let CueParam::Group { children, .. } = &mut parent.params {
+                children.splice(start_idx..start_idx, move_ids);
+            }
+        } else {
+            model.cue_list.root_ids.splice(start_idx..start_idx, move_ids);
+        }
+
+        model.success = true;
+        Ok(())
+    }
+
     async fn insert_cues_at_position(
         &self,
         insert_cues: Vec<Cue>,
@@ -703,13 +782,19 @@ impl ShowModelManager {
                     if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params
                         && let Some(index) = children.iter().position(|&id| id == target) {
                             children.splice(index..index, insert_ids);
-                            model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                            model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = Some(parent_id);
+                                (cue.id, cue)
+                            }));
                             return Ok(());
                         }
                 } else {
                     if let Some(index) = model.cue_list.root_ids.iter().position(|&id| id == target) {
                         model.cue_list.root_ids.splice(index..index, insert_ids);
-                        model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                            model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = None;
+                                (cue.id, cue)
+                            }));
                         return Ok(());
                     }
                 }
@@ -722,14 +807,20 @@ impl ShowModelManager {
                         && let Some(mut index) = children.iter().position(|&id| id == target) {
                             index += 1;
                             children.splice(index..index, insert_ids);
-                            model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                            model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = Some(parent_id);
+                                (cue.id, cue)
+                            }));
                             return Ok(());
                         }
                 } else {
                     if let Some(mut index) = model.cue_list.root_ids.iter().position(|&id| id == target) {
                         index += 1;
                         model.cue_list.root_ids.splice(index..index, insert_ids);
-                        model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                            model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = None;
+                                (cue.id, cue)
+                            }));
                         return Ok(());
                     }
                 }
@@ -740,7 +831,10 @@ impl ShowModelManager {
                     if let Some(parent) = model.cue_list.cues.get_mut(&parent_id) && let CueParam::Group { children, .. } = &mut parent.params {
                         if index <= children.len() {
                             children.splice(index..index, insert_ids);
-                            model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                            model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = Some(parent_id);
+                                (cue.id, cue)
+                            }));
                             Ok(())
                         } else {
                             Err(anyhow::anyhow!("insert index out of range."))
@@ -750,7 +844,10 @@ impl ShowModelManager {
                     }
                 } else if index <= model.cue_list.root_ids.len() {
                     model.cue_list.root_ids.splice(index..index, insert_ids);
-                    model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                    model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                        cue.parent_id = None;
+                        (cue.id, cue)
+                    }));
                     Ok(())
                 } else {
                     Err(anyhow::anyhow!("insert index out of range."))
@@ -758,7 +855,10 @@ impl ShowModelManager {
             }
             InsertPosition::Last => {
                 model.cue_list.root_ids.extend(insert_ids);
-                model.cue_list.cues.extend(insert_cues.into_iter().map(|cue| (cue.id, cue)));
+                model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
+                    cue.parent_id = None;
+                    (cue.id, cue)
+                }));
                 Ok(())
             }
         }
