@@ -115,7 +115,7 @@ onMounted(() => {
           uiState.removeFromSelected(event.param.cueIds);
           break;
         case 'cueListUpdated':
-          showModel.$patch({ cues: event.param.cues });
+          showModel.$patch({ cues: event.param.cues, rootIds: event.param.rootIds });
           break;
         case 'modelNameUpdated':
           showModel.$patch({ name: event.param.newName });

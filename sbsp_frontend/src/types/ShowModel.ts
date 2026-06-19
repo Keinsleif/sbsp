@@ -2,4 +2,4 @@
 import type { Cue } from "./Cue";
 import type { ShowSettings } from "./ShowSettings";
 
-export type ShowModel = { name: string, cues: Array<Cue>, settings: ShowSettings, };
+export type ShowModel = { name: string, settings: ShowSettings, cues: { [key in string]: Cue }, rootIds: Array<string>, };

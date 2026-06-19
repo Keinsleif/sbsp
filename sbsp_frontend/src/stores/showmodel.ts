@@ -23,7 +23,8 @@ export type FlatCueEntry = {
 };
 
 const recursiveCueCheck = (
-  list: Cue[],
+  list: string[],
+  cues: { [id: string]: Cue },
   expandedRows: string[],
   level = 0,
   isHidden = false,
@@ -31,13 +32,15 @@ const recursiveCueCheck = (
 ): FlatCueEntry[] => {
   const cuelist: FlatCueEntry[] = [];
 
-  list.forEach((cue, index) => {
+  list.forEach((cueId, index) => {
+    const cue = cues[cueId];
+    if (cue == null) return;
     let chain: CueChain | null = null;
     if (parent?.params.type === 'group') {
       if (parent.params.mode.type === 'playlist') {
         if (index + 1 === list.length) {
           if (parent.params.mode.repeat) {
-            chain = { type: 'afterComplete', targetId: list[0]!.id };
+            chain = { type: 'afterComplete', targetId: list[0] || null }; // targetId will not null
           } else {
             chain = { type: 'doNotChain' };
           }
@@ -61,7 +64,7 @@ const recursiveCueCheck = (
 
     if (cue.params.type === 'group') {
       const isExpanded = expandedRows.includes(cue.id);
-      cuelist.push(...recursiveCueCheck(cue.params.children, expandedRows, level + 1, !isExpanded || isHidden, cue));
+      cuelist.push(...recursiveCueCheck(cue.params.children, cues, expandedRows, level + 1, !isExpanded || isHidden, cue));
     }
   });
 
@@ -72,7 +75,8 @@ export const useShowModel = defineStore('showmodel', {
   state: () =>
     ({
       name: 'Untitled',
-      cues: [],
+      cues: {},
+      rootIds: [],
       settings: {
         general: {
           copyAssetsDestination: '.',
@@ -98,28 +102,17 @@ export const useShowModel = defineStore('showmodel', {
     },
     flatCueList(state) {
       const uiState = useUiState();
-      return recursiveCueCheck(state.cues, uiState.expandedRows);
+      return recursiveCueCheck(state.rootIds, state.cues, uiState.expandedRows);
     },
-    cueCount() {
-      const queue = [];
-      let cuelist: Cue[] | undefined = this.cues;
-      let cueCount = 0;
-      while (cuelist !== undefined) {
-        cueCount += cuelist.length;
-        for (const cue of cuelist) {
-          if (cue.params.type === 'group') {
-            queue.push(cue.params.children);
-          }
-        }
-        cuelist = queue.shift();
-      }
-      return cueCount;
+    cueCount(state) {
+      return state.cues.length;
     },
   },
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;
       this.cues = newModel.cues;
+      this.rootIds = newModel.rootIds;
       this.settings = newModel.settings;
     },
     addEmptyAudioCue() {
@@ -191,7 +184,7 @@ export const useShowModel = defineStore('showmodel', {
           newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
           break;
       }
-      const targetCue = this.cues.find(cue => cue.id === uiState.selected);
+      const targetCue = this.cues[uiState.selected];
       if (
         targetCue != null
         && (newCue.params.type === 'start'
