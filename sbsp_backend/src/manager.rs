@@ -893,7 +893,7 @@ impl ShowModelManager {
 
         {
             let mut model = self.model.write().await;
-            *model = project_file.model.into();
+            *model = project_file.model.try_into()?;
         }
         {
             let mut project_status = self.project_status.write().await;

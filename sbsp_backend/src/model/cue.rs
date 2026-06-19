@@ -10,10 +10,12 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 pub use uuid::Uuid;
 
-use crate::{manager::project::{ProjectCue, ProjectCueParam}, model::cue::{
+#[cfg(feature = "backend")]
+use crate::manager::project::{ProjectCue, ProjectCueParam};
+use crate::model::cue::{
     audio::{AudioCueParam, Decibels, FadeParam},
     group::GroupCueParamBase,
-}};
+};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -23,8 +25,9 @@ pub struct CueList {
     pub root_ids: Vec<Uuid>,
 }
 
+#[cfg(feature = "backend")]
 impl CueList {
-    fn flatten_cue(cue: ProjectCue, parent_id: Option<Uuid>, flat_list: &mut HashMap<Uuid, Cue>) {
+    fn flatten_cue(cue: ProjectCue, parent_id: Option<Uuid>, flat_list: &mut HashMap<Uuid, Cue>) -> Result<(), anyhow::Error> {
         let flat_params = match cue.params {
             ProjectCueParam::Audio(audio_cue_param) => CueParam::Audio(audio_cue_param),
             ProjectCueParam::Wait(wait_cue_param) => CueParam::Wait(wait_cue_param),
@@ -36,7 +39,7 @@ impl CueList {
             ProjectCueParam::Group { base, children } => {
                 let child_ids = children.iter().map(|child| child.id).collect();
                 for child in *children {
-                    Self::flatten_cue(child, Some(cue.id), flat_list);
+                    Self::flatten_cue(child, Some(cue.id), flat_list)?;
                 }
 
                 CueParam::Group { base, children: child_ids }
@@ -44,7 +47,11 @@ impl CueList {
         };
         let flat_cue = Cue { id: cue.id, number: cue.number, name: cue.name, notes: cue.notes, color: cue.color, pre_wait: cue.pre_wait, chain: cue.chain, parent_id, params: flat_params };
 
+        if flat_list.contains_key(&cue.id) {
+            return Err(anyhow::anyhow!("Duplicate key found."));
+        }
         flat_list.insert(cue.id, flat_cue);
+        Ok(())
     }
 
     fn reconstruct_cue(flat_list: &HashMap<Uuid, Cue>, cue_ids: &[Uuid], cue_list: &mut Vec<ProjectCue>) {
@@ -70,17 +77,20 @@ impl CueList {
     }
 }
 
-impl From<Vec<ProjectCue>> for CueList {
-    fn from(value: Vec<ProjectCue>) -> Self {
+#[cfg(feature = "backend")]
+impl TryFrom<Vec<ProjectCue>> for CueList {
+    type Error = anyhow::Error;
+    fn try_from(value: Vec<ProjectCue>) -> Result<Self, Self::Error> {
         let mut flat_list = CueList::default();
         for cue in value {
             flat_list.root_ids.push(cue.id);
-            Self::flatten_cue(cue, None, &mut flat_list.cues);
+            Self::flatten_cue(cue, None, &mut flat_list.cues)?;
         }
-        flat_list
+        Ok(flat_list)
     }
 }
 
+#[cfg(feature = "backend")]
 impl From<CueList> for Vec<ProjectCue> {
     fn from(value: CueList) -> Self {
         let mut cue_list = Vec::with_capacity(value.root_ids.len());
