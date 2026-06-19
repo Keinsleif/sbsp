@@ -12,9 +12,9 @@ use hotkey::HotkeySettings;
 use sbsp_backend::{
     BackendAudioSettings, BackendSettings,
     model::cue::{
-        Cue, CueChain, CueColor, CueParam, Uuid,
+        Cue, CueChain, CueColor, CueParam, Uuid, WaitCueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam,
         audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
-        group::GroupMode,
+        group::{GroupMode, GroupCueParamBase},
     },
 };
 
@@ -127,6 +127,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
                     start_time: None,
@@ -148,7 +149,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Wait { duration: 5.0 },
+                parent_id: None,
+                params: CueParam::Wait (WaitCueParam { duration: 5.0 }),
             },
             fade: Cue {
                 id: Uuid::nil(),
@@ -158,14 +160,15 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Fade {
+                parent_id: None,
+                params: CueParam::Fade ( FadeCueParam {
                     target: Uuid::nil(),
                     volume: Decibels::IDENTITY,
                     fade_param: FadeParam {
                         duration: 3.0,
                         easing: Easing::InOutPow(2.0),
                     },
-                },
+                }),
             },
             start: Cue {
                 id: Uuid::nil(),
@@ -175,9 +178,10 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Start {
+                parent_id: None,
+                params: CueParam::Start ( StartCueParam {
                     target: Uuid::nil(),
-                },
+                }),
             },
             stop: Cue {
                 id: Uuid::nil(),
@@ -187,10 +191,11 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Stop {
+                parent_id: None,
+                params: CueParam::Stop ( StopCueParam {
                     target: Uuid::nil(),
                     hard: false,
-                },
+                }),
             },
             pause: Cue {
                 id: Uuid::nil(),
@@ -200,9 +205,10 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Pause {
+                parent_id: None,
+                params: CueParam::Pause ( PauseCueParam {
                     target: Uuid::nil(),
-                },
+                }),
             },
             load: Cue {
                 id: Uuid::nil(),
@@ -212,9 +218,10 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
-                params: CueParam::Load {
+                parent_id: None,
+                params: CueParam::Load ( LoadCueParam {
                     target: Uuid::nil(),
-                },
+                }),
             },
             group: Cue {
                 id: Uuid::nil(),
@@ -224,9 +231,12 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                parent_id: None,
                 params: CueParam::Group {
-                    mode: GroupMode::Playlist { repeat: true },
-                    children: Box::new(Vec::new()),
+                    base: GroupCueParamBase {
+                        mode: GroupMode::Playlist { repeat: true },
+                    },
+                    children: Vec::new(),
                 },
             },
         }

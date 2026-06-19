@@ -9,9 +9,7 @@ use uuid::Uuid;
 #[cfg(feature = "backend")]
 use crate::executor::ExecutorEvent;
 use crate::{
-    asset_processor::{AssetData, AssetMetadata},
-    controller::state::StateParam,
-    model::{ProjectType, ShowModel, cue::Cue, settings::ShowSettings},
+    asset_processor::{AssetData, AssetMetadata}, controller::state::StateParam, manager::project::ProjectType, model::{ShowModel, cue::CueList, settings::ShowSettings}
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,7 +47,8 @@ pub enum BackendEvent {
         cue_ids: HashSet<Uuid>,
     },
     CueListUpdated {
-        cues: Vec<Cue>,
+        #[serde(flatten)]
+        cue_list: CueList,
     },
     SettingsUpdated {
         new_settings: Box<ShowSettings>,
