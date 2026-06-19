@@ -105,7 +105,7 @@ export const useShowModel = defineStore('showmodel', {
       return recursiveCueCheck(state.rootIds, state.cues, uiState.expandedRows);
     },
     cueCount(state) {
-      return state.cues.length;
+      return Object.keys(state.cues).length;
     },
   },
   actions: {
