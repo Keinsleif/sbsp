@@ -272,8 +272,6 @@ impl CueController {
         {
             if let Some(target_id) = children.get(1) {
                 Some(*target_id)
-            } else if let Some(first_id) = children.first() {
-                Some(*first_id)
             } else {
                 self.model_handle
                     .get_next_cue_id_by_id(&playback_cursor)
