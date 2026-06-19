@@ -784,6 +784,9 @@ impl ShowModelManager {
                             children.splice(index..index, insert_ids);
                             model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                                 cue.parent_id = Some(parent_id);
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
                                 (cue.id, cue)
                             }));
                             return Ok(());
@@ -793,6 +796,9 @@ impl ShowModelManager {
                         model.cue_list.root_ids.splice(index..index, insert_ids);
                             model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                                 cue.parent_id = None;
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
                                 (cue.id, cue)
                             }));
                         return Ok(());
@@ -809,6 +815,9 @@ impl ShowModelManager {
                             children.splice(index..index, insert_ids);
                             model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                                 cue.parent_id = Some(parent_id);
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
                                 (cue.id, cue)
                             }));
                             return Ok(());
@@ -819,6 +828,9 @@ impl ShowModelManager {
                         model.cue_list.root_ids.splice(index..index, insert_ids);
                             model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                                 cue.parent_id = None;
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
                                 (cue.id, cue)
                             }));
                         return Ok(());
@@ -833,6 +845,9 @@ impl ShowModelManager {
                             children.splice(index..index, insert_ids);
                             model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                                 cue.parent_id = Some(parent_id);
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
                                 (cue.id, cue)
                             }));
                             Ok(())
@@ -846,6 +861,9 @@ impl ShowModelManager {
                     model.cue_list.root_ids.splice(index..index, insert_ids);
                     model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                         cue.parent_id = None;
+                        if let CueParam::Group { children, .. } = &mut cue.params {
+                            children.clear();
+                        }
                         (cue.id, cue)
                     }));
                     Ok(())
@@ -857,6 +875,9 @@ impl ShowModelManager {
                 model.cue_list.root_ids.extend(insert_ids);
                 model.cue_list.cues.extend(insert_cues.into_iter().map(|mut cue| {
                     cue.parent_id = None;
+                    if let CueParam::Group { children, .. } = &mut cue.params {
+                        children.clear();
+                    }
                     (cue.id, cue)
                 }));
                 Ok(())
