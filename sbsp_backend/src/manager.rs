@@ -597,8 +597,10 @@ impl ShowModelManager {
             } else {
                 model.cue_list.root_ids.retain(|&id| id != target_id);
             }
-            let cue = model.cue_list.cues.remove(&target_id);
-            if let Some(target_cue) = &cue && let CueParam::Group { children, .. } = &target_cue.params {
+            let Some(target_cue) = model.cue_list.cues.remove(&target_id) else {
+                continue;
+            };
+            if let CueParam::Group { children, .. } = &target_cue.params {
                 queue.extend(children);
             }
             removed_cues.insert(target_id);
@@ -643,9 +645,7 @@ impl ShowModelManager {
                     // modify only base on Group cue param modify. 
                     *base = new_base;
                 }
-                (current, new) => {
-                    *current = new;
-                }
+                _ => {}
             }
             Ok(())
         } else {
