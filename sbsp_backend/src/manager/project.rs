@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::model::ShowModel;
 use crate::model::{cue::{CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase}, settings::ShowSettings};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum ProjectType {

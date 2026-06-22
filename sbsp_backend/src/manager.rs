@@ -432,7 +432,7 @@ impl ShowModelManager {
                             }
                             self.modify_status.store(false, Ordering::Release);
                             BackendEvent::ShowModelSaved {
-                                project_type: project_type.clone(),
+                                project_type: *project_type,
                                 path: path.to_path_buf(),
                             }
                         }
@@ -553,7 +553,7 @@ impl ShowModelManager {
                         {
                             let mut project_status = self.project_status.write().await;
                             *project_status = ProjectStatus::Saved {
-                                project_type: project_type.clone(),
+                                project_type,
                                 path: path.clone(),
                             };
                         }
@@ -899,7 +899,7 @@ impl ShowModelManager {
         {
             let mut project_status = self.project_status.write().await;
             *project_status = ProjectStatus::Saved {
-                project_type: project_file.project_type.clone(),
+                project_type: project_file.project_type,
                 path: path.to_path_buf(),
             };
         }
@@ -1016,7 +1016,7 @@ impl ShowModelManager {
         let project_file = {
             let model = self.model.read().await;
             ProjectFile {
-                project_type: ProjectType::ProjectFolder,
+                project_type: *project_type,
                 model: model.clone().into(),
             }
         };
