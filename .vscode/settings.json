@@ -1,15 +1,21 @@
 {
-    "i18n-ally.enabledFrameworks": [
-        "vue"
-    ],
-    "i18n-ally.localesPaths": [
-        "sbsp_frontend/src/locales"
-    ],
-    "i18n-ally.keystyle": "nested",
-    "markdownlint.config": {
-        "no-inline-html": false,
-        "ul-indent": {
-            "indent": 4
-        }
-    }
+  "i18n-ally.enabledFrameworks": [
+      "vue"
+  ],
+  "i18n-ally.localesPaths": [
+      "sbsp_frontend/src/locales"
+  ],
+  "i18n-ally.keystyle": "nested",
+  "markdownlint.config": {
+      "no-inline-html": false,
+      "ul-indent": {
+          "indent": 4
+      }
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "tsconfig.json": "tsconfig.*.json, env.d.ts, typed-router.d.ts",
+    "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
+    "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
+  },
 }
