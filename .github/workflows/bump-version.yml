@@ -19,25 +19,15 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: cocogitto
-        uses: cocogitto/cocogitto-action@v4
-        with:
-          command: bump
-          args: --auto
-          git-user: github-actions[bot]
-          git-user-email: github-actions[bot]@users.noreply.github.com
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: jdx/mise-action@v4
 
-      - if: always()
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `Oh no! Cocogitto failed!  \`\`\`  ${{ steps.cocogitto.outputs.stdout }}  \`\`\`  `
-            })
+      - run: |
+          git config --global user.email github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-action
+
+      - run: |
+          cog bump --auto
 
       - name: Push tags
-        run: git push --follow-tags
+        run: git push --tags
