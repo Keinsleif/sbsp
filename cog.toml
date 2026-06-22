@@ -1,6 +1,6 @@
 from_latest_tag = true
-ignore_merge_commits = false
-ignore_fixup_commits = false
+ignore_merge_commits = true
+ignore_fixup_commits = true
 disable_changelog = false
 disable_bump_commit = false
 generate_mono_repository_global_tag = true
@@ -51,18 +51,19 @@ public_api = false
 [monorepo.packages.app]
 path = "sbsp_app"
 include = [
-    "sbsp_backend",
-    "sbsp_frontend",
-    "sbsp_license",
+    "sbsp_backend/**",
+    "sbsp_frontend/**",
+    "sbsp_license/**",
 ]
 bump_order = 4
 pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
+public_api = false
 
 [monorepo.packages.remote_app]
 path = "sbsp_remote_app"
 include = [
-    "sbsp_backend",
-    "sbsp_frontend",
+    "sbsp_backend/**",
+    "sbsp_frontend/**",
 ]
 bump_order = 5
 pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]

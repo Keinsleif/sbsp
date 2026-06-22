@@ -23,8 +23,8 @@ jobs:
         with:
           command: bump
           args: --auto
-          git-user: github-actions[bot]
-          git-user-email: github-actions[bot]@users.noreply.github.com
+          git-user: Keinsleif (GitHub Actions)
+          git-user-email: mountaindull@gmail.com
 
       - name: Push tags
         run: git push --follow-tags
