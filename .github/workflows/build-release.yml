@@ -1,13 +1,11 @@
 name: 'build-release'
 
 on:
-  push:
-    tags:
-      - app-**
+  workflow_dispatch:
 
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}  
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
@@ -80,9 +78,26 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_MAIN }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_MAIN }}
         with:
-          tagName: ${{ github.ref_name }}
+          tagName: app-__VERSION__
           releaseName: 'SBS Player v__VERSION__'
           projectPath: ./sbsp_app
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          tauriScript: cargo tauri
+
+      # SBSP Remote
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_REMOTE }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_REMOTE }}
+        with:
+          tagName: remote_app-__VERSION__
+          releaseName: 'SBS Player Remote v__VERSION__'
+          projectPath: ./sbsp_remote_app
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
