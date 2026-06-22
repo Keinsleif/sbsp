@@ -1446,9 +1446,7 @@ use tokio::sync::{
 
         let instance_id = loop {
             if let Some(command) = audio_rx.recv().await {
-                println!("some received");
                 if let AudioCommand::Play { id, .. } = command {
-                    println!("id found");
                     break id;
                 }
             }

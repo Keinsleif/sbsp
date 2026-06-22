@@ -751,9 +751,7 @@ mod tests {
     #[tokio::test]
     async fn set_playback_cursor() {
         let cue_id = Uuid::new_v4();
-        println!("{}", cue_id);
         let cue_id_next = Uuid::new_v4();
-        println!("{}", cue_id_next);
         let (controller, controller_handle, _, _, state_rx, mut event_rx) =
             setup_controller(&[cue_id, cue_id_next]).await;
 
