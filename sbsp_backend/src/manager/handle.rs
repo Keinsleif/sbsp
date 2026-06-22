@@ -312,9 +312,9 @@ impl ShowModelHandle {
         if let Some(model_path) = self.get_current_file_path().await
             && let Some(parent) = model_path.parent()
         {
-            Ok(tokio::fs::canonicalize(parent.join(path)).await?)
+            Ok(parent.join(path).normalize()?.into_path_buf())
         } else {
-            Ok(tokio::fs::canonicalize(path).await?)
+            Ok(path.normalize()?.into_path_buf())
         }
     }
 
