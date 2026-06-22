@@ -57,7 +57,6 @@ include = [
 ]
 bump_order = 4
 pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
-public_api = false
 
 [monorepo.packages.remote_app]
 path = "sbsp_remote_app"
