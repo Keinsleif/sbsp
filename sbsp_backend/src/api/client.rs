@@ -126,7 +126,7 @@ pub async fn create_remote_backend(
                                             {
                                                 let mut project_status = project_status_clone.write().await;
                                                 *project_status = ProjectStatus::Saved{
-                                                    project_type: project_type.clone(),
+                                                    project_type: *project_type,
                                                     path: path.clone(),
                                                 };
                                             }
@@ -134,7 +134,7 @@ pub async fn create_remote_backend(
                                             {
                                                 let mut project_status = project_status_clone.write().await;
                                                 *project_status = ProjectStatus::Saved{
-                                                    project_type: project_type.clone(),
+                                                    project_type: *project_type,
                                                     path: path.clone(),
                                                 };
                                             }
