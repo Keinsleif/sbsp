@@ -7,7 +7,6 @@ rust = "latest"
 "cargo:cargo-audit" = { version = "latest", depends = ["rust"] }
 "cargo:cargo-edit" = { version = "latest", depends = ["rust"] }
 cocogitto = "latest"
-zizmor = "latest"
 
 [tasks.generate_notices]
 run = [

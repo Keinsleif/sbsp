@@ -19,12 +19,17 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: cocogitto/cocogitto-action@v4
-        with:
-          command: bump
-          args: --auto
-          git-user: github-actions[bot]
-          git-user-email: github-actions[bot]@users.noreply.github.com
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: jdx/mise-action@v4
 
-      - name: Push tags
-        run: git push --follow-tags
+      - run: |
+          git config --global user.email github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-action
+
+      - run: |
+          cog bump --auto
+
+      - name: Push
+        run: |
+          git push
+          git push --tags
