@@ -2839,6 +2839,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "normpath"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9985ef7269fa99f3b12437bb698381da2428743ab90f20393f399fa14cab21a"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4106,6 +4115,7 @@ dependencies = [
  "indexmap 2.14.0",
  "log",
  "mdns-sd",
+ "normpath",
  "rand 0.10.1",
  "rodio",
  "rtrb",

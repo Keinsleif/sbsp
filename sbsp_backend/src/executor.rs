@@ -1143,7 +1143,8 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    use tokio::sync::{
+    use tempfile::NamedTempFile;
+use tokio::sync::{
         broadcast,
         mpsc::{self, Receiver, Sender},
         watch,
@@ -1167,6 +1168,7 @@ mod tests {
 
     async fn setup_executor(
         cue_id: Uuid,
+        path: PathBuf,
     ) -> (
         ShowModelManager,
         Sender<ExecutorCommand>,
@@ -1196,7 +1198,7 @@ mod tests {
             chain: model::cue::CueChain::DoNotChain,
             parent_id: None,
             params: model::cue::CueParam::Audio(AudioCueParam {
-                target: PathBuf::from("./I.G.Y.flac"),
+                target: path,
                 start_time: Some(5.0),
                 fade_in_param: Some(FadeParam {
                     duration: 2.0,
@@ -1240,38 +1242,42 @@ mod tests {
     async fn play_command() {
         let cue_id = Uuid::new_v4();
 
-        let (_, exec_tx, mut audio_rx, _, _) = setup_executor(cue_id).await;
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
+        let (_, exec_tx, mut audio_rx, _, _) = setup_executor(cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(cue_id))
             .await
             .unwrap();
 
-        let command = audio_rx.recv().await.unwrap();
-
-        if let AudioCommand::Play { data, .. } = command {
-            assert_eq!(data.filepath, PathBuf::from("./I.G.Y.flac"));
-            assert_eq!(data.volume, Decibels::IDENTITY);
-            assert_eq!(data.pan, 0.0);
-            assert_eq!(data.start_time, Some(5.0));
-            assert_eq!(
-                data.fade_in_param,
-                Some(FadeParam {
-                    duration: 2.0,
-                    easing: Easing::Linear
-                })
-            );
-            assert_eq!(data.end_time, Some(50.0));
-            assert_eq!(
-                data.fade_out_param,
-                Some(FadeParam {
-                    duration: 5.0,
-                    easing: Easing::InPow(2.0)
-                })
-            );
-            assert!(!data.repeat);
-        } else {
-            unreachable!();
+        loop {
+            if let Some(command) = audio_rx.recv().await {
+                if let AudioCommand::Play { data, .. } = command {
+                    assert_eq!(data.filepath, temp_target.path().to_path_buf());
+                    assert_eq!(data.volume, Decibels::IDENTITY);
+                    assert_eq!(data.pan, 0.0);
+                    assert_eq!(data.start_time, Some(5.0));
+                    assert_eq!(
+                        data.fade_in_param,
+                        Some(FadeParam {
+                            duration: 2.0,
+                            easing: Easing::Linear
+                        })
+                    );
+                    assert_eq!(data.end_time, Some(50.0));
+                    assert_eq!(
+                        data.fade_out_param,
+                        Some(FadeParam {
+                            duration: 5.0,
+                            easing: Easing::InPow(2.0)
+                        })
+                    );
+                    assert!(!data.repeat);
+                    break;
+                }
+            } else {
+                panic!("audio_tx dropped.");
+            }
         }
     }
 
@@ -1279,8 +1285,9 @@ mod tests {
     async fn started_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
@@ -1332,8 +1339,9 @@ mod tests {
     async fn progress_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
@@ -1379,8 +1387,9 @@ mod tests {
     async fn pause_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
@@ -1426,20 +1435,23 @@ mod tests {
     async fn resume_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
             .await
             .unwrap();
 
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
+        let instance_id = loop {
+            if let Some(command) = audio_rx.recv().await {
+                println!("some received");
+                if let AudioCommand::Play { id, .. } = command {
+                    println!("id found");
+                    break id;
+                }
+            }
         };
 
         engine_event_tx
@@ -1464,8 +1476,9 @@ mod tests {
     async fn completed_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
@@ -1502,8 +1515,9 @@ mod tests {
     async fn error_event() {
         let orig_cue_id = Uuid::new_v4();
 
+        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
         let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id).await;
+            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(orig_cue_id))
