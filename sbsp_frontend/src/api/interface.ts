@@ -68,7 +68,13 @@ export interface IBackendAdapter {
   removeCues(cueIds: string[], confirm_remove?: boolean): Promise<void>;
   moveCue(cueId: string, position: InsertPosition): Promise<void>;
   moveCues(cueIds: string[], position: InsertPosition): Promise<void>;
-  renumberCues(cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void>;
+  renumberCues(
+    cues: string[],
+    startFrom: number,
+    increment: number,
+    prefix: string | null,
+    suffix: string | null,
+  ): Promise<void>;
   updateModelName(newName: string): Promise<void>;
   updateShowSettings(newSettings: ShowSettings): Promise<void>;
 
@@ -116,6 +122,8 @@ export interface IBackendRemoteAdapter {
   stopServerDiscovery(): void;
   requestFileList(): void;
 
-  onConnectionStatusChanged(callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn>;
+  onConnectionStatusChanged(
+    callback: (isConnected: boolean, perm: Permissions | null) => void,
+  ): Promise<UnlistenFn>;
   onFileListUpdate(callback: (fileList: FileList[]) => void): Promise<UnlistenFn>;
 }

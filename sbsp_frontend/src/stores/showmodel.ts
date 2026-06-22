@@ -5,7 +5,7 @@ import { defineStore } from 'pinia';
 
 import type { ShowModel } from '../types/ShowModel';
 import type { Cue } from '../types/Cue';
-import { useUiState } from './uistate';
+import { useUiState } from './uiState';
 import { useUiSettings } from './uiSettings';
 import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
@@ -64,14 +64,23 @@ const recursiveCueCheck = (
 
     if (cue.params.type === 'group') {
       const isExpanded = expandedRows.includes(cue.id);
-      cuelist.push(...recursiveCueCheck(cue.params.children, cues, expandedRows, level + 1, !isExpanded || isHidden, cue));
+      cuelist.push(
+        ...recursiveCueCheck(
+          cue.params.children,
+          cues,
+          expandedRows,
+          level + 1,
+          !isExpanded || isHidden,
+          cue,
+        ),
+      );
     }
   });
 
   return cuelist;
 };
 
-export const useShowModel = defineStore('showmodel', {
+export const useShowModel = defineStore('showModel', {
   state: () =>
     ({
       name: 'Untitled',
@@ -93,12 +102,14 @@ export const useShowModel = defineStore('showmodel', {
   getters: {
     getCueById() {
       return (cue_id: string): Cue | undefined => {
-        return this.flatCueList.find(entry => entry.cue.id === cue_id)?.cue;
+        return this.flatCueList.find((entry) => entry.cue.id === cue_id)?.cue;
       };
     },
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
-      return this.flatCueList.filter(entry => uiState.selectedRows.has(entry.cue.id)).map(entry => entry.cue);
+      return this.flatCueList
+        .filter((entry) => uiState.selectedRows.has(entry.cue.id))
+        .map((entry) => entry.cue);
     },
     flatCueList(state) {
       const uiState = useUiState();
@@ -127,7 +138,7 @@ export const useShowModel = defineStore('showmodel', {
             if (newCue.params.type === 'audio') {
               newCue.params.target = assets[0]!;
             }
-            api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
+            api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -137,17 +148,17 @@ export const useShowModel = defineStore('showmodel', {
               }
               newCues.push(newCue);
             }
-            api.addCues(newCues, uiState.selected, false).catch(e => console.error(e));
+            api.addCues(newCues, uiState.selected, false).catch((e) => console.error(e));
           }
         })
-        .catch(e => console.error(e));
+        .catch((e) => console.error(e));
     },
     addEmptyWaitCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
+      api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
@@ -156,9 +167,12 @@ export const useShowModel = defineStore('showmodel', {
       const newCue = structuredClone(toRaw(uiSettings.settings.template.fade)) as Cue;
       if (newCue.params.type === 'fade' && uiState.selected != null) {
         const targetCue = this.getCueById(uiState.selected);
-        if (targetCue != null && (targetCue.params.type === 'audio' || targetCue.params.type === 'group')) {
+        if (
+          targetCue != null &&
+          (targetCue.params.type === 'audio' || targetCue.params.type === 'group')
+        ) {
           newCue.params.target = uiState.selected;
-          api.addCue(newCue, uiState.selected, false).catch(e => console.error(e));
+          api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
         }
       }
     },
@@ -186,14 +200,16 @@ export const useShowModel = defineStore('showmodel', {
       }
       const targetCue = this.cues[uiState.selected];
       if (
-        targetCue != null
-        && (newCue.params.type === 'start'
-          || newCue.params.type === 'stop'
-          || newCue.params.type === 'pause'
-          || newCue.params.type === 'load')
+        targetCue != null &&
+        (newCue.params.type === 'start' ||
+          newCue.params.type === 'stop' ||
+          newCue.params.type === 'pause' ||
+          newCue.params.type === 'load')
       ) {
         newCue.params.target = uiState.selected;
-        api.addCue(newCue, uiState.selected, type === 'load' || type === 'start').catch(e => console.error(e));
+        api
+          .addCue(newCue, uiState.selected, type === 'load' || type === 'start')
+          .catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
@@ -202,12 +218,21 @@ export const useShowModel = defineStore('showmodel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type === 'group') {
-        api.addCue(newCue, uiState.selected, false).then((id) => {
-          if (uiState.selectedRows.size > 0) {
-            api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: id, index: 0 }).catch(e => console.error(e));
-            uiState.expandedRows.push(id);
-          }
-        }).catch(e => console.error(e));
+        api
+          .addCue(newCue, uiState.selected, false)
+          .then((id) => {
+            if (uiState.selectedRows.size > 0) {
+              api
+                .moveCues(Array.from(uiState.selectedRows), {
+                  type: 'inside',
+                  target: id,
+                  index: 0,
+                })
+                .catch((e) => console.error(e));
+              uiState.expandedRows.push(id);
+            }
+          })
+          .catch((e) => console.error(e));
       }
     },
   },

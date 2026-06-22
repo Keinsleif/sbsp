@@ -204,7 +204,8 @@
       "latestVersion": "Latest Version",
       "noUpdates": "No updates available.",
       "title": "Check for updates",
-      "updatesAvailable": "New updates available."
+      "updatesAvailable": "New updates available.",
+      "checking": "Checking..."
     }
   },
   "general": {

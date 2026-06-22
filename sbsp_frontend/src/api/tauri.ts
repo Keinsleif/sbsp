@@ -5,9 +5,9 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import { IBackendAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
+import type { IBackendAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
 import { type } from '@tauri-apps/plugin-os';
-import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { FileList } from '../types/FileList';
 import type { ServiceEntry } from '../types/ServiceEntry';
 import type { LicenseInformation } from '../types/LicenseInformation';
@@ -16,7 +16,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 import { message, open, save } from '@tauri-apps/plugin-dialog';
 import { i18n } from '../i18n';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { useUiState } from '../stores/uistate';
+import { useUiState } from '../stores/uiState';
 import type { ApiServerOptions } from '../types/ApiServerOptions';
 import type { FullShowState } from '../types/FullShowState';
 import type { SupportedHardware } from '../types/SupportedHardware';
@@ -28,97 +28,101 @@ const { t } = i18n.global;
 
 export function useTauriApi(): IBackendAdapter {
   const tauriApi: IBackendAdapter = {
-    host:
-      __IS_HOST__
-        ? {
-            getLicenseInfo: function (): Promise<LicenseInformation | null> {
-              return invoke<LicenseInformation | null>('get_license_info');
-            },
-            activateLicense: function (): Promise<boolean> {
-              return invoke<boolean>('activate_license');
-            },
+    host: __IS_HOST__
+      ? {
+          getLicenseInfo: function (): Promise<LicenseInformation | null> {
+            return invoke<LicenseInformation | null>('get_license_info');
+          },
+          activateLicense: function (): Promise<boolean> {
+            return invoke<boolean>('activate_license');
+          },
 
-            fileNew: function (): void {
-              invoke('file_new').catch(e => console.error(e));
-            },
-            fileOpen: function (): void {
-              invoke('file_open').catch(e => console.error(e));
-            },
-            fileSave: function (): Promise<boolean> {
-              return invoke<boolean>('file_save');
-            },
-            fileSaveAs: function (): Promise<boolean> {
-              return invoke<boolean>('file_save_as');
-            },
-            exportToFolder: function (): Promise<boolean> {
-              return invoke<boolean>('export_to_folder');
-            },
-            isServerRunning: function (): Promise<boolean> {
-              return invoke<boolean>('is_server_running');
-            },
-            setServerOptions: function (options: ApiServerOptions): Promise<void> {
-              return invoke('set_server_options', { options: options });
-            },
-            getServerOptions: function (): Promise<ApiServerOptions> {
-              return invoke<ApiServerOptions>('get_server_options');
-            },
-            getHostname: function (): Promise<string> {
-              return invoke<string>('get_hostname');
-            },
-            startServer: function (): Promise<void> {
-              return invoke('start_server');
-            },
-            stopServer: function (): Promise<void> {
-              return invoke('stop_server');
-            },
-            getHardware: function (): Promise<SupportedHardware> {
-              return invoke('get_hardware');
-            },
-            onServerStatusChanged: function (callback: (status: 'started' | 'stopped') => void): Promise<UnlistenFn> {
-              return listen<'started' | 'stopped'>('backend-server-status-changed', (event) => {
-                callback(event.payload);
-              });
-            },
-          }
-        : undefined,
+          fileNew: function (): void {
+            invoke('file_new').catch((e) => console.error(e));
+          },
+          fileOpen: function (): void {
+            invoke('file_open').catch((e) => console.error(e));
+          },
+          fileSave: function (): Promise<boolean> {
+            return invoke<boolean>('file_save');
+          },
+          fileSaveAs: function (): Promise<boolean> {
+            return invoke<boolean>('file_save_as');
+          },
+          exportToFolder: function (): Promise<boolean> {
+            return invoke<boolean>('export_to_folder');
+          },
+          isServerRunning: function (): Promise<boolean> {
+            return invoke<boolean>('is_server_running');
+          },
+          setServerOptions: function (options: ApiServerOptions): Promise<void> {
+            return invoke('set_server_options', { options: options });
+          },
+          getServerOptions: function (): Promise<ApiServerOptions> {
+            return invoke<ApiServerOptions>('get_server_options');
+          },
+          getHostname: function (): Promise<string> {
+            return invoke<string>('get_hostname');
+          },
+          startServer: function (): Promise<void> {
+            return invoke('start_server');
+          },
+          stopServer: function (): Promise<void> {
+            return invoke('stop_server');
+          },
+          getHardware: function (): Promise<SupportedHardware> {
+            return invoke('get_hardware');
+          },
+          onServerStatusChanged: function (
+            callback: (status: 'started' | 'stopped') => void,
+          ): Promise<UnlistenFn> {
+            return listen<'started' | 'stopped'>('backend-server-status-changed', (event) => {
+              callback(event.payload);
+            });
+          },
+        }
+      : undefined,
 
-    remote:
-      __IS_REMOTE__
-        ? {
-            isConnected: function (): Promise<[boolean, Permissions | null]> {
-              return invoke<[boolean, Permissions | null]>('is_connected');
-            },
-            getServerAddress: function (): Promise<string | null> {
-              return invoke<string | null>('get_server_address');
-            },
-            connectToServer: function (address: string, password: string | null): Promise<void> {
-              return invoke<void>('connect_to_server', { address: address, password: password });
-            },
-            disconnectFromServer: function (): void {
-              invoke('disconnect_from_server').catch(e => console.error(e));
-            },
-            startServerDiscovery: function (callback: (serviceEntry: ServiceEntry[]) => void): void {
-              const channel = new Channel<ServiceEntry[]>(callback);
-              invoke('start_server_discovery', { channel }).catch(e => console.error(e));
-            },
-            stopServerDiscovery: function (): void {
-              invoke('stop_server_discovery').catch(e => console.error(e));
-            },
-            requestFileList: function (): void {
-              invoke('request_file_list').catch(e => console.error(e));
-            },
-            onConnectionStatusChanged: function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
-              return listen<[boolean, Permissions | null]>('connection_status_changed', (event) => {
-                callback(event.payload[0], event.payload[1]);
-              });
-            },
-            onFileListUpdate: function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
-              return listen<FileList[]>('asset-list-update', (event) => {
-                callback(event.payload);
-              });
-            },
-          }
-        : undefined,
+    remote: __IS_REMOTE__
+      ? {
+          isConnected: function (): Promise<[boolean, Permissions | null]> {
+            return invoke<[boolean, Permissions | null]>('is_connected');
+          },
+          getServerAddress: function (): Promise<string | null> {
+            return invoke<string | null>('get_server_address');
+          },
+          connectToServer: function (address: string, password: string | null): Promise<void> {
+            return invoke<void>('connect_to_server', { address: address, password: password });
+          },
+          disconnectFromServer: function (): void {
+            invoke('disconnect_from_server').catch((e) => console.error(e));
+          },
+          startServerDiscovery: function (callback: (serviceEntry: ServiceEntry[]) => void): void {
+            const channel = new Channel<ServiceEntry[]>(callback);
+            invoke('start_server_discovery', { channel }).catch((e) => console.error(e));
+          },
+          stopServerDiscovery: function (): void {
+            invoke('stop_server_discovery').catch((e) => console.error(e));
+          },
+          requestFileList: function (): void {
+            invoke('request_file_list').catch((e) => console.error(e));
+          },
+          onConnectionStatusChanged: function (
+            callback: (isConnected: boolean, perm: Permissions | null) => void,
+          ): Promise<UnlistenFn> {
+            return listen<[boolean, Permissions | null]>('connection_status_changed', (event) => {
+              callback(event.payload[0], event.payload[1]);
+            });
+          },
+          onFileListUpdate: function (
+            callback: (fileList: FileList[]) => void,
+          ): Promise<UnlistenFn> {
+            return listen<FileList[]>('asset-list-update', (event) => {
+              callback(event.payload);
+            });
+          },
+        }
+      : undefined,
     isMacOs: function (): boolean {
       return type() === 'macos';
     },
@@ -244,7 +248,11 @@ export function useTauriApi(): IBackendAdapter {
       await invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore });
       return cue.id;
     },
-    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
+    addCues: async function (
+      cues: Cue[],
+      targetId: string | null,
+      toBefore: boolean,
+    ): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;
@@ -287,7 +295,13 @@ export function useTauriApi(): IBackendAdapter {
     moveCues: function (cueIds: string[], position: InsertPosition): Promise<void> {
       return invoke('move_cues', { cueIds: cueIds, position: position });
     },
-    renumberCues: function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
+    renumberCues: function (
+      cues: string[],
+      startFrom: number,
+      increment: number,
+      prefix: string | null,
+      suffix: string | null,
+    ): Promise<void> {
       return invoke('renumber_cues', { cues, startFrom, increment, prefix, suffix });
     },
     updateModelName: function (newName: string): Promise<void> {
@@ -301,7 +315,7 @@ export function useTauriApi(): IBackendAdapter {
       return invoke<GlobalHostSettings | GlobalRemoteSettings>('get_settings');
     },
     setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
-      invoke('set_settings', { newSettings: newSettings }).catch(e => console.error(e));
+      invoke('set_settings', { newSettings: newSettings }).catch((e) => console.error(e));
     },
     reloadSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       return invoke<GlobalHostSettings | GlobalRemoteSettings>('reload_settings');
@@ -314,10 +328,14 @@ export function useTauriApi(): IBackendAdapter {
         })
           .then((path) => {
             if (path != null) {
-              invoke<GlobalHostSettings | GlobalRemoteSettings>('import_settings_from_file', { path: path }).then(resolve).catch(reject);
+              invoke<GlobalHostSettings | GlobalRemoteSettings>('import_settings_from_file', {
+                path: path,
+              })
+                .then(resolve)
+                .catch(reject);
             }
           })
-          .catch(e => console.error(e));
+          .catch((e) => console.error(e));
       });
     },
     exportSettingsToFile: function (): void {
@@ -331,18 +349,20 @@ export function useTauriApi(): IBackendAdapter {
       })
         .then((path) => {
           if (path != null) {
-            invoke('export_settings_to_file', { path: path }).catch(e => console.error(e));
+            invoke('export_settings_to_file', { path: path }).catch((e) => console.error(e));
           }
         })
-        .catch(e => console.error(e));
+        .catch((e) => console.error(e));
     },
 
     onBackendEvent: function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
       const channel = new Channel<BackendEvent>(callback);
       invoke('listen_backend_event', { channel });
-      return new Promise(resolve => resolve(() => {
-        invoke('unlisten_backend_event');
-      }));
+      return new Promise((resolve) =>
+        resolve(() => {
+          invoke('unlisten_backend_event');
+        }),
+      );
     },
   };
   return tauriApi;

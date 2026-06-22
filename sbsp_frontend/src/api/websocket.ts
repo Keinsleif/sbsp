@@ -4,7 +4,12 @@
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import { IBackendAdapter, IBackendRemoteAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
+import type {
+  IBackendAdapter,
+  IBackendRemoteAdapter,
+  IPickAudioAssetsOptions,
+  LevelMeterListener,
+} from './interface';
 import type { WsFeedback } from '../types/WsFeedback';
 import type { FileList } from '../types/FileList';
 import type { WsCommand } from '../types/WsCommand';
@@ -13,7 +18,7 @@ import { v4 } from 'uuid';
 import type { ServiceEntry } from '../types/ServiceEntry';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
-import { useUiState } from '../stores/uistate';
+import { useUiState } from '../stores/uiState';
 import jsSHA from 'jssha';
 import type { FullShowState } from '../types/FullShowState';
 import type { Permissions } from '../types/Permissions';
@@ -239,7 +244,9 @@ const websocketApiState: {
   sendQueue: string[];
   backendEventListeners: { [key: string]: (event: BackendEvent) => void };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
-  connectionStatusListeners: { [key: string]: (isConnected: boolean, perm: Permissions | null) => void };
+  connectionStatusListeners: {
+    [key: string]: (isConnected: boolean, perm: Permissions | null) => void;
+  };
   fullStateResolver: [(fullState: FullShowState) => void, () => void] | null;
 } = {
   address: null,
@@ -282,7 +289,7 @@ export function useWebsocketApi(): IBackendAdapter {
       websocketApiState.address = address;
       const closeEventListener = () => {
         console.log('Disconnected.');
-        Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(false, null));
+        Object.values(websocketApiState.connectionStatusListeners).forEach((cb) => cb(false, null));
         ws.removeEventListener('close', closeEventListener);
         ws.removeEventListener('error', errorEventListener);
         if (isAuthenticated) {
@@ -321,7 +328,9 @@ export function useWebsocketApi(): IBackendAdapter {
             ws.addEventListener('message', mainEventListener);
             ws.removeEventListener('message', authEventListener);
             websocketApi.flushQueue();
-            Object.values(websocketApiState.connectionStatusListeners).forEach(cb => cb(true, msg.data.perm));
+            Object.values(websocketApiState.connectionStatusListeners).forEach((cb) =>
+              cb(true, msg.data.perm),
+            );
             break;
         }
       };
@@ -349,10 +358,10 @@ export function useWebsocketApi(): IBackendAdapter {
                   path: msg.data.param.path,
                 };
             }
-            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb(msg.data));
+            Object.values(websocketApiState.backendEventListeners).forEach((cb) => cb(msg.data));
             break;
           case 'assetList':
-            Object.values(websocketApiState.assetListListeners).forEach(cb => cb(msg.data));
+            Object.values(websocketApiState.assetListListeners).forEach((cb) => cb(msg.data));
             break;
           case 'fullShowState':
             if (websocketApiState.fullStateResolver != null) {
@@ -382,12 +391,14 @@ export function useWebsocketApi(): IBackendAdapter {
                 };
                 break;
             }
-            Object.values(websocketApiState.backendEventListeners).forEach(cb => cb({
-              type: 'operationFailed',
-              param: {
-                error: error,
-              },
-            }));
+            Object.values(websocketApiState.backendEventListeners).forEach((cb) =>
+              cb({
+                type: 'operationFailed',
+                param: {
+                  error: error,
+                },
+              }),
+            );
             break;
           }
         }
@@ -407,14 +418,18 @@ export function useWebsocketApi(): IBackendAdapter {
     requestFileList: function (): void {
       websocketApi.sendCommand({ type: 'requestAssetList' });
     },
-    onConnectionStatusChanged: async function (callback: (isConnected: boolean, perm: Permissions | null) => void): Promise<UnlistenFn> {
+    onConnectionStatusChanged: async function (
+      callback: (isConnected: boolean, perm: Permissions | null) => void,
+    ): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.connectionStatusListeners[id] = callback;
       return () => {
         delete websocketApiState.connectionStatusListeners[id];
       };
     },
-    onFileListUpdate: async function (callback: (fileList: FileList[]) => void): Promise<UnlistenFn> {
+    onFileListUpdate: async function (
+      callback: (fileList: FileList[]) => void,
+    ): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.assetListListeners[id] = callback;
       return () => {
@@ -570,7 +585,11 @@ export function useWebsocketApi(): IBackendAdapter {
       }
       return cue.id;
     },
-    addCues: async function (cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]> {
+    addCues: async function (
+      cues: Cue[],
+      targetId: string | null,
+      toBefore: boolean,
+    ): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;
@@ -633,7 +652,13 @@ export function useWebsocketApi(): IBackendAdapter {
         params: { cueIds, position: position },
       });
     },
-    renumberCues: async function (cues: string[], startFrom: number, increment: number, prefix: string | null, suffix: string | null): Promise<void> {
+    renumberCues: async function (
+      cues: string[],
+      startFrom: number,
+      increment: number,
+      prefix: string | null,
+      suffix: string | null,
+    ): Promise<void> {
       this.sendCommand({
         type: 'model',
         command: 'renumberCues',

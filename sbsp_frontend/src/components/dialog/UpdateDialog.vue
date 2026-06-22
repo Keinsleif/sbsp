@@ -1,65 +1,15 @@
-<template>
-  <v-dialog
-    v-model="isUpdateDialogOpen"
-    width="auto"
-    @keydown.stop
-    @after-enter="checkUpdate"
-    @contextmenu.prevent
-  >
-    <v-sheet
-      class="d-flex flex-column ga-4 pa-3"
-      width="400px"
-    >
-      <div class="d-flex flex-row align-center ga-4">
-        <h2>{{ t('dialog.update.title') }}</h2>
-        <v-progress-circular
-          v-show="isCheckingUpdate"
-          size="24"
-          indeterminate="disable-shrink"
-        />
-      </div>
-      <span :class="update == null ? 'text-red' : 'text-green'">
-        {{
-          isCheckingUpdate
-            ? ''
-            : update == null
-              ? t('dialog.update.noUpdates')
-              : t('dialog.update.updatesAvailable')
-        }}
-      </span>
-      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
-      <span>{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span>
-      <v-progress-linear
-        height="8"
-        color="primary"
-        :model-value="calculateProgress()"
-        :indeterminate="total === 0"
-      />
-      <v-sheet class="mt-3 d-flex flex-row justify-end ga-2">
-        <v-btn @click="isUpdateDialogOpen = false">
-          {{ t('general.close') }}
-        </v-btn>
-        <v-btn
-          :disabled="update == null"
-          :loading="progress != null && calculateProgress() == 100"
-          color="primary"
-          @click="installUpdate"
-        >
-          {{ t('dialog.update.installUpdate') }}
-        </v-btn>
-      </v-sheet>
-    </v-sheet>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onMounted, ref, toRaw } from 'vue';
+import Dialog from 'primevue/dialog';
+import { computed, onMounted, ref, toRaw, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
+import ProgressSpinnerWrapper from '../wrapper/ProgressSpinnerWrapper.vue';
+import ProgressBar from 'primevue/progressbar';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const { t } = useI18n();
 
@@ -111,12 +61,18 @@ const installUpdate = () => {
   }
 };
 
-const calculateProgress = (): number => {
+const progressBarValue = computed(() => {
   if (total.value === null || progress.value === null || total.value === 0) {
     return 0;
   }
   return progress.value / total.value * 100;
-};
+});
+
+watch(isUpdateDialogOpen, (value) => {
+  if (value) {
+    checkUpdate();
+  }
+});
 
 onMounted(() => {
   getVersion().then((version) => {
@@ -124,3 +80,40 @@ onMounted(() => {
   }).catch(e => console.error(e));
 });
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isUpdateDialogOpen"
+    class="w-auto"
+    :header="t('dialog.update.title')"
+    @keydown.stop
+    @contextmenu.prevent
+  >
+    <div class="flex flex-col gap-4 p-3 w-100">
+      <div class="flex flex-row items-center justify-start gap-4">
+        <span :class="update == null ? 'text-red-500' : 'text-green-600'">
+          {{
+            isCheckingUpdate
+              ? t('dialog.update.checking')
+              : update == null
+                ? t('dialog.update.noUpdates')
+                : t('dialog.update.updatesAvailable')
+          }}
+        </span>
+        <progress-spinner-wrapper v-show="isCheckingUpdate" class="grow-0 m-0" size="16px" />
+      </div>
+      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
+      <span>{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span>
+      <ProgressBar :show-value="false" :value="progressBarValue" :mode="total === 0 ? 'indeterminate' : 'determinate'" />
+      <div class="mt-3 flex flex-row justify-end gap-2">
+        <ButtonWrapper
+          :label="t('dialog.update.installUpdate')"
+          :disabled="update == null"
+          :loading="progress != null"
+          severity="primary"
+          @click="installUpdate"
+        />
+      </div>
+    </div>
+  </Dialog>
+</template>

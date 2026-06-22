@@ -3,7 +3,7 @@
 
 import { onUnmounted } from 'vue';
 import { useApi } from '../api';
-import { LevelMeterListener } from '../api/interface';
+import type { LevelMeterListener } from '../api/interface';
 
 let listenerRegistered = false;
 

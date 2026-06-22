@@ -1,92 +1,16 @@
-<template>
-  <div class="d-flex flex-column w-100 h-100">
-    <v-table
-      fixed-header
-      density="compact"
-      class="flex-grow-1"
-      height="100%"
-      striped="even"
-    >
-      <thead>
-        <tr>
-          <th>{{ t('view.connect.remoteName') }}</th>
-          <th>{{ t('view.connect.remoteHost') }}</th>
-          <th>{{ t('view.connect.remotePort') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="entry in services"
-          :key="entry.host + ':' + entry.port"
-          v-ripple
-          @click="
-            host = entry.host;
-            port = entry.port.toString();
-          "
-          @dblclick="connect(entry.host, entry.port)"
-        >
-          <th>{{ entry.serverName }}</th>
-          <th>{{ entry.host }}</th>
-          <th>{{ entry.port }}</th>
-        </tr>
-      </tbody>
-    </v-table>
-    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
-      <v-text-field
-        v-model="host"
-        hide-details
-        persistent-placeholder
-        variant="outlined"
-        density="compact"
-        autocomplete="off"
-        class="flex-grow-0"
-        :label="t('view.connect.remoteHost')"
-        width="400px"
-        @keydown.enter="connect(host, port)"
-      />
-      <v-text-field
-        v-model="port"
-        hide-details
-        persistent-placeholder
-        variant="outlined"
-        density="compact"
-        autocomplete="off"
-        class="flex-grow-0"
-        :label="t('view.connect.remotePort')"
-        width="100px"
-        @keydown.enter="connect(host, port)"
-      />
-      <v-btn
-        class="ml-auto"
-        :text="t('view.connect.connect')"
-        color="primary"
-        :disabled="host == '' || port == ''"
-        @click="connect(host, port)"
-      />
-    </v-footer>
-    <v-overlay
-      :model-value="overlay"
-      location="center"
-      persistent
-    >
-      <v-progress-circular
-        color="primary"
-        size="64"
-        indeterminate
-      />
-    </v-overlay>
-  </div>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onMounted, onUnmounted, ref } from 'vue';
-import { ServiceEntry } from './types/ServiceEntry';
+import { onMounted, onUnmounted, ref, Teleport } from 'vue';
+import type { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
 import { useApi } from './api';
-import { useUiState } from './stores/uistate';
+import { useUiState } from './stores/uiState';
+import ButtonWrapper from './components/wrapper/ButtonWrapper.vue';
+import ProgressSpinnerWrapper from './components/wrapper/ProgressSpinnerWrapper.vue';
+import FloatLabel from 'primevue/floatlabel';
+import InputText from 'primevue/inputtext';
 
 const { t } = useI18n();
 const api = useApi();
@@ -156,3 +80,99 @@ onUnmounted(() => {
   api.remote?.stopServerDiscovery();
 });
 </script>
+
+<template>
+  <div class="flex flex-col w-full h-full items-stretch">
+    <div class="grow overflow-auto h-100">
+      <table
+        class="w-full border-collapse"
+        :class="$style['table']"
+      >
+        <thead>
+          <tr>
+            <th class="sticky top-0 z-1">{{ t('view.connect.remoteName') }}</th>
+            <th class="sticky top-0 z-1">{{ t('view.connect.remoteHost') }}</th>
+            <th class="sticky top-0 z-1 w-25">{{ t('view.connect.remotePort') }}</th>
+            <th class="sticky top-0 z-1 w-30"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="entry in services"
+            :key="entry.host + ':' + entry.port"
+            @click="
+              host = entry.host;
+              port = entry.port.toString();
+            "
+          >
+            <td>{{ entry.serverName }}</td>
+            <td>{{ entry.host }}</td>
+            <td>{{ entry.port }}</td>
+            <td>
+              <button-wrapper
+                variant="outlined"
+                size="small"
+                :label="t('view.connect.connect')"
+                @click="connect(entry.host, entry.port)"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <footer class="grow-0 flex items-center ml-0 mr-0 w-full gap-3 p-1">
+      <FloatLabel variant="on" class="grow-0">
+          <InputText
+            id="on_label"
+            class="w-100"
+            v-model="host"
+            autocomplete="off"
+            @keydown.enter="connect(host, port)"
+          />
+          <label for="on_label">{{ t('view.connect.remoteHost') }}</label>
+      </FloatLabel>
+      <FloatLabel variant="on" class="grow-0">
+          <InputText
+            id="on_label"
+            class="w-25"
+            v-model="port"
+            autocomplete="off"
+            @keydown.enter="connect(host, port)"
+          />
+          <label for="on_label">{{ t('view.connect.remotePort') }}</label>
+      </FloatLabel>
+      <button-wrapper
+        class="ml-auto"
+        :label="t('view.connect.connect')"
+        severity="primary"
+        :disabled="host == '' || port == ''"
+        @click="connect(host, port)"
+      />
+    </footer>
+    <Teleport to="body">
+      <div
+        v-if="overlay"
+        class="fixed inset-0 z-1000"
+        style="background-color: rgb(0, 0, 0, 0.5);"
+      >
+        <progress-spinner-wrapper
+          color="primary"
+          size="64"
+        />
+      </div>
+    </Teleport>
+  </div>
+</template>
+
+<style lang="css" module>
+.table th,td {
+  height: 34px;
+  border-bottom: 1px solid rgb(from currentColor r g b / 0.5);
+  text-align: left;
+  padding-left: calc(var(--spacing) * 2);
+  padding-right: calc(var(--spacing) * 2);
+}
+.table tbody tr:nth-of-type(odd) {
+  background-color: rgb(from var(--p-surface-500) r g b / 0.2);
+}
+</style>

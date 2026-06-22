@@ -1,71 +1,59 @@
-<template>
-  <component :is="connected ? MainView : ConnectView" />
-  <v-snackbar-queue
-    v-model="uiState.success_messages"
-    timeout="2000"
-    color="success"
-  />
-  <v-snackbar-queue
-    v-model="uiState.error_messages"
-    timeout="2000"
-    color="error"
-  />
-  <update-dialog
-    v-if="isTauri"
-    v-model="uiState.isUpdateDialogOpen"
-  />
-  <credits-dialog
-    v-if="isTauri"
-    v-model="uiState.isCreditsDialogOpen"
-  />
-  <license-dialog
-    v-if="isHost"
-    v-model="uiState.isLicenseDialogOpen"
-  />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-import { useUiSettings } from './stores/uiSettings';
-import { useI18n } from 'vue-i18n';
-import { useTheme } from 'vuetify';
-import { useApi } from './api';
 import MainView from './MainView.vue';
 import ConnectView from './ConnectView.vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { createWindowMenu } from './window-menu';
+import { useUiSettings } from './stores/uiSettings';
+import { useUiState } from './stores/uiState';
+import { useApi } from './api';
+import { usePreferredColorScheme } from '@vueuse/core';
+import { setTheme } from '@tauri-apps/api/app';
+import Toast from 'primevue/toast';
 import UpdateDialog from './components/dialog/UpdateDialog.vue';
 import CreditsDialog from './components/dialog/CreditsDialog.vue';
 import LicenseDialog from './components/dialog/LicenseDialog.vue';
-import { useUiState } from './stores/uistate';
-import { setTheme } from '@tauri-apps/api/app';
 
 const isTauri = __IS_TAURI__;
 const isHost = __IS_HOST__;
 
+const connected = ref<boolean>(__IS_HOST__);
+
 const { locale } = useI18n({ useScope: 'global' });
 const windowMenu = createWindowMenu();
-const theme = useTheme();
+
+const api = useApi();
 const uiState = useUiState();
 const uiSettings = useUiSettings();
-const api = useApi();
-const connected = ref(__IS_HOST__);
-let unlisten: (() => void) | null = null;
+const colorScheme = usePreferredColorScheme();
+
+watch([colorScheme, () => uiSettings.settings.appearance.darkMode], ([scheme, darkMode], [_, oldDarkMode]) => {
+  let isDark;
+  if (__IS_HOST__ && darkMode !== oldDarkMode) {
+    setTheme(darkMode === 'system' ? null : darkMode);
+  }
+  if (uiSettings.settings.appearance.darkMode === 'system') {
+    isDark = scheme !== 'light';
+  } else {
+    isDark = darkMode !== 'light';
+  }
+  if (isDark) {
+    document.documentElement.classList.add('p-dark');
+  } else {
+    document.documentElement.classList.remove('p-dark');
+  }
+}, {
+  immediate: true
+});
 
 watch(
   () => uiSettings.settings.appearance,
   (newSettings, oldSettings) => {
     if (newSettings.language !== oldSettings.language) {
       setLanguage(newSettings.language);
-    }
-    if (newSettings.darkMode !== oldSettings.darkMode) {
-      if (__IS_TAURI__) {
-        setTheme(newSettings.darkMode === 'system' ? null : newSettings.darkMode);
-      } else {
-        theme.change(newSettings.darkMode);
-      }
     }
   },
 );
@@ -86,12 +74,9 @@ const setLanguage = (language: string | null) => {
   windowMenu?.updateLocale();
 };
 
+let unlisten: (() => void) | null = null;
+
 onMounted(() => {
-  if (__IS_TAURI__) {
-    setTheme(uiSettings.settings.appearance.darkMode === 'system' ? null : uiSettings.settings.appearance.darkMode);
-  } else {
-    theme.change(uiSettings.settings.appearance.darkMode);
-  }
   void Promise.resolve(windowMenu?.init()).then(() => {
     setLanguage(uiSettings.settings.appearance.language);
   });
@@ -115,18 +100,36 @@ onUnmounted(() => {
 });
 </script>
 
+<template>
+  <component :is="connected ? MainView : ConnectView" />
+  <Toast />
+  <UpdateDialog
+    v-if="isTauri"
+    v-model="uiState.isUpdateDialogOpen"
+  />
+  <CreditsDialog
+    v-if="isTauri"
+    v-model="uiState.isCreditsDialogOpen"
+  />
+  <LicenseDialog
+    v-if="isHost"
+    v-model="uiState.isLicenseDialogOpen"
+  />
+</template>
+
 <style>
-  html {
-    height: 100%;
-    overflow: hidden;
-    scrollbar-width: none;
-    overscroll-behavior: none;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;
-  }
-  body,
-  #app {
-    height: 100%;
-  }
+html {
+  height: 100%;
+  overflow: hidden;
+  scrollbar-width: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+body,
+#app {
+  height: 100%;
+}
 </style>

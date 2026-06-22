@@ -1,29 +1,27 @@
-<template>
-  <component :is="xs ? MainViewMobile : MainViewDesktop" />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { useHotkey } from 'vuetify';
-import { useUiState } from './stores/uistate';
-import { useShowModel } from './stores/showmodel';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useShowState } from './stores/showstate';
-import { PlaybackStatus } from './types/PlaybackStatus';
+import { breakpointsTailwind, useBreakpoints, useIntervalFn } from '@vueuse/core';
+import MainViewDesktop from './MainViewDesktop.vue';
+import MainViewMobile from './MainViewMobile.vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { useShowModel } from './stores/showModel.ts';
+import { useShowState } from './stores/showState.ts';
+import { useUiState } from './stores/uiState.ts';
+import { useAssetResult } from './stores/assetResult.ts';
+import { useUiSettings } from './stores/uiSettings.ts';
 import { useI18n } from 'vue-i18n';
-import { useAssetResult } from './stores/assetResult';
-import { useUiSettings } from './stores/uiSettings';
-import { getLockCursorToSelection } from './utils';
+import { useApi } from './api';
+import { usePositionTicker } from './composables/usePosition.ts';
+import { getLockCursorToSelection } from './utils.ts';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi } from './api';
-import { useIntervalFn } from '@vueuse/core';
-import MainViewDesktop from './MainViewDesktop.vue';
-import { useDisplay } from 'vuetify';
-import MainViewMobile from './MainViewMobile.vue';
-import { usePositionTicker } from './composables/usePosition.ts';
+import { useHotkey } from './composables/useHotkey.ts';
+import type { PlaybackStatus } from './types/PlaybackStatus.ts';
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const xs = breakpoints.smaller('sm');
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -32,7 +30,6 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t } = useI18n();
 const api = useApi();
-const { xs } = useDisplay();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -253,86 +250,56 @@ onUnmounted(() => {
 if (api.host) {
   useHotkey(
     'cmd+o',
-    () => {
+    (e) => {
+      e.preventDefault()
       api.host?.fileOpen();
     },
-    { preventDefault: true },
   );
 
   useHotkey(
     'cmd+s',
-    () => {
+    (e) => {
+      e.preventDefault();
       api.host?.fileSave();
     },
-    { preventDefault: true },
   );
 
   useHotkey(
     'cmd+shift+a',
-    () => {
+    (e) => {
+      e.preventDefault();
       api.host?.fileSaveAs();
     },
-    { preventDefault: true },
   );
 }
 
-const goHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.go) || undefined;
-});
-const loadHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.load) || undefined;
-});
-const pauseAndResumeHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAndResume) || undefined;
-});
-const pauseAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAll) || undefined;
-});
-const resumeAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.resumeAll) || undefined;
-});
-const stopHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stop) || undefined;
-});
-const stopAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stopAll) || undefined;
-});
-const seekForwardHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekForward) || undefined;
-});
-const seekBackwardHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekBackward) || undefined;
-});
-const audioToggleRepeatHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.audioAction.toggleRepeat) || undefined;
-});
-
 useHotkey(
-  goHotkey,
-  () => {
-    api.sendGo();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  loadHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendLoad(cueId);
+  uiSettings.settings.hotkey.playback.go,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendGo();
     }
   },
-  {
-    preventDefault: true,
+);
+
+useHotkey(
+  uiSettings.settings.hotkey.playback.load,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (let cueId of uiState.selectedRows) {
+        api.sendLoad(cueId);
+      }
+    }
   },
 );
 
 useHotkey(
-  pauseAndResumeHotkey,
-  () => {
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+  uiSettings.settings.hotkey.playback.pauseAndResume,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
       if ((['preWaiting', 'playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
         api.sendPause(uiState.selected);
       } else if (
@@ -342,97 +309,93 @@ useHotkey(
       }
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  pauseAllHotkey,
-  () => {
-    api.sendPauseAll();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  resumeAllHotkey,
-  () => {
-    api.sendResumeAll();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  stopHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendStop(cueId);
+  uiSettings.settings.hotkey.playback.pauseAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendPauseAll();
     }
   },
-  {
-    preventDefault: true,
+);
+
+useHotkey(
+  uiSettings.settings.hotkey.playback.resumeAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendResumeAll();
+    }
   },
 );
 
 useHotkey(
-  stopAllHotkey,
-  () => {
-    api.sendStopAll();
-  },
-  {
-    preventDefault: true,
+  uiSettings.settings.hotkey.playback.stop,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (let cueId of uiState.selectedRows) {
+        api.sendStop(cueId);
+      }
+    }
   },
 );
 
 useHotkey(
-  seekForwardHotkey,
-  () => {
-    console.log('key triggered');
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+  uiSettings.settings.hotkey.playback.stopAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendStopAll();
+    }
+  },
+);
+
+useHotkey(
+  uiSettings.settings.hotkey.playback.seekForward,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
       api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  seekBackwardHotkey,
-  () => {
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+  uiSettings.settings.hotkey.playback.seekBackward,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
       api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  audioToggleRepeatHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendToggleRepeat(cueId);
+  uiSettings.settings.hotkey.audioAction.toggleRepeat,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (let cueId of uiState.selectedRows) {
+        api.sendToggleRepeat(cueId);
+      }
     }
-  },
-  {
-    preventDefault: true,
   },
 );
 
 useHotkey(
   'cmd+r',
-  () => {
+  (e) => {
+    e.preventDefault();
     if (uiState.mode === 'edit') {
       uiState.isRenumberCueDialogOpen = true;
     }
   },
-  { preventDefault: true },
 );
 </script>
+
+<template>
+  <component :is="xs ? MainViewMobile : MainViewDesktop" />
+</template>

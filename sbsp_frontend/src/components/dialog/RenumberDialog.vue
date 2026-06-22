@@ -1,15 +1,60 @@
+<script setup lang="ts">
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
+import { computed, ref } from 'vue';
+import { useUiState } from '../../stores/uiState';
+import { useI18n } from 'vue-i18n';
+import { useApi } from '../../api';
+import Dialog from 'primevue/dialog';
+
+const { t } = useI18n();
+const api = useApi();
+const uiState = useUiState();
+
+const isRenumberDialogOpen = defineModel <boolean> ({ required: true });
+const startFrom = ref(1);
+const increment = ref(1);
+const prefix = ref('');
+const suffix = ref('');
+
+const preview = computed(() => {
+  let result = '';
+  for (let i = 0; i < 3; i++) {
+    result += prefix.value + (startFrom.value + increment.value * i) + suffix.value + '  ';
+  }
+  return result + '...';
+});
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    onDone();
+  } else if (e.key === 'Escape') {
+    isRenumberDialogOpen.value = false;
+  }
+};
+
+const onDone = () => {
+  api
+    .renumberCues(Array.from(uiState.selectedRows), startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
+    .then(() => {
+      isRenumberDialogOpen.value = false;
+    })
+    .catch(e => console.error(e));
+};
+</script>
+
 <template>
-  <v-dialog
-    v-model="isRenumberDialogOpen"
+  <Dialog
+    v-model:visible="isRenumberDialogOpen"
     width="auto"
+    :header="t('dialog.renumber.title')"
     @keydown.stop="onKeydown"
     @contextmenu.prevent
   >
-    <v-sheet
-      class="d-flex flex-column ga-4 pa-3"
-      width="400px"
+    <div
+      class="flex flex-col gap-4 p-3 w-100"
     >
-      <h2>{{ t('dialog.renumber.title') }}</h2>
       <v-number-input
         v-model="startFrom"
         persistent-placeholder
@@ -53,52 +98,6 @@
           {{ t('general.done') }}
         </v-btn>
       </v-sheet>
-    </v-sheet>
-  </v-dialog>
+    </div>
+  </Dialog>
 </template>
-
-<script setup lang="ts">
-// SPDX-License-Identifier: Elastic-2.0
-// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
-
-import { computed, ref } from 'vue';
-import { useUiState } from '../../stores/uistate';
-import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
-import TextInput from '../input/TextInput.vue';
-
-const { t } = useI18n();
-const api = useApi();
-const uiState = useUiState();
-
-const isRenumberDialogOpen = defineModel <boolean> ({ required: true });
-const startFrom = ref(1);
-const increment = ref(1);
-const prefix = ref('');
-const suffix = ref('');
-
-const preview = computed(() => {
-  let result = '';
-  for (let i = 0; i < 3; i++) {
-    result += prefix.value + (startFrom.value + increment.value * i) + suffix.value + '  ';
-  }
-  return result + '...';
-});
-
-const onKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') {
-    onDone();
-  } else if (e.key === 'Escape') {
-    isRenumberDialogOpen.value = false;
-  }
-};
-
-const onDone = () => {
-  api
-    .renumberCues(Array.from(uiState.selectedRows), startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
-    .then(() => {
-      isRenumberDialogOpen.value = false;
-    })
-    .catch(e => console.error(e));
-};
-</script>

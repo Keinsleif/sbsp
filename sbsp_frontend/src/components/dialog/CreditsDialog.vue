@@ -1,24 +1,3 @@
-<template>
-  <v-dialog
-    v-model="isThirdPartyNoticesDialogOpen"
-    @contextmenu.prevent
-  >
-    <v-sheet class="pa-10">
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div :class="$style['markdown']" v-html="notices" />
-    </v-sheet>
-    <v-divider />
-    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100">
-      <v-btn
-        class="ml-auto"
-        color="primary"
-        :text="t('general.close')"
-        @click="isThirdPartyNoticesDialogOpen = false"
-      />
-    </v-footer>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
@@ -28,6 +7,9 @@ import mila from 'markdown-it-link-attributes';
 import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
+import Divider from 'primevue/divider';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import Dialog from 'primevue/dialog';
 
 const { t } = useI18n();
 const api = useApi();
@@ -52,6 +34,18 @@ onMounted(() => {
     .catch(e => console.error(e));
 });
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isThirdPartyNoticesDialogOpen"
+    @contextmenu.prevent
+  >
+    <div class="p-10">
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div :class="$style['markdown']" v-html="notices" />
+    </div>
+  </Dialog>
+</template>
 
 <style lang="css" module>
   .markdown {

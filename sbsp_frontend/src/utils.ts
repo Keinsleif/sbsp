@@ -1,16 +1,26 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { MaybeRef, unref } from 'vue';
+import { unref } from 'vue';
+import type { MaybeRef } from 'vue';
 import { useAssetResult } from './stores/assetResult';
-import { useShowModel } from './stores/showmodel';
+import { useShowModel } from './stores/showModel';
 import { useUiSettings } from './stores/uiSettings';
 import type { Cue } from './types/Cue';
 import type { CueParam } from './types/CueParam';
 import type { Easing } from './types/Easing';
 import { storeToRefs } from 'pinia';
-import { mdiChartBellCurveCumulative, mdiGroup, mdiPauseCircleOutline, mdiPlayCircleOutline, mdiStopCircleOutline, mdiTimerSandEmpty, mdiUploadCircleOutline, mdiVolumeHigh } from '@mdi/js';
-import { Permissions } from './types/Permissions';
+import {
+  mdiChartBellCurveCumulative,
+  mdiGroup,
+  mdiPauseCircleOutline,
+  mdiPlayCircleOutline,
+  mdiStopCircleOutline,
+  mdiTimerSandEmpty,
+  mdiUploadCircleOutline,
+  mdiVolumeHigh,
+} from '@mdi/js';
+import type { Permissions } from './types/Permissions';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -156,7 +166,10 @@ export const buildCueName = (cue: Cue | null): string => {
   }
 };
 
-export const calculateDuration = (cueParam: CueParam, totalDuration: number | null | undefined): number | null => {
+export const calculateDuration = (
+  cueParam: CueParam,
+  totalDuration: number | null | undefined,
+): number | null => {
   switch (cueParam.type) {
     case 'audio': {
       if (totalDuration == null || isNaN(totalDuration)) {
@@ -328,7 +341,7 @@ export const generateRandomPassword = (): string => {
 };
 
 export const PERMISSIONS = {
-  READ: 1 << 0 as Permissions,
-  CONTROL: 1 << 1 as Permissions,
-  EDIT: 1 << 2 as Permissions,
+  READ: (1 << 0) as Permissions,
+  CONTROL: (1 << 1) as Permissions,
+  EDIT: (1 << 2) as Permissions,
 };

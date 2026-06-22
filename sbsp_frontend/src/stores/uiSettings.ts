@@ -47,6 +47,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           soundType: 'streaming',
           type: 'audio',
@@ -71,6 +72,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'wait',
           duration: 5.0,
@@ -86,6 +88,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'fade',
           target: '00000000-0000-0000-0000-000000000000',
@@ -109,6 +112,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'start',
           target: '00000000-0000-0000-0000-000000000000',
@@ -124,6 +128,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'stop',
           target: '00000000-0000-0000-0000-000000000000',
@@ -140,6 +145,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'pause',
           target: '00000000-0000-0000-0000-000000000000',
@@ -155,6 +161,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'load',
           target: '00000000-0000-0000-0000-000000000000',
@@ -170,6 +177,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
         chain: {
           type: 'doNotChain',
         },
+        parentId: null,
         params: {
           type: 'group',
           mode: {
@@ -198,7 +206,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     .then((value) => {
       settings.value = value;
     })
-    .catch(e => console.error(e));
+    .catch((e) => console.error(e));
 
   const update = (newSettings: GlobalHostSettings | GlobalRemoteSettings) => {
     settings.value = newSettings;
@@ -211,7 +219,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
       .then((value) => {
         settings.value = value;
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   };
 
   const clone = () => {
@@ -224,7 +232,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
       .then((settings) => {
         update(settings);
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   };
 
   const export_to_file = () => {
