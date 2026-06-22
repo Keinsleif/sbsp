@@ -12,9 +12,10 @@ use std::{
 
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
+use normpath::PathExt;
 
 use crate::{
-    manager::{ModelCommand, ProjectStatus, command::InsertPosition},
+    manager::{ModelCommand, project::ProjectStatus, command::InsertPosition},
     model::{
         ShowModel,
         cue::{Cue, CueChain, CueParam, group::GroupMode},
@@ -154,71 +155,39 @@ impl ShowModelHandle {
 
     pub async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
         let model = self.read().await;
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
-
-        while let Some(cue) = queue.pop_front() {
-            if cue.id == *cue_id {
-                return true;
-            }
-
-            if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
-            }
-        }
-        false
+        model.cue_list.cues.contains_key(cue_id)
     }
 
     pub async fn get_cue_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
-        let model = self.read().await;
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
-
-        while let Some(cue) = queue.pop_front() {
-            if cue.id == *cue_id {
-                return Some(cue.clone());
-            }
-
-            if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
-            }
-        }
-        None
+        self.read().await.cue_list.cues.get(cue_id).cloned()
     }
 
-    pub async fn get_cue_and_parent_by_id(&self, cue_id: &Uuid) -> Option<(Cue, Option<Cue>)> {
+    pub async fn get_parent_by_id(&self, cue_id: &Uuid) -> Option<Cue> {
         let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
 
-        while let Some((cues, parent)) = queue.pop_front() {
-            for cue in cues {
-                if cue.id == *cue_id {
-                    return Some((cue.clone(), parent.cloned()));
-                }
-
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
-                }
-            }
-        }
-        None
+        model.cue_list.cues.get(cue_id).and_then(|cue| {
+            cue.parent_id.and_then(|parent_id| {
+                model.cue_list.cues.get(&parent_id).cloned()
+            })
+        })
     }
 
     pub async fn get_all_children_by_id(&self, cue_id: &Uuid) -> Vec<Cue> {
+        let model = self.model.read().await;
         let mut result = Vec::new();
-        let target_cue = self.get_cue_by_id(cue_id).await;
+        let target_cue = model.cue_list.cues.get(cue_id);
         if let Some(target) = target_cue
             && let CueParam::Group { children, .. } = &target.params
         {
-            let mut queue: VecDeque<&Vec<Cue>> = VecDeque::from([children.as_ref()]);
-            while let Some(cues) = queue.pop_front() {
-                for cue in cues {
-                    if let CueParam::Group { children, .. } = &cue.params {
-                        queue.push_back(children);
-                    } else {
-                        result.push(cue.clone());
+            let mut queue: VecDeque<&Vec<Uuid>> = VecDeque::from([children]);
+            while let Some(cue_ids) = queue.pop_front() {
+                for id in cue_ids {
+                    if let Some(cue) = model.cue_list.cues.get(id) {
+                        if let CueParam::Group { children, .. } = &cue.params {
+                            queue.push_back(children);
+                        } else {
+                            result.push(cue.clone());
+                        }
                     }
                 }
             }
@@ -227,86 +196,92 @@ impl ShowModelHandle {
     }
 
     pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
-        let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
+        let model = self.model.read().await;
+        let mut current_id = *cue_id;
 
-        while let Some((cues, _parent)) = queue.pop_front() {
-            for (index, cue) in cues.iter().enumerate() {
-                if cue.id == *cue_id {
-                    if index + 1 < cues.len() {
-                        return Some(cues[index + 1].id);
-                    } else {
-                        return None;
+        loop {
+            let cue = model.cue_list.cues.get(&current_id)?;
+
+            if let Some(parent_id) = cue.parent_id {
+                let parent = model.cue_list.cues.get(&parent_id)?;
+                if let CueParam::Group { children, .. } = &parent.params
+                    && let Some(idx) = children.iter().position(|id| *id == current_id)
+                {
+                    if let Some(next_id) = children.get(idx + 1) {
+                        return Some(*next_id);
                     }
+
+                    current_id = parent_id;
+                    continue;
                 }
 
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
-                }
+                return None;
             }
+
+            if let Some(idx) = model.cue_list.root_ids.iter().position(|id| *id == current_id) {
+                return model.cue_list.root_ids.get(idx + 1).copied();
+            }
+
+            return None;
         }
-        None
     }
 
     pub async fn get_cue_chain_by_id(&self, cue_id: &Uuid) -> Option<CueChain> {
         let model = self.read().await;
-        let mut queue: VecDeque<(&Vec<Cue>, Option<&Cue>)> = VecDeque::from([(&model.cues, None)]);
 
-        while let Some((cues, parent)) = queue.pop_front() {
-            for (index, cue) in cues.iter().enumerate() {
-                if cue.id == *cue_id {
-                    if let Some(parent_cue) = parent {
-                        if let CueParam::Group { mode, .. } = &parent_cue.params {
-                            match mode {
-                                GroupMode::Playlist { repeat } => {
-                                    if (index + 1) == cues.len()
-                                        && let Some(first_cue) = cues.first()
-                                    {
-                                        if *repeat {
-                                            return Some(CueChain::AfterComplete {
-                                                target_id: Some(first_cue.id),
-                                            });
-                                        } else {
-                                            return Some(CueChain::DoNotChain);
-                                        }
+        if let Some(cue) = model.cue_list.cues.get(cue_id) {
+            if let Some(parent_id) = cue.parent_id {
+                if let Some(parent) = model.cue_list.cues.get(&parent_id) {
+                    if let CueParam::Group { base, children } = &parent.params {
+                        match base.mode {
+                            GroupMode::Playlist { repeat } => {
+                                if children.last() == Some(cue_id)
+                                    && let Some(first_id) = children.first()
+                                {
+                                    if repeat {
+                                        return Some(CueChain::AfterComplete {
+                                            target_id: Some(*first_id),
+                                        });
                                     } else {
-                                        return Some(CueChain::AfterComplete { target_id: None });
+                                        return Some(CueChain::DoNotChain);
                                     }
+                                } else {
+                                    return Some(CueChain::AfterComplete { target_id: None });
                                 }
-                                GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
-                                    return Some(cue.chain.clone());
-                                }
-                            }
+                            },
+                            GroupMode::Concurrency |
+                            GroupMode::StartFirst { .. } => return Some(cue.chain),
                         }
                     } else {
-                        return Some(cue.chain.clone());
+                        log::warn!("broken cues, invalid parent_id.");
                     }
                 }
-
-                if let CueParam::Group { children, .. } = &cue.params {
-                    queue.push_back((children, Some(cue)));
-                }
+            } else {
+                return Some(cue.chain)
             }
         }
         None
     }
 
     pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
-        let model = self.read().await;
+        let targets: HashSet<_> = {
+            let model = self.read().await;
+            model.cue_list.cues.values().filter_map(|cue| {
+                if let CueParam::Audio(params) = &cue.params {
+                    Some(params.target.clone())
+                } else {
+                    None
+                }
+            }).collect()
+        };
         let mut result = HashSet::new();
-        let mut queue: VecDeque<&Cue> = model.cues.iter().collect();
 
-        while let Some(cue) = queue.pop_front() {
-            if let CueParam::Audio(param) = &cue.params {
-                if let Ok(path) = self.get_asset_standard_path(&param.target).await {
-                    result.insert(path);
-                }
-            } else if let CueParam::Group { children, .. } = &cue.params {
-                for child in children.iter() {
-                    queue.push_back(child);
-                }
+        for target in targets {
+            if let Ok(path) = self.get_asset_standard_path(&target).await {
+                result.insert(path);
             }
         }
+
         result
     }
 
@@ -338,9 +313,9 @@ impl ShowModelHandle {
         if let Some(model_path) = self.get_current_file_path().await
             && let Some(parent) = model_path.parent()
         {
-            Ok(tokio::fs::canonicalize(parent.join(path)).await?)
+            Ok(parent.join(path).normalize()?.into_path_buf())
         } else {
-            Ok(tokio::fs::canonicalize(path).await?)
+            Ok(path.normalize()?.into_path_buf())
         }
     }
 
@@ -354,5 +329,270 @@ impl ShowModelHandle {
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, ShowModel> {
         self.model.read().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+use std::sync::{Arc, atomic::AtomicBool};
+
+use tokio::sync::{RwLock, mpsc};
+
+use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowModel, cue::{Cue, CueChain, CueColor, CueParam, WaitCueParam, group::{GroupCueParamBase, GroupMode}}}};
+
+    #[tokio::test]
+    async fn get_next_cue_root() {
+        let mut model = ShowModel::default();
+        let current_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+        let next_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+        let current_id = current_cue.id;
+        let next_id = next_cue.id;
+        model.cue_list.root_ids.push(current_id);
+        model.cue_list.root_ids.push(next_id);
+        model.cue_list.cues.insert(current_id, current_cue);
+        model.cue_list.cues.insert(next_id, next_cue);
+
+        let (command_tx, _command_rx) = mpsc::channel(1);
+        let handle = ShowModelHandle {
+            model: Arc::new(RwLock::new(model)),
+            command_tx,
+            project_status: Arc::new(RwLock::new(ProjectStatus::Unsaved)),
+            modify_status: Arc::new(AtomicBool::new(false)),
+        };
+
+        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
+    }
+
+    #[tokio::test]
+    async fn get_next_cue_group_inner() {
+        let mut model = ShowModel::default();
+        let group_id = uuid::Uuid::new_v4();
+
+        let current_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: Some(group_id),
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+
+        let next_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: Some(group_id),
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+        let current_id = current_cue.id;
+        let next_id = next_cue.id;
+
+        let group_cue = Cue {
+            id: group_id,
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Group {
+                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
+                children: vec![current_id, next_id]
+            }
+        };
+
+        model.cue_list.root_ids.push(group_id);
+        model.cue_list.cues.insert(current_id, current_cue);
+        model.cue_list.cues.insert(next_id, next_cue);
+        model.cue_list.cues.insert(group_id, group_cue);
+
+        let (command_tx, _command_rx) = mpsc::channel(1);
+        let handle = ShowModelHandle {
+            model: Arc::new(RwLock::new(model)),
+            command_tx,
+            project_status: Arc::new(RwLock::new(ProjectStatus::Unsaved)),
+            modify_status: Arc::new(AtomicBool::new(false)),
+        };
+
+        assert_eq!(handle.get_next_cue_id_by_id(&group_id).await, None);
+        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
+    }
+
+    #[tokio::test]
+    async fn get_next_cue_group_outer() {
+        let mut model = ShowModel::default();
+        let group_id = uuid::Uuid::new_v4();
+
+        let current_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: Some(group_id),
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+
+        let next_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+        let current_id = current_cue.id;
+        let next_id = next_cue.id;
+
+        let group_cue = Cue {
+            id: group_id,
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Group {
+                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
+                children: vec![current_id]
+            }
+        };
+
+        model.cue_list.root_ids.push(group_id);
+        model.cue_list.root_ids.push(next_id);
+        model.cue_list.cues.insert(current_id, current_cue);
+        model.cue_list.cues.insert(next_id, next_cue);
+        model.cue_list.cues.insert(group_id, group_cue);
+
+        let (command_tx, _command_rx) = mpsc::channel(1);
+        let handle = ShowModelHandle {
+            model: Arc::new(RwLock::new(model)),
+            command_tx,
+            project_status: Arc::new(RwLock::new(ProjectStatus::Unsaved)),
+            modify_status: Arc::new(AtomicBool::new(false)),
+        };
+
+        assert_eq!(handle.get_next_cue_id_by_id(&group_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
+    }
+
+    #[tokio::test]
+    async fn get_next_cue_group_nest() {
+        let mut model = ShowModel::default();
+        let group1_id = uuid::Uuid::new_v4();
+        let group2_id = uuid::Uuid::new_v4();
+
+        let current_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: Some(group1_id),
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+
+        let next_cue = Cue {
+            id: uuid::Uuid::new_v4(),
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+        };
+        let current_id = current_cue.id;
+        let next_id = next_cue.id;
+
+        let group1_cue = Cue {
+            id: group1_id,
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: Some(group2_id),
+            params: CueParam::Group {
+                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
+                children: vec![current_id]
+            }
+        };
+
+        let group2_cue = Cue {
+            id: group2_id,
+            number: "".into(),
+            name: None,
+            notes: "".into(),
+            color: CueColor::None,
+            pre_wait: 0.0,
+            chain: CueChain::DoNotChain,
+            parent_id: None,
+            params: CueParam::Group {
+                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
+                children: vec![group1_id]
+            }
+        };
+
+        model.cue_list.root_ids.push(group2_id);
+        model.cue_list.root_ids.push(next_id);
+        model.cue_list.cues.insert(current_id, current_cue);
+        model.cue_list.cues.insert(next_id, next_cue);
+        model.cue_list.cues.insert(group1_id, group1_cue);
+        model.cue_list.cues.insert(group2_id, group2_cue);
+
+        let (command_tx, _command_rx) = mpsc::channel(1);
+        let handle = ShowModelHandle {
+            model: Arc::new(RwLock::new(model)),
+            command_tx,
+            project_status: Arc::new(RwLock::new(ProjectStatus::Unsaved)),
+            modify_status: Arc::new(AtomicBool::new(false)),
+        };
+
+        assert_eq!(handle.get_next_cue_id_by_id(&group1_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&group2_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
     }
 }

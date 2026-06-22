@@ -1,23 +1,27 @@
 <template>
   <tr
     :class="[
-      props.isDragOver ? $style['drag-over-row'] : '',
+      isDragOver ? $style['drag-over-row'] : '',
       isSelected ? $style['selected-row'] : '',
       $style['color-row']
     ]"
     :data-cue-color="item.cue.color"
+    @drop="drop"
   >
     <td
       headers="cuelist_handle"
       class="px-0"
       :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
       :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
-      @dragstart="dragStart($event, props.item.cue.id)"
+      @dragstart="dragStart"
       @pointerdown="(e) => { if (uiState.mode == 'edit') { e.stopPropagation() } }"
     >
       <v-icon v-show="uiState.mode == 'edit'" :icon="mdiDragVertical" />
     </td>
-    <td headers="cuelist_cursor" style="padding-left: 12px; padding-right: 0px">
+    <td
+      headers="cuelist_cursor"
+      style="padding-left: 12px; padding-right: 0px"
+    >
       <v-icon :icon="isPlaybackCursor ? mdiArrowRightBold : undefined" @click="setPlaybackCursor(props.item.cue.id)" />
     </td>
     <td headers="cuelist_status" style="padding-left: 6px">
@@ -59,7 +63,7 @@
         :icon="item.isGroup ? (isExpanded ? mdiMenuDown : mdiMenuRight) : undefined"
         :tabindex="item.isGroup ? 0 : -1"
         @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
-        @pointerdown.stop
+        @pointerdown="item.isGroup && $event.stopPropagation()"
       />
       {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
     </td>
@@ -208,14 +212,23 @@ const setPlaybackCursor = (cueId: string) => {
   }
 };
 
-const dragStart = (event: DragEvent, targetId: string) => {
+const dragStart = (event: DragEvent) => {
+  const targetId = props.item.cue.id;
   if (targetId && event.dataTransfer) {
     if (!uiState.selectedRows.has(targetId)) {
       uiState.setSelected(targetId);
     }
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.dropEffect = 'move';
-    // event.dataTransfer.setData('text/plain', index.toString());
+  }
+};
+
+const drop = (event: DragEvent) => {
+  event.preventDefault();
+  if (event.dataTransfer) {
+    const targetId = props.item.cue.id;
+    if (targetId == null) return;
+    api.moveCues(Array.from(uiState.selectedRows), { type: 'before', target: targetId });
   }
 };
 
@@ -314,7 +327,7 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
 const isPreWaitActive = computed(() => {
   return (
     props.item.cue.id in showState.activeCues
-    && (['preWaiting', 'preWaitPaused'] as PlaybackStatus[]).includes(showState.activeCues[props.item.cue.id]!.status)
+    && showState.activeCues[props.item.cue.id]!.status.startsWith('pre')
   );
 });
 

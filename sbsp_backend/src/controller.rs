@@ -89,11 +89,15 @@ impl CueController {
                         Ok(event) => {
                             match event {
                                 BackendEvent::ShowModelLoaded{..} => {
-                                    if self.state_tx.borrow().playback_cursor.is_none() {
+                                    {
                                         let model = self.model_handle.read().await;
-                                        if let Some(first_cue) = model.cues.first() {
+                                        if let Some(first_id) = model.cue_list.root_ids.first() {
                                             self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = Some(first_cue.id);
+                                                state.playback_cursor = Some(*first_id);
+                                            });
+                                        } else {
+                                            self.state_tx.send_modify(|state| {
+                                                state.playback_cursor = None;
                                             });
                                         }
                                     }
@@ -104,13 +108,24 @@ impl CueController {
                                         log::error!("Failed to stop active cues before load. {}", e);
                                     }
                                 },
+                                BackendEvent::ShowModelReset{..} => {
+                                    self.state_tx.send_modify(|state| {
+                                        state.playback_cursor = None;
+                                    });
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before reset. {}", e);
+                                    }
+                                    if let Err(e) = self.handle_command(ControllerCommand::StopAll).await {
+                                        log::error!("Failed to stop active cues before reset. {}", e);
+                                    }
+                                },
                                 BackendEvent::CueRemoved{cue_ids} => {
                                     let state = self.state_tx.borrow().clone();
                                     if let Some(cursor) = state.playback_cursor && cue_ids.contains(&cursor) {
                                         let model = self.model_handle.read().await;
-                                        if let Some(first_cue) = model.cues.first() {
+                                        if let Some(first_id) = model.cue_list.root_ids.first() {
                                             self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = Some(first_cue.id);
+                                                state.playback_cursor = Some(*first_id);
                                             });
                                         } else {
                                             self.state_tx.send_modify(|state| {
@@ -186,8 +201,11 @@ impl CueController {
                 let state = self.state_tx.borrow().clone();
 
                 for cue_id in state.active_cues.keys() {
-                    let executor_command = command.try_all_into_single_executor_command(*cue_id);
-                    self.executor_tx.send(executor_command).await?;
+                    let is_group = self.model_handle.get_cue_by_id(cue_id).await.is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
+                    if !is_group {
+                        let executor_command = command.try_all_into_single_executor_command(*cue_id);
+                        self.executor_tx.send(executor_command).await?;
+                    }
                 }
                 Ok(())
             }
@@ -248,14 +266,12 @@ impl CueController {
             anyhow::bail!("Playback cursor unavailable.");
         };
         let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await
-            && let CueParam::Group { mode, children } = &cue.params
-            && let GroupMode::StartFirst { enter } = mode
-            && *enter
+            && let CueParam::Group { base, children } = &cue.params
+            && let GroupMode::StartFirst { enter } = base.mode
+            && enter
         {
-            if let Some(target_cue) = children.get(1) {
-                Some(target_cue.id)
-            } else if let Some(first_cue) = children.first() {
-                Some(first_cue.id)
+            if let Some(target_id) = children.get(1) {
+                Some(*target_id)
             } else {
                 self.model_handle
                     .get_next_cue_id_by_id(&playback_cursor)
@@ -314,7 +330,7 @@ impl CueController {
                 if let Some(chain) = self.model_handle.get_cue_chain_by_id(cue_id).await {
                     match &chain {
                         CueChain::AfterComplete { .. } => {
-                            self.wait_tasks.insert(*cue_id, chain.clone());
+                            self.wait_tasks.insert(*cue_id, chain);
                         }
                         CueChain::AfterStart { target_id } => {
                             if let Some(target) = target_id {
@@ -662,7 +678,8 @@ mod tests {
         let mut write_lock = manager.write().await;
         write_lock.name = "TestShowModel".to_string();
         for cue_id in cue_ids {
-            write_lock.cues.push(Cue {
+            write_lock.cue_list.root_ids.push(*cue_id);
+            write_lock.cue_list.cues.insert(*cue_id, Cue {
                 id: *cue_id,
                 number: "1".to_string(),
                 name: None,
@@ -670,6 +687,7 @@ mod tests {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: model::cue::CueChain::DoNotChain,
+                parent_id: None,
                 params: model::cue::CueParam::Audio(AudioCueParam {
                     target: PathBuf::from("./I.G.Y.flac"),
                     start_time: Some(5.0),
@@ -733,9 +751,7 @@ mod tests {
     #[tokio::test]
     async fn set_playback_cursor() {
         let cue_id = Uuid::new_v4();
-        println!("{}", cue_id);
         let cue_id_next = Uuid::new_v4();
-        println!("{}", cue_id_next);
         let (controller, controller_handle, _, _, state_rx, mut event_rx) =
             setup_controller(&[cue_id, cue_id_next]).await;
 

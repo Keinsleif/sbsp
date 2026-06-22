@@ -15,3 +15,9 @@ pub enum GroupMode {
     Concurrency,
     StartFirst { enter: bool },
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupCueParamBase {
+    pub mode: GroupMode,
+}

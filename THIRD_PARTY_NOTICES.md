@@ -9208,6 +9208,7 @@ limitations under the License.
     - [ndk-context 0.1.1]( https://github.com/rust-windowing/android-ndk-rs )
     - [ndk-sys 0.6.0+11769913]( https://github.com/rust-mobile/ndk )
     - [ndk 0.9.0]( https://github.com/rust-mobile/ndk )
+    - [normpath 1.5.1]( https://github.com/dylni/normpath )
     - [num-conv 0.2.2]( https://github.com/jhpratt/num-conv )
     - [num_enum 0.7.6]( https://github.com/illicitonion/num_enum )
     - [num_enum_derive 0.7.6]( https://github.com/illicitonion/num_enum )
@@ -9654,10 +9655,10 @@ insights.
 
 - Used by
 
-    - [sbsp_app 2.4.3]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_backend 1.5.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_app 2.4.4]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.5.2]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote_app 2.4.3]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote_app 2.4.4]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0

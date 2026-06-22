@@ -102,7 +102,6 @@
           :is-drag-over="dragOverIndex == i"
           @dragover="dragOver($event, i, item.cue.id)"
           @dragend="dragEnd"
-          @drop="drop($event, i)"
           @pointerdown.stop="click($event, i)"
           @contextmenu.prevent="
             if (uiState.mode == 'edit') {
@@ -114,7 +113,7 @@
         <tr
           :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
           @dragover="dragOver($event, showModel.flatCueList.length, '')"
-          @drop="drop($event, showModel.flatCueList.length)"
+          @drop="drop"
         >
           <td colspan="10" />
         </tr>
@@ -375,10 +374,14 @@ const dragOverIndex = ref<number | null>(null);
 
 const dragOver = (event: DragEvent, index: number, id: string) => {
   if (uiState.selectedRows.has(id)) {
-    dragOverIndex.value = null;
+    if (dragOverIndex.value != null) {
+      dragOverIndex.value = null;
+    }
   } else {
     event.preventDefault();
-    dragOverIndex.value = index;
+    if (dragOverIndex.value !== index) {
+      dragOverIndex.value = index;
+    }
   }
 };
 
@@ -386,23 +389,10 @@ const dragEnd = () => {
   dragOverIndex.value = null;
 };
 
-const drop = (event: DragEvent, index: number) => {
+const drop = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    // const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-    // if (fromIndex === index) {
-    //   return;
-    // }
-    // const srcCueId = showModel.flatCueList[fromIndex]?.cue.id;
-    // if (srcCueId == undefined) return;
-    if (index < showModel.flatCueList.length) {
-      const targetId = showModel.flatCueList[index]?.cue.id;
-      if (targetId == null) return;
-      api.moveCues(Array.from(uiState.selectedRows), { type: 'before', target: targetId });
-    } else {
-      api.moveCues(Array.from(uiState.selectedRows), { type: 'last' });
-    }
-    // showModel.moveCue(cue_id, newIndex);
+    api.moveCues(Array.from(uiState.selectedRows), { type: 'last' });
   }
 };
 

@@ -19,7 +19,7 @@ use crate::{
     manager::{ShowModelHandle, ShowModelManager},
     model::settings::ShowAudioSettings,
 };
-use crate::{controller::state::ShowState, manager::ProjectStatus, model::ShowModel};
+use crate::{controller::state::ShowState, manager::project::ProjectStatus, model::ShowModel};
 
 #[cfg(feature = "type_export")]
 pub use ts_rs;
@@ -59,8 +59,7 @@ pub mod controller {
 pub mod manager {
     mod command;
     pub use command::{InsertPosition, ModelCommand};
-    mod project;
-    pub use project::{ProjectFile, ProjectStatus};
+    pub mod project;
 }
 #[cfg(feature = "type_export")]
 pub mod api;

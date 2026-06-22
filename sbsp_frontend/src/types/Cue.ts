@@ -3,4 +3,4 @@ import type { CueChain } from "./CueChain";
 import type { CueColor } from "./CueColor";
 import type { CueParam } from "./CueParam";
 
-export type Cue = { id: string, number: string, name: string | null, notes: string, color: CueColor, preWait: number, chain: CueChain, params: CueParam, };
+export type Cue = { id: string, number: string, name: string | null, notes: string, color: CueColor, preWait: number, chain: CueChain, parentId: string | null, params: CueParam, };
