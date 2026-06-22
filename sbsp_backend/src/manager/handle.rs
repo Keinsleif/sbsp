@@ -196,19 +196,33 @@ impl ShowModelHandle {
 
     pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
         let model = self.model.read().await;
-        if let Some(cue) = model.cue_list.cues.get(cue_id) {
+        let mut current_id = *cue_id;
+
+        loop {
+            let cue = model.cue_list.cues.get(&current_id)?;
+
             if let Some(parent_id) = cue.parent_id {
-                if let Some(parent) = model.cue_list.cues.get(&parent_id) && let CueParam::Group { children, .. } = &parent.params
-                    && let Some(idx) = children.iter().position(|id| id == cue_id) {
-                        return children.get(idx + 1).copied()
+                let parent = model.cue_list.cues.get(&parent_id)?;
+                if let CueParam::Group { children, .. } = &parent.params
+                    && let Some(idx) = children.iter().position(|id| *id == current_id)
+                {
+                    if let Some(next_id) = children.get(idx + 1) {
+                        return Some(*next_id);
                     }
-            } else {
-                if let Some(idx) = model.cue_list.root_ids.iter().position(|id| id == cue_id) {
-                    return model.cue_list.root_ids.get(idx + 1).copied()
+
+                    current_id = parent_id;
+                    continue;
                 }
+
+                return None;
             }
+
+            if let Some(idx) = model.cue_list.root_ids.iter().position(|id| *id == current_id) {
+                return model.cue_list.root_ids.get(idx + 1).copied();
+            }
+
+            return None;
         }
-        None
     }
 
     pub async fn get_cue_chain_by_id(&self, cue_id: &Uuid) -> Option<CueChain> {
