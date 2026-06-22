@@ -1449,6 +1449,8 @@ use tokio::sync::{
                 if let AudioCommand::Play { id, .. } = command {
                     break id;
                 }
+            } else {
+                panic!("audio_tx dropped.")
             }
         };
 
