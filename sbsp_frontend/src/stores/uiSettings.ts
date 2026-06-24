@@ -7,198 +7,200 @@ import { useApi } from '../api';
 import type { GlobalHostSettings } from '../types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
+export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
+  general: {
+    advanceCursorWhenGo: false,
+    lockCursorToSelection: true,
+    copyAssetsWhenAdd: false,
+    seekAmount: 5,
+  },
+  appearance: {
+    language: null,
+    darkMode: 'dark',
+    hideControls: false,
+  },
+  hotkey: {
+    playback: {
+      go: 'Space',
+      load: 'L',
+      pauseAndResume: 'P',
+      pauseAll: '[',
+      resumeAll: ']',
+      stop: 'S',
+      stopAll: 'Escape',
+      seekForward: null,
+      seekBackward: null,
+    },
+    audioAction: {
+      toggleRepeat: 'R',
+    },
+  },
+  template: {
+    audio: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'audio',
+        target: '',
+        startTime: null,
+        fadeInParam: null,
+        endTime: null,
+        fadeOutParam: null,
+        volume: 0.0,
+        pan: 0.0,
+        repeat: false,
+        soundType: 'streaming',
+        envelope: [],
+      },
+    },
+    wait: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'wait',
+        duration: 5.0,
+      },
+    },
+    fade: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'fade',
+        target: '00000000-0000-0000-0000-000000000000',
+        volume: 0.0,
+        fadeParam: {
+          duration: 3.0,
+          easing: {
+            type: 'inOutPow',
+            intensity: 2,
+          },
+        },
+      },
+    },
+    start: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'start',
+        target: '00000000-0000-0000-0000-000000000000',
+      },
+    },
+    stop: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'stop',
+        target: '00000000-0000-0000-0000-000000000000',
+        hard: false,
+      },
+    },
+    pause: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'pause',
+        target: '00000000-0000-0000-0000-000000000000',
+      },
+    },
+    load: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'load',
+        target: '00000000-0000-0000-0000-000000000000',
+      },
+    },
+    group: {
+      id: '00000000-0000-0000-0000-000000000000',
+      number: '',
+      name: null,
+      notes: '',
+      color: 'none',
+      preWait: 0,
+      chain: {
+        type: 'doNotChain',
+      },
+      parentId: null,
+      params: {
+        type: 'group',
+        mode: {
+          type: 'playlist',
+          repeat: true,
+        },
+        children: [],
+      },
+    },
+  },
+  nameFormat: {
+    audio: '{filename}',
+    wait: 'Wait {duration}',
+    fade: 'Fade {targetName}',
+    start: 'Start {targetName}',
+    stop: 'Stop {targetName}',
+    pause: 'Pause {targetName}',
+    load: 'Load {targetName}',
+    group: 'Group',
+  },
+};
+
 export const useUiSettings = defineStore('uiSettings', () => {
-  const settings = ref<GlobalHostSettings | GlobalRemoteSettings>({
-    general: {
-      advanceCursorWhenGo: false,
-      lockCursorToSelection: true,
-      copyAssetsWhenAdd: false,
-      seekAmount: 5.0,
-    },
-    appearance: {
-      language: null,
-      darkMode: 'dark',
-      hideControls: false,
-    },
-    hotkey: {
-      playback: {
-        go: 'Enter',
-        load: 'L',
-        pauseAndResume: 'Space',
-        pauseAll: '[',
-        resumeAll: ']',
-        stop: 'Backspace',
-        stopAll: 'Escape',
-        seekForward: 'ArrowRight',
-        seekBackward: 'ArrowLeft',
-      },
-      audioAction: {
-        toggleRepeat: 'R',
-      },
-    },
-    template: {
-      audio: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          soundType: 'streaming',
-          type: 'audio',
-          target: '',
-          startTime: null,
-          fadeInParam: null,
-          endTime: null,
-          fadeOutParam: null,
-          volume: 0.0,
-          pan: 0.0,
-          repeat: false,
-          envelope: [],
-        },
-      },
-      wait: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'wait',
-          duration: 5.0,
-        },
-      },
-      fade: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'fade',
-          target: '00000000-0000-0000-0000-000000000000',
-          volume: 0.0,
-          fadeParam: {
-            duration: 3.0,
-            easing: {
-              type: 'inOutPow',
-              intensity: 2,
-            },
-          },
-        },
-      },
-      start: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'start',
-          target: '00000000-0000-0000-0000-000000000000',
-        },
-      },
-      stop: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'stop',
-          target: '00000000-0000-0000-0000-000000000000',
-          hard: false,
-        },
-      },
-      pause: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'pause',
-          target: '00000000-0000-0000-0000-000000000000',
-        },
-      },
-      load: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'load',
-          target: '00000000-0000-0000-0000-000000000000',
-        },
-      },
-      group: {
-        id: '00000000-0000-0000-0000-000000000000',
-        number: '',
-        name: null,
-        notes: '',
-        color: 'none',
-        preWait: 0.0,
-        chain: {
-          type: 'doNotChain',
-        },
-        parentId: null,
-        params: {
-          type: 'group',
-          mode: {
-            type: 'playlist',
-            repeat: true,
-          },
-          children: [],
-        },
-      },
-    },
-    nameFormat: {
-      audio: '{filename}',
-      wait: 'Wait {duration}',
-      fade: 'Fade {targetName}',
-      start: 'Start {targetName}',
-      stop: 'Stop {targetName}',
-      pause: 'Pause {targetName}',
-      load: 'Load {targetName}',
-      group: 'Group',
-    },
-  });
+  const settings = ref<GlobalHostSettings | GlobalRemoteSettings>(DEFAULT_SETTINGS);
 
   const api = useApi();
   api

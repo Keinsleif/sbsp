@@ -26,193 +26,10 @@ import type { BackendError } from '../types/BackendError';
 import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
 import { settingsValidator } from '../typia';
+import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 const { t } = i18n.global;
-
-const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
-  general: {
-    advanceCursorWhenGo: false,
-    lockCursorToSelection: true,
-    copyAssetsWhenAdd: false,
-    seekAmount: 5,
-  },
-  appearance: {
-    language: null,
-    darkMode: 'dark',
-    hideControls: false,
-  },
-  hotkey: {
-    playback: {
-      go: 'Space',
-      load: 'L',
-      pauseAndResume: 'P',
-      pauseAll: '[',
-      resumeAll: ']',
-      stop: 'S',
-      stopAll: 'Escape',
-      seekForward: null,
-      seekBackward: null,
-    },
-    audioAction: {
-      toggleRepeat: 'R',
-    },
-  },
-  template: {
-    audio: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'audio',
-        target: '',
-        startTime: null,
-        fadeInParam: null,
-        endTime: null,
-        fadeOutParam: null,
-        volume: 0.0,
-        pan: 0.0,
-        repeat: false,
-        soundType: 'streaming',
-        envelope: [],
-      },
-    },
-    wait: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'wait',
-        duration: 5.0,
-      },
-    },
-    fade: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'fade',
-        target: '00000000-0000-0000-0000-000000000000',
-        volume: 0.0,
-        fadeParam: {
-          duration: 3.0,
-          easing: {
-            type: 'inOutPow',
-            intensity: 2,
-          },
-        },
-      },
-    },
-    start: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'start',
-        target: '00000000-0000-0000-0000-000000000000',
-      },
-    },
-    stop: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'stop',
-        target: '00000000-0000-0000-0000-000000000000',
-        hard: false,
-      },
-    },
-    pause: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'pause',
-        target: '00000000-0000-0000-0000-000000000000',
-      },
-    },
-    load: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'load',
-        target: '00000000-0000-0000-0000-000000000000',
-      },
-    },
-    group: {
-      id: '00000000-0000-0000-0000-000000000000',
-      number: '',
-      name: null,
-      notes: '',
-      color: 'none',
-      preWait: 0,
-      chain: {
-        type: 'doNotChain',
-      },
-      params: {
-        type: 'group',
-        mode: {
-          type: 'playlist',
-          repeat: true,
-        },
-        children: [],
-      },
-    },
-  },
-  nameFormat: {
-    audio: '{filename}',
-    wait: 'Wait {duration}',
-    fade: 'Fade {targetName}',
-    start: 'Start {targetName}',
-    stop: 'Stop {targetName}',
-    pause: 'Pause {targetName}',
-    load: 'Load {targetName}',
-    group: 'Group',
-  },
-};
 
 type UnlistenFn = () => void;
 
@@ -408,7 +225,6 @@ export function useWebsocketApi(): IBackendAdapter {
     disconnectFromServer: function (): void {
       websocketApiState.ws?.close();
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     startServerDiscovery: function (_callback: (serviceEntry: ServiceEntry[]) => void): void {
       console.log('Remote discovery on web api is not implemented.');
     },
@@ -482,7 +298,6 @@ export function useWebsocketApi(): IBackendAdapter {
     getThirdPartyNotices: async function (): Promise<string> {
       return 'Not Available. To read third party notices, please use host app.';
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     listenLevelMeter: function (_levelListener: LevelMeterListener): void {
       console.warn('Not implemented');
     },
