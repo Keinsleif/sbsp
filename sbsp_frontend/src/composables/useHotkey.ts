@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onUnmounted, toValue, watch, type MaybeRef } from "vue";
-import { tinykeys } from "tinykeys";
+import { toValue, watchEffect, type MaybeRefOrGetter } from 'vue';
+import { tinykeys } from 'tinykeys';
+import { isUserTyping } from '@/utils';
 
 export type HotkeyListener = (event: KeyboardEvent) => void;
 
-const normalize = (key: string) => key.trim().toLowerCase().replace('ctrl', '$mod').replace('cmd', '$mod');
+const normalize = (key: string) => key.trim().replace('Ctrl', '$mod').replace('Cmd', '$mod');
 
-export const useHotkey = (key: MaybeRef<string | null>, listener: HotkeyListener) => {
- 
-  let unlisten: (() => void) | null = null;
-
-  watch(() => toValue(key), (newKey) => {
-    unlisten?.();
-    if (newKey != null) {
-      unlisten = tinykeys(window, {
-        [normalize(newKey)]: listener,
-      })
-    }
-  }, { immediate: true });
-  
-  onUnmounted(() => unlisten?.());
-}
+export const useHotkey = (key: MaybeRefOrGetter<string | null>, listener: HotkeyListener) => {
+  watchEffect((onCleanup) => {
+    const keys = toValue(key);
+    if (keys == null) return;
+    const unlisten = tinykeys(window, {
+      [normalize(keys)]: (event) => {
+        if (isUserTyping(event)) return;
+        listener(event);
+      },
+    });
+    onCleanup(() => {
+      unlisten();
+    });
+  });
+};
