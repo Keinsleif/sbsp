@@ -1,8 +1,8 @@
 {
   "name": "sbsp_frontend",
-  "license": "Elastic-2.0",
   "version": "2.4.5",
   "private": true,
+  "license": "Elastic-2.0",
   "type": "module",
   "scripts": {
     "dev:web": "cross-env VITE_APP_TARGET=\"websocket\" vite --port 1424",
@@ -24,7 +24,6 @@
   "dependencies": {
     "@mdi/js": "^7.4.47",
     "@primeuix/themes": "^2.0.3",
-    "@tailwindcss/vite": "^4.3.1",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-log": "^2.8.0",
@@ -38,7 +37,6 @@
     "markdown-it-link-attributes": "^4.0.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
-    "primeicons": "^7.0.0",
     "primevue": "^4.5.5",
     "tailwindcss": "^4.3.1",
     "tailwindcss-primeui": "^0.6.1",
@@ -50,6 +48,7 @@
     "vue-i18n": "^11.4.6"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.1",
     "@tsconfig/node24": "^24.0.4",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-link-attributes": "^3.0.5",

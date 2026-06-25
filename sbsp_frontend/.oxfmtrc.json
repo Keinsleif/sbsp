@@ -1,6 +1,20 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "dist/**",
+    "src/types/**",
+    "**/*.md",
+  ],
   "semi": true,
+  "singleAttributePerLine": true,
   "singleQuote": true,
-  "singleAttributePerLine": true
+  "sortTailwindcss": true,
+  "overrides": [
+    {
+      "files": ["**/*.html"],
+      "options": {
+        "singleAttributePerLine": false,
+      }
+    },
+  ]
 }
