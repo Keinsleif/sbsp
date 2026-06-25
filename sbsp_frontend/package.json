@@ -63,6 +63,7 @@
     "eslint-plugin-oxlint": "~1.69.0",
     "eslint-plugin-vue": "~10.9.2",
     "jiti": "^2.7.0",
+    "license-checker-rseidelsohn": "^5.0.1",
     "npm-run-all2": "^9.0.2",
     "oxfmt": "^0.54.0",
     "oxlint": "~1.69.0",
