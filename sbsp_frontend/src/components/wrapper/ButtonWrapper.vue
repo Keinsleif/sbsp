@@ -10,6 +10,7 @@ const props = defineProps<{
   activeColor?: string;
   blink?: boolean;
   active?: boolean;
+  iconColor?: string;
 }>();
 </script>
 
@@ -31,7 +32,7 @@ const props = defineProps<{
       >
         <path
           :d="props.icon"
-          fill="currentColor"
+          :fill="props.iconColor ? props.iconColor : 'currentColor'"
         />
       </svg>
     </template>

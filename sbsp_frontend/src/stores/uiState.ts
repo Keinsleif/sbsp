@@ -4,11 +4,9 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getLockCursorToSelection, PERMISSIONS } from '../utils.ts';
-import { useApi } from '../api';
-import { useShowModel } from './showModel';
-import type { Permissions } from '../types/Permissions';
-import { useToast } from 'primevue/usetoast';
-import type { ToastServiceMethods } from 'primevue/toastservice';
+import { useApi } from '../api/index.ts';
+import { useShowModel } from './showModel.ts';
+import type { Permissions } from '../types/Permissions.ts';
 
 export const useUiState = defineStore(
   'uiState',
@@ -20,7 +18,7 @@ export const useUiState = defineStore(
     const expandedRows = ref<string[]>([]);
     const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
-    const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
+    const sideBarTab = ref<'activeCues' | 'meter'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
     const isUpdateDialogOpen = ref(false);
@@ -34,7 +32,6 @@ export const useUiState = defineStore(
     const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
     const lastUpdateCheckDate = ref<number>(0);
-    let toast: ToastServiceMethods | null = null;
 
     const setPlaybackCursor = (id: string | null) => {
       const api = useApi();
@@ -120,18 +117,6 @@ export const useUiState = defineStore(
     const toggleBottomTab = () => {
       isBottomTabOpen.value = !isBottomTabOpen.value;
     };
-    const success = (title: string, detail?: string, timeout?: number) => {
-      if (toast == null) {
-        toast = useToast();
-      }
-      toast.add({ severity: 'success', summary: title, detail, life: timeout || 2000 });
-    };
-    const error = (title: string, detail?: string, timeout?: number) => {
-      if (toast == null) {
-        toast = useToast();
-      }
-      toast.add({ severity: 'error', summary: title, detail, life: timeout || 3000 });
-    };
 
     const setPermission = (perm: Permissions) => {
       permission.value = perm;
@@ -202,8 +187,6 @@ export const useUiState = defineStore(
       toggleDurationDisplayMode,
       toggleRightSidebar,
       toggleBottomTab,
-      success,
-      error,
     };
   },
   {

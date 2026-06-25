@@ -283,7 +283,7 @@ export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<numbe
   return wrap;
 }
 
-export const getCueIcon = (type: string): string | undefined => {
+export const getCueIcon = (type: string): string | null => {
   switch (type) {
     case 'audio':
       return mdiVolumeHigh;
@@ -302,6 +302,7 @@ export const getCueIcon = (type: string): string | undefined => {
     case 'group':
       return mdiGroup;
   }
+  return null;
 };
 
 export const firstUpper = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -344,4 +345,32 @@ export const PERMISSIONS = {
   READ: (1 << 0) as Permissions,
   CONTROL: (1 << 1) as Permissions,
   EDIT: (1 << 2) as Permissions,
+};
+
+export const isUserTyping = (e: Event): boolean => {
+  const target = (e.target || document.activeElement) as HTMLElement | null;
+  if (!target) return false;
+
+  const tagName = target.tagName.toUpperCase();
+
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+    return true;
+  }
+
+  if (target.closest('input, textarea')) {
+    return true;
+  }
+
+  if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
+    return true;
+  }
+
+  return false;
+};
+
+export const camelToTitleCase = (str: string) => {
+  return str
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (match: string) => match.toUpperCase())
+    .trim();
 };

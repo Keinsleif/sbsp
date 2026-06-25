@@ -19,8 +19,9 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useHotkey } from './composables/useHotkey.ts';
 import type { PlaybackStatus } from './types/PlaybackStatus.ts';
+import { useToast } from 'primevue/usetoast';
 
-const breakpoints = useBreakpoints(breakpointsTailwind)
+const breakpoints = useBreakpoints(breakpointsTailwind);
 const xs = breakpoints.smaller('sm');
 
 const showModel = useShowModel();
@@ -30,6 +31,7 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t } = useI18n();
 const api = useApi();
+const toast = useToast();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -44,7 +46,7 @@ const onVisibilityChange = () => {
 const unlistenFuncs: (() => void)[] = [];
 
 onMounted(() => {
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
   api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   useIntervalFn(
@@ -65,7 +67,12 @@ onMounted(() => {
         case 'cueStatus':
           if (event.param.type === 'error') {
             console.error(event.param.error);
-            uiState.error(event.param.error);
+            toast.add({
+              severity: 'error',
+              summary: t('notification.cueStatus'),
+              detail: event.param.error,
+              life: 3000,
+            });
           }
           showState.handleCueStateEvent(event.param);
           break;
@@ -94,15 +101,19 @@ onMounted(() => {
         case 'syncState':
           showState.handleSyncEvent(event.param);
           break;
-        case 'showModelLoaded':
+        case 'showModelLoaded': {
           showModel.updateAll(event.param.model);
-          uiState.success(t('notification.modelLoaded'));
+          // const parts = event.param.path.replace(/\\/g, '/').replace(/\/$/, '').split('/');
+          toast.add({ severity: 'success', summary: t('notification.modelLoaded'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
           api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
           uiState.resetSelected();
           break;
-        case 'showModelSaved':
-          uiState.success(t('notification.modelSaved'));
+        }
+        case 'showModelSaved': {
+          // const parts = event.param.path.replace(/\\/g, '/').replace(/\/$/, '').split('/');
+          toast.add({ severity: 'success', summary: t('notification.modelSaved'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
           break;
+        }
         case 'showModelReset':
           showModel.updateAll(event.param.model);
           api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
@@ -132,7 +143,12 @@ onMounted(() => {
             assetResult.add(event.param.path, event.param.data.Ok);
           } else {
             console.error(event.param.data.Err);
-            uiState.error(event.param.data.Err);
+            toast.add({
+              severity: 'error',
+              summary: t('notification.assetResult'),
+              detail: event.param.data.Err,
+              life: 3000,
+            });
           }
           break;
         }
@@ -140,34 +156,69 @@ onMounted(() => {
           console.error(event.param.error);
           switch (event.param.error.type) {
             case 'saveToFile':
-              uiState.error(event.param.error.message);
+              toast.add({
+                severity: 'error',
+                summary: 'Failed to save ShowModel',
+                detail: event.param.error.message,
+                life: 3000,
+              });
               break;
             case 'loadFromFile':
-              uiState.error(event.param.error.message);
+              toast.add({
+                severity: 'error',
+                summary: 'Failed to load ShowModel',
+                detail: event.param.error.message,
+                life: 3000,
+              });
               break;
             case 'exportToFolder':
-              uiState.error(event.param.error.message);
+              toast.add({
+                severity: 'error',
+                summary: 'Failed to export ShowModel',
+                detail: event.param.error.message,
+                life: 3000,
+              });
               break;
             case 'cueEdit':
-              uiState.error(event.param.error.message);
+              toast.add({
+                severity: 'error',
+                summary: 'Failed to edit Cue',
+                detail: event.param.error.message,
+                life: 3000,
+              });
               break;
             case 'custom':
               switch (event.param.error.id) {
                 case 1:
-                  uiState.error(t('notification.authenticationFailed'));
+                  toast.add({
+                    severity: 'error',
+                    summary: 'Operation failed',
+                    detail: t('notification.authenticationFailed'),
+                    life: 3000,
+                  });
                   break;
                 case 2:
-                  uiState.error(t('notification.permissionDenied'));
+                  toast.add({
+                    severity: 'error',
+                    summary: 'Operation failed',
+                    detail: t('notification.permissionDenied'),
+                    life: 3000,
+                  });
                   break;
                 default:
-                  uiState.error(event.param.error.message);
+                  toast.add({
+                    severity: 'error',
+                    summary: 'Operation failed',
+                    detail: event.param.error.message,
+                    life: 3000,
+                  });
                   break;
               }
           }
           break;
       }
     })
-    .then(unlistenFn => unlistenFuncs.push(unlistenFn));
+    .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
 
   if (__IS_HOST__) {
     getCurrentWebviewWindow()
@@ -182,7 +233,7 @@ onMounted(() => {
             },
             kind: 'warning',
             title: t('general.confirm'),
-          }).catch(e => console.error(e));
+          }).catch((e) => console.error(e));
           switch (result) {
             case t('dialog.saveConfirm.save'):
               await api.host?.fileSave();
@@ -195,7 +246,7 @@ onMounted(() => {
           }
         }
       })
-      .then(unlistenFn => unlistenFuncs.push(unlistenFn));
+      .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
   }
   api
     .getFullState()
@@ -221,7 +272,7 @@ onMounted(() => {
         }
       }
     })
-    .catch(e => console.error(e.toString()));
+    .catch((e) => console.error(e.toString()));
 
   if (navigator.wakeLock) {
     navigator.wakeLock
@@ -229,13 +280,13 @@ onMounted(() => {
       .then((value) => {
         wakeLock.value = value;
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   }
   document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
 onUnmounted(() => {
-  unlistenFuncs.forEach(unlistenFn => unlistenFn());
+  unlistenFuncs.forEach((unlistenFn) => unlistenFn());
   document.removeEventListener('visibilitychange', onVisibilityChange);
   if (wakeLock.value != null) {
     wakeLock.value
@@ -243,38 +294,29 @@ onUnmounted(() => {
       .then(() => {
         wakeLock.value = null;
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   }
 });
 
 if (api.host) {
-  useHotkey(
-    'cmd+o',
-    (e) => {
-      e.preventDefault()
-      api.host?.fileOpen();
-    },
-  );
+  useHotkey('cmd+o', (e) => {
+    e.preventDefault();
+    api.host?.fileOpen();
+  });
 
-  useHotkey(
-    'cmd+s',
-    (e) => {
-      e.preventDefault();
-      api.host?.fileSave();
-    },
-  );
+  useHotkey('cmd+s', (e) => {
+    e.preventDefault();
+    api.host?.fileSave();
+  });
 
-  useHotkey(
-    'cmd+shift+a',
-    (e) => {
-      e.preventDefault();
-      api.host?.fileSaveAs();
-    },
-  );
+  useHotkey('cmd+shift+a', (e) => {
+    e.preventDefault();
+    api.host?.fileSaveAs();
+  });
 }
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.go,
+  () => uiSettings.settings.hotkey.playback.go,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
@@ -284,11 +326,11 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.load,
+  () => uiSettings.settings.hotkey.playback.load,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
-      for (let cueId of uiState.selectedRows) {
+      for (const cueId of uiState.selectedRows) {
         api.sendLoad(cueId);
       }
     }
@@ -296,14 +338,24 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.pauseAndResume,
+  () => uiSettings.settings.hotkey.playback.pauseAndResume,
   (e) => {
     e.preventDefault();
-    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
-      if ((['preWaiting', 'playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
+      if (
+        (['preWaiting', 'playing'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
+      ) {
         api.sendPause(uiState.selected);
       } else if (
-        (['preWaitPaused', 'paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
+        (['preWaitPaused', 'paused'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
       ) {
         api.sendResume(uiState.selected);
       }
@@ -312,7 +364,7 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.pauseAll,
+  () => uiSettings.settings.hotkey.playback.pauseAll,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
@@ -322,7 +374,7 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.resumeAll,
+  () => uiSettings.settings.hotkey.playback.resumeAll,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
@@ -332,11 +384,11 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.stop,
+  () => uiSettings.settings.hotkey.playback.stop,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
-      for (let cueId of uiState.selectedRows) {
+      for (const cueId of uiState.selectedRows) {
         api.sendStop(cueId);
       }
     }
@@ -344,7 +396,7 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.stopAll,
+  () => uiSettings.settings.hotkey.playback.stopAll,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
@@ -354,46 +406,51 @@ useHotkey(
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.seekForward,
+  () => uiSettings.settings.hotkey.playback.seekForward,
   (e) => {
     e.preventDefault();
-    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
       api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
     }
   },
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.playback.seekBackward,
+  () => uiSettings.settings.hotkey.playback.seekBackward,
   (e) => {
     e.preventDefault();
-    if (uiState.mode !== 'view' && uiState.selected != null && uiState.selected in showState.activeCues) {
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
       api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
     }
   },
 );
 
 useHotkey(
-  uiSettings.settings.hotkey.audioAction.toggleRepeat,
+  () => uiSettings.settings.hotkey.audioAction.toggleRepeat,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
-      for (let cueId of uiState.selectedRows) {
+      for (const cueId of uiState.selectedRows) {
         api.sendToggleRepeat(cueId);
       }
     }
   },
 );
 
-useHotkey(
-  'cmd+r',
-  (e) => {
-    e.preventDefault();
-    if (uiState.mode === 'edit') {
-      uiState.isRenumberCueDialogOpen = true;
-    }
-  },
-);
+useHotkey('cmd+r', (e) => {
+  e.preventDefault();
+  if (uiState.mode === 'edit') {
+    uiState.isRenumberCueDialogOpen = true;
+  }
+});
 </script>
 
 <template>

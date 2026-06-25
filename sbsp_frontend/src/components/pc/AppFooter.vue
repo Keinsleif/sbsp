@@ -3,8 +3,8 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { mdiCog, mdiDockBottom, mdiDockRight, mdiServer, mdiSync } from '@mdi/js';
-import { useUiState } from '../../stores/uiState';
-import { useShowModel } from '../../stores/showModel';
+import { useUiState } from '../../stores/uiState.ts';
+import { useShowModel } from '../../stores/showModel.ts';
 import { useI18n } from 'vue-i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useApi } from '../../api';
@@ -82,10 +82,11 @@ const openServerPanel = () => {
 </script>
 
 <template>
-  <div class="flex items-center ml-0 mr-0">
+  <div class="flex items-center ml-0 mr-0 py-1">
     <div class="px-2 flex items-center">
       <Select
         v-model="uiState.mode"
+        size="small"
         :options="modes"
         option-label="title"
         option-value="value"

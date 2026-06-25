@@ -216,7 +216,9 @@
     "default": "既定",
     "warning": "警告",
     "confirm": "確認",
-    "none": "なし"
+    "none": "なし",
+    "run": "実行",
+    "save": "保存"
   },
   "main": {
     "bottomEditor": {
@@ -303,8 +305,9 @@
     "preWait": "事前待機",
     "sideBar": {
       "activeCues": "実行中のキュー",
-      "levels": {
-        "title": "レベル"
+      "levels": {},
+      "meter": {
+        "title": "メーター"
       }
     },
     "mobile": {
@@ -368,7 +371,10 @@
     "modelLoaded": "正常にロードされました",
     "modelSaved": "正常に保存されました",
     "permissionDenied": "権限がありません",
-    "authenticationFailed": "認証に失敗しました"
+    "authenticationFailed": "認証に失敗しました",
+    "cueStatus": "再生エラー",
+    "connectionError": "接続エラー",
+    "assetResult": "ファイル処理エラー"
   },
   "view": {
     "connect": {

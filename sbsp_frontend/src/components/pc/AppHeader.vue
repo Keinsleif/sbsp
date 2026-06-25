@@ -26,7 +26,6 @@ import { useUiSettings } from '../../stores/uiSettings';
 import { useApi } from '../../api';
 import { storeToRefs } from 'pinia';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
-import { $dt } from '@primeuix/themes';
 import ButtonGroup from 'primevue/buttongroup';
 
 const showModel = useShowModel();
@@ -49,7 +48,7 @@ const playbackCursorCueTitle = computed(() => {
         (playbackCursorCue.value.name != null
           ? playbackCursorCue.value.name
           : buildCueName(playbackCursorCue.value))
-    : '';
+    : ' ';
 });
 
 const isCueStatus = computed(() => {
@@ -90,7 +89,7 @@ const time = useNow();
   <div class="flex flex-row m-0 w-full h-full gap-3 p-3 overflow-x-auto">
     <div class="flex flex-col gap-3 grow-0 items-start">
       <div
-        class="flex items-center border grow"
+        class="flex items-center border border-(--p-form-field-border-color) grow"
         :class="hasFocus ? '' : 'bg-red-500'"
       >
         <div
@@ -113,12 +112,11 @@ const time = useNow();
         <button-group>
           <button-wrapper
             :icon="mdiStop"
-            variant="outlined"
+            severity="secondary"
             :active="isCueStatus('stopping')"
             :blink="isCueStatus('stopping')"
             active-color="red.500"
             :disabled="showState.playbackCursor == null"
-            :class="[isCueStatus('stopping') ? $style['blink'] : '']"
             @click="
               if (showState.playbackCursor != null) {
                 api.sendStop(showState.playbackCursor);
@@ -127,7 +125,7 @@ const time = useNow();
           />
           <button-wrapper
             :icon="mdiPlay"
-            variant="outlined"
+            severity="secondary"
             :active="isCueStatus('playing') || isCueStatus('preWaiting')"
             :disabled="showState.playbackCursor == null"
             active-color="green.500"
@@ -144,7 +142,7 @@ const time = useNow();
           />
           <button-wrapper
             :icon="mdiPause"
-            variant="outlined"
+            severity="secondary"
             :active="isCueStatus('paused') || isCueStatus('loaded')"
             :disabled="showState.playbackCursor == null"
             active-color="orange.500"
@@ -157,14 +155,12 @@ const time = useNow();
     <div class="flex flex-col gap-3 grow">
       <div class="flex flex-col m-0 grow">
         <div
-          class="p-1 rounded mb-1 border-md overflow-x-hidden"
-          height="36px"
+          class="p-1 rounded mb-1 overflow-x-hidden border border-(--p-form-field-border-color) shrink-0 grow-0 h-9 ps-3"
         >
           {{ playbackCursorCueTitle }}
         </div>
         <div
-          class="p-2 pb-0 rounded border-md text-pre-wrap overflow-y-auto grow"
-          height="1px"
+          class="p-2 pb-0 rounded whitespace-pre-wrap overflow-y-auto grow border border-(--p-form-field-border-color)"
         >
           {{ playbackCursorCue != null ? playbackCursorCue.notes : '' }}
         </div>
@@ -223,20 +219,3 @@ const time = useNow();
     </div>
   </div>
 </template>
-
-<style lang="css" module>
-.blink {
-  animation: flash 1s ease infinite;
-}
-
-@keyframes flash {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0;
-  }
-}
-</style>

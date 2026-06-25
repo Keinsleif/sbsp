@@ -23,16 +23,18 @@ const update = ref<Update | null>(null);
 
 const checkUpdate = () => {
   isCheckingUpdate.value = true;
-  check().then((value) => {
-    isCheckingUpdate.value = false;
-    update.value = value;
-    if (value != null) {
-      currentVersion.value = value.currentVersion;
-    }
-  }).catch((e) => {
-    isCheckingUpdate.value = false;
-    console.error(e);
-  });
+  check()
+    .then((value) => {
+      isCheckingUpdate.value = false;
+      update.value = value;
+      if (value != null) {
+        currentVersion.value = value.currentVersion;
+      }
+    })
+    .catch((e) => {
+      isCheckingUpdate.value = false;
+      console.error(e);
+    });
 };
 
 const installUpdate = () => {
@@ -65,7 +67,7 @@ const progressBarValue = computed(() => {
   if (total.value === null || progress.value === null || total.value === 0) {
     return 0;
   }
-  return progress.value / total.value * 100;
+  return (progress.value / total.value) * 100;
 });
 
 watch(isUpdateDialogOpen, (value) => {
@@ -75,9 +77,11 @@ watch(isUpdateDialogOpen, (value) => {
 });
 
 onMounted(() => {
-  getVersion().then((version) => {
-    currentVersion.value = version;
-  }).catch(e => console.error(e));
+  getVersion()
+    .then((version) => {
+      currentVersion.value = version;
+    })
+    .catch((e) => console.error(e));
 });
 </script>
 
@@ -100,11 +104,24 @@ onMounted(() => {
                 : t('dialog.update.updatesAvailable')
           }}
         </span>
-        <progress-spinner-wrapper v-show="isCheckingUpdate" class="grow-0 m-0" size="16px" />
+        <progress-spinner-wrapper
+          v-show="isCheckingUpdate"
+          class="grow-0 m-0"
+          size="16px"
+        />
       </div>
-      <span>{{ t('dialog.update.currentVersion') }}: {{ currentVersion != null ? currentVersion : '--' }}</span>
-      <span>{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span>
-      <ProgressBar :show-value="false" :value="progressBarValue" :mode="total === 0 ? 'indeterminate' : 'determinate'" />
+      <span
+        >{{ t('dialog.update.currentVersion') }}:
+        {{ currentVersion != null ? currentVersion : '--' }}</span
+      >
+      <span
+        >{{ t('dialog.update.latestVersion') }}: {{ update != null ? update.version : '--' }}</span
+      >
+      <ProgressBar
+        :show-value="false"
+        :value="progressBarValue"
+        :mode="total === 0 ? 'indeterminate' : 'determinate'"
+      />
       <div class="mt-3 flex flex-row justify-end gap-2">
         <ButtonWrapper
           :label="t('dialog.update.installUpdate')"

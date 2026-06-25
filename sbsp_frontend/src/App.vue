@@ -4,11 +4,11 @@
 
 import MainView from './MainView.vue';
 import ConnectView from './ConnectView.vue';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { createWindowMenu } from './window-menu';
 import { useUiSettings } from './stores/uiSettings';
-import { useUiState } from './stores/uiState';
+import { useUiState } from './stores/uiState.ts';
 import { useApi } from './api';
 import { usePreferredColorScheme } from '@vueuse/core';
 import { setTheme } from '@tauri-apps/api/app';
@@ -30,24 +30,28 @@ const uiState = useUiState();
 const uiSettings = useUiSettings();
 const colorScheme = usePreferredColorScheme();
 
-watch([colorScheme, () => uiSettings.settings.appearance.darkMode], ([scheme, darkMode], [_, oldDarkMode]) => {
-  let isDark;
-  if (__IS_HOST__ && darkMode !== oldDarkMode) {
-    setTheme(darkMode === 'system' ? null : darkMode);
-  }
-  if (uiSettings.settings.appearance.darkMode === 'system') {
-    isDark = scheme !== 'light';
-  } else {
-    isDark = darkMode !== 'light';
-  }
-  if (isDark) {
-    document.documentElement.classList.add('p-dark');
-  } else {
-    document.documentElement.classList.remove('p-dark');
-  }
-}, {
-  immediate: true
-});
+watch(
+  [colorScheme, () => uiSettings.settings.appearance.darkMode],
+  ([scheme, darkMode], oldValue) => {
+    let isDark;
+    if (__IS_HOST__ && darkMode !== oldValue[1]) {
+      setTheme(darkMode === 'system' ? null : darkMode);
+    }
+    if (uiSettings.settings.appearance.darkMode === 'system') {
+      isDark = scheme !== 'light';
+    } else {
+      isDark = darkMode !== 'light';
+    }
+    if (isDark) {
+      document.documentElement.classList.add('p-dark');
+    } else {
+      document.documentElement.classList.remove('p-dark');
+    }
+  },
+  {
+    immediate: true,
+  },
+);
 
 watch(
   () => uiSettings.settings.appearance,
@@ -87,7 +91,7 @@ onMounted(() => {
         uiState.setPermission(perm || 0);
         windowMenu?.updateConnectionStatus(isConnected);
       })
-      .then(ulfn => (unlisten = ulfn));
+      .then((ulfn) => (unlisten = ulfn));
     api.remote?.isConnected().then(([isConnected, perm]) => {
       connected.value = isConnected;
       uiState.setPermission(perm || 0);
@@ -119,7 +123,7 @@ onUnmounted(() => {
 
 <style>
 html {
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
   scrollbar-width: none;
   overscroll-behavior: none;
@@ -131,5 +135,6 @@ html {
 body,
 #app {
   height: 100%;
+  overflow: hidden;
 }
 </style>

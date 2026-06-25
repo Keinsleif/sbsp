@@ -30,8 +30,8 @@ md.use(mila, {
 onMounted(() => {
   api
     .getThirdPartyNotices()
-    .then(value => (notices.value = md.render(value)))
-    .catch(e => console.error(e));
+    .then((value) => (notices.value = md.render(value)))
+    .catch((e) => console.error(e));
 });
 </script>
 
@@ -42,28 +42,31 @@ onMounted(() => {
   >
     <div class="p-10">
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div :class="$style['markdown']" v-html="notices" />
+      <div
+        :class="$style['markdown']"
+        v-html="notices"
+      />
     </div>
   </Dialog>
 </template>
 
 <style lang="css" module>
-  .markdown {
-    li ul {
-      margin-left: 2em;
-      padding: 0;
-    }
-    ul {
-      margin-left: 2em;
-    }
-    hr {
-      margin-bottom: 2em;
-    }
-    h1,
-    h2,
-    h3,
-    h4 {
-      margin-bottom: 1em;
-    }
+.markdown {
+  li ul {
+    margin-left: 2em;
+    padding: 0;
   }
+  ul {
+    margin-left: 2em;
+  }
+  hr {
+    margin-bottom: 2em;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin-bottom: 1em;
+  }
+}
 </style>

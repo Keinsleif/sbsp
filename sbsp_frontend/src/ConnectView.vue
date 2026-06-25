@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onMounted, onUnmounted, ref, Teleport } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import type { ServiceEntry } from './types/ServiceEntry';
 import { useI18n } from 'vue-i18n';
 import { useApi } from './api';
-import { useUiState } from './stores/uiState';
 import ButtonWrapper from './components/wrapper/ButtonWrapper.vue';
 import ProgressSpinnerWrapper from './components/wrapper/ProgressSpinnerWrapper.vue';
 import FloatLabel from 'primevue/floatlabel';
 import InputText from 'primevue/inputtext';
+import { useToast } from 'primevue/usetoast';
 
 const { t } = useI18n();
 const api = useApi();
-const uiState = useUiState();
+const toast = useToast();
 
 const host = ref('');
 const port = ref('');
@@ -31,7 +31,7 @@ const connect = (host: string, port: string | number) => {
   } else if (window.location.href.endsWith('#')) {
     password = null;
   } else {
-    let ps_string = prompt(t('view.connect.passwordPrompt'));
+    const ps_string = prompt(t('view.connect.passwordPrompt'));
     if (ps_string == null) return;
     if (ps_string !== '') {
       password = ps_string;
@@ -43,7 +43,12 @@ const connect = (host: string, port: string | number) => {
   api.remote?.connectToServer(address, password).catch((e) => {
     overlay.value = false;
     console.error(e);
-    uiState.error(`${e}`);
+    toast.add({
+      severity: 'error',
+      summary: t('notification.connectionError'),
+      detail: e.toString(),
+      life: 3000,
+    });
   });
 };
 
@@ -54,7 +59,7 @@ onMounted(() => {
     ?.onConnectionStatusChanged(() => {
       overlay.value = false;
     })
-    .then(ulfn => (unlisten = ulfn));
+    .then((ulfn) => (unlisten = ulfn));
 
   if (__IS_WEBSOCKET__) {
     const searchParams = new URLSearchParams(window.location.search);
@@ -83,7 +88,7 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col w-full h-full items-stretch">
-    <div class="grow overflow-auto h-100">
+    <div class="grow overflow-auto h-full">
       <table
         class="w-full border-collapse"
         :class="$style['table']"
@@ -121,25 +126,31 @@ onUnmounted(() => {
       </table>
     </div>
     <footer class="grow-0 flex items-center ml-0 mr-0 w-full gap-3 p-1">
-      <FloatLabel variant="on" class="grow-0">
-          <InputText
-            id="on_label"
-            class="w-100"
-            v-model="host"
-            autocomplete="off"
-            @keydown.enter="connect(host, port)"
-          />
-          <label for="on_label">{{ t('view.connect.remoteHost') }}</label>
+      <FloatLabel
+        variant="on"
+        class="grow-0"
+      >
+        <InputText
+          id="on_label"
+          class="w-100"
+          v-model="host"
+          autocomplete="off"
+          @keydown.enter="connect(host, port)"
+        />
+        <label for="on_label">{{ t('view.connect.remoteHost') }}</label>
       </FloatLabel>
-      <FloatLabel variant="on" class="grow-0">
-          <InputText
-            id="on_label"
-            class="w-25"
-            v-model="port"
-            autocomplete="off"
-            @keydown.enter="connect(host, port)"
-          />
-          <label for="on_label">{{ t('view.connect.remotePort') }}</label>
+      <FloatLabel
+        variant="on"
+        class="grow-0"
+      >
+        <InputText
+          id="on_label"
+          class="w-25"
+          v-model="port"
+          autocomplete="off"
+          @keydown.enter="connect(host, port)"
+        />
+        <label for="on_label">{{ t('view.connect.remotePort') }}</label>
       </FloatLabel>
       <button-wrapper
         class="ml-auto"
@@ -153,7 +164,7 @@ onUnmounted(() => {
       <div
         v-if="overlay"
         class="fixed inset-0 z-1000"
-        style="background-color: rgb(0, 0, 0, 0.5);"
+        style="background-color: rgb(0, 0, 0, 0.5)"
       >
         <progress-spinner-wrapper
           color="primary"
@@ -165,14 +176,17 @@ onUnmounted(() => {
 </template>
 
 <style lang="css" module>
-.table th,td {
-  height: 34px;
-  border-bottom: 1px solid rgb(from currentColor r g b / 0.5);
-  text-align: left;
-  padding-left: calc(var(--spacing) * 2);
-  padding-right: calc(var(--spacing) * 2);
-}
-.table tbody tr:nth-of-type(odd) {
-  background-color: rgb(from var(--p-surface-500) r g b / 0.2);
+@layer base {
+  .table th,
+  td {
+    height: 34px;
+    border-bottom: 1px solid rgb(from currentColor r g b / 0.5);
+    text-align: left;
+    padding-left: calc(var(--spacing) * 2);
+    padding-right: calc(var(--spacing) * 2);
+  }
+  .table tbody tr:nth-of-type(odd) {
+    background-color: rgb(from var(--p-surface-500) r g b / 0.2);
+  }
 }
 </style>

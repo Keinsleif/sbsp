@@ -40,8 +40,8 @@ const onCopyId = () => {
 const loadLicense = () => {
   api.host
     ?.getLicenseInfo()
-    .then(value => (licenseInfo.value = value))
-    .catch(e => console.error(e));
+    .then((value) => (licenseInfo.value = value))
+    .catch((e) => console.error(e));
 };
 
 onMounted(() => {
@@ -71,7 +71,10 @@ onMounted(() => {
         <span>{{ issuedDate }}</span>
       </div>
       <div class="grow-0 flex flex-row">
-        <FloatLabel variant="on" class="w-full">
+        <FloatLabel
+          variant="on"
+          class="w-full"
+        >
           <InputText
             id="on_label"
             class="w-full"
@@ -81,7 +84,12 @@ onMounted(() => {
           />
           <label for="on_label">Id</label>
         </FloatLabel>
-        <button-wrapper :icon="mdiContentCopy" @click="onCopyId()" severity="secondary" rounded />
+        <button-wrapper
+          :icon="mdiContentCopy"
+          @click="onCopyId()"
+          severity="secondary"
+          rounded
+        />
       </div>
     </div>
     <div class="grow-0 flex items-center ml-0 mr-0 w-full p-3 gap-3">

@@ -217,7 +217,9 @@
     "default": "Default",
     "warning": "Warning",
     "confirm": "Confirm",
-    "none": "None"
+    "none": "None",
+    "run": "Run",
+    "save": "Save"
   },
   "main": {
     "bottomEditor": {
@@ -312,8 +314,9 @@
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
-      "levels": {
-        "title": "Levels"
+      "levels": {},
+      "meter": {
+        "title": "Meter"
       }
     },
     "mobile": {
@@ -369,7 +372,10 @@
     "modelLoaded": "Show model loaded.",
     "modelSaved": "Show model saved.",
     "permissionDenied": "Permission denied.",
-    "authenticationFailed": "Authentication failed."
+    "authenticationFailed": "Authentication failed.",
+    "cueStatus": "Playback Error",
+    "connectionError": "Connection Error",
+    "assetResult": "Asset Processing Error"
   },
   "view": {
     "connect": {

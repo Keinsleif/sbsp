@@ -2,7 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import typia from 'typia';
-import type { Cue } from './types/Cue';
 import type { GlobalHostSettings } from './types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from './types/GlobalRemoteSettings';
 
