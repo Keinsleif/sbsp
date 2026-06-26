@@ -77,7 +77,7 @@ const saveEditorValue = () => {
       v-model="target"
       class="grow-0"
       :label="t('main.bottomEditor.targetCue')"
-      cue-types="all"
+      cue-type="all"
       :exclude="selectedCue != null ? selectedCue.id : ''"
       @update="saveEditorValue"
     />
