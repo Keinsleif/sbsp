@@ -375,7 +375,8 @@
     "authenticationFailed": "Authentication failed.",
     "cueStatus": "Playback Error",
     "connectionError": "Connection Error",
-    "assetResult": "Asset Processing Error"
+    "assetResult": "Asset Processing Error",
+    "updateFailed": "Update failed"
   },
   "view": {
     "connect": {

@@ -10,8 +10,10 @@ import { getVersion } from '@tauri-apps/api/app';
 import ProgressSpinnerWrapper from '../wrapper/ProgressSpinnerWrapper.vue';
 import ProgressBar from 'primevue/progressbar';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import { useToast } from 'primevue/usetoast';
 
 const { t } = useI18n();
+const toast = useToast();
 
 const isCheckingUpdate = ref<boolean>(true);
 const total = ref<number | null>(null);
@@ -59,7 +61,12 @@ const installUpdate = () => {
           console.log('download finished');
           break;
       }
-    });
+    }).catch((e) => {
+      console.error(e);
+      toast.add({ severity: 'error', summary: t('notification.updateFailed'), detail: e, life: 3000 });
+      total.value = null;
+      progress.value = null;
+    }); // If success install, app will be restarted by tauri.
   }
 };
 

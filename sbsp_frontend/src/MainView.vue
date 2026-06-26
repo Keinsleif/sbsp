@@ -223,7 +223,7 @@ onMounted(() => {
             },
             kind: 'warning',
             title: t('general.confirm'),
-          }).catch((e) => console.error(e));
+          }).catch((e) => console.error(e)); // If message fails, it indicates application may be broken. So close window.
           switch (result) {
             case t('dialog.saveConfirm.save'):
               await api.host?.fileSave();

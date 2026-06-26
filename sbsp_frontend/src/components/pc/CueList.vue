@@ -33,7 +33,6 @@ const uiState = useUiState();
 
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
-const contextMenuPosition = ref<[number, number] | null>(null);
 const internalClipboard = ref<Cue[]>([]);
 
 const scrollIntoIndex = (index: number) => {
@@ -384,7 +383,6 @@ const click = (event: MouseEvent, index: number) => {
           @pointerdown.stop="click($event, i)"
           @contextmenu.prevent="
             if (uiState.mode == 'edit') {
-              contextMenuPosition = [$event.clientX, $event.clientY];
               menu?.show($event);
             }
           "

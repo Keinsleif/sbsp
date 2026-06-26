@@ -77,7 +77,7 @@ const openServerPanel = () => {
         title: t('dialog.message.license.proTitle'),
       });
     }
-  });
+  }).catch((e) => console.error(e)); // Only fails in tauri internal. So no ui feedback needed. 
 };
 </script>
 

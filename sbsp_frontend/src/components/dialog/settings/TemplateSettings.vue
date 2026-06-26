@@ -318,8 +318,8 @@ watch(
             width="auto"
           >
             {{
-              editingSettings.global.template.fade.name != null
-                ? editingSettings.global.template.fade.name
+              editingSettings.global.template.start.name != null
+                ? editingSettings.global.template.start.name
                 : t('dialog.settings.global.template.builtFromCueParam')
             }}
           </td>
