@@ -43,9 +43,9 @@ watch(
       isDark = darkMode !== 'light';
     }
     if (isDark) {
-      document.documentElement.classList.add('p-dark');
+      document.documentElement.classList.add('app-dark');
     } else {
-      document.documentElement.classList.remove('p-dark');
+      document.documentElement.classList.remove('app-dark');
     }
   },
   {

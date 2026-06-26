@@ -22,7 +22,7 @@ const primeVueConfig: PrimeVueConfiguration = {
   theme: {
     preset: Aura,
     options: {
-      darkModeSelector: 'system',
+      darkModeSelector: '.app-dark',
       cssLayer: {
         name: 'primevue',
         order: 'base, components, primevue, utilities',
