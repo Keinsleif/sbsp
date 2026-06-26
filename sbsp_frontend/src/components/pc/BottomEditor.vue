@@ -88,7 +88,7 @@ const editorTab = computed({
 </script>
 
 <template>
-  <div class="overflow-auto h-full">
+  <div class="overflow-auto h-full border-x border-(--p-form-field-border-color)">
     <tabs
       v-model:value="editorTab"
       class="h-full flex flex-col"
