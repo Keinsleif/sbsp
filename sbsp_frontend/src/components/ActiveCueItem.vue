@@ -11,7 +11,6 @@ import { mdiRepeat } from '@mdi/js';
 import { usePosition } from '../composables/usePosition';
 import PathIcon from './display/PathIcon.vue';
 import ProgressSpinnerWrapper from './wrapper/ProgressSpinnerWrapper.vue';
-import ProgressBar from 'primevue/progressbar';
 
 const props = defineProps<{
   activeCue: ActiveCue;
@@ -37,9 +36,10 @@ const title = computed(() => {
 
 const elapsedRef = useTemplateRef('elapsed');
 const remainRef = useTemplateRef('remain');
+const progressRef = useTemplateRef('progress');
 
 usePosition((pos) => {
-  if (elapsedRef.value == null || remainRef.value == null) return;
+  if (elapsedRef.value == null || remainRef.value == null || progressRef.value == null) return;
   const position = pos[props.activeCue.cueId];
   if (position == null) return;
   if (props.activeCue.status.startsWith('pre')) {
@@ -49,6 +49,7 @@ usePosition((pos) => {
     elapsedRef.value.textContent = secondsToFormat(position);
     remainRef.value.textContent = '-' + secondsToFormat(props.activeCue.duration - position);
   }
+  progressRef.value.style.transform = `scaleX(${position / props.activeCue.duration})`;
 });
 </script>
 
@@ -78,25 +79,16 @@ usePosition((pos) => {
         class="px-3 py-2"
       />
     </div>
-    <progress-bar
-      :show-value="false"
-      :value="
-        activeCue != null && activeCue.duration != 0
-          ? Math.ceil((activeCue.position * 100) / activeCue.duration)
-          : 0
-      "
-      style="transition: width 0.1s linear"
-      class="h-4 rounded-none"
-      :pt="{
-        value: {
-          style: {
-            backgroundColor:
-              activeCue.status === 'paused' || activeCue.status === 'stopping'
-                ? 'var(--p-orange-500)'
-                : 'var(--p-primary-color)',
-          },
-        },
-      }"
-    /><!-- use throttle value for model-value -->
+    <div class="h-4 w-full border-y border-(--p-form-field-border-color)">
+      <div
+        ref="progress"
+        class="h-full w-full origin-left"
+        :style="{
+          backgroundColor: activeCue.status === 'paused' || activeCue.status === 'stopping'
+            ? 'var(--p-orange-500)'
+            : 'var(--p-primary-color)'
+        }"
+      />
+    </div>
   </div>
 </template>
