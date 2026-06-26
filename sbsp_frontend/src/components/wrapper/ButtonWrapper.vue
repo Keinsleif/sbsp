@@ -18,6 +18,7 @@ const props = defineProps<{
   <Button
     :style="{
       '--active-color': props.activeColor ? $dt(props.activeColor).variable : '',
+      '--p-button-sm-padding-x': '0.375rem',
     }"
     :class="[props.active ? $style['active'] : '', props.blink ? $style['blink'] : '']"
   >
@@ -26,8 +27,8 @@ const props = defineProps<{
         v-if="props.icon != null"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="2 2 22 22"
-        width="16"
-        height="16"
+        width="16px"
+        height="16px"
         :class="innerProps.class"
       >
         <path

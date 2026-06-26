@@ -733,6 +733,7 @@ const menuItems = computed(() => [
         rounded
         :icon="mdiPlus"
         severity="success"
+        variant="outlined"
         size="small"
         :disabled="props.disabled"
         @click="addSegment"
@@ -741,6 +742,7 @@ const menuItems = computed(() => [
         rounded
         :icon="mdiMinus"
         severity="danger"
+        variant="outlined"
         size="small"
         :disabled="props.disabled || selectedIdx == null"
         @click="removeSegment"
@@ -749,6 +751,7 @@ const menuItems = computed(() => [
         rounded
         :icon="mdiTrashCan"
         severity="secondary"
+        variant="outlined"
         size="small"
         :disabled="props.disabled || !uiState.isEnvelopeVisible"
         @click="clearSegments"
