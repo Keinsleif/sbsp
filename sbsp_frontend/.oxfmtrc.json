@@ -3,7 +3,7 @@
   "ignorePatterns": [
     "dist/**",
     "src/types/**",
-    "**/*.md",
+    "**/*.md"
   ],
   "semi": true,
   "singleAttributePerLine": true,
@@ -13,7 +13,7 @@
     {
       "files": ["**/*.html"],
       "options": {
-        "singleAttributePerLine": false,
+        "singleAttributePerLine": false
       }
     },
   ]
