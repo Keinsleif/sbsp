@@ -299,17 +299,17 @@ onUnmounted(() => {
 });
 
 if (api.host) {
-  useHotkey('cmd+o', (e) => {
+  useHotkey('$mod+O', (e) => {
     e.preventDefault();
     api.host?.fileOpen();
   });
 
-  useHotkey('cmd+s', (e) => {
+  useHotkey('$mod+S', (e) => {
     e.preventDefault();
     api.host?.fileSave();
   });
 
-  useHotkey('cmd+shift+a', (e) => {
+  useHotkey('$mod+Shift+A', (e) => {
     e.preventDefault();
     api.host?.fileSaveAs();
   });
@@ -445,7 +445,7 @@ useHotkey(
   },
 );
 
-useHotkey('cmd+r', (e) => {
+useHotkey('$mod+R', (e) => {
   e.preventDefault();
   if (uiState.mode === 'edit') {
     uiState.isRenumberCueDialogOpen = true;

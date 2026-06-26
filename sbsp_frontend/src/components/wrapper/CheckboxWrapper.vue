@@ -5,6 +5,7 @@
 import Checkbox from 'primevue/checkbox';
 import { useId } from 'vue';
 
+defineOptions({ inheritAttrs: false });
 const props = defineProps<{
   label?: string;
 }>();

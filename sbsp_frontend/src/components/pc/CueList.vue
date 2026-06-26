@@ -146,8 +146,8 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('arrowup', onArrowUp);
-useHotkey('shift+arrowup', onArrowUp);
+useHotkey('ArrowUp', onArrowUp);
+useHotkey('Shift+ArrowUp', onArrowUp);
 
 const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   if (uiState.selected != null) {
@@ -178,10 +178,10 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('arrowdown', onArrowDown);
-useHotkey('shift+arrowdown', onArrowDown);
+useHotkey('ArrowDown', onArrowDown);
+useHotkey('Shift+ArrowDown', onArrowDown);
 
-useHotkey('cmd+a', () => {
+useHotkey('$mod+A', () => {
   // This operation not set uiState.selected. But selecting all will includes uiState.selected
   uiState.selectedRows.clear();
   showModel.flatCueList
@@ -189,7 +189,7 @@ useHotkey('cmd+a', () => {
     .forEach((value) => uiState.selectedRows.add(value.cue.id));
 });
 
-useHotkey('cmd+backspace', () => {
+useHotkey('$mod+Backspace', () => {
   if (uiState.mode === 'edit') {
     api.removeCues(Array.from(uiState.selectedRows));
   }
