@@ -6,7 +6,7 @@ on:
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'sbsp_frontend/pnpm-lock.yaml'
+      - 'pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
       - 'scripts/notice_json2md.js'
