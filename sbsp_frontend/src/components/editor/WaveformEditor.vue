@@ -688,7 +688,7 @@ const menuItems = computed(() => [
           <g
             v-for="(seg, i) in segments"
             :key="i"
-            :class="{ [$style['selected']]: selectedIdx == i }"
+            :class="{ [$style['selected']]: selectedIdx == i, [$style['disabled']]: props.disabled }"
           >
             <rect
               :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
