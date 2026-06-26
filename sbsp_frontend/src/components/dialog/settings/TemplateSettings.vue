@@ -55,11 +55,7 @@ watch(
 
 <template>
   <div class="flex flex-col w-full h-full">
-    <table
-      fixed-header
-      density="compact"
-      class="grow border h-full"
-    >
+    <table class="grow border h-full">
       <thead>
         <tr>
           <th id="cuelist_type">
