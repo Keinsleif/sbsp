@@ -145,7 +145,7 @@ useBackendEvent((event) => {
         case 'saveToFile':
           toast.add({
             severity: 'error',
-            summary: 'Failed to save ShowModel',
+            summary: t('notification.failedToSave'),
             detail: event.param.error.message,
             life: 3000,
           });
@@ -153,7 +153,7 @@ useBackendEvent((event) => {
         case 'loadFromFile':
           toast.add({
             severity: 'error',
-            summary: 'Failed to load ShowModel',
+            summary: t('notification.failedToLoad'),
             detail: event.param.error.message,
             life: 3000,
           });
@@ -161,7 +161,7 @@ useBackendEvent((event) => {
         case 'exportToFolder':
           toast.add({
             severity: 'error',
-            summary: 'Failed to export ShowModel',
+            summary: t('notification.failedToExport'),
             detail: event.param.error.message,
             life: 3000,
           });
@@ -169,7 +169,7 @@ useBackendEvent((event) => {
         case 'cueEdit':
           toast.add({
             severity: 'error',
-            summary: 'Failed to edit Cue',
+            summary: t('notification.failedToEditCue'),
             detail: event.param.error.message,
             life: 3000,
           });
@@ -179,7 +179,7 @@ useBackendEvent((event) => {
             case 1:
               toast.add({
                 severity: 'error',
-                summary: 'Operation failed',
+                summary: t('notification.operationFailed'),
                 detail: t('notification.authenticationFailed'),
                 life: 3000,
               });
@@ -187,7 +187,7 @@ useBackendEvent((event) => {
             case 2:
               toast.add({
                 severity: 'error',
-                summary: 'Operation failed',
+                summary: t('notification.operationFailed'),
                 detail: t('notification.permissionDenied'),
                 life: 3000,
               });
@@ -195,7 +195,7 @@ useBackendEvent((event) => {
             default:
               toast.add({
                 severity: 'error',
-                summary: 'Operation failed',
+                summary: t('notification.operationFailed'),
                 detail: event.param.error.message,
                 life: 3000,
               });

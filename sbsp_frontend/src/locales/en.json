@@ -376,7 +376,12 @@
     "cueStatus": "Playback Error",
     "connectionError": "Connection Error",
     "assetResult": "Asset Processing Error",
-    "updateFailed": "Update failed"
+    "updateFailed": "Update failed",
+    "failedToSave": "Failed to save ShowModel",
+    "failedToLoad": "Failed to load ShowModel",
+    "failedToExport": "Failed to export ShowModel",
+    "failedToEditCue": "Failed to edit Cue",
+    "operationFailed": "Operation failed"
   },
   "view": {
     "connect": {

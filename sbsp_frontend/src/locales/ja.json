@@ -204,7 +204,8 @@
       "latestVersion": "最新バージョン",
       "noUpdates": "現在のバージョンは最新版です。",
       "title": "アップデートを確認",
-      "updatesAvailable": "更新が利用可能です。"
+      "updatesAvailable": "更新が利用可能です。",
+      "checking": "確認中..."
     }
   },
   "general": {
@@ -375,7 +376,12 @@
     "cueStatus": "再生エラー",
     "connectionError": "接続エラー",
     "assetResult": "ファイル処理エラー",
-    "updateFailed": "更新が失敗しました"
+    "updateFailed": "更新が失敗しました",
+    "failedToEditCue": "編集に失敗しました",
+    "failedToExport": "エクスポートに失敗しました",
+    "failedToLoad": "読み込みに失敗しました",
+    "failedToSave": "保存に失敗しました",
+    "operationFailed": "操作に失敗しました"
   },
   "view": {
     "connect": {
