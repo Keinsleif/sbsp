@@ -493,7 +493,7 @@ const isActive = computed((): boolean => {
   --row-color: 158 158 158;
 }
 
-.cue-row:not([data-cue-color='none']) {
+.cue-row:not(.selected-row):not([data-cue-color='none']) {
   background-color: rgb(var(--row-color) / 0.2);
 }
 
