@@ -131,7 +131,7 @@ const setVolumeToMAX = () => {
       :volume="volume"
       @update="emit('update')"
     />
-    <div class="flex flex-col sm:flex-row gap-0 sm:ga-3 items-center">
+    <div class="flex flex-col sm:flex-row gap-0 sm:gap-3 items-center">
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.timeLevels.changeVolume')"
