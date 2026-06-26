@@ -31,7 +31,7 @@ const command = computed(() => {
   } else {
     result = 'M 0 0';
   }
-  for (let i = 1; i < 100; i++) {
+  for (let i = 1; i <= 100; i++) {
     let y = 0;
     if (props.curve === 'linear') {
       y = i / 100;
