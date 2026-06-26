@@ -177,7 +177,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div
-        class="d-flex flex-column relative"
+        class="flex flex-col relative"
         :style="{ top: '-' + props.width }"
       >
         <div
