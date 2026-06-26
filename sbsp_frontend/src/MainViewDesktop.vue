@@ -87,7 +87,7 @@ const onCueEdited = debounce(() => {
         </section>
       </div>
       <aside
-        class="transition-[width] shrink-0 grow-0"
+        class="transition-[width] shrink-0 grow-0 overflow-hidden"
         :class="[uiState.isRightSidebarOpen ? 'w-65' : 'w-0']"
       >
         <SideBar />
