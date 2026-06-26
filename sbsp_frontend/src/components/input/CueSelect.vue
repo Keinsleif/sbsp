@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, useId } from 'vue';
+import { computed } from 'vue';
 import { useShowModel } from '../../stores/showModel';
 import type { Cue } from '../../types/Cue';
 import { buildCueName } from '../../utils';
@@ -12,7 +12,6 @@ import { NIL } from 'uuid';
 
 const showModel = useShowModel();
 
-const inputId = useId();
 const selectedId = defineModel<string | null>();
 
 const innerId = computed({
@@ -67,7 +66,6 @@ const filterCue = (cue: Cue): boolean => {
     <Select
       v-bind="$attrs"
       v-model="innerId"
-      :label-id="inputId"
       :options="cueList"
       option-value="value"
       option-label="name"
@@ -82,6 +80,6 @@ const filterCue = (cue: Cue): boolean => {
       @update:model-value="emit('update')"
       @keydown.stop
     />
-    <label :for="inputId">{{ props.label }}</label>
+    <label>{{ props.label }}</label>
   </float-label>
 </template>
