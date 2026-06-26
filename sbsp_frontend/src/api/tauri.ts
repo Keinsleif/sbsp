@@ -357,10 +357,10 @@ export function useTauriApi(): IBackendAdapter {
 
     onBackendEvent: function (callback: BackendEventListener): Promise<UnlistenFn> {
       const channel = new Channel<BackendEvent>(callback);
-      invoke('listen_backend_event', { channel });
+      invoke('listen_backend_event', { channel }).catch((e) => console.error(e));
       return new Promise((resolve) =>
         resolve(() => {
-          invoke('unlisten_backend_event');
+          invoke('unlisten_backend_event').catch((e) => console.error(e));
         }),
       );
     },
