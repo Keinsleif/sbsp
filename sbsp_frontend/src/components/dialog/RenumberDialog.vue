@@ -8,9 +8,8 @@ import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 import Dialog from 'primevue/dialog';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
-import InputNumber from 'primevue/inputnumber';
-import FloatLabel from 'primevue/floatlabel';
-import InputText from 'primevue/inputtext';
+import NumberInput from '../input/NumberInput.vue';
+import TextInput from '../input/TextInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -63,55 +62,34 @@ const onDone = () => {
     @contextmenu.prevent
   >
     <div class="flex flex-col gap-4 p-3 w-100 items-stretch">
-      <float-label variant="on">
-        <input-number
-          id="start_from"
-          class="w-full"
-          :min="0"
-          :step="1"
-          v-model="startFrom"
-          show-buttons
-          button-layout="horizontal"
-        />
-        <label for="start_from">{{ t('dialog.renumber.startNumber') }}</label>
-      </float-label>
-      <float-label variant="on">
-        <input-number
-          id="increment"
-          class="w-full"
-          :min="0"
-          :step="1"
-          v-model="increment"
-          show-buttons
-          button-layout="horizontal"
-        />
-        <label for="increment">{{ t('dialog.renumber.increment') }}</label>
-      </float-label>
-      <float-label variant="on">
-        <input-text
-          class="w-full"
-          id="prefix"
-          v-model="prefix"
-        />
-        <label for="prefix">{{ t('dialog.renumber.prefix') }}</label>
-      </float-label>
-      <float-label variant="on">
-        <input-text
-          class="w-full"
-          id="suffix"
-          v-model="suffix"
-        />
-        <label for="suffix">{{ t('dialog.renumber.suffix') }}</label>
-      </float-label>
-      <float-label variant="on">
-        <input-text
-          class="w-full"
-          id="preview"
-          :model-value="preview"
-          :label="t('dialog.renumber.preview')"
-        />
-        <label for="preview">{{ t('dialog.renumber.preview') }}</label>
-      </float-label>
+      <number-input
+        :min="0"
+        :step="1"
+        v-model="startFrom"
+        show-buttons
+        button-layout="horizontal"
+        :label="t('dialog.renumber.startNumber')"
+      />
+      <number-input
+        :min="1"
+        :step="1"
+        v-model="increment"
+        show-buttons
+        button-layout="horizontal"
+        :label="t('dialog.renumber.increment')"
+      />
+      <text-input
+        v-model="prefix"
+        :label="t('dialog.renumber.prefix')"
+      />
+      <text-input
+        v-model="suffix"
+        :label="t('dialog.renumber.suffix')"
+      />
+      <text-input
+        :model-value="preview"
+        :label="t('dialog.renumber.preview')"
+      />
       <div class="flex flex-row justify-end">
         <button-wrapper
           :label="t('general.run')"
