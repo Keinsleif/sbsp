@@ -3,7 +3,6 @@
 
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
-import type { BackendEvent } from '../types/BackendEvent';
 import type {
   IBackendAdapter,
   IBackendRemoteAdapter,
@@ -27,6 +26,7 @@ import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
 import { settingsValidator } from '../typia';
 import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
+import { type BackendEventListener } from './interface';
 
 const GLOBAL_SETTINGS_STORAGE_KEY = 'sbsp_global_settings';
 const { t } = i18n.global;
@@ -59,7 +59,7 @@ const websocketApiState: {
   ws: WebSocket | null;
   projectStatus: ProjectStatus | null;
   sendQueue: string[];
-  backendEventListeners: { [key: string]: (event: BackendEvent) => void };
+  backendEventListeners: { [key: string]: BackendEventListener };
   assetListListeners: { [key: string]: (list: FileList[]) => void };
   connectionStatusListeners: {
     [key: string]: (isConnected: boolean, perm: Permissions | null) => void;
@@ -540,7 +540,7 @@ export function useWebsocketApi(): IBackendAdapter {
       });
     },
 
-    onBackendEvent: async function (callback: (event: BackendEvent) => void): Promise<UnlistenFn> {
+    onBackendEvent: async function (callback: BackendEventListener): Promise<UnlistenFn> {
       const id = v4();
       websocketApiState.backendEventListeners[id] = callback;
       return () => {

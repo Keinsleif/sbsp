@@ -18,6 +18,7 @@ import type { InsertPosition } from '../types/InsertPosition';
 type UnlistenFn = () => void;
 
 export type LevelMeterListener = (levels: [number, number]) => void;
+export type BackendEventListener = (event: BackendEvent) => void;
 
 export interface IPickAudioAssetsOptions {
   multiple: boolean;
@@ -85,7 +86,7 @@ export interface IBackendAdapter {
   importSettingsFromFile(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
   exportSettingsToFile(): void;
 
-  onBackendEvent(callback: (event: BackendEvent) => void): Promise<UnlistenFn>;
+  onBackendEvent(callback: BackendEventListener): Promise<UnlistenFn>;
 }
 
 export interface IBackendHostAdapter {
