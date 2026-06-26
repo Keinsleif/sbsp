@@ -178,7 +178,7 @@ onUnmounted(() => {
 <style lang="css" module>
 @layer base {
   .table th,
-  td {
+  .table td {
     height: 34px;
     border-bottom: 1px solid rgb(from currentColor r g b / 0.5);
     text-align: left;
