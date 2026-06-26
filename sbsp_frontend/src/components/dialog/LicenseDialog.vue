@@ -52,12 +52,12 @@ onMounted(() => {
 <template>
   <Dialog
     v-model:visible="isLicenseDialogOpen"
-    width="auto"
+    class="w-auto"
     :header="t('dialog.license.title')"
     @keydown.stop.esc="isLicenseDialogOpen = false"
     @contextmenu.prevent
   >
-    <div class="flex flex-col p-4 gap-3 w-112.5">
+    <div class="flex flex-col p-4 gap-3 w-md">
       <div>
         {{ t('dialog.license.edition') }} :
         <span :class="edition == 'Free' ? '' : 'text-green'">{{ edition }}</span>
@@ -117,7 +117,7 @@ onMounted(() => {
     </div>
     <Dialog
       v-model:visible="isLicenseActivateInfoDialogOpen"
-      width="600px"
+      class="w-150"
       :header="t('dialog.license.success.title')"
       @keydown.stop.esc="isLicenseActivateInfoDialogOpen = false"
     >

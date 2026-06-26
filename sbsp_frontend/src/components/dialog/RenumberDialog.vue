@@ -56,7 +56,7 @@ const onDone = () => {
 <template>
   <Dialog
     v-model:visible="isRenumberDialogOpen"
-    width="auto"
+    class="w-auto"
     :header="t('dialog.renumber.title')"
     @keydown.stop="onKeydown"
     @contextmenu.prevent

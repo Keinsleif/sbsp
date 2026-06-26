@@ -5,13 +5,9 @@
 import markdownit from 'markdown-it';
 import mila from 'markdown-it-link-attributes';
 import { onMounted, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
-import Divider from 'primevue/divider';
-import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import Dialog from 'primevue/dialog';
 
-const { t } = useI18n();
 const api = useApi();
 const isThirdPartyNoticesDialogOpen = defineModel<boolean>();
 const notices = ref('');
