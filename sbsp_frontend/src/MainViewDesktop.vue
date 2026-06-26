@@ -72,7 +72,7 @@ const onCueEdited = debounce(() => {
     </header>
     <div class="flex flex-row grow w-full overflow-hidden">
       <div class="flex flex-col h-full grow">
-        <main class="grow shrink base-0 overflow-hidden">
+        <main class="grow shrink overflow-hidden">
           <CueList />
         </main>
         <section
