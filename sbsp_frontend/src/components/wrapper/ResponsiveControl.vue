@@ -22,15 +22,15 @@ const controlProps = withDefaults(
 
 <template>
   <template v-if="!controlProps.overlay">
-    <slot />
+    <slot :overlay="false" />
   </template>
   <template v-else>
     <button-wrapper
       :label="controlProps.buttonLabel"
       @click="isVisible = true"
     />
-    <Dialog v-model:visible="isVisible">
-      <slot />
+    <Dialog v-model:visible="isVisible" class="w-full h-full">
+      <slot :overlay="true" />
     </Dialog>
   </template>
 </template>

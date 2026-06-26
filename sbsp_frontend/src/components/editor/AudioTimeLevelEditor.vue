@@ -22,10 +22,11 @@ import Divider from 'primevue/divider';
 const { t } = useI18n();
 const api = useApi();
 const uiState = useUiState();
-const breakpoints = useBreakpoints(breakpointsTailwind);
+const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
 const xs = breakpoints.smaller('sm');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 const mdAndDown = breakpoints.smallerOrEqual('md');
+const lxAndUp = breakpoints.greaterOrEqual('xl');
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -136,53 +137,59 @@ const setVolumeToMAX = () => {
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.timeLevels.changeVolume')"
       >
-        <div class="flex flex-row grow gap-2">
-          <volume-fader
-            v-model="volume"
-            class="grow"
-            :label="t('main.bottomEditor.timeLevels.volume')"
-            :direction="xs ? 'vertical' : 'horizontal'"
-            :thumb-amount="breakpoints.xl ? 'full' : 'decreased'"
-            @update="
-              saveEditorValue();
-              changeActiveCueVolume();
-            "
-          />
-          <div class="grow-0 flex flex-col gap-1">
-            <button-wrapper
-              label="LUFS"
-              class="h-6"
-              @click="setVolumeToLUFS"
-              v-tooltip.right="
-                t('main.bottomEditor.timeLevels.lufsDescription', {
-                  targetLUFS: showModel.settings.audio.lufsTarget,
-                })
+        <template #default="innerProps">
+          <div
+            class="flex grow gap-3 h-full"
+            :class="innerProps.overlay ? 'flex-col' : 'flex-row'"
+          >
+            <volume-fader
+              v-model="volume"
+              class="grow"
+              :label="t('main.bottomEditor.timeLevels.volume')"
+              :direction="xs ? 'vertical' : 'horizontal'"
+              :thumb-amount="lxAndUp ? 'full' : 'decreased'"
+              @update="
+                saveEditorValue();
+                changeActiveCueVolume();
               "
             />
-            <button-wrapper
-              label="MAX"
-              class="h-6"
-              @click="setVolumeToMAX"
-              v-tooltip.right="t('main.bottomEditor.timeLevels.peakDescription')"
-            />
+            <div class="grow-0 flex flex-col gap-1">
+              <button-wrapper
+                label="LUFS"
+                :class="innerProps.overlay ? '' : 'h-6'"
+                @click="setVolumeToLUFS"
+                v-tooltip.right="
+                  t('main.bottomEditor.timeLevels.lufsDescription', {
+                    targetLUFS: showModel.settings.audio.lufsTarget,
+                  })
+                "
+              />
+              <button-wrapper
+                label="MAX"
+                :class="innerProps.overlay ? '' : 'h-6'"
+                @click="setVolumeToMAX"
+                v-tooltip.right="t('main.bottomEditor.timeLevels.peakDescription')"
+              />
+            </div>
           </div>
-        </div>
+        </template>
       </responsive-control>
-      <divider layout="vertical" />
+      <divider :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'" />
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        height="400px"
         :button-label="t('main.bottomEditor.timeLevels.changePan')"
       >
         <panning-fader
           v-model="panning"
-          class="grow"
+          class="grow h-full"
           :label="t('main.bottomEditor.timeLevels.pan')"
           :direction="xs ? 'vertical' : 'horizontal'"
           :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
           @update="saveEditorValue()"
         />
       </responsive-control>
-      <divider layout="vertical" />
+      <divider :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'" />
       <checkbox-wrapper
         v-model="repeat"
         :label="t('main.bottomEditor.timeLevels.repeat')"

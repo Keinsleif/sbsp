@@ -46,9 +46,9 @@ const props = defineProps<{
     </div>
   </template>
   <template v-else>
-    <div class="flex flex-col">
+    <div class="flex flex-col items-center">
       <span>{{ props.label }}</span>
-      <div class="flex flex-row grow">
+      <div class="flex flex-row grow py-4">
         <Slider
           v-model="model"
           :min="props.min"
@@ -57,13 +57,13 @@ const props = defineProps<{
           orientation="vertical"
           class="z-1"
         />
-        <div class="relative lt-1 h-full">
+        <div class="relative ml-4 h-full">
           <span
             v-for="tick in props.ticks"
             :key="tick.value"
-            class="absolute transform-[translateY(-50%)] pointer-events-none"
+            class="absolute transform-[translateY(50%)] pointer-events-none"
             :style="{
-              top: `${((tick.value - props.min) * 100) / (props.max - props.min)}%`,
+              bottom: `${((tick.value - props.min) * 100) / (props.max - props.min)}%`,
             }"
             >{{ tick.label }}</span
           >

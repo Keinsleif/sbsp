@@ -72,12 +72,12 @@ const onCueEdited = debounce(() => {
     </header>
     <div class="flex flex-row grow w-full overflow-hidden">
       <div class="flex flex-col h-full grow">
-        <main class="grow shrink overflow-hidden">
+        <main class="grow shrink overflow-y-hidden">
           <CueList />
         </main>
         <section
-          class="transition-[height] overflow-hidden shrink-0 grow-0"
-          :class="[uiState.isBottomTabOpen ? 'h-62.5' : 'h-0']"
+          class="transition-[height] overflow-y-hidden shrink-0 grow-0"
+          :class="[uiState.isBottomTabOpen ? 'h-62' : 'h-0']"
         >
           <BottomEditor
             v-model="selectedCue"

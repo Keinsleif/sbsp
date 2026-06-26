@@ -22,7 +22,7 @@ import type { PlaybackStatus } from './types/PlaybackStatus.ts';
 import { useToast } from 'primevue/usetoast';
 import { useBackendEvent } from './composables/useBackendEvent.ts';
 
-const breakpoints = useBreakpoints(breakpointsTailwind);
+const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
 const xs = breakpoints.smaller('sm');
 
 const showModel = useShowModel();
@@ -442,5 +442,5 @@ useHotkey('$mod+R', (e) => {
 </script>
 
 <template>
-  <component :is="xs ? MainViewMobile : MainViewDesktop" />
+  <component :is="xs && false ? MainViewMobile : MainViewDesktop" />
 </template>

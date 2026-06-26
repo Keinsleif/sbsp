@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 
 const { t } = useI18n();
-const breakpoints = useBreakpoints(breakpointsTailwind);
+const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
 const xs = breakpoints.smaller('sm');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 const showState = useShowState();

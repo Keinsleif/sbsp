@@ -18,7 +18,7 @@ import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const { t } = useI18n();
 const uiState = useUiState();
-const breakpoints = useBreakpoints(breakpointsTailwind);
+const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
 const mdAndDown = breakpoints.smallerOrEqual('md');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 
