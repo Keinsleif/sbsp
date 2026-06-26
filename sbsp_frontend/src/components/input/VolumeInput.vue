@@ -54,7 +54,6 @@ const saveValue = () => {
     v-bind="$attrs"
     class="w-25"
     autocomplete="off"
-    suffix=" dB"
     @blur="saveValue"
     @keydown.stop="onKeydown"
   />
