@@ -54,7 +54,7 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-column w-full h-full">
+  <div class="flex flex-col w-full h-full">
     <table
       fixed-header
       density="compact"
@@ -262,7 +262,7 @@ watch(
           </td>
           <td
             headers="cuelist_pre_wait"
-            class="text-center pa-1"
+            class="text-center p-1"
             width="100px"
           >
             <div>
@@ -271,7 +271,7 @@ watch(
           </td>
           <td
             headers="cuelist_duration"
-            class="text-center pa-1"
+            class="text-center p-1"
             width="100px"
           >
             <div>
