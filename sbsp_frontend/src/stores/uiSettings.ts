@@ -200,7 +200,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
 };
 
 export const useUiSettings = defineStore('uiSettings', () => {
-  const settings = ref<GlobalHostSettings | GlobalRemoteSettings>(DEFAULT_SETTINGS);
+  const settings = ref<GlobalHostSettings | GlobalRemoteSettings>(structuredClone(DEFAULT_SETTINGS));
 
   const api = useApi();
   api

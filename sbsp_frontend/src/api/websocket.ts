@@ -493,7 +493,7 @@ export function useWebsocketApi(): IBackendAdapter {
         return JSON.parse(settings) as GlobalHostSettings | GlobalRemoteSettings;
       } else {
         localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
-        return DEFAULT_SETTINGS;
+        return structuredClone(DEFAULT_SETTINGS);
       }
     },
     setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
