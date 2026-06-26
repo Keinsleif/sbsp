@@ -591,7 +591,7 @@ watch(
 
 <style lang="css" module>
 .selected-row > td {
-  background-color: rgb(var(--v-theme-primary), 0.2);
-  color: rgb(var(--v-theme-on-background));
+  background-color: rgb(var(--p-primary-color), 0.2);
+  color: rgb(var(--p-content-color));
 }
 </style>
