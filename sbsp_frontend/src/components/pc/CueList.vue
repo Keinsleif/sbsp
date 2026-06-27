@@ -37,7 +37,7 @@ const internalClipboard = ref<Cue[]>([]);
 
 const scrollIntoIndex = (index: number) => {
   if (cueListItemRefs.value != null) {
-    cueListItemRefs.value[index]?.$el.scrollIntoView({ block: 'nearest' });
+    cueListItemRefs.value[index]?.$el.scrollIntoView(false);
   }
 };
 
@@ -274,7 +274,7 @@ const click = (event: MouseEvent, index: number) => {
 
 <template>
   <div
-    class="h-full border border-(--p-form-field-border-color) overflow-auto scroll-pbs-8"
+    class="h-full border border-(--p-form-field-border-color) overflow-auto scroll-pt-8"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
     @copy="copyHandler"
