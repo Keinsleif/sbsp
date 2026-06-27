@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, toRaw, useTemplateRef } from 'vue';
+import { computed, ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
@@ -104,7 +104,7 @@ const copy = () => {
 };
 
 const menu = useTemplateRef('menu');
-const menuItems = ref([
+const menuItems = computed(() => [
   { label: t('main.cueList.contextMenu.copy'), icon: mdiContentCopy, command: copy },
   { label: t('main.cueList.contextMenu.cut'), icon: mdiContentCut, command: cut },
   { label: t('main.cueList.contextMenu.paste'), icon: mdiContentPaste, command: paste },
