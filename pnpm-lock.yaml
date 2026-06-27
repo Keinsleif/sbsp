@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  primevue: e84cf97fc673840a02a399d65ace9edca91c2884f6ebeaff1e28b278a0870349
+
 importers:
 
   .: {}
@@ -63,7 +66,7 @@ importers:
         version: 4.7.1(pinia@3.0.4(typescript@6.0.3)(vue@3.5.38(typescript@6.0.3)))
       primevue:
         specifier: ^4.5.5
-        version: 4.5.5(vue@3.5.38(typescript@6.0.3))
+        version: 4.5.5(patch_hash=e84cf97fc673840a02a399d65ace9edca91c2884f6ebeaff1e28b278a0870349)(vue@3.5.38(typescript@6.0.3))
       tailwindcss:
         specifier: ^4.3.1
         version: 4.3.1
@@ -5944,7 +5947,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  primevue@4.5.5(vue@3.5.38(typescript@6.0.3)):
+  primevue@4.5.5(patch_hash=e84cf97fc673840a02a399d65ace9edca91c2884f6ebeaff1e28b278a0870349)(vue@3.5.38(typescript@6.0.3)):
     dependencies:
       '@primeuix/styled': 0.7.4
       '@primeuix/styles': 2.0.3

@@ -2,9 +2,6 @@
 import { $dt } from '@primeuix/themes';
 import FloatLabel from 'primevue/floatlabel';
 import Select from 'primevue/select';
-import { useId } from 'vue';
-
-const inputId = useId();
 
 const props = defineProps<{
   items: {
@@ -22,7 +19,6 @@ const props = defineProps<{
       v-bind="$attrs"
       :options="props.items"
       class="w-full h-full"
-      :label-id="inputId"
       option-label="name"
       option-value="value"
       :pt="{
@@ -34,6 +30,13 @@ const props = defineProps<{
         option: {
           style: 'padding: 0;',
         },
+        label: (opts) => {
+          return {
+            style: {
+              backgroundColor: opts.context.option != null && opts.context.option.color != 'none' ? `rgb(from ${$dt(opts.context.option.color + '.500').variable} r g b / 0.5` : undefined,
+            },
+          };
+        }
       }"
     >
       <template #option="innerProps">
@@ -50,6 +53,6 @@ const props = defineProps<{
         </div>
       </template>
     </Select>
-    <label :for="inputId">{{ props.label || '' }}</label>
+    <label>{{ props.label || '' }}</label>
   </FloatLabel>
 </template>

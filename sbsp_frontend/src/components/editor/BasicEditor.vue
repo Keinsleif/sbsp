@@ -13,7 +13,6 @@ import { mdiCircle } from '@mdi/js';
 import TextInput from '../input/TextInput.vue';
 import TimeInput from '../input/TimeInput.vue';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
-import { $dt } from '@primeuix/themes';
 import CueSelect from '../input/CueSelect.vue';
 import SelectWrapper from '../wrapper/SelectWrapper.vue';
 import TextareaWrapper from '../wrapper/TextareaWrapper.vue';
@@ -96,7 +95,6 @@ const saveEditorValue = () => {
     if (selectedCue.value.chain.type === 'doNotChain') {
       target.value = null;
     } else {
-      console.log(target.value);
       selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
@@ -217,7 +215,6 @@ const insertTimestampToNote = () => {
           v-model="color"
           class="ml-auto grow-0"
           width="150px"
-          :style="{ color: color != null && color != 'none' ? $dt(color + '.500').variable : '' }"
           :label="t('main.bottomEditor.basics.color')"
           :items="[
             { value: 'none', name: t('general.none'), color: 'text' },
@@ -228,7 +225,7 @@ const insertTimestampToNote = () => {
             { value: 'green', name: 'Green', color: 'green' },
             { value: 'yellow', name: 'Yellow', color: 'yellow' },
             { value: 'orange', name: 'Orange', color: 'orange' },
-            { value: 'grey', name: 'Grey', color: 'gray' },
+            { value: 'grey', name: 'Grey', color: 'gray' }, // Backend uses 'grey' as key but primevue uses 'gray' as color name.
           ]"
           :prepend-inner-icon="mdiCircle"
           @update:model-value="saveEditorValue"
