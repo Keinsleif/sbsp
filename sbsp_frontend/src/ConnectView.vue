@@ -8,9 +8,9 @@ import { useI18n } from 'vue-i18n';
 import { useApi } from './api';
 import ButtonWrapper from './components/wrapper/ButtonWrapper.vue';
 import ProgressSpinnerWrapper from './components/wrapper/ProgressSpinnerWrapper.vue';
-import FloatLabel from 'primevue/floatlabel';
-import InputText from 'primevue/inputtext';
 import { useToast } from 'primevue/usetoast';
+import TextInput from './components/input/TextInput.vue';
+import NumberInput from './components/input/NumberInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -126,32 +126,21 @@ onUnmounted(() => {
       </table>
     </div>
     <footer class="grow-0 flex items-center ml-0 mr-0 w-full gap-3 p-1">
-      <FloatLabel
-        variant="on"
+      <text-input
         class="grow-0"
-      >
-        <InputText
-          id="on_label"
-          class="w-100"
-          v-model="host"
-          autocomplete="off"
-          @keydown.enter="connect(host, port)"
-        />
-        <label for="on_label">{{ t('view.connect.remoteHost') }}</label>
-      </FloatLabel>
-      <FloatLabel
-        variant="on"
+        v-model="host"
+        :label="t('view.connect.remoteHost')"
+        @keydown.enter="connect(host, port)"
+      />
+      <number-input
         class="grow-0"
-      >
-        <InputText
-          id="on_label"
-          class="w-25"
-          v-model="port"
-          autocomplete="off"
-          @keydown.enter="connect(host, port)"
-        />
-        <label for="on_label">{{ t('view.connect.remotePort') }}</label>
-      </FloatLabel>
+        v-model="port"
+        :min="0"
+        :step="1"
+        :max-fraction-digits="0"
+        :label="t('view.connect.remotePort')"
+        @keydown.enter="connect(host, port)"
+      />
       <button-wrapper
         class="ml-auto"
         :label="t('view.connect.connect')"

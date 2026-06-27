@@ -106,7 +106,7 @@ const saveValues = () => {
       <select-wrapper
         v-model="easingType"
         :label="t('main.bottomEditor.input.curve')"
-        class="grow-0 w-40"
+        class="w-40"
         :items="[
           { value: 'linear', name: t('main.bottomEditor.input.linear') },
           { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },

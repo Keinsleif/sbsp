@@ -6,6 +6,7 @@ import FloatLabel from 'primevue/floatlabel';
 import InputNumber from 'primevue/inputnumber';
 import { useId } from 'vue';
 
+defineOptions({ inheritAttrs: false });
 const props = defineProps<{
   label?: string;
 }>();
