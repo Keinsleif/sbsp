@@ -7,15 +7,22 @@ import type { BackendEventListener } from '../api/interface';
 
 export const useBackendEvent = async (listener: BackendEventListener) => {
   const api = useApi();
-  let unlisten: (() => void) | null = null
+  let unlisten: (() => void) | null = null;
+  let disposed = false;
 
   onUnmounted(() => {
+    disposed = true;
     if (unlisten != null) {
       unlisten();
+      unlisten = null;
     }
   });
 
   api.onBackendEvent(listener).then((unlistenfn) => {
+    if (disposed) {
+      unlistenfn();
+      return;
+    }
     unlisten = unlistenfn;
   });
 };
