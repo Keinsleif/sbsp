@@ -20,7 +20,7 @@ watch(model, () => {
 
 const save = () => {
   if (model.value !== innerText.value) {
-    model.value = innerText.value;
+    model.value = innerText.value === '' ? innerText.value : null;
     emit('update');
   }
 };
@@ -32,7 +32,7 @@ const onKeydown = (e: KeyboardEvent) => {
       e.target.blur();
       break;
     case 'Escape':
-      innerText.value = model.value != null ? model.value : ''; // reset
+      innerText.value = model.value ?? ''; // reset
       e.target.blur();
       break;
   }
