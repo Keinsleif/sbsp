@@ -33,6 +33,8 @@ const keyinput = (event: KeyboardEvent) => {
   }
   if (event.key === 'Control') {
     shortcut = 'Ctrl';
+  } else if (event.key === 'Meta' || event.key === 'OS') {
+    shortcut = 'Cmd';
   } else if (event.key === 'Alt') {
     shortcut = 'Alt';
   } else if (event.key === 'Shift') {
