@@ -338,9 +338,11 @@ export function useTauriApi(): IBackendAdapter {
               })
                 .then(resolve)
                 .catch(reject);
+            } else {
+              reject(new Error("Settings import cancelled"))
             }
           })
-          .catch((e) => console.error(e));
+          .catch((e) => reject(e));
       });
     },
     exportSettingsToFile: function (): void {
