@@ -387,7 +387,7 @@ const click = (event: MouseEvent, index: number) => {
           @pointerdown.stop="click($event, i)"
           @contextmenu.prevent="
             if (uiState.mode == 'edit') {
-              if (uiState.selected == null) {
+              if (!uiState.selectedRows.has(item.cue.id)) {
                 uiState.setSelected(item.cue.id);
               }
               menu?.show($event);
