@@ -59,6 +59,7 @@ usePosition((pos) => {
     durationRef.value.children.length < 2
   )
     return;
+  if(props.item.isHidden) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
