@@ -381,7 +381,9 @@
     "failedToExport": "エクスポートに失敗しました",
     "failedToLoad": "読み込みに失敗しました",
     "failedToSave": "保存に失敗しました",
-    "operationFailed": "操作に失敗しました"
+    "operationFailed": "操作に失敗しました",
+    "failedToStartServer": "サーバーの起動に失敗しました",
+    "failedToStopServer": "サーバーの停止に失敗しました"
   },
   "view": {
     "connect": {

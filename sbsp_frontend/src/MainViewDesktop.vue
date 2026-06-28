@@ -99,5 +99,9 @@ const onCueEdited = debounce(() => {
     </footer>
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
+    <server-panel-dialog
+      v-if="isHost"
+      v-model="uiState.isServerPanelOpen"
+    />
   </div>
 </template>

@@ -381,7 +381,9 @@
     "failedToLoad": "Failed to load ShowModel",
     "failedToExport": "Failed to export ShowModel",
     "failedToEditCue": "Failed to edit Cue",
-    "operationFailed": "Operation failed"
+    "operationFailed": "Operation failed",
+    "failedToStartServer": "Failed to start server",
+    "failedToStopServer": "Failed to stop server"
   },
   "view": {
     "connect": {
