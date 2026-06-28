@@ -54,9 +54,9 @@ watch(() => activeTargetCue.value?.position, (newposition) => {
 
 const onpointerup = () => {
   if (sliderChanging.value && props.targetId != null) {
-    sliderChanging.value = false;
     api.sendSeekTo(props.targetId, position.value);
   }
+  sliderChanging.value = false;
 };
 </script>
 
@@ -65,7 +65,7 @@ const onpointerup = () => {
     <Slider
       v-model="position"
       class="grow-0"
-      :readonly="activeTargetCue==null"
+      :disabled="activeTargetCue==null"
       :severity="activeTargetCue?.status.startsWith('pre') ? 'warn' : 'primary'"
       :min="0"
       :max="activeTargetCue?.duration || 1"
