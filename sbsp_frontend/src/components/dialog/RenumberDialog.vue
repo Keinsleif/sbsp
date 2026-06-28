@@ -41,8 +41,8 @@ const onDone = () => {
   api
     .renumberCues(
       Array.from(uiState.selectedRows),
-      startFrom.value,
-      increment.value,
+      startFrom.value || 0,
+      increment.value || 1,
       prefix.value.trim() || null,
       suffix.value.trim() || null,
     )
