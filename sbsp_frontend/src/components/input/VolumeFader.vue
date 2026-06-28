@@ -12,6 +12,7 @@ const props = withDefaults(
     label?: string;
     direction?: 'horizontal' | 'vertical';
     thumbAmount?: 'full' | 'decreased' | 'baseOnly';
+    disabled?: boolean;
   }>(),
   {
     label: 'Volume',
@@ -37,7 +38,9 @@ const faderPosition = computed({
 const onPointerUp = debounce(() => {
   if (sliderChanging.value) {
     sliderChanging.value = false;
-    emit('update');
+    if (!props.disabled) {
+      emit('update');
+    }
   }
 }, 300);
 
@@ -76,10 +79,13 @@ const tickLabels = computed(() => {
     :label="props.label"
     :ticks="tickLabels"
     :direction="props.direction"
+    :disabled="props.disabled"
     @dblclick="
-      faderPosition = 0;
-      onPointerUp.clear();
-      emit('update');
+      if (!props.disabled) {
+        faderPosition = 0;
+        onPointerUp.clear();
+        emit('update');
+      }
     "
     @keydown.stop
     @pointerdown="sliderChanging = true"
@@ -88,6 +94,7 @@ const tickLabels = computed(() => {
     <template #input>
       <volume-input
         v-model="volume"
+        :disabled="props.disabled"
         @pointerdown.stop
         @dblclick.stop
         @update="emit('update')"

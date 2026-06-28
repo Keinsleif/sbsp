@@ -9,6 +9,7 @@ import InputNumber from 'primevue/inputnumber';
 const props = defineProps<{
   label?: string;
   direction?: 'horizontal' | 'vertical';
+  disabled?: boolean;
 }>();
 
 const panning = defineModel<number>({ default: 0 });
@@ -41,12 +42,15 @@ const tickLabels = [
     :label="props.label"
     :ticks="tickLabels"
     :direction="props.direction"
-    @dblclick="faderPosition = 0"
+    :disabled="props.disabled"
+    @dblclick="if (!props.disabled) faderPosition = 0;"
     @pointerdown="sliderChanging = true"
     @pointerup="
       if (sliderChanging) {
         sliderChanging = false;
-        emit('update');
+        if (!props.disabled) {
+          emit('update');
+        }
       }
     "
     @keydown.stop
@@ -55,6 +59,7 @@ const tickLabels = [
       <input-number
         v-model="panning"
         class="w-25"
+        :disabled="props.disabled"
         :min="-1"
         :max="1"
         :step="1 / 8"

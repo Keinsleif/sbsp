@@ -13,6 +13,7 @@ const props = defineProps<{
   max: number;
   step: number;
   ticks: { label: string; value: number }[];
+  disabled?: boolean;
 }>();
 </script>
 
@@ -26,6 +27,7 @@ const props = defineProps<{
           :min="props.min"
           :max="props.max"
           :step="props.step"
+          :disabled="props.disabled"
           class="z-1"
         />
         <div class="relative mt-2 w-full">
@@ -54,6 +56,7 @@ const props = defineProps<{
           :min="props.min"
           :max="props.max"
           :step="props.step"
+          :disabled="props.disabled"
           orientation="vertical"
           class="z-1"
         />
