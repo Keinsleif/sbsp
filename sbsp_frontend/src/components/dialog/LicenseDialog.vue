@@ -11,9 +11,11 @@ import Dialog from 'primevue/dialog';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import CopyTextInput from '../input/CopyTextInput.vue';
 import { $dt } from '@primeuix/themes';
+import { useToast } from 'primevue/usetoast';
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const api = useApi();
+const toast = useToast();
 const isLicenseDialogOpen = defineModel<boolean>();
 const isLicenseActivateInfoDialogOpen = ref(false);
 const licenseInfo = ref<LicenseInformation | null>(null);
@@ -35,7 +37,10 @@ const loadLicense = () => {
   api.host
     ?.getLicenseInfo()
     .then((value) => (licenseInfo.value = value))
-    .catch((e) => console.error(e));
+    .catch((e) => {
+      console.error(e);
+      toast.add({ severity: 'error', summary: 'Failed to load License', detail: e.toString(), life: 3000 });
+    });
 };
 
 onMounted(() => {

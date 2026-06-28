@@ -140,7 +140,7 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
     const firstCueId = showModel.flatCueList[0]?.cue.id;
     if (firstCueId != null) {
       uiState.setSelected(firstCueId);
-      scrollIntoIndex(0);
+      scrollIntoIndex(0); // First cue cannot be Group child. This ensures visibility.
     }
   }
 }, 100);
@@ -169,10 +169,14 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
     }
     scrollIntoIndex(cursorIndex);
   } else {
-    const lastCueId = showModel.flatCueList[showModel.flatCueList.length - 1]?.cue.id;
+    let lastVisibleIndex = showModel.flatCueList.length - 1;
+    while (showModel.flatCueList[lastVisibleIndex]?.isHidden) {
+      lastVisibleIndex--;
+    }
+    const lastCueId = showModel.flatCueList[lastVisibleIndex]?.cue.id;
     if (lastCueId != null) {
       uiState.setSelected(lastCueId);
-      scrollIntoIndex(showModel.flatCueList.length - 1);
+      scrollIntoIndex(lastVisibleIndex);
     }
   }
 }, 100);
@@ -383,6 +387,9 @@ const click = (event: MouseEvent, index: number) => {
           @pointerdown.stop="click($event, i)"
           @contextmenu.prevent="
             if (uiState.mode == 'edit') {
+              if (uiState.selected == null) {
+                uiState.setSelected(item.cue.id);
+              }
               menu?.show($event);
             }
           "

@@ -43,13 +43,19 @@ usePosition((pos) => {
   const position = pos[props.activeCue.cueId];
   if (position == null) return;
   if (props.activeCue.status.startsWith('pre')) {
-    elapsedRef.value.textContent = '-' + secondsToFormat(props.activeCue.duration - position);
+    if (props.activeCue.duration > 0) {
+      elapsedRef.value.textContent = '-' + secondsToFormat(props.activeCue.duration - position);
+    }
     remainRef.value.textContent = '00:00.00';
   } else {
     elapsedRef.value.textContent = secondsToFormat(position);
-    remainRef.value.textContent = '-' + secondsToFormat(props.activeCue.duration - position);
+    if (props.activeCue.duration > 0) {
+      remainRef.value.textContent = '-' + secondsToFormat(props.activeCue.duration - position);
+    }
   }
-  progressRef.value.style.transform = `scaleX(${position / props.activeCue.duration})`;
+  if (props.activeCue.duration > 0) {
+    progressRef.value.style.transform = `scaleX(${position / props.activeCue.duration})`;
+  }
 });
 </script>
 
