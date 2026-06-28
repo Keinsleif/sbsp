@@ -42,7 +42,7 @@ const save = () => {
     ]"
     option-label="title"
     option-value="value"
-    dhisplay="chip"
+    display="chip"
     :show-toggle-all="false"
     autocomplete="off"
     @update:model-value="save"
