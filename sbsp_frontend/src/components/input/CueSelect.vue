@@ -8,20 +8,10 @@ import type { Cue } from '../../types/Cue';
 import { buildCueName } from '../../utils';
 import Select from 'primevue/select';
 import FloatLabel from 'primevue/floatlabel';
-import { NIL } from 'uuid';
 
 const showModel = useShowModel();
 
 const selectedId = defineModel<string | null>();
-
-const innerId = computed({
-  get() {
-    return selectedId.value || NIL;
-  },
-  set(value) {
-    selectedId.value = value === NIL ? null : value;
-  },
-});
 
 const props = withDefaults(
   defineProps<{
@@ -44,7 +34,7 @@ const cueList = computed(() => {
     .filter((item) => filterCue(item.cue))
     .map((item) => ({ value: item.cue.id, name: buildCueName(item.cue) }));
   if (props.nullText != null) {
-    list.unshift({ value: NIL, name: props.nullText });
+    list.unshift({ value: null, name: props.nullText });
   }
   return list;
 });
@@ -65,7 +55,7 @@ const filterCue = (cue: Cue): boolean => {
   <float-label variant="on">
     <Select
       v-bind="$attrs"
-      v-model="innerId"
+      v-model="selectedId"
       :options="cueList"
       option-value="value"
       option-label="name"
@@ -73,13 +63,18 @@ const filterCue = (cue: Cue): boolean => {
       :pt="{
         root: () => {
           return {
+            class: 'w-full p-inputwrapper-filled',
             style: 'background-color: var(--p-inputtext-background);',
           };
         },
       }"
       @update:model-value="emit('update')"
       @keydown.stop
-    />
+    >
+      <template #value="innerProps">
+        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
+      </template>
+    </Select>
     <label>{{ props.label }}</label>
   </float-label>
 </template>

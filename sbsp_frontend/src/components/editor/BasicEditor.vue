@@ -198,7 +198,7 @@ const insertTimestampToNote = () => {
       <div class="flex flex-row grow-0 shrink-0 gap-3">
         <cue-select
           v-model="target"
-          class="max-w-160 grow min-w-40"
+          class="max-w-150 grow"
           :label="t('main.bottomEditor.continueTargetCue')"
           cue-type="all"
           :exclude="selectedCue?.id"

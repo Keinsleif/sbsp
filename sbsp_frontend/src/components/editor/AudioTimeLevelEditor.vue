@@ -177,7 +177,6 @@ const setVolumeToMAX = () => {
       <divider :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'" />
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
-        height="400px"
         :button-label="t('main.bottomEditor.timeLevels.changePan')"
       >
         <panning-fader
