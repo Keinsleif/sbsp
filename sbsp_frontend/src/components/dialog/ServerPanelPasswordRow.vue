@@ -28,11 +28,12 @@ const emit = defineEmits(['delete', 'openInfo']);
       <copy-text-input
         v-model="password"
         :placeholder="t('dialog.server.info.passwordNotSet')"
+        :disabled="props.isRunning"
         :type="props.isVisible ? 'text' : 'password'"
       />
     </td>
     <td class="p-0">
-      <permission-select v-model="permission" class="w-full" />
+      <permission-select v-model="permission" :disabled="props.isRunning" class="w-full" />
     </td>
     <td class="p-2">
       <button-wrapper
