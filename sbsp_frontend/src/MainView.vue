@@ -442,5 +442,5 @@ useHotkey('$mod+R', (e) => {
 </script>
 
 <template>
-  <component :is="xs && false ? MainViewMobile : MainViewDesktop" />
+  <component :is="xs ? MainViewMobile : MainViewDesktop" />
 </template>
