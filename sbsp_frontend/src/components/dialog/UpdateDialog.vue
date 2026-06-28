@@ -41,10 +41,13 @@ const checkUpdate = () => {
 
 const installUpdate = () => {
   if (update.value != null) {
+    progress.value = 0;
+    total.value = null;
     toRaw(update.value)
       .downloadAndInstall((event) => {
         switch (event.event) {
           case 'Started':
+            progress.value = 0;
             if (event.data.contentLength != null) {
               total.value = event.data.contentLength;
             } else {
@@ -52,9 +55,7 @@ const installUpdate = () => {
             }
             break;
           case 'Progress':
-            if (progress.value == null) {
-              progress.value = event.data.chunkLength;
-            } else {
+            if (progress.value != null) {
               progress.value += event.data.chunkLength;
             }
             break;
