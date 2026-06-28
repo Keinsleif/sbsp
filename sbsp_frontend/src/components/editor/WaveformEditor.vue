@@ -68,14 +68,14 @@ const normSegments = (seg: Segment[]): Segment[] => {
 };
 
 const buildTimeRange = () => {
-  const duration = metadata.value?.duration || 1;
+  const duration = metadata.value?.duration ?? 1;
   const start =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.startTime || 0) / duration
+      ? (selectedCue.value.params.startTime ?? 0) / duration
       : 0;
   const end =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.endTime || duration) / duration
+      ? (selectedCue.value.params.endTime ?? duration) / duration
       : 1;
   return { start, end, delta: end - start };
 };
@@ -244,7 +244,7 @@ const saveEditorValue = () => {
   if (selectedCue.value?.params.type !== 'audio') return;
   selectedCue.value.params.envelope = segments.value;
 
-  const duration = metadata.value?.duration || 1;
+  const duration = metadata.value?.duration ?? 1;
   selectedCue.value.params.startTime =
     timeRange.value.start === 0 ? null : timeRange.value.start * duration;
   selectedCue.value.params.endTime =
@@ -502,7 +502,7 @@ const skipFirstSilence = () => {
   const result = assetResult.get(selectedCue.value.id);
   if (result == null || result.metadata.duration == null) return;
   timeRange.value.start = clamp(
-    (result.startTime || 0) / result.metadata.duration,
+    (result.startTime ?? 0) / result.metadata.duration,
     0,
     timeRange.value.end,
   );
@@ -517,7 +517,7 @@ const skipLastSilence = () => {
   const result = assetResult.get(selectedCue.value.id);
   if (result == null || result.metadata.duration == null) return;
   timeRange.value.end = clamp(
-    (result.endTime || 1) / result.metadata.duration,
+    (result.endTime ?? result.metadata.duration) / result.metadata.duration,
     timeRange.value.start,
     1,
   );
@@ -546,7 +546,7 @@ const menuItems = computed(() => [
           v-model="timeRange.start"
           width="175px"
           :label="t('main.bottomEditor.timeLevels.startTime')"
-          :multiply="metadata?.duration || 1"
+          :multiply="metadata?.duration ?? 1"
           :default-value="0"
           @update="saveEditorValue"
           @pointerdown.stop
@@ -565,7 +565,7 @@ const menuItems = computed(() => [
           v-model="timeRange.end"
           width="175px"
           :label="t('main.bottomEditor.timeLevels.endTime')"
-          :multiply="metadata?.duration || 1"
+          :multiply="metadata?.duration ?? 1"
           :default-value="1"
           @update="saveEditorValue"
           @pointerdown.stop
