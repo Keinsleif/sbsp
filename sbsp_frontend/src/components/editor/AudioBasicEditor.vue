@@ -18,7 +18,7 @@ import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const { t } = useI18n();
 const uiState = useUiState();
-const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const mdAndDown = breakpoints.smallerOrEqual('md');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 
@@ -106,7 +106,7 @@ const pickFile = () => {
 </script>
 
 <template>
-  <div class="flex flex-col p-4 gap-3">
+  <div class="flex flex-col gap-3 p-4">
     <div class="flex flex-row gap-2">
       <text-input
         v-model="target"
@@ -130,7 +130,7 @@ const pickFile = () => {
       :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
       @update:model-value="saveEditorValue"
     />
-    <div class="flex justify-evenly items-start flex-col sm:flex-row gap-2">
+    <div class="flex flex-col items-start justify-evenly gap-2 sm:flex-row">
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.audio.changeFadeIn')"

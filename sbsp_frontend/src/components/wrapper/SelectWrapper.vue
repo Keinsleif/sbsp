@@ -18,7 +18,7 @@ const props = defineProps<{
     <Select
       v-bind="$attrs"
       :options="props.items"
-      class="w-full h-full"
+      class="h-full w-full"
       option-label="name"
       option-value="value"
       :pt="{
@@ -34,10 +34,13 @@ const props = defineProps<{
         label: (opts) => {
           return {
             style: {
-              backgroundColor: opts.context.option != null && opts.context.option.color != 'none' ? `rgb(from ${$dt(opts.context.option.color + '.500').variable} r g b / 0.5` : undefined,
+              backgroundColor:
+                opts.context.option != null && opts.context.option.color != 'none'
+                  ? `rgb(from ${$dt(opts.context.option.color + '.500').variable} r g b / 0.5`
+                  : undefined,
             },
           };
-        }
+        },
       }"
     >
       <template #value="innerProps">
@@ -45,7 +48,7 @@ const props = defineProps<{
       </template>
       <template #option="innerProps">
         <div
-          class="w-full h-full"
+          class="h-full w-full"
           :style="{
             backgroundColor: innerProps.option.color
               ? 'rgb(from ' + $dt(innerProps.option.color + '.500').variable + ' r g b / 0.5)'

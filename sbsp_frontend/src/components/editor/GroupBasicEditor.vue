@@ -81,7 +81,7 @@ const saveEditorValue = () => {
 </script>
 
 <template>
-  <div class="flex flex-col p-4 gap-4">
+  <div class="flex flex-col gap-4 p-4">
     <select-wrapper
       v-model="mode"
       :label="t('main.bottomEditor.group.mode.label')"

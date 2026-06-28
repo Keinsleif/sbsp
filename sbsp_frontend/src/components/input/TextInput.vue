@@ -45,7 +45,7 @@ const onKeydown = (e: KeyboardEvent) => {
       <InputText
         v-model="innerText"
         v-bind="$attrs"
-        class="w-full h-full"
+        class="h-full w-full"
         :id="inputId"
         autocomplete="off"
         :pt="{
@@ -65,6 +65,7 @@ const onKeydown = (e: KeyboardEvent) => {
       size="small"
       severity="secondary"
       variant="simple"
-      >{{ props.help }}</Message>
+      >{{ props.help }}</Message
+    >
   </div>
 </template>

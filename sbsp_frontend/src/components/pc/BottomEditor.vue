@@ -88,12 +88,12 @@ const editorTab = computed({
 </script>
 
 <template>
-  <div class="overflow-auto h-full border-x border-(--p-form-field-border-color)">
+  <div class="h-full overflow-auto border-x border-(--p-form-field-border-color)">
     <tabs
       v-model:value="editorTab"
-      class="h-full flex flex-col overflow-hidden"
+      class="flex h-full flex-col overflow-hidden"
     >
-      <tab-list class="grow-0 shrink-0">
+      <tab-list class="shrink-0 grow-0">
         <tab value="basics">{{ t('main.bottomEditor.basics.title') }}</tab>
         <tab
           value="audio"
@@ -127,7 +127,7 @@ const editorTab = computed({
           >{{ t('main.bottomEditor.group.title') }}</tab
         >
       </tab-list>
-      <tab-panels class="grow p-0 overflow-auto">
+      <tab-panels class="grow overflow-auto p-0">
         <tab-panel value="blank">
           <div style="margin: auto; width: fit-content">No Selection</div>
         </tab-panel>

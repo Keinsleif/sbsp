@@ -87,8 +87,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col w-full h-full items-stretch">
-    <div class="grow overflow-auto h-full">
+  <div class="flex h-full w-full flex-col items-stretch">
+    <div class="h-full grow overflow-auto">
       <table
         class="w-full border-collapse"
         :class="$style['table']"
@@ -125,7 +125,7 @@ onUnmounted(() => {
         </tbody>
       </table>
     </div>
-    <footer class="grow-0 flex items-center ml-0 mr-0 w-full gap-3 p-1">
+    <footer class="mr-0 ml-0 flex w-full grow-0 items-center gap-3 p-1">
       <text-input
         class="grow-0"
         v-model="host"

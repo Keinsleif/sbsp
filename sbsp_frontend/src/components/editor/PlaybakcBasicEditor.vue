@@ -72,7 +72,7 @@ const saveEditorValue = () => {
 </script>
 
 <template>
-  <div class="flex flex-col p-4 gap-3">
+  <div class="flex flex-col gap-3 p-4">
     <cue-select
       v-model="target"
       class="grow-0"

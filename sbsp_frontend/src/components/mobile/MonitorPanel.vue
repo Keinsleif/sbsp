@@ -11,11 +11,11 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="h-full p-3 flex flex-col gap-2">
+  <div class="flex h-full flex-col gap-2 p-3">
     <h2>
       {{ t('main.sideBar.activeCues') }}
     </h2>
-    <div class="border-t border-x border-(--p-form-field-border-color) overflow-auto">
+    <div class="overflow-auto border-x border-t border-(--p-form-field-border-color)">
       <template
         v-for="(activeCue, cue_id) in showState.activeCues"
         :key="cue_id"

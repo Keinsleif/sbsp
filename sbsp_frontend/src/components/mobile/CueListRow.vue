@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { mdiArrowCollapseDown, mdiArrowExpandDown, mdiArrowRightBold, mdiMenuDown, mdiMenuRight, mdiPause, mdiPlay, mdiRepeat, mdiUpload } from '@mdi/js';
+import {
+  mdiArrowCollapseDown,
+  mdiArrowExpandDown,
+  mdiArrowRightBold,
+  mdiMenuDown,
+  mdiMenuRight,
+  mdiPause,
+  mdiPlay,
+  mdiRepeat,
+  mdiUpload,
+} from '@mdi/js';
 import type { FlatCueEntry } from '../../stores/showModel';
 import { computed, useTemplateRef } from 'vue';
 import { useUiState } from '../../stores/uiState';
@@ -32,20 +42,21 @@ const status = computed(() => {
 const rowRef = useTemplateRef('row');
 usePosition((pos) => {
   if (rowRef.value == null) return;
-  if(props.item.isHidden) return;
+  if (props.item.isHidden) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
   if (activeCue == null || position == null || activeCue.duration === 0) {
     rowRef.value.style.background = '';
     return;
-  };
-  rowRef.value.style.background = (activeCue.status.startsWith('pre')
-    ? 'linear-gradient(to right, rgb(from var(--p-orange-500) r g b / 0.5) '
-    : 'linear-gradient(to right, rgb(from var(--p-primary-color) r g b / 0.5) ')
-  + (position * 100) / activeCue.duration
-  + '%, transparent '
-  + (position * 100) / activeCue.duration
-  + '%) no-repeat';
+  }
+  rowRef.value.style.background =
+    (activeCue.status.startsWith('pre')
+      ? 'linear-gradient(to right, rgb(from var(--p-orange-500) r g b / 0.5) '
+      : 'linear-gradient(to right, rgb(from var(--p-primary-color) r g b / 0.5) ') +
+    (position * 100) / activeCue.duration +
+    '%, transparent ' +
+    (position * 100) / activeCue.duration +
+    '%) no-repeat';
 });
 
 const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
@@ -54,16 +65,12 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
 </script>
 
 <template>
-  <tr
-    ref="row"
-  >
+  <tr ref="row">
     <td
       headers="cuelist_cursor"
       class="px-1"
     >
-      <path-icon
-        :icon="isPlaybackCursor ? mdiArrowRightBold : null"
-      />
+      <path-icon :icon="isPlaybackCursor ? mdiArrowRightBold : null" />
     </td>
     <td
       headers="cuelist_status"
@@ -99,13 +106,13 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
     </td>
     <td
       headers="cuelist_number"
-      class="text-center border-x border-(--p-form-field-border-color) px-1"
+      class="border-x border-(--p-form-field-border-color) px-1 text-center"
     >
       {{ item.cue.number }}
     </td>
     <td
       headers="cuelist_name"
-      class="border-r border-(--p-form-field-border-color) overflow-hidden whitespace-nowrap"
+      class="overflow-hidden border-r border-(--p-form-field-border-color) whitespace-nowrap"
       :style="{
         paddingLeft: `${item.level}em`,
       }"
@@ -117,18 +124,24 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
       />
       {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
     </td>
-    <td headers="cuelist_repeat" class="px-0 border-r border-(--p-form-field-border-color)">
+    <td
+      headers="cuelist_repeat"
+      class="border-r border-(--p-form-field-border-color) px-0"
+    >
       <path-icon
         v-show="
           (item.cue.params.type == 'audio' && item.cue.params.repeat) ||
-            (item.cue.params.type == 'group' &&
-              item.cue.params.mode.type == 'playlist' &&
-              item.cue.params.mode.repeat)
+          (item.cue.params.type == 'group' &&
+            item.cue.params.mode.type == 'playlist' &&
+            item.cue.params.mode.repeat)
         "
         :icon="mdiRepeat"
       />
     </td>
-    <td headers="cuelist_chain" class="px-0">
+    <td
+      headers="cuelist_chain"
+      class="px-0"
+    >
       <path-icon
         v-show="item.chain.type == 'afterComplete'"
         :icon="mdiArrowCollapseDown"
@@ -141,5 +154,4 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
   </tr>
 </template>
 
-<style lang="css" module>
-</style>
+<style lang="css" module></style>

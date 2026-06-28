@@ -68,22 +68,25 @@ const openSettings = async () => {
 };
 
 const openServerPanel = () => {
-  api.host?.getLicenseInfo().then((info) => {
-    if (info != null && info.edition === 'Pro') {
-      uiState.isServerPanelOpen = true;
-    } else {
-      message(t('dialog.message.license.serverPanel'), {
-        kind: 'info',
-        title: t('dialog.message.license.proTitle'),
-      });
-    }
-  }).catch((e) => console.error(e)); // Only fails in tauri internal. So no ui feedback needed. 
+  api.host
+    ?.getLicenseInfo()
+    .then((info) => {
+      if (info != null && info.edition === 'Pro') {
+        uiState.isServerPanelOpen = true;
+      } else {
+        message(t('dialog.message.license.serverPanel'), {
+          kind: 'info',
+          title: t('dialog.message.license.proTitle'),
+        });
+      }
+    })
+    .catch((e) => console.error(e)); // Only fails in tauri internal. So no ui feedback needed.
 };
 </script>
 
 <template>
-  <div class="flex items-center ml-0 mr-0 py-1">
-    <div class="px-2 flex items-center">
+  <div class="mr-0 ml-0 flex items-center py-1">
+    <div class="flex items-center px-2">
       <Select
         v-model="uiState.mode"
         size="small"
@@ -102,7 +105,7 @@ const openServerPanel = () => {
       :label="t('dialog.update.updatesAvailable')"
       @click="uiState.isUpdateDialogOpen = true"
     />
-    <div class="ml-auto mr-auto whitespace-nowrap">
+    <div class="mr-auto ml-auto whitespace-nowrap">
       {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
     </div>
     <div class="flex items-center gap-2">

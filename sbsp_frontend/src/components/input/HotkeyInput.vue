@@ -13,7 +13,7 @@ import InputText from 'primevue/inputtext';
 defineOptions({ inheritAttrs: false });
 const hotkey = defineModel<string | null>({ default: '' });
 const props = defineProps<{
-  label?: string,
+  label?: string;
 }>();
 
 const keyinput = (event: KeyboardEvent) => {
@@ -52,11 +52,14 @@ const inputId = useId();
 
 <template>
   <input-group>
-    <float-label variant="on" class="w-125">
+    <float-label
+      variant="on"
+      class="w-125"
+    >
       <input-text
         v-model="hotkey"
         v-bind="$attrs"
-        class="w-full h-full"
+        class="h-full w-full"
         :id="inputId"
         autocomplete="off"
         :pt="{

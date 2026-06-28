@@ -54,7 +54,7 @@ const onKeydown = (e: KeyboardEvent) => {
     <Textarea
       v-model="innerText"
       v-bind="$attrs"
-      class="w-full h-full"
+      class="h-full w-full"
       :id="inputId"
       autocomplete="off"
       :pt="{

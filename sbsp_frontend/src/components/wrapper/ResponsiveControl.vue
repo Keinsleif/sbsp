@@ -29,7 +29,10 @@ const controlProps = withDefaults(
       :label="controlProps.buttonLabel"
       @click="isVisible = true"
     />
-    <Dialog v-model:visible="isVisible" class="w-full h-full">
+    <Dialog
+      v-model:visible="isVisible"
+      class="h-full w-full"
+    >
       <slot :overlay="true" />
     </Dialog>
   </template>

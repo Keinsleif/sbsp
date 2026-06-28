@@ -62,7 +62,7 @@ const saveServerOptions = async () => {
   }
   const parseResult = parseInt(server_port.value);
   if (isNaN(parseResult)) {
-    throw Error("Invalid port number");
+    throw Error('Invalid port number');
   }
   server_options.port = parseResult;
   server_options.authMap = server_authMap.value;
@@ -73,18 +73,35 @@ const toggleServer = async () => {
   if (isRunning.value) {
     api.host?.stopServer().catch((e) => {
       console.error(e);
-      toast.add({severity: 'error', summary: t('notification.failedToStopServer'), detail: e.toString(), life: 3000});
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToStopServer'),
+        detail: e.toString(),
+        life: 3000,
+      });
     });
   } else {
     isPasswordVisible.value = false;
-    saveServerOptions().then(() => {
-      api.host?.startServer().catch((e) => {
-        console.error(e);
-        toast.add({severity: 'error', summary: t('notification.failedToStartServer'), detail: e.toString(), life: 3000});
+    saveServerOptions()
+      .then(() => {
+        api.host?.startServer().catch((e) => {
+          console.error(e);
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToStartServer'),
+            detail: e.toString(),
+            life: 3000,
+          });
+        });
+      })
+      .catch((e) => {
+        toast.add({
+          severity: 'error',
+          summary: t('notification.failedToStartServer'),
+          detail: e.toString(),
+          life: 3000,
+        });
       });
-    }).catch((e) => {
-      toast.add({severity: 'error', summary: t('notification.failedToStartServer'), detail: e.toString(), life: 3000});
-    });
   }
 };
 
@@ -154,11 +171,11 @@ onMounted(() => {
       server_port.value = options.port.toString();
       server_authMap.value = options.authMap;
     })
-    .catch(e => console.error(e));
+    .catch((e) => console.error(e));
   api.host
     ?.isServerRunning()
-    .then(state => (isRunning.value = state))
-    .catch(e => console.error(e));
+    .then((state) => (isRunning.value = state))
+    .catch((e) => console.error(e));
   api.host
     ?.onServerStatusChanged((status) => {
       if (status === 'started') {
@@ -195,17 +212,28 @@ onUnmounted(() => {
               {{ t('dialog.server.status') }} :
               <span
                 :style="{
-                  color: isRunning == null ? '' : isRunning ? $dt('green.500').variable : $dt('red.500').variable
+                  color:
+                    isRunning == null
+                      ? ''
+                      : isRunning
+                        ? $dt('green.500').variable
+                        : $dt('red.500').variable,
                 }"
               >
-                {{ isRunning == null ? '' : isRunning ? t('dialog.server.running') : t('dialog.server.stopped') }}
+                {{
+                  isRunning == null
+                    ? ''
+                    : isRunning
+                      ? t('dialog.server.running')
+                      : t('dialog.server.stopped')
+                }}
               </span>
             </span>
           </div>
           <text-input
             v-model="server_port"
             :disabled="isRunning"
-            class="grow-0 w-25"
+            class="w-25 grow-0"
             :label="t('dialog.server.port')"
           />
           <CheckboxWrapper
@@ -217,11 +245,11 @@ onUnmounted(() => {
             v-model="server_name"
             :disabled="!isDiscoverable || isRunning"
             align-input="left"
-            class="grow-0 mt-1 w-80"
+            class="mt-1 w-80 grow-0"
             :label="t('dialog.server.serverName')"
           />
         </div>
-        <div class="border border-(--p-form-field-border-color) grow overflow-auto">
+        <div class="grow overflow-auto border border-(--p-form-field-border-color)">
           <table>
             <thead>
               <tr class="border-b border-(--p-form-field-border-color)">
@@ -233,7 +261,10 @@ onUnmounted(() => {
                     @click="isPasswordVisible = !isPasswordVisible"
                   />
                 </th>
-                <th width="316" class="border-x border-(--p-form-field-border-color)">
+                <th
+                  width="316"
+                  class="border-x border-(--p-form-field-border-color)"
+                >
                   {{ t('dialog.server.permission') }}
                 </th>
                 <th width="108" />
@@ -249,20 +280,36 @@ onUnmounted(() => {
                 v-model:permission="info.permission"
                 :is-running="isRunning || false"
                 :is-visible="isPasswordVisible"
-                @delete="() => {if (server_authMap.length > 0) {server_authMap.splice(i, 1)}}"
-                @open-info="generateServerUrl(info.password).then(() => {
-                  isServerInfoDialogOpen = true;
-                })"
+                @delete="
+                  () => {
+                    if (server_authMap.length > 0) {
+                      server_authMap.splice(i, 1);
+                    }
+                  }
+                "
+                @open-info="
+                  generateServerUrl(info.password).then(() => {
+                    isServerInfoDialogOpen = true;
+                  })
+                "
               />
               <tr>
-                <td colspan="5" class="text-center py-1">
+                <td
+                  colspan="5"
+                  class="py-1 text-center"
+                >
                   <button-wrapper
                     :icon="mdiPlus"
                     :disabled="isRunning || false"
                     severity="success"
                     variant="outlined"
                     size="small"
-                    @click="server_authMap.push({ password: generateRandomPassword(), permission: 0b0001 })"
+                    @click="
+                      server_authMap.push({
+                        password: generateRandomPassword(),
+                        permission: 0b0001,
+                      })
+                    "
                   />
                 </td>
               </tr>
@@ -270,7 +317,7 @@ onUnmounted(() => {
           </table>
         </div>
       </div>
-      <div class="grow-0 flex items-center ml-0 mr-0 w-full mt-auto gap-3">
+      <div class="mt-auto mr-0 ml-0 flex w-full grow-0 items-center gap-3">
         <button-wrapper
           class="ml-auto"
           :label="isRunning ? t('dialog.server.stop') : t('dialog.server.start')"
@@ -284,10 +331,8 @@ onUnmounted(() => {
       :header="t('dialog.server.connectInfo')"
       class="w-auto"
     >
-      <div
-        class="flex flex-col p-3 gap-3 items-stretch w-120"
-      >
-        <div class="flex flex-row items-center mt-2">
+      <div class="flex w-120 flex-col items-stretch gap-3 p-3">
+        <div class="mt-2 flex flex-row items-center">
           <copy-text-input
             v-model="server_hostname"
             readonly
@@ -299,7 +344,7 @@ onUnmounted(() => {
           <copy-text-input
             v-model="server_port"
             readonly
-            class="grow-0 w-25"
+            class="w-25 grow-0"
             :label="t('dialog.server.port')"
           />
         </div>
@@ -307,14 +352,14 @@ onUnmounted(() => {
           v-model="server_password"
           readonly
           :placeholder="t('dialog.server.info.passwordNotSet')"
-          class="grow mt-2"
+          class="mt-2 grow"
           :label="t('dialog.server.password')"
         />
         <copy-text-input
           v-model="server_url"
           readonly
           :placeholder="t('dialog.server.info.urlUnavailable')"
-          class="grow mt-2"
+          class="mt-2 grow"
           :label="t('dialog.server.info.url')"
         />
         <div class="text-center">

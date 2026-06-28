@@ -37,7 +37,7 @@ onMounted(() => {
     class="w-7xl overflow-hidden"
     @contextmenu.prevent
   >
-    <div class="p-10 overflow-auto">
+    <div class="overflow-auto p-10">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div
         :class="$style['markdown']"

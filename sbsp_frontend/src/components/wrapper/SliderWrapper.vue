@@ -20,7 +20,7 @@ const props = defineProps<{
   <template v-if="props.direction !== 'vertical'">
     <div class="flex flex-row items-center">
       <span>{{ props.label }}</span>
-      <div class="flex flex-col grow px-8">
+      <div class="flex grow flex-col px-8">
         <Slider
           v-model="model"
           :min="props.min"
@@ -32,7 +32,7 @@ const props = defineProps<{
           <span
             v-for="tick in props.ticks"
             :key="tick.value"
-            class="absolute transform-[translateX(-50%)] pointer-events-none"
+            class="pointer-events-none absolute transform-[translateX(-50%)]"
             :style="{
               left: `${((tick.value - props.min) * 100) / (props.max - props.min)}%`,
             }"
@@ -40,7 +40,7 @@ const props = defineProps<{
           >
         </div>
       </div>
-      <div class="grow-0 shrink-0">
+      <div class="shrink-0 grow-0">
         <slot name="input"></slot>
       </div>
     </div>
@@ -48,7 +48,7 @@ const props = defineProps<{
   <template v-else>
     <div class="flex flex-col items-center">
       <span>{{ props.label }}</span>
-      <div class="flex flex-row grow py-4">
+      <div class="flex grow flex-row py-4">
         <Slider
           v-model="model"
           :min="props.min"
@@ -61,7 +61,7 @@ const props = defineProps<{
           <span
             v-for="tick in props.ticks"
             :key="tick.value"
-            class="absolute transform-[translateY(50%)] pointer-events-none"
+            class="pointer-events-none absolute transform-[translateY(50%)]"
             :style="{
               bottom: `${((tick.value - props.min) * 100) / (props.max - props.min)}%`,
             }"
@@ -69,7 +69,7 @@ const props = defineProps<{
           >
         </div>
       </div>
-      <div class="grow-0 shrink-0">
+      <div class="shrink-0 grow-0">
         <slot name="input"></slot>
       </div>
     </div>

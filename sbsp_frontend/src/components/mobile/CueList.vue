@@ -24,8 +24,11 @@ const setPlaybackCursor = (cueId: string) => {
 </script>
 
 <template>
-  <div class="grow border border-(--p-form-field-border-color) overflow-auto w-full">
-    <table :class="$style['cuelist']" class="w-full table-fixed ">
+  <div class="w-full grow overflow-auto border border-(--p-form-field-border-color)">
+    <table
+      :class="$style['cuelist']"
+      class="w-full table-fixed"
+    >
       <thead>
         <tr>
           <th
@@ -45,14 +48,14 @@ const setPlaybackCursor = (cueId: string) => {
           />
           <th
             id="cuelist_number"
-            class="text-center border-l border-(--p-form-field-border-color) px-1"
+            class="border-l border-(--p-form-field-border-color) px-1 text-center"
             width="32px"
           >
             #
           </th>
           <th
             id="cuelist_name"
-            class="border-x border-(--p-form-field-border-color) overflow-hidden whitespace-nowrap w-fit"
+            class="w-fit overflow-hidden border-x border-(--p-form-field-border-color) whitespace-nowrap"
             style="padding-left: 24px"
           >
             {{ t('main.name') }}
@@ -75,7 +78,7 @@ const setPlaybackCursor = (cueId: string) => {
       </thead>
       <tbody>
         <cue-list-row
-          v-for="(item) in showModel.flatCueList"
+          v-for="item in showModel.flatCueList"
           v-show="!item.isHidden"
           ref="cuelistItem"
           :key="item.cue.id"
@@ -111,7 +114,7 @@ const setPlaybackCursor = (cueId: string) => {
     border-bottom: 1px solid var(--p-form-field-border-color);
   }
 }
-  /* .cuelist {
+/* .cuelist {
     table {
       table-layout: fixed;
       font-size: 0.9em;

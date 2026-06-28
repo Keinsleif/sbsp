@@ -22,7 +22,7 @@ import Divider from 'primevue/divider';
 const { t } = useI18n();
 const api = useApi();
 const uiState = useUiState();
-const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 const mdAndDown = breakpoints.smallerOrEqual('md');
@@ -132,14 +132,14 @@ const setVolumeToMAX = () => {
       :volume="volume"
       @update="emit('update')"
     />
-    <div class="flex flex-col sm:flex-row gap-0 sm:gap-3 items-center">
+    <div class="flex flex-col items-center gap-0 sm:flex-row sm:gap-3">
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.timeLevels.changeVolume')"
       >
         <template #default="innerProps">
           <div
-            class="flex grow gap-3 h-full"
+            class="flex h-full grow gap-3"
             :class="innerProps.overlay ? 'flex-col' : 'flex-row'"
           >
             <volume-fader
@@ -153,7 +153,7 @@ const setVolumeToMAX = () => {
                 changeActiveCueVolume();
               "
             />
-            <div class="grow-0 flex flex-col gap-1">
+            <div class="flex grow-0 flex-col gap-1">
               <button-wrapper
                 label="LUFS"
                 :class="innerProps.overlay ? '' : 'h-6'"
@@ -174,21 +174,25 @@ const setVolumeToMAX = () => {
           </div>
         </template>
       </responsive-control>
-      <divider :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'" />
+      <divider
+        :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'"
+      />
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.timeLevels.changePan')"
       >
         <panning-fader
           v-model="panning"
-          class="grow h-full"
+          class="h-full grow"
           :label="t('main.bottomEditor.timeLevels.pan')"
           :direction="xs ? 'vertical' : 'horizontal'"
           :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
           @update="saveEditorValue()"
         />
       </responsive-control>
-      <divider :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'" />
+      <divider
+        :layout="(uiState.isRightSidebarOpen && mdAndDown) || smAndDown ? 'horizontal' : 'vertical'"
+      />
       <checkbox-wrapper
         v-model="repeat"
         :label="t('main.bottomEditor.timeLevels.repeat')"

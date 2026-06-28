@@ -37,7 +37,7 @@ const inputId = useId();
       <input-text
         v-model="value"
         v-bind="$attrs"
-        class="w-full h-full"
+        class="h-full w-full"
         :id="inputId"
         autocomplete="off"
         :pt="{

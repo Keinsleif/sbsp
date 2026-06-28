@@ -55,7 +55,7 @@ usePosition((pos) => {
 
 <template>
   <div class="flex flex-col">
-    <div class="flex flex-row items-center justify-between pl-3 pr-3 pt-2">
+    <div class="flex flex-row items-center justify-between pt-2 pr-3 pl-3">
       <span>{{ title }}</span>
       <path-icon
         v-show="activeCue.status != 'stopping'"
@@ -69,7 +69,7 @@ usePosition((pos) => {
         size="21px"
       />
     </div>
-    <div class="p-0 flex flex-row justify-between">
+    <div class="flex flex-row justify-between p-0">
       <div
         ref="elapsed"
         class="px-3 py-2"
@@ -84,9 +84,10 @@ usePosition((pos) => {
         ref="progress"
         class="h-full w-full origin-left"
         :style="{
-          backgroundColor: activeCue.status === 'paused' || activeCue.status === 'stopping'
-            ? 'var(--p-orange-500)'
-            : 'var(--p-primary-color)'
+          backgroundColor:
+            activeCue.status === 'paused' || activeCue.status === 'stopping'
+              ? 'var(--p-orange-500)'
+              : 'var(--p-primary-color)',
         }"
       />
     </div>

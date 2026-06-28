@@ -71,7 +71,7 @@ const onKeydown = (e: KeyboardEvent) => {
       v-model="formattedValue"
       v-bind="$attrs"
       :id="inputId"
-      class="w-full h-full"
+      class="h-full w-full"
       variant="outlined"
       autocomplete="off"
       :pt="{

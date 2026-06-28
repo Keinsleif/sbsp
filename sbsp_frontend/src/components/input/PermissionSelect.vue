@@ -36,9 +36,9 @@ const save = () => {
   <multi-select
     v-model="innerPerm"
     :options="[
-      { title: t('dialog.server.permissions.read'), value: 1},
-      { title: t('dialog.server.permissions.control'), value: 2},
-      { title: t('dialog.server.permissions.edit'), value: 4},
+      { title: t('dialog.server.permissions.read'), value: 1 },
+      { title: t('dialog.server.permissions.control'), value: 2 },
+      { title: t('dialog.server.permissions.edit'), value: 4 },
     ]"
     option-label="title"
     option-value="value"

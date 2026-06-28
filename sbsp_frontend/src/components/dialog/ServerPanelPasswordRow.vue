@@ -19,7 +19,6 @@ const props = defineProps<{
   isVisible: boolean;
 }>();
 const emit = defineEmits(['delete', 'openInfo']);
-
 </script>
 
 <template>
@@ -33,7 +32,11 @@ const emit = defineEmits(['delete', 'openInfo']);
       />
     </td>
     <td class="p-0">
-      <permission-select v-model="permission" :disabled="props.isRunning" class="w-full" />
+      <permission-select
+        v-model="permission"
+        :disabled="props.isRunning"
+        class="w-full"
+      />
     </td>
     <td class="p-2">
       <button-wrapper

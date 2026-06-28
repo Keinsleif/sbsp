@@ -21,7 +21,7 @@ const uiState = useUiState();
 <template>
   <tabs
     v-model:value="uiState.sideBarTab"
-    class="h-full flex flex-col"
+    class="flex h-full flex-col"
   >
     <tab-list>
       <tab value="activeCues">{{ t('main.sideBar.activeCues') }}</tab>

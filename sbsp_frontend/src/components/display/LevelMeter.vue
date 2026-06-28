@@ -93,17 +93,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center p-2 gap-2">
+  <div class="flex flex-col items-center gap-2 p-2">
     <div class="text-center">
       {{ props.kind == 'master' ? 'Master' : '' }}
     </div>
     <div class="flex flex-row">
       <div
-        class="flex flex-col relative"
+        class="relative flex flex-col"
         :style="{ top: '-' + props.width }"
       >
         <div
-          class="border border-(--p-form-field-border-color) relative"
+          class="relative border border-(--p-form-field-border-color)"
           :class="clipping.left ? 'bg-red' : 'bg-surface'"
           style="box-sizing: content-box; top: -2px"
           :style="{ width: props.width, height: props.width }"
@@ -128,60 +128,60 @@ onUnmounted(() => {
         style="font-size: 0.6em; width: 1.8em"
       >
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 0"
         >
           0
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 10%"
         >
           6
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 20%"
         >
           12
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 30%"
         >
           18
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 40%"
         >
           24
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 50%"
         >
           30
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-50%); top: 70%"
         >
           42
         </div>
         <div
-          class="text-center absolute"
+          class="absolute text-center"
           style="width: 100%; transform: translateY(-80%); top: 100%"
         >
           60
         </div>
       </div>
       <div
-        class="flex flex-col relative"
+        class="relative flex flex-col"
         :style="{ top: '-' + props.width }"
       >
         <div
-          class="border border-(--p-form-field-border-color) relative"
+          class="relative border border-(--p-form-field-border-color)"
           :class="clipping.right ? 'bg-red' : 'bg-surface'"
           style="box-sizing: content-box; top: -2px"
           :style="{ width: props.width, height: props.width }"

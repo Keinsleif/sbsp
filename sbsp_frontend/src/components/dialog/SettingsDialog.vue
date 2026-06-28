@@ -241,21 +241,54 @@ const recallQLabPreset = () => {
     @keydown.stop.esc="isSettingsDialogOpen = false"
     @contextmenu.prevent
   >
-    <div class="flex h-full w-full flex-col ">
+    <div class="flex h-full w-full flex-col">
       <div class="flex w-full grow flex-row">
-        <div class="flex grow-0 flex-col p-2 border border-(--p-form-field-border-color) min-w-50" :class="$style['tablist']">
-          <button class="text-left" @click="tab = 'preset'">{{ t('dialog.settings.tab.preset') }}</button>
+        <div
+          class="flex min-w-50 grow-0 flex-col border border-(--p-form-field-border-color) p-2"
+          :class="$style['tablist']"
+        >
+          <button
+            class="text-left"
+            @click="tab = 'preset'"
+          >
+            {{ t('dialog.settings.tab.preset') }}
+          </button>
           <div class="bg-gray-600 p-1">
             {{ t('dialog.settings.tab.category.inThisShowModel') }}
           </div>
-          <button class="text-left" @click="tab = 'showGeneral'">{{ t('dialog.settings.tab.general') }}</button>
-          <button class="text-left" @click="tab = 'audioLogic'">{{ t('dialog.settings.tab.audioLogic') }}</button>
-          <button class="text-left" @click="tab = 'remote'">{{ t('dialog.settings.tab.remote') }}</button>
+          <button
+            class="text-left"
+            @click="tab = 'showGeneral'"
+          >
+            {{ t('dialog.settings.tab.general') }}
+          </button>
+          <button
+            class="text-left"
+            @click="tab = 'audioLogic'"
+          >
+            {{ t('dialog.settings.tab.audioLogic') }}
+          </button>
+          <button
+            class="text-left"
+            @click="tab = 'remote'"
+          >
+            {{ t('dialog.settings.tab.remote') }}
+          </button>
           <div class="bg-gray-600 p-1">
             {{ t('dialog.settings.tab.category.global') }}
           </div>
-          <button class="text-left" @click="tab = 'globalGeneral'">{{ t('dialog.settings.tab.general') }}</button>
-          <button class="text-left" @click="tab = 'appearance'">{{ t('dialog.settings.tab.appearance') }}</button>
+          <button
+            class="text-left"
+            @click="tab = 'globalGeneral'"
+          >
+            {{ t('dialog.settings.tab.general') }}
+          </button>
+          <button
+            class="text-left"
+            @click="tab = 'appearance'"
+          >
+            {{ t('dialog.settings.tab.appearance') }}
+          </button>
           <button
             v-if="'audio' in editingSettings.global"
             class="text-left"
@@ -263,9 +296,24 @@ const recallQLabPreset = () => {
           >
             {{ t('dialog.settings.tab.audioHardware') }}
           </button>
-          <button class="text-left" @click="tab = 'hotkey'">{{ t('dialog.settings.tab.hotkey') }}</button>
-          <button class="text-left" @click="tab = 'template'">{{ t('dialog.settings.tab.template') }}</button>
-          <button class="text-left" @click="tab = 'nameFormat'">{{ t('dialog.settings.tab.nameFormat') }}</button>
+          <button
+            class="text-left"
+            @click="tab = 'hotkey'"
+          >
+            {{ t('dialog.settings.tab.hotkey') }}
+          </button>
+          <button
+            class="text-left"
+            @click="tab = 'template'"
+          >
+            {{ t('dialog.settings.tab.template') }}
+          </button>
+          <button
+            class="text-left"
+            @click="tab = 'nameFormat'"
+          >
+            {{ t('dialog.settings.tab.nameFormat') }}
+          </button>
         </div>
         <div class="h-full grow">
           <div
@@ -336,7 +384,10 @@ const recallQLabPreset = () => {
               :label="t('dialog.settings.show.remote.lockCursorToSelection')"
             />
           </div>
-          <div v-show="tab === 'globalGeneral'" class="flex flex-col gap-4 p-4">
+          <div
+            v-show="tab === 'globalGeneral'"
+            class="flex flex-col gap-4 p-4"
+          >
             <checkbox-wrapper
               v-model="editingSettings.global.general.advanceCursorWhenGo"
               :label="t('dialog.settings.global.general.advanceCursorWhenGo')"
@@ -562,7 +613,7 @@ const recallQLabPreset = () => {
           </div>
         </div>
       </div>
-      <div class="mr-0 ml-0 flex w-full grow-0 gap-4 items-center">
+      <div class="mr-0 ml-0 flex w-full grow-0 items-center gap-4">
         <button-wrapper
           class="ml-auto"
           :label="t('general.cancel')"

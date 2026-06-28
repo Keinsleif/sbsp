@@ -20,7 +20,7 @@ const { getCueById } = storeToRefs(showModel);
 const uiState = useUiState();
 const api = useApi();
 
-const isHost = __IS_HOST__; 
+const isHost = __IS_HOST__;
 
 const selectedCue = ref<Cue | null>(
   uiState.selected != null ? getCueById.value(uiState.selected)! : null,
@@ -68,19 +68,19 @@ const onCueEdited = debounce(() => {
 
 <template>
   <div
-    class="flex flex-col h-dvh w-screen"
+    class="flex h-dvh w-screen flex-col"
     @contextmenu.prevent
   >
     <header class="h-50 shrink-0">
       <AppHeader />
     </header>
-    <div class="flex flex-row grow w-full overflow-hidden">
-      <div class="flex flex-col h-full grow">
-        <main class="grow shrink overflow-y-hidden">
+    <div class="flex w-full grow flex-row overflow-hidden">
+      <div class="flex h-full grow flex-col">
+        <main class="shrink grow overflow-y-hidden">
           <CueList />
         </main>
         <section
-          class="transition-[height] overflow-y-hidden shrink-0 grow-0"
+          class="shrink-0 grow-0 overflow-y-hidden transition-[height]"
           :class="[uiState.isBottomTabOpen ? 'h-62' : 'h-0']"
         >
           <BottomEditor
@@ -91,7 +91,7 @@ const onCueEdited = debounce(() => {
         </section>
       </div>
       <aside
-        class="transition-[width] shrink-0 grow-0 overflow-hidden"
+        class="shrink-0 grow-0 overflow-hidden transition-[width]"
         :class="[uiState.isRightSidebarOpen ? 'w-65' : 'w-0']"
       >
         <SideBar />

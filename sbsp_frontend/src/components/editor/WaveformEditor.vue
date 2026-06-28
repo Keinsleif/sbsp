@@ -540,7 +540,7 @@ const menuItems = computed(() => [
     class="flex flex-row gap-2"
     @contextmenu.prevent="menuRef?.show($event)"
   >
-    <div class="flex flex-col items-center justify-center gap-2 mb-2">
+    <div class="mb-2 flex flex-col items-center justify-center gap-2">
       <div class="flex flex-row items-center gap-2">
         <time-input
           v-model="timeRange.start"
@@ -590,14 +590,14 @@ const menuItems = computed(() => [
     </div>
     <div
       :style="{ height: `${props.heightPx}px` }"
-      class="w-full border border-(--p-form-field-border-color) relative"
+      class="relative w-full border border-(--p-form-field-border-color)"
       ref="container"
     >
       <div
         ref="tooltip"
         v-show="!isOutside"
         v-if="selectedCue != null && svgRef != null && parent != null"
-        class="pl-1 pr-1 rounded border border-(--p-form-field-border-color) absolute top-0 left-0 bg-(--p-content-background) pointer-events-none"
+        class="pointer-events-none absolute top-0 left-0 rounded border border-(--p-form-field-border-color) bg-(--p-content-background) pr-1 pl-1"
       />
       <svg
         v-show="selectedCue != null"
@@ -688,7 +688,10 @@ const menuItems = computed(() => [
           <g
             v-for="(seg, i) in segments"
             :key="i"
-            :class="{ [$style['selected']]: selectedIdx == i, [$style['disabled']]: props.disabled }"
+            :class="{
+              [$style['selected']]: selectedIdx == i,
+              [$style['disabled']]: props.disabled,
+            }"
           >
             <rect
               :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
@@ -728,7 +731,7 @@ const menuItems = computed(() => [
         </g>
       </svg>
     </div>
-    <div class="flex flex-col gap-2 items-center justify-center">
+    <div class="flex flex-col items-center justify-center gap-2">
       <button-wrapper
         rounded
         :icon="mdiPlus"

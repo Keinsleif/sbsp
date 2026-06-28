@@ -84,7 +84,7 @@ const saveValues = () => {
 </script>
 
 <template>
-  <div class="p-2 border border-(--p-form-field-border-color) rounded relative">
+  <div class="relative rounded border border-(--p-form-field-border-color) p-2">
     <span class="absolute top-1 left-2">
       {{ props.label }}
     </span>
@@ -99,7 +99,7 @@ const saveValues = () => {
       <time-input
         v-model="duration"
         :disabled="!fadeEnabled || props.disabled"
-        class="grow-0 w-25"
+        class="w-25 grow-0"
         :label="t('main.duration')"
         @update="saveValues"
       />

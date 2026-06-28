@@ -5,7 +5,12 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import type { Cue } from '../types/Cue';
 import type { ShowSettings } from '../types/ShowSettings';
 import type { BackendEvent } from '../types/BackendEvent';
-import type { BackendEventListener, IBackendAdapter, IPickAudioAssetsOptions, LevelMeterListener } from './interface';
+import type {
+  BackendEventListener,
+  IBackendAdapter,
+  IPickAudioAssetsOptions,
+  LevelMeterListener,
+} from './interface';
 import { type } from '@tauri-apps/plugin-os';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { FileList } from '../types/FileList';

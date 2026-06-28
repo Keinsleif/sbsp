@@ -9,7 +9,18 @@ import { useApi } from '../../api';
 import { useShowState } from '../../stores/showState';
 import { buildCueName, firstUpper, getCueIcon, secondsToFormat } from '../../utils';
 import type { PlaybackStatus } from '../../types/PlaybackStatus';
-import { mdiArrowDownRight, mdiArrowUpLeft, mdiFastForward, mdiPause, mdiPlay, mdiRepeat, mdiRewind, mdiSkipNext, mdiSkipPrevious, mdiStop } from '@mdi/js';
+import {
+  mdiArrowDownRight,
+  mdiArrowUpLeft,
+  mdiFastForward,
+  mdiPause,
+  mdiPlay,
+  mdiRepeat,
+  mdiRewind,
+  mdiSkipNext,
+  mdiSkipPrevious,
+  mdiStop,
+} from '@mdi/js';
 import SeekBar from './SeekBar.vue';
 import { useUiSettings } from '../../stores/uiSettings';
 import { useAssetResult } from '../../stores/assetResult';
@@ -29,7 +40,9 @@ const playbackCursorCue = computed(() => {
 });
 
 const playbackCursorCueDuration = computed(() => {
-  return showState.playbackCursor != null ? assetResult.getMetadata(showState.playbackCursor)?.duration || null : null;
+  return showState.playbackCursor != null
+    ? assetResult.getMetadata(showState.playbackCursor)?.duration || null
+    : null;
 });
 
 const activeTargetCue = computed(() => {
@@ -45,7 +58,10 @@ const playbackCursorCueTitle = computed(() => {
     if (playbackCursorCue.value.number.trim() !== '') {
       text = playbackCursorCue.value.number + '・';
     }
-    text += playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value);
+    text +=
+      playbackCursorCue.value.name != null
+        ? playbackCursorCue.value.name
+        : buildCueName(playbackCursorCue.value);
     return text;
   }
   return '';
@@ -84,7 +100,9 @@ const handleReadyPauseButton = () => {
 
 const skipPrevious = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(
+      (item) => item.cue.id === showState.playbackCursor,
+    );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
@@ -110,7 +128,9 @@ const skipPrevious = () => {
 
 const skipNext = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(
+      (item) => item.cue.id === showState.playbackCursor,
+    );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
@@ -135,14 +155,18 @@ const skipNext = () => {
 };
 
 const skipToParent = () => {
-  const cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
+  const cursorEntry = showModel.flatCueList.find(
+    (item) => item.cue.id === showState.playbackCursor,
+  );
   if (cursorEntry == null || cursorEntry.parent == null) return;
 
   api.setPlaybackCursor(cursorEntry.parent);
 };
 
 const skipToChild = () => {
-  const cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
+  const cursorEntry = showModel.flatCueList.find(
+    (item) => item.cue.id === showState.playbackCursor,
+  );
   if (cursorEntry == null || cursorEntry.cue.params.type !== 'group') return;
   const firstChildId = cursorEntry.cue.params.children[0];
   if (firstChildId != null) {
@@ -168,16 +192,16 @@ const fastForward = () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full p-3 gap-3">
-    <h2
-      class="p-1 mb-1 overflow-x-hidden h-9"
-    >
+  <div class="flex h-full flex-col gap-3 p-3">
+    <h2 class="mb-1 h-9 overflow-x-hidden p-1">
       {{ playbackCursorCueTitle }}
     </h2>
     <div class="flex flex-row items-center gap-1">
-      <path-icon :icon="playbackCursorCue != null ? getCueIcon(playbackCursorCue.params.type) : ''" />
+      <path-icon
+        :icon="playbackCursorCue != null ? getCueIcon(playbackCursorCue.params.type) : ''"
+      />
       {{ playbackCursorCue != null ? firstUpper(playbackCursorCue.params.type) : '' }}
-      <div class="ml-auto mr-0">
+      <div class="mr-0 ml-auto">
         {{ secondsToFormat(playbackCursorCueDuration) }}
       </div>
     </div>
@@ -208,7 +232,10 @@ const fastForward = () => {
       />
     </button-group>
 
-    <seek-bar :target-id="showState.playbackCursor" class="mt-auto" />
+    <seek-bar
+      :target-id="showState.playbackCursor"
+      class="mt-auto"
+    />
     <button-group>
       <button-wrapper
         :icon="mdiRewind"

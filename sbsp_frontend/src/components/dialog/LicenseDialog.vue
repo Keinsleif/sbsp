@@ -51,12 +51,15 @@ onMounted(() => {
     @keydown.stop.esc="isLicenseDialogOpen = false"
     @contextmenu.prevent
   >
-    <div class="flex flex-col p-4 gap-3 w-md">
+    <div class="flex w-md flex-col gap-3 p-4">
       <div>
         {{ t('dialog.license.edition') }} :
-        <span :style="{
-          color: edition == 'Free' ? '' : $dt('green.500').variable
-        }">{{ edition }}</span>
+        <span
+          :style="{
+            color: edition == 'Free' ? '' : $dt('green.500').variable,
+          }"
+          >{{ edition }}</span
+        >
       </div>
       <div>
         {{ t('dialog.license.owner') }} :
@@ -74,7 +77,7 @@ onMounted(() => {
         :disabled="licenseInfo == null"
       />
     </div>
-    <div class="grow-0 flex items-center ml-0 mr-0 w-full p-3 gap-3">
+    <div class="mr-0 ml-0 flex w-full grow-0 items-center gap-3 p-3">
       <button-wrapper
         :icon="mdiReload"
         severity="secondary"

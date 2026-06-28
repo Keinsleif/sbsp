@@ -86,14 +86,14 @@ const time = useNow();
 </script>
 
 <template>
-  <div class="flex flex-row m-0 w-full h-full gap-3 p-3 overflow-x-auto">
-    <div class="flex flex-col gap-3 grow-0 items-start">
+  <div class="m-0 flex h-full w-full flex-row gap-3 overflow-x-auto p-3">
+    <div class="flex grow-0 flex-col items-start gap-3">
       <div
-        class="flex items-center border border-(--p-form-field-border-color) grow"
+        class="flex grow items-center border border-(--p-form-field-border-color)"
         :class="hasFocus ? '' : 'bg-red-500'"
       >
         <div
-          class="flex items-end pl-3 pr-3 text-center"
+          class="flex items-end pr-3 pl-3 text-center"
           style="font-size: 4em; line-height: 1"
         >
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
@@ -152,22 +152,22 @@ const time = useNow();
         </button-group>
       </div>
     </div>
-    <div class="flex flex-col gap-3 grow">
-      <div class="flex flex-col m-0 grow">
+    <div class="flex grow flex-col gap-3">
+      <div class="m-0 flex grow flex-col">
         <div
-          class="p-1 rounded mb-1 overflow-x-hidden border border-(--p-form-field-border-color) shrink-0 grow-0 h-9 ps-3"
+          class="mb-1 h-9 shrink-0 grow-0 overflow-x-hidden rounded border border-(--p-form-field-border-color) p-1 ps-3"
         >
           {{ playbackCursorCueTitle }}
         </div>
         <div
-          class="p-2 pb-0 rounded whitespace-pre-wrap overflow-y-auto grow border border-(--p-form-field-border-color)"
+          class="grow overflow-y-auto rounded border border-(--p-form-field-border-color) p-2 pb-0 whitespace-pre-wrap"
         >
           {{ playbackCursorCue != null ? playbackCursorCue.notes : '' }}
         </div>
       </div>
       <div
         :class="uiState.mode == 'edit' ? 'flex' : 'hidden'"
-        class="flex-row gap-4 justify-end"
+        class="flex-row justify-end gap-4"
       >
         <button-group>
           <button-wrapper

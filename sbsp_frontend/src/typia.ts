@@ -5,4 +5,8 @@ import typia, { type IValidation } from 'typia';
 import type { GlobalHostSettings } from './types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from './types/GlobalRemoteSettings';
 
-export const settingsValidator: ((input: unknown) => IValidation<GlobalHostSettings | GlobalRemoteSettings>) = typia.createValidate<GlobalHostSettings | GlobalRemoteSettings>();
+export const settingsValidator: (
+  input: unknown,
+) => IValidation<GlobalHostSettings | GlobalRemoteSettings> = typia.createValidate<
+  GlobalHostSettings | GlobalRemoteSettings
+>();

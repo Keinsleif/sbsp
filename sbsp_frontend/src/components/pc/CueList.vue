@@ -274,7 +274,7 @@ const click = (event: MouseEvent, index: number) => {
 
 <template>
   <div
-    class="h-full border border-(--p-form-field-border-color) overflow-auto scroll-pt-8"
+    class="h-full scroll-pt-8 overflow-auto border border-(--p-form-field-border-color)"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
     @copy="copyHandler"
@@ -282,7 +282,7 @@ const click = (event: MouseEvent, index: number) => {
     @paste="pasteHandler"
   >
     <table
-      class="w-full border-separate border-spacing-0 table-fixed"
+      class="w-full table-fixed border-separate border-spacing-0"
       :class="$style['cuelist']"
     >
       <thead>
@@ -306,14 +306,14 @@ const click = (event: MouseEvent, index: number) => {
           />
           <th
             id="cuelist_number"
-            class="text-center border-s border-(--p-form-field-border-color)"
+            class="border-s border-(--p-form-field-border-color) text-center"
             width="54px"
           >
             #
           </th>
           <th
             id="cuelist_name"
-            class="border-x border-(--p-form-field-border-color) overflow-hidden whitespace-nowrap"
+            class="overflow-hidden border-x border-(--p-form-field-border-color) whitespace-nowrap"
             style="padding-left: 24px"
           >
             {{ t('main.name') }}

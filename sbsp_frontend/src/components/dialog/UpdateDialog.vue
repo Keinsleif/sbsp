@@ -41,32 +41,39 @@ const checkUpdate = () => {
 
 const installUpdate = () => {
   if (update.value != null) {
-    toRaw(update.value).downloadAndInstall((event) => {
-      switch (event.event) {
-        case 'Started':
-          if (event.data.contentLength != null) {
-            total.value = event.data.contentLength;
-          } else {
-            total.value = 0;
-          }
-          break;
-        case 'Progress':
-          if (progress.value == null) {
-            progress.value = event.data.chunkLength;
-          } else {
-            progress.value += event.data.chunkLength;
-          }
-          break;
-        case 'Finished':
-          console.log('download finished');
-          break;
-      }
-    }).catch((e) => {
-      console.error(e);
-      toast.add({ severity: 'error', summary: t('notification.updateFailed'), detail: e, life: 3000 });
-      total.value = null;
-      progress.value = null;
-    }); // If success install, app will be restarted by tauri.
+    toRaw(update.value)
+      .downloadAndInstall((event) => {
+        switch (event.event) {
+          case 'Started':
+            if (event.data.contentLength != null) {
+              total.value = event.data.contentLength;
+            } else {
+              total.value = 0;
+            }
+            break;
+          case 'Progress':
+            if (progress.value == null) {
+              progress.value = event.data.chunkLength;
+            } else {
+              progress.value += event.data.chunkLength;
+            }
+            break;
+          case 'Finished':
+            console.log('download finished');
+            break;
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+        toast.add({
+          severity: 'error',
+          summary: t('notification.updateFailed'),
+          detail: e,
+          life: 3000,
+        });
+        total.value = null;
+        progress.value = null;
+      }); // If success install, app will be restarted by tauri.
   }
 };
 
@@ -100,7 +107,7 @@ onMounted(() => {
     @keydown.stop
     @contextmenu.prevent
   >
-    <div class="flex flex-col gap-4 p-3 w-100">
+    <div class="flex w-100 flex-col gap-4 p-3">
       <div class="flex flex-row items-center justify-start gap-4">
         <span :class="update == null ? 'text-red-500' : 'text-green-600'">
           {{
@@ -113,7 +120,7 @@ onMounted(() => {
         </span>
         <progress-spinner-wrapper
           v-show="isCheckingUpdate"
-          class="grow-0 m-0"
+          class="m-0 grow-0"
           size="16px"
         />
       </div>

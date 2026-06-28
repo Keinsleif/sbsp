@@ -54,9 +54,12 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col w-full h-full overflow-hidden">
-    <div class="grow w-full border border-(--p-form-field-border-color) overflow-auto">
-      <table class="w-full" :class="$style['cuelist']">
+  <div class="flex h-full w-full flex-col overflow-hidden">
+    <div class="w-full grow overflow-auto border border-(--p-form-field-border-color)">
+      <table
+        class="w-full"
+        :class="$style['cuelist']"
+      >
         <thead>
           <tr>
             <th id="cuelist_type">
@@ -127,7 +130,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -136,7 +139,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -196,7 +199,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -205,7 +208,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -259,7 +262,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -268,7 +271,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -322,7 +325,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -331,7 +334,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -379,7 +382,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -388,7 +391,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -436,7 +439,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -445,7 +448,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -493,7 +496,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -502,7 +505,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -550,7 +553,7 @@ watch(
             </td>
             <td
               headers="cuelist_pre_wait"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -559,7 +562,7 @@ watch(
             </td>
             <td
               headers="cuelist_duration"
-              class="text-center p-1"
+              class="p-1 text-center"
               width="100px"
             >
               <div>
@@ -581,7 +584,7 @@ watch(
         </tbody>
       </table>
     </div>
-    <div class="grow-0 mb-0 border h-62 border-(--p-form-field-border-color) overflow-hidden">
+    <div class="mb-0 h-62 grow-0 overflow-hidden border border-(--p-form-field-border-color)">
       <bottom-editor v-model="selectingCue" />
     </div>
   </div>

@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 
 const { t } = useI18n();
-const breakpoints = useBreakpoints(breakpointsTailwind, {strategy: 'max-width'});
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 const showState = useShowState();
@@ -69,7 +69,7 @@ const saveEditorValue = () => {
 </script>
 
 <template>
-  <div class="flex flex-col p-3 gap-3">
+  <div class="flex flex-col gap-3 p-3">
     <cue-select
       v-model="target"
       class="grow-0"

@@ -48,7 +48,7 @@ watch(
 </template>
 
 <style lang="css" module>
-  .qr-svg {
-    background-color: white;
-  }
+.qr-svg {
+  background-color: white;
+}
 </style>

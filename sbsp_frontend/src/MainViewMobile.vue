@@ -20,40 +20,59 @@ const activeTab = ref('list');
 const { t } = useI18n();
 const time = useNow();
 
-watch(() => uiState.permission, (newValue) => {
-  if ((newValue & PERMISSIONS.CONTROL) === 0 && activeTab.value === 'controls') {
-    activeTab.value = 'list';
-  }
-});
+watch(
+  () => uiState.permission,
+  (newValue) => {
+    if ((newValue & PERMISSIONS.CONTROL) === 0 && activeTab.value === 'controls') {
+      activeTab.value = 'list';
+    }
+  },
+);
 </script>
 
 <template>
-  <div class="flex flex-col h-full" @contextmenu.prevent>
+  <div
+    class="flex h-full flex-col"
+    @contextmenu.prevent
+  >
     <div class="min-h-25">
       <div
-        class="flex items-center border border-(--p-form-field-border-color) grow-0 h-full w-full"
+        class="flex h-full w-full grow-0 items-center border border-(--p-form-field-border-color)"
       >
         <div
-          class="flex items-end pl-3 pr-3 text-center justify-center grow"
+          class="flex grow items-end justify-center pr-3 pl-3 text-center"
           style="font-size: 4em; line-height: 1"
         >
-          <span>{{ String(time.getHours()).padStart(2, '0') }}</span>:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span>.<span style="font-size: 32pt; line-height: 1">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
+          <span>{{ String(time.getHours()).padStart(2, '0') }}</span
+          >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
+          >.<span style="font-size: 32pt; line-height: 1">{{
+            String(time.getSeconds()).padStart(2, '0')
+          }}</span>
         </div>
       </div>
     </div>
-    <div class="grow shrink flex flex-col overflow-hidden">
-      <div class="grow shrink flex flex-row overflow-hidden">
-        <div v-show="activeTab === 'list'" class="flex h-full w-full overflow-hidden">
+    <div class="flex shrink grow flex-col overflow-hidden">
+      <div class="flex shrink grow flex-row overflow-hidden">
+        <div
+          v-show="activeTab === 'list'"
+          class="flex h-full w-full overflow-hidden"
+        >
           <cue-list />
         </div>
-        <div v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0 && activeTab === 'controls'" class="h-full w-full">
+        <div
+          v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0 && activeTab === 'controls'"
+          class="h-full w-full"
+        >
           <controls-panel />
         </div>
-        <div v-show="activeTab === 'monitor'" class="h-full w-full">
+        <div
+          v-show="activeTab === 'monitor'"
+          class="h-full w-full"
+        >
           <monitor-panel />
         </div>
       </div>
-      <div class="grow-0 shrink-0">
+      <div class="shrink-0 grow-0">
         <button-group class="flex flex-row justify-center">
           <button-wrapper
             :icon="mdiFormatListBulleted"

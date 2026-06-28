@@ -61,7 +61,7 @@ const onDone = () => {
     @keydown.stop="onKeydown"
     @contextmenu.prevent
   >
-    <div class="flex flex-col gap-4 p-3 w-100 items-stretch">
+    <div class="flex w-100 flex-col items-stretch gap-4 p-3">
       <number-input
         :min="0"
         :step="1"

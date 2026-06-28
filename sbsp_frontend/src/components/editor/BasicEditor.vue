@@ -136,8 +136,8 @@ const insertTimestampToNote = () => {
 </script>
 
 <template>
-  <div class="flex flex-row p-3 gap-2 min-w-180">
-    <div class="flex flex-col gap-2 grow-0 shrink-0 w-42">
+  <div class="flex min-w-180 flex-row gap-2 p-3">
+    <div class="flex w-42 shrink-0 grow-0 flex-col gap-2">
       <text-input
         v-model="number"
         class="grow-0 text-center"
@@ -179,7 +179,7 @@ const insertTimestampToNote = () => {
         @keydown.stop
       />
     </div>
-    <div class="flex grow shrink flex-col gap-2">
+    <div class="flex shrink grow flex-col gap-2">
       <text-input
         v-model="name"
         :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
@@ -190,12 +190,12 @@ const insertTimestampToNote = () => {
       />
       <textarea-wrapper
         v-model="notes"
-        class="grow shrink"
+        class="shrink grow"
         :label="t('main.notes')"
         text-type="area"
         @update="saveEditorValue"
       />
-      <div class="flex flex-row grow-0 shrink-0 gap-3">
+      <div class="flex shrink-0 grow-0 flex-row gap-3">
         <cue-select
           v-model="target"
           class="max-w-150 grow"

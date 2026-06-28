@@ -46,11 +46,14 @@ usePosition((pos) => {
 });
 
 // use throttle value for v-model value
-watch(() => activeTargetCue.value?.position, (newposition) => {
-  if (!sliderChanging.value) {
-    position.value = newposition || 0;
-  }
-});
+watch(
+  () => activeTargetCue.value?.position,
+  (newposition) => {
+    if (!sliderChanging.value) {
+      position.value = newposition || 0;
+    }
+  },
+);
 
 const onpointerup = () => {
   if (sliderChanging.value && props.targetId != null) {
@@ -65,16 +68,22 @@ const onpointerup = () => {
     <Slider
       v-model="position"
       class="grow-0"
-      :disabled="activeTargetCue==null"
+      :disabled="activeTargetCue == null"
       :severity="activeTargetCue?.status.startsWith('pre') ? 'warn' : 'primary'"
       :min="0"
       :max="activeTargetCue?.duration || 1"
       @pointerdown="sliderChanging = true"
       @pointerup="onpointerup"
     />
-    <div class="flex flex-row mt-2">
-      <div ref="elapsed" class="px-1 ml-0 mr-auto"></div>
-      <div ref="remain" class="px-1 ml-auto mr-0"></div>
+    <div class="mt-2 flex flex-row">
+      <div
+        ref="elapsed"
+        class="mr-auto ml-0 px-1"
+      ></div>
+      <div
+        ref="remain"
+        class="mr-0 ml-auto px-1"
+      ></div>
     </div>
   </div>
 </template>

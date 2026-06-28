@@ -59,7 +59,7 @@ usePosition((pos) => {
     durationRef.value.children.length < 2
   )
     return;
-  if(props.item.isHidden) return;
+  if (props.item.isHidden) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
@@ -364,11 +364,11 @@ const isActive = computed((): boolean => {
     >
       <div
         ref="preWait"
-        class="relative w-full h-3/4"
-        :class="[isPreWaitActive ? 'border border-primary' : '']"
+        class="relative h-3/4 w-full"
+        :class="[isPreWaitActive ? 'border-primary border' : '']"
       >
         <div
-          class="top-0 left-0 w-full h-full"
+          class="top-0 left-0 h-full w-full"
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
@@ -392,11 +392,11 @@ const isActive = computed((): boolean => {
     >
       <div
         ref="duration"
-        class="relative w-full h-3/4"
-        :class="[isActive ? 'border border-primary' : '']"
+        class="relative h-3/4 w-full"
+        :class="[isActive ? 'border-primary border' : '']"
       >
         <div
-          class="top-0 left-0 w-full h-full"
+          class="top-0 left-0 h-full w-full"
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
