@@ -18,7 +18,7 @@ watch(text, () => {
 
 const save = () => {
   if (text.value !== innerText.value) {
-    text.value = innerText.value;
+    text.value = innerText.value.trim() === '' ? null : innerText.value;
     emit('update');
   }
 };
@@ -27,7 +27,7 @@ const onKeydown = (e: KeyboardEvent) => {
   if (!(e.target instanceof HTMLElement)) return;
   switch (e.key) {
     case 'Escape':
-      innerText.value = text.value != null ? text.value : ''; // reset
+      innerText.value = text.value ?? ''; // reset
       e.target.blur();
       break;
     case 'Tab':
