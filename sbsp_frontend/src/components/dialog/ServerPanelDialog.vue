@@ -61,7 +61,7 @@ const saveServerOptions = async () => {
     server_options.discoverry = null;
   }
   const parseResult = parseInt(server_port.value);
-  if (isNaN(parseResult)) {
+  if (!Number.isInteger(parseResult) || parseResult < 1 || parseResult > 65535) {
     throw Error('Invalid port number');
   }
   server_options.port = parseResult;
