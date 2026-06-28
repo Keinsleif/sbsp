@@ -4,13 +4,13 @@
 
 import { computed, onMounted, ref } from 'vue';
 import type { LicenseInformation } from '../../types/LicenseInformation';
-import { mdiContentCopy, mdiReload } from '@mdi/js';
+import { mdiReload } from '@mdi/js';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 import Dialog from 'primevue/dialog';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
-import FloatLabel from 'primevue/floatlabel';
-import InputText from 'primevue/inputtext';
+import CopyTextInput from '../input/CopyTextInput.vue';
+import { $dt } from '@primeuix/themes';
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const api = useApi();
@@ -30,12 +30,6 @@ const issuedDate = computed(() => {
     return '-';
   }
 });
-
-const onCopyId = () => {
-  if (licenseInfo.value != null) {
-    navigator.clipboard.writeText(licenseInfo.value.id);
-  }
-};
 
 const loadLicense = () => {
   api.host
@@ -60,7 +54,9 @@ onMounted(() => {
     <div class="flex flex-col p-4 gap-3 w-md">
       <div>
         {{ t('dialog.license.edition') }} :
-        <span :class="edition == 'Free' ? '' : 'text-green'">{{ edition }}</span>
+        <span :style="{
+          color: edition == 'Free' ? '' : $dt('green.500').variable
+        }">{{ edition }}</span>
       </div>
       <div>
         {{ t('dialog.license.owner') }} :
@@ -70,27 +66,13 @@ onMounted(() => {
         {{ t('dialog.license.issuedDate') }} :
         <span>{{ issuedDate }}</span>
       </div>
-      <div class="grow-0 flex flex-row">
-        <FloatLabel
-          variant="on"
-          class="w-full"
-        >
-          <InputText
-            id="on_label"
-            class="w-full"
-            readonly
-            :model-value="licenseInfo != null ? licenseInfo.id : '-'"
-            autocomplete="off"
-          />
-          <label for="on_label">Id</label>
-        </FloatLabel>
-        <button-wrapper
-          :icon="mdiContentCopy"
-          @click="onCopyId()"
-          severity="secondary"
-          rounded
-        />
-      </div>
+      <copy-text-input
+        class="w-full"
+        readonly
+        label="Id"
+        :model-value="licenseInfo != null ? licenseInfo.id : '-'"
+        :disabled="licenseInfo == null"
+      />
     </div>
     <div class="grow-0 flex items-center ml-0 mr-0 w-full p-3 gap-3">
       <button-wrapper

@@ -34,9 +34,10 @@ onMounted(() => {
 <template>
   <Dialog
     v-model:visible="isThirdPartyNoticesDialogOpen"
+    class="w-7xl overflow-hidden"
     @contextmenu.prevent
   >
-    <div class="p-10">
+    <div class="p-10 overflow-auto">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div
         :class="$style['markdown']"
