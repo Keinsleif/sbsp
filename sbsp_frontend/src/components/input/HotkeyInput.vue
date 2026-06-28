@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { mdiClose } from '@mdi/js';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
-import TextInput from './TextInput.vue';
-import { useI18n } from 'vue-i18n';
+import InputGroup from 'primevue/inputgroup';
+import InputGroupAddon from 'primevue/inputgroupaddon';
+import { useId } from 'vue';
+import FloatLabel from 'primevue/floatlabel';
+import InputText from 'primevue/inputtext';
 
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-const { t } = useI18n();
+defineOptions({ inheritAttrs: false });
 const hotkey = defineModel<string | null>({ default: '' });
+const props = defineProps<{
+  label?: string,
+}>();
 
 const keyinput = (event: KeyboardEvent) => {
   event.preventDefault();
@@ -40,18 +46,37 @@ const keyinput = (event: KeyboardEvent) => {
   }
   hotkey.value = shortcut;
 };
+
+const inputId = useId();
 </script>
 
 <template>
-  <text-input
-    class="mt-4 w-125"
-    v-model="hotkey"
-    readonly
-    :label="t('dialog.settings.show.general.assetsDirectory.title')"
-    @keydown.stop="keyinput($event)"
-  />
-  <button-wrapper
-    :icon="mdiClose"
-    @click="hotkey = null"
-  ></button-wrapper>
+  <input-group>
+    <float-label variant="on" class="w-125">
+      <input-text
+        v-model="hotkey"
+        v-bind="$attrs"
+        class="w-full h-full"
+        :id="inputId"
+        autocomplete="off"
+        :pt="{
+          root: () => {
+            return {
+              style: 'background-color: var(--p-inputtext-background);',
+            };
+          },
+        }"
+        @keydown.stop="keyinput($event)"
+      />
+      <label :for="inputId">{{ props.label || '' }}</label>
+    </float-label>
+    <input-group-addon>
+      <button-wrapper
+        :icon="mdiClose"
+        severity="secondary"
+        variant="text"
+        @click="hotkey = null"
+      />
+    </input-group-addon>
+  </input-group>
 </template>

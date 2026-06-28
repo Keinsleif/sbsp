@@ -12,11 +12,15 @@ import { computed, ref, toRaw, watch } from 'vue';
 import type { Cue } from './types/Cue.ts';
 import { debounce } from './utils.ts';
 import SideBar from './components/pc/SideBar.vue';
+import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
+import SettingsDialog from './components/dialog/SettingsDialog.vue';
 
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);
 const uiState = useUiState();
 const api = useApi();
+
+const isHost = __IS_HOST__; 
 
 const selectedCue = ref<Cue | null>(
   uiState.selected != null ? getCueById.value(uiState.selected)! : null,
@@ -99,6 +103,7 @@ const onCueEdited = debounce(() => {
     </footer>
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
+    <settings-dialog v-model="uiState.isSettingsDialogOpen" />
     <server-panel-dialog
       v-if="isHost"
       v-model="uiState.isServerPanelOpen"
