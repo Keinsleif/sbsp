@@ -18,11 +18,17 @@ export const useBackendEvent = async (listener: BackendEventListener) => {
     }
   });
 
-  api.onBackendEvent(listener).then((unlistenfn) => {
+  api.onBackendEvent((event) => {
+    if (!disposed) {
+      listener(event)
+    }
+  }).then((unlistenfn) => {
     if (disposed) {
       unlistenfn();
       return;
     }
     unlisten = unlistenfn;
+  }).catch((e) => {
+    console.error(e);
   });
 };
