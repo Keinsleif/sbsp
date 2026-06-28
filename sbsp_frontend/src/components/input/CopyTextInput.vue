@@ -18,10 +18,10 @@ const props = defineProps<{
 
 const copied = ref(false);
 
-const copyToClipboard = (value: string | null) => {
-  if (value) {
+const copyToClipboard = () => {
+  if (value.value) {
     copied.value = true;
-    navigator.clipboard.writeText(value);
+    navigator.clipboard.writeText(value.value);
     setTimeout(() => {
       copied.value = false;
     }, 2000);
