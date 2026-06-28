@@ -60,7 +60,11 @@ const saveServerOptions = async () => {
   } else {
     server_options.discoverry = null;
   }
-  server_options.port = parseInt(server_port.value);
+  const parseResult = parseInt(server_port.value);
+  if (isNaN(parseResult)) {
+    throw Error("Invalid port number");
+  }
+  server_options.port = parseResult;
   server_options.authMap = server_authMap.value;
   await api.host?.setServerOptions(server_options);
 };
@@ -73,14 +77,18 @@ const toggleServer = async () => {
     });
   } else {
     isPasswordVisible.value = false;
-    await saveServerOptions();
-    api.host?.startServer().catch((e) => {
-      console.error(e);
+    saveServerOptions().then(() => {
+      api.host?.startServer().catch((e) => {
+        console.error(e);
+        toast.add({severity: 'error', summary: t('notification.failedToStartServer'), detail: e.toString(), life: 3000});
+      });
+    }).catch((e) => {
       toast.add({severity: 'error', summary: t('notification.failedToStartServer'), detail: e.toString(), life: 3000});
     });
   }
 };
 
+// Generaate 'connectable' url from server_options that contains backend's options
 const generateServerUrl = async (password: string) => {
   const hostname = await api.host?.getHostname();
   server_hostname.value = hostname || null;
@@ -225,7 +233,7 @@ onUnmounted(() => {
                     @click="isPasswordVisible = !isPasswordVisible"
                   />
                 </th>
-                <th width="240" class="border-x border-(--p-form-field-border-color)">
+                <th width="316" class="border-x border-(--p-form-field-border-color)">
                   {{ t('dialog.server.permission') }}
                 </th>
                 <th width="108" />
