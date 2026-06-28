@@ -17,15 +17,15 @@ const showModel = useShowModel();
 const uiState = useUiState();
 
 const setPlaybackCursor = (cueId: string) => {
-  if (uiState.mode !== 'view' && !getLockCursorToSelection()) {
+  if (uiState.mode !== 'view' && getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
   }
 };
 </script>
 
 <template>
-  <div class="grow border border-(--p-form-field-border-color) overflow-auto table-fixed w-full">
-    <table :class="$style['cuelist']" class="w-full">
+  <div class="grow border border-(--p-form-field-border-color) overflow-auto w-full">
+    <table :class="$style['cuelist']" class="w-full table-fixed ">
       <thead>
         <tr>
           <th
@@ -52,7 +52,7 @@ const setPlaybackCursor = (cueId: string) => {
           </th>
           <th
             id="cuelist_name"
-            class="border-x border-(--p-form-field-border-color) overflow-hidden text-no-wrap  w-fit"
+            class="border-x border-(--p-form-field-border-color) overflow-hidden whitespace-nowrap w-fit"
             style="padding-left: 24px"
           >
             {{ t('main.name') }}
