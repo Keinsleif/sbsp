@@ -67,6 +67,7 @@
     "npm-run-all2": "^9.0.2",
     "oxfmt": "^0.54.0",
     "oxlint": "~1.69.0",
+    "rollup-plugin-visualizer": "^7.0.1",
     "ts-patch": "^4.0.1",
     "typescript": "~6.0.3",
     "vite": "^8.0.16",

@@ -29,9 +29,6 @@ const primeVueConfig: PrimeVueConfiguration = {
       },
     },
   },
-  csp: {
-    nonce: 'aYxPbxuXswGq0ST6rvQ2AA==',
-  },
   pt: {
     tab: {
       root: {
