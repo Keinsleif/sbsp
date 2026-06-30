@@ -113,7 +113,7 @@ const decrement = () => {
   if (props.min != null) {
     model.value = Math.max(base - props.step, props.min);
   } else {
-    model.value = base + props.step;
+    model.value = base - props.step;
   }
   emit('update');
 };
