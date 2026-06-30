@@ -14,6 +14,7 @@ import { debounce } from './utils.ts';
 import SideBar from './components/pc/SideBar.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
+import FileListDialog from './components/dialog/FileListDialog.vue';
 
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);
@@ -104,6 +105,11 @@ const onCueEdited = debounce(() => {
 
     <renumber-dialog v-model="uiState.isRenumberCueDialogOpen" />
     <settings-dialog v-model="uiState.isSettingsDialogOpen" />
+    <file-list-dialog
+      v-if="!isHost"
+      v-model="uiState.fileListResolver"
+      :multiple="uiState.fileListOption"
+    />
     <server-panel-dialog
       v-if="isHost"
       v-model="uiState.isServerPanelOpen"
