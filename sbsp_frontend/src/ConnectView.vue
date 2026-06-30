@@ -153,7 +153,6 @@ onUnmounted(() => {
         v-model="port"
         :min="0"
         :max="65535"
-        :step="1"
         :label="t('view.connect.remotePort')"
       />
       <button-wrapper
