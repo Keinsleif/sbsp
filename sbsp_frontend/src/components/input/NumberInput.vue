@@ -43,12 +43,16 @@ watch([model, () => props.precision], ([newValue]) => {
 
 const save = () => {
   const origModelString = model2text(model.value);
+  if (props.disabled) {
+    innerModel.value = origModelString;
+    return;
+  }
   if (innerModel.value.trim() === origModelString) return;
   if (innerModel.value.trim() === '') {
     if (props.acceptNull) {
       // update model by null if acceptNull == true
+      // innerModel also updated by watcher
       model.value = null;
-      innerModel.value = '';
       emit('update');
       return;
     } else {
@@ -151,10 +155,22 @@ const inputId = useId();
     </input-group-addon>
     <template v-if="props.showButtons">
       <input-group-addon>
-        <button-wrapper :icon="mdiChevronDown" variant="text" severity="secondary" @click="decrement"/>
+        <button-wrapper
+          :icon="mdiChevronDown"
+          :disabled="props.disabled"
+          variant="text"
+          severity="secondary"
+          @click="decrement"
+        />
       </input-group-addon>
       <input-group-addon>
-        <button-wrapper :icon="mdiChevronUp" variant="text" severity="secondary" @click="increment"/>
+        <button-wrapper
+          :icon="mdiChevronUp"
+          :disabled="props.disabled"
+          variant="text"
+          severity="secondary"
+          @click="increment"
+        />
       </input-group-addon>
     </template>
   </input-group>
