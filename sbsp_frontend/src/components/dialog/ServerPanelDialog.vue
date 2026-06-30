@@ -19,6 +19,7 @@ import TextInput from '../input/TextInput.vue';
 import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
 import PathIcon from '../display/PathIcon.vue';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import NumberInput from '../input/NumberInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -31,9 +32,9 @@ const isPasswordVisible = ref(false);
 const isServerInfoDialogOpen = ref(false);
 const copied = ref(false);
 
-const isRunning = ref<boolean | null>(null);
+const isRunning = ref<boolean>(false);
 const isDiscoverable = ref<boolean>(false);
-const server_port = ref<string>('');
+const server_port = ref<number>(5800);
 const server_name = ref<string>('Untitled SBS Player Server');
 const server_authMap = ref<PermissionInfo[]>([]);
 
@@ -60,11 +61,7 @@ const saveServerOptions = async () => {
   } else {
     server_options.discoverry = null;
   }
-  const parseResult = parseInt(server_port.value);
-  if (!Number.isInteger(parseResult) || parseResult < 1 || parseResult > 65535) {
-    throw Error('Invalid port number');
-  }
-  server_options.port = parseResult;
+  server_options.port = server_port.value;
   server_options.authMap = server_authMap.value;
   await api.host?.setServerOptions(server_options);
 };
@@ -168,7 +165,7 @@ onMounted(() => {
       } else {
         isDiscoverable.value = false;
       }
-      server_port.value = options.port.toString();
+      server_port.value = options.port;
       server_authMap.value = options.authMap;
     })
     .catch((e) => console.error(e));
@@ -230,8 +227,10 @@ onUnmounted(() => {
               </span>
             </span>
           </div>
-          <text-input
+          <number-input
             v-model="server_port"
+            :min="0"
+            :max="65535"
             :disabled="isRunning"
             class="w-25 grow-0"
             :label="t('dialog.server.port')"
@@ -342,7 +341,7 @@ onUnmounted(() => {
           />
           <span class="px-2">:</span>
           <copy-text-input
-            v-model="server_port"
+            :model-value="server_port.toString()"
             readonly
             class="w-25 grow-0"
             :label="t('dialog.server.port')"
