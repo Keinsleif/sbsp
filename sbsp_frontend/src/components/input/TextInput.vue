@@ -20,7 +20,7 @@ watch(model, () => {
 
 const save = () => {
   if ((model.value ?? '') !== innerText.value) {
-    model.value = innerText.value === '' ? innerText.value : null;
+    model.value = innerText.value === '' ? null : innerText.value;
     emit('update');
   }
 };
