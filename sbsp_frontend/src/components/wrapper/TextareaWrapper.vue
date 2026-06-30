@@ -7,17 +7,22 @@ const text = defineModel<string | null>();
 const emit = defineEmits(['update']);
 const props = defineProps<{
   label?: string;
+  disabled?: boolean;
 }>();
 
 const inputId = useId();
-const innerText = ref(text.value ?? '');
+const innerText = ref('');
 
 watch(text, () => {
   innerText.value = text.value ?? '';
-});
+}, {immediate: true});
 
 const save = () => {
-  if (text.value !== innerText.value) {
+  if (props.disabled) {
+    innerText.value = text.value ?? ''; // reset
+    return;
+  }
+  if ((text.value ?? '') !== innerText.value) {
     text.value = innerText.value.trim() === '' ? null : innerText.value;
     emit('update');
   }
@@ -57,6 +62,7 @@ const onKeydown = (e: KeyboardEvent) => {
       class="h-full w-full"
       :id="inputId"
       autocomplete="off"
+      :disabled="props.disabled"
       :pt="{
         root: () => {
           return {
