@@ -155,7 +155,6 @@ onUnmounted(() => {
         :max="65534"
         :step="1"
         :label="t('view.connect.remotePort')"
-        @update="connect(host, port)"
       />
       <button-wrapper
         class="ml-auto"
