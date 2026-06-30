@@ -10,3 +10,5 @@ export const settingsValidator: (
 ) => IValidation<GlobalHostSettings | GlobalRemoteSettings> = typia.createValidate<
   GlobalHostSettings | GlobalRemoteSettings
 >();
+
+export const settingsParser: (input: string) => typia.IValidation<GlobalHostSettings | GlobalRemoteSettings> = typia.json.createValidateParse<GlobalHostSettings | GlobalRemoteSettings>();

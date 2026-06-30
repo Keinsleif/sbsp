@@ -24,7 +24,7 @@ import type { Permissions } from '../types/Permissions';
 import type { BackendError } from '../types/BackendError';
 import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
-import { settingsValidator } from '../typia';
+import { settingsParser, settingsValidator } from '../typia';
 import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
 import { type BackendEventListener } from './interface';
 
@@ -486,11 +486,15 @@ export function useWebsocketApi(): IBackendAdapter {
     updateShowSettings: async function (newSettings: ShowSettings): Promise<void> {
       this.sendCommand({ type: 'model', command: 'updateSettings', params: newSettings });
     },
-
     getSettings: async function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       const settings = localStorage.getItem(GLOBAL_SETTINGS_STORAGE_KEY);
       if (settings != null) {
-        return JSON.parse(settings) as GlobalHostSettings | GlobalRemoteSettings;
+        const parsed = settingsParser(settings);
+        if (parsed.success) {
+          return parsed.data;
+        } else {
+          return structuredClone(DEFAULT_SETTINGS);
+        }
       } else {
         localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
         return structuredClone(DEFAULT_SETTINGS);

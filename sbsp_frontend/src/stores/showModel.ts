@@ -135,8 +135,9 @@ export const useShowModel = defineStore('showModel', {
         .then((assets) => {
           if (assets.length === 1) {
             const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
-            if (newCue.params.type === 'audio') {
-              newCue.params.target = assets[0]!;
+            const target = assets[0];
+            if (newCue.params.type === 'audio' && target != null) {
+              newCue.params.target = target;
             }
             api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
           } else if (assets.length > 1) {
