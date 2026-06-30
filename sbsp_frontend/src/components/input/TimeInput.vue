@@ -10,30 +10,34 @@ const props = withDefaults(
   defineProps<{
     acceptMinus?: boolean;
     multiply?: number;
-    max?: number | null;
+    max?: number;
+    min?: number;
     defaultValue?: number;
     label?: string;
+    disabled?: boolean;
   }>(),
   {
-    max: null,
     multiply: 1,
     acceptMinus: false,
     defaultValue: 0,
   },
 );
 
-const inputId = useId();
-const formattedValue = ref(
-  secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null),
-);
+const model2text = (value: number | null | undefined) => {
+  return secondsToFormat(value != null ? value * props.multiply : null);
+};
 
-watch([seconds, () => props.multiply], () => {
-  formattedValue.value = secondsToFormat(
-    seconds.value != null ? seconds.value * props.multiply : null,
-  );
-});
+const inputId = useId();
+const formattedValue = ref('');
+
+watch([seconds, () => props.multiply], ([newSeconds]) => {
+  formattedValue.value = model2text(newSeconds);
+}, {immediate: true});
 
 const save = () => {
+  if (props.disabled) return;
+  const origModelString = model2text(seconds.value);
+  if (formattedValue.value.trim() === origModelString) return;
   let innerValue: number;
   if (formattedValue.value.trim() === '') {
     innerValue = props.defaultValue;
@@ -42,6 +46,8 @@ const save = () => {
   }
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
+  } else if (props.min != null && innerValue < props.min) {
+    innerValue = props.min;
   }
   if (seconds.value !== innerValue) {
     seconds.value = innerValue;
@@ -56,9 +62,7 @@ const onKeydown = (e: KeyboardEvent) => {
       e.target.blur();
       break;
     case 'Escape':
-      formattedValue.value = secondsToFormat(
-        seconds.value != null ? seconds.value * props.multiply : null,
-      ); // reset
+      formattedValue.value = model2text(seconds.value) // reset
       e.target.blur();
       break;
   }
@@ -74,6 +78,7 @@ const onKeydown = (e: KeyboardEvent) => {
       class="h-full w-full"
       variant="outlined"
       autocomplete="off"
+      :disabled="props.disabled"
       :pt="{
         root: () => {
           return {
