@@ -121,14 +121,12 @@ const saveValues = () => {
       <number-input
         v-model="easingPower"
         :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
+        class="w-35"
         :min="1"
         :step="1"
         :label="t('main.bottomEditor.input.intensity')"
         show-buttons
-        autocomplete="off"
-        :max-fraction-digits="0"
-        @update:model-value="saveValues"
-        @keydown.stop
+        @update="saveValues"
       />
       <curve-viewer
         :disabled="!fadeEnabled || props.disabled"

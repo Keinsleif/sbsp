@@ -5,7 +5,7 @@
 import Checkbox from 'primevue/checkbox';
 import { useId } from 'vue';
 
-defineOptions({ inheritAttrs: false });
+const model = defineModel<boolean>();
 const props = defineProps<{
   label?: string;
 }>();
@@ -16,7 +16,7 @@ const inputId = useId();
 <template>
   <div class="flex items-center gap-2">
     <Checkbox
-      v-bind="$attrs"
+      v-model="model"
       :inputId="inputId"
       binary
     />

@@ -372,7 +372,8 @@ const recallQLabPreset = () => {
               class="w-50"
               :label="t('dialog.settings.show.audioLogic.targetLufs')"
               suffix="LUFS"
-              :max-fraction-digits="2"
+              :precision="2"
+              show-buttons
             />
           </div>
           <div
@@ -408,8 +409,8 @@ const recallQLabPreset = () => {
               class="w-40"
               :min="0"
               :label="t('dialog.settings.global.general.seekAmount')"
-              :max-fraction-digits="2"
-              @keydown.stop
+              :precision="2"
+              show-buttons
             />
           </div>
           <div

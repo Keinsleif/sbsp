@@ -67,7 +67,6 @@ const onDone = () => {
         :step="1"
         v-model="startFrom"
         show-buttons
-        button-layout="horizontal"
         :label="t('dialog.renumber.startNumber')"
       />
       <number-input
@@ -75,7 +74,6 @@ const onDone = () => {
         :step="1"
         v-model="increment"
         show-buttons
-        button-layout="horizontal"
         :label="t('dialog.renumber.increment')"
       />
       <text-input

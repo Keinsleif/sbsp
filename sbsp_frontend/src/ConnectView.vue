@@ -17,27 +17,28 @@ const api = useApi();
 const toast = useToast();
 
 const host = ref('');
-const port = ref('');
+const port = ref(5800);
 const services = ref<ServiceEntry[]>([]);
 
 const overlay = ref(false);
 
-const connect = (host: string, port: string | number) => {
-  if (host === '' || port === '') return;
+const connect = (host: string, port: number) => {
+  if (host === '') return;
+
   const address = `${host}:${port}`;
   let password: string | null;
+
   if (window.location.hash !== '') {
-    password = window.location.hash.substring(1).trim();
+    password = window.location.hash.substring(1).trim() || null;
   } else if (window.location.href.endsWith('#')) {
     password = null;
   } else {
     const ps_string = prompt(t('view.connect.passwordPrompt'));
-    if (ps_string == null) return;
-    if (ps_string !== '') {
-      password = ps_string;
-    } else {
-      password = null;
-    }
+    if (ps_string == null) {
+      overlay.value = false;
+      return;
+    };
+    password = ps_string.trim() || null;
   }
   overlay.value = true;
   api.remote?.connectToServer(address, password).catch((e) => {
@@ -67,8 +68,24 @@ onMounted(() => {
     if (address != null) {
       overlay.value = true;
       console.log(`Connecting to ${address}`);
-      host.value = address.split(':')[0] || '';
-      port.value = address.split(':')[1] || '5800';
+      let hostStr = '';
+      let portNum = 5800;
+
+      const splitterIndex = address.lastIndexOf(':');
+
+      if (splitterIndex !== -1) {
+        hostStr = address.substring(0, splitterIndex);
+        const parsedPort = parseInt(address.substring(splitterIndex + 1), 10);
+        if (!isNaN(parsedPort)) {
+          portNum = parsedPort;
+        }
+      } else {
+        // use whole address as hostname if colon not exists
+        hostStr = address;
+      }
+
+      host.value = hostStr;
+      port.value = portNum;
       connect(host.value, port.value);
     }
   }
@@ -107,7 +124,7 @@ onUnmounted(() => {
             :key="entry.host + ':' + entry.port"
             @click="
               host = entry.host;
-              port = entry.port.toString();
+              port = entry.port;
             "
           >
             <td>{{ entry.serverName }}</td>
@@ -130,22 +147,21 @@ onUnmounted(() => {
         class="grow-0"
         v-model="host"
         :label="t('view.connect.remoteHost')"
-        @keydown.enter="connect(host, port)"
       />
       <number-input
         class="grow-0"
         v-model="port"
         :min="0"
+        :max="65534"
         :step="1"
-        :max-fraction-digits="0"
         :label="t('view.connect.remotePort')"
-        @keydown.enter="connect(host, port)"
+        @update="connect(host, port)"
       />
       <button-wrapper
         class="ml-auto"
         :label="t('view.connect.connect')"
         severity="primary"
-        :disabled="host == '' || port == ''"
+        :disabled="host == ''"
         @click="connect(host, port)"
       />
     </footer>

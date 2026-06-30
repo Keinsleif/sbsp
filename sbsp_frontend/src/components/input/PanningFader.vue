@@ -4,7 +4,7 @@
 
 import { computed, ref } from 'vue';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
-import InputNumber from 'primevue/inputnumber';
+import NumberInput from './NumberInput.vue';
 
 const props = defineProps<{
   label?: string;
@@ -43,7 +43,10 @@ const tickLabels = [
     :ticks="tickLabels"
     :direction="props.direction"
     :disabled="props.disabled"
-    @dblclick="if (!props.disabled) faderPosition = 0;"
+    @dblclick="if (!props.disabled) {
+      faderPosition = 0;
+      emit('update');
+    }"
     @pointerdown="sliderChanging = true"
     @pointerup="
       if (sliderChanging) {
@@ -56,24 +59,18 @@ const tickLabels = [
     @keydown.stop
   >
     <template #input>
-      <input-number
+      <number-input
         v-model="panning"
-        class="w-25"
+        class="w-35"
         :disabled="props.disabled"
         :min="-1"
         :max="1"
         :step="1 / 8"
         :prefix="panning < 0 ? 'L ' : panning > 0 ? 'R ' : 'C '"
-        :max-fraction-digits="3"
-        :pt="{
-          pcInputText: {
-            root: {
-              class: 'w-25',
-            },
-          },
-        }"
-        @pointerdown.stop
+        :precision="3"
         @dblclick.stop
+        @pointerdown.stop
+        @update="emit('update')"
       />
     </template>
   </slider-wrapper>
