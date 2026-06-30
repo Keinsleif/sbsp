@@ -32,7 +32,7 @@ const isServerInfoDialogOpen = ref(false);
 const copied = ref(false);
 
 const isRunning = ref<boolean | null>(null);
-const isDiscoverable = ref<boolean | null>(null);
+const isDiscoverable = ref<boolean>(false);
 const server_port = ref<string>('');
 const server_name = ref<string>('Untitled SBS Player Server');
 const server_authMap = ref<PermissionInfo[]>([]);
