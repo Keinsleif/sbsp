@@ -28,6 +28,7 @@ import type { SupportedHardware } from '../types/SupportedHardware';
 import type { Permissions } from '../types/Permissions';
 import type { InsertPosition } from '../types/InsertPosition';
 import { v4 } from 'uuid';
+import { AUDIO_EXTENSIONS } from '.';
 
 const { t } = i18n.global;
 
@@ -163,23 +164,7 @@ export function useTauriApi(): IBackendAdapter {
           filters: [
             {
               name: 'Audio',
-              extensions: [
-                'aiff',
-                'aif',
-                'caf',
-                'mp4',
-                'm4a',
-                'mkv',
-                'mka',
-                'webm',
-                'ogg',
-                'oga',
-                'wav',
-                'aac',
-                'alac',
-                'flac',
-                'mp3',
-              ],
+              extensions: AUDIO_EXTENSIONS,
             },
           ],
         });
