@@ -8,7 +8,7 @@ import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 import UnpluginTypia from '@typia/unplugin/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { visualizer } from "rollup-plugin-visualizer";
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -21,20 +21,29 @@ const htmlPlugin = () => {
     name: 'html-transform',
     transformIndexHtml: {
       order: 'pre',
-      handler(html) {
+      handler(html: string) {
         if (process.env.VITE_APP_TARGET !== 'websocket' && process.env.VITE_APP_SIDE === 'host') {
           return html.replace(/%APP_ICON%/g, 'sbsp.svg').replace(/%APP_TITLE%/g, 'SBS Player');
         } else {
-          return html.replace(/%APP_ICON%/g, 'sbsp_remote.svg').replace(/%APP_TITLE%/g, 'SBS Player Remote');
+          return html
+            .replace(/%APP_ICON%/g, 'sbsp_remote.svg')
+            .replace(/%APP_TITLE%/g, 'SBS Player Remote');
         }
       },
-    }
-  }
-}
+    },
+  };
+};
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [visualizer(), htmlPlugin(), tailwindcss(), vue(), UnpluginTypia({ cache: true }), vueDevTools()],
+  plugins: [
+    htmlPlugin(),
+    tailwindcss(),
+    vue(),
+    UnpluginTypia({ cache: true }),
+    vueDevTools(),
+    visualizer(),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -72,10 +81,7 @@ export default defineConfig({
   build: {
     outDir: outDir,
     rolldownOptions: {
-      input: [
-        'index.html',
-        'splashscreen.html',
-      ],
+      input: ['index.html', 'splashscreen.html'],
       output: {
         manualChunks(id: string | string[]) {
           if (id.includes('node_modules')) {
@@ -88,10 +94,6 @@ export default defineConfig({
             return 'vendor';
           }
         },
-      },
-      onLog(level, log, defaultHandler) {
-        if (log.code === 'INVALID_ANNOTATION') return
-        else defaultHandler(level, log)
       },
     },
     target:
