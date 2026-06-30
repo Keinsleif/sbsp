@@ -29,6 +29,7 @@ const props = withDefaults(
     precision: 0,
     step: 1,
     showButtons: false,
+    acceptNull: false,
   },
 );
 const emit = defineEmits(['update']);
