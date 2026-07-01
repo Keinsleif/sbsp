@@ -44,14 +44,14 @@ const pickFile = (select: string[] | null) => {
 };
 
 const fileList = ref<FileList[]>([]);
-const selected = ref<string[]>([]);
+const selected = ref<{ [key: number]: unknown}>({});
 const pathMap = new Map<string, string>();
 
 const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
   return list
     .filter((item) => item.type === 'dir' || AUDIO_EXTENSIONS.includes(item.extension))
-    .map((item, index) => {
-      const currentKey = parentKey ? `${parentKey}-${index}` : `${index}`;
+    .map((item) => {
+      const currentKey = parentKey ? `${parentKey}-${item.name}` : `${item.name}`;
 
       if (item.type === 'dir') {
         return {
@@ -115,7 +115,7 @@ watch(isFileListDialogOpen, (value) => {
     </tree-table>
     <template #footer>
       <button-wrapper
-        :disabled="selected.length == 0"
+        :disabled="Object.keys(selected).length == 0"
         :label="t('general.open')"
         severity="primary"
         @click="pickFile(Object.keys(selected).map((key) => pathMap.get(key)).filter(item => item != null))"
