@@ -82,6 +82,7 @@ watch(isFileListDialogOpen, (value) => {
     api.remote
       ?.onFileListUpdate((list) => {
         fileList.value = list;
+        selected.value = {};
       })
       .then((unlisten_func) => {
         unlisten = unlisten_func;
