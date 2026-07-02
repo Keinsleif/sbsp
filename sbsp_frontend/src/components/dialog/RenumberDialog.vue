@@ -38,6 +38,12 @@ const onKeydown = (e: KeyboardEvent) => {
 };
 
 const onDone = () => {
+  if (!isFinite(startFrom.value) || !isFinite(increment.value)) {
+    return;
+  }
+  if (increment.value < 1) {
+    return;
+  }
   api
     .renumberCues(
       Array.from(uiState.selectedRows),
