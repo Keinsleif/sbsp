@@ -29,7 +29,7 @@ const target = ref(
 const hard = ref(
   selectedCue.value != null && selectedCue.value.params.type === 'stop'
     ? selectedCue.value.params.hard
-    : null,
+    : undefined,
 );
 
 watch(selectedCue, () => {
@@ -46,7 +46,7 @@ watch(selectedCue, () => {
   }
 
   target.value = selectedCue.value.params.target;
-  hard.value = selectedCue.value.params.type === 'stop' ? selectedCue.value.params.hard : null;
+  hard.value = selectedCue.value.params.type === 'stop' ? selectedCue.value.params.hard : undefined;
 });
 
 const saveEditorValue = () => {

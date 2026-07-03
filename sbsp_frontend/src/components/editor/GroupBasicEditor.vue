@@ -16,7 +16,7 @@ const emit = defineEmits(['update']);
 const mode = ref(
   selectedCue.value != null && selectedCue.value.params.type === 'group'
     ? selectedCue.value.params.mode.type
-    : null,
+    : undefined,
 );
 
 const repeat = ref(
@@ -24,7 +24,7 @@ const repeat = ref(
     selectedCue.value.params.type === 'group' &&
     selectedCue.value.params.mode.type === 'playlist'
     ? selectedCue.value.params.mode.repeat
-    : null,
+    : undefined,
 );
 
 const enter = ref(
@@ -32,7 +32,7 @@ const enter = ref(
     selectedCue.value.params.type === 'group' &&
     selectedCue.value.params.mode.type === 'startFirst'
     ? selectedCue.value.params.mode.enter
-    : null,
+    : undefined,
 );
 
 watch(selectedCue, () => {
@@ -41,11 +41,11 @@ watch(selectedCue, () => {
   }
   mode.value = selectedCue.value.params.mode.type;
   repeat.value =
-    selectedCue.value.params.mode.type === 'playlist' ? selectedCue.value.params.mode.repeat : null;
+    selectedCue.value.params.mode.type === 'playlist' ? selectedCue.value.params.mode.repeat : undefined;
   enter.value =
     selectedCue.value.params.mode.type === 'startFirst'
       ? selectedCue.value.params.mode.enter
-      : null;
+      : undefined;
 });
 
 const saveEditorValue = () => {
