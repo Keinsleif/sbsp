@@ -231,31 +231,29 @@ impl ShowModelHandle {
 
         if let Some(cue) = model.cue_list.cues.get(cue_id) {
             if let Some(parent_id) = cue.parent_id {
-                if let Some(parent) = model.cue_list.cues.get(&parent_id) {
-                    if let CueParam::Group { base, children } = &parent.params {
-                        match base.mode {
-                            GroupMode::Playlist { repeat } => {
-                                if children.last() == Some(cue_id)
-                                    && let Some(first_id) = children.first()
-                                {
-                                    if repeat {
-                                        return Some(CueChain::AfterComplete {
-                                            target_id: Some(*first_id),
-                                        });
-                                    } else {
-                                        return Some(CueChain::DoNotChain);
-                                    }
+                if let Some(parent) = model.cue_list.cues.get(&parent_id)
+                && let CueParam::Group { base, children } = &parent.params {
+                    match base.mode {
+                        GroupMode::Playlist { repeat } => {
+                            if children.last() == Some(cue_id)
+                                && let Some(first_id) = children.first()
+                            {
+                                if repeat {
+                                    return Some(CueChain::AfterComplete {
+                                        target_id: Some(*first_id),
+                                    });
                                 } else {
-                                    return Some(CueChain::AfterComplete { target_id: None });
+                                    return Some(CueChain::DoNotChain);
                                 }
-                            },
-                            GroupMode::Concurrency |
-                            GroupMode::StartFirst { .. } => return Some(cue.chain),
-                        }
-                    } else {
-                        log::warn!("broken cues, invalid parent_id.");
+                            } else {
+                                return Some(CueChain::AfterComplete { target_id: None });
+                            }
+                        },
+                        GroupMode::Concurrency |
+                        GroupMode::StartFirst { .. } => return Some(cue.chain),
                     }
                 }
+                log::warn!("broken cues, invalid parent_id.");
             } else {
                 return Some(cue.chain)
             }
