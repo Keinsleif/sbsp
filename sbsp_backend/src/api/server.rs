@@ -135,17 +135,16 @@ pub fn get_mdns_hostname() -> anyhow::Result<String> {
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("failed to get hostname."))?;
 
+    Ok(normalize_hostname(hostname_str))
+}
+
+fn normalize_hostname(hostname_str: &str) -> String {
     let lower = hostname_str.to_lowercase();
-
-    let mdns_hostname = if lower.ends_with(".local.") {
-        hostname_str.to_string()
-    } else if lower.ends_with(".local") {
-        format!("{}.", hostname_str)
-    } else {
-        format!("{}.local.", hostname_str)
-    } as String;
-
-    Ok(mdns_hostname)
+    let base = lower
+        .trim_end_matches('.')
+        .strip_suffix(".local")
+        .unwrap_or(lower.trim_end_matches('.'));
+    format!("{}.local.", base)
 }
 
 async fn websocket_handler(
@@ -540,4 +539,31 @@ async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<
         }
     }
     Ok(root_list)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn mdns_hostname() {
+        // without .local.
+        assert_eq!(normalize_hostname("testpc"), "testpc.local.");
+        // with .local
+        assert_eq!(normalize_hostname("testpc.local"), "testpc.local.");
+        // with .local.
+        assert_eq!(normalize_hostname("testpc.local."), "testpc.local.");
+
+        // case insensitivity
+        assert_eq!(normalize_hostname("TEST-PC.LOCAL."), "test-pc.local.");
+        assert_eq!(normalize_hostname("TEST-PC.LOCAL"), "test-pc.local.");
+
+        // edge cases
+        assert_eq!(normalize_hostname("testpc..."), "testpc.local.");
+        assert_eq!(normalize_hostname(""), ".local.");
+
+        // multibyte
+        assert_eq!(normalize_hostname("テストPC"), ".local.");
+        assert_eq!(normalize_hostname("テストPC.local"), ".local.");
+        assert_eq!(normalize_hostname("テストPC.local."), ".local.");
+    }
 }
