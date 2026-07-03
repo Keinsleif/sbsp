@@ -1,59 +1,43 @@
-<template>
-  <v-text-field
-    v-model="formattedValue"
-    hide-details
-    persistent-placeholder
-    variant="outlined"
-    density="compact"
-    :class="$style['centered-input']"
-    autocomplete="off"
-    @blur="save"
-    @keydown.stop="onKeydown"
-  />
-</template>
-
 <script setup lang="ts">
-// SPDX-License-Identifier: Elastic-2.0
-// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+import { formatToSeconds, secondsToFormat } from '@/utils';
+import FloatLabel from 'primevue/floatlabel';
+import InputText from 'primevue/inputtext';
+import { ref, useId, watch } from 'vue';
 
-import { ref, watch } from 'vue';
-import { formatToSeconds, secondsToFormat } from '../../utils';
-
-const seconds = defineModel<number | null>({ default: null });
+const seconds = defineModel<number | null>();
+const emit = defineEmits(['update']);
 const props = withDefaults(
   defineProps<{
     acceptMinus?: boolean;
     multiply?: number;
-    max?: number | null;
+    max?: number;
+    min?: number;
     defaultValue?: number;
+    label?: string;
+    disabled?: boolean;
   }>(),
   {
-    max: null,
     multiply: 1,
     acceptMinus: false,
     defaultValue: 0,
   },
 );
-const emit = defineEmits(['update']);
 
-const formattedValue = ref(secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null));
-
-watch([seconds, () => props.multiply], () => {
-  formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null);
-});
-
-const onKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter' && e.target instanceof HTMLElement) {
-    e.target.blur();
-    return;
-  }
-  if (e.key === 'Escape' && e.target instanceof HTMLElement) {
-    formattedValue.value = secondsToFormat(seconds.value != null ? seconds.value * props.multiply : null); // reset
-    e.target.blur();
-  }
+const model2text = (value: number | null | undefined) => {
+  return secondsToFormat(value != null ? value * props.multiply : null);
 };
 
+const inputId = useId();
+const formattedValue = ref('');
+
+watch([seconds, () => props.multiply], ([newSeconds]) => {
+  formattedValue.value = model2text(newSeconds);
+}, {immediate: true});
+
 const save = () => {
+  if (props.disabled) return;
+  const origModelString = model2text(seconds.value);
+  if (formattedValue.value.trim() === origModelString) return;
   let innerValue: number;
   if (formattedValue.value.trim() === '') {
     innerValue = props.defaultValue;
@@ -62,16 +46,49 @@ const save = () => {
   }
   if (props.max != null && innerValue > props.max) {
     innerValue = props.max;
+  } else if (props.min != null && innerValue < props.min) {
+    innerValue = props.min;
   }
   if (seconds.value !== innerValue) {
     seconds.value = innerValue;
     emit('update');
   }
 };
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (!(e.target instanceof HTMLElement)) return;
+  switch (e.key) {
+    case 'Enter':
+      e.target.blur();
+      break;
+    case 'Escape':
+      formattedValue.value = model2text(seconds.value) // reset
+      e.target.blur();
+      break;
+  }
+};
 </script>
 
-<style lang="css" module>
-  .centered-input input {
-    text-align: center;
-  }
-</style>
+<template>
+  <FloatLabel variant="on">
+    <InputText
+      v-model="formattedValue"
+      v-bind="$attrs"
+      :id="inputId"
+      class="h-full w-full"
+      variant="outlined"
+      autocomplete="off"
+      :disabled="props.disabled"
+      :pt="{
+        root: () => {
+          return {
+            style: 'background-color: var(--p-inputtext-background);',
+          };
+        },
+      }"
+      @blur="save"
+      @keydown.stop="onKeydown"
+    />
+    <label :for="inputId">{{ props.label || '' }}</label>
+  </FloatLabel>
+</template>

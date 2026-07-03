@@ -1,96 +1,16 @@
-<template>
-  <div class="pa-2 border-md rounded position-relative">
-    <span
-      class="position-absolute text-caption text-medium-emphasis"
-      style="top: 4px; left: 8px"
-    >
-      {{ props.label }}
-    </span>
-    <v-sheet class="d-flex flex-row align-end ga-2">
-      <v-checkbox
-        v-show="!props.disableToggle"
-        v-model="fadeEnabled"
-        hide-details
-        :disabled="props.disabled || props.disableToggle"
-        @update:model-value="saveValues"
-      />
-      <time-input
-        v-model="duration"
-        :disabled="!fadeEnabled || props.disabled"
-        class="flex-grow-0"
-        :label="t('main.duration')"
-        width="100px"
-        @update="saveValues"
-      />
-      <v-select
-        v-model="easingType"
-        hide-details
-        persistent-placeholder
-        :label="t('main.bottomEditor.input.curve')"
-        class="flex-grow-0"
-        width="160px"
-        :items="[
-          { value: 'linear', name: t('main.bottomEditor.input.linear') },
-          { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },
-          { value: 'outPow', name: t('main.bottomEditor.input.easeOut') },
-          { value: 'inOutPow', name: t('main.bottomEditor.input.easeInOut') },
-        ]"
-        :disabled="!fadeEnabled || props.disabled"
-        item-value="value"
-        item-title="name"
-        variant="outlined"
-        density="compact"
-        autocomplete="off"
-        @update:model-value="saveValues"
-        @keydown.stop
-      />
-      <v-number-input
-        v-model="easingPower"
-        hide-details
-        inset
-        persistent-placeholder
-        :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
-        :min="1"
-        max-width="150px"
-        :label="t('main.bottomEditor.input.intensity')"
-        density="compact"
-        variant="outlined"
-        autocomplete="off"
-        :precision="0"
-        @update:model-value="saveValues"
-        @keydown.stop
-      />
-      <curve-viewer
-        :disabled="!fadeEnabled || props.disabled"
-        class="border-md"
-        width="68px"
-        :type="props.condition != 'out' ? 'in' : 'out'"
-        :curve="easingType"
-        :power="easingPower"
-      />
-      <curve-viewer
-        v-if="props.condition == 'both'"
-        :disabled="!fadeEnabled || props.disabled"
-        class="border-md"
-        width="68px"
-        type="out"
-        :curve="easingType"
-        :power="easingPower"
-      />
-    </v-sheet>
-  </div>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { ref, watch } from 'vue';
 import { curveToEasing, easingToCurve } from '../../utils';
-import CurveViewer from './CurveViewer.vue';
+import CurveViewer from '../display/CurveViewer.vue';
 import TimeInput from './TimeInput.vue';
 import { useI18n } from 'vue-i18n';
 import type { FadeParam } from '../../types/FadeParam';
+import SelectWrapper from '../wrapper/SelectWrapper.vue';
+import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
+import NumberInput from './NumberInput.vue';
 
 const { t } = useI18n();
 
@@ -116,7 +36,9 @@ const duration = ref<number | null>(param.value != null ? param.value.duration :
 const easingType = ref<'linear' | 'inPow' | 'outPow' | 'inOutPow' | null>(
   param.value != null ? easingToCurve(param.value.easing).type : null,
 );
-const easingPower = ref<number | null>(param.value != null ? easingToCurve(param.value.easing).power : null);
+const easingPower = ref<number | null>(
+  param.value != null ? easingToCurve(param.value.easing).power : null,
+);
 
 watch(param, () => {
   if (param.value == null) {
@@ -160,3 +82,67 @@ const saveValues = () => {
   emit('update');
 };
 </script>
+
+<template>
+  <div class="relative rounded border border-(--p-form-field-border-color) p-2">
+    <span class="absolute top-1 left-2">
+      {{ props.label }}
+    </span>
+    <div class="flex flex-row items-end gap-2">
+      <checkbox-wrapper
+        class="mb-2"
+        v-show="!props.disableToggle"
+        v-model="fadeEnabled"
+        :disabled="props.disabled || props.disableToggle"
+        @update:model-value="saveValues"
+      />
+      <time-input
+        v-model="duration"
+        :disabled="!fadeEnabled || props.disabled"
+        class="w-25 grow-0"
+        :label="t('main.duration')"
+        @update="saveValues"
+      />
+      <select-wrapper
+        v-model="easingType"
+        :label="t('main.bottomEditor.input.curve')"
+        class="w-40"
+        :items="[
+          { value: 'linear', name: t('main.bottomEditor.input.linear') },
+          { value: 'inPow', name: t('main.bottomEditor.input.easeIn') },
+          { value: 'outPow', name: t('main.bottomEditor.input.easeOut') },
+          { value: 'inOutPow', name: t('main.bottomEditor.input.easeInOut') },
+        ]"
+        :disabled="!fadeEnabled || props.disabled"
+        autocomplete="off"
+        @update:model-value="saveValues"
+        @keydown.stop
+      />
+      <number-input
+        v-model="easingPower"
+        :disabled="!fadeEnabled || easingType == 'linear' || props.disabled"
+        class="w-35"
+        :min="1"
+        :step="1"
+        :label="t('main.bottomEditor.input.intensity')"
+        show-buttons
+        @update="saveValues"
+      />
+      <curve-viewer
+        :disabled="!fadeEnabled || props.disabled"
+        class="w-16"
+        :type="props.condition != 'out' ? 'in' : 'out'"
+        :curve="easingType"
+        :power="easingPower"
+      />
+      <curve-viewer
+        v-if="props.condition == 'both'"
+        :disabled="!fadeEnabled || props.disabled"
+        class="w-16"
+        type="out"
+        :curve="easingType"
+        :power="easingPower"
+      />
+    </div>
+  </div>
+</template>

@@ -1,68 +1,16 @@
-<template>
-  <v-slider
-    v-model="faderPosition"
-    hide-details
-    class="mb-2"
-    thumb-label
-    show-ticks="always"
-    step="1"
-    min="-64"
-    max="64"
-    :label="props.label"
-    :ticks="tickLabels"
-    :direction="props.direction"
-    @dblclick="faderPosition = 0"
-    @pointerdown="sliderChanging = true"
-    @pointerup="
-      if (sliderChanging) {
-        sliderChanging = false;
-        emit('update');
-      }
-    "
-    @keydown.stop
-  >
-    <template #thumb-label="{ modelValue }">
-      {{ thumbLabel(modelValue) }}
-    </template>
-    <template #append>
-      <v-number-input
-        v-show="!props.hideInput"
-        v-model="panning"
-        :min="-1"
-        :max="1"
-        :step="1 / 8"
-        :prefix="panning < 0 ? 'L' : panning > 0 ? 'R' : 'C'"
-        density="compact"
-        :precision="3"
-        variant="outlined"
-        control-variant="hidden"
-        hide-details
-        width="100px"
-        @pointerdown.stop
-        @dblclick.stop
-      />
-    </template>
-  </v-slider>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed, ref } from 'vue';
+import SliderWrapper from '../wrapper/SliderWrapper.vue';
+import NumberInput from './NumberInput.vue';
 
-const props = withDefaults(
-  defineProps<{
-    label?: string;
-    direction?: 'horizontal' | 'vertical';
-    hideInput?: boolean;
-  }>(),
-  {
-    label: 'Panning',
-    direction: 'horizontal',
-    hideInput: false,
-  },
-);
+const props = defineProps<{
+  label?: string;
+  direction?: 'horizontal' | 'vertical';
+  disabled?: boolean;
+}>();
 
 const panning = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
@@ -78,19 +26,52 @@ const faderPosition = computed({
   },
 });
 
-const thumbLabel = (value: number): string => {
-  if (value === 0) {
-    return 'Center';
-  } else if (value > 0) {
-    return 'R' + Math.abs(value);
-  } else {
-    return 'L' + Math.abs(value);
-  }
-};
-
-const tickLabels = {
-  '64': 'R',
-  '0': 'C',
-  '-64': 'L',
-};
+const tickLabels = [
+  { value: -64, label: 'L' },
+  { value: 0, label: 'C' },
+  { value: 64, label: 'R' },
+];
 </script>
+
+<template>
+  <slider-wrapper
+    v-model="faderPosition"
+    :step="1"
+    :min="-64"
+    :max="64"
+    :label="props.label"
+    :ticks="tickLabels"
+    :direction="props.direction"
+    :disabled="props.disabled"
+    @dblclick="if (!props.disabled) {
+      faderPosition = 0;
+      emit('update');
+    }"
+    @pointerdown="sliderChanging = true"
+    @pointerup="
+      if (sliderChanging) {
+        sliderChanging = false;
+        if (!props.disabled) {
+          emit('update');
+        }
+      }
+    "
+    @keydown.stop
+  >
+    <template #input>
+      <number-input
+        v-model="panning"
+        class="w-35"
+        :disabled="props.disabled"
+        :min="-1"
+        :max="1"
+        :step="1 / 8"
+        :prefix="panning < 0 ? 'L ' : panning > 0 ? 'R ' : 'C '"
+        :precision="3"
+        @dblclick.stop
+        @pointerdown.stop
+        @update="emit('update')"
+      />
+    </template>
+  </slider-wrapper>
+</template>

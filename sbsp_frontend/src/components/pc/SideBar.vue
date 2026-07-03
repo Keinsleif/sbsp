@@ -1,65 +1,48 @@
-<template>
-  <v-tabs
-    v-model="uiState.sideBarTab"
-    grow
-    fixed-tabs
-    density="compact"
-  >
-    <v-tab
-      border
-      density="compact"
-      value="activeCues"
-    >
-      {{ t('main.sideBar.activeCues') }}
-    </v-tab>
-    <v-tab
-      border
-      density="compact"
-      value="levels"
-    >
-      {{ t('main.sideBar.levels.title') }}
-    </v-tab>
-  </v-tabs>
-  <v-tabs-window v-model="uiState.sideBarTab">
-    <v-tabs-window-item
-      value="activeCues"
-      class="overflow-y-auto"
-      style="font-size: 0.9em"
-      transition="false"
-      reverse-transition="false"
-    >
-      <template
-        v-for="(activeCue, cue_id) in showState.activeCues"
-        :key="cue_id"
-      >
-        <active-cue-item :active-cue="activeCue" />
-      </template>
-    </v-tabs-window-item>
-    <v-tabs-window-item
-      value="levels"
-      transition="false"
-      reverse-transition="false"
-    >
-      <level-meter
-        v-if="uiState.sideBarTab == 'levels'"
-        kind="master"
-        height="400px"
-      />
-    </v-tabs-window-item>
-  </v-tabs-window>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { useShowState } from '../../stores/showstate';
-import { useUiState } from '../../stores/uistate';
+import { useShowState } from '../../stores/showState';
+import { useUiState } from '../../stores/uiState';
 import { useI18n } from 'vue-i18n';
-import LevelMeter from '../input/LevelMeter.vue';
+import LevelMeter from '../display/LevelMeter.vue';
 import ActiveCueItem from '../ActiveCueItem.vue';
+import TabList from 'primevue/tablist';
+import Tabs from 'primevue/tabs';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel from 'primevue/tabpanel';
 
 const { t } = useI18n();
 const showState = useShowState();
 const uiState = useUiState();
 </script>
+
+<template>
+  <tabs
+    v-model:value="uiState.sideBarTab"
+    class="flex h-full flex-col"
+  >
+    <tab-list>
+      <tab value="activeCues">{{ t('main.sideBar.activeCues') }}</tab>
+      <tab value="meter">{{ t('main.sideBar.meter.title') }}</tab>
+    </tab-list>
+    <tab-panels class="grow p-0">
+      <tab-panel value="activeCues">
+        <template
+          v-for="(activeCue, cue_id) in showState.activeCues"
+          :key="cue_id"
+        >
+          <active-cue-item :active-cue="activeCue" />
+        </template>
+      </tab-panel>
+      <tab-panel value="meter">
+        <level-meter
+          v-if="uiState.sideBarTab == 'meter'"
+          kind="master"
+          height="400px"
+        />
+      </tab-panel>
+    </tab-panels>
+  </tabs>
+</template>

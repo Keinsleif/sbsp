@@ -3,16 +3,18 @@
 
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { SyncData } from '../types/SyncData';
-import { ActiveCue } from '../types/ActiveCue';
-import { PlaybackStatus } from '../types/PlaybackStatus';
-import { CueStatusEventParam } from '../types/CueStatusEventParam';
-import { ShowState } from '../types/ShowState';
+import type { SyncData } from '../types/SyncData';
+import type { ActiveCue } from '../types/ActiveCue';
+import type { PlaybackStatus } from '../types/PlaybackStatus';
+import type { CueStatusEventParam } from '../types/CueStatusEventParam';
+import type { ShowState } from '../types/ShowState';
 
-export const useShowState = defineStore('showstate', () => {
+export const useShowState = defineStore('showState', () => {
   const playbackCursor = ref<string | null>(null);
   const activeCues = ref<{ [id: string]: ActiveCue }>({});
-  const syncedData = ref<{ [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number } }>({});
+  const syncedData = ref<{
+    [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number };
+  }>({});
   const latency = ref<number>(0);
 
   const handleSyncEvent = (data: SyncData) => {
@@ -41,7 +43,9 @@ export const useShowState = defineStore('showstate', () => {
 
     updatePlaybackCursor(state.playbackCursor);
 
-    const newSyncedData: { [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number } } = {};
+    const newSyncedData: {
+      [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number };
+    } = {};
     const newActiveCues: { [id: string]: ActiveCue } = {};
     Object.entries(state.activeCues).forEach(([cueId, activeCue]) => {
       if (activeCue == null) return;
@@ -217,14 +221,17 @@ export const useShowState = defineStore('showstate', () => {
       let position;
 
       if (
-        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
-        && activeCue.duration > 0
+        (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status) &&
+        activeCue.duration > 0
       ) {
         const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
         if (activeCue.params.type === 'audio' && activeCue.params.repeating) {
           position = (lastSyncCue.position + latency.value / 2 + elapsed) % activeCue.duration;
         } else {
-          position = Math.min(lastSyncCue.position + latency.value / 2 + elapsed, activeCue.duration);
+          position = Math.min(
+            lastSyncCue.position + latency.value / 2 + elapsed,
+            activeCue.duration,
+          );
         }
       } else {
         position = lastSyncCue.position;
@@ -247,8 +254,8 @@ export const useShowState = defineStore('showstate', () => {
       return null;
     }
     if (
-      (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status)
-      && activeCue.duration > 0
+      (['preWaiting', 'playing', 'stopping'] as PlaybackStatus[]).includes(lastSyncCue.status) &&
+      activeCue.duration > 0
     ) {
       const elapsed = (performance.now() - lastSyncCue.lastSyncedAt) / 1000;
       if (activeCue.params.type === 'audio' && activeCue.params.repeating) {
@@ -261,5 +268,14 @@ export const useShowState = defineStore('showstate', () => {
     }
   };
 
-  return { playbackCursor, activeCues, update, handleSyncEvent, updatePlaybackCursor, calculatePosition, handleCueStateEvent, getPosition };
+  return {
+    playbackCursor,
+    activeCues,
+    update,
+    handleSyncEvent,
+    updatePlaybackCursor,
+    calculatePosition,
+    handleCueStateEvent,
+    getPosition,
+  };
 });

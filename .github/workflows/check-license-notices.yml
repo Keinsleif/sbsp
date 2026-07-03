@@ -6,7 +6,7 @@ on:
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'sbsp_frontend/pnpm-lock.yaml'
+      - 'pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
       - 'scripts/notice_json2md.js'
@@ -32,9 +32,9 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: pnpm
-          cache-dependency-path: sbsp_frontend/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -50,7 +50,6 @@ jobs:
 
       - name: install frontend dependencies
         run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
-        working-directory: ./sbsp_frontend
 
       - name: Generate Rust notices
         run: cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md

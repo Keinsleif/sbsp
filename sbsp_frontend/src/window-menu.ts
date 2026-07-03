@@ -2,8 +2,8 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu';
-import { useUiState } from './stores/uistate';
-import { useShowModel } from './stores/showmodel';
+import { useUiState } from './stores/uiState';
+import { useShowModel } from './stores/showModel';
 import { i18n } from './i18n';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useUiSettings } from './stores/uiSettings';
@@ -150,7 +150,7 @@ export const createWindowMenu = () => {
                           api.host?.fileNew();
                         }
                       })
-                      .catch(e => console.error(e));
+                      .catch((e) => console.error(e));
                     break;
                   case t('dialog.saveConfirm.dontSave'):
                     api.host?.fileNew();
@@ -159,7 +159,7 @@ export const createWindowMenu = () => {
                     break;
                 }
               })
-              .catch(e => console.error(e));
+              .catch((e) => console.error(e));
           } else {
             api.host?.fileNew();
           }
@@ -254,7 +254,9 @@ export const createWindowMenu = () => {
         const showModel = useShowModel();
         // This operation not set uiState.selected. But selecting all will includes uiState.selected
         uiState.selectedRows.clear();
-        showModel.flatCueList.filter(item => !item.isHidden).forEach(item => uiState.selectedRows.add(item.cue.id));
+        showModel.flatCueList
+          .filter((item) => !item.isHidden)
+          .forEach((item) => uiState.selectedRows.add(item.cue.id));
       },
     });
 

@@ -1,0 +1,11 @@
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAge: 1440
+
+packages:
+  - 'sbsp_frontend'
+  - 'sbsp_docs'
+
+patchedDependencies:
+  primevue: patches/primevue.patch

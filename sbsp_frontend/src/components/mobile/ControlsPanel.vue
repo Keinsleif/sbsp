@@ -1,134 +1,32 @@
-<template>
-  <v-sheet class="d-flex flex-column h-100 pa-3 ga-3">
-    <div
-      class="pa-1 mb-1 overflow-x-hidden text-body-large font-weight-semibold"
-      height="36px"
-    >
-      {{ playbackCursorCueTitle }}
-    </div>
-    <div class="d-flex">
-      <v-icon :icon="playbackCursorCue != null ? getCueIcon(playbackCursorCue.params.type) : ''" />
-      {{ playbackCursorCue != null ? firstUpper(playbackCursorCue.params.type) : '' }}
-      <div class="ml-auto mr-0">
-        {{ secondsToFormat(playbackCursorCueDuration) }}
-      </div>
-    </div>
-    <v-btn-group
-      divided
-      variant="tonal"
-    >
-      <v-btn
-        :icon="mdiArrowUpLeft"
-        class="flex-grow-2 border-background"
-        @click="skipToParent"
-      />
-      <v-btn
-        :icon="mdiSkipPrevious"
-        class="flex-grow-1 border-background"
-        @click="skipPrevious"
-      />
-      <v-btn
-        :icon="mdiSkipNext"
-        class="flex-grow-1 border-background"
-        @click="skipNext"
-      />
-      <v-btn
-        :icon="mdiArrowDownRight"
-        class="flex-grow-2 border-background"
-        @click="skipToChild"
-      />
-    </v-btn-group>
-
-    <seek-bar :target-id="showState.playbackCursor" class="mt-auto" />
-    <v-btn-group
-      divided
-      variant="tonal"
-    >
-      <v-btn
-        :icon="mdiRewind"
-        :disabled="activeTargetCue == null"
-        class="flex-grow-1 border-background"
-        @click="rewind"
-      />
-      <v-btn
-        :icon="mdiRepeat"
-        :disabled="activeTargetCue == null"
-        :active="activeTargetCue?.params.type == 'audio' && activeTargetCue.params.repeating"
-        active-color="yellow"
-        class="flex-grow-1 border-background"
-        @click="toggleRepeat"
-      />
-      <v-btn
-        :icon="mdiFastForward"
-        :disabled="activeTargetCue == null"
-        class="flex-grow-1 border-background"
-        @click="fastForward"
-      />
-    </v-btn-group>
-
-    <v-btn-group
-      divided
-      variant="tonal"
-      class="mb-0"
-    >
-      <v-btn
-        :icon="mdiStop"
-        :active="isCueStatus('stopping')"
-        active-color="red"
-        :disabled="showState.playbackCursor == null"
-        class="flex-grow-1 border-background"
-        :class="[isCueStatus('stopping') ? $style['blink'] : '']"
-        @click="
-          if (showState.playbackCursor != null) {
-            api.sendStop(showState.playbackCursor);
-          }
-        "
-      />
-      <v-btn
-        :icon="mdiPlay"
-        :active="isCueStatus('playing') || isCueStatus('preWaiting')"
-        :disabled="showState.playbackCursor == null"
-        active-color="green"
-        class="flex-grow-1 border-background"
-        :class="[isCueStatus('preWaiting') ? $style['blink'] : '']"
-        @click="
-          if (showState.playbackCursor != null) {
-            if (isCueStatus('paused') || isCueStatus('preWaitPaused')) {
-              api.sendResume(showState.playbackCursor);
-            } else {
-              api.sendGo();
-            }
-          }
-        "
-      />
-      <v-btn
-        :icon="mdiPause"
-        :active="isCueStatus('paused') || isCueStatus('loaded')"
-        :disabled="showState.playbackCursor == null"
-        active-color="orange"
-        class="flex-grow-1 border-background"
-        :class="[isCueStatus('loaded') ? $style['blink'] : '']"
-        @click="handleReadyPauseButton"
-      />
-    </v-btn-group>
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed } from 'vue';
-import { useShowModel } from '../../stores/showmodel';
+import { useShowModel } from '../../stores/showModel';
 import { storeToRefs } from 'pinia';
 import { useApi } from '../../api';
-import { useShowState } from '../../stores/showstate';
+import { useShowState } from '../../stores/showState';
 import { buildCueName, firstUpper, getCueIcon, secondsToFormat } from '../../utils';
-import { PlaybackStatus } from '../../types/PlaybackStatus';
-import { mdiArrowDownRight, mdiArrowUpLeft, mdiFastForward, mdiPause, mdiPlay, mdiRepeat, mdiRewind, mdiSkipNext, mdiSkipPrevious, mdiStop } from '@mdi/js';
+import type { PlaybackStatus } from '../../types/PlaybackStatus';
+import {
+  mdiArrowDownRight,
+  mdiArrowUpLeft,
+  mdiFastForward,
+  mdiPause,
+  mdiPlay,
+  mdiRepeat,
+  mdiRewind,
+  mdiSkipNext,
+  mdiSkipPrevious,
+  mdiStop,
+} from '@mdi/js';
 import SeekBar from './SeekBar.vue';
 import { useUiSettings } from '../../stores/uiSettings';
 import { useAssetResult } from '../../stores/assetResult';
+import PathIcon from '../display/PathIcon.vue';
+import ButtonGroup from 'primevue/buttongroup';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const api = useApi();
 const showModel = useShowModel();
@@ -142,7 +40,9 @@ const playbackCursorCue = computed(() => {
 });
 
 const playbackCursorCueDuration = computed(() => {
-  return showState.playbackCursor != null ? assetResult.getMetadata(showState.playbackCursor)?.duration || null : null;
+  return showState.playbackCursor != null
+    ? assetResult.getMetadata(showState.playbackCursor)?.duration || null
+    : null;
 });
 
 const activeTargetCue = computed(() => {
@@ -158,7 +58,10 @@ const playbackCursorCueTitle = computed(() => {
     if (playbackCursorCue.value.number.trim() !== '') {
       text = playbackCursorCue.value.number + '・';
     }
-    text += playbackCursorCue.value.name != null ? playbackCursorCue.value.name : buildCueName(playbackCursorCue.value);
+    text +=
+      playbackCursorCue.value.name != null
+        ? playbackCursorCue.value.name
+        : buildCueName(playbackCursorCue.value);
     return text;
   }
   return '';
@@ -197,7 +100,9 @@ const handleReadyPauseButton = () => {
 
 const skipPrevious = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(
+      (item) => item.cue.id === showState.playbackCursor,
+    );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
@@ -223,7 +128,9 @@ const skipPrevious = () => {
 
 const skipNext = () => {
   if (showState.playbackCursor != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === showState.playbackCursor);
+    let cursorIndex = showModel.flatCueList.findIndex(
+      (item) => item.cue.id === showState.playbackCursor,
+    );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
 
@@ -248,18 +155,22 @@ const skipNext = () => {
 };
 
 const skipToParent = () => {
-  let cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
+  const cursorEntry = showModel.flatCueList.find(
+    (item) => item.cue.id === showState.playbackCursor,
+  );
   if (cursorEntry == null || cursorEntry.parent == null) return;
 
   api.setPlaybackCursor(cursorEntry.parent);
 };
 
 const skipToChild = () => {
-  let cursorEntry = showModel.flatCueList.find(item => item.cue.id === showState.playbackCursor);
+  const cursorEntry = showModel.flatCueList.find(
+    (item) => item.cue.id === showState.playbackCursor,
+  );
   if (cursorEntry == null || cursorEntry.cue.params.type !== 'group') return;
-  const firstChild = cursorEntry.cue.params.children[0];
-  if (firstChild != null) {
-    api.setPlaybackCursor(firstChild.id);
+  const firstChildId = cursorEntry.cue.params.children[0];
+  if (firstChildId != null) {
+    api.setPlaybackCursor(firstChildId);
   }
 };
 
@@ -280,17 +191,120 @@ const fastForward = () => {
 };
 </script>
 
-<style lang="css" module>
-  .blink {
-    animation: flash 1s ease infinite;
-  }
-  @keyframes flash {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.25;
-    }
-  }
-</style>
+<template>
+  <div class="flex h-full flex-col gap-3 p-3">
+    <h2 class="mb-1 h-9 overflow-x-hidden p-1">
+      {{ playbackCursorCueTitle }}
+    </h2>
+    <div class="flex flex-row items-center gap-1">
+      <path-icon
+        :icon="playbackCursorCue != null ? getCueIcon(playbackCursorCue.params.type) : ''"
+      />
+      {{ playbackCursorCue != null ? firstUpper(playbackCursorCue.params.type) : '' }}
+      <div class="mr-0 ml-auto">
+        {{ secondsToFormat(playbackCursorCueDuration) }}
+      </div>
+    </div>
+    <button-group>
+      <button-wrapper
+        :icon="mdiArrowUpLeft"
+        class="grow-2"
+        severity="secondary"
+        @click="skipToParent"
+      />
+      <button-wrapper
+        :icon="mdiSkipPrevious"
+        class="grow"
+        severity="secondary"
+        @click="skipPrevious"
+      />
+      <button-wrapper
+        :icon="mdiSkipNext"
+        class="grow"
+        severity="secondary"
+        @click="skipNext"
+      />
+      <button-wrapper
+        :icon="mdiArrowDownRight"
+        class="grow-2"
+        severity="secondary"
+        @click="skipToChild"
+      />
+    </button-group>
+
+    <seek-bar
+      :target-id="showState.playbackCursor"
+      class="mt-auto"
+    />
+    <button-group>
+      <button-wrapper
+        :icon="mdiRewind"
+        :disabled="activeTargetCue == null"
+        class="grow"
+        severity="secondary"
+        @click="rewind"
+      />
+      <button-wrapper
+        :icon="mdiRepeat"
+        :disabled="activeTargetCue == null"
+        :active="activeTargetCue?.params.type == 'audio' && activeTargetCue.params.repeating"
+        active-color="yellow.600"
+        class="grow"
+        severity="secondary"
+        @click="toggleRepeat"
+      />
+      <button-wrapper
+        :icon="mdiFastForward"
+        :disabled="activeTargetCue == null"
+        class="grow"
+        severity="secondary"
+        @click="fastForward"
+      />
+    </button-group>
+
+    <button-group class="mb-0">
+      <button-wrapper
+        :icon="mdiStop"
+        :active="isCueStatus('stopping')"
+        active-color="red.500"
+        :disabled="showState.playbackCursor == null"
+        class="grow"
+        severity="secondary"
+        :blink="isCueStatus('stopping')"
+        @click="
+          if (showState.playbackCursor != null) {
+            api.sendStop(showState.playbackCursor);
+          }
+        "
+      />
+      <button-wrapper
+        :icon="mdiPlay"
+        :active="isCueStatus('playing') || isCueStatus('preWaiting')"
+        :disabled="showState.playbackCursor == null"
+        active-color="green.500"
+        class="grow"
+        severity="secondary"
+        :blink="isCueStatus('preWaiting')"
+        @click="
+          if (showState.playbackCursor != null) {
+            if (isCueStatus('paused') || isCueStatus('preWaitPaused')) {
+              api.sendResume(showState.playbackCursor);
+            } else {
+              api.sendGo();
+            }
+          }
+        "
+      />
+      <button-wrapper
+        :icon="mdiPause"
+        :active="isCueStatus('paused') || isCueStatus('loaded')"
+        :disabled="showState.playbackCursor == null"
+        active-color="orange.500"
+        class="grow"
+        severity="secondary"
+        :blink="isCueStatus('loaded')"
+        @click="handleReadyPauseButton"
+      />
+    </button-group>
+  </div>
+</template>

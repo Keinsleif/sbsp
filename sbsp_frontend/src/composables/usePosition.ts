@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { onUnmounted } from 'vue';
-import { useShowState } from '../stores/showstate';
+import { useShowState } from '../stores/showState';
 
 type PositionCallback = (positions: { [id: string]: number }) => void;
 
@@ -25,7 +25,7 @@ const loop = (timestamp: DOMHighResTimeStamp) => {
     positions = showState.calculatePosition(false);
   }
 
-  callbacks.forEach(fn => fn(positions));
+  callbacks.forEach((fn) => fn(positions));
 
   rafId = requestAnimationFrame(loop);
 };

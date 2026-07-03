@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { defineStore, storeToRefs } from 'pinia';
-import { useShowModel } from './showmodel';
+import { useShowModel } from './showModel';
 import type { AssetData } from '../types/AssetData';
 import type { AssetMetadata } from '../types/AssetMetadata';
 import { reactive, ref } from 'vue';

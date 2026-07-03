@@ -204,7 +204,8 @@
       "latestVersion": "最新バージョン",
       "noUpdates": "現在のバージョンは最新版です。",
       "title": "アップデートを確認",
-      "updatesAvailable": "更新が利用可能です。"
+      "updatesAvailable": "更新が利用可能です。",
+      "checking": "確認中..."
     }
   },
   "general": {
@@ -216,7 +217,9 @@
     "default": "既定",
     "warning": "警告",
     "confirm": "確認",
-    "none": "なし"
+    "none": "なし",
+    "run": "実行",
+    "save": "保存"
   },
   "main": {
     "bottomEditor": {
@@ -303,8 +306,9 @@
     "preWait": "事前待機",
     "sideBar": {
       "activeCues": "実行中のキュー",
-      "levels": {
-        "title": "レベル"
+      "levels": {},
+      "meter": {
+        "title": "メーター"
       }
     },
     "mobile": {
@@ -368,7 +372,18 @@
     "modelLoaded": "正常にロードされました",
     "modelSaved": "正常に保存されました",
     "permissionDenied": "権限がありません",
-    "authenticationFailed": "認証に失敗しました"
+    "authenticationFailed": "認証に失敗しました",
+    "cueStatus": "再生エラー",
+    "connectionError": "接続エラー",
+    "assetResult": "ファイル処理エラー",
+    "updateFailed": "更新が失敗しました",
+    "failedToEditCue": "編集に失敗しました",
+    "failedToExport": "エクスポートに失敗しました",
+    "failedToLoad": "読み込みに失敗しました",
+    "failedToSave": "保存に失敗しました",
+    "operationFailed": "操作に失敗しました",
+    "failedToStartServer": "サーバーの起動に失敗しました",
+    "failedToStopServer": "サーバーの停止に失敗しました"
   },
   "view": {
     "connect": {

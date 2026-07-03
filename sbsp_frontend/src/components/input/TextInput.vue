@@ -1,70 +1,26 @@
-<template>
-  <v-text-field
-    v-if="props.textType == 'single'"
-    v-bind="$attrs"
-    v-model="innerText"
-    :hide-details="!props.showDetails"
-    persistent-placeholder
-    variant="outlined"
-    density="compact"
-    autocomplete="off"
-    :class="
-      props.alignInput == 'left'
-        ? $style['left-input']
-        : props.alignInput == 'center'
-          ? $style['center-input']
-          : $style['right-input']
-    "
-    @blur="save"
-    @keydown.stop="onKeydown"
-  />
-  <v-textarea
-    v-else-if="props.textType == 'area'"
-    v-bind="$attrs"
-    v-model="innerText"
-    :hide-details="!props.showDetails"
-    persistent-placeholder
-    variant="outlined"
-    density="compact"
-    autocomplete="off"
-    rows="1"
-    auto-grow
-    no-resize
-    @blur="save"
-    @keydown.stop="onKeydown"
-  />
-</template>
-
 <script setup lang="ts">
-// SPDX-License-Identifier: Elastic-2.0
-// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+import FloatLabel from 'primevue/floatlabel';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import { ref, useId, watch } from 'vue';
 
-import { nextTick, ref, watch } from 'vue';
-
-const text = defineModel<string | null>({ default: '' });
-const props = withDefaults(
-  defineProps<{
-    textType?: 'single' | 'area';
-    alignInput?: 'left' | 'center' | 'right';
-    showDetails?: boolean;
-  }>(),
-  {
-    textType: 'single',
-    alignInput: 'center',
-    showDetails: false,
-  },
-);
+const model = defineModel<string | null>();
 const emit = defineEmits(['update']);
+const props = defineProps<{
+  label?: string;
+  help?: string;
+}>();
 
-const innerText = ref(text.value ?? '');
+const inputId = useId();
+const innerText = ref(model.value ?? '');
 
-watch(text, () => {
-  innerText.value = text.value ?? '';
+watch(model, () => {
+  innerText.value = model.value ?? '';
 });
 
 const save = () => {
-  if (text.value !== innerText.value) {
-    text.value = innerText.value;
+  if ((model.value ?? '') !== innerText.value) {
+    model.value = innerText.value === '' ? null : innerText.value;
     emit('update');
   }
 };
@@ -73,41 +29,43 @@ const onKeydown = (e: KeyboardEvent) => {
   if (!(e.target instanceof HTMLElement)) return;
   switch (e.key) {
     case 'Enter':
-      if (props.textType === 'single') {
-        e.target.blur();
-      }
-      break;
-    case 'Escape':
-      innerText.value = text.value != null ? text.value : ''; // reset
       e.target.blur();
       break;
-    case 'Tab':
-      if (e.target instanceof HTMLTextAreaElement) {
-        e.preventDefault();
-        const textarea = e.target;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-
-        const value = innerText.value;
-        innerText.value = value.substring(0, start) + '\t' + value.substring(end);
-
-        nextTick(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 1;
-        });
-        break;
-      }
+    case 'Escape':
+      innerText.value = model.value ?? ''; // reset
+      e.target.blur();
+      break;
   }
 };
 </script>
 
-<style lang="css" module>
-  .center-input input {
-    text-align: center;
-  }
-  .left-input input {
-    text-align: left;
-  }
-  .right-input input {
-    text-align: right;
-  }
-</style>
+<template>
+  <div class="flex flex-col gap-1">
+    <FloatLabel variant="on">
+      <InputText
+        v-model="innerText"
+        v-bind="$attrs"
+        class="h-full w-full"
+        :id="inputId"
+        autocomplete="off"
+        :pt="{
+          root: () => {
+            return {
+              style: 'background-color: var(--p-inputtext-background);',
+            };
+          },
+        }"
+        @blur="save"
+        @keydown.stop="onKeydown"
+      />
+      <label :for="inputId">{{ props.label || '' }}</label>
+    </FloatLabel>
+    <Message
+      v-if="props.help != null"
+      size="small"
+      severity="secondary"
+      variant="simple"
+      >{{ props.help }}</Message
+    >
+  </div>
+</template>

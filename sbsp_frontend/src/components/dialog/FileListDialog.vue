@@ -1,53 +1,3 @@
-<template>
-  <v-dialog
-    v-model="isFileListDialogOpen"
-    width="640"
-    height="360"
-    @keydown.stop
-    @contextmenu.prevent
-  >
-    <v-sheet class="d-flex flex-column w-100 h-100 py-1">
-      <h3 class="pa-2 border-b-thin">
-        {{ t('dialog.fileSelect.title') }}
-      </h3>
-      <v-treeview
-        v-model:selected="selected"
-        class="flex-grow-1 overflow-y-auto"
-        :items="fileList"
-        density="compact"
-        item-children="files"
-        item-title="name"
-        item-value="path"
-        open-on-click
-        color="primary"
-        selectable
-        :select-strategy="props.multiple ? 'leaf' : 'single-leaf'"
-      >
-        <template #item="tvProps">
-          <v-treeview-item
-            v-show="tvProps.internalItem.raw.type == 'file' ? extList.includes(tvProps.internalItem.raw.extension) : false"
-            v-bind="tvProps.props"
-          />
-        </template>
-      </v-treeview>
-      <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 ga-3">
-        <v-btn
-          class="ml-auto"
-          :text="t('general.cancel')"
-          variant="outlined"
-          @click="pickFile(null)"
-        />
-        <v-btn
-          :disabled="selected.length == 0"
-          :text="t('general.open')"
-          color="primary"
-          @click="pickFile(selected)"
-        />
-      </v-footer>
-    </v-sheet>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
@@ -55,7 +5,12 @@
 import { computed, ref, watch } from 'vue';
 import type { FileList } from '../../types/FileList.ts';
 import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api/index.ts';
+import { AUDIO_EXTENSIONS, useApi } from '../../api/index.ts';
+import Dialog from 'primevue/dialog';
+import type { TreeNode } from 'primevue/treenode';
+import TreeTable from 'primevue/treetable';
+import Column from 'primevue/column';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -68,8 +23,17 @@ const props = withDefaults(
     multiple: true,
   },
 );
-const isFileListDialogOpen = computed(() => {
+
+const isFileListDialogOpen = computed({
+  get() {
   return fileListResolver.value != null;
+},
+  set(newValue) {
+    if (!newValue && fileListResolver.value != null) {
+      fileListResolver.value(null);
+      fileListResolver.value = null;
+    }
+  },
 });
 
 const pickFile = (select: string[] | null) => {
@@ -79,26 +43,37 @@ const pickFile = (select: string[] | null) => {
   }
 };
 
-const extList = [
-  'aiff',
-  'aif',
-  'caf',
-  'mp4',
-  'm4a',
-  'mkv',
-  'mka',
-  'webm',
-  'ogg',
-  'oga',
-  'wav',
-  'aac',
-  'alac',
-  'flac',
-  'mp3',
-];
-
 const fileList = ref<FileList[]>([]);
-const selected = ref<string[]>([]);
+const selected = ref<{ [key: number]: unknown}>({});
+const pathMap = new Map<string, string>();
+
+const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
+  return list
+    .filter((item) => item.type === 'dir' || AUDIO_EXTENSIONS.includes(item.extension))
+    .map((item) => {
+      const currentKey = parentKey ? `${parentKey}-${item.name}` : `${item.name}`;
+
+      if (item.type === 'dir') {
+        return {
+          key: currentKey,
+          label: item.name,
+          data: item,
+          selectable: false,
+          children: transformToTreeNodes(item.files, currentKey),
+        };
+      } else {
+        pathMap.set(currentKey, item.path);
+        return {
+          key: currentKey,
+          label: item.name,
+          data: item,
+          selectable: true,
+        };
+      }
+    }).filter((item) => item.children == null || item.children.length > 0);
+};
+
+const treeValue = computed(() => transformToTreeNodes(fileList.value));
 
 let unlisten: (() => void) | null = null;
 
@@ -107,6 +82,7 @@ watch(isFileListDialogOpen, (value) => {
     api.remote
       ?.onFileListUpdate((list) => {
         fileList.value = list;
+        selected.value = {};
       })
       .then((unlisten_func) => {
         unlisten = unlisten_func;
@@ -119,3 +95,32 @@ watch(isFileListDialogOpen, (value) => {
   }
 });
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isFileListDialogOpen"
+    class="h-120 w-160"
+    :header="t('dialog.fileSelect.title')"
+    @keydown.stop
+    @contextmenu.prevent
+  >
+    <tree-table
+      v-model:selectionKeys="selected"
+      scroll-height="flex"
+      :value="treeValue"
+      color="primary"
+      scrollable
+      :selection-mode="props.multiple ? 'multiple' : 'single'"
+    >
+      <Column field="name" header="Name" expander />
+    </tree-table>
+    <template #footer>
+      <button-wrapper
+        :disabled="Object.keys(selected).length == 0"
+        :label="t('general.open')"
+        severity="primary"
+        @click="pickFile(Object.keys(selected).map((key) => pathMap.get(key)).filter(item => item != null))"
+      />
+    </template>
+  </Dialog>
+</template>

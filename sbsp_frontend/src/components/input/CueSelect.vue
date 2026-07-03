@@ -1,32 +1,18 @@
-<template>
-  <v-select
-    v-model="selectedId"
-    hide-details
-    persistent-placeholder
-    :label="props.label"
-    :items="cueList"
-    item-value="value"
-    item-title="name"
-    variant="outlined"
-    density="compact"
-    autocomplete="off"
-    @update:model-value="emit('update')"
-    @keydown.stop
-  />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed } from 'vue';
-import { useShowModel } from '../../stores/showmodel';
+import { useShowModel } from '../../stores/showModel';
 import type { Cue } from '../../types/Cue';
 import { buildCueName } from '../../utils';
+import Select from 'primevue/select';
+import FloatLabel from 'primevue/floatlabel';
 
 const showModel = useShowModel();
 
 const selectedId = defineModel<string | null>();
+
 const props = withDefaults(
   defineProps<{
     label?: string;
@@ -45,8 +31,8 @@ const emit = defineEmits(['update']);
 
 const cueList = computed(() => {
   const list: { value: string | null; name: string }[] = showModel.flatCueList
-    .filter(item => filterCue(item.cue))
-    .map(item => ({ value: item.cue.id, name: buildCueName(item.cue) }));
+    .filter((item) => filterCue(item.cue))
+    .map((item) => ({ value: item.cue.id, name: buildCueName(item.cue) }));
   if (props.nullText != null) {
     list.unshift({ value: null, name: props.nullText });
   }
@@ -64,3 +50,31 @@ const filterCue = (cue: Cue): boolean => {
   }
 };
 </script>
+
+<template>
+  <float-label variant="on">
+    <Select
+      v-bind="$attrs"
+      v-model="selectedId"
+      :options="cueList"
+      option-value="value"
+      option-label="name"
+      autocomplete="off"
+      :pt="{
+        root: () => {
+          return {
+            class: 'w-full p-inputwrapper-filled',
+            style: 'background-color: var(--p-inputtext-background);',
+          };
+        },
+      }"
+      @update:model-value="emit('update')"
+      @keydown.stop
+    >
+      <template #value="innerProps">
+        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
+      </template>
+    </Select>
+    <label>{{ props.label }}</label>
+  </float-label>
+</template>
