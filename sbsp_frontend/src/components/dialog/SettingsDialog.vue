@@ -249,6 +249,7 @@ const recallQLabPreset = () => {
         >
           <button
             class="text-left"
+            :class="tab === 'preset' ? $style['selected-category'] : ''"
             @click="tab = 'preset'"
           >
             {{ t('dialog.settings.tab.preset') }}
@@ -258,18 +259,21 @@ const recallQLabPreset = () => {
           </div>
           <button
             class="text-left"
+            :class="tab === 'showGeneral' ? $style['selected-category'] : ''"
             @click="tab = 'showGeneral'"
           >
             {{ t('dialog.settings.tab.general') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'audioLogic' ? $style['selected-category'] : ''"
             @click="tab = 'audioLogic'"
           >
             {{ t('dialog.settings.tab.audioLogic') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'remote' ? $style['selected-category'] : ''"
             @click="tab = 'remote'"
           >
             {{ t('dialog.settings.tab.remote') }}
@@ -279,12 +283,14 @@ const recallQLabPreset = () => {
           </div>
           <button
             class="text-left"
+            :class="tab === 'globalGeneral' ? $style['selected-category'] : ''"
             @click="tab = 'globalGeneral'"
           >
             {{ t('dialog.settings.tab.general') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'appearance' ? $style['selected-category'] : ''"
             @click="tab = 'appearance'"
           >
             {{ t('dialog.settings.tab.appearance') }}
@@ -292,24 +298,28 @@ const recallQLabPreset = () => {
           <button
             v-if="'audio' in editingSettings.global"
             class="text-left"
+            :class="tab === 'audioHardware' ? $style['selected-category'] : ''"
             @click="tab = 'audioHardware'"
           >
             {{ t('dialog.settings.tab.audioHardware') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'hotkey' ? $style['selected-category'] : ''"
             @click="tab = 'hotkey'"
           >
             {{ t('dialog.settings.tab.hotkey') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'template' ? $style['selected-category'] : ''"
             @click="tab = 'template'"
           >
             {{ t('dialog.settings.tab.template') }}
           </button>
           <button
             class="text-left"
+            :class="tab === 'nameFormat' ? $style['selected-category'] : ''"
             @click="tab = 'nameFormat'"
           >
             {{ t('dialog.settings.tab.nameFormat') }}
@@ -644,5 +654,9 @@ const recallQLabPreset = () => {
   &:active {
     background-color: rgb(from var(--p-gray-500) r g b / 0.2);
   }
+}
+
+.selected-category {
+  background-color: rgb(from var(--p-primary-color) r g b / 0.2);
 }
 </style>
