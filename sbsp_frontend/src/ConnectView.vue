@@ -149,14 +149,14 @@ onUnmounted(() => {
         :label="t('view.connect.remoteHost')"
       />
       <number-input
-        class="grow-0"
+        class="grow-0 w-40"
         v-model="port"
         :min="0"
         :max="65535"
         :label="t('view.connect.remotePort')"
       />
       <button-wrapper
-        class="ml-auto"
+        class="ml-auto shrink-0"
         :label="t('view.connect.connect')"
         severity="primary"
         :disabled="host == ''"
