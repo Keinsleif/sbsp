@@ -7,11 +7,14 @@ import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import SelectWrapper from '../wrapper/SelectWrapper.vue';
 import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
+import { useShowState } from '@/stores/showState.ts';
 
 const { t } = useI18n();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
+
+const showState = useShowState();
 
 const mode = ref(
   selectedCue.value != null && selectedCue.value.params.type === 'group'
@@ -90,6 +93,7 @@ const saveEditorValue = () => {
         { value: 'concurrency', name: t('main.bottomEditor.group.mode.concurrency') },
         { value: 'startFirst', name: t('main.bottomEditor.group.mode.startFirst') },
       ]"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       autocomplete="off"
       @update:model-value="saveEditorValue"
       @keydown.stop
@@ -98,12 +102,14 @@ const saveEditorValue = () => {
       v-show="selectedCue != null && mode == 'playlist'"
       v-model="repeat"
       :label="t('main.bottomEditor.timeLevels.repeat')"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update:model-value="saveEditorValue"
     />
     <checkbox-wrapper
       v-show="selectedCue != null && mode == 'startFirst'"
       v-model="enter"
       :label="t('main.bottomEditor.group.advanceCursorInto')"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update:model-value="saveEditorValue"
     />
   </div>

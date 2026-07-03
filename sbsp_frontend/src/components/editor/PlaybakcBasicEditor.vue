@@ -8,11 +8,14 @@ import CueSelect from '../input/CueSelect.vue';
 import { NIL } from 'uuid';
 import { useI18n } from 'vue-i18n';
 import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
+import { useShowState } from '@/stores/showState.ts';
 
 const { t } = useI18n();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
+
+const showState = useShowState();
 
 const sliderChanging = ref(false);
 
@@ -79,12 +82,14 @@ const saveEditorValue = () => {
       :label="t('main.bottomEditor.targetCue')"
       cue-type="all"
       :exclude="selectedCue != null ? selectedCue.id : ''"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update="saveEditorValue"
     />
     <checkbox-wrapper
       v-show="selectedCue != null && selectedCue.params.type == 'stop'"
       v-model="hard"
       :label="t('main.bottomEditor.playback.hard')"
+      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
       @update:model-value="saveEditorValue"
     />
   </div>
