@@ -4,7 +4,6 @@ pnpm = "11"
 rust = "latest"
 "cargo:tauri-cli" = { version = "latest", depends = ["rust"] }
 "cargo:cargo-about" = { version = "latest", depends = ["rust"] }
-"cargo:cargo-audit" = { version = "latest", depends = ["rust"] }
 "cargo:cargo-edit" = { version = "latest", depends = ["rust"] }
 cocogitto = "latest"
 

@@ -1,0 +1,6 @@
+[tools]
+sccache = "latest"
+"cargo:cargo-audit" = { version = "latest", depends = ["rust"] }
+
+[env]
+RUSTC_WRAPPER="sccache"
