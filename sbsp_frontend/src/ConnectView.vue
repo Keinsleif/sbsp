@@ -126,6 +126,11 @@ onUnmounted(() => {
               host = entry.host;
               port = entry.port;
             "
+            @dblclick="
+              host = entry.host;
+              port = entry.port;
+              connect(host, port);
+            "
           >
             <td>{{ entry.serverName }}</td>
             <td>{{ entry.host }}</td>
@@ -144,7 +149,7 @@ onUnmounted(() => {
     </div>
     <footer class="mr-0 ml-0 flex w-full grow-0 items-center gap-3 p-1">
       <text-input
-        class="grow-0"
+        class="max-w-160 shrink grow"
         v-model="host"
         :label="t('view.connect.remoteHost')"
       />
