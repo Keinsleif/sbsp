@@ -369,11 +369,10 @@ const recallQLabPreset = () => {
             />
             <number-input
               v-model="editingSettings.show.audio.lufsTarget"
-              class="w-50"
+              class="w-80"
               :label="t('dialog.settings.show.audioLogic.targetLufs')"
               suffix="LUFS"
               :precision="2"
-              show-buttons
             />
           </div>
           <div
@@ -406,7 +405,7 @@ const recallQLabPreset = () => {
             />
             <number-input
               v-model="editingSettings.global.general.seekAmount"
-              class="w-40"
+              class="w-50"
               :min="0"
               :label="t('dialog.settings.global.general.seekAmount')"
               :precision="2"
