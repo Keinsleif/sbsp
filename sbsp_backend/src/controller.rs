@@ -413,6 +413,8 @@ impl CueController {
                         active_cue.status = PlaybackStatus::Paused;
                         state_changed = true;
                     }
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::Resumed { cue_id } => {
@@ -421,12 +423,16 @@ impl CueController {
                 {
                     active_cue.status = PlaybackStatus::Playing;
                     state_changed = true;
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::Seeked { cue_id, position } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     state_changed = true;
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::Stopping {
@@ -449,6 +455,8 @@ impl CueController {
                     } else {
                         send_event = false; // only send first Stopping event
                     }
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::Stopped { cue_id } => {
@@ -540,6 +548,8 @@ impl CueController {
                         active_cue.status = PlaybackStatus::PreWaitPaused;
                         state_changed = true;
                     }
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::PreWaitResumed { cue_id } => {
@@ -548,13 +558,15 @@ impl CueController {
                 {
                     active_cue.status = PlaybackStatus::PreWaiting;
                     state_changed = true;
+                } else {
+                    send_event = false;
                 }
             }
             ExecutorEvent::PreWaitStopped { cue_id } => {
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
-            ExecutorEvent::PreWaitCompleted { .. } => {} // skip to keep active cue because cue will be started.
+            ExecutorEvent::PreWaitCompleted { .. } => {} // skip to keep active cue because cue will be started. but event is emitted for client.
         }
 
         if state_changed && self.state_tx.send(show_state).is_err() {
