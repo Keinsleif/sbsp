@@ -8,6 +8,7 @@ import { useId } from 'vue';
 const model = defineModel<boolean>();
 const props = defineProps<{
   label?: string;
+  disabled?: boolean;
 }>();
 
 const inputId = useId();
@@ -18,6 +19,7 @@ const inputId = useId();
     <Checkbox
       v-model="model"
       :inputId="inputId"
+      :disabled="props.disabled"
       binary
     />
     <label :for="inputId">{{ props.label || '' }}</label>
