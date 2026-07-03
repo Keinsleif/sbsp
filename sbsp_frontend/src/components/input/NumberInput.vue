@@ -131,12 +131,11 @@ const inputId = useId();
     <input-group-addon v-if="props.prefix">
       <slot name="prefix" prefix="props.prefix">{{ props.prefix }}</slot>
     </input-group-addon>
-    <float-label variant="on">
+    <float-label variant="on" class="w-full">
       <input-text
         v-model="innerModel"
-        v-bind="$attrs"
+        class="w-full"
         :input-id="inputId"
-        class="w-full h-full"
         :disabled="props.disabled"
         autocomplete="off"
         :pt="{
