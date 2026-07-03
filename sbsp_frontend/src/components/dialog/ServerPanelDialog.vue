@@ -351,26 +351,25 @@ onUnmounted(() => {
           v-model="server_password"
           readonly
           :placeholder="t('dialog.server.info.passwordNotSet')"
-          class="mt-2 grow"
+          class="grow"
           :label="t('dialog.server.password')"
         />
         <copy-text-input
           v-model="server_url"
           readonly
           :placeholder="t('dialog.server.info.urlUnavailable')"
-          class="mt-2 grow"
+          class="grow"
           :label="t('dialog.server.info.url')"
         />
         <div class="text-center">
           <qr-viewer
             ref="qrRef"
             v-model="server_url"
-            width="240px"
-            height="240px"
+            class="w-60 h-60 ml-auto mr-auto"
           />
         </div>
         <button-wrapper
-          :text="t('dialog.server.info.copyQr')"
+          :label="t('dialog.server.info.copyQr')"
           @click="copyQr"
         >
         </button-wrapper>
