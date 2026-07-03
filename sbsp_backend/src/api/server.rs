@@ -130,10 +130,22 @@ pub async fn start_apiserver(
 }
 
 pub fn get_mdns_hostname() -> anyhow::Result<String> {
-    gethostname()
+    let hostname_os = gethostname();
+    let hostname_str = hostname_os
         .to_str()
-        .ok_or_else(|| anyhow::anyhow!("failed to get hostname."))
-        .map(|hostname| format!("{}.local.", hostname))
+        .ok_or_else(|| anyhow::anyhow!("failed to get hostname."))?;
+
+    let lower = hostname_str.to_lowercase();
+
+    let mdns_hostname = if lower.ends_with(".local.") {
+        hostname_str.to_string()
+    } else if lower.ends_with(".local") {
+        format!("{}.", hostname_str)
+    } else {
+        format!("{}.local.", hostname_str)
+    } as String;
+
+    Ok(mdns_hostname)
 }
 
 async fn websocket_handler(
