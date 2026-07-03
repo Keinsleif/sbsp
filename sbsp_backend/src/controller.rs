@@ -771,11 +771,24 @@ mod tests {
     #[tokio::test]
     async fn progress_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, mut state_rx, event_rx) =
+        let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
             setup_controller(&[cue_id]).await;
+        tokio::spawn(controller.run());
+
         state_rx.mark_unchanged();
 
-        tokio::spawn(controller.run());
+        playback_event_tx
+            .send(ExecutorEvent::Started {
+                cue_id,
+                position: 0.0,
+                duration: 50.0,
+                initial_params: StateParam::None,
+            })
+            .await
+            .unwrap();
+
+        let _ = state_rx.changed().await;
+        assert_eq!(event_rx.recv().await.unwrap(), BackendEvent::CueStatus(CueStatusEventParam::Started { cue_id, position: 0.0, duration: 50.0, params: StateParam::None }));
 
         playback_event_tx
             .send(ExecutorEvent::Progress {
@@ -786,25 +799,39 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(event_rx.is_empty());
-        state_rx.changed().await.unwrap();
+        let _ = state_rx.changed().await;
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Playing);
             assert_eq!(active_cue.position, 20.0);
             assert_eq!(active_cue.duration, 50.0);
-        } else {
-            unreachable!();
         }
+        assert!(event_rx.is_empty());
     }
 
     #[tokio::test]
     async fn pause_n_resume_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+        let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
             setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
+
+        state_rx.mark_unchanged();
+
+        playback_event_tx
+            .send(ExecutorEvent::Started {
+                cue_id,
+                position: 0.0,
+                duration: 50.0,
+                initial_params: StateParam::None,
+            })
+            .await
+            .unwrap();
+
+        let _ = state_rx.changed().await;
+        let event = event_rx.recv().await.unwrap();
+        assert_eq!(event, BackendEvent::CueStatus(CueStatusEventParam::Started { cue_id, position: 0.0, duration: 50.0, params: StateParam::None }));
 
         playback_event_tx
             .send(ExecutorEvent::Paused {
@@ -816,12 +843,10 @@ mod tests {
             .unwrap();
 
         let event = event_rx.recv().await.unwrap();
-        assert!(
-            event.eq(&BackendEvent::CueStatus(CueStatusEventParam::Paused {
-                cue_id,
-                position: 21.0
-            }))
-        );
+        assert_eq!(event, BackendEvent::CueStatus(CueStatusEventParam::Paused {
+            cue_id,
+            position: 21.0
+        }));
         if let Some(active_cue) = state_rx.borrow().active_cues.get(&cue_id) {
             assert_eq!(active_cue.cue_id, cue_id);
             assert_eq!(active_cue.status, PlaybackStatus::Paused);
@@ -855,10 +880,26 @@ mod tests {
     #[tokio::test]
     async fn completed_event() {
         let cue_id = Uuid::new_v4();
-        let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+        let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
             setup_controller(&[cue_id]).await;
 
         tokio::spawn(controller.run());
+
+        state_rx.mark_unchanged();
+
+        playback_event_tx
+            .send(ExecutorEvent::Started {
+                cue_id,
+                position: 0.0,
+                duration: 50.0,
+                initial_params: StateParam::None,
+            })
+            .await
+            .unwrap();
+
+        let _ = state_rx.changed().await;
+        let event = event_rx.recv().await.unwrap();
+        assert_eq!(event, BackendEvent::CueStatus(CueStatusEventParam::Started { cue_id, position: 0.0, duration: 50.0, params: StateParam::None }));
 
         playback_event_tx
             .send(ExecutorEvent::Completed { cue_id })
