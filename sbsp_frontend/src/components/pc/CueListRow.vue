@@ -297,27 +297,27 @@ const isActive = computed((): boolean => {
     </td>
     <td
       headers="cuelist_status"
-      style="padding-left: 6px"
+      style="padding-left: 6px; line-height: 1;"
     >
       <path-icon
         v-show="isStatusIn(['playing', 'preWaiting'])"
         :icon="mdiPlay"
-        color="success"
+        class="text-green-500"
       />
       <path-icon
         v-show="isStatusIn(['paused', 'preWaitPaused'])"
         :icon="mdiPause"
-        color="warning"
+        class="text-orange-500"
       />
       <path-icon
         v-show="status == 'loaded'"
         :icon="mdiUpload"
-        color="warning"
+        class="text-orange-500"
       />
       <progress-spinner-wrapper
         v-show="status == 'stopping'"
         size="16px"
-        color="warning"
+        color="orange.500"
       />
     </td>
     <td
