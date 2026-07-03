@@ -298,6 +298,7 @@ impl CueController {
     async fn handle_executor_event(&mut self, event: ExecutorEvent) -> Result<(), anyhow::Error> {
         let mut show_state = self.state_tx.borrow().clone();
         let mut state_changed = false;
+        let mut send_event = true;
 
         match &event {
             ExecutorEvent::Loaded {
@@ -358,8 +359,8 @@ impl CueController {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     active_cue.duration = *duration;
-                    active_cue.status = PlaybackStatus::Playing;
                     active_cue.params = *initial_params;
+                    active_cue.status = PlaybackStatus::Playing;
                 } else {
                     let active_cue = ActiveCue {
                         cue_id: *cue_id,
@@ -391,19 +392,8 @@ impl CueController {
                         active_cue.status = PlaybackStatus::Playing;
                         state_changed = true;
                     }
-                } else {
-                    show_state.active_cues.insert(
-                        *cue_id,
-                        ActiveCue {
-                            cue_id: *cue_id,
-                            position: *position,
-                            duration: *duration,
-                            status: PlaybackStatus::Playing,
-                            params: StateParam::None,
-                        },
-                    );
-                    state_changed = true;
                 }
+                send_event = false; // skip sending Progress event
             }
             ExecutorEvent::Paused {
                 cue_id,
@@ -423,18 +413,6 @@ impl CueController {
                         active_cue.status = PlaybackStatus::Paused;
                         state_changed = true;
                     }
-                } else {
-                    show_state.active_cues.insert(
-                        *cue_id,
-                        ActiveCue {
-                            cue_id: *cue_id,
-                            position: *position,
-                            duration: *duration,
-                            status: PlaybackStatus::Paused,
-                            params: StateParam::None,
-                        },
-                    );
-                    state_changed = true;
                 }
             }
             ExecutorEvent::Resumed { cue_id } => {
@@ -468,28 +446,13 @@ impl CueController {
                     if active_cue.status != PlaybackStatus::Stopping {
                         active_cue.status = PlaybackStatus::Stopping;
                         state_changed = true;
+                    } else {
+                        send_event = false; // only send first Stopping event
                     }
-                } else {
-                    show_state.active_cues.insert(
-                        *cue_id,
-                        ActiveCue {
-                            cue_id: *cue_id,
-                            position: *position,
-                            duration: *duration,
-                            status: PlaybackStatus::Stopping,
-                            params: StateParam::None,
-                        },
-                    );
-                    state_changed = true;
                 }
             }
             ExecutorEvent::Stopped { cue_id } => {
                 self.wait_tasks.remove(cue_id);
-                self.state_tx.send_modify(|state| {
-                    if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
-                        active_cue.status = PlaybackStatus::Stopped;
-                    }
-                });
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
@@ -508,11 +471,6 @@ impl CueController {
                         log::error!("Failed to perform cue chain. ignoring. error={}", e);
                     }
                 }
-                self.state_tx.send_modify(|state| {
-                    if let Some(active_cue) = state.active_cues.get_mut(cue_id) {
-                        active_cue.status = PlaybackStatus::Completed;
-                    }
-                });
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
@@ -561,19 +519,8 @@ impl CueController {
                         active_cue.status = PlaybackStatus::PreWaiting;
                         state_changed = true;
                     }
-                } else {
-                    show_state.active_cues.insert(
-                        *cue_id,
-                        ActiveCue {
-                            cue_id: *cue_id,
-                            position: *position,
-                            duration: *duration,
-                            status: PlaybackStatus::PreWaiting,
-                            params: StateParam::None,
-                        },
-                    );
-                    state_changed = true;
                 }
+                send_event = false; // skip sending PreWaitProgress event
             }
             ExecutorEvent::PreWaitPaused {
                 cue_id,
@@ -581,24 +528,19 @@ impl CueController {
                 duration,
             } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
-                    if !active_cue.status.eq(&PlaybackStatus::Paused) {
+                    if active_cue.position != *position {
                         active_cue.position = *position;
-                        active_cue.duration = *duration;
-                        active_cue.status = PlaybackStatus::PreWaitPaused;
+                        state_changed = true;
                     }
-                } else {
-                    show_state.active_cues.insert(
-                        *cue_id,
-                        ActiveCue {
-                            cue_id: *cue_id,
-                            position: *position,
-                            duration: *duration,
-                            status: PlaybackStatus::PreWaitPaused,
-                            params: StateParam::None,
-                        },
-                    );
+                    if active_cue.duration != *duration {
+                        active_cue.duration = *duration;
+                        state_changed = true;
+                    }
+                    if !active_cue.status.eq(&PlaybackStatus::PreWaitPaused) {
+                        active_cue.status = PlaybackStatus::PreWaitPaused;
+                        state_changed = true;
+                    }
                 }
-                state_changed = true;
             }
             ExecutorEvent::PreWaitResumed { cue_id } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id)
@@ -612,14 +554,14 @@ impl CueController {
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
-            ExecutorEvent::PreWaitCompleted { .. } => {}
+            ExecutorEvent::PreWaitCompleted { .. } => {} // skip to keep active cue because cue will be started.
         }
 
         if state_changed && self.state_tx.send(show_state).is_err() {
             log::trace!("No UI clients are listening to state updates.");
         }
 
-        if state_changed
+        if send_event
             && let Ok(ui_event) = BackendEvent::try_from(event)
             && self.event_tx.send(ui_event).is_err()
         {
