@@ -28,6 +28,8 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - uses: jdx/mise-action@v4
 
+      - run: mise install -f rust@stable
+
       - name: Get pnpm store path
         id: pnpm-cache
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
