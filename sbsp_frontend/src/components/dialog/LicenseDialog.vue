@@ -39,7 +39,12 @@ const loadLicense = () => {
     .then((value) => (licenseInfo.value = value))
     .catch((e) => {
       console.error(e);
-      toast.add({ severity: 'error', summary: 'Failed to load License', detail: e.toString(), life: 3000 });
+      toast.add({
+        severity: 'error',
+        summary: 'Failed to load License',
+        detail: e.toString(),
+        life: 3000,
+      });
     });
 };
 

@@ -27,7 +27,11 @@ pub struct CueList {
 
 #[cfg(feature = "backend")]
 impl CueList {
-    fn flatten_cue(cue: ProjectCue, parent_id: Option<Uuid>, flat_list: &mut HashMap<Uuid, Cue>) -> Result<(), anyhow::Error> {
+    fn flatten_cue(
+        cue: ProjectCue,
+        parent_id: Option<Uuid>,
+        flat_list: &mut HashMap<Uuid, Cue>,
+    ) -> Result<(), anyhow::Error> {
         let flat_params = match cue.params {
             ProjectCueParam::Audio(audio_cue_param) => CueParam::Audio(audio_cue_param),
             ProjectCueParam::Wait(wait_cue_param) => CueParam::Wait(wait_cue_param),
@@ -42,10 +46,23 @@ impl CueList {
                     Self::flatten_cue(child, Some(cue.id), flat_list)?;
                 }
 
-                CueParam::Group { base, children: child_ids }
-            },
+                CueParam::Group {
+                    base,
+                    children: child_ids,
+                }
+            }
         };
-        let flat_cue = Cue { id: cue.id, number: cue.number, name: cue.name, notes: cue.notes, color: cue.color, pre_wait: cue.pre_wait, chain: cue.chain, parent_id, params: flat_params };
+        let flat_cue = Cue {
+            id: cue.id,
+            number: cue.number,
+            name: cue.name,
+            notes: cue.notes,
+            color: cue.color,
+            pre_wait: cue.pre_wait,
+            chain: cue.chain,
+            parent_id,
+            params: flat_params,
+        };
 
         if flat_list.contains_key(&cue.id) {
             return Err(anyhow::anyhow!("Duplicate key found."));
@@ -54,24 +71,46 @@ impl CueList {
         Ok(())
     }
 
-    fn reconstruct_cue(flat_list: &HashMap<Uuid, Cue>, cue_ids: &[Uuid], cue_list: &mut Vec<ProjectCue>) {
+    fn reconstruct_cue(
+        flat_list: &HashMap<Uuid, Cue>,
+        cue_ids: &[Uuid],
+        cue_list: &mut Vec<ProjectCue>,
+    ) {
         for cue_id in cue_ids {
             if let Some(flat_cue) = flat_list.get(cue_id) {
                 let cue_params = match &flat_cue.params {
-                    CueParam::Audio(audio_cue_param) => ProjectCueParam::Audio(audio_cue_param.clone()),
+                    CueParam::Audio(audio_cue_param) => {
+                        ProjectCueParam::Audio(audio_cue_param.clone())
+                    }
                     CueParam::Wait(wait_cue_param) => ProjectCueParam::Wait(wait_cue_param.clone()),
                     CueParam::Fade(fade_cue_param) => ProjectCueParam::Fade(fade_cue_param.clone()),
-                    CueParam::Start(start_cue_param) => ProjectCueParam::Start(start_cue_param.clone()),
+                    CueParam::Start(start_cue_param) => {
+                        ProjectCueParam::Start(start_cue_param.clone())
+                    }
                     CueParam::Stop(stop_cue_param) => ProjectCueParam::Stop(stop_cue_param.clone()),
-                    CueParam::Pause(pause_cue_param) => ProjectCueParam::Pause(pause_cue_param.clone()),
+                    CueParam::Pause(pause_cue_param) => {
+                        ProjectCueParam::Pause(pause_cue_param.clone())
+                    }
                     CueParam::Load(load_cue_param) => ProjectCueParam::Load(load_cue_param.clone()),
                     CueParam::Group { base, children } => {
                         let mut child_cues = Vec::with_capacity(children.len());
                         Self::reconstruct_cue(flat_list, children, &mut child_cues);
-                        ProjectCueParam::Group { base: base.clone(), children: Box::new(child_cues) }
+                        ProjectCueParam::Group {
+                            base: base.clone(),
+                            children: Box::new(child_cues),
+                        }
                     }
                 };
-                cue_list.push(ProjectCue { id: flat_cue.id, number: flat_cue.number.clone(), name: flat_cue.name.clone(), notes: flat_cue.notes.clone(), color: flat_cue.color, pre_wait: flat_cue.pre_wait, chain: flat_cue.chain, params: cue_params });
+                cue_list.push(ProjectCue {
+                    id: flat_cue.id,
+                    number: flat_cue.number.clone(),
+                    name: flat_cue.name.clone(),
+                    notes: flat_cue.notes.clone(),
+                    color: flat_cue.color,
+                    pre_wait: flat_cue.pre_wait,
+                    chain: flat_cue.chain,
+                    params: cue_params,
+                });
             }
         }
     }
@@ -153,12 +192,12 @@ pub enum CueChain {
 )]
 pub enum CueParam {
     Audio(AudioCueParam),
-    Wait (WaitCueParam),
-    Fade (FadeCueParam),
-    Start (StartCueParam),
-    Stop (StopCueParam),
-    Pause (PauseCueParam),
-    Load (LoadCueParam),
+    Wait(WaitCueParam),
+    Fade(FadeCueParam),
+    Start(StartCueParam),
+    Stop(StopCueParam),
+    Pause(PauseCueParam),
+    Load(LoadCueParam),
     Group {
         #[serde(flatten)]
         base: GroupCueParamBase,

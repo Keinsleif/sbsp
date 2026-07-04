@@ -26,8 +26,8 @@ const props = withDefaults(
 
 const isFileListDialogOpen = computed({
   get() {
-  return fileListResolver.value != null;
-},
+    return fileListResolver.value != null;
+  },
   set(newValue) {
     if (!newValue && fileListResolver.value != null) {
       fileListResolver.value(null);
@@ -44,7 +44,7 @@ const pickFile = (select: string[] | null) => {
 };
 
 const fileList = ref<FileList[]>([]);
-const selected = ref<{ [key: number]: unknown}>({});
+const selected = ref<{ [key: number]: unknown }>({});
 const pathMap = new Map<string, string>();
 
 const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
@@ -70,7 +70,8 @@ const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
           selectable: true,
         };
       }
-    }).filter((item) => item.children == null || item.children.length > 0);
+    })
+    .filter((item) => item.children == null || item.children.length > 0);
 };
 
 const treeValue = computed(() => transformToTreeNodes(fileList.value));
@@ -112,14 +113,24 @@ watch(isFileListDialogOpen, (value) => {
       scrollable
       :selection-mode="props.multiple ? 'multiple' : 'single'"
     >
-      <Column field="name" header="Name" expander />
+      <Column
+        field="name"
+        header="Name"
+        expander
+      />
     </tree-table>
     <template #footer>
       <button-wrapper
         :disabled="Object.keys(selected).length == 0"
         :label="t('general.open')"
         severity="primary"
-        @click="pickFile(Object.keys(selected).map((key) => pathMap.get(key)).filter(item => item != null))"
+        @click="
+          pickFile(
+            Object.keys(selected)
+              .map((key) => pathMap.get(key))
+              .filter((item) => item != null),
+          )
+        "
       />
     </template>
   </Dialog>

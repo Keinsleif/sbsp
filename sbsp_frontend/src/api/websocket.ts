@@ -493,6 +493,11 @@ export function useWebsocketApi(): IBackendAdapter {
         if (parsed.success) {
           return parsed.data;
         } else {
+          console.error(
+            'Failed to parse settings. Overwriting storage with defaults.',
+            parsed.errors,
+          );
+          localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
           return structuredClone(DEFAULT_SETTINGS);
         }
       } else {

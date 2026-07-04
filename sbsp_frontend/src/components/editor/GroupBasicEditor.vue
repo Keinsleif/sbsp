@@ -44,7 +44,9 @@ watch(selectedCue, () => {
   }
   mode.value = selectedCue.value.params.mode.type;
   repeat.value =
-    selectedCue.value.params.mode.type === 'playlist' ? selectedCue.value.params.mode.repeat : undefined;
+    selectedCue.value.params.mode.type === 'playlist'
+      ? selectedCue.value.params.mode.repeat
+      : undefined;
   enter.value =
     selectedCue.value.params.mode.type === 'startFirst'
       ? selectedCue.value.params.mode.enter

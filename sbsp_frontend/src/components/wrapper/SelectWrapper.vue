@@ -44,7 +44,7 @@ const props = defineProps<{
       }"
     >
       <template #value="innerProps">
-        {{ props.items.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
+        {{ props.items.find((opt) => opt.value === (innerProps.value ?? null))?.name || '&nbsp;' }}
       </template>
       <template #option="innerProps">
         <div

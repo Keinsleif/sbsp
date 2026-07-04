@@ -198,7 +198,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Wait (params) => {
+            CueParam::Wait(params) => {
                 self.wait_tx
                     .send(WaitCommand::Load {
                         wait_type: WaitType::Wait,
@@ -216,7 +216,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Fade (params) => {
+            CueParam::Fade(params) => {
                 self.wait_tx
                     .send(WaitCommand::Load {
                         wait_type: WaitType::FadeWait,
@@ -234,10 +234,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Start(_)
-            | CueParam::Stop(_)
-            | CueParam::Pause(_)
-            | CueParam::Load(_) => {
+            CueParam::Start(_) | CueParam::Stop(_) | CueParam::Pause(_) | CueParam::Load(_) => {
                 log::warn!("Loading transport cues is not available. ignoring...");
                 self.active_instances.insert(
                     cue.id,
@@ -343,7 +340,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Wait (params) => {
+            CueParam::Wait(params) => {
                 self.wait_tx
                     .send(WaitCommand::Start {
                         wait_type: WaitType::Wait,
@@ -361,7 +358,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Fade (params) => {
+            CueParam::Fade(params) => {
                 if let Some(cue) = self.model_handle.get_cue_by_id(&params.target).await
                     && self.active_instances.contains_key(&params.target)
                 {
@@ -380,7 +377,10 @@ impl Executor {
                             anyhow::bail!("cannot send AudioCommand");
                         }
                         CueParam::Group { .. } => {
-                            let children = self.model_handle.get_all_children_by_id(&params.target).await;
+                            let children = self
+                                .model_handle
+                                .get_all_children_by_id(&params.target)
+                                .await;
                             for child in children {
                                 if self.active_instances.contains_key(&child.id)
                                     && let CueParam::Audio(_) = child.params
@@ -419,7 +419,7 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Start (params) => {
+            CueParam::Start(params) => {
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.executed
                 {
@@ -444,11 +444,13 @@ impl Executor {
                     .await?;
                 self.active_instances.remove(&cue.id);
             }
-            CueParam::Stop (params) => {
+            CueParam::Stop(params) => {
                 if self.active_instances.contains_key(&params.target) {
-                    self.process_command(ExecutorCommand::Stop(params.target)).await?;
+                    self.process_command(ExecutorCommand::Stop(params.target))
+                        .await?;
                     if params.hard {
-                        self.process_command(ExecutorCommand::Stop(params.target)).await?;
+                        self.process_command(ExecutorCommand::Stop(params.target))
+                            .await?;
                     }
                 }
                 self.executor_event_tx
@@ -464,7 +466,7 @@ impl Executor {
                     .await?;
                 self.active_instances.remove(&cue.id);
             }
-            CueParam::Pause (params) => {
+            CueParam::Pause(params) => {
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.executed
                     && !instance.paused
@@ -485,9 +487,10 @@ impl Executor {
                     .await?;
                 self.active_instances.remove(&cue.id);
             }
-            CueParam::Load (params) => {
+            CueParam::Load(params) => {
                 if !self.active_instances.contains_key(&params.target) {
-                    self.process_command(ExecutorCommand::Load(params.target)).await?;
+                    self.process_command(ExecutorCommand::Load(params.target))
+                        .await?;
                 }
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
@@ -1062,9 +1065,7 @@ impl Executor {
         let mut stack = VecDeque::from([cue_id]);
 
         while let Some(target_id) = stack.pop_back() {
-            if let Some(parent) =
-                self.model_handle.get_parent_by_id(&target_id).await
-            {
+            if let Some(parent) = self.model_handle.get_parent_by_id(&target_id).await {
                 let mut need_notify_event = false;
                 self.active_instances
                     .entry(parent.id)
@@ -1108,8 +1109,7 @@ impl Executor {
         let mut stack = VecDeque::from([cue_id]);
 
         while let Some(target_id) = stack.pop_back() {
-            if let Some(parent) =
-                self.model_handle.get_parent_by_id(&target_id).await
+            if let Some(parent) = self.model_handle.get_parent_by_id(&target_id).await
                 && let CueParam::Group { children, .. } = parent.params
             {
                 let need_to_stop_parent = {
@@ -1144,7 +1144,7 @@ mod tests {
     use std::path::PathBuf;
 
     use tempfile::NamedTempFile;
-use tokio::sync::{
+    use tokio::sync::{
         broadcast,
         mpsc::{self, Receiver, Sender},
         watch,
@@ -1188,34 +1188,37 @@ use tokio::sync::{
         let mut write_lock = manager.write().await;
         write_lock.name = "TestShowModel".to_string();
         write_lock.cue_list.root_ids.push(cue_id);
-        write_lock.cue_list.cues.insert(cue_id, Cue {
-            id: cue_id,
-            number: "1".to_string(),
-            name: None,
-            notes: "".to_string(),
-            color: CueColor::None,
-            pre_wait: 0.0,
-            chain: model::cue::CueChain::DoNotChain,
-            parent_id: None,
-            params: model::cue::CueParam::Audio(AudioCueParam {
-                target: path,
-                start_time: Some(5.0),
-                fade_in_param: Some(FadeParam {
-                    duration: 2.0,
-                    easing: Easing::Linear,
+        write_lock.cue_list.cues.insert(
+            cue_id,
+            Cue {
+                id: cue_id,
+                number: "1".to_string(),
+                name: None,
+                notes: "".to_string(),
+                color: CueColor::None,
+                pre_wait: 0.0,
+                chain: model::cue::CueChain::DoNotChain,
+                parent_id: None,
+                params: model::cue::CueParam::Audio(AudioCueParam {
+                    target: path,
+                    start_time: Some(5.0),
+                    fade_in_param: Some(FadeParam {
+                        duration: 2.0,
+                        easing: Easing::Linear,
+                    }),
+                    end_time: Some(50.0),
+                    fade_out_param: Some(FadeParam {
+                        duration: 5.0,
+                        easing: Easing::InPow(2.0),
+                    }),
+                    volume: Decibels::IDENTITY,
+                    pan: 0.0,
+                    repeat: false,
+                    sound_type: SoundType::Streaming,
+                    envelope: Vec::new(),
                 }),
-                end_time: Some(50.0),
-                fade_out_param: Some(FadeParam {
-                    duration: 5.0,
-                    easing: Easing::InPow(2.0),
-                }),
-                volume: Decibels::IDENTITY,
-                pan: 0.0,
-                repeat: false,
-                sound_type: SoundType::Streaming,
-                envelope: Vec::new(),
-            }),
-        });
+            },
+        );
         drop(write_lock);
 
         let executor = Executor::new(
@@ -1243,7 +1246,8 @@ use tokio::sync::{
         let cue_id = Uuid::new_v4();
 
         let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, _, _) = setup_executor(cue_id, temp_target.path().to_path_buf()).await;
+        let (_, exec_tx, mut audio_rx, _, _) =
+            setup_executor(cue_id, temp_target.path().to_path_buf()).await;
 
         exec_tx
             .send(ExecutorCommand::Execute(cue_id))
