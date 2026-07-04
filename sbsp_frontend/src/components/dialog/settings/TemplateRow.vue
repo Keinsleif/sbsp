@@ -3,10 +3,11 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import type { Cue } from '@/types/Cue';
-import { calculateDuration, secondsToFormat } from '@/utils';
+import { calculateDuration, getCueIcon, secondsToFormat } from '@/utils';
 import { mdiArrowDown, mdiArrowExpandDown, mdiRepeat } from '@mdi/js';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import PathIcon from '@/components/display/PathIcon.vue';
 
 const model = defineModel<Cue>({ required: true });
 const { t } = useI18n();
@@ -38,6 +39,7 @@ const duration = computed(() => {
       headers="cuelist_type"
       width="160px"
     >
+      <path-icon :icon="getCueIcon(model.params.type)" class="mr-2"/>
       {{ t(`dialog.settings.global.template.${model.params.type}`) }}
     </td>
     <td
