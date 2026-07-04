@@ -1,7 +1,8 @@
 name: Check PR Title
 
 on:
-  pull_request_target:
+  pull_request:
+    branches: [dev]
     types:
       - opened
       - reopened
