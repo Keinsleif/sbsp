@@ -9,7 +9,10 @@ use uuid::Uuid;
 #[cfg(feature = "backend")]
 use crate::executor::ExecutorEvent;
 use crate::{
-    asset_processor::{AssetData, AssetMetadata}, controller::state::StateParam, manager::project::ProjectType, model::{ShowModel, cue::CueList, settings::ShowSettings}
+    asset_processor::{AssetData, AssetMetadata},
+    controller::state::StateParam,
+    manager::project::ProjectType,
+    model::{ShowModel, cue::CueList, settings::ShowSettings},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

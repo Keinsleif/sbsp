@@ -35,12 +35,16 @@ const props = withDefaults(
 const emit = defineEmits(['update']);
 const innerModel = ref('');
 
-const model2text = (num: number | null | undefined) => num != null ? num.toFixed(props.precision) : ''
+const model2text = (num: number | null | undefined) =>
+  num != null ? num.toFixed(props.precision) : '';
 
-watch([model, () => props.precision], ([newValue]) => {
-  innerModel.value = model2text(newValue);
-}, {immediate: true});
-
+watch(
+  [model, () => props.precision],
+  ([newValue]) => {
+    innerModel.value = model2text(newValue);
+  },
+  { immediate: true },
+);
 
 const save = () => {
   const origModelString = model2text(model.value);
@@ -129,9 +133,16 @@ const inputId = useId();
 <template>
   <input-group>
     <input-group-addon v-if="props.prefix">
-      <slot name="prefix" prefix="props.prefix">{{ props.prefix }}</slot>
+      <slot
+        name="prefix"
+        prefix="props.prefix"
+        >{{ props.prefix }}</slot
+      >
     </input-group-addon>
-    <float-label variant="on" class="w-full">
+    <float-label
+      variant="on"
+      class="w-full"
+    >
       <input-text
         v-model="innerModel"
         class="w-full"
@@ -151,7 +162,11 @@ const inputId = useId();
       <label :for="inputId">{{ props.label || '' }}</label>
     </float-label>
     <input-group-addon v-if="props.suffix">
-      <slot name="suffix" prefix="props.suffix">{{ props.suffix }}</slot>
+      <slot
+        name="suffix"
+        prefix="props.suffix"
+        >{{ props.suffix }}</slot
+      >
     </input-group-addon>
     <template v-if="props.showButtons">
       <input-group-addon>

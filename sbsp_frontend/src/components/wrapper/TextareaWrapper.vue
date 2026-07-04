@@ -13,9 +13,13 @@ const props = defineProps<{
 const inputId = useId();
 const innerText = ref('');
 
-watch(text, () => {
-  innerText.value = text.value ?? '';
-}, {immediate: true});
+watch(
+  text,
+  () => {
+    innerText.value = text.value ?? '';
+  },
+  { immediate: true },
+);
 
 const save = () => {
   if (props.disabled) {

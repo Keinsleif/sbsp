@@ -28,18 +28,18 @@ const duration = computed(() => {
     return null;
   }
 });
-
 </script>
 
 <template>
-  <tr
-    :class="[props.selected ? $style['selected-row'] : '']"
-  >
+  <tr :class="[props.selected ? $style['selected-row'] : '']">
     <td
       headers="cuelist_type"
       width="160px"
     >
-      <path-icon :icon="getCueIcon(model.params.type)" class="mr-2"/>
+      <path-icon
+        :icon="getCueIcon(model.params.type)"
+        class="mr-2"
+      />
       {{ t(`dialog.settings.global.template.${model.params.type}`) }}
     </td>
     <td
@@ -53,11 +53,7 @@ const duration = computed(() => {
       headers="cuelist_name"
       width="auto"
     >
-      {{
-        model.name != null
-          ? model.name
-          : t('dialog.settings.global.template.builtFromCueParam')
-      }}
+      {{ model.name != null ? model.name : t('dialog.settings.global.template.builtFromCueParam') }}
     </td>
     <td
       headers="cuelist_pre_wait"

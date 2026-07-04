@@ -297,7 +297,7 @@ const isActive = computed((): boolean => {
     </td>
     <td
       headers="cuelist_status"
-      style="padding-left: 6px; line-height: 1;"
+      style="padding-left: 6px; line-height: 1"
     >
       <path-icon
         v-show="isStatusIn(['playing', 'preWaiting'])"

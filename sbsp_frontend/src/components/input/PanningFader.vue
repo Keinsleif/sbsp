@@ -43,10 +43,12 @@ const tickLabels = [
     :ticks="tickLabels"
     :direction="props.direction"
     :disabled="props.disabled"
-    @dblclick="if (!props.disabled) {
-      faderPosition = 0;
-      emit('update');
-    }"
+    @dblclick="
+      if (!props.disabled) {
+        faderPosition = 0;
+        emit('update');
+      }
+    "
     @pointerdown="sliderChanging = true"
     @pointerup="
       if (sliderChanging) {

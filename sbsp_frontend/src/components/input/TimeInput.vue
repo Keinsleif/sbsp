@@ -30,9 +30,13 @@ const model2text = (value: number | null | undefined) => {
 const inputId = useId();
 const formattedValue = ref('');
 
-watch([seconds, () => props.multiply], ([newSeconds]) => {
-  formattedValue.value = model2text(newSeconds);
-}, {immediate: true});
+watch(
+  [seconds, () => props.multiply],
+  ([newSeconds]) => {
+    formattedValue.value = model2text(newSeconds);
+  },
+  { immediate: true },
+);
 
 const save = () => {
   if (props.disabled) return;
@@ -62,7 +66,7 @@ const onKeydown = (e: KeyboardEvent) => {
       e.target.blur();
       break;
     case 'Escape':
-      formattedValue.value = model2text(seconds.value) // reset
+      formattedValue.value = model2text(seconds.value); // reset
       e.target.blur();
       break;
   }

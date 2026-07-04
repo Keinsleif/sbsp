@@ -324,7 +324,7 @@ export function useTauriApi(): IBackendAdapter {
                 .then(resolve)
                 .catch(reject);
             } else {
-              reject(new Error("Settings import cancelled"))
+              reject(new Error('Settings import cancelled'));
             }
           })
           .catch((e) => reject(e));

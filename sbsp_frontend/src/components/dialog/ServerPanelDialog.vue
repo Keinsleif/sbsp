@@ -365,7 +365,7 @@ onUnmounted(() => {
           <qr-viewer
             ref="qrRef"
             v-model="server_url"
-            class="w-60 h-60 ml-auto mr-auto"
+            class="mr-auto ml-auto h-60 w-60"
           />
         </div>
         <button-wrapper

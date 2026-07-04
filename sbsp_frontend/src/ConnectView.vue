@@ -37,7 +37,7 @@ const connect = (host: string, port: number) => {
     if (ps_string == null) {
       overlay.value = false;
       return;
-    };
+    }
     password = ps_string.trim() || null;
   }
   overlay.value = true;
@@ -154,7 +154,7 @@ onUnmounted(() => {
         :label="t('view.connect.remoteHost')"
       />
       <number-input
-        class="grow-0 w-40"
+        class="w-40 grow-0"
         v-model="port"
         :min="0"
         :max="65535"
