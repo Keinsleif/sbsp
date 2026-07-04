@@ -19,7 +19,7 @@ jobs:
       contents: read
     env:
       MISE_ENV: ci
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
@@ -27,8 +27,6 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
       - uses: jdx/mise-action@v4
-
-      - run: mise install -f rust@stable
 
       - name: Get pnpm store path
         id: pnpm-cache
