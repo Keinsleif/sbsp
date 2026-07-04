@@ -41,7 +41,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm", "appimage", "nsis", "dmg"],
+    "targets": ["deb", "rpm", "appimage", "nsis", "dmg", "app"],
     "resources": {
       "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     },

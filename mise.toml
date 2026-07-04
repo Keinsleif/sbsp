@@ -1,12 +1,11 @@
 [tools]
 node = "24"
 pnpm = "11"
-rust = "latest"
-"cargo:tauri-cli" = { version = "latest", depends = ["rust"] }
-"cargo:cargo-about" = { version = "latest", depends = ["rust"] }
-"cargo:cargo-audit" = { version = "latest", depends = ["rust"] }
-"cargo:cargo-edit" = { version = "latest", depends = ["rust"] }
-cocogitto = "latest"
+rust = "stable"
+"cargo:tauri-cli" = { version = "2", depends = ["rust"] }
+"cargo:cargo-about" = { version = "0.9", depends = ["rust"] }
+"cargo:cargo-edit" = { version = "0.13", depends = ["rust"] }
+cocogitto = "7"
 
 [tasks.generate_notices]
 run = [
