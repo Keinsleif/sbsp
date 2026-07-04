@@ -34,7 +34,7 @@ watch(
   [colorScheme, () => uiSettings.settings.appearance.darkMode],
   ([scheme, darkMode], oldValue) => {
     let isDark;
-    if (__IS_HOST__ && darkMode !== oldValue[1]) {
+    if (__IS_HOST__ && (oldValue == null || darkMode !== oldValue[1])) {
       setTheme(darkMode === 'system' ? null : darkMode);
     }
     if (uiSettings.settings.appearance.darkMode === 'system') {
