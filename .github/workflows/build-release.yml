@@ -22,7 +22,6 @@ jobs:
             args: ''
           - platform: 'windows-latest'
             args: ''
-
     runs-on: ${{ matrix.platform }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -57,7 +56,7 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
 
-      - run: cargo binstall tauri-cli --no-confirm --force
+      - run: cargo binstall tauri-cli@2 --no-confirm --force
 
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.

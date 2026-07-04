@@ -17,8 +17,9 @@ jobs:
   generate:
     permissions:
       contents: read
-
-    runs-on: ubuntu-latest
+    env:
+      MISE_ENV: ci
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
         with:
