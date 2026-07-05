@@ -28,6 +28,15 @@ const duration = computed(() => {
     return null;
   }
 });
+
+const isRepeat = computed(() => {
+  return (
+    (model.value.params.type === 'audio' && model.value.params.repeat) ||
+    (model.value.params.type === 'group' &&
+      model.value.params.mode.type === 'playlist' &&
+      model.value.params.mode.repeat)
+  );
+});
 </script>
 
 <template>
@@ -75,12 +84,7 @@ const duration = computed(() => {
     </td>
     <td headers="cuelist_repeat">
       <path-icon
-        v-show="
-          (model.params.type == 'audio' && model.params.repeat) ||
-          (model.params.type == 'group' &&
-            model.params.mode.type == 'playlist' &&
-            model.params.mode.repeat)
-        "
+        v-show="isRepeat"
         :icon="mdiRepeat"
       />
     </td>
