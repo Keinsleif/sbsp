@@ -248,7 +248,7 @@ const isPreWaitActive = computed(() => {
   );
 });
 
-const isActive = computed((): boolean => {
+const isPlayingActive = computed((): boolean => {
   return (
     props.item.cue.id in showState.activeCues &&
     (['playing', 'paused', 'stopping'] as PlaybackStatus[]).includes(
@@ -397,7 +397,7 @@ const isActive = computed((): boolean => {
       <div
         ref="duration"
         class="relative h-3/4 w-full"
-        :class="[isActive ? 'border-primary border' : '']"
+        :class="[isPlayingActive ? 'border-primary border' : '']"
       >
         <div
           class="top-0 left-0 h-full w-full"
@@ -409,7 +409,7 @@ const isActive = computed((): boolean => {
         <div
           class="absolute left-0 w-full text-center"
           style="top: 50%; transform: translateY(-50%)"
-          @dblclick="if (!isActive) openEditable($event, 'cuelist_duration');"
+          @dblclick="if (!isPlayingActive) openEditable($event, 'cuelist_duration');"
           @blur="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_duration')"
