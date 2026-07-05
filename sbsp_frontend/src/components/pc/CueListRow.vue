@@ -249,7 +249,7 @@ const isPreWaitActive = computed(() => {
 const isActive = computed((): boolean => {
   return (
     props.item.cue.id in showState.activeCues &&
-    (['playing', 'paused', 'stopping', 'completed'] as PlaybackStatus[]).includes(
+    (['playing', 'paused', 'stopping'] as PlaybackStatus[]).includes(
       showState.activeCues[props.item.cue.id]!.status,
     )
   );
