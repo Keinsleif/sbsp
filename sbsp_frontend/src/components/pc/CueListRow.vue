@@ -206,13 +206,19 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         break;
       }
       case 'cuelist_pre_wait': {
-        if (isPreWaitActive.value) return;
+        if (isPreWaitActive.value) {
+          delete target.dataset.prevText;
+          return;
+        }
         const newPreWait = formatToSeconds(target.innerText, false);
         newCue.preWait = newPreWait;
         break;
       }
       case 'cuelist_duration': {
-        if (isPlayingActive.value) return;
+        if (isPlayingActive.value) {
+          delete target.dataset.prevText;
+          return;
+        }
         if (newCue.params.type === 'wait') {
           const newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
