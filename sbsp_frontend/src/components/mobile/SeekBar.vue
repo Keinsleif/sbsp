@@ -57,7 +57,7 @@ watch(
 );
 
 const onpointerup = () => {
-  if (sliderChanging.value && props.targetId != null) {
+  if (sliderChanging.value) {
     setTimeout(() => {
       if (props.targetId != null) {
         api.sendSeekTo(props.targetId, position.value);
@@ -65,7 +65,6 @@ const onpointerup = () => {
       sliderChanging.value = false;
     }, 0);
   }
-  sliderChanging.value = false;
 };
 </script>
 
