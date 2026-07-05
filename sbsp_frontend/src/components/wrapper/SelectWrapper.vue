@@ -11,10 +11,16 @@ const props = defineProps<{
   }[];
   label?: string;
 }>();
+
+const onHide = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+}
 </script>
 
 <template>
-  <FloatLabel variant="on">
+  <FloatLabel variant="on" @keydown.stop>
     <Select
       v-bind="$attrs"
       :options="props.items"
@@ -42,6 +48,7 @@ const props = defineProps<{
           };
         },
       }"
+      @hide="onHide"
     >
       <template #value="innerProps">
         {{ props.items.find((opt) => opt.value === (innerProps.value ?? null))?.name || '&nbsp;' }}

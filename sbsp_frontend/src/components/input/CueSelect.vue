@@ -49,10 +49,16 @@ const filterCue = (cue: Cue): boolean => {
     return props.cueType.includes(cue.params.type);
   }
 };
+
+const onHide = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+}
 </script>
 
 <template>
-  <float-label variant="on">
+  <float-label variant="on" @keydown.stop>
     <Select
       v-bind="$attrs"
       v-model="selectedId"
@@ -69,10 +75,10 @@ const filterCue = (cue: Cue): boolean => {
         },
       }"
       @update:model-value="emit('update')"
-      @keydown.stop
+      @hide="onHide"
     >
       <template #value="innerProps">
-        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
+        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || ' ' }}
       </template>
     </Select>
     <label>{{ props.label }}</label> <!--label cannot be attachable. Cue select is not generic input form.-->
