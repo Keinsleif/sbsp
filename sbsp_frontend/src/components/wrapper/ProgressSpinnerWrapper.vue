@@ -12,7 +12,7 @@ const props = withDefaults(
     strokeWidth?: string;
   }>(),
   {
-    storkeWidth: '10',
+    strokeWidth: '10',
     size: '16px',
     color: 'text.color',
   },
