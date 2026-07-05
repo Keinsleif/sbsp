@@ -98,14 +98,7 @@ const saveEditorValue = () => {
       selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
-  if (name.value != null) {
-    const newName = name.value.trim();
-    if (newName === '') {
-      selectedCue.value.name = null;
-    } else {
-      selectedCue.value.name = newName;
-    }
-  }
+  selectedCue.value.name = name.value;
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
   }
@@ -136,7 +129,7 @@ const insertTimestampToNote = () => {
 
 const isActive = computed(() => {
   return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
-})
+});
 </script>
 
 <template>
@@ -188,7 +181,7 @@ const isActive = computed(() => {
         v-model="name"
         :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
         :label="t('main.name')"
-        align-input="left"
+        accept-null
         class="grow-0"
         @update="saveEditorValue"
       />
