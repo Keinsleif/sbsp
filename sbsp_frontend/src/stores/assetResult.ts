@@ -85,6 +85,7 @@ export const useAssetResult = defineStore('assetResult', () => {
   return {
     results,
     processing,
+    failed,
     add,
     addError,
     addMetadata,
