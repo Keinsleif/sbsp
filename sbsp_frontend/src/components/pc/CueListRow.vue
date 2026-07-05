@@ -154,18 +154,16 @@ const openEditable = (e: MouseEvent, editType: string) => {
   }
   if (props.item == null) return;
   if (editType === 'cuelist_duration') {
+    if (isPlayingActive.value) {
+      return;
+    }
     const cueType = props.item.cue.params.type;
     if (cueType !== 'wait' && cueType !== 'fade') {
       return;
     }
   }
-  if (editType === 'cuelist_post_wait') {
-    if (props.item.isChainOverrided) {
-      return;
-    }
-    if (props.item.chain.type !== 'afterStart') {
-      return;
-    }
+  if (editType === 'cuelist_pre_wait' && isPreWaitActive.value) {
+    return;
   }
   e.target.contentEditable = 'true';
   e.target.classList.add('inEdit');
@@ -208,11 +206,19 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         break;
       }
       case 'cuelist_pre_wait': {
+        if (isPreWaitActive.value) {
+          delete target.dataset.prevText;
+          return;
+        }
         const newPreWait = formatToSeconds(target.innerText, false);
         newCue.preWait = newPreWait;
         break;
       }
       case 'cuelist_duration': {
+        if (isPlayingActive.value) {
+          delete target.dataset.prevText;
+          return;
+        }
         if (newCue.params.type === 'wait') {
           const newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
