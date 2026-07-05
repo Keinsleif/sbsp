@@ -209,12 +209,7 @@ onUnmounted(() => {
               {{ t('dialog.server.status') }} :
               <span
                 :style="{
-                  color:
-                    isRunning == null
-                      ? ''
-                      : isRunning
-                        ? $dt('green.500').variable
-                        : $dt('red.500').variable,
+                  color: isRunning ? $dt('green.500').variable : $dt('red.500').variable,
                 }"
               >
                 {{
