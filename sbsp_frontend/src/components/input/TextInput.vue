@@ -6,21 +6,56 @@ import { ref, useId, watch } from 'vue';
 
 const model = defineModel<string | null>();
 const emit = defineEmits(['update']);
-const props = defineProps<{
-  label?: string;
-  help?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    placeholder?: string;
+    help?: string;
+    acceptNull?: boolean;
+    disabled?: boolean;
+  }>(),
+  {
+    acceptNull: false,
+    disabled: false,
+  },
+);
 
 const inputId = useId();
-const innerText = ref(model.value ?? '');
+const innerText = ref('');
 
-watch(model, () => {
-  innerText.value = model.value ?? '';
-});
+watch(
+  model,
+  () => {
+    innerText.value = model.value ?? '';
+  },
+  { immediate: true },
+);
 
-const save = () => {
-  if ((model.value ?? '') !== innerText.value) {
-    model.value = innerText.value === '' ? null : innerText.value;
+const save = async () => {
+  const origModelString = model.value ?? '';
+
+  if (props.disabled) {
+    innerText.value = origModelString;
+    return;
+  }
+  const newText = innerText.value.trim();
+  if (newText === '') {
+    if (props.acceptNull) {
+      // update model by null if acceptNull == true
+      // innerText also updated by watcher
+      model.value = null;
+      emit('update');
+      return;
+    } else {
+      // reset if acceptNull == false and innerText == ''
+      innerText.value = origModelString;
+      return;
+    }
+  }
+
+  innerText.value = newText;
+  if ((model.value ?? '') !== newText) {
+    model.value = newText;
     emit('update');
   }
 };
@@ -44,10 +79,10 @@ const onKeydown = (e: KeyboardEvent) => {
     <FloatLabel variant="on">
       <InputText
         v-model="innerText"
-        v-bind="$attrs"
         class="h-full w-full"
         :id="inputId"
         autocomplete="off"
+        :placeholder="props.placeholder"
         :pt="{
           root: () => {
             return {
