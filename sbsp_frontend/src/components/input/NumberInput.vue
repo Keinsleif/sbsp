@@ -135,7 +135,7 @@ const inputId = useId();
     <input-group-addon v-if="props.prefix">
       <slot
         name="prefix"
-        prefix="props.prefix"
+        :prefix="props.prefix"
         >{{ props.prefix }}</slot
       >
     </input-group-addon>
@@ -164,7 +164,7 @@ const inputId = useId();
     <input-group-addon v-if="props.suffix">
       <slot
         name="suffix"
-        prefix="props.suffix"
+        :prefix="props.suffix"
         >{{ props.suffix }}</slot
       >
     </input-group-addon>
