@@ -112,7 +112,6 @@ watch(isFileListDialogOpen, (value) => {
       v-model:selectionKeys="selected"
       scroll-height="flex"
       :value="treeValue"
-      color="primary"
       scrollable
       :selection-mode="props.multiple ? 'multiple' : 'single'"
     >
