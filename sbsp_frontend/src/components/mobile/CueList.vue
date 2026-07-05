@@ -114,13 +114,4 @@ const setPlaybackCursor = (cueId: string) => {
     border-bottom: 1px solid var(--p-form-field-border-color);
   }
 }
-/* .cuelist {
-    table {
-      table-layout: fixed;
-      font-size: 0.9em;
-    }
-    > div {
-      scroll-padding-top: 34px;
-    }
-  } */
 </style>
