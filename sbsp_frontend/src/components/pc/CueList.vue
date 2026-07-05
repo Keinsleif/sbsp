@@ -58,7 +58,7 @@ const cutHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
+    internalClipboard.value = structuredClone(cues.map((cue: Cue) => toRaw(cue)));
     if (uiState.mode === 'edit') {
       api.removeCues(
         cues.map((cue) => cue.id),
