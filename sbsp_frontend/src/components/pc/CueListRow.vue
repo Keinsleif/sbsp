@@ -118,7 +118,7 @@ const durationText = computed(() => {
 });
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!getLockCursorToSelection()) {
+  if (getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
   }
 };
