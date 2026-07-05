@@ -34,7 +34,7 @@ onMounted(() => {
 <template>
   <Dialog
     v-model:visible="isThirdPartyNoticesDialogOpen"
-    class="w-7xl overflow-hidden"
+    class="w-300 overflow-hidden"
     @contextmenu.prevent
   >
     <div class="overflow-auto p-10">
