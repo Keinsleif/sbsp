@@ -52,6 +52,14 @@ const connect = (host: string, port: number) => {
         life: 3000,
       });
     });
+  } else {
+    console.error('Remote API does not implemented.');
+    toast.add({
+      severity: 'error',
+      summary: t('notification.connectionError'),
+      detail: 'Remote API does not implemented.',
+      life: 3000,
+    });
   }
 };
 
