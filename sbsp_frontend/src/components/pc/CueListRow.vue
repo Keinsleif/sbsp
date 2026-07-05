@@ -51,6 +51,8 @@ const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 const preWaitRef = useTemplateRef('preWait');
 const durationRef = useTemplateRef('duration');
 
+let preWaitProgressActive = false;
+
 usePosition((pos) => {
   if (
     preWaitRef.value == null ||
@@ -62,40 +64,62 @@ usePosition((pos) => {
   if (props.item.isHidden) return;
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
+  const preWaitField = preWaitRef.value.children[1];
+  const preWaitProgress = preWaitRef.value.children[0];
+  const durationField = durationRef.value.children[1];
+  const durationProgress = durationRef.value.children[0];
+  if (
+    preWaitField == null ||
+    preWaitProgress == null ||
+    durationField == null ||
+    durationProgress == null ||
+    !(
+      preWaitField instanceof HTMLElement &&
+      preWaitProgress instanceof HTMLElement &&
+      durationField instanceof HTMLElement &&
+      durationProgress instanceof HTMLElement
+    )
+  ) {
+    return;
+  }
   if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
+      if (!preWaitProgressActive) {
+        preWaitProgressActive = true;
+      }
+      if (preWaitField.contentEditable === 'true') {
+        closeEditable(preWaitField, false, 'cuelist_pre_wait');
+      }
       // The state transitions from the pre-wait state to the normal playback state. It does not move backward.
-      preWaitRef.value.children[1]!.textContent = secondsToFormat(
+      preWaitField.textContent = secondsToFormat(
         uiState.preWaitDisplayMode === 'elapsed' ? position : activeCue.duration - position,
       );
-      (preWaitRef.value.children[0]! as HTMLElement).style.transform =
-        `scaleX(${position / activeCue.duration})`;
+      preWaitProgress.style.transform = `scaleX(${position / activeCue.duration})`;
     } else {
-      // reset prewait progress display
-      if ((preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)') {
-        preWaitRef.value.children[1]!.textContent = preWaitText;
-        (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
+      if (durationField.contentEditable === 'true') {
+        closeEditable(durationField, false, 'cuelist_duration');
       }
-      durationRef.value.children[1]!.textContent = secondsToFormat(
+      if (preWaitProgressActive) {
+        // reset prewait progress display
+        preWaitField.textContent = preWaitText;
+        preWaitProgress.style.transform = 'scaleX(0)';
+        preWaitProgressActive = false;
+      }
+
+      durationField.textContent = secondsToFormat(
         uiState.durationDisplayMode === 'elapsed' ? position : activeCue.duration - position,
       );
-      (durationRef.value.children[0]! as HTMLElement).style.transform =
-        `scaleX(${position / activeCue.duration})`;
+      durationProgress.style.transform = `scaleX(${position / activeCue.duration})`;
     }
   } else {
-    if (
-      (preWaitRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      (preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
-    ) {
-      preWaitRef.value.children[1]!.textContent = preWaitText;
-      (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
+    preWaitProgressActive = false;
+    if (preWaitField.contentEditable !== 'true') {
+      preWaitField.textContent = preWaitText;
+      preWaitProgress.style.transform = 'scaleX(0)';
     }
-    if (
-      (durationRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      (durationRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
-    ) {
-      durationRef.value.children[1]!.textContent = durationText.value;
-      (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
+    if (durationField.contentEditable !== 'true') {
+      durationField.textContent = durationText.value;
+      durationProgress.style.transform = 'scaleX(0)';
     }
   }
 });
@@ -167,7 +191,7 @@ const openEditable = (e: MouseEvent, editType: string) => {
   }
   e.target.contentEditable = 'true';
   e.target.classList.add('inEdit');
-  e.target.dataset.prevText = e.target.innerText;
+  e.target.dataset.prevText = e.target.textContent;
   const range = document.createRange();
   range.selectNodeContents(e.target);
   const sel = window.getSelection();
@@ -190,41 +214,32 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
     const newCue = structuredClone(toRaw(props.item.cue));
     switch (editType) {
       case 'cuelist_number':
-        newCue.number = target.innerText;
+        newCue.number = target.textContent;
         break;
       case 'cuelist_name': {
         const newText = target.textContent.trim();
         if (newText === '') {
-          if (newCue.name == null && target.dataset.prevText !== undefined) {
-            target.innerText = target.dataset.prevText;
-          } else {
-            newCue.name = null;
-          }
+          newCue.name = null;
+          target.textContent = buildCueName(props.item.cue);
         } else {
           newCue.name = newText;
         }
         break;
       }
       case 'cuelist_pre_wait': {
-        if (isPreWaitActive.value) {
-          delete target.dataset.prevText;
-          return;
-        }
-        const newPreWait = formatToSeconds(target.innerText, false);
+        const newPreWait = formatToSeconds(target.textContent, false);
         newCue.preWait = newPreWait;
+        target.textContent = secondsToFormat(newPreWait === 0.0 ? null : newPreWait);
         break;
       }
       case 'cuelist_duration': {
-        if (isPlayingActive.value) {
-          delete target.dataset.prevText;
-          return;
-        }
+        const newDuration = formatToSeconds(target.textContent, false);
         if (newCue.params.type === 'wait') {
-          const newDuration = formatToSeconds(target.innerText, false);
           newCue.params.duration = newDuration;
+          target.textContent = secondsToFormat(newDuration);
         } else if (newCue.params.type === 'fade') {
-          const newDuration = formatToSeconds(target.innerText, false);
           newCue.params.fadeParam.duration = newDuration;
+          target.textContent = secondsToFormat(newDuration);
         }
         break;
       }
@@ -232,7 +247,7 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
     api.updateCue(newCue);
   } else {
     if (target.dataset.prevText !== undefined) {
-      target.innerText = target.dataset.prevText;
+      target.textContent = target.dataset.prevText;
     }
   }
   delete target.dataset.prevText;
