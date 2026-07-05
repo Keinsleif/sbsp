@@ -63,22 +63,6 @@ watch(selectedCue, () => {
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
 
-const onTargetFieldKeyDown = (e: KeyboardEvent) => {
-  if (
-    !(e.target instanceof HTMLElement) ||
-    selectedCue.value == null ||
-    selectedCue.value.params.type !== 'audio'
-  ) {
-    return;
-  }
-  if (e.key === 'Enter') {
-    e.target.blur();
-  } else if (e.key === 'Escape') {
-    target.value = selectedCue.value.params.target;
-    e.target.blur();
-  }
-};
-
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
@@ -117,8 +101,7 @@ const isActive = computed(() => {
         :label="t('main.bottomEditor.audio.targetFile')"
         :disabled="isActive"
         class="grow text-center"
-        @blur="saveEditorValue"
-        @keydown="onTargetFieldKeyDown"
+        @update="saveEditorValue"
       />
       <button-wrapper
         :disabled="isActive"
