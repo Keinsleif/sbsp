@@ -53,7 +53,7 @@ const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
     .map((item) => {
       // This is stable because it is nearly equals to path. (constructed with dirname & filename)
       // And this is needed for directory key
-      const currentKey = parentKey ? `${parentKey}-${item.name}` : `${item.name}`;
+      const currentKey = parentKey ? `${parentKey}/${item.name}` : `${item.name}`;
 
       if (item.type === 'dir') {
         return {
