@@ -413,8 +413,10 @@ const handleAddOrSplit = (svgX: number) => {
     const segmentWidth = target.end - target.start;
 
     if (segmentWidth > MIN_GAP * 2 + MIN_GAP) {
-      const leftEnd = svgX - MIN_GAP / 2;
-      const rightStart = svgX + MIN_GAP / 2;
+      const clampedX = Math.max(target.start + MIN_GAP, Math.min(target.end - MIN_GAP, svgX));
+
+      const leftEnd = clampedX - MIN_GAP / 2;
+      const rightStart = clampedX + MIN_GAP / 2;
 
       segments.value[targetIdx] = { ...target, end: leftEnd };
       segments.value.splice(targetIdx + 1, 0, {
