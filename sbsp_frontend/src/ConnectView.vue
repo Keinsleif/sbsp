@@ -68,7 +68,6 @@ onMounted(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const address = searchParams.get('address');
     if (address != null) {
-      overlay.value = true;
       console.log(`Connecting to ${address}`);
       let hostStr = '';
       let portNum = 5800;
