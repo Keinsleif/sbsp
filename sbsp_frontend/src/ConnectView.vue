@@ -172,12 +172,12 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="overlay"
-        class="fixed inset-0 z-1000 h-full w-full flex items-center justify-center"
+        class="fixed inset-0 z-1000 flex h-full w-full items-center justify-center"
         style="background-color: rgb(0 0 0 / 0.5)"
       >
         <progress-spinner-wrapper
           color="primary.500"
-          storke-width="5"
+          strokeWidth="5"
           size="96px"
         />
       </div>
