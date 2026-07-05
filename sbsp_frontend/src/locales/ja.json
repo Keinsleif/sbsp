@@ -383,7 +383,8 @@
     "failedToSave": "保存に失敗しました",
     "operationFailed": "操作に失敗しました",
     "failedToStartServer": "サーバーの起動に失敗しました",
-    "failedToStopServer": "サーバーの停止に失敗しました"
+    "failedToStopServer": "サーバーの停止に失敗しました",
+    "failedToLoadLicense": "ライセンスの読み込みに失敗しました"
   },
   "view": {
     "connect": {

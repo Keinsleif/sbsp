@@ -41,7 +41,7 @@ const loadLicense = () => {
       console.error(e);
       toast.add({
         severity: 'error',
-        summary: 'Failed to load License',
+        summary: t('notification.failedToLoadLicense'),
         detail: e.toString(),
         life: 3000,
       });
