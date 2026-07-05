@@ -306,7 +306,6 @@
     "preWait": "事前待機",
     "sideBar": {
       "activeCues": "実行中のキュー",
-      "levels": {},
       "meter": {
         "title": "メーター"
       }

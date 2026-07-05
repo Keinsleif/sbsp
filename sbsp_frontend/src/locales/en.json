@@ -314,7 +314,6 @@
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
-      "levels": {},
       "meter": {
         "title": "Meter"
       }
