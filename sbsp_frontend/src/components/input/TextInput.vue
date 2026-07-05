@@ -83,6 +83,7 @@ const onKeydown = (e: KeyboardEvent) => {
         :id="inputId"
         autocomplete="off"
         :placeholder="props.placeholder"
+        :disabled="props.disabled"
         :pt="{
           root: () => {
             return {
