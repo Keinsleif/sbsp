@@ -68,39 +68,38 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
   <tr ref="row">
     <td
       headers="cuelist_cursor"
-      class="px-1"
+      class="px-1 leading-none"
     >
       <path-icon :icon="isPlaybackCursor ? mdiArrowRightBold : null" />
     </td>
     <td
       headers="cuelist_status"
-      class="px-1"
+      class="px-1 leading-none"
     >
       <path-icon
         v-show="isStatusIn(['playing', 'preWaiting'])"
         :icon="mdiPlay"
-        color="success"
+        class="text-green-500"
       />
       <path-icon
         v-show="isStatusIn(['paused', 'preWaitPaused'])"
         :icon="mdiPause"
-        color="warning"
+        class="text-orange-500"
       />
       <path-icon
         v-show="status == 'loaded'"
         :icon="mdiUpload"
-        color="warning"
+        class="text-orange-500"
       />
       <progress-spinner-wrapper
         v-show="status == 'stopping'"
         size="16px"
-        severity="warning"
+        color="orange.500"
       />
     </td>
     <td
       headers="cuelist_type"
-      class="text-center"
-      style="padding: 0px"
+      class="text-center p-0 leading-none"
     >
       <path-icon :icon="cueIcon" />
     </td>
