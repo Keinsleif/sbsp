@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Cue } from '../../types/Cue';
 import CueSelect from '../input/CueSelect.vue';
 import { NIL } from 'uuid';
@@ -72,6 +72,10 @@ const saveEditorValue = () => {
   }
   emit('update');
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+})
 </script>
 
 <template>
@@ -82,14 +86,14 @@ const saveEditorValue = () => {
       :label="t('main.bottomEditor.targetCue')"
       cue-type="all"
       :exclude="selectedCue != null ? selectedCue.id : ''"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update="saveEditorValue"
     />
     <checkbox-wrapper
       v-show="selectedCue != null && selectedCue.params.type == 'stop'"
       v-model="hard"
       :label="t('main.bottomEditor.playback.hard')"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update:model-value="saveEditorValue"
     />
   </div>

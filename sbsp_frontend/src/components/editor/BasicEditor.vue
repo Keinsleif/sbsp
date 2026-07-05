@@ -133,6 +133,10 @@ const insertTimestampToNote = () => {
   }
   saveEditorValue();
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+})
 </script>
 
 <template>
@@ -166,7 +170,7 @@ const insertTimestampToNote = () => {
         class="grow-0"
         :label="t('main.chainMode.title')"
         :disabled="
-          (selectedCue != null && selectedCue.id in showState.activeCues) ||
+          isActive ||
           props.chainOverride != null
         "
         :items="[
@@ -205,8 +209,7 @@ const insertTimestampToNote = () => {
           :null-text="t('main.bottomEditor.basics.nextCue')"
           :disabled="
             props.chainOverride != null ||
-            selectedCue == null ||
-            selectedCue.id in showState.activeCues ||
+            isActive ||
             chain == 'doNotChain'
           "
           @update="saveEditorValue"
@@ -233,7 +236,7 @@ const insertTimestampToNote = () => {
         />
         <button-wrapper
           class="grow-0"
-          :disabled="selectedCue != null && !(selectedCue.id in showState.activeCues)"
+          :disabled="!isActive"
           :label="t('main.bottomEditor.basics.timestamp')"
           @click="insertTimestampToNote"
         />

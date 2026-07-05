@@ -558,7 +558,7 @@ const menuItems = computed(() => [
           class="w-12"
           size="small"
           :icon="mdiSkipNext"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          :disabled="props.disabled"
           @click="skipFirstSilence"
         />
       </div>
@@ -577,7 +577,7 @@ const menuItems = computed(() => [
           class="w-12"
           size="small"
           :icon="mdiSkipPrevious"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          :disabled="props.disabled"
           @click="skipLastSilence"
         />
       </div>
