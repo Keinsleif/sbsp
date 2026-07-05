@@ -81,7 +81,7 @@ const onHide = () => {
       @hide="onHide"
     >
       <template #value="innerProps">
-        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || ' ' }}
+        {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
       </template>
     </Select>
     <label>{{ props.label }}</label>

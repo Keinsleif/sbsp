@@ -54,7 +54,7 @@ const onHide = () => {
       @hide="onHide"
     >
       <template #value="innerProps">
-        {{ props.items.find((opt) => opt.value === (innerProps.value ?? null))?.name || ' ' }}
+        {{ props.items.find((opt) => opt.value === (innerProps.value ?? null))?.name || '&nbsp;' }}
       </template>
       <template #option="innerProps">
         <div
