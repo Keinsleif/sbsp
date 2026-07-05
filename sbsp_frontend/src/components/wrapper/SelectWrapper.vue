@@ -60,6 +60,6 @@ const props = defineProps<{
         </div>
       </template>
     </Select>
-    <label>{{ props.label || '' }}</label>
+    <label>{{ props.label || '' }}</label> <!--label cannot be attachable. Cue select is not generic input form.-->
   </FloatLabel>
 </template>

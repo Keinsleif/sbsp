@@ -75,6 +75,6 @@ const filterCue = (cue: Cue): boolean => {
         {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || '&nbsp;' }}
       </template>
     </Select>
-    <label>{{ props.label }}</label>
+    <label>{{ props.label }}</label> <!--label cannot be attachable. Cue select is not generic input form.-->
   </float-label>
 </template>
