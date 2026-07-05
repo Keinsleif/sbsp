@@ -16,11 +16,14 @@ const onHide = () => {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
-}
+};
 </script>
 
 <template>
-  <FloatLabel variant="on" @keydown.stop>
+  <FloatLabel
+    variant="on"
+    @keydown.stop
+  >
     <Select
       v-bind="$attrs"
       :options="props.items"
@@ -67,6 +70,7 @@ const onHide = () => {
         </div>
       </template>
     </Select>
-    <label>{{ props.label || '' }}</label> <!--label cannot be attachable. Cue select is not generic input form.-->
+    <label>{{ props.label || '' }}</label>
+    <!--label cannot be attachable. Cue select is not generic input form.-->
   </FloatLabel>
 </template>

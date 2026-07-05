@@ -37,7 +37,7 @@ const options = computed(() => {
     { title: t('dialog.server.permissions.control'), value: 2 },
     { title: t('dialog.server.permissions.edit'), value: 4 },
   ];
-})
+});
 </script>
 
 <template>

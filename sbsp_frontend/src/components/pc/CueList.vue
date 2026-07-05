@@ -46,7 +46,7 @@ const pasteHandler = (e: ClipboardEvent) => {
 
   const cues: Cue[] = internalClipboard.value;
 
-  if (cues.length > 0 && uiState.mode === 'edit' ) {
+  if (cues.length > 0 && uiState.mode === 'edit') {
     e.preventDefault();
     api.addCues(cues, uiState.selected, false);
   }

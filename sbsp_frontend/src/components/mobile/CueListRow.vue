@@ -101,7 +101,7 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
     </td>
     <td
       headers="cuelist_type"
-      class="text-center p-0 leading-none"
+      class="p-0 text-center leading-none"
     >
       <path-icon :icon="cueIcon" />
     </td>

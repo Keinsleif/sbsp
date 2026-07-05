@@ -162,10 +162,7 @@ const isActive = computed(() => {
         v-model="chain"
         class="grow-0"
         :label="t('main.chainMode.title')"
-        :disabled="
-          isActive ||
-          props.chainOverride != null
-        "
+        :disabled="isActive || props.chainOverride != null"
         :items="[
           { value: 'doNotChain', name: t('main.chainMode.doNotChain') },
           { value: 'afterStart', name: t('main.chainMode.afterStart') },
@@ -200,11 +197,7 @@ const isActive = computed(() => {
           cue-type="all"
           :exclude="selectedCue?.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
-          :disabled="
-            props.chainOverride != null ||
-            isActive ||
-            chain == 'doNotChain'
-          "
+          :disabled="props.chainOverride != null || isActive || chain == 'doNotChain'"
           @update="saveEditorValue"
         />
         <select-wrapper

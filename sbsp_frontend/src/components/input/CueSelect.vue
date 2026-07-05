@@ -54,11 +54,14 @@ const onHide = () => {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
-}
+};
 </script>
 
 <template>
-  <float-label variant="on" @keydown.stop>
+  <float-label
+    variant="on"
+    @keydown.stop
+  >
     <Select
       v-bind="$attrs"
       v-model="selectedId"
@@ -81,6 +84,7 @@ const onHide = () => {
         {{ cueList.find((opt) => opt.value === (innerProps.value || null))?.name || ' ' }}
       </template>
     </Select>
-    <label>{{ props.label }}</label> <!--label cannot be attachable. Cue select is not generic input form.-->
+    <label>{{ props.label }}</label>
+    <!--label cannot be attachable. Cue select is not generic input form.-->
   </float-label>
 </template>

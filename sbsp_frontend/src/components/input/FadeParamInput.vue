@@ -134,7 +134,8 @@ const saveValues = () => {
         :type="props.condition != 'out' ? 'in' : 'out'"
         :curve="easingType"
         :power="easingPower"
-      /> <!-- props.disabled only disable inputs, not applied for CurveViewer -->
+      />
+      <!-- props.disabled only disable inputs, not applied for CurveViewer -->
       <curve-viewer
         v-if="props.condition == 'both'"
         :disabled="!fadeEnabled"
@@ -142,7 +143,8 @@ const saveValues = () => {
         type="out"
         :curve="easingType"
         :power="easingPower"
-      /> <!-- props.disabled only disable inputs, not applied for CurveViewer -->
+      />
+      <!-- props.disabled only disable inputs, not applied for CurveViewer -->
     </div>
   </div>
 </template>

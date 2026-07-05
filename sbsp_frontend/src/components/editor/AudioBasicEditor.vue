@@ -90,7 +90,7 @@ const pickFile = () => {
 
 const isActive = computed(() => {
   return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
-})
+});
 </script>
 
 <template>

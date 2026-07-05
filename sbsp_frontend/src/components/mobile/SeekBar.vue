@@ -74,7 +74,11 @@ const onpointerup = () => {
       v-model="position"
       class="grow-0"
       :disabled="activeTargetCue == null"
-      :style="{'--p-slider-range-background': activeTargetCue?.status.startsWith('pre') ? 'var(--p-orange-500)' : 'var(--p-primary-color)'}"
+      :style="{
+        '--p-slider-range-background': activeTargetCue?.status.startsWith('pre')
+          ? 'var(--p-orange-500)'
+          : 'var(--p-primary-color)',
+      }"
       :min="0"
       :max="activeTargetCue?.duration || 1"
       @pointerdown="sliderChanging = true"
