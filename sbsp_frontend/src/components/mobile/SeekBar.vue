@@ -53,11 +53,17 @@ watch(
       position.value = newposition || 0;
     }
   },
+  { immediate: true },
 );
 
 const onpointerup = () => {
   if (sliderChanging.value && props.targetId != null) {
-    api.sendSeekTo(props.targetId, position.value);
+    setTimeout(() => {
+      if (props.targetId != null) {
+        api.sendSeekTo(props.targetId, position.value);
+      }
+      sliderChanging.value = false;
+    }, 0);
   }
   sliderChanging.value = false;
 };
@@ -69,7 +75,7 @@ const onpointerup = () => {
       v-model="position"
       class="grow-0"
       :disabled="activeTargetCue == null"
-      :severity="activeTargetCue?.status.startsWith('pre') ? 'warn' : 'primary'"
+      :style="{'--p-slider-range-background': activeTargetCue?.status.startsWith('pre') ? 'var(--p-orange-500)' : 'var(--p-primary-color)'}"
       :min="0"
       :max="activeTargetCue?.duration || 1"
       @pointerdown="sliderChanging = true"
