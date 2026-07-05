@@ -64,17 +64,15 @@ usePosition((pos) => {
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
-      if (durationRef.value.children[1]!.textContent !== durationText.value) {
-        durationRef.value.children[1]!.textContent = durationText.value;
-        (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
-      }
+      // The state transitions from the pre-wait state to the normal playback state. It does not move backward.
       preWaitRef.value.children[1]!.textContent = secondsToFormat(
         uiState.preWaitDisplayMode === 'elapsed' ? position : activeCue.duration - position,
       );
       (preWaitRef.value.children[0]! as HTMLElement).style.transform =
         `scaleX(${position / activeCue.duration})`;
     } else {
-      if (preWaitRef.value.children[1]!.textContent !== preWaitText) {
+      // reset prewait progress display
+      if ((preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)') {
         preWaitRef.value.children[1]!.textContent = preWaitText;
         (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
       }
@@ -87,14 +85,14 @@ usePosition((pos) => {
   } else {
     if (
       (preWaitRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      preWaitRef.value.children[1]!.textContent !== preWaitText
+      (preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
     ) {
       preWaitRef.value.children[1]!.textContent = preWaitText;
       (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
     }
     if (
       (durationRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      durationRef.value.children[1]!.textContent !== durationText.value
+      (durationRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
     ) {
       durationRef.value.children[1]!.textContent = durationText.value;
       (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
@@ -367,7 +365,7 @@ const isActive = computed((): boolean => {
     <td
       headers="cuelist_pre_wait"
       class="text-center"
-      style="padding: 4px 4px"
+      style="padding: 0px 4px"
     >
       <div
         ref="preWait"
@@ -379,7 +377,6 @@ const isActive = computed((): boolean => {
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
-            transform: scaleX(0);
           "
         />
         <div
@@ -407,7 +404,6 @@ const isActive = computed((): boolean => {
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
-            transform: scaleX(0);
           "
         />
         <div
