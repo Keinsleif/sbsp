@@ -173,7 +173,7 @@ onUnmounted(() => {
       <div
         v-if="overlay"
         class="fixed inset-0 z-1000 h-full w-full flex items-center justify-center"
-        style="background-color: rgb(0, 0, 0, 0.5)"
+        style="background-color: rgb(0 0 0 / 0.5)"
       >
         <progress-spinner-wrapper
           color="primary.500"
