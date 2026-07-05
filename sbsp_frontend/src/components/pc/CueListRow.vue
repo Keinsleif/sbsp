@@ -64,17 +64,15 @@ usePosition((pos) => {
   const activeCue = showState.activeCues[props.item.cue.id];
   if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
-      if (durationRef.value.children[1]!.textContent !== durationText.value) {
-        durationRef.value.children[1]!.textContent = durationText.value;
-        (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
-      }
+      // The state transitions from the pre-wait state to the normal playback state. It does not move backward.
       preWaitRef.value.children[1]!.textContent = secondsToFormat(
         uiState.preWaitDisplayMode === 'elapsed' ? position : activeCue.duration - position,
       );
       (preWaitRef.value.children[0]! as HTMLElement).style.transform =
         `scaleX(${position / activeCue.duration})`;
     } else {
-      if (preWaitRef.value.children[1]!.textContent !== preWaitText) {
+      // reset prewait progress display
+      if ((preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)') {
         preWaitRef.value.children[1]!.textContent = preWaitText;
         (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
       }
@@ -87,14 +85,14 @@ usePosition((pos) => {
   } else {
     if (
       (preWaitRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      preWaitRef.value.children[1]!.textContent !== preWaitText
+      (preWaitRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
     ) {
       preWaitRef.value.children[1]!.textContent = preWaitText;
       (preWaitRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
     }
     if (
       (durationRef.value.children[1]! as HTMLElement).contentEditable !== 'true' &&
-      durationRef.value.children[1]!.textContent !== durationText.value
+      (durationRef.value.children[0]! as HTMLElement).style.transform !== 'scaleX(0)'
     ) {
       durationRef.value.children[1]!.textContent = durationText.value;
       (durationRef.value.children[0]! as HTMLElement).style.transform = 'scaleX(0)';
@@ -118,7 +116,7 @@ const durationText = computed(() => {
 });
 
 const setPlaybackCursor = (cueId: string) => {
-  if (!getLockCursorToSelection()) {
+  if (getLockCursorToSelection()) {
     api.setPlaybackCursor(cueId);
   }
 };
@@ -197,9 +195,13 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         newCue.number = target.innerText;
         break;
       case 'cuelist_name': {
-        const newText = target.innerText.trim();
+        const newText = target.textContent.trim();
         if (newText === '') {
-          newCue.name = null;
+          if (newCue.name == null && target.dataset.prevText !== undefined) {
+            target.innerText = target.dataset.prevText;
+          } else {
+            newCue.name = null;
+          }
         } else {
           newCue.name = newText;
         }
@@ -246,10 +248,10 @@ const isPreWaitActive = computed(() => {
   );
 });
 
-const isActive = computed((): boolean => {
+const isPlayingActive = computed((): boolean => {
   return (
     props.item.cue.id in showState.activeCues &&
-    (['playing', 'paused', 'stopping', 'completed'] as PlaybackStatus[]).includes(
+    (['playing', 'paused', 'stopping'] as PlaybackStatus[]).includes(
       showState.activeCues[props.item.cue.id]!.status,
     )
   );
@@ -343,10 +345,6 @@ const isActive = computed((): boolean => {
       :style="{
         paddingLeft: `${item.level}em`,
       }"
-      @dblclick="openEditable($event, 'cuelist_name')"
-      @blur="closeEditable($event.target, true, 'cuelist_name')"
-      @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_name')"
-      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')"
     >
       <path-icon
         :icon="item.isGroup ? (isExpanded ? mdiMenuDown : mdiMenuRight) : null"
@@ -355,12 +353,19 @@ const isActive = computed((): boolean => {
         @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
         @pointerdown="item.isGroup && $event.stopPropagation()"
       />
-      {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
+      <span
+        class="h-full"
+        v-text="item.cue.name != null ? item.cue.name : buildCueName(item.cue)"
+        @dblclick="openEditable($event, 'cuelist_name')"
+        @blur="closeEditable($event.target, true, 'cuelist_name')"
+        @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_name')"
+        @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')"
+      ></span>
     </td>
     <td
       headers="cuelist_pre_wait"
       class="text-center"
-      style="padding: 4px 4px"
+      style="padding: 0px 4px"
     >
       <div
         ref="preWait"
@@ -372,7 +377,6 @@ const isActive = computed((): boolean => {
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
-            transform: scaleX(0);
           "
         />
         <div
@@ -393,20 +397,19 @@ const isActive = computed((): boolean => {
       <div
         ref="duration"
         class="relative h-3/4 w-full"
-        :class="[isActive ? 'border-primary border' : '']"
+        :class="[isPlayingActive ? 'border-primary border' : '']"
       >
         <div
           class="top-0 left-0 h-full w-full"
           style="
             transform-origin: left;
             background-color: rgb(from var(--p-primary-color) r g b / 0.5);
-            transform: scaleX(0);
           "
         />
         <div
           class="absolute left-0 w-full text-center"
           style="top: 50%; transform: translateY(-50%)"
-          @dblclick="if (!isActive) openEditable($event, 'cuelist_duration');"
+          @dblclick="if (!isPlayingActive) openEditable($event, 'cuelist_duration');"
           @blur="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_duration')"
           @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_duration')"

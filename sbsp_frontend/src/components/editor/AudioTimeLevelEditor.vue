@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import VolumeFader from '../input/VolumeFader.vue';
 import PanningFader from '../input/PanningFader.vue';
 import ResponsiveControl from '../wrapper/ResponsiveControl.vue';
@@ -121,6 +121,10 @@ const setVolumeToMAX = () => {
   saveEditorValue();
   changeActiveCueVolume();
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
 <template>
@@ -128,7 +132,7 @@ const setVolumeToMAX = () => {
     <waveform-editor
       v-model="selectedCue"
       :height-px="125"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       :volume="volume"
       @update="emit('update')"
     />
@@ -186,7 +190,7 @@ const setVolumeToMAX = () => {
           class="h-full grow"
           :label="t('main.bottomEditor.timeLevels.pan')"
           :direction="xs ? 'vertical' : 'horizontal'"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          :disabled="isActive"
           @update="saveEditorValue()"
         />
       </responsive-control>
@@ -196,7 +200,7 @@ const setVolumeToMAX = () => {
       <checkbox-wrapper
         v-model="repeat"
         :label="t('main.bottomEditor.timeLevels.repeat')"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+        :disabled="isActive"
         @update:model-value="saveEditorValue"
       />
     </div>

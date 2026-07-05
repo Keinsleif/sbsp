@@ -40,17 +40,27 @@ const connect = (host: string, port: number) => {
     }
     password = ps_string.trim() || null;
   }
-  overlay.value = true;
-  api.remote?.connectToServer(address, password).catch((e) => {
-    overlay.value = false;
-    console.error(e);
+  if (api.remote != null) {
+    overlay.value = true;
+    api.remote.connectToServer(address, password).catch((e) => {
+      overlay.value = false;
+      console.error(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.connectionError'),
+        detail: e.toString(),
+        life: 3000,
+      });
+    });
+  } else {
+    console.error('Remote API does not implemented.');
     toast.add({
       severity: 'error',
       summary: t('notification.connectionError'),
-      detail: e.toString(),
+      detail: 'Remote API does not implemented.',
       life: 3000,
     });
-  });
+  }
 };
 
 let unlisten: (() => void) | null;
@@ -66,7 +76,6 @@ onMounted(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const address = searchParams.get('address');
     if (address != null) {
-      overlay.value = true;
       console.log(`Connecting to ${address}`);
       let hostStr = '';
       let portNum = 5800;
@@ -171,12 +180,13 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="overlay"
-        class="fixed inset-0 z-1000"
-        style="background-color: rgb(0, 0, 0, 0.5)"
+        class="fixed inset-0 z-1000 flex h-full w-full items-center justify-center"
+        style="background-color: rgb(0 0 0 / 0.5)"
       >
         <progress-spinner-wrapper
-          color="primary"
-          size="64"
+          color="primary.500"
+          strokeWidth="5"
+          size="96px"
         />
       </div>
     </Teleport>

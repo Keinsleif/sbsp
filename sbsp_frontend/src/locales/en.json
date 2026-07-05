@@ -314,7 +314,6 @@
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
-      "levels": {},
       "meter": {
         "title": "Meter"
       }
@@ -383,7 +382,8 @@
     "failedToEditCue": "Failed to edit Cue",
     "operationFailed": "Operation failed",
     "failedToStartServer": "Failed to start server",
-    "failedToStopServer": "Failed to stop server"
+    "failedToStopServer": "Failed to stop server",
+    "failedToLoadLicense": "Failed to load License"
   },
   "view": {
     "connect": {

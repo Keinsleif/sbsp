@@ -51,7 +51,9 @@ const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
   return list
     .filter((item) => item.type === 'dir' || AUDIO_EXTENSIONS.includes(item.extension))
     .map((item) => {
-      const currentKey = parentKey ? `${parentKey}-${item.name}` : `${item.name}`;
+      // This is stable because it is nearly equals to path. (constructed with dirname & filename)
+      // And this is needed for directory key
+      const currentKey = parentKey ? `${parentKey}/${item.name}` : `${item.name}`;
 
       if (item.type === 'dir') {
         return {
@@ -62,6 +64,7 @@ const transformToTreeNodes = (list: FileList[], parentKey = ''): TreeNode[] => {
           children: transformToTreeNodes(item.files, currentKey),
         };
       } else {
+        // This key is must be same as TreeNode's unique key
         pathMap.set(currentKey, item.path);
         return {
           key: currentKey,
@@ -109,7 +112,6 @@ watch(isFileListDialogOpen, (value) => {
       v-model:selectionKeys="selected"
       scroll-height="flex"
       :value="treeValue"
-      color="primary"
       scrollable
       :selection-mode="props.multiple ? 'multiple' : 'single'"
     >

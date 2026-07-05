@@ -46,9 +46,9 @@ const pasteHandler = (e: ClipboardEvent) => {
 
   const cues: Cue[] = internalClipboard.value;
 
-  if (cues.length > 0) {
+  if (cues.length > 0 && uiState.mode === 'edit') {
     e.preventDefault();
-    api.addCues(cues, uiState.selected, true);
+    api.addCues(cues, uiState.selected, false);
   }
 };
 
@@ -58,11 +58,13 @@ const cutHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
-    api.removeCues(
-      cues.map((cue) => cue.id),
-      false,
-    );
+    internalClipboard.value = structuredClone(cues.map((cue: Cue) => toRaw(cue)));
+    if (uiState.mode === 'edit') {
+      api.removeCues(
+        cues.map((cue) => cue.id),
+        false,
+      );
+    }
   }
 };
 
@@ -79,7 +81,7 @@ const copyHandler = (e: ClipboardEvent) => {
 const paste = () => {
   const cues = internalClipboard.value;
 
-  if (cues.length > 0) {
+  if (cues.length > 0 && uiState.mode === 'edit') {
     api.addCues(cues, uiState.selected, false);
   }
 };
@@ -88,10 +90,12 @@ const cut = () => {
   const cues = showModel.getSelectedCues;
   if (cues.length > 0) {
     internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
-    api.removeCues(
-      cues.map((cue) => cue.id),
-      false,
-    );
+    if (uiState.mode === 'edit') {
+      api.removeCues(
+        cues.map((cue) => cue.id),
+        false,
+      );
+    }
   }
 };
 
@@ -112,7 +116,11 @@ const menuItems = computed(() => [
   {
     label: t('main.cueList.contextMenu.delete'),
     icon: mdiTrashCan,
-    command: () => api.removeCues(Array.from(uiState.selectedRows)),
+    command: () => {
+      if (uiState.mode === 'edit') {
+        api.removeCues(Array.from(uiState.selectedRows));
+      }
+    },
   },
 ]);
 

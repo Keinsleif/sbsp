@@ -563,8 +563,8 @@ mod tests {
         assert_eq!(normalize_hostname(""), ".local.");
 
         // multibyte
-        assert_eq!(normalize_hostname("テストPC"), ".local.");
-        assert_eq!(normalize_hostname("テストPC.local"), ".local.");
-        assert_eq!(normalize_hostname("テストPC.local."), ".local.");
+        assert_eq!(normalize_hostname("テストPC"), "テストpc.local.");
+        assert_eq!(normalize_hostname("テストPC.local"), "テストpc.local.");
+        assert_eq!(normalize_hostname("テストPC.local."), "テストpc.local.");
     }
 }

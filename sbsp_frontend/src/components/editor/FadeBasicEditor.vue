@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
 import { useShowState } from '../../stores/showState';
 import type { Cue } from '../../types/Cue';
@@ -66,6 +66,10 @@ const saveEditorValue = () => {
   selectedCue.value.params.fadeParam = fadeParam.value;
   emit('update');
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
 <template>
@@ -75,13 +79,13 @@ const saveEditorValue = () => {
       class="grow-0"
       :label="t('main.bottomEditor.targetCue')"
       :cue-type="['audio', 'group']"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update="saveEditorValue"
     />
     <volume-fader
       v-model="volume"
       :label="t('main.bottomEditor.fade.targetVolume')"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
       @update="saveEditorValue"
     />
@@ -91,7 +95,7 @@ const saveEditorValue = () => {
       :label="t('main.bottomEditor.fade.fadeParameter')"
       condition="both"
       disable-toggle
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update="saveEditorValue"
     />
   </div>

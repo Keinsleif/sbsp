@@ -3,7 +3,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { mdiFileMusic } from '@mdi/js';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
 import ResponsiveControl from '../wrapper/ResponsiveControl.vue';
 import { useShowState } from '../../stores/showState';
@@ -63,22 +63,6 @@ watch(selectedCue, () => {
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
 
-const onTargetFieldKeyDown = (e: KeyboardEvent) => {
-  if (
-    !(e.target instanceof HTMLElement) ||
-    selectedCue.value == null ||
-    selectedCue.value.params.type !== 'audio'
-  ) {
-    return;
-  }
-  if (e.key === 'Enter') {
-    e.target.blur();
-  } else if (e.key === 'Escape') {
-    target.value = selectedCue.value.params.target;
-    e.target.blur();
-  }
-};
-
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
@@ -103,6 +87,10 @@ const pickFile = () => {
     }
   });
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
 <template>
@@ -111,13 +99,12 @@ const pickFile = () => {
       <text-input
         v-model="target"
         :label="t('main.bottomEditor.audio.targetFile')"
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+        :disabled="isActive"
         class="grow text-center"
-        @blur="saveEditorValue"
-        @keydown="onTargetFieldKeyDown"
+        @update="saveEditorValue"
       />
       <button-wrapper
-        :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+        :disabled="isActive"
         :icon="mdiFileMusic"
         @click="pickFile"
       />
@@ -126,7 +113,7 @@ const pickFile = () => {
       v-model="soundType"
       v-tooltip.bottom="t('general.forExpertWarning')"
       class="self-start"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
       @update:model-value="saveEditorValue"
     />
@@ -139,7 +126,7 @@ const pickFile = () => {
           v-model="fadeInParam"
           :label="t('main.bottomEditor.audio.fadeIn')"
           condition="in"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          :disabled="isActive"
           @update="saveEditorValue"
         />
       </responsive-control>
@@ -151,7 +138,7 @@ const pickFile = () => {
           v-model="fadeOutParam"
           :label="t('main.bottomEditor.audio.fadeOut')"
           condition="out"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+          :disabled="isActive"
           @update="saveEditorValue"
         />
       </responsive-control>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import SelectWrapper from '../wrapper/SelectWrapper.vue';
@@ -83,6 +83,10 @@ const saveEditorValue = () => {
   }
   emit('update');
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
 <template>
@@ -95,7 +99,7 @@ const saveEditorValue = () => {
         { value: 'concurrency', name: t('main.bottomEditor.group.mode.concurrency') },
         { value: 'startFirst', name: t('main.bottomEditor.group.mode.startFirst') },
       ]"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       autocomplete="off"
       @update:model-value="saveEditorValue"
       @keydown.stop
@@ -104,14 +108,14 @@ const saveEditorValue = () => {
       v-show="selectedCue != null && mode == 'playlist'"
       v-model="repeat"
       :label="t('main.bottomEditor.timeLevels.repeat')"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update:model-value="saveEditorValue"
     />
     <checkbox-wrapper
       v-show="selectedCue != null && mode == 'startFirst'"
       v-model="enter"
       :label="t('main.bottomEditor.group.advanceCursorInto')"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
+      :disabled="isActive"
       @update:model-value="saveEditorValue"
     />
   </div>

@@ -46,7 +46,9 @@ usePosition((pos) => {
   const position = pos[props.item.cue.id];
   const activeCue = showState.activeCues[props.item.cue.id];
   if (activeCue == null || position == null || activeCue.duration === 0) {
-    rowRef.value.style.background = '';
+    if (rowRef.value.style.background !== '') {
+      rowRef.value.style.background = '';
+    }
     return;
   }
   rowRef.value.style.background =
@@ -68,39 +70,38 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
   <tr ref="row">
     <td
       headers="cuelist_cursor"
-      class="px-1"
+      class="px-1 leading-none"
     >
       <path-icon :icon="isPlaybackCursor ? mdiArrowRightBold : null" />
     </td>
     <td
       headers="cuelist_status"
-      class="px-1"
+      class="px-1 leading-none"
     >
       <path-icon
         v-show="isStatusIn(['playing', 'preWaiting'])"
         :icon="mdiPlay"
-        color="success"
+        class="text-green-500"
       />
       <path-icon
         v-show="isStatusIn(['paused', 'preWaitPaused'])"
         :icon="mdiPause"
-        color="warning"
+        class="text-orange-500"
       />
       <path-icon
         v-show="status == 'loaded'"
         :icon="mdiUpload"
-        color="warning"
+        class="text-orange-500"
       />
       <progress-spinner-wrapper
         v-show="status == 'stopping'"
         size="16px"
-        severity="warning"
+        color="orange.500"
       />
     </td>
     <td
       headers="cuelist_type"
-      class="text-center"
-      style="padding: 0px"
+      class="p-0 text-center leading-none"
     >
       <path-icon :icon="cueIcon" />
     </td>

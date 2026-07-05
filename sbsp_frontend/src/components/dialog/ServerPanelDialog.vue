@@ -209,12 +209,7 @@ onUnmounted(() => {
               {{ t('dialog.server.status') }} :
               <span
                 :style="{
-                  color:
-                    isRunning == null
-                      ? ''
-                      : isRunning
-                        ? $dt('green.500').variable
-                        : $dt('red.500').variable,
+                  color: isRunning ? $dt('green.500').variable : $dt('red.500').variable,
                 }"
               >
                 {{
@@ -243,7 +238,6 @@ onUnmounted(() => {
           <text-input
             v-model="server_name"
             :disabled="!isDiscoverable || isRunning"
-            align-input="left"
             class="mt-1 w-80 grow-0"
             :label="t('dialog.server.serverName')"
           />

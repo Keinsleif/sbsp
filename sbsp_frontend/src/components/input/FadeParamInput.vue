@@ -129,20 +129,22 @@ const saveValues = () => {
         @update="saveValues"
       />
       <curve-viewer
-        :disabled="!fadeEnabled || props.disabled"
+        :disabled="!fadeEnabled"
         class="w-16"
         :type="props.condition != 'out' ? 'in' : 'out'"
         :curve="easingType"
         :power="easingPower"
       />
+      <!-- props.disabled only disable inputs, not applied for CurveViewer -->
       <curve-viewer
         v-if="props.condition == 'both'"
-        :disabled="!fadeEnabled || props.disabled"
+        :disabled="!fadeEnabled"
         class="w-16"
         type="out"
         :curve="easingType"
         :power="easingPower"
       />
+      <!-- props.disabled only disable inputs, not applied for CurveViewer -->
     </div>
   </div>
 </template>

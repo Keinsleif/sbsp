@@ -98,14 +98,7 @@ const saveEditorValue = () => {
       selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
-  if (name.value != null) {
-    const newName = name.value.trim();
-    if (newName === '') {
-      selectedCue.value.name = null;
-    } else {
-      selectedCue.value.name = newName;
-    }
-  }
+  selectedCue.value.name = name.value;
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
   }
@@ -133,6 +126,10 @@ const insertTimestampToNote = () => {
   }
   saveEditorValue();
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
 <template>
@@ -165,10 +162,7 @@ const insertTimestampToNote = () => {
         v-model="chain"
         class="grow-0"
         :label="t('main.chainMode.title')"
-        :disabled="
-          (selectedCue != null && selectedCue.id in showState.activeCues) ||
-          props.chainOverride != null
-        "
+        :disabled="isActive || props.chainOverride != null"
         :items="[
           { value: 'doNotChain', name: t('main.chainMode.doNotChain') },
           { value: 'afterStart', name: t('main.chainMode.afterStart') },
@@ -184,7 +178,7 @@ const insertTimestampToNote = () => {
         v-model="name"
         :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
         :label="t('main.name')"
-        align-input="left"
+        accept-null
         class="grow-0"
         @update="saveEditorValue"
       />
@@ -203,12 +197,7 @@ const insertTimestampToNote = () => {
           cue-type="all"
           :exclude="selectedCue?.id"
           :null-text="t('main.bottomEditor.basics.nextCue')"
-          :disabled="
-            props.chainOverride != null ||
-            selectedCue == null ||
-            selectedCue.id in showState.activeCues ||
-            chain == 'doNotChain'
-          "
+          :disabled="props.chainOverride != null || isActive || chain == 'doNotChain'"
           @update="saveEditorValue"
         />
         <select-wrapper
@@ -233,7 +222,7 @@ const insertTimestampToNote = () => {
         />
         <button-wrapper
           class="grow-0"
-          :disabled="selectedCue != null && !(selectedCue.id in showState.activeCues)"
+          :disabled="!isActive"
           :label="t('main.bottomEditor.basics.timestamp')"
           @click="insertTimestampToNote"
         />
