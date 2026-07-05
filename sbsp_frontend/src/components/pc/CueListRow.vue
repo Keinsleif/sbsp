@@ -197,9 +197,13 @@ const closeEditable = (target: EventTarget | null, needSave: boolean, editType: 
         newCue.number = target.innerText;
         break;
       case 'cuelist_name': {
-        const newText = target.innerText.trim();
+        const newText = target.textContent.trim();
         if (newText === '') {
-          newCue.name = null;
+          if (newCue.name == null && target.dataset.prevText !== undefined) {
+            target.innerText = target.dataset.prevText;
+          } else {
+            newCue.name = null;
+          }
         } else {
           newCue.name = newText;
         }
@@ -343,10 +347,6 @@ const isActive = computed((): boolean => {
       :style="{
         paddingLeft: `${item.level}em`,
       }"
-      @dblclick="openEditable($event, 'cuelist_name')"
-      @blur="closeEditable($event.target, true, 'cuelist_name')"
-      @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_name')"
-      @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')"
     >
       <path-icon
         :icon="item.isGroup ? (isExpanded ? mdiMenuDown : mdiMenuRight) : null"
@@ -355,7 +355,14 @@ const isActive = computed((): boolean => {
         @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
         @pointerdown="item.isGroup && $event.stopPropagation()"
       />
-      {{ item.cue.name != null ? item.cue.name : buildCueName(item.cue) }}
+      <span
+        class="h-full"
+        v-text="item.cue.name != null ? item.cue.name : buildCueName(item.cue)"
+        @dblclick="openEditable($event, 'cuelist_name')"
+        @blur="closeEditable($event.target, true, 'cuelist_name')"
+        @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_name')"
+        @keydown.esc.stop="closeEditable($event.target, false, 'cuelist_name')"
+      ></span>
     </td>
     <td
       headers="cuelist_pre_wait"
