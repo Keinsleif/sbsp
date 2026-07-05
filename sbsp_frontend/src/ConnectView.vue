@@ -40,17 +40,19 @@ const connect = (host: string, port: number) => {
     }
     password = ps_string.trim() || null;
   }
-  overlay.value = true;
-  api.remote?.connectToServer(address, password).catch((e) => {
-    overlay.value = false;
-    console.error(e);
-    toast.add({
-      severity: 'error',
-      summary: t('notification.connectionError'),
-      detail: e.toString(),
-      life: 3000,
+  if (api.remote != null) {
+    overlay.value = true;
+    api.remote.connectToServer(address, password).catch((e) => {
+      overlay.value = false;
+      console.error(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.connectionError'),
+        detail: e.toString(),
+        life: 3000,
+      });
     });
-  });
+  }
 };
 
 let unlisten: (() => void) | null;
@@ -171,12 +173,13 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="overlay"
-        class="fixed inset-0 z-1000"
+        class="fixed inset-0 z-1000 h-full w-full flex flex-col align-center justify-center"
         style="background-color: rgb(0, 0, 0, 0.5)"
       >
         <progress-spinner-wrapper
-          color="primary"
-          size="64"
+          color="primary.500"
+          storke-width="5"
+          size="96px"
         />
       </div>
     </Teleport>

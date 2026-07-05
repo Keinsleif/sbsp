@@ -9,8 +9,10 @@ const props = withDefaults(
   defineProps<{
     size?: string;
     color?: string;
+    storkeWidth?: string;
   }>(),
   {
+    storkeWidth: '10',
     size: '16px',
     color: 'text.color',
   },
@@ -19,7 +21,7 @@ const props = withDefaults(
 
 <template>
   <ProgressSpinner
-    stroke-width="10"
+    :stroke-width="props.storkeWidth"
     animation-duration="1s"
     :style="{
       width: props.size,
