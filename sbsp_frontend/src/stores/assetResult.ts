@@ -37,7 +37,10 @@ export const useAssetResult = defineStore(
       if (!processing.has(path) && !failed.has(path)) {
         const api = useApi();
         processing.add(path);
-        api.processAsset(path);
+        api.processAsset(path).catch((e) => {
+          console.error(e);
+          addError(path);
+        });
       }
     }
 
