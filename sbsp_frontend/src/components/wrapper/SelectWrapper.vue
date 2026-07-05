@@ -35,8 +35,8 @@ const props = defineProps<{
           return {
             style: {
               backgroundColor:
-                opts.context.option != null && opts.context.option.color != 'none'
-                  ? `rgb(from ${$dt(opts.context.option.color + '.500').variable} r g b / 0.5`
+                opts.context.option != null && opts.context.option.color != 'none' // primevue is patched that option contains selected option
+                  ? `rgb(from ${$dt(opts.context.option.color + '.500').variable} r g b / 0.5)`
                   : undefined,
             },
           };
