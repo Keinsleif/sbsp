@@ -100,7 +100,7 @@ export default defineConfig({
       process.env.VITE_APP_TARGET === 'tauri'
         ? process.env.TAURI_ENV_PLATFORM === 'windows'
           ? 'chrome105'
-          : 'safari13'
+          : 'safari15'
         : 'baseline-widely-available',
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
