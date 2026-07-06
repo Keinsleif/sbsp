@@ -4059,7 +4059,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_app"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "anyhow",
  "humantime",
@@ -4130,7 +4130,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_remote_app"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "anyhow",
  "humantime",

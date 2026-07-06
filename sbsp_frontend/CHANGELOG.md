@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend-2.5.1 - 2026-07-06
+#### Bug Fixes
+- (**frontend**) webkit(safari) version for primeuix (#132) - (22a212d) - *Keinsleif*
+
+- - -
+
 ## frontend-2.5.0 - 2026-07-06
 #### Features
 - (**frontend**) primevue framework migration (#119) - (45a38ac) - *Keinsleif*

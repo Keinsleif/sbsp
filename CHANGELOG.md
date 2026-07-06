@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.5.1](https://github.com/Keinsleif/sbsp/compare/2.5.0..2.5.1) - 1970-01-01
+### Package updates
+- [app-2.5.1](sbsp_app) bumped to [app-2.5.1](https://github.com/Keinsleif/sbsp/compare/app-2.5.0..app-2.5.1)
+- [remote_app-2.5.1](sbsp_remote_app) bumped to [remote_app-2.5.1](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.0..remote_app-2.5.1)
+- [frontend-2.5.1](sbsp_frontend) bumped to [frontend-2.5.1](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.0..frontend-2.5.1)
+### Global changes
+
+- - -
+
 ## [2.5.0](https://github.com/Keinsleif/sbsp/compare/efd4124666acbeabb0b8a6db91a3aa96fca9a205..2.5.0) - 2026-07-06
 ### Package updates
 - [docs-1.1.0](sbsp_docs) bumped to [docs-1.1.0](https://github.com/Keinsleif/sbsp/compare/docs-1.0.1..docs-1.1.0)
