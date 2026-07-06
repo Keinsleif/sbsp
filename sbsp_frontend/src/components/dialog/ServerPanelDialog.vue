@@ -1,210 +1,29 @@
-<template>
-  <v-dialog
-    v-model="isServerPanelOpen"
-    width="auto"
-    @keydown.stop.esc="isServerPanelOpen = false"
-    @contextmenu.prevent
-  >
-    <v-sheet class="d-flex flex-column pa-4 ga-4">
-      <h2 class="ma-2">
-        {{ t('dialog.server.title') }}
-      </h2>
-      <div class="d-flex flex-row ga-4">
-        <div class="d-flex flex-column ga-4">
-          <div>
-            <span>
-              {{ t('dialog.server.status') }} :
-              <span :class="isRunning == null ? '' : isRunning ? 'text-green' : 'text-red'">
-                {{ isRunning == null ? '' : isRunning ? t('dialog.server.running') : t('dialog.server.stopped') }}
-              </span>
-            </span>
-          </div>
-          <text-input
-            v-model="server_port"
-            :disabled="isRunning"
-            class="flex-grow-0"
-            :label="t('dialog.server.port')"
-            width="100px"
-          />
-          <v-checkbox
-            v-model="isDiscoverable"
-            :disabled="isRunning"
-            :label="t('dialog.server.discoverable')"
-            density="compact"
-            hide-details
-          />
-          <text-input
-            v-model="server_name"
-            :disabled="!isDiscoverable || isRunning"
-            align-input="left"
-            class="flex-grow-0 mt-1"
-            :label="t('dialog.server.serverName')"
-            width="320px"
-          />
-        </div>
-        <v-table density="compact" class="border flex-grow-1">
-          <thead>
-            <tr>
-              <th width="200">
-                {{ t('dialog.server.password') }}
-                <v-icon
-                  class="ml-2"
-                  :icon="isPasswordVisible ? mdiEye : mdiEyeOff"
-                  @click="isPasswordVisible = !isPasswordVisible"
-                />
-              </th>
-              <th width="240">
-                {{ t('dialog.server.permission') }}
-              </th>
-              <th width="108" />
-              <th width="45" />
-              <th width="45" />
-            </tr>
-          </thead>
-          <tbody>
-            <server-panel-password-row
-              v-for="(info, i) in server_authMap"
-              :key="i"
-              v-model:password="info.password"
-              v-model:permission="info.permission"
-              :is-running="isRunning || false"
-              :is-visible="isPasswordVisible"
-              @delete="() => {if (server_authMap.length > 1) {server_authMap.splice(i, 1)}}"
-              @open-info="generateServerUrl(info.password).then(() => {
-                isServerInfoDialogOpen = true;
-              })"
-            />
-            <tr>
-              <td colspan="5" class="text-center py-1">
-                <v-btn
-                  :icon="mdiPlus"
-                  :disabled="isRunning || false"
-                  density="compact"
-                  color="success"
-                  variant="outlined"
-                  @click="server_authMap.push({ password: generateRandomPassword(), permission: 0b0001 })"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
-    </v-sheet>
-    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 mt-auto ga-3">
-      <v-btn
-        class="ml-auto"
-        :text="isRunning ? t('dialog.server.stop') : t('dialog.server.start')"
-        :color="isRunning ? 'red' : 'green'"
-        @click="toggleServer"
-      />
-      <v-btn
-        :text="t('general.close')"
-        variant="outlined"
-        @click="isServerPanelOpen = false"
-      />
-    </v-footer>
-    <v-dialog
-      v-model="isServerInfoDialogOpen"
-      width="auto"
-    >
-      <v-sheet
-        class="d-flex flex-column pa-3 ga-3 align-stretch"
-        width="480px"
-      >
-        <h3>{{ t('dialog.server.connectInfo') }}</h3>
-        <div class="d-flex flex-row align-center mt-2">
-          <copy-text-input
-            v-model="server_hostname"
-            readonly
-            :placeholder="t('dialog.server.info.hostnameUnavailable')"
-            align-input="left"
-            class="flex-grow-1"
-            :label="t('dialog.server.info.host')"
-          />
-          <span class="px-2">:</span>
-          <copy-text-input
-            v-model="server_port"
-            readonly
-            align-input="left"
-            class="flex-grow-0"
-            :label="t('dialog.server.port')"
-            width="100px"
-          />
-        </div>
-        <copy-text-input
-          v-model="server_password"
-          readonly
-          :placeholder="t('dialog.server.info.passwordNotSet')"
-          align-input="left"
-          class="flex-grow-1 mt-2"
-          :label="t('dialog.server.password')"
-        />
-        <copy-text-input
-          v-model="server_url"
-          readonly
-          :placeholder="t('dialog.server.info.urlUnavailable')"
-          align-input="left"
-          class="flex-grow-1 mt-2"
-          :label="t('dialog.server.info.url')"
-        />
-        <div style="text-align: center">
-          <qr-viewer
-            ref="qrRef"
-            v-model="server_url"
-            width="240px"
-            height="240px"
-          />
-        </div>
-        <v-btn
-          :text="t('dialog.server.info.copyQr')"
-          @click="copyQr"
-        >
-          <template #prepend>
-            <v-fade-transition leave-absolute>
-              <v-icon
-                v-if="copied"
-                :icon="mdiCheck"
-              />
-              <v-icon
-                v-else
-                :icon="mdiContentCopy"
-              />
-            </v-fade-transition>
-          </template>
-        </v-btn>
-      </v-sheet>
-      <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 mt-auto ga-3">
-        <v-btn
-          :text="t('general.close')"
-          class="ml-auto mr-0"
-          variant="outlined"
-          @click="isServerInfoDialogOpen = false"
-        />
-      </v-footer>
-    </v-dialog>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
-import TextInput from '../input/TextInput.vue';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
-import { ApiServerOptions } from '../../types/ApiServerOptions';
-import { useUiState } from '../../stores/uistate';
-import { mdiCheck, mdiContentCopy, mdiEye, mdiEyeOff, mdiPlus } from '@mdi/js';
+import type { ApiServerOptions } from '../../types/ApiServerOptions';
+import { mdiEye, mdiEyeOff, mdiPlus } from '@mdi/js';
 import CopyTextInput from '../input/CopyTextInput.vue';
-import QrViewer from '../input/QrViewer.vue';
+import QrViewer from '../display/QrViewer.vue';
 import { generateRandomPassword } from '../../utils';
 import ServerPanelPasswordRow from './ServerPanelPasswordRow.vue';
-import { PermissionInfo } from '../../types/PermissionInfo';
+import type { PermissionInfo } from '../../types/PermissionInfo';
+import { useToast } from 'primevue/usetoast';
+import Dialog from 'primevue/dialog';
+import { $dt } from '@primeuix/themes';
+import TextInput from '../input/TextInput.vue';
+import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
+import PathIcon from '../display/PathIcon.vue';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import NumberInput from '../input/NumberInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
-const uiState = useUiState();
+const toast = useToast();
 
 const isServerPanelOpen = defineModel<boolean>({ required: true });
 const qrRef = useTemplateRef<InstanceType<typeof QrViewer>>('qrRef');
@@ -213,9 +32,9 @@ const isPasswordVisible = ref(false);
 const isServerInfoDialogOpen = ref(false);
 const copied = ref(false);
 
-const isRunning = ref<boolean | null>(null);
-const isDiscoverable = ref<boolean | null>(null);
-const server_port = ref<string>('');
+const isRunning = ref<boolean>(false);
+const isDiscoverable = ref<boolean>(false);
+const server_port = ref<number>(5800);
 const server_name = ref<string>('Untitled SBS Player Server');
 const server_authMap = ref<PermissionInfo[]>([]);
 
@@ -242,7 +61,7 @@ const saveServerOptions = async () => {
   } else {
     server_options.discoverry = null;
   }
-  server_options.port = parseInt(server_port.value);
+  server_options.port = server_port.value;
   server_options.authMap = server_authMap.value;
   await api.host?.setServerOptions(server_options);
 };
@@ -251,18 +70,39 @@ const toggleServer = async () => {
   if (isRunning.value) {
     api.host?.stopServer().catch((e) => {
       console.error(e);
-      uiState.error_messages.push(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToStopServer'),
+        detail: e.toString(),
+        life: 3000,
+      });
     });
   } else {
     isPasswordVisible.value = false;
-    await saveServerOptions();
-    api.host?.startServer().catch((e) => {
-      console.error(e);
-      uiState.error_messages.push(e);
-    });
+    saveServerOptions()
+      .then(() => {
+        api.host?.startServer().catch((e) => {
+          console.error(e);
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToStartServer'),
+            detail: e.toString(),
+            life: 3000,
+          });
+        });
+      })
+      .catch((e) => {
+        toast.add({
+          severity: 'error',
+          summary: t('notification.failedToStartServer'),
+          detail: e.toString(),
+          life: 3000,
+        });
+      });
   }
 };
 
+// Generaate 'connectable' url from server_options that contains backend's options
 const generateServerUrl = async (password: string) => {
   const hostname = await api.host?.getHostname();
   server_hostname.value = hostname || null;
@@ -325,14 +165,14 @@ onMounted(() => {
       } else {
         isDiscoverable.value = false;
       }
-      server_port.value = options.port.toString();
+      server_port.value = options.port;
       server_authMap.value = options.authMap;
     })
-    .catch(e => console.error(e));
+    .catch((e) => console.error(e));
   api.host
     ?.isServerRunning()
-    .then(state => (isRunning.value = state))
-    .catch(e => console.error(e));
+    .then((state) => (isRunning.value = state))
+    .catch((e) => console.error(e));
   api.host
     ?.onServerStatusChanged((status) => {
       if (status === 'started') {
@@ -352,3 +192,182 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isServerPanelOpen"
+    class="w-auto"
+    :header="t('dialog.server.title')"
+    @keydown.stop.esc="isServerPanelOpen = false"
+    @contextmenu.prevent
+  >
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-row gap-4">
+        <div class="flex flex-col gap-4">
+          <div>
+            <span>
+              {{ t('dialog.server.status') }} :
+              <span
+                :style="{
+                  color: isRunning ? $dt('green.500').variable : $dt('red.500').variable,
+                }"
+              >
+                {{
+                  isRunning == null
+                    ? ''
+                    : isRunning
+                      ? t('dialog.server.running')
+                      : t('dialog.server.stopped')
+                }}
+              </span>
+            </span>
+          </div>
+          <number-input
+            v-model="server_port"
+            :min="0"
+            :max="65535"
+            :disabled="isRunning"
+            class="w-25 grow-0"
+            :label="t('dialog.server.port')"
+          />
+          <CheckboxWrapper
+            v-model="isDiscoverable"
+            :disabled="isRunning"
+            :label="t('dialog.server.discoverable')"
+          />
+          <text-input
+            v-model="server_name"
+            :disabled="!isDiscoverable || isRunning"
+            class="mt-1 w-80 grow-0"
+            :label="t('dialog.server.serverName')"
+          />
+        </div>
+        <div class="grow overflow-auto border border-(--p-form-field-border-color)">
+          <table>
+            <thead>
+              <tr class="border-b border-(--p-form-field-border-color)">
+                <th width="220">
+                  {{ t('dialog.server.password') }}
+                  <path-icon
+                    class="ml-2 cursor-pointer"
+                    :icon="isPasswordVisible ? mdiEye : mdiEyeOff"
+                    @click="isPasswordVisible = !isPasswordVisible"
+                  />
+                </th>
+                <th
+                  width="316"
+                  class="border-x border-(--p-form-field-border-color)"
+                >
+                  {{ t('dialog.server.permission') }}
+                </th>
+                <th width="108" />
+                <th width="45" />
+                <th width="45" />
+              </tr>
+            </thead>
+            <tbody>
+              <server-panel-password-row
+                v-for="(info, i) in server_authMap"
+                :key="i"
+                v-model:password="info.password"
+                v-model:permission="info.permission"
+                :is-running="isRunning || false"
+                :is-visible="isPasswordVisible"
+                @delete="
+                  () => {
+                    if (server_authMap.length > 0) {
+                      server_authMap.splice(i, 1);
+                    }
+                  }
+                "
+                @open-info="
+                  generateServerUrl(info.password).then(() => {
+                    isServerInfoDialogOpen = true;
+                  })
+                "
+              />
+              <tr>
+                <td
+                  colspan="5"
+                  class="py-1 text-center"
+                >
+                  <button-wrapper
+                    :icon="mdiPlus"
+                    :disabled="isRunning || false"
+                    severity="success"
+                    variant="outlined"
+                    size="small"
+                    @click="
+                      server_authMap.push({
+                        password: generateRandomPassword(),
+                        permission: 0b0001,
+                      })
+                    "
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="mt-auto mr-0 ml-0 flex w-full grow-0 items-center gap-3">
+        <button-wrapper
+          class="ml-auto"
+          :label="isRunning ? t('dialog.server.stop') : t('dialog.server.start')"
+          :severity="isRunning ? 'danger' : 'success'"
+          @click="toggleServer"
+        />
+      </div>
+    </div>
+    <Dialog
+      v-model:visible="isServerInfoDialogOpen"
+      :header="t('dialog.server.connectInfo')"
+      class="w-auto"
+    >
+      <div class="flex w-120 flex-col items-stretch gap-3 p-3">
+        <div class="mt-2 flex flex-row items-center">
+          <copy-text-input
+            v-model="server_hostname"
+            readonly
+            :placeholder="t('dialog.server.info.hostnameUnavailable')"
+            class="grow"
+            :label="t('dialog.server.info.host')"
+          />
+          <span class="px-2">:</span>
+          <copy-text-input
+            :model-value="server_port.toString()"
+            readonly
+            class="w-25 grow-0"
+            :label="t('dialog.server.port')"
+          />
+        </div>
+        <copy-text-input
+          v-model="server_password"
+          readonly
+          :placeholder="t('dialog.server.info.passwordNotSet')"
+          class="grow"
+          :label="t('dialog.server.password')"
+        />
+        <copy-text-input
+          v-model="server_url"
+          readonly
+          :placeholder="t('dialog.server.info.urlUnavailable')"
+          class="grow"
+          :label="t('dialog.server.info.url')"
+        />
+        <div class="text-center">
+          <qr-viewer
+            ref="qrRef"
+            v-model="server_url"
+            class="mr-auto ml-auto h-60 w-60"
+          />
+        </div>
+        <button-wrapper
+          :label="t('dialog.server.info.copyQr')"
+          @click="copyQr"
+        >
+        </button-wrapper>
+      </div>
+    </Dialog>
+  </Dialog>
+</template>

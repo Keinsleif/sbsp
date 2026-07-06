@@ -1,24 +1,3 @@
-<template>
-  <v-dialog
-    v-model="isThirdPartyNoticesDialogOpen"
-    @contextmenu.prevent
-  >
-    <v-sheet class="pa-10">
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div :class="$style['markdown']" v-html="notices" />
-    </v-sheet>
-    <v-divider />
-    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100">
-      <v-btn
-        class="ml-auto"
-        color="primary"
-        :text="t('general.close')"
-        @click="isThirdPartyNoticesDialogOpen = false"
-      />
-    </v-footer>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
@@ -26,10 +5,9 @@
 import markdownit from 'markdown-it';
 import mila from 'markdown-it-link-attributes';
 import { onMounted, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
+import Dialog from 'primevue/dialog';
 
-const { t } = useI18n();
 const api = useApi();
 const isThirdPartyNoticesDialogOpen = defineModel<boolean>();
 const notices = ref('');
@@ -48,28 +26,44 @@ md.use(mila, {
 onMounted(() => {
   api
     .getThirdPartyNotices()
-    .then(value => (notices.value = md.render(value)))
-    .catch(e => console.error(e));
+    .then((value) => (notices.value = md.render(value)))
+    .catch((e) => console.error(e));
 });
 </script>
 
+<template>
+  <Dialog
+    v-model:visible="isThirdPartyNoticesDialogOpen"
+    class="w-300 overflow-hidden"
+    @contextmenu.prevent
+  >
+    <div class="overflow-auto p-10">
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div
+        :class="$style['markdown']"
+        v-html="notices"
+      />
+    </div>
+  </Dialog>
+</template>
+
 <style lang="css" module>
-  .markdown {
-    li ul {
-      margin-left: 2em;
-      padding: 0;
-    }
-    ul {
-      margin-left: 2em;
-    }
-    hr {
-      margin-bottom: 2em;
-    }
-    h1,
-    h2,
-    h3,
-    h4 {
-      margin-bottom: 1em;
-    }
+.markdown {
+  li ul {
+    margin-left: 2em;
+    padding: 0;
   }
+  ul {
+    margin-left: 2em;
+  }
+  hr {
+    margin-bottom: 2em;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin-bottom: 1em;
+  }
+}
 </style>

@@ -1,14 +1,3 @@
-<template>
-  <svg
-    v-show="text != null && qrSize != null"
-    :class="$style['qr-svg']"
-    xmlns="http://www.w3.org/2000/svg"
-    :viewBox="`0 0 ${qrSize} ${qrSize}`"
-  >
-    <path :d="qrPath" />
-  </svg>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
@@ -47,8 +36,19 @@ watch(
 );
 </script>
 
+<template>
+  <svg
+    v-show="text != null && qrSize != null"
+    :class="$style['qr-svg']"
+    xmlns="http://www.w3.org/2000/svg"
+    :viewBox="`0 0 ${qrSize} ${qrSize}`"
+  >
+    <path :d="qrPath" />
+  </svg>
+</template>
+
 <style lang="css" module>
-  .qr-svg {
-    background-color: white;
-  }
+.qr-svg {
+  background-color: white;
+}
 </style>

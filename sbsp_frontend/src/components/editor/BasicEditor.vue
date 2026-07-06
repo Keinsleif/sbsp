@@ -1,143 +1,21 @@
-<template>
-  <v-sheet
-    flat
-    class="d-flex flex-row pa-4 ga-4"
-    min-width="720px"
-  >
-    <v-sheet
-      flat
-      class="d-flex flex-column ga-2 flex-grow-0 flex-shrink-0"
-      width="175px"
-    >
-      <text-input
-        v-model="number"
-        class="flex-grow-0"
-        :label="t('main.number')"
-        @update="saveEditorValue"
-      />
-      <time-input
-        v-model="duration"
-        class="flex-grow-0"
-        :disabled="selectedCue != null && selectedCue.params.type != 'wait' && selectedCue.params.type != 'fade'"
-        :label="t('main.duration')"
-        @update="saveEditorValue"
-      />
-      <time-input
-        v-model="preWait"
-        class="flex-grow-0"
-        :label="t('main.preWait')"
-        @update="saveEditorValue"
-      />
-      <v-select
-        v-model="chain"
-        class="flex-grow-0"
-        hide-details
-        persistent-placeholder
-        :label="t('main.chainMode.title')"
-        :disabled="(selectedCue != null && selectedCue.id in showState.activeCues) || props.chainOverride != null"
-        :items="[
-          { value: 'doNotChain', name: t('main.chainMode.doNotChain') },
-          { value: 'afterStart', name: t('main.chainMode.afterStart') },
-          { value: 'afterComplete', name: t('main.chainMode.afterComplete') },
-        ]"
-        item-value="value"
-        item-title="name"
-        variant="outlined"
-        density="compact"
-        autocomplete="off"
-        @update:model-value="saveEditorValue"
-        @keydown.stop
-      />
-    </v-sheet>
-    <v-sheet
-      flat
-      class="d-flex flex-grow-1 flex-shrink-1 flex-column ga-2"
-    >
-      <text-input
-        v-model="name"
-        :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
-        :label="t('main.name')"
-        align-input="left"
-        class="flex-grow-0"
-        @update="saveEditorValue"
-      />
-      <text-input
-        v-model="notes"
-        class="flex-grow-1 flex-shrink-1"
-        :label="t('main.notes')"
-        text-type="area"
-        @update="saveEditorValue"
-      />
-      <v-sheet
-        flat
-        class="d-flex flex-row flex-grow-0 flex-shrink-0 ga-3"
-      >
-        <cue-select
-          v-model="target"
-          class="flex-grow-0"
-          :label="t('main.bottomEditor.continueTargetCue')"
-          cue-type="all"
-          :exclude="selectedCue?.id"
-          :null-text="t('main.bottomEditor.basics.nextCue')"
-          max-width="640px"
-          :disabled="props.chainOverride != null || selectedCue == null || selectedCue.id in showState.activeCues || chain == 'doNotChain'"
-          @update="saveEditorValue"
-        />
-        <v-select
-          v-model="color"
-          class="ml-auto flex-grow-0"
-          hide-details
-          persistent-placeholder
-          width="150px"
-          :style="{'color': color != null && color != 'none' ? colors[color].base : ''}"
-          :label="t('main.bottomEditor.basics.color')"
-          :items="[
-            {value: 'none', title: t('general.none'), props: {baseColor: 'text'}},
-            {value: 'red', title: 'Red', props: {baseColor: 'red'}},
-            {value: 'purple', title: 'Purple', props: {baseColor: 'purple'}},
-            {value: 'blue', title: 'Blue', props: {baseColor: 'blue'}},
-            {value: 'cyan', title: 'Cyan', props: {baseColor: 'cyan'}},
-            {value: 'green', title: 'Green', props: {baseColor: 'green'}},
-            {value: 'yellow', title: 'Yellow', props: {baseColor: 'yellow'}},
-            {value: 'orange', title: 'Orange', props: {baseColor: 'orange'}},
-            {value: 'grey', title: 'Grey', props: {baseColor: 'grey'}},
-          ]"
-          variant="outlined"
-          :prepend-inner-icon="mdiCircle"
-          density="compact"
-          autocomplete="off"
-          @update:model-value="saveEditorValue"
-          @keydown.stop
-        />
-        <v-btn
-          class="flex-grow-0"
-          density="compact"
-          :disabled="selectedCue != null && !(selectedCue.id in showState.activeCues)"
-          @click="insertTimestampToNote"
-        >
-          {{ t('main.bottomEditor.basics.timestamp') }}
-        </v-btn>
-      </v-sheet>
-    </v-sheet>
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed, ref, watch } from 'vue';
 import { buildCueName, getDuration, secondsToFormat } from '../../utils';
-import TextInput from '../input/TextInput.vue';
-import TimeInput from '../input/TimeInput.vue';
 import type { Cue } from '../../types/Cue';
-import { useShowState } from '../../stores/showstate';
+import { useShowState } from '../../stores/showState';
 import { useI18n } from 'vue-i18n';
 import { NIL } from 'uuid';
-import CueSelect from '../input/CueSelect.vue';
 import type { CueChain } from '../../types/CueChain';
 import { mdiCircle } from '@mdi/js';
-import colors from 'vuetify/util/colors';
+import TextInput from '../input/TextInput.vue';
+import TimeInput from '../input/TimeInput.vue';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import CueSelect from '../input/CueSelect.vue';
+import SelectWrapper from '../wrapper/SelectWrapper.vue';
+import TextareaWrapper from '../wrapper/TextareaWrapper.vue';
 
 const { t } = useI18n();
 
@@ -171,9 +49,9 @@ const name = ref(selectedCue.value != null ? selectedCue.value.name : null);
 const notes = ref(selectedCue.value != null ? selectedCue.value.notes : null);
 const color = ref(selectedCue.value != null ? selectedCue.value.color : null);
 const target = ref(
-  overridedChain.value != null
-  && overridedChain.value.type !== 'doNotChain'
-  && overridedChain.value.targetId !== NIL
+  overridedChain.value != null &&
+    overridedChain.value.type !== 'doNotChain' &&
+    overridedChain.value.targetId !== NIL
     ? overridedChain.value.targetId
     : null,
 );
@@ -186,8 +64,10 @@ watch(selectedCue, () => {
   name.value = selectedCue.value != null ? selectedCue.value.name : null;
   notes.value = selectedCue.value != null ? selectedCue.value.notes : null;
   color.value = selectedCue.value != null ? selectedCue.value.color : null;
-  target.value
-    = overridedChain.value != null && overridedChain.value.type !== 'doNotChain' && overridedChain.value.targetId !== NIL
+  target.value =
+    overridedChain.value != null &&
+    overridedChain.value.type !== 'doNotChain' &&
+    overridedChain.value.targetId !== NIL
       ? overridedChain.value.targetId
       : null;
 });
@@ -215,18 +95,10 @@ const saveEditorValue = () => {
     if (selectedCue.value.chain.type === 'doNotChain') {
       target.value = null;
     } else {
-      console.log(target.value);
       selectedCue.value.chain.targetId = target.value != null ? target.value : null;
     }
   }
-  if (name.value != null) {
-    const newName = name.value.trim();
-    if (newName === '') {
-      selectedCue.value.name = null;
-    } else {
-      selectedCue.value.name = newName;
-    }
-  }
+  selectedCue.value.name = name.value;
   if (notes.value != null) {
     selectedCue.value.notes = notes.value;
   }
@@ -254,10 +126,107 @@ const insertTimestampToNote = () => {
   }
   saveEditorValue();
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
-<style lang="css" module>
-  .centered-input input {
-    text-align: center;
-  }
-</style>
+<template>
+  <div class="flex min-w-180 flex-row gap-2 p-3">
+    <div class="flex w-42 shrink-0 grow-0 flex-col gap-2">
+      <text-input
+        v-model="number"
+        class="grow-0 text-center"
+        :label="t('main.number')"
+        @update="saveEditorValue"
+      />
+      <time-input
+        v-model="duration"
+        class="grow-0 text-center"
+        :disabled="
+          selectedCue != null &&
+          selectedCue.params.type != 'wait' &&
+          selectedCue.params.type != 'fade'
+        "
+        :label="t('main.duration')"
+        @update="saveEditorValue"
+      />
+      <time-input
+        v-model="preWait"
+        class="grow-0 text-center"
+        :label="t('main.preWait')"
+        @update="saveEditorValue"
+      />
+      <select-wrapper
+        v-model="chain"
+        class="grow-0"
+        :label="t('main.chainMode.title')"
+        :disabled="isActive || props.chainOverride != null"
+        :items="[
+          { value: 'doNotChain', name: t('main.chainMode.doNotChain') },
+          { value: 'afterStart', name: t('main.chainMode.afterStart') },
+          { value: 'afterComplete', name: t('main.chainMode.afterComplete') },
+        ]"
+        autocomplete="off"
+        @update:model-value="saveEditorValue"
+        @keydown.stop
+      />
+    </div>
+    <div class="flex shrink grow flex-col gap-2">
+      <text-input
+        v-model="name"
+        :placeholder="selectedCue != null ? buildCueName(selectedCue) : ''"
+        :label="t('main.name')"
+        accept-null
+        class="grow-0"
+        @update="saveEditorValue"
+      />
+      <textarea-wrapper
+        v-model="notes"
+        class="shrink grow"
+        :label="t('main.notes')"
+        text-type="area"
+        @update="saveEditorValue"
+      />
+      <div class="flex shrink-0 grow-0 flex-row gap-3">
+        <cue-select
+          v-model="target"
+          class="max-w-150 grow"
+          :label="t('main.bottomEditor.continueTargetCue')"
+          cue-type="all"
+          :exclude="selectedCue?.id"
+          :null-text="t('main.bottomEditor.basics.nextCue')"
+          :disabled="props.chainOverride != null || isActive || chain == 'doNotChain'"
+          @update="saveEditorValue"
+        />
+        <select-wrapper
+          v-model="color"
+          class="ml-auto grow-0"
+          width="150px"
+          :label="t('main.bottomEditor.basics.color')"
+          :items="[
+            { value: 'none', name: t('general.none'), color: 'text' },
+            { value: 'red', name: 'Red', color: 'red' },
+            { value: 'purple', name: 'Purple', color: 'purple' },
+            { value: 'blue', name: 'Blue', color: 'blue' },
+            { value: 'cyan', name: 'Cyan', color: 'cyan' },
+            { value: 'green', name: 'Green', color: 'green' },
+            { value: 'yellow', name: 'Yellow', color: 'yellow' },
+            { value: 'orange', name: 'Orange', color: 'orange' },
+            { value: 'grey', name: 'Grey', color: 'gray' }, // Backend uses 'grey' as key but primevue uses 'gray' as color name.
+          ]"
+          :prepend-inner-icon="mdiCircle"
+          @update:model-value="saveEditorValue"
+          @keydown.stop
+        />
+        <button-wrapper
+          class="grow-0"
+          :disabled="!isActive"
+          :label="t('main.bottomEditor.basics.timestamp')"
+          @click="insertTimestampToNote"
+        />
+      </div>
+    </div>
+  </div>
+</template>

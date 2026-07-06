@@ -1,26 +1,9 @@
-<template>
-  <v-select
-    v-model="innerPerm"
-    :items="[
-      { title: t('dialog.server.permissions.read'), value: 1},
-      { title: t('dialog.server.permissions.control'), value: 2},
-      { title: t('dialog.server.permissions.edit'), value: 4},
-    ]"
-    density="compact"
-    variant="outlined"
-    chips
-    multiple
-    autocomplete="off"
-    hide-details
-    @update:model-value="save"
-  />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import MultiSelect from 'primevue/multiselect';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -47,4 +30,25 @@ const save = () => {
   document.body.focus();
   perm.value = innerPerm.value.reduce((acc, cur) => acc + cur, 0);
 };
+
+const options = computed(() => {
+  return [
+    { title: t('dialog.server.permissions.read'), value: 1 },
+    { title: t('dialog.server.permissions.control'), value: 2 },
+    { title: t('dialog.server.permissions.edit'), value: 4 },
+  ];
+});
 </script>
+
+<template>
+  <multi-select
+    v-model="innerPerm"
+    :options="options"
+    option-label="title"
+    option-value="value"
+    display="chip"
+    :show-toggle-all="false"
+    autocomplete="off"
+    @update:model-value="save"
+  />
+</template>

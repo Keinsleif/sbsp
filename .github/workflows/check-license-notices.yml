@@ -6,7 +6,7 @@ on:
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'sbsp_frontend/pnpm-lock.yaml'
+      - 'pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
       - 'scripts/notice_json2md.js'
@@ -17,54 +17,33 @@ jobs:
   generate:
     permissions:
       contents: read
-
+    env:
+      MISE_ENV: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
-      - name: setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11
-
-      - name: setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: pnpm
-          cache-dependency-path: sbsp_frontend/pnpm-lock.yaml
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
       - uses: cargo-bins/cargo-binstall@main
+      - uses: jdx/mise-action@v4
 
-      - run: cargo binstall cargo-about --no-confirm --force
-
-      - name: install dependencies (ubuntu only)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: install frontend dependencies
         run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
-        working-directory: ./sbsp_frontend
 
-      - name: Generate Rust notices
-        run: cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md
-        working-directory: ./
-
-      - name: Generate JS notices
-        run: pnpm exec license-checker-rseidelsohn --excludePackages sbsp_frontend --direct false --production --json --out ../scripts/tmp.json
-        working-directory: ./sbsp_frontend
-
-      - name: Combine notices
+      - name: Generate notices
         run: |
-          node notice_json2md.js
-          rm ./tmp.json
-        working-directory: ./scripts
+          mise generate_notices
 
       - name: Verify no changes
         run: |

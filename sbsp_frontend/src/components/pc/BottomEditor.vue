@@ -1,202 +1,22 @@
-<template>
-  <v-sheet class="overflow-hidden">
-    <div v-show="selectedCue != null && selectedCue.params.type == 'audio'">
-      <v-tabs
-        v-model="audioEditorTab"
-        density="compact"
-      >
-        <v-tab
-          density="compact"
-          value="basics"
-        >
-          {{ t('main.bottomEditor.basics.title') }}
-        </v-tab>
-        <v-tab
-          density="compact"
-          value="audio"
-        >
-          {{ t('main.bottomEditor.audio.title') }}
-        </v-tab>
-        <v-tab
-          density="compact"
-          value="time"
-        >
-          {{ t('main.bottomEditor.timeLevels.title') }}
-        </v-tab>
-      </v-tabs>
-    </div>
-    <div v-show="selectedCue != null && selectedCue.params.type == 'fade'">
-      <v-tabs
-        v-model="fadeEditorTab"
-        density="compact"
-      >
-        <v-tab
-          density="compact"
-          value="basics"
-        >
-          {{ t('main.bottomEditor.basics.title') }}
-        </v-tab>
-        <v-tab
-          density="compact"
-          value="fade"
-        >
-          {{ t('main.bottomEditor.fade.title') }}
-        </v-tab>
-      </v-tabs>
-    </div>
-    <div
-      v-show="
-        selectedCue != null &&
-          (selectedCue.params.type == 'start' ||
-            selectedCue.params.type == 'stop' ||
-            selectedCue.params.type == 'pause' ||
-            selectedCue.params.type == 'load')
-      "
-    >
-      <v-tabs
-        v-model="playbackEditorTab"
-        density="compact"
-      >
-        <v-tab
-          density="compact"
-          value="basics"
-        >
-          {{ t('main.bottomEditor.basics.title') }}
-        </v-tab>
-        <v-tab
-          density="compact"
-          value="playback"
-        >
-          {{ t('main.bottomEditor.playback.title') }}
-        </v-tab>
-      </v-tabs>
-    </div>
-    <div v-show="selectedCue != null && selectedCue.params.type == 'group'">
-      <v-tabs
-        v-model="groupEditorTab"
-        density="compact"
-      >
-        <v-tab
-          density="compact"
-          value="basics"
-        >
-          {{ t('main.bottomEditor.basics.title') }}
-        </v-tab>
-        <v-tab
-          density="compact"
-          value="group"
-        >
-          {{ t('main.bottomEditor.group.title') }}
-        </v-tab>
-      </v-tabs>
-    </div>
-    <div v-show="selectedCue != null && selectedCue.params.type == 'wait'">
-      <v-tabs
-        v-model="otherEditorTab"
-        density="compact"
-      >
-        <v-tab
-          density="compact"
-          value="basics"
-        >
-          {{ t('main.bottomEditor.basics.title') }}
-        </v-tab>
-      </v-tabs>
-    </div>
-    <div v-show="selectedCue == null" />
-    <v-tabs-window
-      v-model="editorTab"
-      class="border-t-sm"
-    >
-      <v-tabs-window-item
-        value="blank"
-        reverse-transition="false"
-        transition="false"
-      >
-        <div style="margin: auto; width: fit-content">
-          No Selection
-        </div>
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="basics"
-        reverse-transition="false"
-        transition="false"
-        class="overflow-x-auto"
-      >
-        <basic-editor
-          v-model="selectedCue"
-          :chain-override="props.chainOverride"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="audio"
-        reverse-transition="false"
-        transition="false"
-      >
-        <audio-basic-editor
-          v-model="selectedCue"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="time"
-        reverse-transition="false"
-        transition="false"
-      >
-        <audio-time-level-editor
-          v-model="selectedCue"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="fade"
-        reverse-transition="false"
-        transition="false"
-      >
-        <fade-basic-editor
-          v-model="selectedCue"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="playback"
-        reverse-transition="false"
-        transition="false"
-      >
-        <playback-basic-editor
-          v-model="selectedCue"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-      <v-tabs-window-item
-        value="group"
-        reverse-transition="false"
-        transition="false"
-      >
-        <group-basic-editor
-          v-model="selectedCue"
-          @update="edited"
-        />
-      </v-tabs-window-item>
-    </v-tabs-window>
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref } from 'vue';
-import BasicEditor from '../editor/BasicEditor.vue';
-import AudioTimeLevelEditor from '../editor/AudioTimeLevelEditor.vue';
-import AudioBasicEditor from '../editor/AudioBasicEditor.vue';
 import type { Cue } from '../../types/Cue';
-import FadeBasicEditor from '../editor/FadeBasicEditor.vue';
-import { useI18n } from 'vue-i18n';
-import PlaybackBasicEditor from '../editor/PlaybackBasicEditor.vue';
-import GroupBasicEditor from '../editor/GroupBasicEditor.vue';
 import type { CueChain } from '../../types/CueChain';
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import BasicEditor from '../editor/BasicEditor.vue';
+import TabPanel from 'primevue/tabpanel';
+import AudioBasicEditor from '../editor/AudioBasicEditor.vue';
+import AudioTimeLevelEditor from '../editor/AudioTimeLevelEditor.vue';
+import FadeBasicEditor from '../editor/FadeBasicEditor.vue';
+import PlaybakcBasicEditor from '../editor/PlaybakcBasicEditor.vue';
+import GroupBasicEditor from '../editor/GroupBasicEditor.vue';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();
@@ -221,30 +41,134 @@ const playbackEditorTab = ref('basics');
 const groupEditorTab = ref('basics');
 const otherEditorTab = ref('basics');
 
-const editorTab = computed(() => {
-  if (selectedCue.value == null) {
-    return 'blank';
-  }
-  switch (selectedCue.value.params.type) {
-    case 'audio':
-      return audioEditorTab.value;
-    case 'fade':
-      return fadeEditorTab.value;
-    case 'start':
-    case 'load':
-    case 'pause':
-    case 'stop':
-      return playbackEditorTab.value;
-    case 'group':
-      return groupEditorTab.value;
-    default:
-      return otherEditorTab.value;
-  }
+const editorTab = computed({
+  get() {
+    if (selectedCue.value == null) {
+      return 'blank';
+    }
+    switch (selectedCue.value.params.type) {
+      case 'audio':
+        return audioEditorTab.value;
+      case 'fade':
+        return fadeEditorTab.value;
+      case 'start':
+      case 'load':
+      case 'pause':
+      case 'stop':
+        return playbackEditorTab.value;
+      case 'group':
+        return groupEditorTab.value;
+      default:
+        return otherEditorTab.value;
+    }
+  },
+  set(value) {
+    if (selectedCue.value == null) return;
+    switch (selectedCue.value.params.type) {
+      case 'audio':
+        audioEditorTab.value = value;
+        break;
+      case 'fade':
+        fadeEditorTab.value = value;
+        break;
+      case 'start':
+      case 'load':
+      case 'pause':
+      case 'stop':
+        playbackEditorTab.value = value;
+        break;
+      case 'group':
+        groupEditorTab.value = value;
+        break;
+      default:
+        otherEditorTab.value = value;
+    }
+  },
 });
 </script>
 
-<style lang="css" module>
-  .centered-input input {
-    text-align: center;
-  }
-</style>
+<template>
+  <div class="h-full overflow-auto border-x border-(--p-form-field-border-color)">
+    <tabs
+      v-model:value="editorTab"
+      class="flex h-full flex-col overflow-hidden"
+    >
+      <tab-list class="shrink-0 grow-0">
+        <tab value="basics">{{ t('main.bottomEditor.basics.title') }}</tab>
+        <tab
+          value="audio"
+          v-show="selectedCue != null && selectedCue.params.type == 'audio'"
+          >{{ t('main.bottomEditor.audio.title') }}</tab
+        >
+        <tab
+          value="time"
+          v-show="selectedCue != null && selectedCue.params.type == 'audio'"
+          >{{ t('main.bottomEditor.timeLevels.title') }}</tab
+        >
+        <tab
+          value="fade"
+          v-show="selectedCue != null && selectedCue.params.type == 'fade'"
+          >{{ t('main.bottomEditor.fade.title') }}</tab
+        >
+        <tab
+          value="playback"
+          v-show="
+            selectedCue != null &&
+            (selectedCue.params.type == 'start' ||
+              selectedCue.params.type == 'stop' ||
+              selectedCue.params.type == 'pause' ||
+              selectedCue.params.type == 'load')
+          "
+          >{{ t('main.bottomEditor.playback.title') }}</tab
+        >
+        <tab
+          value="group"
+          v-show="selectedCue != null && selectedCue.params.type == 'group'"
+          >{{ t('main.bottomEditor.group.title') }}</tab
+        >
+      </tab-list>
+      <tab-panels class="grow overflow-auto p-0">
+        <tab-panel value="blank">
+          <div style="margin: auto; width: fit-content">No Selection</div>
+        </tab-panel>
+        <tab-panel value="basics">
+          <BasicEditor
+            v-model="selectedCue"
+            :chain-override="props.chainOverride"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="audio">
+          <AudioBasicEditor
+            v-model="selectedCue"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="time">
+          <AudioTimeLevelEditor
+            v-model="selectedCue"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="fade">
+          <FadeBasicEditor
+            v-model="selectedCue"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="playback">
+          <PlaybakcBasicEditor
+            v-model="selectedCue"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="group">
+          <GroupBasicEditor
+            v-model="selectedCue"
+            @update="edited"
+          />
+        </tab-panel>
+      </tab-panels>
+    </tabs>
+  </div>
+</template>

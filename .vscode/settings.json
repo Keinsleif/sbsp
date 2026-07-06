@@ -1,15 +1,41 @@
 {
-    "i18n-ally.enabledFrameworks": [
-        "vue"
-    ],
-    "i18n-ally.localesPaths": [
-        "sbsp_frontend/src/locales"
-    ],
-    "i18n-ally.keystyle": "nested",
-    "markdownlint.config": {
-        "no-inline-html": false,
-        "ul-indent": {
-            "indent": 4
-        }
-    }
+  "i18n-ally.enabledFrameworks": [
+      "vue"
+  ],
+  "i18n-ally.localesPaths": [
+      "sbsp_frontend/src/locales"
+  ],
+  "i18n-ally.keystyle": "nested",
+  "markdownlint.config": {
+      "no-inline-html": false,
+      "ul-indent": {
+          "indent": 4
+      }
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "tsconfig.json": "tsconfig.*.json, env.d.ts, typed-router.d.ts",
+    "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
+    "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
+  },
+  "js/ts.tsdk.path": "./sbsp_frontend/node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+    "editor.formatOnSave": true
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  }
 }

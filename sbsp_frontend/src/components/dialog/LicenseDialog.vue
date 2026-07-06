@@ -1,104 +1,21 @@
-<template>
-  <v-dialog
-    v-model="isLicenseDialogOpen"
-    width="auto"
-    @keydown.stop.esc="isLicenseDialogOpen = false"
-    @contextmenu.prevent
-  >
-    <v-sheet
-      class="d-flex flex-column pa-4 ga-3"
-      width="450px"
-    >
-      <h2>{{ t('dialog.license.title') }}</h2>
-      <div>
-        {{ t('dialog.license.edition') }} :
-        <span :class="edition == 'Free' ? '' : 'text-green'">{{ edition }}</span>
-      </div>
-      <div>
-        {{ t('dialog.license.owner') }} :
-        <span>{{ licenseInfo != null ? licenseInfo.owner : '-' }}</span>
-      </div>
-      <div>
-        {{ t('dialog.license.issuedDate') }} :
-        <span>{{ issuedDate }}</span>
-      </div>
-      <text-input
-        :value="licenseInfo != null ? licenseInfo.id : '-'"
-        label="Id"
-        align-input="left"
-        :append-inner-icon="mdiContentCopy"
-        autocomplete="off"
-        @click:append-inner="onCopyId()"
-      />
-    </v-sheet>
-    <v-footer class="flex-grow-0 d-flex align-center ml-0 mr-0 w-100 pa-3 ga-3">
-      <v-btn
-        :icon="mdiReload"
-        density="comfortable"
-        @click="loadLicense"
-      />
-      <v-btn
-        class="ml-auto"
-        :text="t('dialog.license.activateLicense')"
-        variant="outlined"
-        @click="
-          api.host
-            ?.activateLicense()
-            .then((isActivated) => {
-              if (isActivated) {
-                isLicenseActivateInfoDialogOpen = true;
-              }
-            })
-            .catch((e) => console.error(e))
-        "
-      />
-      <v-btn
-        :text="t('general.close')"
-        color="primary"
-        @click="isLicenseDialogOpen = false"
-      />
-    </v-footer>
-    <v-dialog
-      v-model="isLicenseActivateInfoDialogOpen"
-      width="600px"
-      @keydown.stop.esc="isLicenseActivateInfoDialogOpen = false"
-    >
-      <v-card>
-        <v-card-title class="d-flex flex-row text-success pa-4">
-          <v-icon :icon="mdiCheckCircleOutline" />
-          <span class="font-weight-black">{{ t('dialog.license.success.title') }}</span>
-        </v-card-title>
-        <v-card-text
-          class="bg-surface-light"
-          style="white-space: pre-line"
-        >
-          {{ t('dialog.license.success.message') }}
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            :text="t('general.close')"
-            color="primary"
-            @click="isLicenseActivateInfoDialogOpen = false"
-          />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed, onMounted, ref } from 'vue';
-import { LicenseInformation } from '../../types/LicenseInformation';
-import TextInput from '../input/TextInput.vue';
-import { mdiCheckCircleOutline, mdiContentCopy, mdiReload } from '@mdi/js';
+import type { LicenseInformation } from '../../types/LicenseInformation';
+import { mdiReload } from '@mdi/js';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
+import Dialog from 'primevue/dialog';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import CopyTextInput from '../input/CopyTextInput.vue';
+import { $dt } from '@primeuix/themes';
+import { useToast } from 'primevue/usetoast';
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const api = useApi();
+const toast = useToast();
 const isLicenseDialogOpen = defineModel<boolean>();
 const isLicenseActivateInfoDialogOpen = ref(false);
 const licenseInfo = ref<LicenseInformation | null>(null);
@@ -116,20 +33,95 @@ const issuedDate = computed(() => {
   }
 });
 
-const onCopyId = () => {
-  if (licenseInfo.value != null) {
-    navigator.clipboard.writeText(licenseInfo.value.id);
-  }
-};
-
 const loadLicense = () => {
   api.host
     ?.getLicenseInfo()
-    .then(value => (licenseInfo.value = value))
-    .catch(e => console.error(e));
+    .then((value) => (licenseInfo.value = value))
+    .catch((e) => {
+      console.error(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToLoadLicense'),
+        detail: e.toString(),
+        life: 3000,
+      });
+    });
 };
 
 onMounted(() => {
   loadLicense();
 });
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isLicenseDialogOpen"
+    class="w-auto"
+    :header="t('dialog.license.title')"
+    @keydown.stop.esc="isLicenseDialogOpen = false"
+    @contextmenu.prevent
+  >
+    <div class="flex w-md flex-col gap-3 p-4">
+      <div>
+        {{ t('dialog.license.edition') }} :
+        <span
+          :style="{
+            color: edition == 'Free' ? '' : $dt('green.500').variable,
+          }"
+          >{{ edition }}</span
+        >
+      </div>
+      <div>
+        {{ t('dialog.license.owner') }} :
+        <span>{{ licenseInfo != null ? licenseInfo.owner : '-' }}</span>
+      </div>
+      <div>
+        {{ t('dialog.license.issuedDate') }} :
+        <span>{{ issuedDate }}</span>
+      </div>
+      <copy-text-input
+        class="w-full"
+        readonly
+        label="Id"
+        :model-value="licenseInfo != null ? licenseInfo.id : '-'"
+        :disabled="licenseInfo == null"
+      />
+    </div>
+    <div class="mr-0 ml-0 flex w-full grow-0 items-center gap-3 p-3">
+      <button-wrapper
+        :icon="mdiReload"
+        severity="secondary"
+        rounded
+        @click="loadLicense"
+      />
+      <button-wrapper
+        class="ml-auto"
+        :label="t('dialog.license.activateLicense')"
+        variant="outlined"
+        @click="
+          api.host
+            ?.activateLicense()
+            .then((isActivated) => {
+              if (isActivated) {
+                isLicenseActivateInfoDialogOpen = true;
+              }
+            })
+            .catch((e) => console.error(e))
+        "
+      />
+    </div>
+    <Dialog
+      v-model:visible="isLicenseActivateInfoDialogOpen"
+      class="w-150"
+      :header="t('dialog.license.success.title')"
+      @keydown.stop.esc="isLicenseActivateInfoDialogOpen = false"
+    >
+      <div
+        class="bg-surface-light"
+        style="white-space: pre-line"
+      >
+        {{ t('dialog.license.success.message') }}
+      </div>
+    </Dialog>
+  </Dialog>
+</template>

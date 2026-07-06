@@ -8,7 +8,13 @@ use uuid::Uuid;
 
 #[cfg(feature = "backend")]
 use crate::model::ShowModel;
-use crate::model::{cue::{CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase}, settings::ShowSettings};
+use crate::model::{
+    cue::{
+        CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam,
+        WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase,
+    },
+    settings::ShowSettings,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -71,7 +77,11 @@ impl Default for ProjectShowModel {
 #[cfg(feature = "backend")]
 impl From<ShowModel> for ProjectShowModel {
     fn from(value: ShowModel) -> Self {
-        Self { name: value.name, cues: value.cue_list.into(), settings: value.settings }
+        Self {
+            name: value.name,
+            cues: value.cue_list.into(),
+            settings: value.settings,
+        }
     }
 }
 
@@ -80,7 +90,11 @@ impl TryFrom<ProjectShowModel> for ShowModel {
     type Error = anyhow::Error;
 
     fn try_from(value: ProjectShowModel) -> Result<Self, Self::Error> {
-        Ok(Self { name: value.name, cue_list: value.cues.try_into()?, settings: value.settings })
+        Ok(Self {
+            name: value.name,
+            cue_list: value.cues.try_into()?,
+            settings: value.settings,
+        })
     }
 }
 
@@ -107,12 +121,12 @@ pub struct ProjectCue {
 )]
 pub enum ProjectCueParam {
     Audio(AudioCueParam),
-    Wait (WaitCueParam),
-    Fade (FadeCueParam),
-    Start (StartCueParam),
-    Stop (StopCueParam),
-    Pause (PauseCueParam),
-    Load (LoadCueParam),
+    Wait(WaitCueParam),
+    Fade(FadeCueParam),
+    Start(StartCueParam),
+    Stop(StopCueParam),
+    Pause(PauseCueParam),
+    Load(LoadCueParam),
     Group {
         #[serde(flatten)]
         base: GroupCueParamBase,

@@ -10,7 +10,10 @@ use ts_rs::TS;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::model::cue::{
-    Cue, CueChain, CueColor, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::{GroupCueParamBase, GroupMode}
+    Cue, CueChain, CueColor, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam,
+    StopCueParam, Uuid, WaitCueParam,
+    audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+    group::{GroupCueParamBase, GroupMode},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
@@ -108,7 +111,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Wait (WaitCueParam { duration: 5.0 }),
+                params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
             },
             fade: Cue {
                 id: Uuid::nil(),
@@ -119,7 +122,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Fade ( FadeCueParam {
+                params: CueParam::Fade(FadeCueParam {
                     target: Uuid::nil(),
                     volume: Decibels::IDENTITY,
                     fade_param: FadeParam {
@@ -137,7 +140,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Start ( StartCueParam {
+                params: CueParam::Start(StartCueParam {
                     target: Uuid::nil(),
                 }),
             },
@@ -150,7 +153,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Stop ( StopCueParam {
+                params: CueParam::Stop(StopCueParam {
                     target: Uuid::nil(),
                     hard: false,
                 }),
@@ -164,7 +167,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Pause ( PauseCueParam {
+                params: CueParam::Pause(PauseCueParam {
                     target: Uuid::nil(),
                 }),
             },
@@ -177,7 +180,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 parent_id: None,
-                params: CueParam::Load ( LoadCueParam {
+                params: CueParam::Load(LoadCueParam {
                     target: Uuid::nil(),
                 }),
             },

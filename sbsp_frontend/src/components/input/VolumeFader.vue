@@ -1,40 +1,3 @@
-<template>
-  <v-slider
-    v-model="faderPosition"
-    hide-details
-    :class="props.direction == 'vertical' ? $style['vertical-fader'] : 'mb-2'"
-    thumb-label
-    show-ticks="always"
-    step="0.05"
-    min="-30"
-    max="10"
-    :label="props.label"
-    :ticks="tickLabels"
-    :direction="props.direction"
-    @dblclick="
-      faderPosition = 0;
-      onPointerUp.clear();
-      emit('update');
-    "
-    @keydown.stop
-    @pointerdown="sliderChanging = true"
-    @pointerup="onPointerUp"
-  >
-    <template #thumb-label="{ modelValue }">
-      {{ faderToDecibels(modelValue) == -60 ? '-∞dB' : faderToDecibels(modelValue).toFixed(2) + 'dB' }}
-    </template>
-    <template #append>
-      <volume-input
-        v-show="!props.hideInput"
-        v-model="volume"
-        @pointerdown.stop
-        @dblclick.stop
-        @update="emit('update')"
-      />
-    </template>
-  </v-slider>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
@@ -42,18 +5,18 @@
 import { computed, ref } from 'vue';
 import VolumeInput from './VolumeInput.vue';
 import { debounce, decibelsToFader, faderToDecibels } from '../../utils';
+import SliderWrapper from '../wrapper/SliderWrapper.vue';
 
 const props = withDefaults(
   defineProps<{
     label?: string;
     direction?: 'horizontal' | 'vertical';
-    hideInput?: boolean;
     thumbAmount?: 'full' | 'decreased' | 'baseOnly';
+    disabled?: boolean;
   }>(),
   {
     label: 'Volume',
     direction: 'horizontal',
-    hideInput: false,
     thumbAmount: 'full',
   },
 );
@@ -75,42 +38,67 @@ const faderPosition = computed({
 const onPointerUp = debounce(() => {
   if (sliderChanging.value) {
     sliderChanging.value = false;
-    emit('update');
+    if (!props.disabled) {
+      emit('update');
+    }
   }
 }, 300);
 
 const tickLabels = computed(() => {
   if (props.thumbAmount === 'decreased') {
-    return {
-      '10': '10',
-      '0': '0',
-      '-10': '-10',
-      '-30': '-60',
-    } as Record<number, string>;
+    return [
+      { value: 10, label: '10' },
+      { value: 0, label: '0' },
+      { value: -10, label: '-10' },
+      { value: -30, label: '-60' },
+    ];
   } else if (props.thumbAmount === 'baseOnly') {
-    return {
-      0: '0',
-    } as Record<number, string>;
+    return [{ value: 0, label: '0' }];
   } else {
-    return {
-      '10': '10',
-      '5': '5',
-      '0': '0',
-      '-5': '-5',
-      '-10': '-10',
-      '-15': '-20',
-      '-20': '-30',
-      '-25': '-40',
-      '-30': '-60',
-    } as Record<number, string>;
+    return [
+      { value: 10, label: '10' },
+      { value: 5, label: '5' },
+      { value: 0, label: '0' },
+      { value: -5, label: '-5' },
+      { value: -10, label: '-10' },
+      { value: -15, label: '-20' },
+      { value: -20, label: '-30' },
+      { value: -25, label: '-40' },
+      { value: -30, label: '-60' },
+    ];
   }
 });
 </script>
 
-<style lang="css" module>
-  .vertical-fader label {
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-  }
-</style>
+<template>
+  <slider-wrapper
+    v-model="faderPosition"
+    :step="0.05"
+    :min="-30"
+    :max="10"
+    :label="props.label"
+    :ticks="tickLabels"
+    :direction="props.direction"
+    :disabled="props.disabled"
+    @dblclick="
+      if (!props.disabled) {
+        faderPosition = 0;
+        onPointerUp.clear();
+        emit('update');
+      }
+    "
+    @keydown.stop
+    @pointerdown="sliderChanging = true"
+    @pointerup="onPointerUp"
+  >
+    <template #input>
+      <volume-input
+        v-model="volume"
+        :disabled="props.disabled"
+        @pointerdown.stop
+        @dblclick.stop
+        @update="emit('update')"
+      />
+    </template>
+  </slider-wrapper>
+</template>

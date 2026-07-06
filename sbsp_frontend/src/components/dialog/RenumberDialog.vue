@@ -1,77 +1,21 @@
-<template>
-  <v-dialog
-    v-model="isRenumberDialogOpen"
-    width="auto"
-    @keydown.stop="onKeydown"
-    @contextmenu.prevent
-  >
-    <v-sheet
-      class="d-flex flex-column ga-4 pa-3"
-      width="400px"
-    >
-      <h2>{{ t('dialog.renumber.title') }}</h2>
-      <v-number-input
-        v-model="startFrom"
-        persistent-placeholder
-        hide-details
-        :label="t('dialog.renumber.startNumber')"
-        density="compact"
-        variant="outlined"
-      />
-      <v-number-input
-        v-model="increment"
-        persistent-placeholder
-        hide-details
-        :label="t('dialog.renumber.increment')"
-        density="compact"
-        variant="outlined"
-      />
-      <text-input
-        v-model="prefix"
-        class="flex-grow-0"
-        align-input="left"
-        :label="t('dialog.renumber.prefix')"
-      />
-      <text-input
-        v-model="suffix"
-        class="flex-grow-0"
-        align-input="left"
-        :label="t('dialog.renumber.suffix')"
-      />
-      <text-input
-        :model-value="preview"
-        :label="t('dialog.renumber.preview')"
-      />
-      <v-sheet class="d-flex flex-row justify-end ga-2">
-        <v-btn @click="isRenumberDialogOpen = false">
-          {{ t('general.cancel') }}
-        </v-btn>
-        <v-btn
-          color="primary"
-          @click="onDone"
-        >
-          {{ t('general.done') }}
-        </v-btn>
-      </v-sheet>
-    </v-sheet>
-  </v-dialog>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed, ref } from 'vue';
-import { useUiState } from '../../stores/uistate';
+import { useUiState } from '../../stores/uiState.ts';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
+import Dialog from 'primevue/dialog';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import NumberInput from '../input/NumberInput.vue';
 import TextInput from '../input/TextInput.vue';
 
 const { t } = useI18n();
 const api = useApi();
 const uiState = useUiState();
 
-const isRenumberDialogOpen = defineModel <boolean> ({ required: true });
+const isRenumberDialogOpen = defineModel<boolean>({ required: true });
 const startFrom = ref(1);
 const increment = ref(1);
 const prefix = ref('');
@@ -94,11 +38,69 @@ const onKeydown = (e: KeyboardEvent) => {
 };
 
 const onDone = () => {
+  if (!isFinite(startFrom.value) || !isFinite(increment.value)) {
+    return;
+  }
+  if (increment.value < 1) {
+    return;
+  }
   api
-    .renumberCues(Array.from(uiState.selectedRows), startFrom.value, increment.value, prefix.value.trim() || null, suffix.value.trim() || null)
+    .renumberCues(
+      Array.from(uiState.selectedRows),
+      startFrom.value || 0,
+      increment.value || 1,
+      prefix.value.trim() || null,
+      suffix.value.trim() || null,
+    )
     .then(() => {
       isRenumberDialogOpen.value = false;
     })
-    .catch(e => console.error(e));
+    .catch((e) => console.error(e));
 };
 </script>
+
+<template>
+  <Dialog
+    v-model:visible="isRenumberDialogOpen"
+    class="w-auto"
+    :header="t('dialog.renumber.title')"
+    @keydown.stop="onKeydown"
+    @contextmenu.prevent
+  >
+    <div class="flex w-100 flex-col items-stretch gap-4 p-3">
+      <number-input
+        :min="0"
+        :step="1"
+        v-model="startFrom"
+        show-buttons
+        :label="t('dialog.renumber.startNumber')"
+      />
+      <number-input
+        :min="1"
+        :step="1"
+        v-model="increment"
+        show-buttons
+        :label="t('dialog.renumber.increment')"
+      />
+      <text-input
+        v-model="prefix"
+        :label="t('dialog.renumber.prefix')"
+      />
+      <text-input
+        v-model="suffix"
+        :label="t('dialog.renumber.suffix')"
+      />
+      <text-input
+        :model-value="preview"
+        :label="t('dialog.renumber.preview')"
+      />
+      <div class="flex flex-row justify-end">
+        <button-wrapper
+          :label="t('general.run')"
+          severity="primary"
+          @click="onDone"
+        />
+      </div>
+    </div>
+  </Dialog>
+</template>

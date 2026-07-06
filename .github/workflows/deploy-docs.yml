@@ -16,6 +16,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      MISE_ENV: ci
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -23,20 +25,21 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: jdx/mise-action@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
         with:
-          node-version: lts/*
-          cache: pnpm
-          cache-dependency-path: sbsp_docs/pnpm-lock.yaml
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
-        working-directory: ./sbsp_docs
 
       - name: Build with VitePress
         run: pnpm run docs:build

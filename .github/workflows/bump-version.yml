@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      MISE_ENV: ci
     steps:
       - uses: actions/checkout@v6
         with:

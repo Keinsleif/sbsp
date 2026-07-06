@@ -1,276 +1,32 @@
-<template>
-  <div
-    class="d-flex flex-row ga-2"
-    @contextmenu.prevent="
-      contextMenuPosition = [$event.clientX, $event.clientY];
-      isContextMenuOpen = true;
-    "
-  >
-    <div class="d-flex flex-column align-center justify-center ga-2 mb-2">
-      <div class="d-flex flex-row align-center ga-2">
-        <time-input
-          v-model="timeRange.start"
-          width="175px"
-          :label="t('main.bottomEditor.timeLevels.startTime')"
-          :multiply="metadata?.duration || 1"
-          :default-value="0"
-          @update="saveEditorValue"
-          @pointerdown.stop
-        />
-        <v-tooltip target="cursor">
-          <template #activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              variant="outlined"
-              :icon="mdiSkipNext"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="skipFirstSilence"
-            />
-          </template>
-          <span>{{ t('main.bottomEditor.timeLevels.skipFirstSilence') }}</span>
-        </v-tooltip>
-      </div>
-      <div class="d-flex flex-row align-center ga-2">
-        <time-input
-          v-model="timeRange.end"
-          width="175px"
-          :label="t('main.bottomEditor.timeLevels.endTime')"
-          :multiply="metadata?.duration || 1"
-          :default-value="1"
-          @update="saveEditorValue"
-          @pointerdown.stop
-        />
-        <v-tooltip target="cursor">
-          <template #activator="{ props: activatorProps }">
-            <v-btn
-              v-bind="activatorProps"
-              density="compact"
-              variant="outlined"
-              :icon="mdiSkipPrevious"
-              :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-              @click="skipLastSilence"
-            />
-          </template>
-          <span>{{ t('main.bottomEditor.timeLevels.skipLastSilence') }}</span>
-        </v-tooltip>
-      </div>
-      <v-btn
-        :prepend-icon="uiState.isEnvelopeVisible ? mdiEye : mdiEyeOff"
-        class="align-self-start"
-        density="compact"
-        variant="outlined"
-        width="175px"
-        @click="uiState.isEnvelopeVisible = !uiState.isEnvelopeVisible"
-      >
-        {{ t('main.bottomEditor.timeLevels.envelopeVisible') }}
-      </v-btn>
-    </div>
-    <div
-      :style="{ height: `${props.heightPx}px` }"
-      class="w-100 border-md"
-    >
-      <v-sheet
-        v-show="!isOutside"
-        v-if="selectedCue != null && svgRef != null && parent != null"
-        style="position: absolute; top: 0px; left: 0px;"
-        :style="tooltipStyle"
-        class="pl-1 pr-1 rounded text-caption"
-      >
-        {{ tooltipText }}
-      </v-sheet>
-      <svg
-        v-show="selectedCue != null"
-        ref="svg"
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-        :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
-        width="100%"
-        :height="`${contentHeight}px`"
-        @dblclick="(e: MouseEvent) => {
-          const {x} = getSVGCoords(e);
-          handleAddOrSplit(((x / svgWidth) - timeRange.start) / timeRange.delta);
-        }"
-        @pointerdown="seek"
-      >
-        <rect
-          :class="$style.waveform"
-          x="0"
-          :y="contentHeight / 2"
-          height="1"
-          :width="svgWidth"
-        />
-        <path
-          v-if="waveformPath != null"
-          :d="waveformPath"
-          :transform="waveformTransform"
-          :class="$style.waveform"
-          transform-origin="center"
-        />
-        <rect
-          :x="startPos"
-          y="0"
-          width="2"
-          :height="contentHeight"
-          fill="blue"
-        />
-        <rect
-          :x="endPos"
-          y="0"
-          width="2"
-          :height="contentHeight"
-          fill="blue"
-        />
-        <rect
-          :x="startPos - 10"
-          y="0"
-          width="20"
-          :height="contentHeight"
-          fill="transparent"
-          :style="{cursor: props.disabled ? '' : 'ew-resize'}"
-          @pointerdown="handlePointerDown($event, 0, 'hstart')"
-        />
-        <rect
-          :x="endPos - 10"
-          y="0"
-          width="20"
-          :height="contentHeight"
-          fill="transparent"
-          :style="{cursor: props.disabled ? '' : 'ew-resize'}"
-          @pointerdown="handlePointerDown($event, 0, 'hend')"
-        />
-        <rect
-          v-show="selectedCue != null && selectedCue.id in showState.activeCues"
-          ref="position"
-          x="0"
-          y="0"
-          width="2"
-          :height="contentHeight"
-          fill="yellow"
-        />
-        <g
-          v-show="uiState.isEnvelopeVisible"
-          ref="parent"
-        >
-          <path
-            :d="linePath.dot"
-            fill="none"
-            style="stroke: rgb(var(--v-theme-primary)); stroke-width: 3px; stroke-dasharray: 8, 4;"
-            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
-          />
-          <polyline
-            :points="linePath.fill"
-            style="fill: rgb(var(--v-theme-primary), 20%)"
-            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
-          />
-          <g
-            v-for="(seg, i) in segments"
-            :key="i"
-            :class="{[$style['selected']]: selectedIdx == i}"
-          >
-            <rect
-              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
-              :y="decibelsToY(seg.volume) - 2"
-              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
-              height="4"
-              :class="$style['bar']"
-            />
-            <rect
-              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
-              :y="decibelsToY(seg.volume) - 10"
-              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
-              height="20"
-              :style="{cursor: props.disabled ? '' : 'ns-resize'}"
-              fill="transparent"
-              @pointerdown="handlePointerDown($event, i, 'volume')"
-            />
-            <circle
-              :cx="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
-              :cy="decibelsToY(seg.volume)"
-              :r="i == 0 || props.disabled ? 3 : 8"
-              :class="i == 0 || props.disabled ? $style['handle-locked'] : $style['handle']"
-              @pointerdown="handlePointerDown($event, i, 'start')"
-            />
-            <circle
-              :cx="(timeRange.start + seg.end * timeRange.delta) * svgWidth"
-              :cy="decibelsToY(seg.volume)"
-              :r="i == (segments.length - 1) || props.disabled ? 3 : 8"
-              :class="i == (segments.length - 1) || props.disabled ? $style['handle-locked'] : $style['handle']"
-              @pointerdown="handlePointerDown($event, i, 'end')"
-            />
-          </g>
-        </g>
-      </svg>
-    </div>
-    <div class="d-flex flex-column ga-2 align-center justify-center">
-      <v-btn
-        :icon="mdiPlus"
-        density="compact"
-        color="success"
-        variant="outlined"
-        :disabled="props.disabled"
-        @click="addSegment"
-      />
-      <v-btn
-        :icon="mdiMinus"
-        density="compact"
-        color="error"
-        variant="outlined"
-        :disabled="props.disabled || selectedIdx == null"
-        @click="removeSegment"
-      />
-      <v-btn
-        :icon="mdiTrashCan"
-        density="compact"
-        color="white"
-        variant="outlined"
-        :disabled="props.disabled || !uiState.isEnvelopeVisible"
-        @click="clearSegments"
-      />
-    </div>
-    <v-menu
-      v-model="isContextMenuOpen"
-      :target="contextMenuPosition || undefined"
-      density="compact"
-    >
-      <v-list
-        density="compact"
-        class="pa-0 border"
-        @contextmenu.prevent
-      >
-        <v-list-item
-          height="40px"
-          density="compact"
-        >
-          <v-checkbox
-            v-model="uiState.scaleWaveform"
-            style="font-size: 0.8em"
-            :label="t('main.bottomEditor.timeLevels.scaleWaveform')"
-            density="compact"
-            hide-details
-          />
-        </v-list-item>
-      </v-list>
-    </v-menu>
-  </div>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref, shallowRef, StyleValue, toRaw, useTemplateRef, watch } from 'vue';
+import { computed, ref, shallowRef, toRaw, useTemplateRef, watch, watchEffect } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
-import { useShowState } from '../../stores/showstate';
-import { useElementSize, useEventListener, useMouseInElement, useParentElement, useWebWorkerFn } from '@vueuse/core';
+import { useShowState } from '../../stores/showState';
+import { useElementSize, useEventListener, useMouseInElement, useWebWorkerFn } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
-import { Cue } from '../../types/Cue';
-import { mdiEye, mdiEyeOff, mdiMinus, mdiPlus, mdiSkipNext, mdiSkipPrevious, mdiTrashCan } from '@mdi/js';
+import type { Cue } from '../../types/Cue';
+import {
+  mdiCheckboxBlankOutline,
+  mdiCheckboxMarked,
+  mdiEye,
+  mdiEyeOff,
+  mdiMinus,
+  mdiPlus,
+  mdiSkipNext,
+  mdiSkipPrevious,
+  mdiTrashCan,
+} from '@mdi/js';
 import { useApi } from '../../api';
 import { useI18n } from 'vue-i18n';
 import TimeInput from '../input/TimeInput.vue';
-import { useUiState } from '../../stores/uistate';
+import { useUiState } from '../../stores/uiState';
 import { usePosition } from '../../composables/usePosition.ts';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import ContextMenu from 'primevue/contextmenu';
+import PathIcon from '../display/PathIcon.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -303,7 +59,7 @@ type Segment = {
 };
 
 const normSegments = (seg: Segment[]): Segment[] => {
-  let result = [...seg].sort((a, b) => a.start - b.start);
+  const result = [...seg].sort((a, b) => a.start - b.start);
   if (result.length > 0) {
     result[0]!.start = 0;
     result[result.length - 1]!.end = 1;
@@ -312,14 +68,17 @@ const normSegments = (seg: Segment[]): Segment[] => {
 };
 
 const buildTimeRange = () => {
-  const duration = metadata.value?.duration || 1;
-  const start = selectedCue.value?.params.type === 'audio' ? (selectedCue.value.params.startTime || 0) / duration : 0;
-  const end = selectedCue.value?.params.type === 'audio' ? (selectedCue.value.params.endTime || duration) / duration : 1;
+  const duration = metadata.value?.duration ?? 1;
+  const start =
+    selectedCue.value?.params.type === 'audio'
+      ? (selectedCue.value.params.startTime ?? 0) / duration
+      : 0;
+  const end =
+    selectedCue.value?.params.type === 'audio'
+      ? (selectedCue.value.params.endTime ?? duration) / duration
+      : 1;
   return { start, end, delta: end - start };
 };
-
-const isContextMenuOpen = ref(false);
-const contextMenuPosition = ref<[number, number] | null>(null);
 
 const dragging = ref<{
   index: number;
@@ -327,19 +86,33 @@ const dragging = ref<{
   dragged: boolean;
 } | null>(null);
 const selectedIdx = ref<number | null>(null);
-const segments = ref<Segment[]>(selectedCue.value != null && selectedCue.value.params.type === 'audio' ? normSegments(selectedCue.value.params.envelope) : []);
+const segments = ref<Segment[]>(
+  selectedCue.value != null && selectedCue.value.params.type === 'audio'
+    ? normSegments(selectedCue.value.params.envelope)
+    : [],
+);
 
 watch(selectedCue, (newCue, oldCue) => {
-  if (newCue?.id !== oldCue?.id || (selectedIdx.value != null && newCue?.params.type === 'audio' && newCue.params.envelope.length <= selectedIdx.value)) {
+  if (
+    newCue?.id !== oldCue?.id ||
+    (selectedIdx.value != null &&
+      newCue?.params.type === 'audio' &&
+      newCue.params.envelope.length <= selectedIdx.value)
+  ) {
     selectedIdx.value = null;
   }
   dragging.value = null;
-  segments.value = selectedCue.value != null && selectedCue.value.params.type === 'audio' ? normSegments(selectedCue.value.params.envelope) : [];
+  segments.value =
+    selectedCue.value != null && selectedCue.value.params.type === 'audio'
+      ? normSegments(selectedCue.value.params.envelope)
+      : [];
   timeRange.value = buildTimeRange();
 });
 
 const contentHeight = computed(() => props.heightPx - 4);
-const metadata = computed(() => (selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null));
+const metadata = computed(() =>
+  selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
+);
 
 const timeRange = ref<{
   start: number;
@@ -352,7 +125,7 @@ const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1)
 
 const svgRef = useTemplateRef('svg');
 const { width: svgWidth } = useElementSize(svgRef);
-const parent = useParentElement();
+const parent = useTemplateRef('container');
 
 const positionRef = useTemplateRef('position');
 
@@ -361,7 +134,11 @@ usePosition((pos) => {
   const activeCue = showState.activeCues[selectedCue.value.id];
   let position = pos[selectedCue.value.id];
   if (activeCue == null || position == null) return;
-  if (activeCue.duration !== 0 && activeCue.status !== 'preWaiting' && activeCue.status !== 'preWaitPaused') {
+  if (
+    activeCue.duration !== 0 &&
+    activeCue.status !== 'preWaiting' &&
+    activeCue.status !== 'preWaitPaused'
+  ) {
     position = position / activeCue.duration;
   } else {
     position = 0;
@@ -379,8 +156,8 @@ const buildWaveformPath = (source: number[], height: number, width: number) => {
 
   const samplePerPixel = source.length / width;
   for (let i = 0; i < width; i++) {
-    let start = Math.floor(i * samplePerPixel);
-    let end = Math.floor((i + 1) * samplePerPixel);
+    const start = Math.floor(i * samplePerPixel);
+    const end = Math.floor((i + 1) * samplePerPixel);
 
     let max = source[start];
     if (max == null) continue;
@@ -420,12 +197,15 @@ const updateWaveformPath = async () => {
   }
 };
 
-watch([svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform], (newValue, oldValue) => {
-  if (newValue[2] !== oldValue[2]) {
-    waveformPath.value = '';
-  }
-  updateWaveformPath();
-});
+watch(
+  [svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform],
+  (newValue, oldValue) => {
+    if (newValue[2] !== oldValue[2]) {
+      waveformPath.value = '';
+    }
+    updateWaveformPath();
+  },
+);
 
 const waveformTransform = computed(() => {
   if (uiState.scaleWaveform) {
@@ -435,30 +215,28 @@ const waveformTransform = computed(() => {
   }
 });
 
-const {
-  x: mouseX,
-  y: mouseY,
-  elementX,
-  isOutside,
-} = useMouseInElement(svgRef, { handleOutside: false, touch: false });
-
-const tooltipText = computed(() => {
-  if (selectedCue.value == null) {
-    return '--:--.-- / --:--.--';
-  }
-  const duration = assetResult.getMetadata(selectedCue.value.id)?.duration;
-  if (duration == null) {
-    return '--:--.-- / --:--.--';
-  }
-  return `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
+const { elementX, elementY, isOutside } = useMouseInElement(svgRef, {
+  handleOutside: false,
+  touch: false,
 });
 
-const tooltipStyle = computed<StyleValue>(() => {
-  if (parent.value == null) return {};
-  const parentRect = parent.value.getBoundingClientRect();
-  return {
-    transform: `translateX(${parentRect.right - mouseX.value > 180 ? mouseX.value - parentRect.left + 15 : mouseX.value - parentRect.left - 150}px) translateY(${mouseY.value - parentRect.top - 10}px)`,
-  };
+const tooltipRef = useTemplateRef('tooltip');
+
+watchEffect(() => {
+  if (tooltipRef.value == null) return;
+  if (!isOutside.value) {
+    tooltipRef.value.style.transform = `translate(${svgWidth.value - elementX.value > 180 ? elementX.value + 15 : elementX.value - 150}px, ${elementY.value}px)`;
+    if (selectedCue.value == null) {
+      tooltipRef.value.textContent = '--:--.-- / --:--.--';
+      return;
+    }
+    const duration = assetResult.getMetadata(selectedCue.value.id)?.duration;
+    if (duration == null) {
+      tooltipRef.value.textContent = '--:--.-- / --:--.--';
+    } else {
+      tooltipRef.value.textContent = `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
+    }
+  }
 });
 
 const saveEditorValue = () => {
@@ -466,9 +244,11 @@ const saveEditorValue = () => {
   if (selectedCue.value?.params.type !== 'audio') return;
   selectedCue.value.params.envelope = segments.value;
 
-  const duration = metadata.value?.duration || 1;
-  selectedCue.value.params.startTime = timeRange.value.start === 0 ? null : timeRange.value.start * duration;
-  selectedCue.value.params.endTime = timeRange.value.end === 1 ? null : timeRange.value.end * duration;
+  const duration = metadata.value?.duration ?? 1;
+  selectedCue.value.params.startTime =
+    timeRange.value.start === 0 ? null : timeRange.value.start * duration;
+  selectedCue.value.params.endTime =
+    timeRange.value.end === 1 ? null : timeRange.value.end * duration;
   emit('update');
 };
 
@@ -476,23 +256,32 @@ const linePath = computed<{
   dot: string;
   fill: string;
 }>(() => {
-  if (segments.value.length === 0) return {
-    dot: '',
-    fill: '',
-  };
+  if (segments.value.length === 0)
+    return {
+      dot: '',
+      fill: '',
+    };
 
   return {
-    dot: segments.value.map((value, i) => {
-      const y = decibelsToY(value.volume);
-      if (i === 0) {
-        return `M${value.end * svgWidth.value},${y}`;
-      } else if (i === segments.value.length - 1) {
-        return `L${value.start * svgWidth.value},${y}`;
-      } else {
-        return `L${value.start * svgWidth.value},${y}M${value.end * svgWidth.value},${y}`;
-      }
-    }).join(''),
-    fill: segments.value.map(value => `${value.start * svgWidth.value},${decibelsToY(value.volume)} ${value.end * svgWidth.value},${decibelsToY(value.volume)}`).join(' ') + ` ${svgWidth.value},${contentHeight.value} 0,${contentHeight.value}`,
+    dot: segments.value
+      .map((value, i) => {
+        const y = decibelsToY(value.volume);
+        if (i === 0) {
+          return `M${value.end * svgWidth.value},${y}`;
+        } else if (i === segments.value.length - 1) {
+          return `L${value.start * svgWidth.value},${y}`;
+        } else {
+          return `L${value.start * svgWidth.value},${y}M${value.end * svgWidth.value},${y}`;
+        }
+      })
+      .join(''),
+    fill:
+      segments.value
+        .map(
+          (value) =>
+            `${value.start * svgWidth.value},${decibelsToY(value.volume)} ${value.end * svgWidth.value},${decibelsToY(value.volume)}`,
+        )
+        .join(' ') + ` ${svgWidth.value},${contentHeight.value} 0,${contentHeight.value}`,
   };
 });
 
@@ -505,7 +294,7 @@ const decibelsToY = (value: number): number => {
 };
 
 const YToDecibels = (value: number): number => {
-  return clamp(Math.log10(1 - (value / contentHeight.value)) * 20, -60, 0);
+  return clamp(Math.log10(1 - value / contentHeight.value) * 20, -60, 0);
 };
 
 const getSVGCoords = (e: MouseEvent) => {
@@ -518,7 +307,11 @@ const getSVGCoords = (e: MouseEvent) => {
   return { x: clamp(svgPoint.x, 0, svgWidth.value), y: clamp(svgPoint.y, 0, contentHeight.value) };
 };
 
-const handlePointerDown = (e: PointerEvent, index: number, type: 'volume' | 'start' | 'end' | 'hstart' | 'hend') => {
+const handlePointerDown = (
+  e: PointerEvent,
+  index: number,
+  type: 'volume' | 'start' | 'end' | 'hstart' | 'hend',
+) => {
   if (props.disabled) return;
   e.stopPropagation();
   if (type === 'start' && index === 0) return;
@@ -554,7 +347,11 @@ const handlePointerMove = (e: PointerEvent) => {
 
       const minX = prevSeg ? prevSeg.end + MIN_GAP : 0;
       const maxX = current.end - MIN_GAP;
-      current.start = clamp(((x / svgWidth.value) - timeRange.value.start) / timeRange.value.delta, minX, maxX);
+      current.start = clamp(
+        (x / svgWidth.value - timeRange.value.start) / timeRange.value.delta,
+        minX,
+        maxX,
+      );
       break;
     }
     case 'end': {
@@ -568,7 +365,11 @@ const handlePointerMove = (e: PointerEvent) => {
 
       const minX = current.start + MIN_GAP;
       const maxX = nextSeg ? nextSeg.start - MIN_GAP : 1;
-      current.end = clamp(((x / svgWidth.value) - timeRange.value.start) / timeRange.value.delta, minX, maxX);
+      current.end = clamp(
+        (x / svgWidth.value - timeRange.value.start) / timeRange.value.delta,
+        minX,
+        maxX,
+      );
       break;
     }
     case 'hstart': {
@@ -606,17 +407,23 @@ const handleAddOrSplit = (svgX: number) => {
     saveEditorValue();
     return;
   }
-  const targetIdx = segments.value.findIndex(s => svgX >= s.start && svgX <= s.end);
+  const targetIdx = segments.value.findIndex((s) => svgX >= s.start && svgX <= s.end);
   if (targetIdx !== -1) {
     const target = segments.value[targetIdx]!;
     const segmentWidth = target.end - target.start;
 
-    if (segmentWidth > (MIN_GAP * 2) + MIN_GAP) {
-      const leftEnd = svgX - (MIN_GAP / 2);
-      const rightStart = svgX + (MIN_GAP / 2);
+    if (segmentWidth > MIN_GAP * 2 + MIN_GAP) {
+      const clampedX = Math.max(target.start + MIN_GAP, Math.min(target.end - MIN_GAP, svgX));
+
+      const leftEnd = clampedX - MIN_GAP / 2;
+      const rightStart = clampedX + MIN_GAP / 2;
 
       segments.value[targetIdx] = { ...target, end: leftEnd };
-      segments.value.splice(targetIdx + 1, 0, { start: rightStart, end: target.end, volume: target.volume });
+      segments.value.splice(targetIdx + 1, 0, {
+        start: rightStart,
+        end: target.end,
+        volume: target.volume,
+      });
       saveEditorValue();
       return;
     }
@@ -627,7 +434,7 @@ const handleAddOrSplit = (svgX: number) => {
     const gapEnd = segments.value[i + 1]!.start;
     if (svgX > gapStart && svgX < gapEnd) {
       const availableWidth = gapEnd - gapStart;
-      if (availableWidth > MIN_GAP + (MIN_GAP * 2)) {
+      if (availableWidth > MIN_GAP + MIN_GAP * 2) {
         const s = svgX - 0.04;
         const e = svgX + 0.04;
         const finalS = Math.max(gapStart + MIN_GAP, s);
@@ -682,9 +489,9 @@ const seek = (event: MouseEvent) => {
   if (activeCue == null) {
     return;
   }
-  const position
-    = (event.offsetX - timeRange.value.start * svgWidth.value)
-      / (svgWidth.value * (timeRange.value.delta));
+  const position =
+    (event.offsetX - timeRange.value.start * svgWidth.value) /
+    (svgWidth.value * timeRange.value.delta);
   if (position > 0 && position < 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
@@ -696,7 +503,11 @@ const skipFirstSilence = () => {
   }
   const result = assetResult.get(selectedCue.value.id);
   if (result == null || result.metadata.duration == null) return;
-  timeRange.value.start = clamp((result.startTime || 0) / result.metadata.duration, 0, timeRange.value.end);
+  timeRange.value.start = clamp(
+    (result.startTime ?? 0) / result.metadata.duration,
+    0,
+    timeRange.value.end,
+  );
   timeRange.value.delta = timeRange.value.end - timeRange.value.start;
   saveEditorValue();
 };
@@ -707,46 +518,295 @@ const skipLastSilence = () => {
   }
   const result = assetResult.get(selectedCue.value.id);
   if (result == null || result.metadata.duration == null) return;
-  timeRange.value.end = clamp((result.endTime || 1) / result.metadata.duration, timeRange.value.start, 1);
+  timeRange.value.end = clamp(
+    (result.endTime ?? result.metadata.duration) / result.metadata.duration,
+    timeRange.value.start,
+    1,
+  );
   timeRange.value.delta = timeRange.value.end - timeRange.value.start;
   saveEditorValue();
 };
+
+const menuRef = useTemplateRef('menu');
+const menuItems = computed(() => [
+  {
+    label: t('main.bottomEditor.timeLevels.scaleWaveform'),
+    icon: uiState.scaleWaveform ? mdiCheckboxMarked : mdiCheckboxBlankOutline,
+    command: () => (uiState.scaleWaveform = !uiState.scaleWaveform),
+  },
+]);
 </script>
 
+<template>
+  <div
+    class="flex flex-row gap-2"
+    @contextmenu.prevent="menuRef?.show($event)"
+  >
+    <div class="mb-2 flex flex-col items-center justify-center gap-2">
+      <div class="flex flex-row items-center gap-2">
+        <time-input
+          v-model="timeRange.start"
+          width="175px"
+          :label="t('main.bottomEditor.timeLevels.startTime')"
+          :multiply="metadata?.duration ?? 1"
+          :default-value="0"
+          @update="saveEditorValue"
+          @pointerdown.stop
+        />
+        <button-wrapper
+          v-tooltip.right="t('main.bottomEditor.timeLevels.skipFirstSilence')"
+          class="w-12"
+          size="small"
+          :icon="mdiSkipNext"
+          :disabled="props.disabled"
+          @click="skipFirstSilence"
+        />
+      </div>
+      <div class="flex flex-row items-center gap-2">
+        <time-input
+          v-model="timeRange.end"
+          width="175px"
+          :label="t('main.bottomEditor.timeLevels.endTime')"
+          :multiply="metadata?.duration ?? 1"
+          :default-value="1"
+          @update="saveEditorValue"
+          @pointerdown.stop
+        />
+        <button-wrapper
+          v-tooltip.right="t('main.bottomEditor.timeLevels.skipLastSilence')"
+          class="w-12"
+          size="small"
+          :icon="mdiSkipPrevious"
+          :disabled="props.disabled"
+          @click="skipLastSilence"
+        />
+      </div>
+      <button-wrapper
+        :icon="uiState.isEnvelopeVisible ? mdiEye : mdiEyeOff"
+        :label="t('main.bottomEditor.timeLevels.envelopeVisible')"
+        size="small"
+        class="self-start"
+        width="175px"
+        @click="uiState.isEnvelopeVisible = !uiState.isEnvelopeVisible"
+      />
+    </div>
+    <div
+      :style="{ height: `${props.heightPx}px` }"
+      class="relative w-full border border-(--p-form-field-border-color)"
+      ref="container"
+    >
+      <div
+        ref="tooltip"
+        v-show="!isOutside"
+        v-if="selectedCue != null && svgRef != null && parent != null"
+        class="pointer-events-none absolute top-0 left-0 rounded border border-(--p-form-field-border-color) bg-(--p-content-background) pr-1 pl-1"
+      />
+      <svg
+        v-show="selectedCue != null"
+        ref="svg"
+        preserveAspectRatio="none"
+        xmlns="http://www.w3.org/2000/svg"
+        :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
+        width="100%"
+        :height="`${contentHeight}px`"
+        @dblclick="
+          (e: MouseEvent) => {
+            const { x } = getSVGCoords(e);
+            handleAddOrSplit((x / svgWidth - timeRange.start) / timeRange.delta);
+          }
+        "
+        @pointerdown="seek"
+      >
+        <rect
+          :class="$style.waveform"
+          x="0"
+          :y="contentHeight / 2"
+          height="1"
+          :width="svgWidth"
+        />
+        <path
+          v-if="waveformPath != null"
+          :d="waveformPath"
+          :transform="waveformTransform"
+          :class="$style.waveform"
+          transform-origin="center"
+        />
+        <rect
+          :x="startPos"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="blue"
+        />
+        <rect
+          :x="endPos"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="blue"
+        />
+        <rect
+          :x="startPos - 10"
+          y="0"
+          width="20"
+          :height="contentHeight"
+          fill="transparent"
+          :style="{ cursor: props.disabled ? '' : 'ew-resize' }"
+          @pointerdown="handlePointerDown($event, 0, 'hstart')"
+        />
+        <rect
+          :x="endPos - 10"
+          y="0"
+          width="20"
+          :height="contentHeight"
+          fill="transparent"
+          :style="{ cursor: props.disabled ? '' : 'ew-resize' }"
+          @pointerdown="handlePointerDown($event, 0, 'hend')"
+        />
+        <rect
+          v-show="selectedCue != null && selectedCue.id in showState.activeCues"
+          ref="position"
+          x="0"
+          y="0"
+          width="2"
+          :height="contentHeight"
+          fill="yellow"
+        />
+        <g
+          v-show="uiState.isEnvelopeVisible"
+          ref="parent"
+        >
+          <path
+            :d="linePath.dot"
+            fill="none"
+            style="stroke: var(--p-primary-500); stroke-width: 3px; stroke-dasharray: 8, 4"
+            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
+          />
+          <polyline
+            :points="linePath.fill"
+            style="fill: rgb(from var(--p-primary-500) r g b / 20%)"
+            :transform="`translate(${timeRange.start * svgWidth}, 0) scale(${timeRange.delta},1)`"
+          />
+          <g
+            v-for="(seg, i) in segments"
+            :key="i"
+            :class="{
+              [$style['selected']]: selectedIdx == i,
+              [$style['disabled']]: props.disabled,
+            }"
+          >
+            <rect
+              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :y="decibelsToY(seg.volume) - 2"
+              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
+              height="4"
+              :class="$style['bar']"
+            />
+            <rect
+              :x="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :y="decibelsToY(seg.volume) - 10"
+              :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
+              height="20"
+              :style="{ cursor: props.disabled ? '' : 'ns-resize' }"
+              fill="transparent"
+              @pointerdown="handlePointerDown($event, i, 'volume')"
+            />
+            <circle
+              :cx="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
+              :cy="decibelsToY(seg.volume)"
+              :r="i == 0 || props.disabled ? 3 : 8"
+              :class="i == 0 || props.disabled ? $style['handle-locked'] : $style['handle']"
+              @pointerdown="handlePointerDown($event, i, 'start')"
+            />
+            <circle
+              :cx="(timeRange.start + seg.end * timeRange.delta) * svgWidth"
+              :cy="decibelsToY(seg.volume)"
+              :r="i == segments.length - 1 || props.disabled ? 3 : 8"
+              :class="
+                i == segments.length - 1 || props.disabled
+                  ? $style['handle-locked']
+                  : $style['handle']
+              "
+              @pointerdown="handlePointerDown($event, i, 'end')"
+            />
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="flex flex-col items-center justify-center gap-2">
+      <button-wrapper
+        rounded
+        :icon="mdiPlus"
+        severity="success"
+        variant="outlined"
+        size="small"
+        :disabled="props.disabled"
+        @click="addSegment"
+      />
+      <button-wrapper
+        rounded
+        :icon="mdiMinus"
+        severity="danger"
+        variant="outlined"
+        size="small"
+        :disabled="props.disabled || selectedIdx == null"
+        @click="removeSegment"
+      />
+      <button-wrapper
+        rounded
+        :icon="mdiTrashCan"
+        severity="secondary"
+        variant="outlined"
+        size="small"
+        :disabled="props.disabled || !uiState.isEnvelopeVisible"
+        @click="clearSegments"
+      />
+    </div>
+    <context-menu
+      ref="menu"
+      :model="menuItems"
+    >
+      <template #itemicon="innerProps">
+        <path-icon :icon="innerProps.item.icon || null" />
+      </template>
+    </context-menu>
+  </div>
+</template>
+
 <style lang="css" module>
-  .waveform {
-    stroke: rgb(var(--v-theme-surface-variant), 0.8);
-  }
-  .disabled {
-    .bar {
-      fill: rgb(var(--v-theme-surface))
-    }
-    .handle:hover {
-      stroke: black;
-    }
-  }
-  .selected {
-    .bar {
-      fill: rgb(var(--v-theme-warning));
-    }
-    .handle {
-      fill: rgb(var(--v-theme-warning));
-    }
-  }
+.waveform {
+  stroke: rgb(from var(--p-surface-500) r g b / 0.8);
+}
+.disabled {
   .bar {
-    fill: rgb(var(--v-theme-primary));
-    stroke: rgb(var(--v-theme-surface-variant));
-    stroke-width: 1px;
-  }
-  .handle {
-    stroke-width: 2px;
-    cursor: ew-resize;
-    fill: rgb(var(--v-theme-primary));
+    fill: var(--p-surface-500);
   }
   .handle:hover {
-    stroke: white;
+    stroke: black;
   }
-  .handle-locked {
-    fill: #444;
+}
+.selected {
+  .bar {
+    fill: var(--p-orange-500);
   }
+  .handle {
+    fill: var(--p-orange-500);
+  }
+}
+.bar {
+  fill: var(--p-primary-500);
+  stroke: var(--p-surface-500);
+  stroke-width: 1px;
+}
+.handle {
+  stroke-width: 2px;
+  cursor: ew-resize;
+  fill: var(--p-primary-500);
+}
+.handle:hover {
+  stroke: white;
+}
+.handle-locked {
+  fill: #444;
+}
 </style>

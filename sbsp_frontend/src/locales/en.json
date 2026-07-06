@@ -204,7 +204,8 @@
       "latestVersion": "Latest Version",
       "noUpdates": "No updates available.",
       "title": "Check for updates",
-      "updatesAvailable": "New updates available."
+      "updatesAvailable": "New updates available.",
+      "checking": "Checking..."
     }
   },
   "general": {
@@ -216,7 +217,9 @@
     "default": "Default",
     "warning": "Warning",
     "confirm": "Confirm",
-    "none": "None"
+    "none": "None",
+    "run": "Run",
+    "save": "Save"
   },
   "main": {
     "bottomEditor": {
@@ -311,8 +314,8 @@
     "preWait": "Pre-Wait",
     "sideBar": {
       "activeCues": "Active Cues",
-      "levels": {
-        "title": "Levels"
+      "meter": {
+        "title": "Meter"
       }
     },
     "mobile": {
@@ -368,7 +371,19 @@
     "modelLoaded": "Show model loaded.",
     "modelSaved": "Show model saved.",
     "permissionDenied": "Permission denied.",
-    "authenticationFailed": "Authentication failed."
+    "authenticationFailed": "Authentication failed.",
+    "cueStatus": "Playback Error",
+    "connectionError": "Connection Error",
+    "assetResult": "Asset Processing Error",
+    "updateFailed": "Update failed",
+    "failedToSave": "Failed to save ShowModel",
+    "failedToLoad": "Failed to load ShowModel",
+    "failedToExport": "Failed to export ShowModel",
+    "failedToEditCue": "Failed to edit Cue",
+    "operationFailed": "Operation failed",
+    "failedToStartServer": "Failed to start server",
+    "failedToStopServer": "Failed to stop server",
+    "failedToLoadLicense": "Failed to load License"
   },
   "view": {
     "connect": {

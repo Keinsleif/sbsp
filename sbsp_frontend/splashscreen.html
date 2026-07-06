@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/%APP_ICON%" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      html,body {
+        width:100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        user-select: none;
+        overflow: hidden;
+      }
+    </style>
+    <title>%APP_TITLE%</title>
+  </head>
+  <body tabindex="-1">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 800 450"
+      width="400"
+      height="225"
+      style="background: #0d1117;"
+    >
+      <defs>
+        <style>
+          .splash-content {
+            animation: fadeIn 0.8s ease-out forwards;
+          }
+          
+          .wave-flow {
+            animation: flow 1.5s linear infinite;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          @keyframes flow {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-80px, 0); }
+          }
+        </style>
+        <clipPath id="wave-clip">
+          <rect x="320" y="340" width="160" height="60" rx="4" />
+        </clipPath>
+      </defs>
+      <g class="splash-content">
+        <text x="400" y="90" fill="white" style="font-size: 2.5em; font-family: system-ui, sans-serif; text-anchor: middle;">%APP_TITLE%</text>
+        <image x="320" y="140" width="160" height="160" href="/%APP_ICON%" />
+        <g clip-path="url(#wave-clip)">
+          <path class="wave-flow" d="M 320 370 Q 340 350 360 370 T 400 370 T 440 370 T 480 370 T 520 370 T 560 370" 
+                fill="none" stroke="#00A3E0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+        </g>
+        <text x="750" y="410" fill="#6b7280" style="font-size: 2em; font-family: system-ui, sans-serif; text-anchor: end;">Loading...</text>
+      </g>
+    </svg>
+  </body>
+</html>

@@ -17,9 +17,6 @@ pub enum PlaybackStatus {
     Playing,
     Paused,
     Stopping,
-    Stopped,
-    Completed,
-    Error,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]

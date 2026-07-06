@@ -1,29 +1,29 @@
-<template>
-  <component :is="xs ? MainViewMobile : MainViewDesktop" />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { useHotkey } from 'vuetify';
-import { useUiState } from './stores/uistate';
-import { useShowModel } from './stores/showmodel';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useShowState } from './stores/showstate';
-import { PlaybackStatus } from './types/PlaybackStatus';
+import { breakpointsTailwind, useBreakpoints, useEventListener, useIntervalFn } from '@vueuse/core';
+import MainViewDesktop from './MainViewDesktop.vue';
+import MainViewMobile from './MainViewMobile.vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { useShowModel } from './stores/showModel.ts';
+import { useShowState } from './stores/showState.ts';
+import { useUiState } from './stores/uiState.ts';
+import { useAssetResult } from './stores/assetResult.ts';
+import { useUiSettings } from './stores/uiSettings.ts';
 import { useI18n } from 'vue-i18n';
-import { useAssetResult } from './stores/assetResult';
-import { useUiSettings } from './stores/uiSettings';
-import { getLockCursorToSelection } from './utils';
+import { useApi } from './api';
+import { usePositionTicker } from './composables/usePosition.ts';
+import { getLockCursorToSelection } from './utils.ts';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { message } from '@tauri-apps/plugin-dialog';
-import { useApi } from './api';
-import { useIntervalFn } from '@vueuse/core';
-import MainViewDesktop from './MainViewDesktop.vue';
-import { useDisplay } from 'vuetify';
-import MainViewMobile from './MainViewMobile.vue';
-import { usePositionTicker } from './composables/usePosition.ts';
+import { useHotkey } from './composables/useHotkey.ts';
+import type { PlaybackStatus } from './types/PlaybackStatus.ts';
+import { useToast } from 'primevue/usetoast';
+import { useBackendEvent } from './composables/useBackendEvent.ts';
+
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
+const xs = breakpoints.smaller('sm');
 
 const showModel = useShowModel();
 const showState = useShowState();
@@ -32,7 +32,7 @@ const assetResult = useAssetResult();
 const uiSettings = useUiSettings();
 const { t } = useI18n();
 const api = useApi();
-const { xs } = useDisplay();
+const toast = useToast();
 
 const wakeLock = ref<WakeLockSentinel | null>(null);
 
@@ -44,133 +44,172 @@ const onVisibilityChange = () => {
   }
 };
 
-const unlistenFuncs: (() => void)[] = [];
+useEventListener(document, 'visibilitychange', onVisibilityChange);
+useEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+useIntervalFn(() => api.requestStateSync(), 5000);
+usePositionTicker();
 
-onMounted(() => {
-  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
-
-  useIntervalFn(
-    () => {
-      api.requestStateSync();
-    },
-    5000,
-    {
-      immediate: true,
-    },
-  );
-
-  usePositionTicker();
-
-  api
-    .onBackendEvent((event) => {
-      switch (event.type) {
-        case 'cueStatus':
-          if (event.param.type === 'error') {
-            console.error(event.param.error);
-            uiState.error(event.param.error);
-          }
-          showState.handleCueStateEvent(event.param);
-          break;
-        case 'playbackCursorMoved': {
-          showState.updatePlaybackCursor(event.param.cueId);
-          if (getLockCursorToSelection()) {
-            const cueId = event.param.cueId;
-            if (cueId != null) {
-              if (uiState.selected !== cueId) {
-                uiState.selected = cueId;
-                uiState.expandToVisible(cueId);
-                // This operation not using uiState.addSelected to avoid updating playbackcursor.
-                if (!uiState.selectedRows.has(cueId)) {
-                  uiState.selectedRows.clear();
-                  uiState.selectedRows.add(cueId);
-                }
-              }
-            } else {
-              // This operation not using uiState.addSelected to avoid updating playbackcursor.
+useBackendEvent((event) => {
+  switch (event.type) {
+    case 'cueStatus':
+      if (event.param.type === 'error') {
+        console.error(event.param.error);
+        toast.add({
+          severity: 'error',
+          summary: t('notification.cueStatus'),
+          detail: event.param.error,
+          life: 3000,
+        });
+      }
+      showState.handleCueStateEvent(event.param);
+      break;
+    case 'playbackCursorMoved': {
+      showState.updatePlaybackCursor(event.param.cueId);
+      if (getLockCursorToSelection()) {
+        const cueId = event.param.cueId;
+        if (cueId != null) {
+          if (uiState.selected !== cueId) {
+            uiState.selected = cueId;
+            uiState.expandToVisible(cueId);
+            // This operation not using uiState.addSelected to avoid updating playbackcursor.
+            if (!uiState.selectedRows.has(cueId)) {
               uiState.selectedRows.clear();
-              uiState.selected = null;
+              uiState.selectedRows.add(cueId);
             }
           }
-          break;
+        } else {
+          // This operation not using uiState.addSelected to avoid updating playbackcursor.
+          uiState.selectedRows.clear();
+          uiState.selected = null;
         }
-        case 'syncState':
-          showState.handleSyncEvent(event.param);
-          break;
-        case 'showModelLoaded':
-          showModel.updateAll(event.param.model);
-          uiState.success(t('notification.modelLoaded'));
-          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
-          uiState.resetSelected();
-          break;
-        case 'showModelSaved':
-          uiState.success(t('notification.modelSaved'));
-          break;
-        case 'showModelReset':
-          showModel.updateAll(event.param.model);
-          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
-          uiState.resetSelected();
-          break;
-        case 'cueRemoved':
-          uiState.removeFromSelected(event.param.cueIds);
-          break;
-        case 'cueListUpdated':
-          showModel.$patch({ cues: event.param.cues, rootIds: event.param.rootIds });
-          break;
-        case 'modelNameUpdated':
-          showModel.$patch({ name: event.param.newName });
-          api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
-          break;
-        case 'settingsUpdated': {
-          const settings = event.param.newSettings;
-          showModel.$patch({ settings: settings });
-          break;
-        }
-        case 'assetMetadata': {
-          assetResult.addMetadata(event.param.path, event.param.data);
-          break;
-        }
-        case 'assetResult': {
-          if ('Ok' in event.param.data) {
-            assetResult.add(event.param.path, event.param.data.Ok);
-          } else {
-            console.error(event.param.data.Err);
-            uiState.error(event.param.data.Err);
-          }
-          break;
-        }
-        case 'operationFailed':
-          console.error(event.param.error);
-          switch (event.param.error.type) {
-            case 'saveToFile':
-              uiState.error(event.param.error.message);
-              break;
-            case 'loadFromFile':
-              uiState.error(event.param.error.message);
-              break;
-            case 'exportToFolder':
-              uiState.error(event.param.error.message);
-              break;
-            case 'cueEdit':
-              uiState.error(event.param.error.message);
-              break;
-            case 'custom':
-              switch (event.param.error.id) {
-                case 1:
-                  uiState.error(t('notification.authenticationFailed'));
-                  break;
-                case 2:
-                  uiState.error(t('notification.permissionDenied'));
-                  break;
-                default:
-                  uiState.error(event.param.error.message);
-                  break;
-              }
-          }
-          break;
       }
-    })
-    .then(unlistenFn => unlistenFuncs.push(unlistenFn));
+      break;
+    }
+    case 'syncState':
+      showState.handleSyncEvent(event.param);
+      break;
+    case 'showModelLoaded': {
+      showModel.updateAll(event.param.model);
+      // const parts = event.param.path.replace(/\\/g, '/').replace(/\/$/, '').split('/');
+      toast.add({ severity: 'success', summary: t('notification.modelLoaded'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
+      api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+      uiState.resetSelected();
+      break;
+    }
+    case 'showModelSaved': {
+      // const parts = event.param.path.replace(/\\/g, '/').replace(/\/$/, '').split('/');
+      toast.add({ severity: 'success', summary: t('notification.modelSaved'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
+      break;
+    }
+    case 'showModelReset':
+      showModel.updateAll(event.param.model);
+      api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+      uiState.resetSelected();
+      break;
+    case 'cueRemoved':
+      uiState.removeFromSelected(event.param.cueIds);
+      break;
+    case 'cueListUpdated':
+      showModel.$patch({ cues: event.param.cues, rootIds: event.param.rootIds });
+      break;
+    case 'modelNameUpdated':
+      showModel.$patch({ name: event.param.newName });
+      api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
+      break;
+    case 'settingsUpdated': {
+      const settings = event.param.newSettings;
+      showModel.$patch({ settings: settings });
+      break;
+    }
+    case 'assetMetadata': {
+      assetResult.addMetadata(event.param.path, event.param.data);
+      break;
+    }
+    case 'assetResult': {
+      if ('Ok' in event.param.data) {
+        assetResult.add(event.param.path, event.param.data.Ok);
+      } else {
+        assetResult.addError(event.param.path);
+        console.error(event.param.data.Err);
+        toast.add({
+          severity: 'error',
+          summary: t('notification.assetResult'),
+          detail: event.param.data.Err,
+          life: 5000,
+        });
+      }
+      break;
+    }
+    case 'operationFailed':
+      console.error(event.param.error);
+      switch (event.param.error.type) {
+        case 'saveToFile':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToSave'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
+        case 'loadFromFile':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToLoad'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
+        case 'exportToFolder':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToExport'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
+        case 'cueEdit':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToEditCue'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
+        case 'custom':
+          switch (event.param.error.id) {
+            case 1:
+              toast.add({
+                severity: 'error',
+                summary: t('notification.operationFailed'),
+                detail: t('notification.authenticationFailed'),
+                life: 3000,
+              });
+              break;
+            case 2:
+              toast.add({
+                severity: 'error',
+                summary: t('notification.operationFailed'),
+                detail: t('notification.permissionDenied'),
+                life: 3000,
+              });
+              break;
+            default:
+              toast.add({
+                severity: 'error',
+                summary: t('notification.operationFailed'),
+                detail: event.param.error.message,
+                life: 3000,
+              });
+              break;
+          }
+      }
+      break;
+  }
+});
+
+const unlistenFuncs: (() => void)[] = [];
+onMounted(() => {
+  api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
 
   if (__IS_HOST__) {
     getCurrentWebviewWindow()
@@ -185,7 +224,7 @@ onMounted(() => {
             },
             kind: 'warning',
             title: t('general.confirm'),
-          }).catch(e => console.error(e));
+          }).catch((e) => console.error(e)); // If message fails, it indicates application may be broken. So close window.
           switch (result) {
             case t('dialog.saveConfirm.save'):
               await api.host?.fileSave();
@@ -198,7 +237,7 @@ onMounted(() => {
           }
         }
       })
-      .then(unlistenFn => unlistenFuncs.push(unlistenFn));
+      .then((unlistenFn) => unlistenFuncs.push(unlistenFn));
   }
   api
     .getFullState()
@@ -224,7 +263,7 @@ onMounted(() => {
         }
       }
     })
-    .catch(e => console.error(e.toString()));
+    .catch((e) => console.error(e.toString()));
 
   if (navigator.wakeLock) {
     navigator.wakeLock
@@ -232,207 +271,177 @@ onMounted(() => {
       .then((value) => {
         wakeLock.value = value;
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   }
-  document.addEventListener('visibilitychange', onVisibilityChange);
 });
 
 onUnmounted(() => {
-  unlistenFuncs.forEach(unlistenFn => unlistenFn());
-  document.removeEventListener('visibilitychange', onVisibilityChange);
+  unlistenFuncs.forEach((unlistenFn) => unlistenFn());
   if (wakeLock.value != null) {
     wakeLock.value
       .release()
       .then(() => {
         wakeLock.value = null;
       })
-      .catch(e => console.error(e));
+      .catch((e) => console.error(e));
   }
 });
 
 if (api.host) {
-  useHotkey(
-    'cmd+o',
-    () => {
-      api.host?.fileOpen();
-    },
-    { preventDefault: true },
-  );
+  useHotkey('$mod+O', (e) => {
+    e.preventDefault();
+    api.host?.fileOpen();
+  });
 
-  useHotkey(
-    'cmd+s',
-    () => {
-      api.host?.fileSave();
-    },
-    { preventDefault: true },
-  );
+  useHotkey('$mod+S', (e) => {
+    e.preventDefault();
+    api.host?.fileSave();
+  });
 
-  useHotkey(
-    'cmd+shift+a',
-    () => {
-      api.host?.fileSaveAs();
-    },
-    { preventDefault: true },
-  );
+  useHotkey('$mod+Shift+A', (e) => {
+    e.preventDefault();
+    api.host?.fileSaveAs();
+  });
 }
 
-const goHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.go) || undefined;
-});
-const loadHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.load) || undefined;
-});
-const pauseAndResumeHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAndResume) || undefined;
-});
-const pauseAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.pauseAll) || undefined;
-});
-const resumeAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.resumeAll) || undefined;
-});
-const stopHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stop) || undefined;
-});
-const stopAllHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.stopAll) || undefined;
-});
-const seekForwardHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekForward) || undefined;
-});
-const seekBackwardHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.playback.seekBackward) || undefined;
-});
-const audioToggleRepeatHotkey = computed(() => {
-  return (uiState.mode !== 'view' && uiSettings.settings.hotkey.audioAction.toggleRepeat) || undefined;
-});
-
 useHotkey(
-  goHotkey,
-  () => {
-    api.sendGo();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  loadHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendLoad(cueId);
+  () => uiSettings.settings.hotkey.playback.go,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendGo();
     }
   },
-  {
-    preventDefault: true,
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.load,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (const cueId of uiState.selectedRows) {
+        api.sendLoad(cueId);
+      }
+    }
   },
 );
 
 useHotkey(
-  pauseAndResumeHotkey,
-  () => {
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
-      if ((['preWaiting', 'playing'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)) {
+  () => uiSettings.settings.hotkey.playback.pauseAndResume,
+  (e) => {
+    e.preventDefault();
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
+      if (
+        (['preWaiting', 'playing'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
+      ) {
         api.sendPause(uiState.selected);
       } else if (
-        (['preWaitPaused', 'paused'] as PlaybackStatus[]).includes(showState.activeCues[uiState.selected]!.status)
+        (['preWaitPaused', 'paused'] as PlaybackStatus[]).includes(
+          showState.activeCues[uiState.selected]!.status,
+        )
       ) {
         api.sendResume(uiState.selected);
       }
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  pauseAllHotkey,
-  () => {
-    api.sendPauseAll();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  resumeAllHotkey,
-  () => {
-    api.sendResumeAll();
-  },
-  {
-    preventDefault: true,
-  },
-);
-
-useHotkey(
-  stopHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendStop(cueId);
+  () => uiSettings.settings.hotkey.playback.pauseAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendPauseAll();
     }
   },
-  {
-    preventDefault: true,
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.resumeAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendResumeAll();
+    }
   },
 );
 
 useHotkey(
-  stopAllHotkey,
-  () => {
-    api.sendStopAll();
-  },
-  {
-    preventDefault: true,
+  () => uiSettings.settings.hotkey.playback.stop,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (const cueId of uiState.selectedRows) {
+        api.sendStop(cueId);
+      }
+    }
   },
 );
 
 useHotkey(
-  seekForwardHotkey,
-  () => {
-    console.log('key triggered');
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+  () => uiSettings.settings.hotkey.playback.stopAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendStopAll();
+    }
+  },
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.seekForward,
+  (e) => {
+    e.preventDefault();
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
       api.sendSeekBy(uiState.selected, uiSettings.settings.general.seekAmount);
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  seekBackwardHotkey,
-  () => {
-    if (uiState.selected != null && uiState.selected in showState.activeCues) {
+  () => uiSettings.settings.hotkey.playback.seekBackward,
+  (e) => {
+    e.preventDefault();
+    if (
+      uiState.mode !== 'view' &&
+      uiState.selected != null &&
+      uiState.selected in showState.activeCues
+    ) {
       api.sendSeekBy(uiState.selected, -uiSettings.settings.general.seekAmount);
     }
   },
-  {
-    preventDefault: true,
-  },
 );
 
 useHotkey(
-  audioToggleRepeatHotkey,
-  () => {
-    for (let cueId of uiState.selectedRows) {
-      api.sendToggleRepeat(cueId);
+  () => uiSettings.settings.hotkey.audioAction.toggleRepeat,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (const cueId of uiState.selectedRows) {
+        api.sendToggleRepeat(cueId);
+      }
     }
-  },
-  {
-    preventDefault: true,
   },
 );
 
-useHotkey(
-  'cmd+r',
-  () => {
-    if (uiState.mode === 'edit') {
-      uiState.isRenumberCueDialogOpen = true;
-    }
-  },
-  { preventDefault: true },
-);
+useHotkey('$mod+R', (e) => {
+  e.preventDefault();
+  if (uiState.mode === 'edit') {
+    uiState.isRenumberCueDialogOpen = true;
+  }
+});
 </script>
+
+<template>
+  <component :is="xs ? MainViewMobile : MainViewDesktop" />
+</template>

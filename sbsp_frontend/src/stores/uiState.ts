@@ -3,13 +3,13 @@
 
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getLockCursorToSelection, PERMISSIONS } from '../utils';
-import { useApi } from '../api';
-import { useShowModel } from './showmodel';
-import { Permissions } from '../types/Permissions';
+import { getLockCursorToSelection, PERMISSIONS } from '../utils.ts';
+import { useApi } from '../api/index.ts';
+import { useShowModel } from './showModel.ts';
+import type { Permissions } from '../types/Permissions.ts';
 
 export const useUiState = defineStore(
-  'uistate',
+  'uiState',
   () => {
     const permission = ref<Permissions>(0b0111);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
@@ -18,7 +18,7 @@ export const useUiState = defineStore(
     const expandedRows = ref<string[]>([]);
     const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
-    const sideBarTab = ref<'activeCues' | 'levels'>('activeCues');
+    const sideBarTab = ref<'activeCues' | 'meter'>('activeCues');
     const isRightSidebarOpen = ref(true);
     const isRenumberCueDialogOpen = ref(false);
     const isUpdateDialogOpen = ref(false);
@@ -32,8 +32,6 @@ export const useUiState = defineStore(
     const isEnvelopeVisible = ref(false);
     const scaleWaveform = ref(true);
     const lastUpdateCheckDate = ref<number>(0);
-    const success_messages = ref<string[]>([]);
-    const error_messages = ref<string[]>([]);
 
     const setPlaybackCursor = (id: string | null) => {
       const api = useApi();
@@ -81,7 +79,7 @@ export const useUiState = defineStore(
     const toggleExpand = (id: string) => {
       if (expandedRows.value.includes(id)) {
         expandedRows.value.splice(
-          expandedRows.value.findIndex(value => value === id),
+          expandedRows.value.findIndex((value) => value === id),
           1,
         );
       } else {
@@ -93,7 +91,7 @@ export const useUiState = defineStore(
       const showModel = useShowModel();
       let target_id: string | null = id;
       while (target_id != null) {
-        const target_cue = showModel.flatCueList.find(value => value.cue.id === target_id);
+        const target_cue = showModel.flatCueList.find((value) => value.cue.id === target_id);
         if (target_cue != null && target_cue.parent != null) {
           if (!expandedRows.value.includes(target_cue.parent)) {
             expandedRows.value.push(target_cue.parent);
@@ -118,12 +116,6 @@ export const useUiState = defineStore(
     };
     const toggleBottomTab = () => {
       isBottomTabOpen.value = !isBottomTabOpen.value;
-    };
-    const success = (message: string) => {
-      success_messages.value.push(message);
-    };
-    const error = (message: string) => {
-      error_messages.value.push(message);
     };
 
     const setPermission = (perm: Permissions) => {
@@ -182,8 +174,6 @@ export const useUiState = defineStore(
       isEnvelopeVisible,
       scaleWaveform,
       lastUpdateCheckDate,
-      success_messages,
-      error_messages,
       setPermission,
       setPlaybackCursor,
       resetSelected,
@@ -197,8 +187,6 @@ export const useUiState = defineStore(
       toggleDurationDisplayMode,
       toggleRightSidebar,
       toggleBottomTab,
-      success,
-      error,
     };
   },
   {

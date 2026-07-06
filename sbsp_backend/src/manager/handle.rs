@@ -10,12 +10,12 @@ use std::{
     },
 };
 
+use normpath::PathExt;
 use tokio::sync::{RwLock, mpsc};
 use uuid::Uuid;
-use normpath::PathExt;
 
 use crate::{
-    manager::{ModelCommand, project::ProjectStatus, command::InsertPosition},
+    manager::{ModelCommand, command::InsertPosition, project::ProjectStatus},
     model::{
         ShowModel,
         cue::{Cue, CueChain, CueParam, group::GroupMode},
@@ -166,9 +166,8 @@ impl ShowModelHandle {
         let model = self.read().await;
 
         model.cue_list.cues.get(cue_id).and_then(|cue| {
-            cue.parent_id.and_then(|parent_id| {
-                model.cue_list.cues.get(&parent_id).cloned()
-            })
+            cue.parent_id
+                .and_then(|parent_id| model.cue_list.cues.get(&parent_id).cloned())
         })
     }
 
@@ -218,7 +217,12 @@ impl ShowModelHandle {
                 return None;
             }
 
-            if let Some(idx) = model.cue_list.root_ids.iter().position(|id| *id == current_id) {
+            if let Some(idx) = model
+                .cue_list
+                .root_ids
+                .iter()
+                .position(|id| *id == current_id)
+            {
                 return model.cue_list.root_ids.get(idx + 1).copied();
             }
 
@@ -231,33 +235,33 @@ impl ShowModelHandle {
 
         if let Some(cue) = model.cue_list.cues.get(cue_id) {
             if let Some(parent_id) = cue.parent_id {
-                if let Some(parent) = model.cue_list.cues.get(&parent_id) {
-                    if let CueParam::Group { base, children } = &parent.params {
-                        match base.mode {
-                            GroupMode::Playlist { repeat } => {
-                                if children.last() == Some(cue_id)
-                                    && let Some(first_id) = children.first()
-                                {
-                                    if repeat {
-                                        return Some(CueChain::AfterComplete {
-                                            target_id: Some(*first_id),
-                                        });
-                                    } else {
-                                        return Some(CueChain::DoNotChain);
-                                    }
+                if let Some(parent) = model.cue_list.cues.get(&parent_id)
+                    && let CueParam::Group { base, children } = &parent.params
+                {
+                    match base.mode {
+                        GroupMode::Playlist { repeat } => {
+                            if children.last() == Some(cue_id)
+                                && let Some(first_id) = children.first()
+                            {
+                                if repeat {
+                                    return Some(CueChain::AfterComplete {
+                                        target_id: Some(*first_id),
+                                    });
                                 } else {
-                                    return Some(CueChain::AfterComplete { target_id: None });
+                                    return Some(CueChain::DoNotChain);
                                 }
-                            },
-                            GroupMode::Concurrency |
-                            GroupMode::StartFirst { .. } => return Some(cue.chain),
+                            } else {
+                                return Some(CueChain::AfterComplete { target_id: None });
+                            }
                         }
-                    } else {
-                        log::warn!("broken cues, invalid parent_id.");
+                        GroupMode::Concurrency | GroupMode::StartFirst { .. } => {
+                            return Some(cue.chain);
+                        }
                     }
                 }
+                log::warn!("broken cues, invalid parent_id.");
             } else {
-                return Some(cue.chain)
+                return Some(cue.chain);
             }
         }
         None
@@ -266,13 +270,18 @@ impl ShowModelHandle {
     pub async fn get_all_asset_paths(&self) -> HashSet<PathBuf> {
         let targets: HashSet<_> = {
             let model = self.read().await;
-            model.cue_list.cues.values().filter_map(|cue| {
-                if let CueParam::Audio(params) = &cue.params {
-                    Some(params.target.clone())
-                } else {
-                    None
-                }
-            }).collect()
+            model
+                .cue_list
+                .cues
+                .values()
+                .filter_map(|cue| {
+                    if let CueParam::Audio(params) = &cue.params {
+                        Some(params.target.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect()
         };
         let mut result = HashSet::new();
 
@@ -334,11 +343,20 @@ impl ShowModelHandle {
 
 #[cfg(test)]
 mod tests {
-use std::sync::{Arc, atomic::AtomicBool};
+    use std::sync::{Arc, atomic::AtomicBool};
 
-use tokio::sync::{RwLock, mpsc};
+    use tokio::sync::{RwLock, mpsc};
 
-use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowModel, cue::{Cue, CueChain, CueColor, CueParam, WaitCueParam, group::{GroupCueParamBase, GroupMode}}}};
+    use crate::{
+        manager::{ShowModelHandle, project::ProjectStatus},
+        model::{
+            ShowModel,
+            cue::{
+                Cue, CueChain, CueColor, CueParam, WaitCueParam,
+                group::{GroupCueParamBase, GroupMode},
+            },
+        },
+    };
 
     #[tokio::test]
     async fn get_next_cue_root() {
@@ -352,7 +370,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: None,
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
         let next_cue = Cue {
             id: uuid::Uuid::new_v4(),
@@ -363,7 +381,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: None,
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
         let current_id = current_cue.id;
         let next_id = next_cue.id;
@@ -380,7 +398,10 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             modify_status: Arc::new(AtomicBool::new(false)),
         };
 
-        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&current_id).await,
+            Some(next_id)
+        );
         assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
     }
 
@@ -398,7 +419,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: Some(group_id),
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
 
         let next_cue = Cue {
@@ -410,7 +431,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: Some(group_id),
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
         let current_id = current_cue.id;
         let next_id = next_cue.id;
@@ -425,9 +446,11 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             chain: CueChain::DoNotChain,
             parent_id: None,
             params: CueParam::Group {
-                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
-                children: vec![current_id, next_id]
-            }
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: false },
+                },
+                children: vec![current_id, next_id],
+            },
         };
 
         model.cue_list.root_ids.push(group_id);
@@ -444,7 +467,10 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
         };
 
         assert_eq!(handle.get_next_cue_id_by_id(&group_id).await, None);
-        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&current_id).await,
+            Some(next_id)
+        );
         assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
     }
 
@@ -462,7 +488,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: Some(group_id),
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
 
         let next_cue = Cue {
@@ -474,7 +500,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: None,
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
         let current_id = current_cue.id;
         let next_id = next_cue.id;
@@ -489,9 +515,11 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             chain: CueChain::DoNotChain,
             parent_id: None,
             params: CueParam::Group {
-                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
-                children: vec![current_id]
-            }
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: false },
+                },
+                children: vec![current_id],
+            },
         };
 
         model.cue_list.root_ids.push(group_id);
@@ -509,7 +537,10 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
         };
 
         assert_eq!(handle.get_next_cue_id_by_id(&group_id).await, Some(next_id));
-        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&current_id).await,
+            Some(next_id)
+        );
         assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
     }
 
@@ -528,7 +559,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: Some(group1_id),
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
 
         let next_cue = Cue {
@@ -540,7 +571,7 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             parent_id: None,
-            params: CueParam::Wait(WaitCueParam { duration: 5.0 })
+            params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
         let current_id = current_cue.id;
         let next_id = next_cue.id;
@@ -555,9 +586,11 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             chain: CueChain::DoNotChain,
             parent_id: Some(group2_id),
             params: CueParam::Group {
-                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
-                children: vec![current_id]
-            }
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: false },
+                },
+                children: vec![current_id],
+            },
         };
 
         let group2_cue = Cue {
@@ -570,9 +603,11 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             chain: CueChain::DoNotChain,
             parent_id: None,
             params: CueParam::Group {
-                base: GroupCueParamBase { mode: GroupMode::Playlist { repeat: false } },
-                children: vec![group1_id]
-            }
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: false },
+                },
+                children: vec![group1_id],
+            },
         };
 
         model.cue_list.root_ids.push(group2_id);
@@ -590,9 +625,18 @@ use crate::{manager::{ShowModelHandle, project::ProjectStatus}, model::{ShowMode
             modify_status: Arc::new(AtomicBool::new(false)),
         };
 
-        assert_eq!(handle.get_next_cue_id_by_id(&group1_id).await, Some(next_id));
-        assert_eq!(handle.get_next_cue_id_by_id(&group2_id).await, Some(next_id));
-        assert_eq!(handle.get_next_cue_id_by_id(&current_id).await, Some(next_id));
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&group1_id).await,
+            Some(next_id)
+        );
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&group2_id).await,
+            Some(next_id)
+        );
+        assert_eq!(
+            handle.get_next_cue_id_by_id(&current_id).await,
+            Some(next_id)
+        );
         assert_eq!(handle.get_next_cue_id_by_id(&next_id).await, None);
     }
 }

@@ -1,12 +1,19 @@
 name: Check PR Title
+
 on:
   pull_request:
     branches: [dev]
-    types: [opened, edited, synchronize]
+    types:
+      - opened
+      - reopened
+      - edited
+      # - synchronize (if you use required Actions)
 
 jobs:
   check-title:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
+    permissions:
+      pull-requests: read
     steps:
       - name: Check Conventional Commits format
         uses: amannn/action-semantic-pull-request@v5

@@ -1,21 +1,8 @@
-<template>
-  <v-text-field
-    v-model="innerVolume"
-    suffix="dB"
-    density="compact"
-    variant="outlined"
-    hide-details
-    width="100px"
-    autocomplete="off"
-    @blur="saveValue"
-    @keydown.stop="onKeydown"
-  />
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+import InputText from 'primevue/inputtext';
 import { ref, watch } from 'vue';
 
 const volume = defineModel<number>();
@@ -43,7 +30,7 @@ watch(volume, () => {
 const onKeydown = (e: KeyboardEvent) => {
   if (!(e.target instanceof HTMLElement)) return;
   if (e.key === 'Enter') {
-    return;
+    e.target.blur();
   } else if (e.key === 'Escape') {
     innerVolume.value = validateVolume(volume.value);
     e.target.blur();
@@ -60,3 +47,14 @@ const saveValue = () => {
   emit('update');
 };
 </script>
+
+<template>
+  <InputText
+    v-model="innerVolume"
+    v-bind="$attrs"
+    class="w-25"
+    autocomplete="off"
+    @blur="saveValue"
+    @keydown.stop="onKeydown"
+  />
+</template>

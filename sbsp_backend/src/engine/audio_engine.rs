@@ -342,11 +342,7 @@ impl AudioEngine {
                                 },
                                 AudioPlaybackState::HardStopping |
                                 AudioPlaybackState::SoftStopping => {
-                                    if let Some(last_state) = &playing_sound.last_status && last_state.state == playback_state {
-                                        AudioEngineEvent::Progress { instance_id: id, position, duration: playing_sound.handle.duration }
-                                    } else {
-                                        AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
-                                    }
+                                    AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
                                 },
                                 AudioPlaybackState::Stopped => {
                                     log::info!("STOP: id={}", id);

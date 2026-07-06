@@ -1,173 +1,9 @@
-<template>
-  <v-sheet
-    class="d-flex h-100"
-    :class="$style['cuelist-wrapper']"
-    tabindex="-1"
-    @copy="copyHandler"
-    @cut="cutHandler"
-    @paste="pasteHandler"
-  >
-    <v-table
-      fixed-header
-      density="compact"
-      class="flex-grow-1"
-      :class="$style['cuelist']"
-      height="100%"
-    >
-      <thead>
-        <tr>
-          <th
-            id="cuelist_handle"
-            class="pa-0"
-            width="19px"
-          />
-          <th
-            id="cuelist_cursor"
-            width="32px"
-          />
-          <th
-            id="cuelist_status"
-            width="32px"
-          />
-          <th
-            id="cuelist_type"
-            width="24px"
-          />
-          <th
-            id="cuelist_number"
-            class="text-center border-s"
-            width="54px"
-            style="padding: 0"
-          >
-            #
-          </th>
-          <th
-            id="cuelist_name"
-            class="border-s border-e overflow-hidden text-no-wrap"
-            style="padding-left: 24px"
-          >
-            {{ t('main.name') }}
-          </th>
-          <th
-            id="cuelist_pre_wait"
-            class="text-center"
-            width="124px"
-            style="padding: 0px 8px"
-          >
-            <div class="d-flex flex-row justify-center ga-1">
-              {{ t('main.preWait') }}
-              <v-icon
-                class="mt-auto mb-auto"
-                :icon="uiState.preWaitDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-                @click.stop="uiState.togglePreWaitDisplayMode"
-              />
-            </div>
-          </th>
-          <th
-            id="cuelist_duration"
-            class="text-center"
-            width="124px"
-            style="padding: 0px 8px"
-          >
-            <div class="d-flex flex-row justify-center ga-1">
-              {{ t('main.duration') }}
-              <v-icon
-                class="mt-auto mb-auto"
-                :icon="uiState.durationDisplayMode == 'elapsed' ? mdiAlphaEBoxOutline : mdiAlphaRBoxOutline"
-                @click.stop="uiState.toggleDurationDisplayMode"
-              />
-            </div>
-          </th>
-          <th
-            id="cuelist_repeat"
-            width="32px"
-          >
-            <v-icon :icon="mdiRepeat" />
-          </th>
-          <th
-            id="cuelist_chain"
-            width="54px"
-          >
-            <v-icon :icon="mdiChevronDoubleDown" />
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <cue-list-row
-          v-for="(item, i) in showModel.flatCueList"
-          v-show="!item.isHidden"
-          ref="cuelistItem"
-          :key="item.cue.id"
-          :item="item"
-          :is-drag-over="dragOverIndex == i"
-          @dragover="dragOver($event, i, item.cue.id)"
-          @dragend="dragEnd"
-          @pointerdown.stop="click($event, i)"
-          @contextmenu.prevent="
-            if (uiState.mode == 'edit') {
-              contextMenuPosition = [$event.clientX, $event.clientY];
-              isContextMenuOpen = true;
-            }
-          "
-        />
-        <tr
-          :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
-          @dragover="dragOver($event, showModel.flatCueList.length, '')"
-          @drop="drop"
-        >
-          <td colspan="10" />
-        </tr>
-      </tbody>
-    </v-table>
-    <v-menu
-      v-model="isContextMenuOpen"
-      :target="contextMenuPosition || undefined"
-      density="compact"
-    >
-      <v-list
-        density="compact"
-        @contextmenu.prevent
-      >
-        <v-list-item
-          :title="t('main.cueList.contextMenu.copy')"
-          density="compact"
-          :disabled="uiState.mode != 'edit'"
-          :prepend-icon="mdiContentCopy"
-          @click="copy"
-        />
-        <v-list-item
-          density="compact"
-          :title="t('main.cueList.contextMenu.cut')"
-          :disabled="uiState.mode != 'edit'"
-          :prepend-icon="mdiContentCut"
-          @click="cut"
-        />
-        <v-list-item
-          density="compact"
-          :title="t('main.cueList.contextMenu.paste')"
-          :disabled="uiState.mode != 'edit'"
-          :prepend-icon="mdiContentPaste"
-          @click="paste"
-        />
-        <v-divider />
-        <v-list-item
-          density="compact"
-          :title="t('main.cueList.contextMenu.delete')"
-          :disabled="uiState.mode != 'edit'"
-          :prepend-icon="mdiTrashCan"
-          @click="api.removeCues(Array.from(uiState.selectedRows))"
-        />
-      </v-list>
-    </v-menu>
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, toRaw, useTemplateRef } from 'vue';
-import { useShowModel } from '../../stores/showmodel';
+import { computed, ref, toRaw, useTemplateRef } from 'vue';
+import { useShowModel } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
   mdiAlphaRBoxOutline,
@@ -178,14 +14,16 @@ import {
   mdiRepeat,
   mdiTrashCan,
 } from '@mdi/js';
-import { useUiState } from '../../stores/uistate';
-import { useHotkey } from 'vuetify';
+import { useUiState } from '../../stores/uiState';
 import { useI18n } from 'vue-i18n';
-import { throttle } from 'vuetify/lib/util/throttle.mjs';
 import { useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
 import type { Cue } from '../../types/Cue';
-// import { cueParser, cueStringify } from '../../typia';
+import { useThrottleFn } from '@vueuse/core';
+import { useHotkey } from '@/composables/useHotkey.ts';
+import PathIcon from '../display/PathIcon.vue';
+import ContextMenu from 'primevue/contextmenu';
+import { isUserTyping } from '@/utils.ts';
 
 const { t } = useI18n();
 const api = useApi();
@@ -195,52 +33,22 @@ const uiState = useUiState();
 
 const cueListItemRefs = useTemplateRef('cuelistItem');
 
-const isContextMenuOpen = ref(false);
-const contextMenuPosition = ref<[number, number] | null>(null);
 const internalClipboard = ref<Cue[]>([]);
 
 const scrollIntoIndex = (index: number) => {
   if (cueListItemRefs.value != null) {
-    cueListItemRefs.value[index]?.$el.scrollIntoView({ block: 'nearest' });
+    cueListItemRefs.value[index]?.$el.scrollIntoView(false);
   }
-};
-
-const isUserTyping = (e: ClipboardEvent): boolean => {
-  const target = (e.target || document.activeElement) as HTMLElement | null;
-  if (!target) return false;
-
-  const tagName = target.tagName.toUpperCase();
-
-  if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
-    return true;
-  }
-
-  if (target.closest('input, textarea')) {
-    return true;
-  }
-
-  if (target.isContentEditable || target.closest('[contenteditable="true"]')) {
-    return true;
-  }
-
-  return false;
 };
 
 const pasteHandler = (e: ClipboardEvent) => {
   if (isUserTyping(e)) return;
 
   const cues: Cue[] = internalClipboard.value;
-  // if (navigator.clipboard && e.clipboardData) {
-  //   const rawText = e.clipboardData.getData('application/x-sbsp-cue');
-  //   if (!rawText) return;
-  //   cues = cueParser(rawText) || [];
-  // } else {
-  //   cues = internalClipboard.value;
-  // }
 
-  if (cues.length > 0) {
+  if (cues.length > 0 && uiState.mode === 'edit') {
     e.preventDefault();
-    api.addCues(cues, uiState.selected, true);
+    api.addCues(cues, uiState.selected, false);
   }
 };
 
@@ -250,8 +58,13 @@ const cutHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
-    api.removeCues(cues.map(cue => cue.id), false);
+    internalClipboard.value = structuredClone(cues.map((cue: Cue) => toRaw(cue)));
+    if (uiState.mode === 'edit') {
+      api.removeCues(
+        cues.map((cue) => cue.id),
+        false,
+      );
+    }
   }
 };
 
@@ -261,21 +74,14 @@ const copyHandler = (e: ClipboardEvent) => {
 
   if (cues.length > 0) {
     e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
-    // if (navigator.clipboard && e.clipboardData) {
-    //   const text = cueStringify(cues);
-    //   if (!text) return;
-    //   e.clipboardData.setData('application/x-sbsp-cue', text);
-    // } else {
-    //   internalClipboard.value = cues;
-    // }
+    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
   }
 };
 
 const paste = () => {
-  let cues = internalClipboard.value;
+  const cues = internalClipboard.value;
 
-  if (cues.length > 0) {
+  if (cues.length > 0 && uiState.mode === 'edit') {
     api.addCues(cues, uiState.selected, false);
   }
 };
@@ -283,8 +89,13 @@ const paste = () => {
 const cut = () => {
   const cues = showModel.getSelectedCues;
   if (cues.length > 0) {
-    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
-    api.removeCues(cues.map(cue => cue.id), false);
+    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
+    if (uiState.mode === 'edit') {
+      api.removeCues(
+        cues.map((cue) => cue.id),
+        false,
+      );
+    }
   }
 };
 
@@ -292,13 +103,31 @@ const copy = () => {
   const cues = showModel.getSelectedCues;
 
   if (cues.length > 0) {
-    internalClipboard.value = structuredClone(cues.map(cue => toRaw(cue)));
+    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
   }
 };
 
-const onArrowUp = throttle((e: KeyboardEvent) => {
+const menu = useTemplateRef('menu');
+const menuItems = computed(() => [
+  { label: t('main.cueList.contextMenu.copy'), icon: mdiContentCopy, command: copy },
+  { label: t('main.cueList.contextMenu.cut'), icon: mdiContentCut, command: cut },
+  { label: t('main.cueList.contextMenu.paste'), icon: mdiContentPaste, command: paste },
+  { separator: true },
+  {
+    label: t('main.cueList.contextMenu.delete'),
+    icon: mdiTrashCan,
+    command: () => {
+      if (uiState.mode === 'edit') {
+        api.removeCues(Array.from(uiState.selectedRows));
+      }
+    },
+  },
+]);
+
+const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) - 1;
+    let cursorIndex =
+      showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected) - 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -319,17 +148,18 @@ const onArrowUp = throttle((e: KeyboardEvent) => {
     const firstCueId = showModel.flatCueList[0]?.cue.id;
     if (firstCueId != null) {
       uiState.setSelected(firstCueId);
-      scrollIntoIndex(0);
+      scrollIntoIndex(0); // First cue cannot be Group child. This ensures visibility.
     }
   }
 }, 100);
 
-useHotkey('arrowup', onArrowUp);
-useHotkey('shift+arrowup', onArrowUp);
+useHotkey('ArrowUp', onArrowUp);
+useHotkey('Shift+ArrowUp', onArrowUp);
 
-const onArrowDown = throttle((e: KeyboardEvent) => {
+const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   if (uiState.selected != null) {
-    let cursorIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected) + 1;
+    let cursorIndex =
+      showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected) + 1;
     let cursorCueRef = showModel.flatCueList[cursorIndex];
     if (cursorCueRef == null) return;
 
@@ -347,24 +177,30 @@ const onArrowDown = throttle((e: KeyboardEvent) => {
     }
     scrollIntoIndex(cursorIndex);
   } else {
-    const lastCueId = showModel.flatCueList[showModel.flatCueList.length - 1]?.cue.id;
+    let lastVisibleIndex = showModel.flatCueList.length - 1;
+    while (showModel.flatCueList[lastVisibleIndex]?.isHidden) {
+      lastVisibleIndex--;
+    }
+    const lastCueId = showModel.flatCueList[lastVisibleIndex]?.cue.id;
     if (lastCueId != null) {
       uiState.setSelected(lastCueId);
-      scrollIntoIndex(showModel.flatCueList.length - 1);
+      scrollIntoIndex(lastVisibleIndex);
     }
   }
 }, 100);
 
-useHotkey('arrowdown', onArrowDown);
-useHotkey('shift+arrowdown', onArrowDown);
+useHotkey('ArrowDown', onArrowDown);
+useHotkey('Shift+ArrowDown', onArrowDown);
 
-useHotkey('cmd+a', () => {
+useHotkey('$mod+A', () => {
   // This operation not set uiState.selected. But selecting all will includes uiState.selected
   uiState.selectedRows.clear();
-  showModel.flatCueList.filter(item => !item.isHidden).forEach(value => uiState.selectedRows.add(value.cue.id));
+  showModel.flatCueList
+    .filter((item) => !item.isHidden)
+    .forEach((value) => uiState.selectedRows.add(value.cue.id));
 });
 
-useHotkey('cmd+backspace', () => {
+useHotkey('$mod+Backspace', () => {
   if (uiState.mode === 'edit') {
     api.removeCues(Array.from(uiState.selectedRows));
   }
@@ -406,7 +242,7 @@ const click = (event: MouseEvent, index: number) => {
     if (uiState.selected != null) {
       // This operation manually add multiple cues and update playback cursor.
       uiState.selectedRows.clear();
-      const prevIndex = showModel.flatCueList.findIndex(item => item.cue.id === uiState.selected);
+      const prevIndex = showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected);
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
           const targetCue = showModel.flatCueList[i];
@@ -448,22 +284,179 @@ const click = (event: MouseEvent, index: number) => {
 // };
 </script>
 
+<template>
+  <div
+    class="h-full scroll-pt-8 overflow-scroll border border-(--p-form-field-border-color)"
+    :class="$style['cuelist-wrapper']"
+    tabindex="-1"
+    @copy="copyHandler"
+    @cut="cutHandler"
+    @paste="pasteHandler"
+  >
+    <table
+      class="w-full table-fixed border-separate border-spacing-0"
+      :class="$style['cuelist']"
+    >
+      <thead>
+        <tr>
+          <th
+            id="cuelist_handle"
+            class="p-0"
+            width="19px"
+          />
+          <th
+            id="cuelist_cursor"
+            width="32px"
+          />
+          <th
+            id="cuelist_status"
+            width="32px"
+          />
+          <th
+            id="cuelist_type"
+            width="24px"
+          />
+          <th
+            id="cuelist_number"
+            class="border-s border-(--p-form-field-border-color) text-center"
+            width="54px"
+          >
+            #
+          </th>
+          <th
+            id="cuelist_name"
+            class="overflow-hidden border-x border-(--p-form-field-border-color) whitespace-nowrap"
+            style="padding-left: 24px"
+          >
+            {{ t('main.name') }}
+          </th>
+          <th
+            id="cuelist_pre_wait"
+            class="text-center"
+            width="124px"
+            style="padding: 0px 8px"
+          >
+            <div class="flex flex-row justify-center gap-1">
+              {{ t('main.preWait') }}
+              <path-icon
+                class="mt-auto mb-auto cursor-pointer"
+                :icon="
+                  uiState.preWaitDisplayMode == 'elapsed'
+                    ? mdiAlphaEBoxOutline
+                    : mdiAlphaRBoxOutline
+                "
+                @click.stop="uiState.togglePreWaitDisplayMode"
+              />
+            </div>
+          </th>
+          <th
+            id="cuelist_duration"
+            class="text-center"
+            width="124px"
+            style="padding: 0px 8px"
+          >
+            <div class="flex flex-row justify-center gap-1">
+              {{ t('main.duration') }}
+              <path-icon
+                class="mt-auto mb-auto cursor-pointer"
+                :icon="
+                  uiState.durationDisplayMode == 'elapsed'
+                    ? mdiAlphaEBoxOutline
+                    : mdiAlphaRBoxOutline
+                "
+                @click.stop="uiState.toggleDurationDisplayMode"
+              />
+            </div>
+          </th>
+          <th
+            id="cuelist_repeat"
+            width="32px"
+          >
+            <path-icon :icon="mdiRepeat" />
+          </th>
+          <th
+            id="cuelist_chain"
+            width="54px"
+          >
+            <path-icon :icon="mdiChevronDoubleDown" />
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <cue-list-row
+          v-for="(item, i) in showModel.flatCueList"
+          v-show="!item.isHidden"
+          ref="cuelistItem"
+          :key="item.cue.id"
+          :item="item"
+          :is-drag-over="dragOverIndex == i"
+          @dragover="dragOver($event, i, item.cue.id)"
+          @dragend="dragEnd"
+          @pointerdown.stop="click($event, i)"
+          @contextmenu.prevent="
+            if (uiState.mode == 'edit') {
+              if (!uiState.selectedRows.has(item.cue.id)) {
+                uiState.setSelected(item.cue.id);
+              }
+              menu?.show($event);
+            }
+          "
+        />
+        <tr
+          :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
+          @dragover="dragOver($event, showModel.flatCueList.length, '')"
+          @drop="drop"
+        >
+          <td
+            colspan="10"
+            class="border-b-0"
+          />
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <ContextMenu
+    ref="menu"
+    :model="menuItems"
+  >
+    <template #itemicon="innerProps">
+      <path-icon
+        v-if="innerProps.item.icon != null"
+        :icon="innerProps.item.icon"
+        :class="innerProps.class"
+      ></path-icon>
+    </template>
+  </ContextMenu>
+</template>
+
 <style lang="css" module>
-  .cuelist-wrapper:focus {
-    outline: none;
+.cuelist-wrapper:focus {
+  outline: none;
+}
+
+.cuelist {
+  scroll-padding-top: 32px;
+  font-size: 0.8em;
+  min-width: 800px;
+}
+
+.cuelist th {
+  position: sticky;
+  background-color: color-mix(in oklab, var(--p-content-background) 60%, var(--p-surface-500));
+  top: 0;
+  z-index: 10;
+}
+
+@layer base {
+  .cuelist th,
+  .cuelist td {
+    height: 32px;
+    text-align: left;
+    border-bottom: 1px solid var(--p-form-field-border-color);
   }
-  .cuelist {
-    table {
-      table-layout: fixed;
-      border-collapse: collapse;
-      font-size: 0.9em;
-      min-width: 800px;
-    }
-    > div {
-      scroll-padding-top: 34px;
-    }
-  }
-  .drag-over-row > td {
-    border-top: 2px solid rgb(var(--v-theme-primary)) !important;
-  }
+}
+
+.drag-over-row > td {
+  border-top: 2px solid var(--p-primary-color) !important;
+}
 </style>

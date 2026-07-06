@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: Elastic-2.0
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
+import { onUnmounted } from 'vue';
+import { useApi } from '../api';
+import type { BackendEventListener } from '../api/interface';
+
+export const useBackendEvent = async (listener: BackendEventListener) => {
+  const api = useApi();
+  let unlisten: (() => void) | null = null;
+  let disposed = false;
+
+  onUnmounted(() => {
+    disposed = true;
+    if (unlisten != null) {
+      unlisten();
+      unlisten = null;
+    }
+  });
+
+  api
+    .onBackendEvent((event) => {
+      if (!disposed) {
+        listener(event);
+      }
+    })
+    .then((unlistenfn) => {
+      if (disposed) {
+        unlistenfn();
+        return;
+      }
+      unlisten = unlistenfn;
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+};

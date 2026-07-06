@@ -1,95 +1,26 @@
-<template>
-  <v-sheet
-    flat
-    class="d-flex flex-column pa-4 ga-2"
-  >
-    <v-text-field
-      v-model="target"
-      hide-details
-      persistent-placeholder
-      :label="t('main.bottomEditor.audio.targetFile')"
-      variant="outlined"
-      density="compact"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-      :class="$style['centered-input']"
-      @blur="saveEditorValue"
-      @keydown="onTargetFieldKeyDown"
-    >
-      <template #append>
-        <v-btn
-          :active="false"
-          density="compact"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-          :icon="mdiFileMusic"
-          @click="pickFile"
-        />
-      </template>
-    </v-text-field>
-    <v-checkbox
-      v-model="soundType"
-      hide-details
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-      density="compact"
-      :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
-      @update:model-value="saveEditorValue"
-    >
-      <v-tooltip
-        activator="parent"
-        location="end"
-      >
-        {{ t('general.forExpertWarning') }}
-      </v-tooltip>
-    </v-checkbox>
-    <v-sheet
-      flat
-      class="d-flex justify-space-evenly align-start flex-column flex-sm-row ga-2"
-    >
-      <responsive-control
-        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
-        :button-label="t('main.bottomEditor.audio.changeFadeIn')"
-      >
-        <fade-param-input
-          v-model="fadeInParam"
-          :label="t('main.bottomEditor.audio.fadeIn')"
-          condition="in"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-          @update="saveEditorValue"
-        />
-      </responsive-control>
-      <responsive-control
-        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
-        :button-label="t('main.bottomEditor.audio.changeFadeOut')"
-      >
-        <fade-param-input
-          v-model="fadeOutParam"
-          :label="t('main.bottomEditor.audio.fadeOut')"
-          condition="out"
-          :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-          @update="saveEditorValue"
-        />
-      </responsive-control>
-    </v-sheet>
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { mdiFileMusic } from '@mdi/js';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
-import ResponsiveControl from '../input/ResponsiveControl.vue';
-import { useShowState } from '../../stores/showstate';
+import ResponsiveControl from '../wrapper/ResponsiveControl.vue';
+import { useShowState } from '../../stores/showState';
 import type { Cue } from '../../types/Cue';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
-import { useDisplay } from 'vuetify';
-import { useUiState } from '../../stores/uistate';
+import { useUiState } from '../../stores/uiState';
+import TextInput from '../input/TextInput.vue';
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
+import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 
 const { t } = useI18n();
 const uiState = useUiState();
-const { mdAndDown, smAndDown } = useDisplay();
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
+const mdAndDown = breakpoints.smallerOrEqual('md');
+const smAndDown = breakpoints.smallerOrEqual('sm');
 
 const showState = useShowState();
 const api = useApi();
@@ -98,7 +29,9 @@ const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
 const target = ref<string>(
-  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.target : '',
+  selectedCue.value != null && selectedCue.value.params.type === 'audio'
+    ? selectedCue.value.params.target
+    : '',
 );
 
 const soundType = ref(
@@ -108,7 +41,9 @@ const soundType = ref(
 );
 
 const fadeInParam = ref(
-  selectedCue.value != null && selectedCue.value.params.type === 'audio' ? selectedCue.value.params.fadeInParam : null,
+  selectedCue.value != null && selectedCue.value.params.type === 'audio'
+    ? selectedCue.value.params.fadeInParam
+    : null,
 );
 
 const fadeOutParam = ref(
@@ -127,18 +62,6 @@ watch(selectedCue, () => {
   fadeInParam.value = selectedCue.value.params.fadeInParam;
   fadeOutParam.value = selectedCue.value.params.fadeOutParam;
 });
-
-const onTargetFieldKeyDown = (e: KeyboardEvent) => {
-  if (!(e.target instanceof HTMLElement) || selectedCue.value == null || selectedCue.value.params.type !== 'audio') {
-    return;
-  }
-  if (e.key === 'Enter') {
-    e.target.blur();
-  } else if (e.key === 'Escape') {
-    target.value = selectedCue.value.params.target;
-    e.target.blur();
-  }
-};
 
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
@@ -164,10 +87,61 @@ const pickFile = () => {
     }
   });
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
-<style lang="css" module>
-  .centered-input input {
-    text-align: center;
-  }
-</style>
+<template>
+  <div class="flex flex-col gap-3 p-4">
+    <div class="flex flex-row gap-2">
+      <text-input
+        v-model="target"
+        :label="t('main.bottomEditor.audio.targetFile')"
+        :disabled="isActive"
+        class="grow text-center"
+        @update="saveEditorValue"
+      />
+      <button-wrapper
+        :disabled="isActive"
+        :icon="mdiFileMusic"
+        @click="pickFile"
+      />
+    </div>
+    <checkbox-wrapper
+      v-model="soundType"
+      v-tooltip.bottom="t('general.forExpertWarning')"
+      class="self-start"
+      :disabled="isActive"
+      :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
+      @update:model-value="saveEditorValue"
+    />
+    <div class="flex flex-col items-start justify-evenly gap-2 sm:flex-row">
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="t('main.bottomEditor.audio.changeFadeIn')"
+      >
+        <fade-param-input
+          v-model="fadeInParam"
+          :label="t('main.bottomEditor.audio.fadeIn')"
+          condition="in"
+          :disabled="isActive"
+          @update="saveEditorValue"
+        />
+      </responsive-control>
+      <responsive-control
+        :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
+        :button-label="t('main.bottomEditor.audio.changeFadeOut')"
+      >
+        <fade-param-input
+          v-model="fadeOutParam"
+          :label="t('main.bottomEditor.audio.fadeOut')"
+          condition="out"
+          :disabled="isActive"
+          @update="saveEditorValue"
+        />
+      </responsive-control>
+    </div>
+  </div>
+</template>

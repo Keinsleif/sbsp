@@ -1,52 +1,22 @@
-<template>
-  <v-sheet
-    flat
-    class="d-flex flex-column pa-3 ga-2"
-  >
-    <cue-select
-      v-model="target"
-      class="flex-grow-0"
-      :label="t('main.bottomEditor.targetCue')"
-      :cue-type="['audio', 'group']"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-      @update="saveEditorValue"
-    />
-    <volume-fader
-      v-model="volume"
-      :label="t('main.bottomEditor.fade.targetVolume')"
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-      :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
-      @update="saveEditorValue"
-    />
-    <fade-param-input
-      v-model="fadeParam"
-      class="align-self-start"
-      :label="t('main.bottomEditor.fade.fadeParameter')"
-      condition="both"
-      disable-toggle
-      :disabled="selectedCue != null && selectedCue.id in showState.activeCues"
-      @update="saveEditorValue"
-    />
-  </v-sheet>
-</template>
-
 <script setup lang="ts">
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import FadeParamInput from '../input/FadeParamInput.vue';
-import { useShowState } from '../../stores/showstate';
+import { useShowState } from '../../stores/showState';
 import type { Cue } from '../../types/Cue';
-import { FadeParam } from '../../types/FadeParam';
+import type { FadeParam } from '../../types/FadeParam';
 import CueSelect from '../input/CueSelect.vue';
 import VolumeFader from '../input/VolumeFader.vue';
 import { NIL } from 'uuid';
 import { useI18n } from 'vue-i18n';
-import { useDisplay } from 'vuetify';
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 
 const { t } = useI18n();
-const { smAndDown, xs } = useDisplay();
+const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
+const xs = breakpoints.smaller('sm');
+const smAndDown = breakpoints.smallerOrEqual('sm');
 const showState = useShowState();
 
 const selectedCue = defineModel<Cue | null>();
@@ -55,13 +25,17 @@ const emit = defineEmits(['update']);
 const sliderChanging = ref(false);
 
 const target = ref(
-  selectedCue.value != null && selectedCue.value.params.type === 'fade' && selectedCue.value.params.target !== NIL
+  selectedCue.value != null &&
+    selectedCue.value.params.type === 'fade' &&
+    selectedCue.value.params.target !== NIL
     ? selectedCue.value.params.target
     : '',
 );
 
 const volume = ref(
-  selectedCue.value != null && selectedCue.value.params.type === 'fade' ? selectedCue.value.params.volume : 0,
+  selectedCue.value != null && selectedCue.value.params.type === 'fade'
+    ? selectedCue.value.params.volume
+    : 0,
 );
 
 const fadeParam = ref(
@@ -92,10 +66,37 @@ const saveEditorValue = () => {
   selectedCue.value.params.fadeParam = fadeParam.value;
   emit('update');
 };
+
+const isActive = computed(() => {
+  return selectedCue.value != null && selectedCue.value.id in showState.activeCues;
+});
 </script>
 
-<style lang="css" module>
-  .centered-input input {
-    text-align: center;
-  }
-</style>
+<template>
+  <div class="flex flex-col gap-3 p-3">
+    <cue-select
+      v-model="target"
+      class="grow-0"
+      :label="t('main.bottomEditor.targetCue')"
+      :cue-type="['audio', 'group']"
+      :disabled="isActive"
+      @update="saveEditorValue"
+    />
+    <volume-fader
+      v-model="volume"
+      :label="t('main.bottomEditor.fade.targetVolume')"
+      :disabled="isActive"
+      :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
+      @update="saveEditorValue"
+    />
+    <fade-param-input
+      v-model="fadeParam"
+      class="self-start"
+      :label="t('main.bottomEditor.fade.fadeParameter')"
+      condition="both"
+      disable-toggle
+      :disabled="isActive"
+      @update="saveEditorValue"
+    />
+  </div>
+</template>
