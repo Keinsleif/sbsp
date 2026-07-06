@@ -13,10 +13,12 @@ const props = withDefaults(
     help?: string;
     acceptNull?: boolean;
     disabled?: boolean;
+    textAlign?: 'left' | 'center' | 'right';
   }>(),
   {
     acceptNull: false,
     disabled: false,
+    textAlign: 'left',
   },
 );
 
@@ -80,6 +82,9 @@ const onKeydown = (e: KeyboardEvent) => {
       <InputText
         v-model="innerText"
         class="h-full w-full"
+        :style="{
+          textAlign: props.textAlign,
+        }"
         :id="inputId"
         autocomplete="off"
         :placeholder="props.placeholder"

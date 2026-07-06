@@ -137,13 +137,14 @@ const isActive = computed(() => {
     <div class="flex w-42 shrink-0 grow-0 flex-col gap-2">
       <text-input
         v-model="number"
-        class="grow-0 text-center"
+        class="grow-0"
+        text-align="center"
         :label="t('main.number')"
         @update="saveEditorValue"
       />
       <time-input
         v-model="duration"
-        class="grow-0 text-center"
+        class="grow-0"
         :disabled="
           selectedCue != null &&
           selectedCue.params.type != 'wait' &&
@@ -154,7 +155,7 @@ const isActive = computed(() => {
       />
       <time-input
         v-model="preWait"
-        class="grow-0 text-center"
+        class="grow-0"
         :label="t('main.preWait')"
         @update="saveEditorValue"
       />
