@@ -46,6 +46,7 @@ export const secondsToFormat = (source_seconds: number | null): string => {
 };
 
 export const formatToSeconds = (source_format: string, acceptMinus: boolean = true): number => {
+  source_format = source_format.trim();
   let is_minus = false;
   let result = 0;
   if (source_format.startsWith('-')) {
