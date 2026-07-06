@@ -94,7 +94,10 @@ const editorTab = computed({
       class="flex h-full flex-col overflow-hidden"
     >
       <tab-list class="shrink-0 grow-0">
-        <tab value="basics">{{ t('main.bottomEditor.basics.title') }}</tab>
+        <tab
+          value="basics"
+          v-show="selectedCue != null"
+        >{{ t('main.bottomEditor.basics.title') }}</tab>
         <tab
           value="audio"
           v-show="selectedCue != null && selectedCue.params.type == 'audio'"
