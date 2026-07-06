@@ -2,6 +2,25 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.5.0](https://github.com/Keinsleif/sbsp/compare/efd4124666acbeabb0b8a6db91a3aa96fca9a205..2.5.0) - 2026-07-06
+### Package updates
+- [docs-1.1.0](sbsp_docs) bumped to [docs-1.1.0](https://github.com/Keinsleif/sbsp/compare/docs-1.0.1..docs-1.1.0)
+- [backend-1.5.4](sbsp_backend) bumped to [backend-1.5.4](https://github.com/Keinsleif/sbsp/compare/backend-1.5.3..backend-1.5.4)
+- [frontend-2.5.0](sbsp_frontend) bumped to [frontend-2.5.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.4.5..frontend-2.5.0)
+- [remote_app-2.5.0](sbsp_remote_app) bumped to [remote_app-2.5.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.4.5..remote_app-2.5.0)
+- [app-2.5.0](sbsp_app) bumped to [app-2.5.0](https://github.com/Keinsleif/sbsp/compare/app-2.4.5..app-2.5.0)
+### Global changes
+#### Features
+- (**frontend**) primevue framework migration (#119) - ([45a38ac](https://github.com/Keinsleif/sbsp/commit/45a38ac2fffb6371b1c7092b4beecb584fb48c3b)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Build system
+- update deps (#125) - ([f6cbc3e](https://github.com/Keinsleif/sbsp/commit/f6cbc3e72fa2665603ae0f7c65ca3208b7bc1d03)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Continuous Integration
+- fix tests & workflow configs (#124) - ([9da1d81](https://github.com/Keinsleif/sbsp/commit/9da1d81f6f860cea38ad18323c5f73200d670dcd)) - [@Keinsleif](https://github.com/Keinsleif)
+- improve mise config & build config (#123) - ([a1e99d1](https://github.com/Keinsleif/sbsp/commit/a1e99d109bea5bd740cd01642aed385d8d3efed0)) - [@Keinsleif](https://github.com/Keinsleif)
+- manual deploy & build - ([efd4124](https://github.com/Keinsleif/sbsp/commit/efd4124666acbeabb0b8a6db91a3aa96fca9a205)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.4.5](https://github.com/Keinsleif/sbsp/compare/31000ea5cba437ba2155df09ab7763e7a67dc06c..2.4.5) - 2026-06-22
 ### Package updates
 - [app-2.4.5](sbsp_app) bumped to [app-2.4.5](https://github.com/Keinsleif/sbsp/compare/app-2.4.4..app-2.4.5)

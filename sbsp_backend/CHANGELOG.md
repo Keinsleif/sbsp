@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## backend-1.5.4 - 2026-07-06
+#### Bug Fixes
+- (**backend**) add hostname logic for macOS (#121) - (ede41bc) - *Keinsleif*
+- (**backend**) event & state logic (#120) - (2b21472) - *Keinsleif*
+- (**frontend**) prebump minor checks (#129) - (41a1f4d) - *Keinsleif*
+- (**frontend**) fix prebump checks error (#127) - (943ba7e) - *Keinsleif*
+#### Continuous Integration
+- fix tests & workflow configs (#124) - (9da1d81) - *Keinsleif*
+
+- - -
+
 ## backend-1.5.3 - 2026-06-22
 #### Bug Fixes
 - (**backend**) next cue resolution logic for flatten cue model (#110) - (73d7415) - 近藤 和人
