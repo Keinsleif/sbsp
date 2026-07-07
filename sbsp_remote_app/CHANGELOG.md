@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## remote_app-2.5.2 - 2026-07-07
+#### Bug Fixes
+- adopt CSP for removal of unsafe nonce (#134) - (d174271) - *Keinsleif*
+
+- - -
+
 ## remote_app-2.5.1 - 2026-07-06
 #### Bug Fixes
 - (**frontend**) webkit(safari) version for primeuix (#132) - (22a212d) - *Keinsleif*
