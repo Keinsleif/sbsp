@@ -32,9 +32,9 @@
         "connect-src": "ipc: http://ipc.localhost",
         "font-src": ["https://fonts.gstatic.com"],
         "img-src": "'self' asset: http://asset.localhost blob: data:",
-        "script-src": "'self' 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='",
+        "script-src": "'self'",
         "worker-src": "'self' blob:",
-        "style-src-elem": "'self' https://fonts.googleapis.com 'nonce-aYxPbxuXswGq0ST6rvQ2AA=='",
+        "style-src-elem": "'unsafe-inline' 'self' https://fonts.googleapis.com",
         "style-src-attr": "'unsafe-inline'"
       }
     }
