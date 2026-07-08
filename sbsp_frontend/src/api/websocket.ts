@@ -395,7 +395,7 @@ export function useWebsocketApi(): IBackendAdapter {
         this.sendCommand({
           type: 'model',
           command: 'addCue',
-          params: { cue: cue, position: { type: 'last' } },
+          params: { cue: cue, position: { type: 'inside', target: null, index: null } },
         });
       }
       return cue.id;
@@ -427,7 +427,7 @@ export function useWebsocketApi(): IBackendAdapter {
         this.sendCommand({
           type: 'model',
           command: 'addCues',
-          params: { cues: cues, position: { type: 'last' } },
+          params: { cues: cues, position: { type: 'inside', target: null, index: null } },
         });
       }
       return cueIds;

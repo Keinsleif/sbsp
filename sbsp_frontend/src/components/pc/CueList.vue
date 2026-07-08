@@ -228,7 +228,7 @@ const dragEnd = () => {
 const drop = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    api.moveCues(Array.from(uiState.selectedRows), { type: 'last' });
+    api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: null, index: null });
   }
 };
 
