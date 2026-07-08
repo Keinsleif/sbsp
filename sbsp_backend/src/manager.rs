@@ -763,21 +763,30 @@ impl ShowModelManager {
                     if let Some(parent) = model.cue_list.cues.get_mut(&parent_id)
                         && let CueParam::Group { children, .. } = &mut parent.params
                     {
-                        if index <= children.len() {
-                            (Some(parent_id), index)
+                        if let Some(idx) = index {
+                            if idx <= children.len() {
+                                (Some(parent_id), idx)
+                            } else {
+                                return Err(anyhow::anyhow!("insert index out of range."));
+                            }
                         } else {
-                            return Err(anyhow::anyhow!("insert index out of range."));
+                            (Some(parent_id), children.len())
                         }
                     } else {
                         return Err(anyhow::anyhow!("target id not found."));
                     }
-                } else if index <= model.cue_list.root_ids.len() {
-                    (None, index)
                 } else {
-                    return Err(anyhow::anyhow!("insert index out of range."));
+                    if let Some(idx) = index {
+                        if idx <= model.cue_list.root_ids.len() {
+                            (None, idx)
+                        } else {
+                            return Err(anyhow::anyhow!("insert index out of range."));
+                        }
+                    } else {
+                        (None, model.cue_list.root_ids.len())
+                    }
                 }
             }
-            InsertPosition::Last => (None, model.cue_list.root_ids.len()),
         };
 
         let mut ancestor_id = new_parent_id;
@@ -920,8 +929,26 @@ impl ShowModelManager {
                     if let Some(parent) = model.cue_list.cues.get_mut(&parent_id)
                         && let CueParam::Group { children, .. } = &mut parent.params
                     {
-                        if index <= children.len() {
-                            children.splice(index..index, insert_ids);
+                        if let Some(idx) = index {
+                            if idx <= children.len() {
+                                children.splice(idx..idx, insert_ids);
+                                model
+                                    .cue_list
+                                    .cues
+                                    .extend(insert_cues.into_iter().map(|mut cue| {
+                                        cue.parent_id = Some(parent_id);
+                                        if let CueParam::Group { children, .. } = &mut cue.params {
+                                            children.clear();
+                                        }
+                                        (cue.id, cue)
+                                    }));
+                                Ok(())
+                            } else {
+                                Err(anyhow::anyhow!("insert index out of range."))
+                            }
+                        } else {
+                            let idx = children.len();
+                            children.splice(idx..idx, insert_ids);
                             model
                                 .cue_list
                                 .cues
@@ -933,42 +960,44 @@ impl ShowModelManager {
                                     (cue.id, cue)
                                 }));
                             Ok(())
-                        } else {
-                            Err(anyhow::anyhow!("insert index out of range."))
                         }
                     } else {
                         Err(anyhow::anyhow!("target id not found."))
                     }
-                } else if index <= model.cue_list.root_ids.len() {
-                    model.cue_list.root_ids.splice(index..index, insert_ids);
-                    model
-                        .cue_list
-                        .cues
-                        .extend(insert_cues.into_iter().map(|mut cue| {
-                            cue.parent_id = None;
-                            if let CueParam::Group { children, .. } = &mut cue.params {
-                                children.clear();
-                            }
-                            (cue.id, cue)
-                        }));
-                    Ok(())
                 } else {
-                    Err(anyhow::anyhow!("insert index out of range."))
-                }
-            }
-            InsertPosition::Last => {
-                model.cue_list.root_ids.extend(insert_ids);
-                model
-                    .cue_list
-                    .cues
-                    .extend(insert_cues.into_iter().map(|mut cue| {
-                        cue.parent_id = None;
-                        if let CueParam::Group { children, .. } = &mut cue.params {
-                            children.clear();
+                    if let Some(idx) = index {
+                        if idx <= model.cue_list.root_ids.len() {
+                            model.cue_list.root_ids.splice(idx..idx, insert_ids);
+                            model
+                                .cue_list
+                                .cues
+                                .extend(insert_cues.into_iter().map(|mut cue| {
+                                    cue.parent_id = None;
+                                    if let CueParam::Group { children, .. } = &mut cue.params {
+                                        children.clear();
+                                    }
+                                    (cue.id, cue)
+                                }));
+                            Ok(())
+                        } else {
+                            Err(anyhow::anyhow!("insert index out of range."))
                         }
-                        (cue.id, cue)
-                    }));
-                Ok(())
+                    } else {
+                        let idx = model.cue_list.root_ids.len();
+                        model.cue_list.root_ids.splice(idx..idx, insert_ids);
+                        model
+                            .cue_list
+                            .cues
+                            .extend(insert_cues.into_iter().map(|mut cue| {
+                                cue.parent_id = None;
+                                if let CueParam::Group { children, .. } = &mut cue.params {
+                                    children.clear();
+                                }
+                                (cue.id, cue)
+                            }));
+                        Ok(())
+                    }
+                }
             }
         }
     }
@@ -1342,7 +1371,7 @@ mod tests {
                 new_cue.clone(),
                 InsertPosition::Inside {
                     target: None,
-                    index: 0,
+                    index: Some(0),
                 },
             )
             .await
