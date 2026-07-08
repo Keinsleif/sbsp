@@ -60,7 +60,7 @@ pub async fn add_cue(
     } else {
         handle
             .model_handle
-            .add_cue(cue, InsertPosition::Last)
+            .add_cue(cue, InsertPosition::LAST)
             .await
             .map_err(|e| e.to_string())
     }
@@ -91,7 +91,7 @@ pub async fn add_cues(
     } else {
         handle
             .model_handle
-            .add_cues(cues, InsertPosition::Last)
+            .add_cues(cues, InsertPosition::LAST)
             .await
             .map_err(|e| e.to_string())
     }
