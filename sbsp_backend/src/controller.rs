@@ -8,8 +8,6 @@ pub mod state;
 pub use command::ControllerCommand;
 pub use handle::CueControllerHandle;
 
-use std::collections::HashMap;
-
 use anyhow::Result;
 use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
@@ -20,7 +18,7 @@ use crate::{
     event::BackendEvent,
     executor::{ExecutorCommand, ExecutorEvent, StopMode},
     manager::ShowModelHandle,
-    model::cue::{CueChain, CueParam, group::GroupMode},
+    model::cue::{CueParam, group::GroupMode},
 };
 
 pub struct CueController {
@@ -35,7 +33,6 @@ pub struct CueController {
     event_rx: broadcast::Receiver<BackendEvent>,
 
     advance_cursor_when_go: bool,
-    wait_tasks: HashMap<Uuid, CueChain>,
 }
 
 impl CueController {
@@ -61,7 +58,6 @@ impl CueController {
                 event_tx,
                 event_rx,
                 advance_cursor_when_go,
-                wait_tasks: HashMap::new(),
             },
             CueControllerHandle { command_tx },
         )
@@ -448,34 +444,6 @@ impl CueController {
                 duration,
                 initial_params,
             } => {
-                if let Some(chain) = self.model_handle.get_cue_chain_by_id(cue_id).await {
-                    match &chain {
-                        CueChain::AfterComplete { .. } => {
-                            self.wait_tasks.insert(*cue_id, chain);
-                        }
-                        CueChain::AfterStart { target_id } => {
-                            if let Some(target) = target_id {
-                                if let Err(e) = self.handle_go(*target).await {
-                                    log::error!(
-                                        "Failed to perform cue chain. ignoring. error={}",
-                                        e
-                                    );
-                                }
-                            } else if let Some(next_id) =
-                                self.model_handle.get_next_cue_id_by_id(cue_id).await
-                                && let Err(e) = self.handle_go(next_id).await
-                            {
-                                log::error!("Failed to perform cue chain. ignoring. error={}", e);
-                            }
-                        }
-                        CueChain::DoNotChain => {}
-                    }
-                } else {
-                    log::warn!(
-                        "Unknown cue started. model may be broken. cue_id={}",
-                        cue_id
-                    );
-                }
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
                     active_cue.position = *position;
                     active_cue.duration = *duration;
@@ -579,26 +547,9 @@ impl CueController {
                     send_event = false;
                 }
             }
-            ExecutorEvent::Stopped { cue_id } => {
-                self.wait_tasks.remove(cue_id);
-                show_state.active_cues.shift_remove(cue_id);
-                state_changed = true;
-            }
-            ExecutorEvent::Completed { cue_id, .. } => {
-                if let Some(chain) = self.wait_tasks.remove(cue_id)
-                    && let CueChain::AfterComplete { target_id } = chain
-                {
-                    if let Some(target) = target_id {
-                        if let Err(e) = self.handle_go(target).await {
-                            log::error!("Failed to perform cue chain. ignoring. error={}", e);
-                        }
-                    } else if let Some(next_id) =
-                        self.model_handle.get_next_cue_id_by_id(cue_id).await
-                        && let Err(e) = self.handle_go(next_id).await
-                    {
-                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
-                    }
-                }
+            ExecutorEvent::Stopped { cue_id } |
+            ExecutorEvent::Completed { cue_id, .. } |
+            ExecutorEvent::Error { cue_id, .. } => {
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
@@ -607,10 +558,6 @@ impl CueController {
                     active_cue.params = *params;
                     state_changed = true;
                 }
-            }
-            ExecutorEvent::Error { cue_id, .. } => {
-                show_state.active_cues.shift_remove(cue_id);
-                state_changed = true;
             }
             ExecutorEvent::PreWaitStarted { cue_id, duration } => {
                 if let Some(active_cue) = show_state.active_cues.get_mut(cue_id) {
