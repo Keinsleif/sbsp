@@ -136,7 +136,13 @@ async fn setup_executor_with_cues(
     );
     tokio::spawn(executor.run());
 
-    (manager, exec_tx, audio_rx, engine_event_tx, playback_event_rx)
+    (
+        manager,
+        exec_tx,
+        audio_rx,
+        engine_event_tx,
+        playback_event_rx,
+    )
 }
 
 fn make_audio_cue(id: Uuid, parent_id: Option<Uuid>, path: PathBuf) -> Cue {
@@ -516,7 +522,12 @@ async fn nested_group_completed_chain_propagates_to_sibling() {
 
     let cues = vec![
         make_playlist_group_cue(outer_id, None, vec![inner_id, sibling_id], false),
-        make_playlist_group_cue(inner_id, Some(outer_id), vec![child_a_id, child_b_id], false),
+        make_playlist_group_cue(
+            inner_id,
+            Some(outer_id),
+            vec![child_a_id, child_b_id],
+            false,
+        ),
         make_audio_cue(child_a_id, Some(inner_id), path.clone()),
         make_audio_cue(child_b_id, Some(inner_id), path.clone()),
         make_audio_cue(sibling_id, Some(outer_id), path.clone()),
@@ -525,7 +536,10 @@ async fn nested_group_completed_chain_propagates_to_sibling() {
     let (_manager, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
         setup_executor_with_cues(cues, vec![outer_id]).await;
 
-    exec_tx.send(ExecutorCommand::Execute(outer_id)).await.unwrap();
+    exec_tx
+        .send(ExecutorCommand::Execute(outer_id))
+        .await
+        .unwrap();
 
     // Group cueのStartedは execute_cue 内で即座に(同期的に)発行される
     assert!(matches!(
@@ -633,7 +647,10 @@ async fn playlist_repeat_chain_reactivation_suppresses_group_completed() {
     let (_manager, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
         setup_executor_with_cues(cues, vec![group_id]).await;
 
-    exec_tx.send(ExecutorCommand::Execute(group_id)).await.unwrap();
+    exec_tx
+        .send(ExecutorCommand::Execute(group_id))
+        .await
+        .unwrap();
 
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),

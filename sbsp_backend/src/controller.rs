@@ -547,9 +547,9 @@ impl CueController {
                     send_event = false;
                 }
             }
-            ExecutorEvent::Stopped { cue_id } |
-            ExecutorEvent::Completed { cue_id, .. } |
-            ExecutorEvent::Error { cue_id, .. } => {
+            ExecutorEvent::Stopped { cue_id }
+            | ExecutorEvent::Completed { cue_id, .. }
+            | ExecutorEvent::Error { cue_id, .. } => {
                 show_state.active_cues.shift_remove(cue_id);
                 state_changed = true;
             }
