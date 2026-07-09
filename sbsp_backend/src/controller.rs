@@ -15,7 +15,12 @@ use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings, controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam}, event::BackendEvent, executor::{ExecutorCommand, ExecutorEvent, StopMode}, manager::ShowModelHandle, model::cue::{CueChain, CueParam, group::GroupMode},
+    BackendSettings,
+    controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
+    event::BackendEvent,
+    executor::{ExecutorCommand, ExecutorEvent, StopMode},
+    manager::ShowModelHandle,
+    model::cue::{CueChain, CueParam, group::GroupMode},
 };
 
 pub struct CueController {
@@ -180,7 +185,9 @@ impl CueController {
             ControllerCommand::SeekTo(cue_id, position) => {
                 if self.model_handle.is_cue_exists(&cue_id).await {
                     if state.active_cues.contains_key(&cue_id) {
-                        self.executor_tx.send(ExecutorCommand::SeekTo(cue_id, position)).await?;
+                        self.executor_tx
+                            .send(ExecutorCommand::SeekTo(cue_id, position))
+                            .await?;
                     } else {
                         anyhow::bail!("SeekTo: cue is not executed. cue_id={}", cue_id);
                     }
@@ -192,7 +199,9 @@ impl CueController {
             ControllerCommand::SeekBy(cue_id, amount) => {
                 if self.model_handle.is_cue_exists(&cue_id).await {
                     if state.active_cues.contains_key(&cue_id) {
-                        self.executor_tx.send(ExecutorCommand::SeekBy(cue_id, amount)).await?;
+                        self.executor_tx
+                            .send(ExecutorCommand::SeekBy(cue_id, amount))
+                            .await?;
                     } else {
                         anyhow::bail!("SeekBy: cue is not executed. cue_id={}", cue_id);
                     }
@@ -203,8 +212,13 @@ impl CueController {
             }
             ControllerCommand::Pause(cue_id) => {
                 if self.model_handle.is_cue_exists(&cue_id).await {
-                    if let Some(active_cue) = state.active_cues.get(&cue_id) && (active_cue.status == PlaybackStatus::PreWaiting || active_cue.status == PlaybackStatus::Playing) {
-                        self.executor_tx.send(ExecutorCommand::Pause(cue_id)).await?;
+                    if let Some(active_cue) = state.active_cues.get(&cue_id)
+                        && (active_cue.status == PlaybackStatus::PreWaiting
+                            || active_cue.status == PlaybackStatus::Playing)
+                    {
+                        self.executor_tx
+                            .send(ExecutorCommand::Pause(cue_id))
+                            .await?;
                     } else {
                         anyhow::bail!("Pause: cue is not playing. cue_id={}", cue_id);
                     }
@@ -215,8 +229,13 @@ impl CueController {
             }
             ControllerCommand::Resume(cue_id) => {
                 if self.model_handle.is_cue_exists(&cue_id).await {
-                    if let Some(active_cue) = state.active_cues.get(&cue_id) && (active_cue.status == PlaybackStatus::PreWaitPaused || active_cue.status == PlaybackStatus::Paused) {
-                        self.executor_tx.send(ExecutorCommand::Resume(cue_id)).await?;
+                    if let Some(active_cue) = state.active_cues.get(&cue_id)
+                        && (active_cue.status == PlaybackStatus::PreWaitPaused
+                            || active_cue.status == PlaybackStatus::Paused)
+                    {
+                        self.executor_tx
+                            .send(ExecutorCommand::Resume(cue_id))
+                            .await?;
                     } else {
                         anyhow::bail!("Resume: cue is not paused. cue_id={}", cue_id);
                     }
@@ -233,7 +252,9 @@ impl CueController {
                         } else {
                             StopMode::Soft
                         };
-                        self.executor_tx.send(ExecutorCommand::Stop(cue_id, stop_mode)).await?;
+                        self.executor_tx
+                            .send(ExecutorCommand::Stop(cue_id, stop_mode))
+                            .await?;
                     }
                 } else {
                     anyhow::bail!("Stop: cue not found. cue_id={}", cue_id);
@@ -243,7 +264,9 @@ impl CueController {
             ControllerCommand::PerformAction(cue_id, cue_action) => {
                 if self.model_handle.is_cue_exists(&cue_id).await {
                     if state.active_cues.contains_key(&cue_id) {
-                        self.executor_tx.send(ExecutorCommand::PerformAction(cue_id, cue_action)).await?;
+                        self.executor_tx
+                            .send(ExecutorCommand::PerformAction(cue_id, cue_action))
+                            .await?;
                     } else {
                         anyhow::bail!("PerformAction: cue is not executed. cue_id={}", cue_id);
                     }
@@ -263,23 +286,17 @@ impl CueController {
                         .is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
                     if !is_group {
                         let executor_command = match command {
-                            ControllerCommand::PauseAll => {
-                                match active_cue.status {
-                                    PlaybackStatus::PreWaiting |
-                                    PlaybackStatus::Playing => {
-                                        ExecutorCommand::Pause(*cue_id)
-                                    }
-                                    _ => continue,
+                            ControllerCommand::PauseAll => match active_cue.status {
+                                PlaybackStatus::PreWaiting | PlaybackStatus::Playing => {
+                                    ExecutorCommand::Pause(*cue_id)
                                 }
+                                _ => continue,
                             },
-                            ControllerCommand::ResumeAll => {
-                                match active_cue.status {
-                                    PlaybackStatus::PreWaitPaused |
-                                    PlaybackStatus::Paused => {
-                                        ExecutorCommand::Resume(*cue_id)
-                                    }
-                                    _ => continue,
+                            ControllerCommand::ResumeAll => match active_cue.status {
+                                PlaybackStatus::PreWaitPaused | PlaybackStatus::Paused => {
+                                    ExecutorCommand::Resume(*cue_id)
                                 }
+                                _ => continue,
                             },
                             ControllerCommand::StopAll => {
                                 if active_cue.status == PlaybackStatus::Stopping {
@@ -287,7 +304,7 @@ impl CueController {
                                 } else {
                                     ExecutorCommand::Stop(*cue_id, StopMode::Soft)
                                 }
-                            },
+                            }
                             _ => unreachable!(),
                         };
                         self.executor_tx.send(executor_command).await?;
@@ -390,7 +407,9 @@ impl CueController {
                 .await
                 .is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
             if !is_group {
-                self.executor_tx.send(ExecutorCommand::Stop(*cue_id, StopMode::Hard)).await?;
+                self.executor_tx
+                    .send(ExecutorCommand::Stop(*cue_id, StopMode::Hard))
+                    .await?;
             }
         }
         Ok(())

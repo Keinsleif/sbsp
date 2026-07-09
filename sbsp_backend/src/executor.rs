@@ -697,9 +697,7 @@ impl Executor {
                         StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
                         StopMode::Hard => AudioCommand::HardStop { id: cue_id },
                     };
-                    self.audio_tx
-                        .send(command)
-                        .await?;
+                    self.audio_tx.send(command).await?;
                 }
                 EngineType::Wait => {
                     self.wait_tx
@@ -726,9 +724,7 @@ impl Executor {
                                     StopMode::Soft => AudioCommand::SoftStop { id: *child_id },
                                     StopMode::Hard => AudioCommand::HardStop { id: *child_id },
                                 };
-                                self.audio_tx
-                                    .send(command)
-                                    .await?;
+                                self.audio_tx.send(command).await?;
                                 stop_sent = true;
                             }
                         }
