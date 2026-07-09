@@ -5,6 +5,7 @@ mod command;
 mod event;
 
 pub use command::ExecutorCommand;
+pub use command::StopMode;
 pub use event::ExecutorEvent;
 
 use std::collections::{HashMap, VecDeque};
@@ -123,7 +124,7 @@ impl Executor {
             }
             ExecutorCommand::Pause(cue_id) => self.pause_cue(cue_id).await?,
             ExecutorCommand::Resume(cue_id) => self.resume_cue(cue_id).await?,
-            ExecutorCommand::Stop(cue_id) => self.stop_cue(cue_id).await?,
+            ExecutorCommand::Stop(cue_id, stop_mode) => self.stop_cue(cue_id, stop_mode).await?,
             ExecutorCommand::SeekTo(cue_id, position) => self.seek_to_cue(cue_id, position).await?,
             ExecutorCommand::SeekBy(cue_id, amount) => self.seek_by_cue(cue_id, amount).await?,
             ExecutorCommand::PerformAction(cue_id, action) => {
@@ -446,12 +447,13 @@ impl Executor {
             }
             CueParam::Stop(params) => {
                 if self.active_instances.contains_key(&params.target) {
-                    self.process_command(ExecutorCommand::Stop(params.target))
+                    let stop_mode = if params.hard {
+                        StopMode::Hard
+                    } else {
+                        StopMode::Soft
+                    };
+                    self.process_command(ExecutorCommand::Stop(params.target, stop_mode))
                         .await?;
-                    if params.hard {
-                        self.process_command(ExecutorCommand::Stop(params.target))
-                            .await?;
-                    }
                 }
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
@@ -679,7 +681,7 @@ impl Executor {
         Ok(())
     }
 
-    async fn stop_cue(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+    async fn stop_cue(&mut self, cue_id: Uuid, stop_mode: StopMode) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
             if active_instance.prewaiting {
                 self.wait_tx
@@ -691,8 +693,12 @@ impl Executor {
             } // continue for stop loaded cue.
             match active_instance.engine_type {
                 EngineType::Audio => {
+                    let command = match stop_mode {
+                        StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
+                        StopMode::Hard => AudioCommand::HardStop { id: cue_id },
+                    };
                     self.audio_tx
-                        .send(AudioCommand::Stop { id: cue_id })
+                        .send(command)
                         .await?;
                 }
                 EngineType::Wait => {
@@ -716,7 +722,12 @@ impl Executor {
                     {
                         for child_id in children.iter() {
                             if self.active_instances.contains_key(child_id) {
-                                self.process_command(ExecutorCommand::Stop(*child_id))
+                                let command = match stop_mode {
+                                    StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
+                                    StopMode::Hard => AudioCommand::HardStop { id: cue_id },
+                                };
+                                self.audio_tx
+                                    .send(command)
                                     .await?;
                                 stop_sent = true;
                             }

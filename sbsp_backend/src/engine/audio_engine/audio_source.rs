@@ -114,8 +114,8 @@ enum AudioSourceControlCommand {
     Start,
     Pause,
     Resume,
-    FadeOut,
-    Stop,
+    SoftStop,
+    HardStop,
     Seek {
         position: f64,
         result: oneshot::Sender<Result<(), anyhow::Error>>,
@@ -148,7 +148,6 @@ pub struct AudioSourceHandle {
     pub duration: f64,
     volume: Decibels,
     fade_volume: Decibels,
-    stop_triggered: bool,
 }
 
 impl AudioSourceHandle {
@@ -188,17 +187,15 @@ impl AudioSourceHandle {
         let _ = self.control.push(AudioSourceControlCommand::Pause);
     }
 
-    pub fn stop(&mut self) {
+    pub fn stop(&mut self, is_hard: bool) {
         let state = self.state();
         if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
             return;
         }
-        if self.stop_triggered {
-            // Hard Stop
-            let _ = self.control.push(AudioSourceControlCommand::Stop);
+        if is_hard {
+            let _ = self.control.push(AudioSourceControlCommand::HardStop);
         } else {
-            let _ = self.control.push(AudioSourceControlCommand::FadeOut);
-            self.stop_triggered = true;
+            let _ = self.control.push(AudioSourceControlCommand::SoftStop);
         }
     }
 
@@ -464,7 +461,6 @@ where
                 duration,
                 volume: volume_db,
                 fade_volume: Decibels::IDENTITY,
-                stop_triggered: false,
             },
         )
     }
@@ -526,7 +522,7 @@ where
                                     .set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
-                        AudioSourceControlCommand::FadeOut => match state {
+                        AudioSourceControlCommand::SoftStop => match state {
                             AudioPlaybackState::Playing
                             | AudioPlaybackState::Pausing
                             | AudioPlaybackState::Resuming => {
@@ -539,7 +535,7 @@ where
                             }
                             _ => {}
                         },
-                        AudioSourceControlCommand::Stop => match state {
+                        AudioSourceControlCommand::HardStop => match state {
                             AudioPlaybackState::Playing
                             | AudioPlaybackState::Pausing
                             | AudioPlaybackState::Resuming
