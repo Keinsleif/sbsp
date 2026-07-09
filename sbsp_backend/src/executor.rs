@@ -723,8 +723,8 @@ impl Executor {
                         for child_id in children.iter() {
                             if self.active_instances.contains_key(child_id) {
                                 let command = match stop_mode {
-                                    StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
-                                    StopMode::Hard => AudioCommand::HardStop { id: cue_id },
+                                    StopMode::Soft => AudioCommand::SoftStop { id: *child_id },
+                                    StopMode::Hard => AudioCommand::HardStop { id: *child_id },
                                 };
                                 self.audio_tx
                                     .send(command)
