@@ -30,7 +30,6 @@ pub enum StateParam {
     #[default]
     None,
     Audio(AudioStateParam),
-    Wait,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
