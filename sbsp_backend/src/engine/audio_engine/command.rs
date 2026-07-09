@@ -29,7 +29,10 @@ pub enum AudioCommand {
     Resume {
         id: Uuid,
     },
-    Stop {
+    SoftStop {
+        id: Uuid,
+    },
+    HardStop {
         id: Uuid,
     },
     SeekTo {
@@ -59,11 +62,13 @@ impl AudioCommand {
             AudioCommand::Play { id, .. } => *id,
             AudioCommand::Pause { id } => *id,
             AudioCommand::Resume { id } => *id,
-            AudioCommand::Stop { id } => *id,
+            AudioCommand::SoftStop { id } => *id,
+            AudioCommand::HardStop { id } => *id,
             AudioCommand::SeekTo { id, .. } => *id,
             AudioCommand::SeekBy { id, .. } => *id,
             AudioCommand::PerformAction { id, .. } => *id,
-            _ => Uuid::nil(),
+            AudioCommand::FadeVolume { id, .. } => *id,
+            AudioCommand::Reconfigure(_) => Uuid::nil(),
         }
     }
 }
