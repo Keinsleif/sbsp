@@ -494,10 +494,6 @@ impl Executor {
                 GroupMode::Concurrency => {
                     if !children.is_empty() {
                         self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                        for cue_id in children.iter() {
-                            self.process_command(ExecutorCommand::Execute(*cue_id))
-                                .await?;
-                        }
                         self.active_instances.insert(
                             cue.id,
                             ActiveInstance {
@@ -507,6 +503,10 @@ impl Executor {
                                 paused: false,
                             },
                         );
+                        for cue_id in children.iter() {
+                            self.process_command(ExecutorCommand::Execute(*cue_id))
+                                .await?;
+                        }
                     } else {
                         self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
                         self.emit_completed(cue.id).await?;
