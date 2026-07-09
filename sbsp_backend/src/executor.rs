@@ -240,7 +240,6 @@ impl Executor {
                 );
             }
             CueParam::Start(_) | CueParam::Stop(_) | CueParam::Pause(_) | CueParam::Load(_) => {
-                log::warn!("Loading transport cues is not available. ignoring...");
                 self.active_instances.insert(
                     cue.id,
                     ActiveInstance {
@@ -424,6 +423,15 @@ impl Executor {
                 );
             }
             CueParam::Start(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        prewaiting: false,
+                        executed: true,
+                        paused: false,
+                    },
+                );
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.executed
                 {
@@ -435,11 +443,29 @@ impl Executor {
                     self.process_command(ExecutorCommand::Execute(params.target))
                         .await?;
                 }
-                self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                self.emit_completed(cue.id).await?;
+                self.resolve_after_start_chain(cue.id).await?;
+                self.executor_event_tx
+                    .send(ExecutorEvent::Started {
+                        cue_id: cue.id,
+                        position: 0.0,
+                        duration: 0.0,
+                        initial_params: StateParam::None,
+                    })
+                    .await?;
+                self.resolve_after_complete_chain(cue.id).await?;
+                self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 self.active_instances.remove(&cue.id);
             }
             CueParam::Stop(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        prewaiting: false,
+                        executed: true,
+                        paused: false,
+                    },
+                );
                 if self.active_instances.contains_key(&params.target) {
                     let stop_mode = if params.hard {
                         StopMode::Hard
@@ -449,11 +475,29 @@ impl Executor {
                     self.process_command(ExecutorCommand::Stop(params.target, stop_mode))
                         .await?;
                 }
-                self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                self.emit_completed(cue.id).await?;
+                self.resolve_after_start_chain(cue.id).await?;
+                self.executor_event_tx
+                    .send(ExecutorEvent::Started {
+                        cue_id: cue.id,
+                        position: 0.0,
+                        duration: 0.0,
+                        initial_params: StateParam::None,
+                    })
+                    .await?;
+                self.resolve_after_complete_chain(cue.id).await?;
+                self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 self.active_instances.remove(&cue.id);
             }
             CueParam::Pause(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        prewaiting: false,
+                        executed: true,
+                        paused: false,
+                    },
+                );
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.executed
                     && !instance.paused
@@ -461,23 +505,49 @@ impl Executor {
                     self.process_command(ExecutorCommand::Pause(params.target))
                         .await?;
                 }
-                self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                self.emit_completed(cue.id).await?;
+                self.resolve_after_start_chain(cue.id).await?;
+                self.executor_event_tx
+                    .send(ExecutorEvent::Started {
+                        cue_id: cue.id,
+                        position: 0.0,
+                        duration: 0.0,
+                        initial_params: StateParam::None,
+                    })
+                    .await?;
+                self.resolve_after_complete_chain(cue.id).await?;
+                self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 self.active_instances.remove(&cue.id);
             }
             CueParam::Load(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        prewaiting: false,
+                        executed: true,
+                        paused: false,
+                    },
+                );
                 if !self.active_instances.contains_key(&params.target) {
                     self.process_command(ExecutorCommand::Load(params.target))
                         .await?;
                 }
-                self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                self.emit_completed(cue.id).await?;
+                self.resolve_after_start_chain(cue.id).await?;
+                self.executor_event_tx
+                    .send(ExecutorEvent::Started {
+                        cue_id: cue.id,
+                        position: 0.0,
+                        duration: 0.0,
+                        initial_params: StateParam::None,
+                    })
+                    .await?;
+                self.resolve_after_complete_chain(cue.id).await?;
+                self.executor_event_tx.send(ExecutorEvent::Completed { cue_id: cue.id }).await?;
                 self.active_instances.remove(&cue.id);
             }
             CueParam::Group { base, children } => match base.mode {
                 GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                     if let Some(first_id) = children.first() {
-                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
                         self.active_instances.insert(
                             cue.id,
                             ActiveInstance {
@@ -487,16 +557,13 @@ impl Executor {
                                 paused: false,
                             },
                         );
+                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
                         self.process_command(ExecutorCommand::Execute(*first_id))
                             .await?;
-                    } else {
-                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                        self.emit_completed(cue.id).await?;
                     }
                 }
                 GroupMode::Concurrency => {
                     if !children.is_empty() {
-                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
                         self.active_instances.insert(
                             cue.id,
                             ActiveInstance {
@@ -506,13 +573,11 @@ impl Executor {
                                 paused: false,
                             },
                         );
+                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
                         for cue_id in children.iter() {
                             self.process_command(ExecutorCommand::Execute(*cue_id))
                                 .await?;
                         }
-                    } else {
-                        self.emit_started(cue.id, 0.0, 0.0, StateParam::None).await?;
-                        self.emit_completed(cue.id).await?;
                     }
                 }
             },
@@ -646,7 +711,7 @@ impl Executor {
                     log::warn!("Stop command is not available for Fade cue. ignoring...");
                 }
                 EngineType::Playback => {
-                    log::warn!("Stop command is not available for Transport cues. ignoring...");
+                    self.active_instances.remove(&cue_id);
                 }
                 EngineType::Group => {
                     let mut stop_sent = false;
