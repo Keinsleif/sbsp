@@ -132,7 +132,7 @@ const editorTab = computed({
       </tab-list>
       <tab-panels class="grow overflow-auto p-0">
         <tab-panel value="blank" class="h-full flex items-center justify-center">
-          <div class="text-2xl">No Selection</div>
+          <div class="text-2xl">{{ t('main.bottomEditor.noSelection') }}</div>
         </tab-panel>
         <tab-panel value="basics">
           <BasicEditor
