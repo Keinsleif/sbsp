@@ -15,6 +15,7 @@ import SideBar from './components/pc/SideBar.vue';
 import ServerPanelDialog from './components/dialog/ServerPanelDialog.vue';
 import SettingsDialog from './components/dialog/SettingsDialog.vue';
 import FileListDialog from './components/dialog/FileListDialog.vue';
+import BottomViewer from './components/pc/BottomViewer.vue';
 
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);
@@ -75,19 +76,24 @@ const onCueEdited = debounce(() => {
     <header class="h-50 shrink-0">
       <AppHeader />
     </header>
-    <div class="flex w-full grow flex-row overflow-hidden">
-      <div class="flex h-full grow flex-col">
-        <main class="shrink grow overflow-y-hidden">
+    <div class="flex w-full grow shrink flex-row overflow-hidden">
+      <div class="flex h-full grow shrink flex-col min-w-0">
+        <main class="shrink grow overflow-hidden">
           <CueList />
         </main>
         <section
-          class="shrink-0 grow-0 overflow-y-hidden transition-[height]"
-          :class="[uiState.isBottomTabOpen ? 'h-62' : 'h-0']"
+          class="shrink-0 grow-0 overflow-y-hidden transition-[height] border-t border-(--p-form-field-border-color)"
+          :class="[uiState.isBottomTabOpen ? uiState.mode === 'edit' ? 'h-62' : 'h-16' : 'h-0']"
         >
           <BottomEditor
+            v-if="uiState.mode === 'edit'"
             v-model="selectedCue"
             :chain-override="selectedCueChainOverride"
             @update="onCueEdited"
+          />
+          <BottomViewer
+            v-else
+            v-model="selectedCue"
           />
         </section>
       </div>
