@@ -40,7 +40,7 @@
 
 - **連鎖しない**：キュー終了後に何も行いません
 - **開始後**：キュー開始後に対象のキューを実行します。
-- **終了後**：キュー終了後に対象のキューを実行します。
+- **完了後**：キュー完了後に対象のキューを実行します。
 
 #### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="red" /><text x="13" y="21" text-anchor="middle" fill="white" font-size="16pt">7</text></svg> キュー連鎖の対象
 
