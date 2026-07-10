@@ -1,12 +1,12 @@
 # インストール方法
 
-以下の3つの配布元からインストーラまたはアプリ本体を入手できます。
+以下の配布元からインストーラまたはアプリ本体を入手できます。
 
-## インストーラから
+<DownloadButton />
 
-以下のページよりインストーラーのZIPファイルを入手できます。
+もしくは、以下のページよりインストーラーのZIPファイルを入手できます。
 
-### BOOTH
+## BOOTH
 
 [BOOTH 商品ページ](https://keinsleif.booth.pm/items/7619260)
 
@@ -15,7 +15,7 @@ macOS向けには for macOS
 
 を選択します。
 
-### GitHub Releases（アップデート配信元）
+## GitHub Releases（アップデート配信元）
 
 [GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest)
 
@@ -31,8 +31,6 @@ RedHat, CentOS : ` SBS.Player-x.x.x-1.x86_64.rpm `
 
 をダウンロードします。（x.x.xにはバージョン番号が入ります）
 
-## Microsoft Store から (Windowsのみ、安定版のみ)
-
-以下のリンクからMicrosoft Storeを開き、インストールします。
-
-[Microsoft Store 配布ページ](https://apps.microsoft.com/store/detail/9NLNN3XD1QFZ?cid=DevShareMCLPCS)
+<script setup>
+    import DownloadButton from './components/DownloadButton.vue';
+</script>
