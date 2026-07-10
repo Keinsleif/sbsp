@@ -43,6 +43,21 @@ const editingSettings = ref<{
 }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 const supportedHardware = ref<SupportedHardware | null>(null);
 
+const tabItems = [
+  { type: 'tab', value: 'preset', label: t('dialog.settings.tab.preset') },
+  { type: 'group', value: 'showModel', label: t('dialog.settings.tab.category.inThisShowModel') },
+  { type: 'tab', value: 'showGeneral', label: t('dialog.settings.tab.general') },
+  { type: 'tab', value: 'audioLogic', label: t('dialog.settings.tab.audioLogic') },
+  { type: 'tab', value: 'remote', label: t('dialog.settings.tab.remote') },
+  { type: 'group', value: 'global',label: t('dialog.settings.tab.category.global') },
+  { type: 'tab', value: 'globalGeneral', label: t('dialog.settings.tab.general') },
+  { type: 'tab', value: 'appearance', label: t('dialog.settings.tab.appearance') },
+  ...(__IS_HOST__ ? [{ type: 'tab', value: 'audioHardware', label: t('dialog.settings.tab.audioHardware') }] : []),
+  { type: 'tab', value: 'hotkey', label: t('dialog.settings.tab.hotkey') },
+  { type: 'tab', value: 'template', label: t('dialog.settings.tab.template') },
+  { type: 'tab', value: 'nameFormat', label: t('dialog.settings.tab.nameFormat') },
+];
+
 const devices = computed(() => {
   const supportedHW = supportedHardware.value;
   if (supportedHW != null) {
@@ -247,83 +262,22 @@ const recallQLabPreset = () => {
           class="flex min-w-50 grow-0 flex-col border border-(--p-form-field-border-color) p-2"
           :class="$style['tablist']"
         >
-          <button
-            class="text-left"
-            :class="tab === 'preset' ? $style['selected-category'] : ''"
-            @click="tab = 'preset'"
-          >
-            {{ t('dialog.settings.tab.preset') }}
-          </button>
-          <div class="bg-gray-600 p-1">
-            {{ t('dialog.settings.tab.category.inThisShowModel') }}
-          </div>
-          <button
-            class="text-left"
-            :class="tab === 'showGeneral' ? $style['selected-category'] : ''"
-            @click="tab = 'showGeneral'"
-          >
-            {{ t('dialog.settings.tab.general') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'audioLogic' ? $style['selected-category'] : ''"
-            @click="tab = 'audioLogic'"
-          >
-            {{ t('dialog.settings.tab.audioLogic') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'remote' ? $style['selected-category'] : ''"
-            @click="tab = 'remote'"
-          >
-            {{ t('dialog.settings.tab.remote') }}
-          </button>
-          <div class="bg-gray-600 p-1">
-            {{ t('dialog.settings.tab.category.global') }}
-          </div>
-          <button
-            class="text-left"
-            :class="tab === 'globalGeneral' ? $style['selected-category'] : ''"
-            @click="tab = 'globalGeneral'"
-          >
-            {{ t('dialog.settings.tab.general') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'appearance' ? $style['selected-category'] : ''"
-            @click="tab = 'appearance'"
-          >
-            {{ t('dialog.settings.tab.appearance') }}
-          </button>
-          <button
-            v-if="'audio' in editingSettings.global"
-            class="text-left"
-            :class="tab === 'audioHardware' ? $style['selected-category'] : ''"
-            @click="tab = 'audioHardware'"
-          >
-            {{ t('dialog.settings.tab.audioHardware') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'hotkey' ? $style['selected-category'] : ''"
-            @click="tab = 'hotkey'"
-          >
-            {{ t('dialog.settings.tab.hotkey') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'template' ? $style['selected-category'] : ''"
-            @click="tab = 'template'"
-          >
-            {{ t('dialog.settings.tab.template') }}
-          </button>
-          <button
-            class="text-left"
-            :class="tab === 'nameFormat' ? $style['selected-category'] : ''"
-            @click="tab = 'nameFormat'"
-          >
-            {{ t('dialog.settings.tab.nameFormat') }}
-          </button>
+          <template v-for="tabItem in tabItems" :key="tabItem.value">
+            <button
+              v-if="tabItem.type === 'tab'"
+              class="text-left px-2 py-1 transition-all duration-200"
+              :class="tab === tabItem.value ? $style['selected-category'] : ''"
+              @click="tab = tabItem.value"
+            >
+              {{ tabItem.label }}
+            </button>
+            <div
+              v-else
+              class="border-y text-gray-500 dark:text-gray-400 my-2 py-1 px-3"
+            >
+              {{ tabItem.label  }}
+            </div>
+          </template>
         </div>
         <div class="h-full grow">
           <div
@@ -646,17 +600,6 @@ const recallQLabPreset = () => {
 </template>
 
 <style lang="css" module>
-.tablist button {
-  cursor: pointer;
-  padding: 0.5em 1em;
-  &:hover {
-    background-color: rgb(from var(--p-gray-500) r g b / 0.5);
-  }
-  &:active {
-    background-color: rgb(from var(--p-gray-500) r g b / 0.2);
-  }
-}
-
 .selected-category {
   background-color: rgb(from var(--p-primary-color) r g b / 0.2);
 }
