@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, useTemplateRef } from 'vue';
+import { computed, useTemplateRef, watchEffect } from 'vue';
 import WaveformPath from '../display/WaveformPath.vue';
-import { useElementSize } from '@vueuse/core';
+import { useElementSize, useMouseInElement } from '@vueuse/core';
 import type { Cue } from '@/types/Cue.ts';
 import { useShowState } from '@/stores/showState.ts';
 import { usePosition } from '@/composables/usePosition.ts';
 import { useAssetResult } from '@/stores/assetResult.ts';
 import { useApi } from '@/api/index.ts';
 import { useUiState } from '@/stores/uiState.ts';
+import { secondsToFormat } from '@/utils.ts';
 
 const selectedCue = defineModel<Cue | null>();
 
@@ -59,6 +60,30 @@ usePosition((pos) => {
   positionRef.value.style.transform = `translateX(${x}px)`;
 });
 
+const { x, y, elementX, isOutside } = useMouseInElement(svgRef, {
+  handleOutside: false,
+  touch: false,
+});
+
+const tooltipRef = useTemplateRef('tooltip');
+
+watchEffect(() => {
+  if (tooltipRef.value == null) return;
+  if (!isOutside.value) {
+    tooltipRef.value.style.transform = `translate(${x.value + 16}px, ${y.value}px)`;
+    if (selectedCue.value == null) {
+      tooltipRef.value.textContent = '--:--.-- / --:--.--';
+      return;
+    }
+    const duration = assetResult.getMetadata(selectedCue.value.id)?.duration;
+    if (duration == null) {
+      tooltipRef.value.textContent = '--:--.-- / --:--.--';
+    } else {
+      tooltipRef.value.textContent = `${secondsToFormat((elementX.value / svgWidth.value) * duration)} / ${secondsToFormat(duration)}`;
+    }
+  }
+});
+
 const seek = (event: MouseEvent) => {
   if (!isActive.value || uiState.mode === 'view') return;
   if (selectedCue.value == null || event.button !== 0) {
@@ -78,40 +103,53 @@ const seek = (event: MouseEvent) => {
 </script>
 
 <template>
-  <svg
-    ref="svg"
-    xmlns="http://www.w3.org/2000/svg"
-    :viewBox="`0 0 ${svgWidth} 64`"
-    preserveAspectRatio="none"
-    height="100%"
-    width="100%"
-    @pointerdown="seek"
+  <div
+    class="relative w-full border border-(--p-form-field-border-color) h-16"
+    ref="container"
   >
-    <waveform-path v-model="selectedCue" :height="64" :width="svgWidth" />
-    <rect
-      v-if="selectedCue != null && selectedCue.params.type === 'audio'"
-      :x="timeRange.start * (svgWidth - 1) - 1"
-      y="0"
-      width="2"
-      :height="64"
-      fill="blue"
-    />
-    <rect
-      v-if="selectedCue != null && selectedCue.params.type === 'audio'"
-      :x="timeRange.end * (svgWidth - 1)"
-      y="0"
-      width="2"
-      :height="64"
-      fill="blue"
-    />
-    <rect
-      v-show="isActive"
-      ref="position"
-      x="0"
-      y="0"
-      width="2"
-      :height="64"
-      fill="yellow"
-    />
-  </svg>
+    <Teleport to="body">
+      <div
+        ref="tooltip"
+        v-show="!isOutside"
+        v-if="selectedCue != null && svgRef != null"
+        class="pointer-events-none absolute top-0 left-0 rounded border border-(--p-form-field-border-color) bg-(--p-content-background) pr-1 pl-1"
+      />
+    </Teleport>
+    <svg
+      ref="svg"
+      xmlns="http://www.w3.org/2000/svg"
+      :viewBox="`0 0 ${svgWidth} 64`"
+      preserveAspectRatio="none"
+      height="100%"
+      width="100%"
+      @pointerdown="seek"
+    >
+      <waveform-path v-model="selectedCue" :height="64" :width="svgWidth" />
+      <rect
+        v-if="selectedCue != null && selectedCue.params.type === 'audio'"
+        :x="timeRange.start * (svgWidth - 1) - 1"
+        y="0"
+        width="2"
+        :height="64"
+        fill="blue"
+      />
+      <rect
+        v-if="selectedCue != null && selectedCue.params.type === 'audio'"
+        :x="timeRange.end * (svgWidth - 1)"
+        y="0"
+        width="2"
+        :height="64"
+        fill="blue"
+      />
+      <rect
+        v-show="isActive"
+        ref="position"
+        x="0"
+        y="0"
+        width="2"
+        :height="64"
+        fill="yellow"
+      />
+    </svg>
+  </div>
 </template>
