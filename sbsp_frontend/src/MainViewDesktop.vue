@@ -86,13 +86,13 @@ const onCueEdited = debounce(() => {
           :class="[uiState.isBottomTabOpen ? uiState.mode === 'edit' ? 'h-62' : 'h-16' : 'h-0']"
         >
           <BottomEditor
-            v-if="uiState.mode === 'edit'"
+            v-if="uiState.isBottomTabOpen && uiState.mode === 'edit'"
             v-model="selectedCue"
             :chain-override="selectedCueChainOverride"
             @update="onCueEdited"
           />
           <BottomViewer
-            v-else
+            v-else-if="uiState.isBottomTabOpen"
             v-model="selectedCue"
           />
         </section>
