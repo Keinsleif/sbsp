@@ -618,6 +618,7 @@ const recallQLabPreset = () => {
                 v-model="editingSettings.global.nameFormat.group"
                 class="w-125"
                 :label="t('dialog.settings.global.nameFormat.group.title')"
+                :help="'{mode} replaced with Group cue mode'"
               />
             </div>
           </div>

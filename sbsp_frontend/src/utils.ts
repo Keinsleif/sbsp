@@ -160,7 +160,9 @@ export const buildCueName = (cue: Cue | null): string => {
       });
     }
     case 'group': {
-      return nameFormat.group;
+      return format(nameFormat.group, {
+        mode: camelToTitleCase(cue.params.mode.type)
+      });
     }
     default:
       return '';
