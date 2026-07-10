@@ -33,12 +33,12 @@ const uiState = useUiState();
           v-for="(activeCue, cue_id) in showState.activeCues"
           :key="cue_id"
         >
-          <active-cue-item :active-cue="activeCue" :is-hidden="uiState.sideBarTab !== 'activeCues'" />
+          <active-cue-item :active-cue="activeCue" :is-hidden="!uiState.isRightSidebarOpen || uiState.sideBarTab !== 'activeCues'" />
         </template>
       </tab-panel>
       <tab-panel value="meter" class="h-full">
         <level-meter
-          v-if="uiState.sideBarTab == 'meter'"
+          v-if="uiState.isRightSidebarOpen && uiState.sideBarTab == 'meter'"
           class="h-full"
           kind="master"
         />
