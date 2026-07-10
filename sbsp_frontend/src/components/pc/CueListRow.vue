@@ -44,14 +44,13 @@ const props = defineProps<{
 }>();
 
 const isSelected = computed(() => uiState.selectedRows.has(props.item.cue.id));
-const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
 const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 
 const preWaitRef = useTemplateRef('preWait');
 const durationRef = useTemplateRef('duration');
 
-let preWaitProgressActive = false;
+let preWaitNeedReset = true;
 
 usePosition((pos) => {
   if (
@@ -84,8 +83,8 @@ usePosition((pos) => {
   }
   if (position != null && activeCue != null && activeCue.duration > 0) {
     if (activeCue.status.startsWith('pre')) {
-      if (!preWaitProgressActive) {
-        preWaitProgressActive = true;
+      if (!preWaitNeedReset) {
+        preWaitNeedReset = true;
       }
       if (preWaitField.contentEditable === 'true') {
         closeEditable(preWaitField, false, 'cuelist_pre_wait');
@@ -99,11 +98,11 @@ usePosition((pos) => {
       if (durationField.contentEditable === 'true') {
         closeEditable(durationField, false, 'cuelist_duration');
       }
-      if (preWaitProgressActive) {
+      if (preWaitNeedReset) {
         // reset prewait progress display
         preWaitField.textContent = preWaitText;
         preWaitProgress.style.transform = 'scaleX(0)';
-        preWaitProgressActive = false;
+        preWaitNeedReset = false;
       }
 
       durationField.textContent = secondsToFormat(
@@ -112,7 +111,7 @@ usePosition((pos) => {
       durationProgress.style.transform = `scaleX(${position / activeCue.duration})`;
     }
   } else {
-    preWaitProgressActive = false;
+    preWaitNeedReset = false;
     if (preWaitField.contentEditable !== 'true') {
       preWaitField.textContent = preWaitText;
       preWaitProgress.style.transform = 'scaleX(0)';
@@ -312,11 +311,11 @@ const isPlayingActive = computed((): boolean => {
       headers="cuelist_cursor"
       style="padding-left: 12px; padding-right: 0px"
     >
-      <path-icon
-        class="cursor-pointer"
-        :icon="isPlaybackCursor ? mdiArrowRightBold : null"
-        @click="setPlaybackCursor(props.item.cue.id)"
-      />
+      <button class="cursor-pointer" @click="setPlaybackCursor(props.item.cue.id)">
+        <path-icon
+          :icon="isPlaybackCursor ? mdiArrowRightBold : null"
+        />
+      </button>
     </td>
     <td
       headers="cuelist_status"
@@ -363,17 +362,30 @@ const isPlayingActive = computed((): boolean => {
     <td
       headers="cuelist_name"
       class="overflow-hidden whitespace-nowrap"
-      :style="{
-        paddingLeft: `${item.level}em`,
-      }"
     >
-      <path-icon
-        :icon="item.isGroup ? (isExpanded ? mdiMenuDown : mdiMenuRight) : null"
-        :tabindex="item.isGroup ? 0 : -1"
-        :class="item.isGroup ? 'cursor-pointer' : ''"
+      <svg
+        v-if="item.level > 0"
+        class="inline text-slate-400"
+        xmlns="http://www.w3.org/2000/svg"
+        :viewBox="`0 0 ${item.level * 16} 31`"
+        preserveAspectRatio="none"
+        height="100%"
+        :width="`${item.level * 16}px`"
+      >
+        <rect v-for="i in (item.level - 1)" :key="i" :x="8 + (i - 1) * 16" y="0" width="1" height="32" fill="currentColor"></rect>
+        <rect :x="8 + (item.level - 1) * 16" y="0" width="1" :height="32" fill="currentColor"></rect>
+        <rect :x="8 + (item.level - 1) * 16" y="16" width="8" height="1" fill="currentColor"></rect>
+      </svg>
+      <button
+        :disabled="!item.isGroup"
+        :class="item.isGroup ? 'cursor-pointer' : 'pointer-events-none'"
         @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
         @pointerdown="item.isGroup && $event.stopPropagation()"
-      />
+      >
+        <path-icon
+          :icon="item.isGroup ? (item.isExpanded ? mdiMenuDown : mdiMenuRight) : null"
+        />
+      </button>
       <span
         class="h-full"
         v-text="item.cue.name != null ? item.cue.name : buildCueName(item.cue)"

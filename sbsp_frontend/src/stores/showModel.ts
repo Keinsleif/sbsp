@@ -17,10 +17,13 @@ export type FlatCueEntry = {
   parent: null | string;
   innerIndex: number;
   isHidden: boolean;
-  isGroup: boolean;
+  isLast: boolean;
   chain: CueChain;
   isChainOverrided: boolean;
-};
+} & ({
+  isGroup: true,
+  isExpanded: boolean,
+} | { isGroup: false });
 
 const recursiveCueCheck = (
   list: string[],
@@ -51,19 +54,23 @@ const recursiveCueCheck = (
         chain = { type: 'doNotChain' };
       }
     }
-    cuelist.push({
-      cue: cue,
-      level: level,
-      parent: parent != null ? parent.id : null,
-      innerIndex: index,
-      isHidden: isHidden,
-      isGroup: cue.params.type === 'group',
-      chain: chain != null ? chain : cue.chain,
-      isChainOverrided: chain != null,
-    });
+
+    const isLast = index === list.length;
 
     if (cue.params.type === 'group') {
       const isExpanded = expandedRows.includes(cue.id);
+      cuelist.push({
+        cue: cue,
+        level: level,
+        parent: parent != null ? parent.id : null,
+        innerIndex: index,
+        isHidden: isHidden,
+        isLast,
+        isGroup: true,
+        isExpanded,
+        chain: chain != null ? chain : cue.chain,
+        isChainOverrided: chain != null,
+      });
       cuelist.push(
         ...recursiveCueCheck(
           cue.params.children,
@@ -74,6 +81,18 @@ const recursiveCueCheck = (
           cue,
         ),
       );
+    } else {
+      cuelist.push({
+        cue: cue,
+        level: level,
+        parent: parent != null ? parent.id : null,
+        innerIndex: index,
+        isHidden: isHidden,
+        isLast,
+        isGroup: false,
+        chain: chain != null ? chain : cue.chain,
+        isChainOverrided: chain != null,
+      });
     }
   });
 
