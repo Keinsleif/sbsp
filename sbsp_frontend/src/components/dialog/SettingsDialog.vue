@@ -257,9 +257,9 @@ const recallQLabPreset = () => {
     @contextmenu.prevent
   >
     <div class="flex h-full w-full flex-col">
-      <div class="flex w-full grow flex-row">
+      <div class="flex w-full grow flex-row overflow-hidden">
         <div
-          class="flex min-w-50 grow-0 flex-col border border-(--p-form-field-border-color) p-2"
+          class="flex min-w-50 grow-0 flex-col border-r border-(--p-form-field-border-color) p-2"
           :class="$style['tablist']"
         >
           <template v-for="tabItem in tabItems" :key="tabItem.value">
@@ -279,7 +279,7 @@ const recallQLabPreset = () => {
             </div>
           </template>
         </div>
-        <div class="h-full grow">
+        <div class="h-full grow overflow-y-auto">
           <div
             v-show="tab === 'preset'"
             class="p-4"
