@@ -26,7 +26,7 @@ const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' 
 const xs = breakpoints.smaller('sm');
 const smAndDown = breakpoints.smallerOrEqual('sm');
 const mdAndDown = breakpoints.smallerOrEqual('md');
-const lxAndUp = breakpoints.greaterOrEqual('xl');
+const twoxlAndUp = breakpoints.greaterOrEqual('2xl');
 
 const showState = useShowState();
 const assetResult = useAssetResult();
@@ -151,7 +151,7 @@ const isActive = computed(() => {
               class="grow"
               :label="t('main.bottomEditor.timeLevels.volume')"
               :direction="xs ? 'vertical' : 'horizontal'"
-              :thumb-amount="lxAndUp ? 'full' : 'decreased'"
+              :thumb-amount="twoxlAndUp ? 'full' : 'decreased'"
               @update="
                 saveEditorValue();
                 changeActiveCueVolume();

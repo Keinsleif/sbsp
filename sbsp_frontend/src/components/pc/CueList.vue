@@ -3,7 +3,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import { computed, ref, toRaw, useTemplateRef } from 'vue';
-import { useShowModel } from '../../stores/showModel';
+import { useShowModel, type FlatCueEntry } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
   mdiAlphaRBoxOutline,
@@ -24,6 +24,7 @@ import { useHotkey } from '@/composables/useHotkey.ts';
 import PathIcon from '../display/PathIcon.vue';
 import ContextMenu from 'primevue/contextmenu';
 import { isUserTyping } from '@/utils.ts';
+import CueListEmptyRow from './CueListEmptyRow.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -31,59 +32,74 @@ const api = useApi();
 const showModel = useShowModel();
 const uiState = useUiState();
 
-const cueListItemRefs = useTemplateRef('cuelistItem');
+const cueListBodyRef = useTemplateRef('cuelistBody');
 
 const internalClipboard = ref<Cue[]>([]);
 
+type RenderRow =
+  | { kind: 'entry'; entry: FlatCueEntry; index: number }
+  | { kind: 'end-slot'; parentId: string | null; level: number; }
+
+function buildRenderRows(flatList: FlatCueEntry[]): RenderRow[] {
+  const rows: RenderRow[] = []
+  const stack: { entry: FlatCueEntry; level: number }[] = []
+
+  const flushStackAbove = (level: number) => {
+    if (stack.length === 0) return;
+    let stack_level = stack[stack.length - 1]?.level;
+    while (stack_level != null && stack_level >= level) {
+      const g = stack.pop();
+      if (g != null) {
+        rows.push({
+          kind: 'end-slot',
+          parentId: g.entry.cue.id,
+          level: stack_level + 1
+        });
+      }
+      stack_level = stack[stack.length - 1]?.level;
+    }
+  }
+
+  flatList.forEach((entry, index) => {
+    if (entry.isHidden) return
+
+    flushStackAbove(entry.level)
+    rows.push({ kind: 'entry', entry, index })
+
+    if (entry.isGroup && entry.isExpanded) {
+      stack.push({ entry, level: entry.level })
+    }
+  })
+
+  flushStackAbove(0);
+
+  rows.push({
+    kind: 'end-slot',
+    parentId: null,
+    level: 0,
+  })
+  return rows
+}
+
+const renderRows = computed(() => buildRenderRows(showModel.flatCueList))
+
 const scrollIntoIndex = (index: number) => {
-  if (cueListItemRefs.value != null) {
-    cueListItemRefs.value[index]?.$el.scrollIntoView(false);
+  if (cueListBodyRef.value != null && cueListBodyRef.value instanceof HTMLElement) {
+    cueListBodyRef.value.children[index]?.scrollIntoView(false);
+  }
+};
+
+const paste = () => {
+  const cues: Cue[] = internalClipboard.value;
+
+  if (cues.length > 0 && uiState.mode === 'edit') {
+    api.addCues(cues, uiState.selected, false);
   }
 };
 
 const pasteHandler = (e: ClipboardEvent) => {
   if (isUserTyping(e)) return;
-
-  const cues: Cue[] = internalClipboard.value;
-
-  if (cues.length > 0 && uiState.mode === 'edit') {
-    e.preventDefault();
-    api.addCues(cues, uiState.selected, false);
-  }
-};
-
-const cutHandler = (e: ClipboardEvent) => {
-  if (isUserTyping(e)) return;
-  const cues = showModel.getSelectedCues;
-
-  if (cues.length > 0) {
-    e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map((cue: Cue) => toRaw(cue)));
-    if (uiState.mode === 'edit') {
-      api.removeCues(
-        cues.map((cue) => cue.id),
-        false,
-      );
-    }
-  }
-};
-
-const copyHandler = (e: ClipboardEvent) => {
-  if (isUserTyping(e)) return;
-  const cues = showModel.getSelectedCues;
-
-  if (cues.length > 0) {
-    e.preventDefault();
-    internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
-  }
-};
-
-const paste = () => {
-  const cues = internalClipboard.value;
-
-  if (cues.length > 0 && uiState.mode === 'edit') {
-    api.addCues(cues, uiState.selected, false);
-  }
+  paste();
 };
 
 const cut = () => {
@@ -99,12 +115,22 @@ const cut = () => {
   }
 };
 
+const cutHandler = (e: ClipboardEvent) => {
+  if (isUserTyping(e)) return;
+  cut();
+};
+
 const copy = () => {
   const cues = showModel.getSelectedCues;
 
   if (cues.length > 0) {
     internalClipboard.value = structuredClone(cues.map((cue) => toRaw(cue)));
   }
+};
+
+const copyHandler = (e: ClipboardEvent) => {
+  if (isUserTyping(e)) return;
+  copy();
 };
 
 const menu = useTemplateRef('menu');
@@ -125,72 +151,96 @@ const menuItems = computed(() => [
 ]);
 
 const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
+  const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex =
-      showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected) - 1;
-    let cursorCueRef = showModel.flatCueList[cursorIndex];
-    if (cursorCueRef == null) return;
+      renderRowsCache.findIndex((item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected);
+    let cursorCueRef = renderRowsCache[cursorIndex];
+    if (cursorCueRef == null || cursorCueRef.kind !== 'entry') return;
+    const origLevel = cursorCueRef.entry.level;
 
-    while (cursorCueRef.isHidden) {
+    cursorIndex--;
+    cursorCueRef = renderRowsCache[cursorIndex];
+    if (cursorCueRef == null) return;
+    while (cursorCueRef.kind !== 'entry' || cursorCueRef.entry.isHidden) {
       cursorIndex--;
-      cursorCueRef = showModel.flatCueList[cursorIndex];
+      cursorCueRef = renderRowsCache[cursorIndex];
       if (cursorCueRef == null) {
         return;
       }
     }
     if (e.shiftKey) {
-      uiState.addSelected(cursorCueRef.cue.id);
+      if (cursorCueRef.entry.level !== origLevel) return;
+      uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
-      uiState.setSelected(cursorCueRef.cue.id);
+      uiState.setSelected(cursorCueRef.entry.cue.id);
     }
     scrollIntoIndex(cursorIndex);
   } else {
-    const firstCueId = showModel.flatCueList[0]?.cue.id;
-    if (firstCueId != null) {
-      uiState.setSelected(firstCueId);
-      scrollIntoIndex(0); // First cue cannot be Group child. This ensures visibility.
-    }
+    const firstRow = renderRowsCache[0];
+    if (firstRow?.kind !== 'entry') return;
+    uiState.setSelected(firstRow.entry.cue.id);
+    scrollIntoIndex(0); // First cue cannot be Group child. This ensures visibility.
   }
 }, 100);
 
-useHotkey('ArrowUp', onArrowUp);
-useHotkey('Shift+ArrowUp', onArrowUp);
+useHotkey('ArrowUp', (e) => {
+  e.preventDefault();
+  onArrowUp(e);
+});
+useHotkey('Shift+ArrowUp', (e) => {
+  e.preventDefault();
+  onArrowUp(e);
+});
 
 const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
+  const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex =
-      showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected) + 1;
-    let cursorCueRef = showModel.flatCueList[cursorIndex];
-    if (cursorCueRef == null) return;
+      renderRowsCache.findIndex((item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected);
+    let cursorCueRef = renderRowsCache[cursorIndex];
+    if (cursorCueRef == null || cursorCueRef.kind !== 'entry') return;
+    const origLevel = cursorCueRef.entry.level;
 
-    while (cursorCueRef.isHidden) {
+    cursorIndex++;
+    cursorCueRef = renderRowsCache[cursorIndex];
+    if (cursorCueRef == null) return;
+    while (cursorCueRef.kind !== 'entry' || cursorCueRef.entry.isHidden) {
       cursorIndex++;
-      cursorCueRef = showModel.flatCueList[cursorIndex];
+      cursorCueRef = renderRowsCache[cursorIndex];
       if (cursorCueRef == null) {
         return;
       }
     }
     if (e.shiftKey) {
-      uiState.addSelected(cursorCueRef.cue.id);
+      if (cursorCueRef.entry.level !== origLevel) return;
+      uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
-      uiState.setSelected(cursorCueRef.cue.id);
+      uiState.setSelected(cursorCueRef.entry.cue.id);
     }
     scrollIntoIndex(cursorIndex);
   } else {
-    let lastVisibleIndex = showModel.flatCueList.length - 1;
-    while (showModel.flatCueList[lastVisibleIndex]?.isHidden) {
+    let lastVisibleIndex = renderRows.value.length - 1;
+    let lastVisibleEntry = renderRows.value[lastVisibleIndex];
+    if (lastVisibleEntry == null) return;
+    while (lastVisibleEntry.kind !== 'entry' || lastVisibleEntry.entry.isHidden) {
       lastVisibleIndex--;
+      lastVisibleEntry = renderRows.value[lastVisibleIndex];
+      if (lastVisibleEntry == null) return;
     }
-    const lastCueId = showModel.flatCueList[lastVisibleIndex]?.cue.id;
-    if (lastCueId != null) {
-      uiState.setSelected(lastCueId);
-      scrollIntoIndex(lastVisibleIndex);
-    }
+    uiState.setSelected(lastVisibleEntry.entry.cue.id);
+    scrollIntoIndex(lastVisibleIndex);
   }
 }, 100);
 
-useHotkey('ArrowDown', onArrowDown);
-useHotkey('Shift+ArrowDown', onArrowDown);
+useHotkey('ArrowDown', (e) => {
+  e.preventDefault();
+  onArrowDown(e);
+});
+useHotkey('Shift+ArrowDown', (e) => {
+  e.preventDefault();
+  onArrowDown(e);
+});
 
 useHotkey('$mod+A', () => {
   // This operation not set uiState.selected. But selecting all will includes uiState.selected
@@ -208,8 +258,8 @@ useHotkey('$mod+Backspace', () => {
 
 const dragOverIndex = ref<number | null>(null);
 
-const dragOver = (event: DragEvent, index: number, id: string) => {
-  if (uiState.selectedRows.has(id)) {
+const dragOver = (event: DragEvent, index: number, id: string | null) => {
+  if (id != null && uiState.selectedRows.has(id)) {
     if (dragOverIndex.value != null) {
       dragOverIndex.value = null;
     }
@@ -225,39 +275,39 @@ const dragEnd = () => {
   dragOverIndex.value = null;
 };
 
-const drop = (event: DragEvent) => {
-  event.preventDefault();
-  if (event.dataTransfer) {
-    api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: null, index: null });
-  }
-};
-
 const click = (event: MouseEvent, index: number) => {
   if (event.button !== 0) {
     return;
   }
-  const clickedId = showModel.flatCueList[index]?.cue.id;
+  const row = renderRows.value[index];
+  if (row == null || row.kind !== 'entry') return;
+  const clickedId = row.entry.cue.id;
   if (clickedId == null) return;
   if (event.shiftKey) {
     if (uiState.selected != null) {
       // This operation manually add multiple cues and update playback cursor.
       uiState.selectedRows.clear();
-      const prevIndex = showModel.flatCueList.findIndex((item) => item.cue.id === uiState.selected);
+      const prevIndex = renderRows.value.findIndex((item) => item.kind !== 'end-slot' && item.entry.cue.id === uiState.selected);
+      const prevRow = renderRows.value[prevIndex];
+      if (prevIndex === -1 || prevRow == null || prevRow.kind === 'end-slot') return;
+      let lastSelected = null;
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
-          const targetCue = showModel.flatCueList[i];
-          if (targetCue == null || targetCue.isHidden) continue;
-          uiState.selectedRows.add(targetCue.cue.id);
+          const targetEntry = renderRows.value[i];
+          if (targetEntry == null || targetEntry.kind === 'end-slot' || targetEntry.entry.isHidden || targetEntry.entry.level !== prevRow.entry.level) continue;
+          uiState.selectedRows.add(targetEntry.entry.cue.id);
+          lastSelected = targetEntry.entry.cue.id;
         }
       } else {
-        for (let i = index; i <= prevIndex; i++) {
-          const targetCue = showModel.flatCueList[i];
-          if (targetCue == null || targetCue.isHidden) continue;
-          uiState.selectedRows.add(targetCue.cue.id);
+        for (let i = prevIndex; i >= index; i--) {
+          const targetEntry = renderRows.value[i];
+          if (targetEntry == null || targetEntry.kind === 'end-slot' || targetEntry.entry.isHidden || targetEntry.entry.level !== prevRow.entry.level) continue;
+          uiState.selectedRows.add(targetEntry.entry.cue.id);
+          lastSelected = targetEntry.entry.cue.id;
         }
       }
-      uiState.selected = clickedId;
-      uiState.setPlaybackCursor(clickedId);
+      uiState.selected = lastSelected;
+      uiState.setPlaybackCursor(lastSelected);
     } else {
       uiState.setSelected(clickedId);
     }
@@ -286,7 +336,7 @@ const click = (event: MouseEvent, index: number) => {
 
 <template>
   <div
-    class="h-full scroll-pt-8 overflow-scroll border border-(--p-form-field-border-color)"
+    class="h-full scroll-pt-8 overflow-y-scroll overflow-x-auto"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
     @copy="copyHandler"
@@ -382,36 +432,32 @@ const click = (event: MouseEvent, index: number) => {
           </th>
         </tr>
       </thead>
-      <tbody>
-        <cue-list-row
-          v-for="(item, i) in showModel.flatCueList"
-          v-show="!item.isHidden"
-          ref="cuelistItem"
-          :key="item.cue.id"
-          :item="item"
-          :is-drag-over="dragOverIndex == i"
-          @dragover="dragOver($event, i, item.cue.id)"
-          @dragend="dragEnd"
-          @pointerdown.stop="click($event, i)"
-          @contextmenu.prevent="
-            if (uiState.mode == 'edit') {
-              if (!uiState.selectedRows.has(item.cue.id)) {
-                uiState.setSelected(item.cue.id);
+      <tbody ref="cuelistBody">
+        <template v-for="(row, i) in renderRows" :key="row.kind === 'entry' ? row.entry.cue.id : `${row.parentId}-end`">
+          <cue-list-row
+            v-if="row.kind === 'entry'"
+            :item="row.entry"
+            :is-drag-over="dragOverIndex === i"
+            @dragover="dragOver($event, i, row.entry.cue.id)"
+            @dragend="dragEnd"
+            @pointerdown.stop="click($event, i)"
+            @contextmenu.prevent="
+              if (uiState.mode == 'edit') {
+                if (!uiState.selectedRows.has(row.entry.cue.id)) {
+                  uiState.setSelected(row.entry.cue.id);
+                }
+                menu?.show($event);
               }
-              menu?.show($event);
-            }
-          "
-        />
-        <tr
-          :class="dragOverIndex == showModel.flatCueList.length ? $style['drag-over-row'] : ''"
-          @dragover="dragOver($event, showModel.flatCueList.length, '')"
-          @drop="drop"
-        >
-          <td
-            colspan="10"
-            class="border-b-0"
+            "
           />
-        </tr>
+          <cue-list-empty-row
+            v-else
+            :parent-id="row.parentId"
+            :level="row.level"
+            :is-drag-over="dragOverIndex === i"
+            @dragover="dragOver($event, i, null)"
+          />
+        </template>
       </tbody>
     </table>
   </div>
@@ -435,7 +481,6 @@ const click = (event: MouseEvent, index: number) => {
 }
 
 .cuelist {
-  scroll-padding-top: 32px;
   font-size: 0.8em;
   min-width: 800px;
 }

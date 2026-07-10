@@ -282,7 +282,8 @@
         "title": "Time & Levels",
         "volume": "Volume",
         "envelopeVisible": "Show envelope"
-      }
+      },
+      "noSelection": "No Selection"
     },
     "chainMode": {
       "afterStart": "After-Start",

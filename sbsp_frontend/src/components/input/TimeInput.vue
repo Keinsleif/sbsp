@@ -15,11 +15,13 @@ const props = withDefaults(
     defaultValue?: number;
     label?: string;
     disabled?: boolean;
+    textAlign?: 'left' | 'center' | 'right';
   }>(),
   {
     multiply: 1,
     acceptMinus: false,
     defaultValue: 0,
+    textAlign: 'center',
   },
 );
 
@@ -77,9 +79,11 @@ const onKeydown = (e: KeyboardEvent) => {
   <FloatLabel variant="on">
     <InputText
       v-model="formattedValue"
-      v-bind="$attrs"
       :id="inputId"
       class="h-full w-full"
+      :style="{
+        textAlign: props.textAlign,
+      }"
       variant="outlined"
       autocomplete="off"
       :disabled="props.disabled"
