@@ -128,7 +128,7 @@ const time = useNow();
             severity="secondary"
             :active="isCueStatus('playing') || isCueStatus('preWaiting')"
             :disabled="showState.playbackCursor == null"
-            active-color="green.500"
+            active-color="green.600"
             :blink="isCueStatus('preWaiting')"
             @click="
               if (showState.playbackCursor != null) {
@@ -145,7 +145,7 @@ const time = useNow();
             severity="secondary"
             :active="isCueStatus('paused') || isCueStatus('loaded')"
             :disabled="showState.playbackCursor == null"
-            active-color="orange.500"
+            active-color="orange.600"
             :blink="isCueStatus('loaded')"
             @click="handleReadyPauseButton"
           />
