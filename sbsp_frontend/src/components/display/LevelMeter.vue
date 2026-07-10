@@ -97,7 +97,7 @@ onUnmounted(() => {
     </div>
     <div class="flex flex-row h-full">
       <div
-        class="relative flex flex-col"
+        class="relative flex flex-col h-full"
         :style="{ top: '-' + props.width }"
       >
         <div
@@ -107,7 +107,7 @@ onUnmounted(() => {
           :style="{ width: props.width, height: props.width }"
         />
         <div
-          class="border border-(--p-form-field-border-color) h-full"
+          class="border border-(--p-form-field-border-color) grow"
           :class="$style['meter-bar']"
           :style="{ width: props.width }"
         >
@@ -190,11 +190,8 @@ onUnmounted(() => {
         >
           <div
             ref="right"
-            class="relative top-0 left-0 bg-(--p-content-background)"
-            style="height: 100%; transform-origin: top"
-            :style="{
-              width: props.width,
-            }"
+            class="relative top-0 left-0 bg-(--p-content-background) h-full origin-top"
+            :style="{ width: props.width }"
           />
         </div>
       </div>
