@@ -91,11 +91,11 @@ const waveformTransform = computed(() => {
 
 <template>
   <rect
-    :class="$style.waveform"
     x="0"
     :y="props.height / 2"
     height="1"
     :width="props.width"
+    fill="rgb(from var(--p-surface-500) r g b / 0.8)"
   />
   <path
     :d="waveformPath"
