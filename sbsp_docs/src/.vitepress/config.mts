@@ -28,20 +28,21 @@ export default defineConfig({
         text: 'インターフェース',
         items: [
           { text: 'メイン画面', link: '/usage/ui/main' },
-          { text: '基本エディタ', link: '/usage/ui/basic_editor' },
+          {
+            text: 'エディタ',
+            link: '/usage/ui/editor/basic_editor',
+            collapsed: true,
+            items: [
+              { text: '基本', link: '/usage/ui/editor/basic_editor' },
+              { text: '音声キュー', link: '/usage/ui/editor/audio' },
+              { text: 'フェードキュー', link: '/usage/ui/editor/fade' },
+              { text: '再生制御キュー', link: '/usage/ui/editor/playback' },
+              { text: 'グループキュー', link: '/usage/ui/editor/group' },
+            ],
+          },
           { text: '設定画面', link: '/usage/ui/settings' },
-        ]
+        ],
       },
-      {
-        text: 'Cues',
-        link: '/usage/cues',
-        items: [
-          { text: '音声キュー', link: '/usage/cues/audio' },
-          { text: 'フェードキュー', link: '/usage/cues/fade' },
-          { text: 'グループキュー', link: '/usage/cues/group' },
-          { text: '再生制御キュー', link: '/usage/cues/playback' },
-        ]
-      }
     ],
 
     socialLinks: [
