@@ -132,7 +132,7 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。
 ここでは、選択したキューについて、様々な情報が表示されます。
 
 編集モードのときは下部エディタが表示され、キューの設定を変更することができます。
-実行モード及び表示モード
+実行モード及び表示モードのときは波形やシークバーが表示されます。
 
 ### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="black" stroke-width="2px" fill="#fff800" /><text x="13" y="20" text-anchor="middle" fill="black" font-size="13pt">17</text></svg> エディタタブ
 
