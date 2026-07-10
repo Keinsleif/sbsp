@@ -170,7 +170,6 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
       }
     }
     if (e.shiftKey) {
-      console.log(cursorCueRef.entry.level, origLevel);
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
@@ -214,7 +213,6 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
       }
     }
     if (e.shiftKey) {
-      console.log(cursorCueRef.entry.level, origLevel);
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
