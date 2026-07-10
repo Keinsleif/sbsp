@@ -134,7 +134,7 @@ const isActive = computed(() => {
 
 <template>
   <div class="flex min-w-180 flex-row gap-2 p-3">
-    <div class="flex w-42 shrink-0 grow-0 flex-col gap-2">
+    <div class="flex w-40 shrink-0 grow-0 flex-col gap-2">
       <text-input
         v-model="number"
         class="grow-0"
