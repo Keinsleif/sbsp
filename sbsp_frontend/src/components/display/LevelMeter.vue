@@ -12,12 +12,10 @@ const props = withDefaults(
   defineProps<{
     kind?: 'master';
     width?: string;
-    height?: string;
   }>(),
   {
     kind: 'master',
     width: '4px',
-    height: '256px',
   },
 );
 
@@ -97,7 +95,7 @@ onUnmounted(() => {
     <div class="text-center">
       {{ props.kind == 'master' ? 'Master' : '' }}
     </div>
-    <div class="flex flex-row">
+    <div class="flex flex-row h-full">
       <div
         class="relative flex flex-col"
         :style="{ top: '-' + props.width }"
@@ -109,14 +107,13 @@ onUnmounted(() => {
           :style="{ width: props.width, height: props.width }"
         />
         <div
-          class="border border-(--p-form-field-border-color)"
+          class="border border-(--p-form-field-border-color) h-full"
           :class="$style['meter-bar']"
-          :style="{ width: props.width, height: props.height }"
+          :style="{ width: props.width }"
         >
           <div
             ref="left"
-            class="relative top-0 left-0 bg-(--p-content-background)"
-            style="height: 100%; transform-origin: top"
+            class="relative top-0 left-0 bg-(--p-content-background) h-full origin-top"
             :style="{
               width: props.width,
             }"
@@ -124,7 +121,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div
-        class="relative"
+        class="relative h-full"
         style="font-size: 0.6em; width: 1.8em"
       >
         <div
@@ -177,7 +174,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div
-        class="relative flex flex-col"
+        class="relative flex flex-col h-full"
         :style="{ top: '-' + props.width }"
       >
         <div
@@ -187,9 +184,9 @@ onUnmounted(() => {
           :style="{ width: props.width, height: props.width }"
         />
         <div
-          class="border border-(--p-form-field-border-color)"
+          class="border border-(--p-form-field-border-color) grow"
           :class="$style['meter-bar']"
-          :style="{ width: props.width, height: props.height }"
+          :style="{ width: props.width }"
         >
           <div
             ref="right"
