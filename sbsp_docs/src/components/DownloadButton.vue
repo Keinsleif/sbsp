@@ -26,9 +26,8 @@ const linkData = computed(() => {
     };
   }
 
-  const version = latestData.value.version;
   const baseMacUrl = latestData.value.platforms["darwin-aarch64"]?.url ?? null;
-  const dmgUrl = baseMacUrl != null ? baseMacUrl.replace(/[^/]+$/, `SBS.Player_${version}_universal.dmg`) : null;
+  const dmgUrl = baseMacUrl != null ? baseMacUrl.replace(/[^/]+$/, `SBS.Player_${version.value}_universal.dmg`) : null;
 
   return {
     win: latestData.value.platforms['windows-x86_64']?.url ?? null,
@@ -68,7 +67,7 @@ onMounted(async () => {
     
     <div v-else-if="isError" :class="$style['error']">
       情報を取得できませんでした。<br>
-      <a :href="`https://github.com/${OWNER}/${REPO}/releases`" target="_blank" rel="noopener">
+      <a :href="`https://github.com/Keinsleif/sbsp/releases/latest`" target="_blank" rel="noopener">
         GitHubのリリース一覧ページ
       </a> から直接ダウンロードしてください。
     </div>

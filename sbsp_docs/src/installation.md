@@ -26,8 +26,8 @@ Windows向けには `SBS Player_x.x.x_x64-setup.exe`
 macOS向けには `SBS.Player_x.x.x_universal.dmg`
 
 Linux向けには、
-Debian, Ubuntu : ` SBS.Player_x.x.x_amd64.deb `
-RedHat, CentOS : ` SBS.Player-x.x.x-1.x86_64.rpm `
+Debian, Ubuntu : `SBS.Player_x.x.x_amd64.deb`
+RedHat, CentOS : `SBS.Player-x.x.x-1.x86_64.rpm`
 
 をダウンロードします。（x.x.xにはバージョン番号が入ります）
 
