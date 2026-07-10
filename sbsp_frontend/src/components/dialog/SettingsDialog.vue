@@ -43,7 +43,7 @@ const editingSettings = ref<{
 }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
 const supportedHardware = ref<SupportedHardware | null>(null);
 
-const tabItems = [
+const tabItems = computed(() => [
   { type: 'tab', value: 'preset', label: t('dialog.settings.tab.preset') },
   { type: 'group', value: 'showModel', label: t('dialog.settings.tab.category.inThisShowModel') },
   { type: 'tab', value: 'showGeneral', label: t('dialog.settings.tab.general') },
@@ -56,7 +56,7 @@ const tabItems = [
   { type: 'tab', value: 'hotkey', label: t('dialog.settings.tab.hotkey') },
   { type: 'tab', value: 'template', label: t('dialog.settings.tab.template') },
   { type: 'tab', value: 'nameFormat', label: t('dialog.settings.tab.nameFormat') },
-];
+]);
 
 const devices = computed(() => {
   const supportedHW = supportedHardware.value;
