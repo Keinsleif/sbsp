@@ -10,7 +10,6 @@ import InputText from 'primevue/inputtext';
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-defineOptions({ inheritAttrs: false });
 const hotkey = defineModel<string | null>({ default: '' });
 const props = defineProps<{
   label?: string;
@@ -60,7 +59,6 @@ const inputId = useId();
     >
       <input-text
         v-model="hotkey"
-        v-bind="$attrs"
         class="h-full w-full"
         :id="inputId"
         autocomplete="off"

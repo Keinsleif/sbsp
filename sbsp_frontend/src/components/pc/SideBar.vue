@@ -21,26 +21,26 @@ const uiState = useUiState();
 <template>
   <tabs
     v-model:value="uiState.sideBarTab"
-    class="flex h-full flex-col"
+    class="flex h-full flex-col border-l border-(--p-form-field-border-color)"
   >
     <tab-list>
       <tab value="activeCues">{{ t('main.sideBar.activeCues') }}</tab>
       <tab value="meter">{{ t('main.sideBar.meter.title') }}</tab>
     </tab-list>
-    <tab-panels class="grow p-0">
+    <tab-panels class="grow p-0 overflow-auto">
       <tab-panel value="activeCues">
         <template
           v-for="(activeCue, cue_id) in showState.activeCues"
           :key="cue_id"
         >
-          <active-cue-item :active-cue="activeCue" />
+          <active-cue-item :active-cue="activeCue" :is-hidden="!uiState.isRightSidebarOpen || uiState.sideBarTab !== 'activeCues'" />
         </template>
       </tab-panel>
-      <tab-panel value="meter">
+      <tab-panel value="meter" class="h-full">
         <level-meter
-          v-if="uiState.sideBarTab == 'meter'"
+          v-if="uiState.isRightSidebarOpen && uiState.sideBarTab == 'meter'"
+          class="h-full"
           kind="master"
-          height="400px"
         />
       </tab-panel>
     </tab-panels>
