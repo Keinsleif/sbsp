@@ -1129,7 +1129,7 @@
 
 - Used by
 
-    - [zerocopy 0.8.52]( https://github.com/google/zerocopy )
+    - [zerocopy 0.8.54]( https://github.com/google/zerocopy )
 
 ```text
                                  Apache License
@@ -5433,8 +5433,8 @@ limitations under the License.
     - [core-graphics-types 0.2.0]( https://github.com/servo/core-foundation-rs )
     - [core-graphics 0.25.0]( https://github.com/servo/core-foundation-rs )
     - [coreaudio-rs 0.14.2]( https://github.com/RustAudio/coreaudio-rs.git )
-    - [crossbeam-channel 0.5.15]( https://github.com/crossbeam-rs/crossbeam )
-    - [crossbeam-utils 0.8.21]( https://github.com/crossbeam-rs/crossbeam )
+    - [crossbeam-channel 0.5.16]( https://github.com/crossbeam-rs/crossbeam )
+    - [crossbeam-utils 0.8.22]( https://github.com/crossbeam-rs/crossbeam )
     - [curve25519-dalek-derive 0.1.1]( https://github.com/dalek-cryptography/curve25519-dalek )
     - [derive_arbitrary 1.4.2]( https://github.com/rust-fuzz/arbitrary )
     - [displaydoc 0.2.6]( https://github.com/yaahc/displaydoc )
@@ -5469,7 +5469,7 @@ limitations under the License.
     - [markup5ever 0.38.0]( https://github.com/servo/html5ever )
     - [mime 0.3.17]( https://github.com/hyperium/mime )
     - [muda 0.19.3]( https://github.com/tauri-apps/muda )
-    - [num-bigint 0.4.7]( https://github.com/rust-num/num-bigint )
+    - [num-bigint 0.4.8]( https://github.com/rust-num/num-bigint )
     - [num-derive 0.4.2]( https://github.com/rust-num/num-derive )
     - [num-integer 0.1.46]( https://github.com/rust-num/num-integer )
     - [num-rational 0.4.2]( https://github.com/rust-num/num-rational )
@@ -5485,9 +5485,9 @@ limitations under the License.
     - [png 0.17.16]( https://github.com/image-rs/image-png )
     - [png 0.18.1]( https://github.com/image-rs/image-png )
     - [polling 3.11.0]( https://github.com/smol-rs/polling )
-    - [regex-automata 0.4.14]( https://github.com/rust-lang/regex )
+    - [regex-automata 0.4.15]( https://github.com/rust-lang/regex )
     - [regex-syntax 0.8.11]( https://github.com/rust-lang/regex )
-    - [regex 1.12.4]( https://github.com/rust-lang/regex )
+    - [regex 1.13.0]( https://github.com/rust-lang/regex )
     - [ring 0.17.14]( https://github.com/briansmith/ring )
     - [rtrb 0.3.4]( https://github.com/mgeier/rtrb )
     - [rustix 1.1.4]( https://github.com/bytecodealliance/rustix )
@@ -5508,7 +5508,7 @@ limitations under the License.
     - [syn 1.0.109]( https://github.com/dtolnay/syn )
     - [tar 0.4.46]( https://github.com/composefs/tar-rs )
     - [tempfile 3.27.0]( https://github.com/Stebalien/tempfile )
-    - [tendril 0.5.0]( https://github.com/servo/html5ever )
+    - [tendril 0.5.1]( https://github.com/servo/html5ever )
     - [toml_datetime 0.6.3]( https://github.com/toml-rs/toml )
     - [tungstenite 0.29.0]( https://github.com/snapview/tungstenite-rs )
     - [unicase 2.9.0]( https://github.com/seanmonstar/unicase )
@@ -5966,7 +5966,7 @@ limitations under the License.
     - [digest 0.10.7]( https://github.com/RustCrypto/traits )
     - [pem-rfc7468 0.7.0]( https://github.com/RustCrypto/formats/tree/master/pem-rfc7468 )
     - [pkcs8 0.10.2]( https://github.com/RustCrypto/formats/tree/master/pkcs8 )
-    - [sha1 0.10.6]( https://github.com/RustCrypto/hashes )
+    - [sha1 0.10.7]( https://github.com/RustCrypto/hashes )
     - [sha2 0.10.9]( https://github.com/RustCrypto/hashes )
     - [signature 2.2.0]( https://github.com/RustCrypto/traits/tree/master/signature )
     - [spki 0.7.3]( https://github.com/RustCrypto/formats/tree/master/spki )
@@ -9029,7 +9029,7 @@ limitations under the License.
     - [rodio 0.22.2]( https://github.com/RustAudio/rodio )
     - [rustc-hash 2.1.3]( https://github.com/rust-lang/rustc-hash )
     - [rustls-platform-verifier-android 0.1.1]( https://github.com/rustls/rustls-platform-verifier )
-    - [rustversion 1.0.22]( https://github.com/dtolnay/rustversion )
+    - [rustversion 1.0.23]( https://github.com/dtolnay/rustversion )
     - [semver 1.0.28]( https://github.com/dtolnay/semver )
     - [serde-untagged 0.1.9]( https://github.com/dtolnay/serde-untagged )
     - [serde 1.0.228]( https://github.com/serde-rs/serde )
@@ -9070,7 +9070,6 @@ limitations under the License.
     - [unic-ucd-ident 0.9.0]( https://github.com/open-i18n/rust-unic/ )
     - [unic-ucd-version 0.9.0]( https://github.com/open-i18n/rust-unic/ )
     - [unicode-ident 1.0.24]( https://github.com/dtolnay/unicode-ident )
-    - [utf-8 0.7.6]( https://github.com/SimonSapin/rust-utf8 )
     - [wasm-streams 0.5.0]( https://github.com/MattiasBuelens/wasm-streams/ )
     - [winapi-i686-pc-windows-gnu 0.4.0]( https://github.com/retep998/winapi-rs )
     - [winapi-x86_64-pc-windows-gnu 0.4.0]( https://github.com/retep998/winapi-rs )
@@ -9806,7 +9805,7 @@ THE SOFTWARE.
 
 - Used by
 
-    - [plist 1.9.0]( https://github.com/ebarnard/rust-plist/ )
+    - [plist 1.10.0]( https://github.com/ebarnard/rust-plist/ )
 
 ```text
 Copyright (c) 2015 Edward Barnard
@@ -10087,7 +10086,7 @@ DEALINGS IN THE SOFTWARE.
 
 - Used by
 
-    - [bytes 1.12.0]( https://github.com/tokio-rs/bytes )
+    - [bytes 1.12.1]( https://github.com/tokio-rs/bytes )
 
 ```text
 Copyright (c) 2018 Carl Lerche
@@ -10483,11 +10482,11 @@ THE SOFTWARE.
 
 - Used by
 
-    - [zbus 5.16.0]( https://github.com/z-galaxy/zbus/ )
-    - [zbus_macros 5.16.0]( https://github.com/z-galaxy/zbus/ )
-    - [zbus_names 4.3.2]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant 5.12.0]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant_derive 5.12.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus 5.17.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus_macros 5.17.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus_names 4.3.3]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant 5.13.0]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant_derive 5.13.0]( https://github.com/z-galaxy/zbus/ )
 
 ```text
 Copyright (c) 2024 Zeeshan Ali Khan &amp; zbus contributors
@@ -10933,7 +10932,7 @@ DEALINGS IN THE SOFTWARE.
 
 - Used by
 
-    - [utf8-width 0.1.8]( https://github.com/magiclen/utf8-width )
+    - [utf8-width 0.1.9]( https://github.com/magiclen/utf8-width )
 
 ```text
 MIT License
@@ -11384,7 +11383,7 @@ SOFTWARE.
     - [x11-dl 2.21.0]( https://github.com/AltF02/x11-rs.git )
     - [x11 2.21.0]( https://github.com/AltF02/x11-rs.git )
     - [zmij 1.0.21]( https://github.com/dtolnay/zmij )
-    - [zvariant_utils 3.4.0]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant_utils 3.5.0]( https://github.com/z-galaxy/zbus/ )
 
 ```text
 Permission is hereby granted, free of charge, to any
@@ -11676,7 +11675,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     - [aho-corasick 1.1.4]( https://github.com/BurntSushi/aho-corasick )
     - [byteorder 1.5.0]( https://github.com/BurntSushi/byteorder )
-    - [memchr 2.8.2]( https://github.com/BurntSushi/memchr )
+    - [memchr 2.8.3]( https://github.com/BurntSushi/memchr )
     - [termcolor 1.4.1]( https://github.com/BurntSushi/termcolor )
     - [walkdir 2.5.0]( https://github.com/BurntSushi/walkdir )
 
@@ -12085,7 +12084,7 @@ SOFTWARE.
 
 - Used by
 
-    - [quick-xml 0.39.4]( https://github.com/tafia/quick-xml )
+    - [quick-xml 0.41.0]( https://github.com/tafia/quick-xml )
 
 ```text
 The MIT License (MIT)
@@ -14161,7 +14160,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@types/node@24.13.2](https://github.com/DefinitelyTyped/DefinitelyTyped)
+### [@types/node@24.13.3](https://github.com/DefinitelyTyped/DefinitelyTyped)
 license: MIT
 
 ```text
@@ -15746,7 +15745,7 @@ SOFTWARE.
 
 ```
 
-### [iconv-lite@0.7.2](https://github.com/pillarjs/iconv-lite)
+### [iconv-lite@0.7.3](https://github.com/pillarjs/iconv-lite)
 license: MIT
 
 ```text
