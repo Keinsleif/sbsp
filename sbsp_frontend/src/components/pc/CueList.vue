@@ -336,7 +336,7 @@ const click = (event: MouseEvent, index: number) => {
 
 <template>
   <div
-    class="h-full scroll-pt-8 overflow-scroll border border-(--p-form-field-border-color)"
+    class="h-full scroll-pt-8 overflow-y-scroll overflow-x-auto"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
     @copy="copyHandler"
