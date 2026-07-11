@@ -77,6 +77,7 @@ watch(
     }
     updateWaveformPath();
   },
+  { immediate: true },
 );
 
 const waveformTransform = computed(() => {
