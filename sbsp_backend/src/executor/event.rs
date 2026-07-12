@@ -12,6 +12,9 @@ pub enum ExecutorEvent {
         position: f64,
         duration: f64,
     },
+    Triggered {
+        cue_id: Uuid,
+    },
     PreWaitStarted {
         cue_id: Uuid,
         duration: f64,
@@ -27,9 +30,6 @@ pub enum ExecutorEvent {
         duration: f64,
     },
     PreWaitResumed {
-        cue_id: Uuid,
-    },
-    PreWaitStopped {
         cue_id: Uuid,
     },
     PreWaitCompleted {

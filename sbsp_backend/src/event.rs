@@ -83,6 +83,9 @@ pub enum BackendEvent {
     rename_all_fields = "camelCase"
 )]
 pub enum CueStatusEventParam {
+    Triggered {
+        cue_id: Uuid,
+    },
     Loaded {
         cue_id: Uuid,
         position: f64,
@@ -161,6 +164,7 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
         use crate::executor::ExecutorEvent;
 
         let status_param = match value {
+            ExecutorEvent::Triggered { cue_id } => Some(CueStatusEventParam::Triggered { cue_id }),
             ExecutorEvent::Loaded {
                 cue_id,
                 position,

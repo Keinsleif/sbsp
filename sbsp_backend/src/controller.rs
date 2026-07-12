@@ -417,6 +417,7 @@ impl CueController {
         let mut send_event = true;
 
         match &event {
+            ExecutorEvent::Triggered { .. } => {}
             ExecutorEvent::Loaded {
                 cue_id,
                 position,
