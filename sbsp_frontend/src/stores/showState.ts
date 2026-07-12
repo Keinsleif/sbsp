@@ -120,11 +120,6 @@ export const useShowState = defineStore('showState', () => {
         }
         break;
       }
-      case 'preWaitStopped': {
-        delete syncedData.value[data.cueId];
-        delete activeCues.value[data.cueId];
-        break;
-      }
       case 'preWaitCompleted':
         // start cue will automatically triggered in backend.
         break;

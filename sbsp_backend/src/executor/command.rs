@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{action::CueAction, model::settings::ShowSettings};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum StopMode {
     Soft,
     Hard,
