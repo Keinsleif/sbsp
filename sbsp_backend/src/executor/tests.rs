@@ -1286,7 +1286,7 @@ async fn pre_wait_defers_started_until_actual_start() {
 
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
-        ExecutorEvent::Triggered { cue_id } if cue_id == cue_id
+        ExecutorEvent::Triggered { cue_id: id } if id == cue_id
     ));
     // ロードは即座に行われる
     assert!(matches!(
@@ -1359,7 +1359,7 @@ async fn stop_during_prewait_audio_cue_emits_stopped_once() {
         .unwrap();
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
-        ExecutorEvent::Triggered { cue_id } if cue_id == cue_id
+        ExecutorEvent::Triggered { cue_id: id } if id == cue_id
     ));
     assert!(
         matches!(audio_rx.recv().await.unwrap(), AudioCommand::Load { id, .. } if id == cue_id)
