@@ -99,9 +99,6 @@ pub enum CueStatusEventParam {
     PreWaitResumed {
         cue_id: Uuid,
     },
-    PreWaitStopped {
-        cue_id: Uuid,
-    },
     PreWaitCompleted {
         cue_id: Uuid,
     },
@@ -212,9 +209,6 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
             } => Some(CueStatusEventParam::PreWaitPaused { cue_id, position }),
             ExecutorEvent::PreWaitResumed { cue_id } => {
                 Some(CueStatusEventParam::PreWaitResumed { cue_id })
-            }
-            ExecutorEvent::PreWaitStopped { cue_id } => {
-                Some(CueStatusEventParam::PreWaitStopped { cue_id })
             }
             ExecutorEvent::PreWaitCompleted { cue_id } => {
                 Some(CueStatusEventParam::PreWaitCompleted { cue_id })

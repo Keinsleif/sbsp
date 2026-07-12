@@ -629,10 +629,6 @@ impl CueController {
                     send_event = false;
                 }
             }
-            ExecutorEvent::PreWaitStopped { cue_id } => {
-                show_state.active_cues.shift_remove(cue_id);
-                state_changed = true;
-            }
             ExecutorEvent::PreWaitCompleted { .. } => {} // skip to keep active cue because cue will be started. but event is emitted for client.
         }
 
