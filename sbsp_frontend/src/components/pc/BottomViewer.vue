@@ -27,14 +27,14 @@ const metadata = computed(() =>
   selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
 );
 const timeRange = computed(() => {
-  const duration = metadata.value?.duration ?? 1;
+  const duration = metadata.value?.duration || 1;
   const start =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.startTime ?? 0) / duration
+      ? (selectedCue.value.params.startTime || 0) / duration
       : 0;
   const end =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.endTime ?? duration) / duration
+      ? (selectedCue.value.params.endTime || duration) / duration
       : 1;
   return { start, end, delta: end - start };
 });
