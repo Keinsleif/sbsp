@@ -91,7 +91,7 @@ const seek = (event: MouseEvent) => {
   if (
     selectedCue.value == null ||
     event.button !== 0 ||
-    !(event.currentTarget instanceof HTMLElement)
+    !(event.currentTarget instanceof Element)
   ) {
     return;
   }
@@ -101,8 +101,9 @@ const seek = (event: MouseEvent) => {
   }
   const rect = event.currentTarget.getBoundingClientRect();
   const position =
-    (event.clientX + rect.left - timeRange.value.start * svgWidth.value) /
+    (event.clientX - rect.left - timeRange.value.start * svgWidth.value) /
     (svgWidth.value * timeRange.value.delta);
+  console.log(position);
   if (position > 0 && position < 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
