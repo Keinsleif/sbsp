@@ -27,18 +27,20 @@ const metadata = computed(() =>
   selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
 );
 const timeRange = computed(() => {
-  const duration = metadata.value?.duration ?? 1;
+  const duration = metadata.value?.duration || 1;
   const start =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.startTime ?? 0) / duration
+      ? (selectedCue.value.params.startTime || 0) / duration
       : 0;
   const end =
     selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.endTime ?? duration) / duration
+      ? (selectedCue.value.params.endTime || duration) / duration
       : 1;
   return { start, end, delta: end - start };
 });
-const isActive = computed(() => selectedCue.value != null && selectedCue.value.id in showState.activeCues);
+const isActive = computed(
+  () => selectedCue.value != null && selectedCue.value.id in showState.activeCues,
+);
 
 const positionRef = useTemplateRef('position');
 usePosition((pos) => {
@@ -86,17 +88,22 @@ watchEffect(() => {
 
 const seek = (event: MouseEvent) => {
   if (!isActive.value || uiState.mode === 'view') return;
-  if (selectedCue.value == null || event.button !== 0) {
+  if (
+    selectedCue.value == null ||
+    event.button !== 0 ||
+    !(event.currentTarget instanceof Element)
+  ) {
     return;
   }
   const activeCue = showState.activeCues[selectedCue.value.id];
   if (activeCue == null) {
     return;
   }
+  const rect = event.currentTarget.getBoundingClientRect();
   const position =
-    (event.offsetX - timeRange.value.start * svgWidth.value) /
+    (event.clientX - rect.left - timeRange.value.start * svgWidth.value) /
     (svgWidth.value * timeRange.value.delta);
-  if (position > 0 && position < 1) {
+  if (position >= 0 && position <= 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
 };
@@ -104,7 +111,7 @@ const seek = (event: MouseEvent) => {
 
 <template>
   <div
-    class="relative w-full border border-(--p-form-field-border-color) h-16"
+    class="relative h-16 w-full border border-(--p-form-field-border-color)"
     ref="container"
   >
     <Teleport to="body">
@@ -124,7 +131,11 @@ const seek = (event: MouseEvent) => {
       width="100%"
       @pointerdown="seek"
     >
-      <waveform-path v-model="selectedCue" :height="64" :width="svgWidth" />
+      <waveform-path
+        v-model="selectedCue"
+        :height="64"
+        :width="svgWidth"
+      />
       <rect
         v-if="selectedCue != null && selectedCue.params.type === 'audio'"
         :x="timeRange.start * (svgWidth - 1) - 1"

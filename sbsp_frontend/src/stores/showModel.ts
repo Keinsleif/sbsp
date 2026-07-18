@@ -17,13 +17,15 @@ export type FlatCueEntry = {
   parent: null | string;
   innerIndex: number;
   isHidden: boolean;
-  isLast: boolean;
   chain: CueChain;
   isChainOverrided: boolean;
-} & ({
-  isGroup: true,
-  isExpanded: boolean,
-} | { isGroup: false });
+} & (
+  | {
+      isGroup: true;
+      isExpanded: boolean;
+    }
+  | { isGroup: false }
+);
 
 const recursiveCueCheck = (
   list: string[],
@@ -55,8 +57,6 @@ const recursiveCueCheck = (
       }
     }
 
-    const isLast = index === list.length;
-
     if (cue.params.type === 'group') {
       const isExpanded = expandedRows.includes(cue.id);
       cuelist.push({
@@ -65,7 +65,6 @@ const recursiveCueCheck = (
         parent: parent != null ? parent.id : null,
         innerIndex: index,
         isHidden: isHidden,
-        isLast,
         isGroup: true,
         isExpanded,
         chain: chain != null ? chain : cue.chain,
@@ -88,7 +87,6 @@ const recursiveCueCheck = (
         parent: parent != null ? parent.id : null,
         innerIndex: index,
         isHidden: isHidden,
-        isLast,
         isGroup: false,
         chain: chain != null ? chain : cue.chain,
         isChainOverrided: chain != null,

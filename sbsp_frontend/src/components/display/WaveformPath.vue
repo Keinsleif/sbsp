@@ -9,13 +9,16 @@ import { useWebWorkerFn } from '@vueuse/core';
 import { computed, shallowRef, toRaw, watch } from 'vue';
 
 const selectedCue = defineModel<Cue | null>();
-const props = withDefaults(defineProps<{
-  volume?: number;
-  width: number;
-  height: number;
-}>(),{
-  volume: 0,
-});
+const props = withDefaults(
+  defineProps<{
+    volume?: number;
+    width: number;
+    height: number;
+  }>(),
+  {
+    volume: 0,
+  },
+);
 
 const assetResult = useAssetResult();
 const uiState = useUiState();
@@ -47,6 +50,10 @@ const buildWaveformPath = (source: number[], height: number, width: number) => {
 const { workerFn, workerStatus, workerTerminate } = useWebWorkerFn(buildWaveformPath);
 
 const updateWaveformPath = async () => {
+  if (workerStatus.value === 'RUNNING') {
+    workerTerminate();
+  }
+
   if (props.width < 1 || selectedCue.value == null) {
     waveformPath.value = '';
     return;
@@ -56,10 +63,6 @@ const updateWaveformPath = async () => {
   if (source == null) {
     waveformPath.value = '';
     return;
-  }
-
-  if (workerStatus.value === 'RUNNING') {
-    workerTerminate();
   }
 
   try {
@@ -87,7 +90,6 @@ const waveformTransform = computed(() => {
     return `translate(0, ${props.height * 0.125})`;
   }
 });
-
 </script>
 
 <template>
