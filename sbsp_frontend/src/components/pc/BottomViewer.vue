@@ -103,8 +103,7 @@ const seek = (event: MouseEvent) => {
   const position =
     (event.clientX - rect.left - timeRange.value.start * svgWidth.value) /
     (svgWidth.value * timeRange.value.delta);
-  console.log(position);
-  if (position > 0 && position < 1) {
+  if (position >= 0 && position <= 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
   }
 };
