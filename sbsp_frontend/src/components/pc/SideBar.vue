@@ -38,7 +38,7 @@ const uiState = useUiState();
       </tab-panel>
       <tab-panel value="meter" class="h-full">
         <level-meter
-          v-if="uiState.isRightSidebarOpen && uiState.sideBarTab == 'meter'"
+          v-if="uiState.isRightSidebarOpen && uiState.sideBarTab === 'meter'"
           class="h-full"
           kind="master"
         />
