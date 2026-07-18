@@ -86,15 +86,16 @@ watchEffect(() => {
 
 const seek = (event: MouseEvent) => {
   if (!isActive.value || uiState.mode === 'view') return;
-  if (selectedCue.value == null || event.button !== 0) {
+  if (selectedCue.value == null || event.button !== 0 || !(event.currentTarget instanceof HTMLElement)) {
     return;
   }
   const activeCue = showState.activeCues[selectedCue.value.id];
   if (activeCue == null) {
     return;
   }
+  const rect = event.currentTarget.getBoundingClientRect();
   const position =
-    (event.offsetX - timeRange.value.start * svgWidth.value) /
+    (event.clientX + rect.left - timeRange.value.start * svgWidth.value) /
     (svgWidth.value * timeRange.value.delta);
   if (position > 0 && position < 1) {
     api.sendSeekTo(selectedCue.value.id, position * activeCue.duration);
