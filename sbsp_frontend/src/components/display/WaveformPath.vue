@@ -47,6 +47,10 @@ const buildWaveformPath = (source: number[], height: number, width: number) => {
 const { workerFn, workerStatus, workerTerminate } = useWebWorkerFn(buildWaveformPath);
 
 const updateWaveformPath = async () => {
+  if (workerStatus.value === 'RUNNING') {
+    workerTerminate();
+  }
+
   if (props.width < 1 || selectedCue.value == null) {
     waveformPath.value = '';
     return;
@@ -56,10 +60,6 @@ const updateWaveformPath = async () => {
   if (source == null) {
     waveformPath.value = '';
     return;
-  }
-
-  if (workerStatus.value === 'RUNNING') {
-    workerTerminate();
   }
 
   try {
