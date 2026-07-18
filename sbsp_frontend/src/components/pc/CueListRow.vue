@@ -32,6 +32,7 @@ import type { PlaybackStatus } from '../../types/PlaybackStatus';
 import { usePosition } from '../../composables/usePosition';
 import PathIcon from '../display/PathIcon.vue';
 import ProgressSpinnerWrapper from '../wrapper/ProgressSpinnerWrapper.vue';
+import TreeIndentGuide from '../display/TreeIndentGuide.vue';
 
 const api = useApi();
 const uiState = useUiState();
@@ -363,19 +364,7 @@ const isPlayingActive = computed((): boolean => {
       headers="cuelist_name"
       class="overflow-hidden whitespace-nowrap"
     >
-      <svg
-        v-if="item.level > 0"
-        class="inline text-slate-400"
-        xmlns="http://www.w3.org/2000/svg"
-        :viewBox="`0 0 ${item.level * 16} 31`"
-        preserveAspectRatio="none"
-        height="100%"
-        :width="`${item.level * 16}px`"
-      >
-        <rect v-for="i in (item.level - 1)" :key="i" :x="8 + (i - 1) * 16" y="0" width="1" height="32" fill="currentColor"></rect>
-        <rect :x="8 + (item.level - 1) * 16" y="0" width="1" :height="32" fill="currentColor"></rect>
-        <rect :x="8 + (item.level - 1) * 16" y="16" width="8" height="1" fill="currentColor"></rect>
-      </svg>
+      <tree-indent-guide :level="item.level" type="item" />
       <button
         :disabled="!item.isGroup"
         :class="item.isGroup ? 'cursor-pointer' : 'pointer-events-none'"
