@@ -38,11 +38,11 @@ const internalClipboard = ref<Cue[]>([]);
 
 type RenderRow =
   | { kind: 'entry'; entry: FlatCueEntry; index: number }
-  | { kind: 'end-slot'; parentId: string | null; level: number; }
+  | { kind: 'end-slot'; parentId: string | null; level: number };
 
 function buildRenderRows(flatList: FlatCueEntry[]): RenderRow[] {
-  const rows: RenderRow[] = []
-  const stack: { entry: FlatCueEntry; level: number }[] = []
+  const rows: RenderRow[] = [];
+  const stack: { entry: FlatCueEntry; level: number }[] = [];
 
   const flushStackAbove = (level: number) => {
     if (stack.length === 0) return;
@@ -53,23 +53,23 @@ function buildRenderRows(flatList: FlatCueEntry[]): RenderRow[] {
         rows.push({
           kind: 'end-slot',
           parentId: g.entry.cue.id,
-          level: stack_level + 1
+          level: stack_level + 1,
         });
       }
       stack_level = stack[stack.length - 1]?.level;
     }
-  }
+  };
 
   flatList.forEach((entry, index) => {
-    if (entry.isHidden) return
+    if (entry.isHidden) return;
 
-    flushStackAbove(entry.level)
-    rows.push({ kind: 'entry', entry, index })
+    flushStackAbove(entry.level);
+    rows.push({ kind: 'entry', entry, index });
 
     if (entry.isGroup && entry.isExpanded) {
-      stack.push({ entry, level: entry.level })
+      stack.push({ entry, level: entry.level });
     }
-  })
+  });
 
   flushStackAbove(0);
 
@@ -77,11 +77,11 @@ function buildRenderRows(flatList: FlatCueEntry[]): RenderRow[] {
     kind: 'end-slot',
     parentId: null,
     level: 0,
-  })
-  return rows
+  });
+  return rows;
 }
 
-const renderRows = computed(() => buildRenderRows(showModel.flatCueList))
+const renderRows = computed(() => buildRenderRows(showModel.flatCueList));
 
 const scrollIntoIndex = (index: number) => {
   if (cueListBodyRef.value != null && cueListBodyRef.value instanceof HTMLElement) {
@@ -153,8 +153,9 @@ const menuItems = computed(() => [
 const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
-    let cursorIndex =
-      renderRowsCache.findIndex((item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected);
+    let cursorIndex = renderRowsCache.findIndex(
+      (item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected,
+    );
     let cursorCueRef = renderRowsCache[cursorIndex];
     if (cursorCueRef == null || cursorCueRef.kind !== 'entry') return;
     const origLevel = cursorCueRef.entry.level;
@@ -196,8 +197,9 @@ useHotkey('Shift+ArrowUp', (e) => {
 const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
-    let cursorIndex =
-      renderRowsCache.findIndex((item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected);
+    let cursorIndex = renderRowsCache.findIndex(
+      (item) => item.kind === 'entry' && item.entry.cue.id === uiState.selected,
+    );
     let cursorCueRef = renderRowsCache[cursorIndex];
     if (cursorCueRef == null || cursorCueRef.kind !== 'entry') return;
     const origLevel = cursorCueRef.entry.level;
@@ -287,21 +289,35 @@ const click = (event: MouseEvent, index: number) => {
     if (uiState.selected != null) {
       // This operation manually add multiple cues and update playback cursor.
       uiState.selectedRows.clear();
-      const prevIndex = renderRows.value.findIndex((item) => item.kind !== 'end-slot' && item.entry.cue.id === uiState.selected);
+      const prevIndex = renderRows.value.findIndex(
+        (item) => item.kind !== 'end-slot' && item.entry.cue.id === uiState.selected,
+      );
       const prevRow = renderRows.value[prevIndex];
       if (prevIndex === -1 || prevRow == null || prevRow.kind === 'end-slot') return;
       let lastSelected = null;
       if (index >= prevIndex) {
         for (let i = prevIndex; i <= index; i++) {
           const targetEntry = renderRows.value[i];
-          if (targetEntry == null || targetEntry.kind === 'end-slot' || targetEntry.entry.isHidden || targetEntry.entry.level !== prevRow.entry.level) continue;
+          if (
+            targetEntry == null ||
+            targetEntry.kind === 'end-slot' ||
+            targetEntry.entry.isHidden ||
+            targetEntry.entry.level !== prevRow.entry.level
+          )
+            continue;
           uiState.selectedRows.add(targetEntry.entry.cue.id);
           lastSelected = targetEntry.entry.cue.id;
         }
       } else {
         for (let i = prevIndex; i >= index; i--) {
           const targetEntry = renderRows.value[i];
-          if (targetEntry == null || targetEntry.kind === 'end-slot' || targetEntry.entry.isHidden || targetEntry.entry.level !== prevRow.entry.level) continue;
+          if (
+            targetEntry == null ||
+            targetEntry.kind === 'end-slot' ||
+            targetEntry.entry.isHidden ||
+            targetEntry.entry.level !== prevRow.entry.level
+          )
+            continue;
           uiState.selectedRows.add(targetEntry.entry.cue.id);
           lastSelected = targetEntry.entry.cue.id;
         }
@@ -336,7 +352,7 @@ const click = (event: MouseEvent, index: number) => {
 
 <template>
   <div
-    class="h-full scroll-pt-8 overflow-y-scroll overflow-x-auto"
+    class="h-full scroll-pt-8 overflow-x-auto overflow-y-scroll"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
     @copy="copyHandler"
@@ -433,7 +449,10 @@ const click = (event: MouseEvent, index: number) => {
         </tr>
       </thead>
       <tbody ref="cuelistBody">
-        <template v-for="(row, i) in renderRows" :key="row.kind === 'entry' ? row.entry.cue.id : `${row.parentId}-end`">
+        <template
+          v-for="(row, i) in renderRows"
+          :key="row.kind === 'entry' ? row.entry.cue.id : `${row.parentId}-end`"
+        >
           <cue-list-row
             v-if="row.kind === 'entry'"
             :item="row.entry"

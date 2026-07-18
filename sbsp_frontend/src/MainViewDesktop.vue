@@ -76,14 +76,14 @@ const onCueEdited = debounce(() => {
     <header class="h-50 shrink-0">
       <AppHeader />
     </header>
-    <div class="flex w-full grow shrink flex-row overflow-hidden">
-      <div class="flex h-full grow shrink flex-col min-w-0">
+    <div class="flex w-full shrink grow flex-row overflow-hidden">
+      <div class="flex h-full min-w-0 shrink grow flex-col">
         <main class="shrink grow overflow-hidden">
           <CueList />
         </main>
         <section
-          class="shrink-0 grow-0 overflow-y-hidden transition-[height] border-t border-(--p-form-field-border-color)"
-          :class="[uiState.isBottomTabOpen ? uiState.mode === 'edit' ? 'h-62' : 'h-16' : 'h-0']"
+          class="shrink-0 grow-0 overflow-y-hidden border-t border-(--p-form-field-border-color) transition-[height]"
+          :class="[uiState.isBottomTabOpen ? (uiState.mode === 'edit' ? 'h-62' : 'h-16') : 'h-0']"
         >
           <BottomEditor
             v-if="uiState.isBottomTabOpen && uiState.mode === 'edit'"

@@ -19,10 +19,13 @@ export type FlatCueEntry = {
   isHidden: boolean;
   chain: CueChain;
   isChainOverrided: boolean;
-} & ({
-  isGroup: true,
-  isExpanded: boolean,
-} | { isGroup: false });
+} & (
+  | {
+      isGroup: true;
+      isExpanded: boolean;
+    }
+  | { isGroup: false }
+);
 
 const recursiveCueCheck = (
   list: string[],

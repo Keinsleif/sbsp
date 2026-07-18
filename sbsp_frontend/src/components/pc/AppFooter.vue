@@ -85,7 +85,7 @@ const openServerPanel = () => {
 </script>
 
 <template>
-  <div class="mr-0 ml-0 flex items-center py-1 border-t border-(--p-form-field-border-color)">
+  <div class="mr-0 ml-0 flex items-center border-t border-(--p-form-field-border-color) py-1">
     <div class="flex items-center px-2">
       <Select
         v-model="uiState.mode"

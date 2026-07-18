@@ -95,9 +95,9 @@ onUnmounted(() => {
     <div class="text-center">
       {{ props.kind == 'master' ? 'Master' : '' }}
     </div>
-    <div class="flex flex-row h-full">
+    <div class="flex h-full flex-row">
       <div
-        class="relative flex flex-col h-full"
+        class="relative flex h-full flex-col"
         :style="{ top: '-' + props.width }"
       >
         <div
@@ -107,13 +107,13 @@ onUnmounted(() => {
           :style="{ width: props.width, height: props.width }"
         />
         <div
-          class="border border-(--p-form-field-border-color) grow"
+          class="grow border border-(--p-form-field-border-color)"
           :class="$style['meter-bar']"
           :style="{ width: props.width }"
         >
           <div
             ref="left"
-            class="relative top-0 left-0 bg-(--p-content-background) h-full origin-top"
+            class="relative top-0 left-0 h-full origin-top bg-(--p-content-background)"
             :style="{
               width: props.width,
             }"
@@ -174,7 +174,7 @@ onUnmounted(() => {
         </div>
       </div>
       <div
-        class="relative flex flex-col h-full"
+        class="relative flex h-full flex-col"
         :style="{ top: '-' + props.width }"
       >
         <div
@@ -184,13 +184,13 @@ onUnmounted(() => {
           :style="{ width: props.width, height: props.width }"
         />
         <div
-          class="border border-(--p-form-field-border-color) grow"
+          class="grow border border-(--p-form-field-border-color)"
           :class="$style['meter-bar']"
           :style="{ width: props.width }"
         >
           <div
             ref="right"
-            class="relative top-0 left-0 bg-(--p-content-background) h-full origin-top"
+            class="relative top-0 left-0 h-full origin-top bg-(--p-content-background)"
             :style="{ width: props.width }"
           />
         </div>

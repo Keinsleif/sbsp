@@ -18,7 +18,11 @@ const uiState = useUiState();
 const drop = (event: DragEvent) => {
   event.preventDefault();
   if (event.dataTransfer) {
-    api.moveCues(Array.from(uiState.selectedRows), { type: 'inside', target: props.parentId, index: null });
+    api.moveCues(Array.from(uiState.selectedRows), {
+      type: 'inside',
+      target: props.parentId,
+      index: null,
+    });
   }
 };
 </script>
@@ -33,10 +37,16 @@ const drop = (event: DragEvent) => {
       colspan="5"
     />
     <td class="h-6 text-slate-400">
-      <tree-indent-guide :level="props.level" type="end" />
-      <span class="pl-2">{{ props.level > 0 ? 'end' : 'end of list'}}</span>
+      <tree-indent-guide
+        :level="props.level"
+        type="end"
+      />
+      <span class="pl-2">{{ props.level > 0 ? 'end' : 'end of list' }}</span>
     </td>
-    <td class="h-6" colspan="4"></td>
+    <td
+      class="h-6"
+      colspan="4"
+    ></td>
   </tr>
 </template>
 

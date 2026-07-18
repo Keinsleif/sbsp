@@ -49,10 +49,12 @@ const tabItems = computed(() => [
   { type: 'tab', value: 'showGeneral', label: t('dialog.settings.tab.general') },
   { type: 'tab', value: 'audioLogic', label: t('dialog.settings.tab.audioLogic') },
   { type: 'tab', value: 'remote', label: t('dialog.settings.tab.remote') },
-  { type: 'group', value: 'global',label: t('dialog.settings.tab.category.global') },
+  { type: 'group', value: 'global', label: t('dialog.settings.tab.category.global') },
   { type: 'tab', value: 'globalGeneral', label: t('dialog.settings.tab.general') },
   { type: 'tab', value: 'appearance', label: t('dialog.settings.tab.appearance') },
-  ...(__IS_HOST__ ? [{ type: 'tab', value: 'audioHardware', label: t('dialog.settings.tab.audioHardware') }] : []),
+  ...(__IS_HOST__
+    ? [{ type: 'tab', value: 'audioHardware', label: t('dialog.settings.tab.audioHardware') }]
+    : []),
   { type: 'tab', value: 'hotkey', label: t('dialog.settings.tab.hotkey') },
   { type: 'tab', value: 'template', label: t('dialog.settings.tab.template') },
   { type: 'tab', value: 'nameFormat', label: t('dialog.settings.tab.nameFormat') },
@@ -262,10 +264,13 @@ const recallQLabPreset = () => {
           class="flex min-w-50 grow-0 flex-col border-r border-(--p-form-field-border-color) p-2"
           :class="$style['tablist']"
         >
-          <template v-for="tabItem in tabItems" :key="tabItem.value">
+          <template
+            v-for="tabItem in tabItems"
+            :key="tabItem.value"
+          >
             <button
               v-if="tabItem.type === 'tab'"
-              class="text-left px-2 py-1 transition-all duration-200"
+              class="px-2 py-1 text-left transition-all duration-200"
               :class="tab === tabItem.value ? $style['selected-category'] : ''"
               @click="tab = tabItem.value"
             >
@@ -273,9 +278,9 @@ const recallQLabPreset = () => {
             </button>
             <div
               v-else
-              class="border-y text-gray-500 dark:text-gray-400 my-2 py-1 px-3"
+              class="my-2 border-y px-3 py-1 text-gray-500 dark:text-gray-400"
             >
-              {{ tabItem.label  }}
+              {{ tabItem.label }}
             </div>
           </template>
         </div>

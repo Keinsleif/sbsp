@@ -312,10 +312,11 @@ const isPlayingActive = computed((): boolean => {
       headers="cuelist_cursor"
       style="padding-left: 12px; padding-right: 0px"
     >
-      <button class="cursor-pointer" @click="setPlaybackCursor(props.item.cue.id)">
-        <path-icon
-          :icon="isPlaybackCursor ? mdiArrowRightBold : null"
-        />
+      <button
+        class="cursor-pointer"
+        @click="setPlaybackCursor(props.item.cue.id)"
+      >
+        <path-icon :icon="isPlaybackCursor ? mdiArrowRightBold : null" />
       </button>
     </td>
     <td
@@ -364,16 +365,17 @@ const isPlayingActive = computed((): boolean => {
       headers="cuelist_name"
       class="overflow-hidden whitespace-nowrap"
     >
-      <tree-indent-guide :level="item.level" type="item" />
+      <tree-indent-guide
+        :level="item.level"
+        type="item"
+      />
       <button
         :disabled="!item.isGroup"
         :class="item.isGroup ? 'cursor-pointer' : 'pointer-events-none'"
         @click.stop="if (item.isGroup) uiState.toggleExpand(item.cue.id);"
         @pointerdown="item.isGroup && $event.stopPropagation()"
       >
-        <path-icon
-          :icon="item.isGroup ? (item.isExpanded ? mdiMenuDown : mdiMenuRight) : null"
-        />
+        <path-icon :icon="item.isGroup ? (item.isExpanded ? mdiMenuDown : mdiMenuRight) : null" />
       </button>
       <span
         class="h-full"

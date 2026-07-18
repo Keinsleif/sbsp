@@ -86,7 +86,9 @@ const time = useNow();
 </script>
 
 <template>
-  <div class="m-0 flex h-full w-full flex-row gap-3 overflow-x-auto p-3 border-b border-(--p-form-field-border-color)">
+  <div
+    class="m-0 flex h-full w-full flex-row gap-3 overflow-x-auto border-b border-(--p-form-field-border-color) p-3"
+  >
     <div class="flex grow-0 flex-col items-start gap-3">
       <div
         class="flex grow items-center border border-(--p-form-field-border-color)"

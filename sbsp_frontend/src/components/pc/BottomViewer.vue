@@ -38,7 +38,9 @@ const timeRange = computed(() => {
       : 1;
   return { start, end, delta: end - start };
 });
-const isActive = computed(() => selectedCue.value != null && selectedCue.value.id in showState.activeCues);
+const isActive = computed(
+  () => selectedCue.value != null && selectedCue.value.id in showState.activeCues,
+);
 
 const positionRef = useTemplateRef('position');
 usePosition((pos) => {
@@ -86,7 +88,11 @@ watchEffect(() => {
 
 const seek = (event: MouseEvent) => {
   if (!isActive.value || uiState.mode === 'view') return;
-  if (selectedCue.value == null || event.button !== 0 || !(event.currentTarget instanceof HTMLElement)) {
+  if (
+    selectedCue.value == null ||
+    event.button !== 0 ||
+    !(event.currentTarget instanceof HTMLElement)
+  ) {
     return;
   }
   const activeCue = showState.activeCues[selectedCue.value.id];
@@ -105,7 +111,7 @@ const seek = (event: MouseEvent) => {
 
 <template>
   <div
-    class="relative w-full border border-(--p-form-field-border-color) h-16"
+    class="relative h-16 w-full border border-(--p-form-field-border-color)"
     ref="container"
   >
     <Teleport to="body">
@@ -125,7 +131,11 @@ const seek = (event: MouseEvent) => {
       width="100%"
       @pointerdown="seek"
     >
-      <waveform-path v-model="selectedCue" :height="64" :width="svgWidth" />
+      <waveform-path
+        v-model="selectedCue"
+        :height="64"
+        :width="svgWidth"
+      />
       <rect
         v-if="selectedCue != null && selectedCue.params.type === 'audio'"
         :x="timeRange.start * (svgWidth - 1) - 1"

@@ -9,13 +9,16 @@ import { useWebWorkerFn } from '@vueuse/core';
 import { computed, shallowRef, toRaw, watch } from 'vue';
 
 const selectedCue = defineModel<Cue | null>();
-const props = withDefaults(defineProps<{
-  volume?: number;
-  width: number;
-  height: number;
-}>(),{
-  volume: 0,
-});
+const props = withDefaults(
+  defineProps<{
+    volume?: number;
+    width: number;
+    height: number;
+  }>(),
+  {
+    volume: 0,
+  },
+);
 
 const assetResult = useAssetResult();
 const uiState = useUiState();
@@ -87,7 +90,6 @@ const waveformTransform = computed(() => {
     return `translate(0, ${props.height * 0.125})`;
   }
 });
-
 </script>
 
 <template>
