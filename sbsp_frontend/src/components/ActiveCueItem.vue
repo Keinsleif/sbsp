@@ -14,7 +14,6 @@ import ProgressSpinnerWrapper from './wrapper/ProgressSpinnerWrapper.vue';
 
 const props = defineProps<{
   activeCue: ActiveCue;
-  isHidden: boolean;
 }>();
 
 const showModel = useShowModel();
@@ -40,7 +39,6 @@ const remainRef = useTemplateRef('remain');
 const progressRef = useTemplateRef('progress');
 
 usePosition((pos) => {
-  if (props.isHidden) return;
   if (elapsedRef.value == null || remainRef.value == null || progressRef.value == null) return;
   const position = pos[props.activeCue.cueId];
   if (position == null) return;
