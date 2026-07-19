@@ -14,3 +14,6 @@ run = [
 'cd ./scripts && node notice_json2md.js',
 'rm ./scripts/tmp.json',
 ]
+
+[settings]
+cargo.binstall_quickinstall = true
