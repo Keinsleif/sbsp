@@ -54,19 +54,19 @@ watch(
     <div class="flex shrink grow flex-col overflow-hidden">
       <div class="flex shrink grow flex-row overflow-hidden">
         <div
-          v-show="activeTab === 'list'"
+          v-if="activeTab === 'list'"
           class="flex h-full w-full overflow-hidden"
         >
           <cue-list />
         </div>
         <div
-          v-show="(uiState.permission & PERMISSIONS.CONTROL) != 0 && activeTab === 'controls'"
+          v-if="(uiState.permission & PERMISSIONS.CONTROL) != 0 && activeTab === 'controls'"
           class="h-full w-full"
         >
           <controls-panel />
         </div>
         <div
-          v-show="activeTab === 'monitor'"
+          v-if="activeTab === 'monitor'"
           class="h-full w-full"
         >
           <monitor-panel />

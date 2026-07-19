@@ -29,13 +29,11 @@ const uiState = useUiState();
     </tab-list>
     <tab-panels class="grow overflow-auto p-0">
       <tab-panel value="activeCues">
-        <template
-          v-for="(activeCue, cue_id) in showState.activeCues"
-          :key="cue_id"
-        >
+        <template v-if="uiState.isRightSidebarOpen && uiState.sideBarTab === 'activeCues'">
           <active-cue-item
+            v-for="(activeCue, cue_id) in showState.activeCues"
+            :key="cue_id"
             :active-cue="activeCue"
-            :is-hidden="!uiState.isRightSidebarOpen || uiState.sideBarTab !== 'activeCues'"
           />
         </template>
       </tab-panel>
