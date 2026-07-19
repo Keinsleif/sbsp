@@ -11,7 +11,7 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'SBS Player' }],
     ['meta', { property: 'og:description', content: 'イベント向け音源再生ソフトウェア' }],
-    ['meta', { property: 'og:image', content: '/sbsp/docs/thumbnail.png' }],
+    ['meta', { property: 'og:image', content: 'https://keinsleif.github.io/sbsp/docs/thumbnail.png' }],
     ['meta', { property: 'og:url', content: 'https://keinsleif.github.io/sbsp/docs/' }],
   ],
   base: '/sbsp/docs/',
