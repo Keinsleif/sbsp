@@ -36,7 +36,8 @@ async fn setup_executor(
 ) {
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-    let (wait_tx, _wait_rx) = mpsc::channel::<WaitCommand>(32);
+    let (wait_tx, mut wait_rx) = mpsc::channel::<WaitCommand>(32);
+    tokio::spawn(async move { while wait_rx.recv().await.is_some() {} });
     let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
@@ -111,7 +112,8 @@ async fn setup_executor_with_cues(
 ) {
     let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
     let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-    let (wait_tx, _wait_rx) = mpsc::channel::<WaitCommand>(32);
+    let (wait_tx, mut wait_rx) = mpsc::channel::<WaitCommand>(32);
+    tokio::spawn(async move { while wait_rx.recv().await.is_some() {} });
     let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
     let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
     let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
@@ -638,16 +640,15 @@ async fn start_cue_executes_inactive_target() {
     ));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
-        ExecutorEvent::Triggered { cue_id } if cue_id == target_id
+        ExecutorEvent::Started { cue_id, .. } if cue_id == start_id
     ));
-
-    let cmd = audio_rx.recv().await.unwrap();
-    assert!(matches!(cmd, AudioCommand::Play { id, .. } if id == target_id));
 
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
-        ExecutorEvent::Started { cue_id, .. } if cue_id == start_id
+        ExecutorEvent::Triggered { cue_id } if cue_id == target_id
     ));
+    let cmd = audio_rx.recv().await.unwrap();
+    assert!(matches!(cmd, AudioCommand::Play { id, .. } if id == target_id));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Completed { cue_id } if cue_id == start_id
@@ -990,12 +991,6 @@ async fn playback_cue_as_last_group_child_completes_group() {
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Started { cue_id, .. } if cue_id == group_id
     ));
-
-    assert!(matches!(
-        audio_rx.recv().await.unwrap(),
-        AudioCommand::Load { id, .. } if id == target_id
-    ));
-
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == load_cue_id
@@ -1003,6 +998,10 @@ async fn playback_cue_as_last_group_child_completes_group() {
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Started { cue_id, .. } if cue_id == load_cue_id
+    ));
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Load { id, .. } if id == target_id
     ));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
@@ -1052,11 +1051,11 @@ async fn nested_group_completed_chain_propagates_to_sibling() {
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == outer_id
     ));
-    // Group cueのStartedは execute_cue 内で即座に(同期的に)発行される
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Started { cue_id, .. } if cue_id == outer_id
     ));
+
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == inner_id
@@ -1066,11 +1065,11 @@ async fn nested_group_completed_chain_propagates_to_sibling() {
         ExecutorEvent::Started { cue_id, .. } if cue_id == inner_id
     ));
 
-    // child_a の再生開始をEngineが通知
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == child_a_id
     ));
+    // child_a の再生開始をEngineが通知
     let cmd = audio_rx.recv().await.unwrap();
     assert!(matches!(cmd, AudioCommand::Play { id, .. } if id == child_a_id));
     engine_event_tx
@@ -1500,6 +1499,10 @@ async fn stop_prewaiting_child_does_not_affect_active_sibling_group() {
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == group_id
     ));
+    assert!(matches!(
+        playback_event_rx.recv().await.unwrap(),
+        ExecutorEvent::Started { cue_id, .. } if cue_id == group_id
+    ));
     assert!(
         matches!(audio_rx.recv().await.unwrap(), AudioCommand::Play { id, .. } if id == sibling_id)
     );
@@ -1516,10 +1519,6 @@ async fn stop_prewaiting_child_does_not_affect_active_sibling_group() {
         }))
         .await
         .unwrap();
-    assert!(matches!(
-        playback_event_rx.recv().await.unwrap(),
-        ExecutorEvent::Started { cue_id, .. } if cue_id == group_id
-    ));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),
         ExecutorEvent::Triggered { cue_id } if cue_id == sibling_id
