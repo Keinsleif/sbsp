@@ -6,7 +6,7 @@ on:
     paths:
       - 'sbsp_frontend/**'
       - 'pnpm-lock.yaml'
-      - 'check-frontend-types.yml'
+      - '.github/workflows/check-frontend-types.yml'
   workflow_dispatch:
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: install frontend dependencies
-        run: pnpm install --frozen-lockfile # change this to npm, pnpm or bun depending on which one you use.
+        run: pnpm install --frozen-lockfile
 
       - name: Frontend Typecheck
         working-directory: 'sbsp_frontend'
