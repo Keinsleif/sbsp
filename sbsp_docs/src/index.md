@@ -4,7 +4,6 @@ layout: home
 
 hero:
   name: "SBS Player"
-  text:  Documentation
   tagline: イベント向け音源再生ソフトウェア
   image:
     src: /favicon.svg

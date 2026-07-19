@@ -7,7 +7,12 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', href: '/sbsp/docs/favicon.ico', sizes: '48x48' }],
     ['link', { rel: 'icon', href: '/sbsp/docs/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
-    ['link', { rel: 'apple-touch-icon', href: '/sbsp/docs/apple-touch-icon.png'}]
+    ['link', { rel: 'apple-touch-icon', href: '/sbsp/docs/apple-touch-icon.png'}],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'SBS Player' }],
+    ['meta', { property: 'og:description', content: 'イベント向け音源再生ソフトウェア' }],
+    ['meta', { property: 'og:image', content: '/sbsp/docs/thumbnail.png' }],
+    ['meta', { property: 'og:url', content: 'https://keinsleif.github.io/sbsp/docs/' }],
   ],
   base: '/sbsp/docs/',
 
