@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## backend-1.5.5 - 2026-07-19
+#### Bug Fixes
+- (**backend**) executor logic (#146) - (9548ff3) - *Keinsleif*
+- (**backend**) cue chain with group (#138) - (b0662ce) - *Keinsleif*
+#### Refactoring
+- (**backend**) extract hard stop as command to clarify function (#137) - (394c3af) - *Keinsleif*
+- InsertPosition variant (#136) - (f3fc907) - *Keinsleif*
+
+- - -
+
 ## backend-1.5.4 - 2026-07-06
 #### Bug Fixes
 - (**backend**) add hostname logic for macOS (#121) - (ede41bc) - *Keinsleif*

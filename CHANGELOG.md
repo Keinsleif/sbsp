@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.5.3](https://github.com/Keinsleif/sbsp/compare/52372b2042e4d6620b700e1697b1ddf4e8d7292f..2.5.3) - 2026-07-19
+### Package updates
+- [app-2.5.3](sbsp_app) bumped to [app-2.5.3](https://github.com/Keinsleif/sbsp/compare/app-2.5.2..app-2.5.3)
+- [docs-1.2.0](sbsp_docs) bumped to [docs-1.2.0](https://github.com/Keinsleif/sbsp/compare/docs-1.1.0..docs-1.2.0)
+- [remote_app-2.5.3](sbsp_remote_app) bumped to [remote_app-2.5.3](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.2..remote_app-2.5.3)
+- [backend-1.5.5](sbsp_backend) bumped to [backend-1.5.5](https://github.com/Keinsleif/sbsp/compare/backend-1.5.4..backend-1.5.5)
+- [frontend-2.5.2](sbsp_frontend) bumped to [frontend-2.5.2](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.1..frontend-2.5.2)
+### Global changes
+#### Build system
+- update deps (#141) - ([52372b2](https://github.com/Keinsleif/sbsp/commit/52372b2042e4d6620b700e1697b1ddf4e8d7292f)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Continuous Integration
+- use `--frozen-lockfile` for pnpm install (#143) - ([3e3a01f](https://github.com/Keinsleif/sbsp/commit/3e3a01fd23ddc50ce46e6395e2b0f3f09446ecae)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.5.2](https://github.com/Keinsleif/sbsp/compare/2.5.1..2.5.2) - 1970-01-01
 ### Package updates
 - [remote_app-2.5.2](sbsp_remote_app) bumped to [remote_app-2.5.2](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.1..remote_app-2.5.2)

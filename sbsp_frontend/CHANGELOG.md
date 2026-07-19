@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend-2.5.2 - 2026-07-19
+#### Bug Fixes
+- (**backend**) executor logic (#146) - (9548ff3) - *Keinsleif*
+- (**backend**) cue chain with group (#138) - (b0662ce) - *Keinsleif*
+- (**frontend**) component logic & reusability (#148) - (9aa118a) - *Keinsleif*
+- (**frontend**) add translation for new nameFormat (#147) - (794eeee) - *Keinsleif*
+- (**frontend**) waveform calculate on mounted (#145) - (cf7e3bc) - *Keinsleif*
+#### Build system
+- update deps (#141) - (52372b2) - *Keinsleif*
+#### Refactoring
+- (**frontend**) appearance (#139) - (694256f) - *Keinsleif*
+- InsertPosition variant (#136) - (f3fc907) - *Keinsleif*
+
+- - -
+
 ## frontend-2.5.1 - 2026-07-06
 #### Bug Fixes
 - (**frontend**) webkit(safari) version for primeuix (#132) - (22a212d) - *Keinsleif*

@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## app-2.5.3 - 2026-07-19
+#### Bug Fixes
+- (**backend**) executor logic (#146) - (9548ff3) - *Keinsleif*
+- (**backend**) cue chain with group (#138) - (b0662ce) - *Keinsleif*
+- (**frontend**) component logic & reusability (#148) - (9aa118a) - *Keinsleif*
+- (**frontend**) add translation for new nameFormat (#147) - (794eeee) - *Keinsleif*
+- (**frontend**) waveform calculate on mounted (#145) - (cf7e3bc) - *Keinsleif*
+#### Build system
+- update deps (#141) - (52372b2) - *Keinsleif*
+#### Refactoring
+- (**backend**) extract hard stop as command to clarify function (#137) - (394c3af) - *Keinsleif*
+- (**frontend**) appearance (#139) - (694256f) - *Keinsleif*
+- InsertPosition variant (#136) - (f3fc907) - *Keinsleif*
+
+- - -
+
 ## app-2.5.2 - 2026-07-07
 #### Bug Fixes
 - adopt CSP for removal of unsafe nonce (#134) - (d174271) - *Keinsleif*

@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## docs-1.2.0 - 2026-07-19
+#### Features
+- (**docs**) rewrite for new version (#140) - (13ee6ea) - *Keinsleif*
+#### Bug Fixes
+- (**docs**) add description for editable cue type (#144) - (f73e621) - *Keinsleif*
+
+- - -
+
 ## docs-1.1.0 - 2026-07-06
 #### Features
 - (**frontend**) primevue framework migration (#119) - (45a38ac) - *Keinsleif*
