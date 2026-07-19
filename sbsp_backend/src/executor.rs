@@ -11,9 +11,9 @@ pub use command::ExecutorCommand;
 pub use command::StopMode;
 pub use event::ExecutorEvent;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::time::{Duration, Instant};
 
-use async_recursion::async_recursion;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -31,11 +31,47 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ActiveInstance {
+struct ActiveInstance {
     engine_type: EngineType,
     is_triggered: bool,  // specify loaded or triggered
     is_prewaiting: bool, // specify prewaiting or playing
     is_paused: bool,     // specify paused or playing
+}
+
+enum ChainType {
+    Start,
+    Complete,
+}
+
+enum Task {
+    Dispatch(ExecutorCommand),
+    SettleStart(Uuid),
+    SettleStop {
+        cue_id: Uuid,
+        is_completed: bool,
+    },
+    SendCompleted {
+        cue_id: Uuid,
+    },
+    BeginScope {
+        cue_id: Uuid,
+        context: ScopeContext,
+    },
+    EndScope {
+        cue_id: Uuid,
+        context: ScopeContext,
+        watermark: usize,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ScopeContext {
+    GroupLoad { child_count: usize },
+    GroupExecute { child_count: usize },
+    GroupPause,
+    GroupResume,
+    GroupStop,
+    Playback,
 }
 
 pub struct Executor {
@@ -47,6 +83,10 @@ pub struct Executor {
     engine_event_rx: mpsc::Receiver<EngineEvent>,
 
     active_instances: HashMap<Uuid, ActiveInstance>,
+    task_stack: Vec<Task>,
+    error_stack: Vec<String>,
+    in_flight: HashSet<Uuid>,
+    chain_trigger_history: HashMap<Uuid, VecDeque<Instant>>,
 }
 
 impl Executor {
@@ -66,6 +106,10 @@ impl Executor {
             executor_event_tx: playback_event_tx,
             engine_event_rx,
             active_instances: HashMap::new(),
+            task_stack: Vec::new(),
+            error_stack: Vec::new(),
+            in_flight: HashSet::new(),
+            chain_trigger_history: HashMap::new(),
         }
     }
 
@@ -75,9 +119,7 @@ impl Executor {
             tokio::select! {
                 Some(command) = self.command_rx.recv() => {
                     log::debug!("Executor received command: {:?}", command);
-                    if let Err(e) = self.process_command(command).await {
-                        log::error!("Error processing executor command: {:?}", e);
-                    }
+                    self.task_stack.push(Task::Dispatch(command));
                 },
                 Some(event) = self.engine_event_rx.recv() => {
                     if let Err(e) = self.handle_engine_event(event).await {
@@ -86,11 +128,272 @@ impl Executor {
                 }
                 else => break,
             }
+            while let Some(task) = self.task_stack.pop() {
+                self.apply(task).await;
+            }
+            if !self.error_stack.is_empty() {
+                log::debug!("Unclaimed cue errors: {}", self.error_stack.join("; "));
+                self.error_stack.clear();
+            }
         }
         log::info!("Executor run loop finished.");
     }
 
-    #[async_recursion]
+    async fn apply(&mut self, task: Task) {
+        match task {
+            Task::Dispatch(executor_command) => {
+                if let Err(e) = self.process_command(executor_command).await {
+                    log::error!("Failed to execute command: e={}", e);
+                    self.error_stack.push(e.to_string());
+                }
+            }
+            Task::SettleStart(cue_id) => {
+                if let Some(parent) = self.model_handle.get_parent_by_id(&cue_id).await {
+                    let mut need_notify_event = false;
+                    self.active_instances
+                        .entry(parent.id)
+                        .and_modify(|instance| {
+                            if instance.is_prewaiting || !instance.is_triggered {
+                                need_notify_event = true;
+                            }
+                            instance.is_prewaiting = false;
+                            instance.is_triggered = true;
+                        })
+                        .or_insert_with(|| {
+                            need_notify_event = true;
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: true,
+                                is_paused: false,
+                            }
+                        });
+
+                    if need_notify_event {
+                        self.task_stack.push(Task::SettleStart(parent.id));
+                        self.resolve_after_start_chain(parent.id).await;
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Triggered { cue_id: parent.id })
+                            .await
+                            .ok();
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Started {
+                                cue_id: parent.id,
+                                position: 0.0,
+                                duration: 0.0,
+                                initial_params: StateParam::None,
+                            })
+                            .await
+                            .ok();
+                    }
+                }
+            }
+            Task::SettleStop {
+                cue_id,
+                is_completed,
+            } => {
+                let Some(parent) = self.model_handle.get_parent_by_id(&cue_id).await else {
+                    return;
+                };
+                let CueParam::Group { children, .. } = &parent.params else {
+                    return;
+                };
+
+                if children
+                    .iter()
+                    .any(|id| self.active_instances.contains_key(id))
+                    || !self.active_instances.contains_key(&parent.id)
+                {
+                    return;
+                }
+
+                self.active_instances.remove(&parent.id);
+
+                if is_completed {
+                    self.task_stack
+                        .push(Task::SendCompleted { cue_id: parent.id });
+                    self.resolve_after_complete_chain(parent.id).await;
+                } else {
+                    self.executor_event_tx
+                        .send(ExecutorEvent::Stopped { cue_id: parent.id })
+                        .await
+                        .ok();
+                    self.task_stack.push(Task::SettleStop {
+                        cue_id: parent.id,
+                        is_completed: false,
+                    });
+                }
+            }
+            Task::SendCompleted { cue_id } => {
+                if self.active_instances.contains_key(&cue_id) {
+                    return;
+                }
+                self.executor_event_tx
+                    .send(ExecutorEvent::Completed { cue_id })
+                    .await
+                    .ok();
+                self.task_stack.push(Task::SettleStop {
+                    cue_id,
+                    is_completed: true,
+                });
+            }
+            Task::BeginScope { cue_id, context } => {
+                self.in_flight.insert(cue_id);
+                match context {
+                    ScopeContext::GroupLoad { .. } => {
+                        self.active_instances.insert(
+                            cue_id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: false,
+                                is_paused: false,
+                            },
+                        );
+                    }
+                    ScopeContext::GroupExecute { .. } => {
+                        self.active_instances.insert(
+                            cue_id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: true,
+                                is_paused: false,
+                            },
+                        );
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Started {
+                                cue_id,
+                                position: 0.0,
+                                duration: 0.0,
+                                initial_params: StateParam::None,
+                            })
+                            .await
+                            .ok();
+                    }
+                    ScopeContext::GroupPause => {}
+                    ScopeContext::GroupResume => {}
+                    ScopeContext::GroupStop => {}
+                    ScopeContext::Playback => {
+                        self.active_instances.insert(
+                            cue_id,
+                            ActiveInstance {
+                                engine_type: EngineType::Playback,
+                                is_prewaiting: false,
+                                is_triggered: true,
+                                is_paused: false,
+                            },
+                        );
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Started {
+                                cue_id,
+                                position: 0.0,
+                                duration: 0.0,
+                                initial_params: StateParam::None,
+                            })
+                            .await
+                            .ok();
+                    }
+                }
+            }
+            Task::EndScope {
+                cue_id,
+                context,
+                watermark,
+            } => {
+                self.in_flight.remove(&cue_id);
+                let failures = self.error_stack.split_off(watermark);
+                match context {
+                    ScopeContext::GroupLoad { child_count } => {
+                        match (failures.len(), child_count) {
+                            (0, _) => {
+                                self.executor_event_tx
+                                    .send(ExecutorEvent::Loaded {
+                                        cue_id,
+                                        position: 0.0,
+                                        duration: 0.0,
+                                    })
+                                    .await
+                                    .ok();
+                            }
+                            (n, total) if n == total => {
+                                self.active_instances.remove(&cue_id);
+                                self.emit_error(
+                                    cue_id,
+                                    format!("Failed to execute group children. e={:?}", failures),
+                                )
+                                .await
+                                .ok();
+                            }
+                            _ => {
+                                log::error!("Failed to load some group children.");
+                                self.executor_event_tx
+                                    .send(ExecutorEvent::Loaded {
+                                        cue_id,
+                                        position: 0.0,
+                                        duration: 0.0,
+                                    })
+                                    .await
+                                    .ok();
+                            }
+                        }
+                    }
+                    ScopeContext::GroupExecute { child_count } => {
+                        match (failures.len(), child_count) {
+                            (0, _) => {} // successfully executed.
+                            (n, total) if n == total => {
+                                self.active_instances.remove(&cue_id);
+                                self.emit_error(
+                                    cue_id,
+                                    format!("Failed to execute group children. e={:?}", failures),
+                                )
+                                .await
+                                .ok();
+                            }
+                            _ => {
+                                log::error!(
+                                    "Failed to execute some group children. e={:?}",
+                                    failures
+                                );
+                            } // continue with error log
+                        }
+                    }
+                    ScopeContext::GroupPause => {
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Paused {
+                                cue_id,
+                                position: 0.0,
+                                duration: 0.0,
+                            })
+                            .await
+                            .ok();
+                    }
+                    ScopeContext::GroupResume => {
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Resumed { cue_id })
+                            .await
+                            .ok();
+                    }
+                    ScopeContext::GroupStop => {}
+                    ScopeContext::Playback => {
+                        if let Some(e) = failures.first() {
+                            self.active_instances.remove(&cue_id);
+                            self.emit_error(
+                                cue_id,
+                                format!("Failed to dispatch playback control. e={}", e),
+                            )
+                            .await
+                            .ok();
+                        } else {
+                            self.active_instances.remove(&cue_id);
+                            self.emit_completed(cue_id).await.ok();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     async fn process_command(&mut self, command: ExecutorCommand) -> Result<(), anyhow::Error> {
         match command {
             ExecutorCommand::Load(cue_id) => {
@@ -104,7 +407,7 @@ impl Executor {
                 {
                     log::warn!("Cue already executed. cue_id={}", cue_id);
                 } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
-                    self.check_and_start_parents(cue_id).await?;
+                    self.task_stack.push(Task::SettleStart(cue_id));
                     self.executor_event_tx
                         .send(ExecutorEvent::Triggered { cue_id })
                         .await?;
@@ -126,7 +429,7 @@ impl Executor {
                     } else {
                         self.execute_cue(&cue).await?;
                     }
-                    self.resolve_after_start_chain(cue_id).await?;
+                    self.resolve_after_start_chain(cue_id).await;
                 } else {
                     anyhow::bail!("EXECUTE: cue not found. cue_id={}", cue_id);
                 }
@@ -255,57 +558,50 @@ impl Executor {
                     },
                 );
             }
-            CueParam::Group { base, children } => match base.mode {
-                GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
-                    if let Some(first_id) = children.first() {
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                is_prewaiting: false,
-                                is_triggered: false,
-                                is_paused: false,
-                            },
-                        );
-                        self.process_command(ExecutorCommand::Load(*first_id))
-                            .await?;
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Loaded {
-                                cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                            })
-                            .await?;
-                    }
+            CueParam::Group { base, children } => {
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic group containment; skipping. cue_id={}", cue.id);
+                    return Ok(());
                 }
-                GroupMode::Concurrency => {
-                    if !children.is_empty() {
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                is_prewaiting: false,
-                                is_triggered: false,
-                                is_paused: false,
-                            },
-                        );
-                        for cue_id in children.iter() {
-                            if let Err(e) =
-                                self.process_command(ExecutorCommand::Load(*cue_id)).await
-                            {
-                                log::error!("Failed to load group child. e={}", e);
-                            }
+                match base.mode {
+                    GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
+                        if let Some(first_id) = children.first() {
+                            let context = ScopeContext::GroupLoad { child_count: 1 };
+                            self.task_stack.push(Task::EndScope {
+                                cue_id: cue.id,
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            self.task_stack
+                                .push(Task::Dispatch(ExecutorCommand::Load(*first_id)));
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
                         }
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Loaded {
+                    }
+                    GroupMode::Concurrency => {
+                        if !children.is_empty() {
+                            let context = ScopeContext::GroupLoad {
+                                child_count: children.len(),
+                            };
+                            self.task_stack.push(Task::EndScope {
                                 cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                            })
-                            .await?;
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            for cue_id in children.iter().rev() {
+                                self.task_stack
+                                    .push(Task::Dispatch(ExecutorCommand::Load(*cue_id)));
+                            }
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
+                        }
                     }
                 }
-            },
+            }
         }
         Ok(())
     }
@@ -390,6 +686,7 @@ impl Executor {
                             }
                         }
                         CueParam::Group { .. } => {
+                            // TODO: check and fade decendants?
                             let children = self
                                 .model_handle
                                 .get_all_children_by_id(&params.target)
@@ -432,178 +729,142 @@ impl Executor {
                 );
             }
             CueParam::Start(params) => {
-                self.active_instances.insert(
-                    cue.id,
-                    ActiveInstance {
-                        engine_type: EngineType::Playback,
-                        is_prewaiting: false,
-                        is_triggered: true,
-                        is_paused: false,
-                    },
-                );
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic playback target; skipping. cue_id={}", cue.id);
+                    return Ok(());
+                }
+                self.task_stack.push(Task::EndScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                    watermark: self.error_stack.len(),
+                });
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.is_triggered
                 {
                     if instance.is_paused {
-                        self.process_command(ExecutorCommand::Resume(params.target))
-                            .await?;
+                        self.task_stack
+                            .push(Task::Dispatch(ExecutorCommand::Resume(params.target)));
                     }
                 } else {
-                    self.process_command(ExecutorCommand::Execute(params.target))
-                        .await?;
+                    self.task_stack
+                        .push(Task::Dispatch(ExecutorCommand::Execute(params.target)));
                 }
-
-                self.executor_event_tx
-                    .send(ExecutorEvent::Started {
-                        cue_id: cue.id,
-                        position: 0.0,
-                        duration: 0.0,
-                        initial_params: StateParam::None,
-                    })
-                    .await?;
-                self.active_instances.remove(&cue.id);
-                self.emit_completed(cue.id).await?;
+                self.task_stack.push(Task::BeginScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                });
             }
             CueParam::Stop(params) => {
-                self.active_instances.insert(
-                    cue.id,
-                    ActiveInstance {
-                        engine_type: EngineType::Playback,
-                        is_prewaiting: false,
-                        is_triggered: true,
-                        is_paused: false,
-                    },
-                );
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic playback target; skipping. cue_id={}", cue.id);
+                    return Ok(());
+                }
+                self.task_stack.push(Task::EndScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                    watermark: self.error_stack.len(),
+                });
                 if self.active_instances.contains_key(&params.target) {
                     let stop_mode = if params.hard {
                         StopMode::Hard
                     } else {
                         StopMode::Soft
                     };
-                    self.process_command(ExecutorCommand::Stop(params.target, stop_mode))
-                        .await?;
+                    self.task_stack.push(Task::Dispatch(ExecutorCommand::Stop(
+                        params.target,
+                        stop_mode,
+                    )));
                 }
-
-                self.executor_event_tx
-                    .send(ExecutorEvent::Started {
-                        cue_id: cue.id,
-                        position: 0.0,
-                        duration: 0.0,
-                        initial_params: StateParam::None,
-                    })
-                    .await?;
-                self.active_instances.remove(&cue.id);
-                self.emit_completed(cue.id).await?;
+                self.task_stack.push(Task::BeginScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                });
             }
             CueParam::Pause(params) => {
-                self.active_instances.insert(
-                    cue.id,
-                    ActiveInstance {
-                        engine_type: EngineType::Playback,
-                        is_prewaiting: false,
-                        is_triggered: true,
-                        is_paused: false,
-                    },
-                );
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic playback target; skipping. cue_id={}", cue.id);
+                    return Ok(());
+                }
+                self.task_stack.push(Task::EndScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                    watermark: self.error_stack.len(),
+                });
                 if let Some(instance) = self.active_instances.get(&params.target)
                     && instance.is_triggered
                     && !instance.is_paused
                 {
-                    self.process_command(ExecutorCommand::Pause(params.target))
-                        .await?;
+                    self.task_stack
+                        .push(Task::Dispatch(ExecutorCommand::Pause(params.target)));
                 }
-
-                self.executor_event_tx
-                    .send(ExecutorEvent::Started {
-                        cue_id: cue.id,
-                        position: 0.0,
-                        duration: 0.0,
-                        initial_params: StateParam::None,
-                    })
-                    .await?;
-                self.active_instances.remove(&cue.id);
-                self.emit_completed(cue.id).await?;
+                self.task_stack.push(Task::BeginScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                });
             }
             CueParam::Load(params) => {
-                self.active_instances.insert(
-                    cue.id,
-                    ActiveInstance {
-                        engine_type: EngineType::Playback,
-                        is_prewaiting: false,
-                        is_triggered: true,
-                        is_paused: false,
-                    },
-                );
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic playback target; skipping. cue_id={}", cue.id);
+                    return Ok(());
+                }
+                self.task_stack.push(Task::EndScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                    watermark: self.error_stack.len(),
+                });
                 if !self.active_instances.contains_key(&params.target) {
-                    self.process_command(ExecutorCommand::Load(params.target))
-                        .await?;
+                    self.task_stack
+                        .push(Task::Dispatch(ExecutorCommand::Load(params.target)));
                 }
-
-                self.executor_event_tx
-                    .send(ExecutorEvent::Started {
-                        cue_id: cue.id,
-                        position: 0.0,
-                        duration: 0.0,
-                        initial_params: StateParam::None,
-                    })
-                    .await?;
-                self.active_instances.remove(&cue.id);
-                self.emit_completed(cue.id).await?;
+                self.task_stack.push(Task::BeginScope {
+                    cue_id: cue.id,
+                    context: ScopeContext::Playback,
+                });
             }
-            CueParam::Group { base, children } => match base.mode {
-                GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
-                    if let Some(first_id) = children.first() {
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                is_prewaiting: false,
-                                is_triggered: true,
-                                is_paused: false,
-                            },
-                        );
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Started {
-                                cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                                initial_params: StateParam::None,
-                            })
-                            .await?;
-                        self.process_command(ExecutorCommand::Execute(*first_id))
-                            .await?;
-                    }
+            CueParam::Group { base, children } => {
+                if self.in_flight.contains(&cue.id) {
+                    log::error!("cyclic group containment; skipping. cue_id={}", cue.id);
+                    return Ok(());
                 }
-                GroupMode::Concurrency => {
-                    if !children.is_empty() {
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                is_prewaiting: false,
-                                is_triggered: true,
-                                is_paused: false,
-                            },
-                        );
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Started {
+                match base.mode {
+                    GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
+                        if let Some(first_id) = children.first() {
+                            let context = ScopeContext::GroupExecute { child_count: 1 };
+                            self.task_stack.push(Task::EndScope {
                                 cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                                initial_params: StateParam::None,
-                            })
-                            .await?;
-                        for cue_id in children.iter() {
-                            if let Err(e) = self
-                                .process_command(ExecutorCommand::Execute(*cue_id))
-                                .await
-                            {
-                                log::error!("Failed to execute group child. e={}", e);
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            self.task_stack
+                                .push(Task::Dispatch(ExecutorCommand::Execute(*first_id)));
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
+                        }
+                    }
+                    GroupMode::Concurrency => {
+                        if !children.is_empty() {
+                            let context = ScopeContext::GroupExecute {
+                                child_count: children.len(),
+                            };
+                            self.task_stack.push(Task::EndScope {
+                                cue_id: cue.id,
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            for cue_id in children.iter().rev() {
+                                self.task_stack
+                                    .push(Task::Dispatch(ExecutorCommand::Execute(*cue_id)));
                             }
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
                         }
                     }
                 }
-            },
+            }
         }
         Ok(())
     }
@@ -640,17 +901,33 @@ impl Executor {
                     log::warn!("Pause command is not available for Transport cues. ignoring...");
                 }
                 EngineType::Group => {
+                    if self.in_flight.contains(&cue_id) {
+                        log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
+                        return Ok(());
+                    }
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                         && let CueParam::Group { children, .. } = cue.params
                     {
-                        for child_id in children.iter() {
-                            if self.active_instances.contains_key(child_id)
-                                && let Err(e) = self
-                                    .process_command(ExecutorCommand::Pause(*child_id))
-                                    .await
-                            {
-                                log::error!("Failed to pause group child. e={}", e);
+                        let active_children: Vec<_> = children
+                            .iter()
+                            .filter(|c| self.active_instances.contains_key(c))
+                            .rev()
+                            .collect();
+                        if !active_children.is_empty() {
+                            let context = ScopeContext::GroupPause;
+                            self.task_stack.push(Task::EndScope {
+                                cue_id: cue.id,
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            for child_id in active_children {
+                                self.task_stack
+                                    .push(Task::Dispatch(ExecutorCommand::Pause(*child_id)));
                             }
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
                         }
                     }
                 }
@@ -691,17 +968,33 @@ impl Executor {
                     log::warn!("Resume command is not available for Transport cues. ignoring...");
                 }
                 EngineType::Group => {
+                    if self.in_flight.contains(&cue_id) {
+                        log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
+                        return Ok(());
+                    }
                     if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                         && let CueParam::Group { children, .. } = cue.params
                     {
-                        for child_id in children.iter() {
-                            if self.active_instances.contains_key(child_id)
-                                && let Err(e) = self
-                                    .process_command(ExecutorCommand::Resume(*child_id))
-                                    .await
-                            {
-                                log::error!("Failed to resume group child. e={}", e);
+                        let active_children: Vec<_> = children
+                            .iter()
+                            .filter(|c| self.active_instances.contains_key(c))
+                            .rev()
+                            .collect();
+                        if !active_children.is_empty() {
+                            let context = ScopeContext::GroupResume;
+                            self.task_stack.push(Task::EndScope {
+                                cue_id: cue.id,
+                                context,
+                                watermark: self.error_stack.len(),
+                            });
+                            for child_id in active_children {
+                                self.task_stack
+                                    .push(Task::Dispatch(ExecutorCommand::Resume(*child_id)));
                             }
+                            self.task_stack.push(Task::BeginScope {
+                                cue_id: cue.id,
+                                context,
+                            });
                         }
                     }
                 }
@@ -714,6 +1007,16 @@ impl Executor {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
             let is_prewaiting = active_instance.is_prewaiting;
             if is_prewaiting {
+                if let Err(e) = self
+                    .wait_tx
+                    .send(WaitCommand::Stop {
+                        wait_type: WaitType::PreWait,
+                        instance_id: cue_id,
+                    })
+                    .await
+                {
+                    log::error!("Failed to send wait command to stop prewait timer. {}", e);
+                }
                 match active_instance.engine_type {
                     EngineType::Audio => {
                         self.audio_tx
@@ -738,27 +1041,39 @@ impl Executor {
                     }
                     EngineType::Playback => {}
                     EngineType::Group => {
+                        if self.in_flight.contains(&cue_id) {
+                            log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
+                            return Ok(());
+                        }
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                             && let CueParam::Group { children, .. } = cue.params
                         {
-                            for child_id in children.iter() {
-                                if self.active_instances.contains_key(child_id) {
-                                    self.process_command(ExecutorCommand::Stop(
+                            let active_children: Vec<_> = children
+                                .iter()
+                                .filter(|c| self.active_instances.contains_key(c))
+                                .rev()
+                                .collect();
+                            if !active_children.is_empty() {
+                                let context = ScopeContext::GroupStop;
+                                self.task_stack.push(Task::EndScope {
+                                    cue_id: cue.id,
+                                    context,
+                                    watermark: self.error_stack.len(),
+                                });
+                                for child_id in active_children {
+                                    self.task_stack.push(Task::Dispatch(ExecutorCommand::Stop(
                                         *child_id,
                                         StopMode::Hard,
-                                    ))
-                                    .await?;
+                                    )));
                                 }
+                                self.task_stack.push(Task::BeginScope {
+                                    cue_id: cue.id,
+                                    context,
+                                });
                             }
                         }
                     }
                 }
-                self.wait_tx
-                    .send(WaitCommand::Stop {
-                        wait_type: WaitType::PreWait,
-                        instance_id: cue_id,
-                    })
-                    .await?;
             } else {
                 match active_instance.engine_type {
                     EngineType::Audio => {
@@ -784,19 +1099,34 @@ impl Executor {
                         self.emit_stopped(cue_id).await?;
                     }
                     EngineType::Group => {
+                        if self.in_flight.contains(&cue_id) {
+                            log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
+                            return Ok(());
+                        }
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                             && let CueParam::Group { children, .. } = cue.params
                         {
-                            for child_id in children.iter() {
-                                if self.active_instances.contains_key(child_id)
-                                    && let Err(e) = self
-                                        .process_command(ExecutorCommand::Stop(
-                                            *child_id, stop_mode,
-                                        ))
-                                        .await
-                                {
-                                    log::error!("Failed to stop group child. e={}", e);
+                            let active_children: Vec<_> = children
+                                .iter()
+                                .filter(|c| self.active_instances.contains_key(c))
+                                .rev()
+                                .collect();
+                            if !active_children.is_empty() {
+                                let context = ScopeContext::GroupStop;
+                                self.task_stack.push(Task::EndScope {
+                                    cue_id: cue.id,
+                                    context,
+                                    watermark: self.error_stack.len(),
+                                });
+                                for child_id in active_children {
+                                    self.task_stack.push(Task::Dispatch(ExecutorCommand::Stop(
+                                        *child_id, stop_mode,
+                                    )));
                                 }
+                                self.task_stack.push(Task::BeginScope {
+                                    cue_id: cue.id,
+                                    context,
+                                });
                             }
                         }
                     }
@@ -1126,7 +1456,10 @@ impl Executor {
         self.executor_event_tx
             .send(ExecutorEvent::Stopped { cue_id })
             .await?;
-        self.check_and_stop_parents(cue_id, false).await?;
+        self.task_stack.push(Task::SettleStop {
+            cue_id,
+            is_completed: false,
+        });
         Ok(())
     }
 
@@ -1134,7 +1467,10 @@ impl Executor {
         self.executor_event_tx
             .send(ExecutorEvent::Error { cue_id, error })
             .await?;
-        self.check_and_stop_parents(cue_id, false).await?;
+        self.task_stack.push(Task::SettleStop {
+            cue_id,
+            is_completed: false,
+        });
         Ok(())
     }
 
@@ -1142,152 +1478,82 @@ impl Executor {
         self.executor_event_tx
             .send(ExecutorEvent::Completed { cue_id })
             .await?;
-        self.resolve_after_complete_chain(cue_id).await?; // trigger cue chain before stop parents
-        self.check_and_stop_parents(cue_id, true).await?;
+        self.task_stack.push(Task::SettleStop {
+            cue_id,
+            is_completed: true,
+        });
+        self.resolve_after_complete_chain(cue_id).await; // trigger cue chain before stop parents
         Ok(())
     }
 
-    async fn resolve_after_start_chain(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+    async fn resolve_after_start_chain(&mut self, cue_id: Uuid) {
+        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Start).await else { return };
+
+        if self.record_and_check_chain_trigger(target) {
+            self.task_stack
+                .push(Task::Dispatch(ExecutorCommand::Execute(target)));
+        }
+    }
+
+    async fn resolve_after_complete_chain(&mut self, cue_id: Uuid) {
+        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Complete).await else { return };
+
+        if self.record_and_check_chain_trigger(target) {
+            self.task_stack
+                .push(Task::Dispatch(ExecutorCommand::Execute(target)));
+        }
+    }
+
+    async fn resolve_chain_target(&self, cue_id: Uuid, chain_type: ChainType) -> Option<Uuid> {
         if let Some(chain) = self.model_handle.get_cue_chain_by_id(&cue_id).await {
-            if let CueChain::AfterStart { target_id } = &chain {
-                if let Some(target) = target_id {
-                    if let Err(e) = self
-                        .process_command(ExecutorCommand::Execute(*target))
-                        .await
-                    {
-                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
+            match (chain_type, &chain) {
+                (ChainType::Start, CueChain::AfterStart { target_id }) => {
+                    if let Some(target) = target_id {
+                        Some(*target)
+                    } else {
+                        self.model_handle.get_next_cue_id_by_id(&cue_id).await
                     }
-                } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(&cue_id).await
-                    && let Err(e) = self
-                        .process_command(ExecutorCommand::Execute(next_id))
-                        .await
-                {
-                    log::error!("Failed to perform cue chain. ignoring. error={}", e);
                 }
+                (ChainType::Complete, CueChain::AfterComplete { target_id }) => {
+                    if let Some(target) = target_id {
+                        Some(*target)
+                    } else {
+                        self.model_handle.get_next_cue_id_by_id(&cue_id).await
+                    }
+                }
+                (_, _) => None,
             }
         } else {
-            log::warn!(
-                "Unknown cue started. model may be broken. cue_id={}",
-                cue_id
-            );
+            log::warn!("Unknown cue found. model may be broken. cue_id={}", cue_id);
+            None
         }
-        Ok(())
     }
 
-    async fn resolve_after_complete_chain(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
-        if let Some(chain) = self.model_handle.get_cue_chain_by_id(&cue_id).await {
-            if let CueChain::AfterComplete { target_id } = &chain {
-                if let Some(target) = target_id {
-                    if let Err(e) = self
-                        .process_command(ExecutorCommand::Execute(*target))
-                        .await
-                    {
-                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
-                    }
-                } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(&cue_id).await
-                    && let Err(e) = self
-                        .process_command(ExecutorCommand::Execute(next_id))
-                        .await
-                {
-                    log::error!("Failed to perform cue chain. ignoring. error={}", e);
-                }
+    fn record_and_check_chain_trigger(&mut self, cue_id: Uuid) -> bool {
+        const WINDOW: Duration = Duration::from_secs(2);
+        const MAX_TRIGGERS_IN_WINDOW: usize = 8;
+
+        let now = Instant::now();
+        let history = self.chain_trigger_history.entry(cue_id).or_default();
+        while let Some(&oldest) = history.front() {
+            if now.duration_since(oldest) > WINDOW {
+                history.pop_front();
+            } else {
+                break;
             }
+        }
+        history.push_back(now);
+
+        if history.len() > MAX_TRIGGERS_IN_WINDOW {
+            log::error!(
+                "Cue chain appears to be looping: cue_id={} was auto-chained into {} times within {:?}.",
+                cue_id,
+                history.len(),
+                WINDOW
+            );
+            false
         } else {
-            log::warn!(
-                "Unknown cue completed. model may be broken. cue_id={}",
-                cue_id
-            );
+            true
         }
-        Ok(())
-    }
-
-    async fn check_and_start_parents(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
-        let mut stack = VecDeque::from([cue_id]);
-
-        while let Some(target_id) = stack.pop_back() {
-            if let Some(parent) = self.model_handle.get_parent_by_id(&target_id).await {
-                let mut need_notify_event = false;
-                self.active_instances
-                    .entry(parent.id)
-                    .and_modify(|instance| {
-                        if instance.is_prewaiting || !instance.is_triggered {
-                            need_notify_event = true;
-                        }
-                        instance.is_prewaiting = false;
-                        instance.is_triggered = true;
-                    })
-                    .or_insert_with(|| {
-                        need_notify_event = true;
-                        ActiveInstance {
-                            engine_type: EngineType::Group,
-                            is_prewaiting: false,
-                            is_triggered: true,
-                            is_paused: false,
-                        }
-                    });
-                if need_notify_event {
-                    self.resolve_after_start_chain(parent.id).await?;
-                    self.executor_event_tx
-                        .send(ExecutorEvent::Triggered { cue_id: parent.id })
-                        .await?;
-                    self.executor_event_tx
-                        .send(ExecutorEvent::Started {
-                            cue_id: parent.id,
-                            position: 0.0,
-                            duration: 0.0,
-                            initial_params: StateParam::None,
-                        })
-                        .await?;
-                }
-                stack.push_back(parent.id);
-            }
-        }
-        Ok(())
-    }
-
-    async fn check_and_stop_parents(
-        &mut self,
-        cue_id: Uuid,
-        is_completed: bool,
-    ) -> Result<(), anyhow::Error> {
-        let mut stack = VecDeque::from([cue_id]);
-
-        while let Some(target_id) = stack.pop_back() {
-            if let Some(parent) = self.model_handle.get_parent_by_id(&target_id).await
-                && let CueParam::Group { children, .. } = parent.params
-            {
-                if children
-                    .iter()
-                    .any(|cue_id| self.active_instances.contains_key(cue_id))
-                    || !self.active_instances.contains_key(&parent.id)
-                {
-                    continue;
-                };
-
-                self.active_instances.remove(&parent.id);
-                if is_completed {
-                    self.resolve_after_complete_chain(parent.id).await?;
-                }
-
-                let reactivated = self.active_instances.contains_key(&parent.id)
-                    || children
-                        .iter()
-                        .any(|id| self.active_instances.contains_key(id));
-                if reactivated {
-                    continue;
-                }
-                if is_completed {
-                    self.executor_event_tx
-                        .send(ExecutorEvent::Completed { cue_id: parent.id })
-                        .await?;
-                } else {
-                    self.executor_event_tx
-                        .send(ExecutorEvent::Stopped { cue_id: parent.id })
-                        .await?;
-                }
-                stack.push_back(parent.id);
-            }
-        }
-        Ok(())
     }
 }
