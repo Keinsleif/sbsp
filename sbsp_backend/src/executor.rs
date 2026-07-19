@@ -240,17 +240,7 @@ impl Executor {
             Task::BeginScope { cue_id, context } => {
                 self.in_flight.insert(cue_id);
                 match context {
-                    ScopeContext::GroupLoad { .. } => {
-                        self.active_instances.insert(
-                            cue_id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                is_prewaiting: false,
-                                is_triggered: false,
-                                is_paused: false,
-                            },
-                        );
-                    }
+                    ScopeContext::GroupLoad { .. } => {}
                     ScopeContext::GroupExecute { .. } => {
                         self.active_instances.insert(
                             cue_id,
@@ -566,6 +556,15 @@ impl Executor {
                 match base.mode {
                     GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                         if let Some(first_id) = children.first() {
+                            self.active_instances.insert(
+                                cue.id,
+                                ActiveInstance {
+                                    engine_type: EngineType::Group,
+                                    is_prewaiting: false,
+                                    is_triggered: false,
+                                    is_paused: false,
+                                },
+                            );
                             let context = ScopeContext::GroupLoad { child_count: 1 };
                             self.task_stack.push(Task::EndScope {
                                 cue_id: cue.id,
@@ -582,6 +581,15 @@ impl Executor {
                     }
                     GroupMode::Concurrency => {
                         if !children.is_empty() {
+                            self.active_instances.insert(
+                                cue.id,
+                                ActiveInstance {
+                                    engine_type: EngineType::Group,
+                                    is_prewaiting: false,
+                                    is_triggered: false,
+                                    is_paused: false,
+                                },
+                            );
                             let context = ScopeContext::GroupLoad {
                                 child_count: children.len(),
                             };
