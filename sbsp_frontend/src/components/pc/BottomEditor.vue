@@ -94,7 +94,11 @@ const editorTab = computed({
       class="flex h-full flex-col overflow-hidden"
     >
       <tab-list class="shrink-0 grow-0">
-        <tab value="basics">{{ t('main.bottomEditor.basics.title') }}</tab>
+        <tab
+          value="basics"
+          v-show="selectedCue != null"
+          >{{ t('main.bottomEditor.basics.title') }}</tab
+        >
         <tab
           value="audio"
           v-show="selectedCue != null && selectedCue.params.type == 'audio'"
@@ -128,8 +132,11 @@ const editorTab = computed({
         >
       </tab-list>
       <tab-panels class="grow overflow-auto p-0">
-        <tab-panel value="blank">
-          <div style="margin: auto; width: fit-content">No Selection</div>
+        <tab-panel
+          value="blank"
+          class="flex h-full items-center justify-center"
+        >
+          <div class="text-2xl">{{ t('main.bottomEditor.noSelection') }}</div>
         </tab-panel>
         <tab-panel value="basics">
           <BasicEditor

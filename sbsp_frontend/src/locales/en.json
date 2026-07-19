@@ -112,7 +112,8 @@
             "title": "Fade Cue"
           },
           "group": {
-            "title": "Group Cue"
+            "title": "Group Cue",
+            "description": "{'{'}mode{'}'} replaced with Group cue mode"
           },
           "load": {
             "title": "Load Cue"
@@ -282,7 +283,8 @@
         "title": "Time & Levels",
         "volume": "Volume",
         "envelopeVisible": "Show envelope"
-      }
+      },
+      "noSelection": "No Selection"
     },
     "chainMode": {
       "afterStart": "After-Start",

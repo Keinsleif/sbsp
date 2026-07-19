@@ -112,7 +112,8 @@
             "title": "フェードキュー"
           },
           "group": {
-            "title": "グループキュー"
+            "title": "グループキュー",
+            "description": "{'{'}mode{'}'} はグループキューのモードに置き換えられます"
           },
           "load": {
             "title": "読み込みキュー"
@@ -282,7 +283,8 @@
         "title": "時間と音量",
         "volume": "音量",
         "envelopeVisible": "音量変化を表示"
-      }
+      },
+      "noSelection": "選択なし"
     },
     "chainMode": {
       "afterComplete": "完了後",
@@ -297,7 +299,7 @@
       "modes": {
         "edit": "編集",
         "run": "実行",
-        "view": "表示"
+        "view": "閲覧"
       }
     },
     "name": "名前",

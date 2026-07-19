@@ -4,7 +4,11 @@
 mod command;
 mod event;
 
+#[cfg(test)]
+mod tests;
+
 pub use command::ExecutorCommand;
+pub use command::StopMode;
 pub use event::ExecutorEvent;
 
 use std::collections::{HashMap, VecDeque};
@@ -13,6 +17,7 @@ use async_recursion::async_recursion;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
+use crate::model::cue::CueChain;
 use crate::{
     action::CueAction,
     controller::state::StateParam,
@@ -28,9 +33,9 @@ use crate::{
 #[derive(Debug)]
 pub struct ActiveInstance {
     engine_type: EngineType,
-    executed: bool,
-    prewaiting: bool,
-    paused: bool,
+    is_triggered: bool,  // specify loaded or triggered
+    is_prewaiting: bool, // specify prewaiting or playing
+    is_paused: bool,     // specify paused or playing
 }
 
 pub struct Executor {
@@ -95,17 +100,21 @@ impl Executor {
             }
             ExecutorCommand::Execute(cue_id) => {
                 if let Some(active_instance) = self.active_instances.get(&cue_id)
-                    && active_instance.executed
+                    && active_instance.is_triggered
                 {
                     log::warn!("Cue already executed. cue_id={}", cue_id);
                 } else if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                    self.check_and_start_parents(cue_id).await?;
+                    self.executor_event_tx
+                        .send(ExecutorEvent::Triggered { cue_id })
+                        .await?;
                     if cue.pre_wait > 0.0 {
                         if !self.active_instances.contains_key(&cue_id) {
                             self.load_cue(&cue).await?;
                         }
                         if let Some(instance) = self.active_instances.get_mut(&cue_id) {
-                            instance.prewaiting = true;
-                            instance.executed = true;
+                            instance.is_prewaiting = true;
+                            instance.is_triggered = true;
                         }
                         self.wait_tx
                             .send(WaitCommand::Start {
@@ -117,13 +126,14 @@ impl Executor {
                     } else {
                         self.execute_cue(&cue).await?;
                     }
+                    self.resolve_after_start_chain(cue_id).await?;
                 } else {
                     anyhow::bail!("EXECUTE: cue not found. cue_id={}", cue_id);
                 }
             }
             ExecutorCommand::Pause(cue_id) => self.pause_cue(cue_id).await?,
             ExecutorCommand::Resume(cue_id) => self.resume_cue(cue_id).await?,
-            ExecutorCommand::Stop(cue_id) => self.stop_cue(cue_id).await?,
+            ExecutorCommand::Stop(cue_id, stop_mode) => self.stop_cue(cue_id, stop_mode).await?,
             ExecutorCommand::SeekTo(cue_id, position) => self.seek_to_cue(cue_id, position).await?,
             ExecutorCommand::SeekBy(cue_id, amount) => self.seek_by_cue(cue_id, amount).await?,
             ExecutorCommand::PerformAction(cue_id, action) => {
@@ -192,9 +202,9 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Audio,
-                        prewaiting: false,
-                        executed: false,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: false,
+                        is_paused: false,
                     },
                 );
             }
@@ -210,9 +220,9 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Wait,
-                        prewaiting: false,
-                        executed: false,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: false,
+                        is_paused: false,
                     },
                 );
             }
@@ -228,27 +238,35 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Fade,
-                        prewaiting: false,
-                        executed: false,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: false,
+                        is_paused: false,
                     },
                 );
             }
             CueParam::Start(_) | CueParam::Stop(_) | CueParam::Pause(_) | CueParam::Load(_) => {
-                log::warn!("Loading transport cues is not available. ignoring...");
                 self.active_instances.insert(
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Playback,
-                        prewaiting: false,
-                        executed: false,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: false,
+                        is_paused: false,
                     },
                 );
             }
             CueParam::Group { base, children } => match base.mode {
                 GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                     if let Some(first_id) = children.first() {
+                        self.active_instances.insert(
+                            cue.id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: false,
+                                is_paused: false,
+                            },
+                        );
                         self.process_command(ExecutorCommand::Load(*first_id))
                             .await?;
                         self.executor_event_tx
@@ -258,21 +276,25 @@ impl Executor {
                                 duration: 0.0,
                             })
                             .await?;
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                prewaiting: false,
-                                executed: false,
-                                paused: false,
-                            },
-                        );
                     }
                 }
                 GroupMode::Concurrency => {
                     if !children.is_empty() {
+                        self.active_instances.insert(
+                            cue.id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: false,
+                                is_paused: false,
+                            },
+                        );
                         for cue_id in children.iter() {
-                            self.process_command(ExecutorCommand::Load(*cue_id)).await?;
+                            if let Err(e) =
+                                self.process_command(ExecutorCommand::Load(*cue_id)).await
+                            {
+                                log::error!("Failed to load group child. e={}", e);
+                            }
                         }
                         self.executor_event_tx
                             .send(ExecutorEvent::Loaded {
@@ -281,15 +303,6 @@ impl Executor {
                                 duration: 0.0,
                             })
                             .await?;
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                prewaiting: false,
-                                executed: false,
-                                paused: false,
-                            },
-                        );
                     }
                 }
             },
@@ -298,7 +311,6 @@ impl Executor {
     }
 
     async fn execute_cue(&mut self, cue: &Cue) -> Result<(), anyhow::Error> {
-        self.check_and_start_parents(cue.id).await?;
         match &cue.params {
             CueParam::Audio(AudioCueParam {
                 target,
@@ -334,9 +346,9 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Audio,
-                        prewaiting: false,
-                        executed: true,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
                     },
                 );
             }
@@ -352,9 +364,9 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Wait,
-                        prewaiting: false,
-                        executed: true,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
                     },
                 );
             }
@@ -363,7 +375,7 @@ impl Executor {
                     && self.active_instances.contains_key(&params.target)
                 {
                     match cue.params {
-                        CueParam::Audio(_)
+                        CueParam::Audio(_) => {
                             if self
                                 .audio_tx
                                 .send(AudioCommand::FadeVolume {
@@ -372,9 +384,10 @@ impl Executor {
                                     fade_param: params.fade_param,
                                 })
                                 .await
-                                .is_err() =>
-                        {
-                            anyhow::bail!("cannot send AudioCommand");
+                                .is_err()
+                            {
+                                anyhow::bail!("cannot send AudioCommand");
+                            }
                         }
                         CueParam::Group { .. } => {
                             let children = self
@@ -384,7 +397,7 @@ impl Executor {
                             for child in children {
                                 if self.active_instances.contains_key(&child.id)
                                     && let CueParam::Audio(_) = child.params
-                                    && self
+                                    && let Err(e) = self
                                         .audio_tx
                                         .send(AudioCommand::FadeVolume {
                                             id: child.id,
@@ -392,9 +405,8 @@ impl Executor {
                                             fade_param: params.fade_param,
                                         })
                                         .await
-                                        .is_err()
                                 {
-                                    anyhow::bail!("cannot send AudioCommand");
+                                    log::error!("Failed to fade group child. e={}", e);
                                 }
                             }
                         }
@@ -413,17 +425,26 @@ impl Executor {
                     cue.id,
                     ActiveInstance {
                         engine_type: EngineType::Fade,
-                        prewaiting: false,
-                        executed: true,
-                        paused: false,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
                     },
                 );
             }
             CueParam::Start(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
+                    },
+                );
                 if let Some(instance) = self.active_instances.get(&params.target)
-                    && instance.executed
+                    && instance.is_triggered
                 {
-                    if instance.paused {
+                    if instance.is_paused {
                         self.process_command(ExecutorCommand::Resume(params.target))
                             .await?;
                     }
@@ -431,6 +452,7 @@ impl Executor {
                     self.process_command(ExecutorCommand::Execute(params.target))
                         .await?;
                 }
+
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
                         cue_id: cue.id,
@@ -439,20 +461,29 @@ impl Executor {
                         initial_params: StateParam::None,
                     })
                     .await?;
-                self.executor_event_tx
-                    .send(ExecutorEvent::Completed { cue_id: cue.id })
-                    .await?;
                 self.active_instances.remove(&cue.id);
+                self.emit_completed(cue.id).await?;
             }
             CueParam::Stop(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
+                    },
+                );
                 if self.active_instances.contains_key(&params.target) {
-                    self.process_command(ExecutorCommand::Stop(params.target))
+                    let stop_mode = if params.hard {
+                        StopMode::Hard
+                    } else {
+                        StopMode::Soft
+                    };
+                    self.process_command(ExecutorCommand::Stop(params.target, stop_mode))
                         .await?;
-                    if params.hard {
-                        self.process_command(ExecutorCommand::Stop(params.target))
-                            .await?;
-                    }
                 }
+
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
                         cue_id: cue.id,
@@ -461,19 +492,27 @@ impl Executor {
                         initial_params: StateParam::None,
                     })
                     .await?;
-                self.executor_event_tx
-                    .send(ExecutorEvent::Completed { cue_id: cue.id })
-                    .await?;
                 self.active_instances.remove(&cue.id);
+                self.emit_completed(cue.id).await?;
             }
             CueParam::Pause(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
+                    },
+                );
                 if let Some(instance) = self.active_instances.get(&params.target)
-                    && instance.executed
-                    && !instance.paused
+                    && instance.is_triggered
+                    && !instance.is_paused
                 {
                     self.process_command(ExecutorCommand::Pause(params.target))
                         .await?;
                 }
+
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
                         cue_id: cue.id,
@@ -482,16 +521,24 @@ impl Executor {
                         initial_params: StateParam::None,
                     })
                     .await?;
-                self.executor_event_tx
-                    .send(ExecutorEvent::Completed { cue_id: cue.id })
-                    .await?;
                 self.active_instances.remove(&cue.id);
+                self.emit_completed(cue.id).await?;
             }
             CueParam::Load(params) => {
+                self.active_instances.insert(
+                    cue.id,
+                    ActiveInstance {
+                        engine_type: EngineType::Playback,
+                        is_prewaiting: false,
+                        is_triggered: true,
+                        is_paused: false,
+                    },
+                );
                 if !self.active_instances.contains_key(&params.target) {
                     self.process_command(ExecutorCommand::Load(params.target))
                         .await?;
                 }
+
                 self.executor_event_tx
                     .send(ExecutorEvent::Started {
                         cue_id: cue.id,
@@ -500,14 +547,21 @@ impl Executor {
                         initial_params: StateParam::None,
                     })
                     .await?;
-                self.executor_event_tx
-                    .send(ExecutorEvent::Completed { cue_id: cue.id })
-                    .await?;
                 self.active_instances.remove(&cue.id);
+                self.emit_completed(cue.id).await?;
             }
             CueParam::Group { base, children } => match base.mode {
                 GroupMode::Playlist { .. } | GroupMode::StartFirst { .. } => {
                     if let Some(first_id) = children.first() {
+                        self.active_instances.insert(
+                            cue.id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: true,
+                                is_paused: false,
+                            },
+                        );
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
@@ -518,31 +572,19 @@ impl Executor {
                             .await?;
                         self.process_command(ExecutorCommand::Execute(*first_id))
                             .await?;
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                prewaiting: false,
-                                executed: true,
-                                paused: false,
-                            },
-                        );
-                    } else {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Started {
-                                cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                                initial_params: StateParam::None,
-                            })
-                            .await?;
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Completed { cue_id: cue.id })
-                            .await?;
                     }
                 }
                 GroupMode::Concurrency => {
                     if !children.is_empty() {
+                        self.active_instances.insert(
+                            cue.id,
+                            ActiveInstance {
+                                engine_type: EngineType::Group,
+                                is_prewaiting: false,
+                                is_triggered: true,
+                                is_paused: false,
+                            },
+                        );
                         self.executor_event_tx
                             .send(ExecutorEvent::Started {
                                 cue_id: cue.id,
@@ -552,30 +594,13 @@ impl Executor {
                             })
                             .await?;
                         for cue_id in children.iter() {
-                            self.process_command(ExecutorCommand::Execute(*cue_id))
-                                .await?;
+                            if let Err(e) = self
+                                .process_command(ExecutorCommand::Execute(*cue_id))
+                                .await
+                            {
+                                log::error!("Failed to execute group child. e={}", e);
+                            }
                         }
-                        self.active_instances.insert(
-                            cue.id,
-                            ActiveInstance {
-                                engine_type: EngineType::Group,
-                                prewaiting: false,
-                                executed: true,
-                                paused: false,
-                            },
-                        );
-                    } else {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Started {
-                                cue_id: cue.id,
-                                position: 0.0,
-                                duration: 0.0,
-                                initial_params: StateParam::None,
-                            })
-                            .await?;
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Completed { cue_id: cue.id })
-                            .await?;
                     }
                 }
             },
@@ -585,7 +610,7 @@ impl Executor {
 
     async fn pause_cue(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
-            if active_instance.prewaiting {
+            if active_instance.is_prewaiting {
                 self.wait_tx
                     .send(WaitCommand::Pause {
                         wait_type: WaitType::PreWait,
@@ -619,9 +644,12 @@ impl Executor {
                         && let CueParam::Group { children, .. } = cue.params
                     {
                         for child_id in children.iter() {
-                            if self.active_instances.contains_key(child_id) {
-                                self.process_command(ExecutorCommand::Pause(*child_id))
-                                    .await?;
+                            if self.active_instances.contains_key(child_id)
+                                && let Err(e) = self
+                                    .process_command(ExecutorCommand::Pause(*child_id))
+                                    .await
+                            {
+                                log::error!("Failed to pause group child. e={}", e);
                             }
                         }
                     }
@@ -633,7 +661,7 @@ impl Executor {
 
     async fn resume_cue(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
-            if active_instance.prewaiting {
+            if active_instance.is_prewaiting {
                 self.wait_tx
                     .send(WaitCommand::Resume {
                         wait_type: WaitType::PreWait,
@@ -667,9 +695,12 @@ impl Executor {
                         && let CueParam::Group { children, .. } = cue.params
                     {
                         for child_id in children.iter() {
-                            if self.active_instances.contains_key(child_id) {
-                                self.process_command(ExecutorCommand::Resume(*child_id))
-                                    .await?;
+                            if self.active_instances.contains_key(child_id)
+                                && let Err(e) = self
+                                    .process_command(ExecutorCommand::Resume(*child_id))
+                                    .await
+                            {
+                                log::error!("Failed to resume group child. e={}", e);
                             }
                         }
                     }
@@ -679,61 +710,95 @@ impl Executor {
         Ok(())
     }
 
-    async fn stop_cue(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+    async fn stop_cue(&mut self, cue_id: Uuid, stop_mode: StopMode) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
-            if active_instance.prewaiting {
+            let is_prewaiting = active_instance.is_prewaiting;
+            if is_prewaiting {
+                match active_instance.engine_type {
+                    EngineType::Audio => {
+                        self.audio_tx
+                            .send(AudioCommand::HardStop { id: cue_id })
+                            .await?;
+                    }
+                    EngineType::Wait => {
+                        self.wait_tx
+                            .send(WaitCommand::Stop {
+                                wait_type: WaitType::Wait,
+                                instance_id: cue_id,
+                            })
+                            .await?;
+                    }
+                    EngineType::Fade => {
+                        self.wait_tx
+                            .send(WaitCommand::Stop {
+                                wait_type: WaitType::FadeWait,
+                                instance_id: cue_id,
+                            })
+                            .await?;
+                    }
+                    EngineType::Playback => {}
+                    EngineType::Group => {
+                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
+                            && let CueParam::Group { children, .. } = cue.params
+                        {
+                            for child_id in children.iter() {
+                                if self.active_instances.contains_key(child_id) {
+                                    self.process_command(ExecutorCommand::Stop(
+                                        *child_id,
+                                        StopMode::Hard,
+                                    ))
+                                    .await?;
+                                }
+                            }
+                        }
+                    }
+                }
                 self.wait_tx
                     .send(WaitCommand::Stop {
                         wait_type: WaitType::PreWait,
                         instance_id: cue_id,
                     })
                     .await?;
-            } // continue for stop loaded cue.
-            match active_instance.engine_type {
-                EngineType::Audio => {
-                    self.audio_tx
-                        .send(AudioCommand::Stop { id: cue_id })
-                        .await?;
-                }
-                EngineType::Wait => {
-                    self.wait_tx
-                        .send(WaitCommand::Stop {
-                            wait_type: WaitType::Wait,
-                            instance_id: cue_id,
-                        })
-                        .await?;
-                }
-                EngineType::Fade => {
-                    log::warn!("Stop command is not available for Fade cue. ignoring...");
-                }
-                EngineType::Playback => {
-                    log::warn!("Stop command is not available for Transport cues. ignoring...");
-                }
-                EngineType::Group => {
-                    let mut stop_sent = false;
-                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
-                        && let CueParam::Group { children, .. } = cue.params
-                    {
-                        for child_id in children.iter() {
-                            if self.active_instances.contains_key(child_id) {
-                                self.process_command(ExecutorCommand::Stop(*child_id))
-                                    .await?;
-                                stop_sent = true;
-                            }
-                        }
+            } else {
+                match active_instance.engine_type {
+                    EngineType::Audio => {
+                        let command = match stop_mode {
+                            StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
+                            StopMode::Hard => AudioCommand::HardStop { id: cue_id },
+                        };
+                        self.audio_tx.send(command).await?;
                     }
-                    if stop_sent {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Stopping {
-                                cue_id,
-                                position: 0.0,
-                                duration: 0.0,
+                    EngineType::Wait => {
+                        self.wait_tx
+                            .send(WaitCommand::Stop {
+                                wait_type: WaitType::Wait,
+                                instance_id: cue_id,
                             })
                             .await?;
-                    } else {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Stopped { cue_id })
-                            .await?;
+                    }
+                    EngineType::Fade => {
+                        log::warn!("Stop command is not available for Fade cue. ignoring...");
+                    }
+                    EngineType::Playback => {
+                        self.active_instances.remove(&cue_id);
+                        self.emit_stopped(cue_id).await?;
+                    }
+                    EngineType::Group => {
+                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
+                            && let CueParam::Group { children, .. } = cue.params
+                        {
+                            for child_id in children.iter() {
+                                if self.active_instances.contains_key(child_id)
+                                    && let Err(e) = self
+                                        .process_command(ExecutorCommand::Stop(
+                                            *child_id, stop_mode,
+                                        ))
+                                        .await
+                                {
+                                    log::error!("Failed to stop group child. e={}", e);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -743,7 +808,7 @@ impl Executor {
 
     async fn seek_to_cue(&self, cue_id: Uuid, position: f64) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
-            if active_instance.prewaiting {
+            if active_instance.is_prewaiting {
                 self.wait_tx
                     .send(WaitCommand::SeekTo {
                         wait_type: WaitType::PreWait,
@@ -787,7 +852,7 @@ impl Executor {
 
     async fn seek_by_cue(&self, cue_id: Uuid, amount: f64) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get(&cue_id) {
-            if active_instance.prewaiting {
+            if active_instance.is_prewaiting {
                 self.wait_tx
                     .send(WaitCommand::SeekBy {
                         wait_type: WaitType::PreWait,
@@ -868,7 +933,7 @@ impl Executor {
                     } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = true);
+                            .and_modify(|instance| instance.is_paused = true);
                         ExecutorEvent::Paused {
                             cue_id,
                             position,
@@ -878,7 +943,7 @@ impl Executor {
                     AudioEngineEvent::Resumed { .. } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = false);
+                            .and_modify(|instance| instance.is_paused = false);
                         ExecutorEvent::Resumed { cue_id }
                     }
                     AudioEngineEvent::Seeked { position, .. } => {
@@ -899,13 +964,11 @@ impl Executor {
                     }
                     AudioEngineEvent::Stopped { .. } => {
                         self.active_instances.remove(&cue_id);
-                        self.check_and_stop_parents(cue_id, false).await?;
-                        ExecutorEvent::Stopped { cue_id }
+                        return self.emit_stopped(cue_id).await;
                     }
                     AudioEngineEvent::Completed { .. } => {
                         self.active_instances.remove(&cue_id);
-                        self.check_and_stop_parents(cue_id, true).await?;
-                        ExecutorEvent::Completed { cue_id }
+                        return self.emit_completed(cue_id).await;
                     }
                     AudioEngineEvent::StateParamUpdated { params, .. } => {
                         ExecutorEvent::StateParamUpdated {
@@ -915,8 +978,7 @@ impl Executor {
                     }
                     AudioEngineEvent::Error { error, .. } => {
                         self.active_instances.remove(&cue_id);
-                        self.check_and_stop_parents(cue_id, false).await?;
-                        ExecutorEvent::Error { cue_id, error }
+                        return self.emit_error(cue_id, error).await;
                     }
                 };
 
@@ -948,7 +1010,7 @@ impl Executor {
                     } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = true);
+                            .and_modify(|instance| instance.is_paused = true);
                         ExecutorEvent::PreWaitPaused {
                             cue_id,
                             position,
@@ -958,7 +1020,7 @@ impl Executor {
                     WaitEvent::Resumed { .. } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = false);
+                            .and_modify(|instance| instance.is_paused = false);
                         ExecutorEvent::PreWaitResumed { cue_id }
                     }
                     WaitEvent::Seeked { position, .. } => {
@@ -967,8 +1029,9 @@ impl Executor {
                     WaitEvent::Stopped { .. } => {
                         if self.active_instances.remove(&cue_id).is_some() {
                             log::info!("PreWaitStopped cue_id={}", cue_id);
+                            self.emit_stopped(cue_id).await?;
                         }
-                        ExecutorEvent::PreWaitStopped { cue_id }
+                        return Ok(());
                     }
                     WaitEvent::Completed { .. } => {
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
@@ -1007,7 +1070,7 @@ impl Executor {
                         cue_id,
                         position,
                         duration,
-                        initial_params: StateParam::Wait,
+                        initial_params: StateParam::None,
                     },
                     WaitEvent::Progress {
                         position, duration, ..
@@ -1027,7 +1090,7 @@ impl Executor {
                     } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = true);
+                            .and_modify(|instance| instance.is_paused = true);
                         ExecutorEvent::Paused {
                             cue_id,
                             position,
@@ -1037,7 +1100,7 @@ impl Executor {
                     WaitEvent::Resumed { .. } => {
                         self.active_instances
                             .entry(cue_id)
-                            .and_modify(|instance| instance.paused = false);
+                            .and_modify(|instance| instance.is_paused = false);
                         ExecutorEvent::Resumed { cue_id }
                     }
                     WaitEvent::Seeked { position, .. } => {
@@ -1045,18 +1108,95 @@ impl Executor {
                     }
                     WaitEvent::Stopped { .. } => {
                         self.active_instances.remove(&cue_id);
-                        self.check_and_stop_parents(cue_id, false).await?;
-                        ExecutorEvent::Stopped { cue_id }
+                        return self.emit_stopped(cue_id).await;
                     }
                     WaitEvent::Completed { .. } => {
                         self.active_instances.remove(&cue_id);
-                        self.check_and_stop_parents(cue_id, true).await?;
-                        ExecutorEvent::Completed { cue_id }
+                        return self.emit_completed(cue_id).await;
                     }
                 };
 
                 self.executor_event_tx.send(playback_event).await?;
             }
+        }
+        Ok(())
+    }
+
+    async fn emit_stopped(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+        self.executor_event_tx
+            .send(ExecutorEvent::Stopped { cue_id })
+            .await?;
+        self.check_and_stop_parents(cue_id, false).await?;
+        Ok(())
+    }
+
+    async fn emit_error(&mut self, cue_id: Uuid, error: String) -> Result<(), anyhow::Error> {
+        self.executor_event_tx
+            .send(ExecutorEvent::Error { cue_id, error })
+            .await?;
+        self.check_and_stop_parents(cue_id, false).await?;
+        Ok(())
+    }
+
+    async fn emit_completed(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+        self.executor_event_tx
+            .send(ExecutorEvent::Completed { cue_id })
+            .await?;
+        self.resolve_after_complete_chain(cue_id).await?; // trigger cue chain before stop parents
+        self.check_and_stop_parents(cue_id, true).await?;
+        Ok(())
+    }
+
+    async fn resolve_after_start_chain(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+        if let Some(chain) = self.model_handle.get_cue_chain_by_id(&cue_id).await {
+            if let CueChain::AfterStart { target_id } = &chain {
+                if let Some(target) = target_id {
+                    if let Err(e) = self
+                        .process_command(ExecutorCommand::Execute(*target))
+                        .await
+                    {
+                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
+                    }
+                } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(&cue_id).await
+                    && let Err(e) = self
+                        .process_command(ExecutorCommand::Execute(next_id))
+                        .await
+                {
+                    log::error!("Failed to perform cue chain. ignoring. error={}", e);
+                }
+            }
+        } else {
+            log::warn!(
+                "Unknown cue started. model may be broken. cue_id={}",
+                cue_id
+            );
+        }
+        Ok(())
+    }
+
+    async fn resolve_after_complete_chain(&mut self, cue_id: Uuid) -> Result<(), anyhow::Error> {
+        if let Some(chain) = self.model_handle.get_cue_chain_by_id(&cue_id).await {
+            if let CueChain::AfterComplete { target_id } = &chain {
+                if let Some(target) = target_id {
+                    if let Err(e) = self
+                        .process_command(ExecutorCommand::Execute(*target))
+                        .await
+                    {
+                        log::error!("Failed to perform cue chain. ignoring. error={}", e);
+                    }
+                } else if let Some(next_id) = self.model_handle.get_next_cue_id_by_id(&cue_id).await
+                    && let Err(e) = self
+                        .process_command(ExecutorCommand::Execute(next_id))
+                        .await
+                {
+                    log::error!("Failed to perform cue chain. ignoring. error={}", e);
+                }
+            }
+        } else {
+            log::warn!(
+                "Unknown cue completed. model may be broken. cue_id={}",
+                cue_id
+            );
         }
         Ok(())
     }
@@ -1070,22 +1210,26 @@ impl Executor {
                 self.active_instances
                     .entry(parent.id)
                     .and_modify(|instance| {
-                        if instance.prewaiting || !instance.executed {
+                        if instance.is_prewaiting || !instance.is_triggered {
                             need_notify_event = true;
                         }
-                        instance.prewaiting = false;
-                        instance.executed = true;
+                        instance.is_prewaiting = false;
+                        instance.is_triggered = true;
                     })
                     .or_insert_with(|| {
                         need_notify_event = true;
                         ActiveInstance {
                             engine_type: EngineType::Group,
-                            prewaiting: false,
-                            executed: true,
-                            paused: false,
+                            is_prewaiting: false,
+                            is_triggered: true,
+                            is_paused: false,
                         }
                     });
                 if need_notify_event {
+                    self.resolve_after_start_chain(parent.id).await?;
+                    self.executor_event_tx
+                        .send(ExecutorEvent::Triggered { cue_id: parent.id })
+                        .await?;
                     self.executor_event_tx
                         .send(ExecutorEvent::Started {
                             cue_id: parent.id,
@@ -1112,447 +1256,38 @@ impl Executor {
             if let Some(parent) = self.model_handle.get_parent_by_id(&target_id).await
                 && let CueParam::Group { children, .. } = parent.params
             {
-                let need_to_stop_parent = {
-                    !children
-                        .iter()
-                        .any(|cue_id| self.active_instances.contains_key(cue_id))
-                        && self.active_instances.contains_key(&parent.id)
+                if children
+                    .iter()
+                    .any(|cue_id| self.active_instances.contains_key(cue_id))
+                    || !self.active_instances.contains_key(&parent.id)
+                {
+                    continue;
                 };
 
-                if need_to_stop_parent {
-                    self.active_instances.remove(&parent.id);
-                    if is_completed {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Completed { cue_id: parent.id })
-                            .await?;
-                    } else {
-                        self.executor_event_tx
-                            .send(ExecutorEvent::Stopped { cue_id: parent.id })
-                            .await?;
-                    }
+                self.active_instances.remove(&parent.id);
+                if is_completed {
+                    self.resolve_after_complete_chain(parent.id).await?;
+                }
+
+                let reactivated = self.active_instances.contains_key(&parent.id)
+                    || children
+                        .iter()
+                        .any(|id| self.active_instances.contains_key(id));
+                if reactivated {
+                    continue;
+                }
+                if is_completed {
+                    self.executor_event_tx
+                        .send(ExecutorEvent::Completed { cue_id: parent.id })
+                        .await?;
+                } else {
+                    self.executor_event_tx
+                        .send(ExecutorEvent::Stopped { cue_id: parent.id })
+                        .await?;
                 }
                 stack.push_back(parent.id);
             }
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    use tempfile::NamedTempFile;
-    use tokio::sync::{
-        broadcast,
-        mpsc::{self, Receiver, Sender},
-        watch,
-    };
-    use uuid::Uuid;
-
-    use crate::{
-        BackendSettings,
-        controller::state::AudioStateParam,
-        engine::audio_engine::{AudioCommand, AudioEngineEvent},
-        event::BackendEvent,
-        manager::ShowModelManager,
-        model::{
-            self,
-            cue::{
-                CueColor,
-                audio::{Decibels, Easing, FadeParam, SoundType},
-            },
-        },
-    };
-
-    async fn setup_executor(
-        cue_id: Uuid,
-        path: PathBuf,
-    ) -> (
-        ShowModelManager,
-        Sender<ExecutorCommand>,
-        Receiver<AudioCommand>,
-        Sender<EngineEvent>,
-        Receiver<ExecutorEvent>,
-    ) {
-        let (exec_tx, exec_rx) = mpsc::channel::<ExecutorCommand>(32);
-        let (audio_tx, audio_rx) = mpsc::channel::<AudioCommand>(32);
-        let (wait_tx, _wait_rx) = mpsc::channel::<WaitCommand>(32);
-        let (playback_event_tx, playback_event_rx) = mpsc::channel::<ExecutorEvent>(32);
-        let (engine_event_tx, engine_event_rx) = mpsc::channel::<EngineEvent>(32);
-        let (event_tx, _) = broadcast::channel::<BackendEvent>(32);
-        let (_, settings_rx) = watch::channel(BackendSettings::default());
-
-        let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx);
-        let mut write_lock = manager.write().await;
-        write_lock.name = "TestShowModel".to_string();
-        write_lock.cue_list.root_ids.push(cue_id);
-        write_lock.cue_list.cues.insert(
-            cue_id,
-            Cue {
-                id: cue_id,
-                number: "1".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: model::cue::CueChain::DoNotChain,
-                parent_id: None,
-                params: model::cue::CueParam::Audio(AudioCueParam {
-                    target: path,
-                    start_time: Some(5.0),
-                    fade_in_param: Some(FadeParam {
-                        duration: 2.0,
-                        easing: Easing::Linear,
-                    }),
-                    end_time: Some(50.0),
-                    fade_out_param: Some(FadeParam {
-                        duration: 5.0,
-                        easing: Easing::InPow(2.0),
-                    }),
-                    volume: Decibels::IDENTITY,
-                    pan: 0.0,
-                    repeat: false,
-                    sound_type: SoundType::Streaming,
-                    envelope: Vec::new(),
-                }),
-            },
-        );
-        drop(write_lock);
-
-        let executor = Executor::new(
-            handle.clone(),
-            exec_rx,
-            audio_tx,
-            wait_tx,
-            playback_event_tx,
-            engine_event_rx,
-        );
-
-        tokio::spawn(executor.run());
-
-        (
-            manager,
-            exec_tx,
-            audio_rx,
-            engine_event_tx,
-            playback_event_rx,
-        )
-    }
-
-    #[tokio::test]
-    async fn play_command() {
-        let cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, _, _) =
-            setup_executor(cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(cue_id))
-            .await
-            .unwrap();
-
-        loop {
-            if let Some(command) = audio_rx.recv().await {
-                if let AudioCommand::Play { data, .. } = command {
-                    assert_eq!(data.filepath, temp_target.path().to_path_buf());
-                    assert_eq!(data.volume, Decibels::IDENTITY);
-                    assert_eq!(data.pan, 0.0);
-                    assert_eq!(data.start_time, Some(5.0));
-                    assert_eq!(
-                        data.fade_in_param,
-                        Some(FadeParam {
-                            duration: 2.0,
-                            easing: Easing::Linear
-                        })
-                    );
-                    assert_eq!(data.end_time, Some(50.0));
-                    assert_eq!(
-                        data.fade_out_param,
-                        Some(FadeParam {
-                            duration: 5.0,
-                            easing: Easing::InPow(2.0)
-                        })
-                    );
-                    assert!(!data.repeat);
-                    break;
-                }
-            } else {
-                panic!("audio_tx dropped.");
-            }
-        }
-    }
-
-    #[tokio::test]
-    async fn started_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Started {
-                instance_id,
-                position: 0.0,
-                duration: 23.0,
-                initial_params: AudioStateParam::default(),
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Started {
-                cue_id,
-                position,
-                duration,
-                initial_params,
-            } = event
-            {
-                assert_eq!(cue_id, orig_cue_id);
-                assert_eq!(position, 0.0);
-                assert_eq!(duration, 23.0);
-                assert_eq!(
-                    initial_params,
-                    StateParam::Audio(AudioStateParam::default())
-                );
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn progress_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Progress {
-                instance_id,
-                position: 20.0,
-                duration: 50.0,
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Progress {
-                cue_id,
-                position,
-                duration,
-            } = event
-            {
-                assert_eq!(cue_id, orig_cue_id);
-                assert_eq!(position, 20.0);
-                assert_eq!(duration, 50.0);
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn pause_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Paused {
-                instance_id,
-                position: 24.0,
-                duration: 50.0,
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Paused {
-                cue_id,
-                position,
-                duration,
-            } = event
-            {
-                assert_eq!(cue_id, orig_cue_id);
-                assert_eq!(position, 24.0);
-                assert_eq!(duration, 50.0);
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn resume_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let instance_id = loop {
-            if let Some(command) = audio_rx.recv().await {
-                if let AudioCommand::Play { id, .. } = command {
-                    break id;
-                }
-            } else {
-                panic!("audio_tx dropped.")
-            }
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Resumed {
-                instance_id,
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Resumed { cue_id } = event {
-                assert_eq!(cue_id, orig_cue_id);
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn completed_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Completed {
-                instance_id,
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Completed { cue_id } = event {
-                assert_eq!(cue_id, orig_cue_id);
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn error_event() {
-        let orig_cue_id = Uuid::new_v4();
-
-        let temp_target: NamedTempFile = NamedTempFile::with_suffix(".flac").unwrap();
-        let (_, exec_tx, mut audio_rx, engine_event_tx, mut playback_event_rx) =
-            setup_executor(orig_cue_id, temp_target.path().to_path_buf()).await;
-
-        exec_tx
-            .send(ExecutorCommand::Execute(orig_cue_id))
-            .await
-            .unwrap();
-
-        let command = audio_rx.recv().await.unwrap();
-
-        let instance_id = if let AudioCommand::Play { id, .. } = command {
-            id
-        } else {
-            unreachable!();
-        };
-
-        engine_event_tx
-            .send(EngineEvent::Audio(AudioEngineEvent::Error {
-                instance_id,
-                error: "Error".to_string(),
-            }))
-            .await
-            .unwrap();
-
-        if let Some(event) = playback_event_rx.recv().await {
-            if let ExecutorEvent::Error { cue_id, error } = event {
-                assert_eq!(cue_id, orig_cue_id);
-                assert_eq!(error, "Error".to_string());
-            } else {
-                panic!("Wrong Playback Event emitted.");
-            }
-        } else {
-            unreachable!();
-        }
     }
 }

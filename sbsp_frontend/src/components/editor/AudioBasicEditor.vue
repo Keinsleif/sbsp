@@ -117,7 +117,7 @@ const isActive = computed(() => {
       :label="t('main.bottomEditor.audio.loadEntireFileOnMemory')"
       @update:model-value="saveEditorValue"
     />
-    <div class="flex flex-col items-start justify-evenly gap-2 sm:flex-row">
+    <div class="flex flex-col items-start justify-evenly gap-2 xl:flex-row">
       <responsive-control
         :overlay="uiState.isRightSidebarOpen ? mdAndDown : smAndDown"
         :button-label="t('main.bottomEditor.audio.changeFadeIn')"

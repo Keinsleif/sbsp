@@ -6,6 +6,9 @@ hero:
   name: "SBS Player"
   text:  Documentation
   tagline: イベント向け音源再生ソフトウェア
+  image:
+    src: /favicon.svg
+    alt: SBS_Player_logo
   actions:
     - theme: brand
       text: インストール方法

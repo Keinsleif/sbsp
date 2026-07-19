@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref, shallowRef, toRaw, useTemplateRef, watch, watchEffect } from 'vue';
+import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showState';
-import { useElementSize, useEventListener, useMouseInElement, useWebWorkerFn } from '@vueuse/core';
+import { useElementSize, useEventListener, useMouseInElement } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import type { Cue } from '../../types/Cue';
 import {
@@ -27,6 +27,7 @@ import { usePosition } from '../../composables/usePosition.ts';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import ContextMenu from 'primevue/contextmenu';
 import PathIcon from '../display/PathIcon.vue';
+import WaveformPath from '../display/WaveformPath.vue';
 
 const { t } = useI18n();
 const api = useApi();
@@ -146,73 +147,6 @@ usePosition((pos) => {
   const range = timeRange.value;
   const x = (range.start + position * range.delta) * (svgWidth.value - 1);
   positionRef.value.style.transform = `translateX(${x}px)`;
-});
-
-const waveformPath = shallowRef('');
-
-const buildWaveformPath = (source: number[], height: number, width: number) => {
-  let result = '';
-  const amp = height * 0.375;
-
-  const samplePerPixel = source.length / width;
-  for (let i = 0; i < width; i++) {
-    const start = Math.floor(i * samplePerPixel);
-    const end = Math.floor((i + 1) * samplePerPixel);
-
-    let max = source[start];
-    if (max == null) continue;
-    for (let j = start; j < end; j++) {
-      const value = source[j];
-      if (value != null && value > max) max = value;
-    }
-    if (max > 0) {
-      result += `M${i},${((1 - max) * amp).toFixed(2)}v${(2 * amp * max).toFixed()}`;
-    }
-  }
-  return result;
-};
-
-const { workerFn, workerStatus, workerTerminate } = useWebWorkerFn(buildWaveformPath);
-
-const updateWaveformPath = async () => {
-  if (svgWidth.value < 1 || selectedCue.value == null) {
-    waveformPath.value = '';
-    return;
-  }
-
-  const source = assetResult.get(selectedCue.value.id)?.waveform;
-  if (source == null) {
-    waveformPath.value = '';
-    return;
-  }
-
-  if (workerStatus.value === 'RUNNING') {
-    workerTerminate();
-  }
-
-  try {
-    waveformPath.value = await workerFn(toRaw(source), contentHeight.value, svgWidth.value);
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-watch(
-  [svgWidth, contentHeight, () => assetResult.get(selectedCue.value?.id)?.waveform],
-  (newValue, oldValue) => {
-    if (newValue[2] !== oldValue[2]) {
-      waveformPath.value = '';
-    }
-    updateWaveformPath();
-  },
-);
-
-const waveformTransform = computed(() => {
-  if (uiState.scaleWaveform) {
-    return `scale(1, ${Math.pow(10, props.volume / 20)}) translate(0, ${contentHeight.value * 0.125})`;
-  } else {
-    return `translate(0, ${contentHeight.value * 0.125})`;
-  }
 });
 
 const { elementX, elementY, isOutside } = useMouseInElement(svgRef, {
@@ -617,19 +551,11 @@ const menuItems = computed(() => [
         "
         @pointerdown="seek"
       >
-        <rect
-          :class="$style.waveform"
-          x="0"
-          :y="contentHeight / 2"
-          height="1"
+        <waveform-path
+          v-model="selectedCue"
           :width="svgWidth"
-        />
-        <path
-          v-if="waveformPath != null"
-          :d="waveformPath"
-          :transform="waveformTransform"
-          :class="$style.waveform"
-          transform-origin="center"
+          :height="contentHeight"
+          :volume="props.volume"
         />
         <rect
           :x="startPos"

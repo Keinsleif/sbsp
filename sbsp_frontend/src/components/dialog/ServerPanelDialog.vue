@@ -261,8 +261,8 @@ onUnmounted(() => {
                   {{ t('dialog.server.permission') }}
                 </th>
                 <th width="108" />
-                <th width="45" />
-                <th width="45" />
+                <th width="56" />
+                <th width="56" />
               </tr>
             </thead>
             <tbody>

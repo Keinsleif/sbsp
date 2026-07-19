@@ -86,7 +86,9 @@ const time = useNow();
 </script>
 
 <template>
-  <div class="m-0 flex h-full w-full flex-row gap-3 overflow-x-auto p-3">
+  <div
+    class="m-0 flex h-full w-full flex-row gap-3 overflow-x-auto border-b border-(--p-form-field-border-color) p-3"
+  >
     <div class="flex grow-0 flex-col items-start gap-3">
       <div
         class="flex grow items-center border border-(--p-form-field-border-color)"
@@ -128,7 +130,7 @@ const time = useNow();
             severity="secondary"
             :active="isCueStatus('playing') || isCueStatus('preWaiting')"
             :disabled="showState.playbackCursor == null"
-            active-color="green.500"
+            active-color="green.600"
             :blink="isCueStatus('preWaiting')"
             @click="
               if (showState.playbackCursor != null) {
@@ -145,7 +147,7 @@ const time = useNow();
             severity="secondary"
             :active="isCueStatus('paused') || isCueStatus('loaded')"
             :disabled="showState.playbackCursor == null"
-            active-color="orange.500"
+            active-color="orange.600"
             :blink="isCueStatus('loaded')"
             @click="handleReadyPauseButton"
           />
