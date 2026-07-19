@@ -1,0 +1,43 @@
+name: 'check-frontend-types'
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'sbsp_frontend/**'
+      - 'pnpm-lock.yaml'
+      - 'check-frontend-types.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    permissions:
+      contents: read
+    env:
+      MISE_ENV: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: jdx/mise-action@v4
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: install frontend dependencies
+        run: pnpm install --frozen-lockfile # change this to npm, pnpm or bun depending on which one you use.
+
+      - name: Frontend Typecheck
+        working-directory: 'sbsp_frontend'
+        run: |
+          pnpm typecheck
