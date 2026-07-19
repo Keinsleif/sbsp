@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.5.4](https://github.com/Keinsleif/sbsp/compare/c6d2a0c6dc10cd80de09cb5bf10755c92c1cc75a..2.5.4) - 2026-07-19
+### Package updates
+- [frontend-2.5.3](sbsp_frontend) bumped to [frontend-2.5.3](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.2..frontend-2.5.3)
+- [remote_app-2.5.4](sbsp_remote_app) bumped to [remote_app-2.5.4](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.3..remote_app-2.5.4)
+- [app-2.5.4](sbsp_app) bumped to [app-2.5.4](https://github.com/Keinsleif/sbsp/compare/app-2.5.3..app-2.5.4)
+### Global changes
+#### Documentation
+- add OGP for web page (#153) - ([4a8c662](https://github.com/Keinsleif/sbsp/commit/4a8c66241bd8d95b07c708ac1c7ec4231d3d9c77)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Continuous Integration
+- improve ci checks (#152) - ([c6d2a0c](https://github.com/Keinsleif/sbsp/commit/c6d2a0c6dc10cd80de09cb5bf10755c92c1cc75a)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.5.3](https://github.com/Keinsleif/sbsp/compare/52372b2042e4d6620b700e1697b1ddf4e8d7292f..2.5.3) - 2026-07-19
 ### Package updates
 - [app-2.5.3](sbsp_app) bumped to [app-2.5.3](https://github.com/Keinsleif/sbsp/compare/app-2.5.2..app-2.5.3)

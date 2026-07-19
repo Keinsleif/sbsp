@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend-2.5.3 - 2026-07-19
+#### Bug Fixes
+- (**frontend**) invalid param of ActiveCueItem on MonitorPanel (#150) - (e7a4974) - *Keinsleif*
+
+- - -
+
 ## frontend-2.5.2 - 2026-07-19
 #### Bug Fixes
 - (**backend**) executor logic (#146) - (9548ff3) - *Keinsleif*
