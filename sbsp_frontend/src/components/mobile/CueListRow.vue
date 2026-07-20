@@ -107,7 +107,7 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
     </td>
     <td
       headers="cuelist_number"
-      class="border-x border-(--p-form-field-border-color) px-1 text-center"
+      class="border-x border-(--p-form-field-border-color) px-1 text-center tabular-nums"
     >
       {{ item.cue.number }}
     </td>
