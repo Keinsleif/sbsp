@@ -61,8 +61,8 @@ where
 {
     log::info!(
         "Starting server with port: {}, discovery: {:?}",
-        &options.port,
-        &options.discoverry
+        options.port,
+        options.discoverry
     );
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
     let salt = generate_salt();

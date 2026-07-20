@@ -349,7 +349,7 @@ impl ShowModelManager {
                     for cue_id in cue_ids {
                         if let Some(cue) = model.cue_list.cues.get_mut(&cue_id) {
                             if targets.remove(&cue_id) {
-                                cue.number = format!("{}{}{}", &prefix, number, &suffix);
+                                cue.number = format!("{}{}{}", prefix, number, suffix);
                                 number += increment;
                                 if targets.is_empty() {
                                     break 'outer;
