@@ -75,7 +75,7 @@ usePosition((pos) => {
         size="21px"
       />
     </div>
-    <div class="flex flex-row justify-between p-0">
+    <div class="flex flex-row justify-between p-0 tabular-nums">
       <div
         ref="elapsed"
         class="px-3 py-2"

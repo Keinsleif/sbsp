@@ -95,12 +95,11 @@ const time = useNow();
         :class="hasFocus ? '' : 'bg-red-500'"
       >
         <div
-          class="flex items-end pr-3 pl-3 text-center"
-          style="font-size: 4em; line-height: 1"
+          class="flex items-end pr-3 pl-3 text-center text-6xl tabular-nums"
         >
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
           >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
-          >.<span style="font-size: 32pt; line-height: 1">{{
+          >.<span class="text-4xl">{{
             String(time.getSeconds()).padStart(2, '0')
           }}</span>
         </div>

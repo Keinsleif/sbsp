@@ -353,7 +353,7 @@ const isPlayingActive = computed((): boolean => {
     </td>
     <td
       headers="cuelist_number"
-      class="text-center"
+      class="text-center tabular-nums"
       @dblclick="openEditable($event, 'cuelist_number')"
       @blur="closeEditable($event.target, true, 'cuelist_number')"
       @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_number')"
@@ -404,7 +404,7 @@ const isPlayingActive = computed((): boolean => {
           "
         />
         <div
-          class="absolute left-0 w-full text-center"
+          class="absolute left-0 w-full text-center tabular-nums"
           style="top: 50%; transform: translateY(-50%)"
           @dblclick="if (!isPreWaitActive) openEditable($event, 'cuelist_pre_wait');"
           @blur="closeEditable($event.target, true, 'cuelist_pre_wait')"
@@ -431,7 +431,7 @@ const isPlayingActive = computed((): boolean => {
           "
         />
         <div
-          class="absolute left-0 w-full text-center"
+          class="absolute left-0 w-full text-center tabular-nums"
           style="top: 50%; transform: translateY(-50%)"
           @dblclick="if (!isPlayingActive) openEditable($event, 'cuelist_duration');"
           @blur="closeEditable($event.target, true, 'cuelist_duration')"

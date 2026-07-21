@@ -40,12 +40,11 @@ watch(
         class="flex h-full w-full grow-0 items-center border border-(--p-form-field-border-color)"
       >
         <div
-          class="flex grow items-end justify-center pr-3 pl-3 text-center"
-          style="font-size: 4em; line-height: 1"
+          class="flex grow items-end justify-center pr-3 pl-3 text-center text-6xl tabular-nums"
         >
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
           >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
-          >.<span style="font-size: 32pt; line-height: 1">{{
+          >.<span class="text-4xl">{{
             String(time.getSeconds()).padStart(2, '0')
           }}</span>
         </div>
