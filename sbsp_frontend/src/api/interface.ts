@@ -44,8 +44,7 @@ export interface IBackendAdapter {
   processAsset(path: string): Promise<void>;
 
   // controller commands
-  setPlaybackCursor(cueId: string | null): Promise<void>;
-  sendGo(): Promise<void>;
+  sendExecute(cueId: string): Promise<void>;
   sendLoad(cueId: string): Promise<void>;
   sendPause(cueId: string): Promise<void>;
   sendResume(cueId: string): Promise<void>;
