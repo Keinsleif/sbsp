@@ -28,7 +28,7 @@ use tokio::{
 };
 use tower_http::services::ServeDir;
 
-use crate::settings::manager::GlobalSettingsManager;
+use crate::settings::GlobalSettingsManager;
 
 const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
