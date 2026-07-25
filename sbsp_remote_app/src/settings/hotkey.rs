@@ -14,6 +14,7 @@ pub struct HotkeySettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PlaybackHotkey {
+    #[serde(alias = "go")]
     pub execute: Option<String>,
     pub load: Option<String>,
     pub pause_and_resume: Option<String>,

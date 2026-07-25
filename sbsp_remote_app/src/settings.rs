@@ -30,6 +30,7 @@ pub struct GlobalRemoteSettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
+    #[serde(alias = "advanceCursorWhenGo")]
     pub advance_cursor_when_execute: bool,
     pub lock_cursor_to_selection: bool,
     pub copy_assets_when_add: bool,
