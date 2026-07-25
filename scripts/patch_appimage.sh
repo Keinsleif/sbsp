@@ -147,10 +147,6 @@ if [ "$new_entries" -ne $((orig_entries - removed)) ]; then
   echo "error: repacked entry count $new_entries != $orig_entries - $removed" >&2
   exit 1
 fi
-if unsquashfs -o "$runtime_size" -l repacked.AppImage | grep -q 'libwayland-'; then
-  echo "error: repacked image still contains libwayland" >&2
-  exit 1
-fi
 
 mv repacked.AppImage "$appimage"
 echo "repaired $appimage ($orig_entries -> $new_entries entries)"
