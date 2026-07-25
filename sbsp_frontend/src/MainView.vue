@@ -236,7 +236,9 @@ onMounted(() => {
     .then((fullState) => {
       showModel.updateAll(fullState.showModel);
       showState.update(fullState.showState);
-
+      if (uiState.playbackCursor == null) {
+        uiState.setPlaybackCursor(fullState.showModel.rootIds[0] ?? null);
+      }
     })
     .catch((e) => console.error(e.toString()));
 
