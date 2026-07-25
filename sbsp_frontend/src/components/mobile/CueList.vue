@@ -7,18 +7,16 @@ import { useI18n } from 'vue-i18n';
 import { useShowModel } from '../../stores/showModel';
 import CueListRow from './CueListRow.vue';
 import { getLockCursorToSelection } from '../../utils';
-import { useApi } from '../../api';
 import { useUiState } from '../../stores/uiState';
 import PathIcon from '../display/PathIcon.vue';
 
 const { t } = useI18n();
-const api = useApi();
 const showModel = useShowModel();
 const uiState = useUiState();
 
 const setPlaybackCursor = (cueId: string) => {
   if (uiState.mode !== 'view' && getLockCursorToSelection()) {
-    api.setPlaybackCursor(cueId);
+    uiState.setPlaybackCursor(cueId);
   }
 };
 </script>

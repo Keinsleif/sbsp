@@ -79,10 +79,10 @@
           "systemSettings": "System Settings"
         },
         "general": {
-          "advanceCursorWhenGo": "Advance cursor when GO",
           "copyAssetsWhenAdd": "Copy assets when adding Cue",
           "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
-          "seekAmount": "Seek amount"
+          "seekAmount": "Seek amount",
+          "advanceCursorWhenExecute": "Advance cursor when EXECUTE"
         },
         "hotkey": {
           "audio": {
@@ -90,7 +90,6 @@
             "toggleRepeat": "ToggleRepeat"
           },
           "playback": {
-            "go": "Go",
             "load": "Load",
             "pauseAll": "Pause All",
             "pauseAndResume": "Pause & Resume",
@@ -99,7 +98,8 @@
             "seekForward": "Seek Forward (seconds set in General Settings)",
             "stop": "Stop",
             "stopAll": "Stop All",
-            "title": "Playback"
+            "title": "Playback",
+            "execute": "Execute"
           }
         },
         "nameFormat": {

@@ -216,7 +216,7 @@ const isEqualAudioHardware = (a: AudioHardwareSettings, b: AudioHardwareSettings
 
 const recallMusicBeePreset = () => {
   editingSettings.value.global.hotkey.playback = {
-    go: 'Enter',
+    execute: 'Enter',
     load: 'L',
     pauseAndResume: 'Space',
     pauseAll: '[',
@@ -229,12 +229,12 @@ const recallMusicBeePreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.advanceCursorWhenGo = false;
+  editingSettings.value.global.general.advanceCursorWhenExecute = false;
 };
 
 const recallQLabPreset = () => {
   editingSettings.value.global.hotkey.playback = {
-    go: 'Space',
+    execute: 'Space',
     load: 'L',
     pauseAndResume: 'P',
     pauseAll: '[',
@@ -247,7 +247,7 @@ const recallQLabPreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.advanceCursorWhenGo = true;
+  editingSettings.value.global.general.advanceCursorWhenExecute = true;
 };
 </script>
 
@@ -358,8 +358,8 @@ const recallQLabPreset = () => {
             class="flex flex-col gap-4 p-4"
           >
             <checkbox-wrapper
-              v-model="editingSettings.global.general.advanceCursorWhenGo"
-              :label="t('dialog.settings.global.general.advanceCursorWhenGo')"
+              v-model="editingSettings.global.general.advanceCursorWhenExecute"
+              :label="t('dialog.settings.global.general.advanceCursorWhenExecute')"
               hide-details
             />
             <checkbox-wrapper
@@ -460,9 +460,9 @@ const recallQLabPreset = () => {
             <div class="flex flex-row items-start gap-4">
               <div class="flex flex-col gap-4">
                 <hotkey-input
-                  v-model="editingSettings.global.hotkey.playback.go"
+                  v-model="editingSettings.global.hotkey.playback.execute"
                   class="w-70"
-                  :label="t('dialog.settings.global.hotkey.playback.go')"
+                  :label="t('dialog.settings.global.hotkey.playback.execute')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.load"

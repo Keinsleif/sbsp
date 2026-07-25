@@ -79,10 +79,10 @@
           "systemSettings": "システムの設定"
         },
         "general": {
-          "advanceCursorWhenGo": "GO実行時に再生カーソルを進める",
           "copyAssetsWhenAdd": "キューを追加するときにアセットをコピーする",
           "lockCursorToSelection": "再生カーソルを選択範囲にロック",
-          "seekAmount": "シーク秒数"
+          "seekAmount": "シーク秒数",
+          "advanceCursorWhenExecute": "実行時に再生カーソルを進める"
         },
         "hotkey": {
           "audio": {
@@ -90,7 +90,6 @@
             "toggleRepeat": "リピート切り替え"
           },
           "playback": {
-            "go": "Go",
             "load": "読み込み",
             "pauseAll": "すべて一時停止",
             "pauseAndResume": "一時停止＆再開",
@@ -99,7 +98,8 @@
             "seekForward": "前方へスキップ (全般設定で設定された秒数)",
             "stop": "停止",
             "stopAll": "すべて停止",
-            "title": "再生"
+            "title": "再生",
+            "execute": "実行"
           }
         },
         "nameFormat": {

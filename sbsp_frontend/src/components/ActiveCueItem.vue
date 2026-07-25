@@ -57,6 +57,17 @@ usePosition((pos) => {
     progressRef.value.style.transform = `scaleX(${position / props.activeCue.duration})`;
   }
 });
+
+const barColor = computed(() => {
+  const activeCueStatus = props.activeCue.status;
+  if (activeCueStatus.startsWith('pre')) {
+    return 'var(--p-yellow-500)';
+  } else if (activeCueStatus === 'paused' || activeCueStatus === 'preWaitPaused' || activeCueStatus === 'stopping') {
+    return 'var(--p-orange-500)';
+  } else {
+    return 'var(--p-primary-color)';
+  }
+});
 </script>
 
 <template>
@@ -90,10 +101,7 @@ usePosition((pos) => {
         ref="progress"
         class="h-full w-full origin-left"
         :style="{
-          backgroundColor:
-            activeCue.status === 'paused' || activeCue.status === 'stopping'
-              ? 'var(--p-orange-500)'
-              : 'var(--p-primary-color)',
+          backgroundColor: barColor,
         }"
       />
     </div>
