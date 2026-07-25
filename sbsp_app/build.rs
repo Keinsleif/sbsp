@@ -7,6 +7,7 @@ use sbsp_backend::{
     model::ShowModel,
     ts_rs::{Config, TS},
 };
+use sbsp_frontend_settings::GlobalHostSettings;
 use sbsp_license::data::LicenseInformation;
 
 fn main() {
@@ -21,6 +22,8 @@ fn main() {
     <WsFeedback as TS>::export_all(&config).unwrap();
     <LicenseInformation as TS>::export_all(&config).unwrap();
     <SupportedHardware as TS>::export_all(&config).unwrap();
+
+    <GlobalHostSettings as TS>::export_all(&config).unwrap();
 
     tauri_build::build()
 }
