@@ -26,10 +26,13 @@ impl GlobalSettingsManager {
     }
 
     pub async fn import_from_file(&self, path: &Path) -> Result<GlobalHostSettings, anyhow::Error> {
-        let mut settings = self.inner.import_from_file(path).await?;
+        let content = tokio::fs::read_to_string(path).await?;
+        let mut settings = tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalHostSettings>(&content)).await??;
         sanitize_audio(&mut settings);
         self.set(settings.clone()).await;
-        self.inner.save().await?;
+        self.save().await?;
+
+        log::info!("GlobalSettings imported from: {}", path.display());
         Ok(settings)
     }
 
