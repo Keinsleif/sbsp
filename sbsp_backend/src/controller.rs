@@ -17,7 +17,6 @@ use crate::{
     event::BackendEvent,
     executor::{ExecutorCommand, ExecutorEvent, StopMode},
     manager::ShowModelHandle,
-    model::cue::CueParam,
 };
 
 pub struct CueController {
@@ -227,13 +226,9 @@ impl CueController {
             ControllerCommand::PauseAll
             | ControllerCommand::ResumeAll
             | ControllerCommand::StopAll => {
-                for (cue_id, active_cue) in &state.active_cues {
-                    let is_group = self
-                        .model_handle
-                        .get_cue_by_id(cue_id)
-                        .await
-                        .is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
-                    if !is_group {
+                let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
+                for cue_id in &root_ids {
+                    if let Some(active_cue) = state.active_cues.get(cue_id) {
                         let executor_command = match command {
                             ControllerCommand::PauseAll => match active_cue.status {
                                 PlaybackStatus::PreWaiting | PlaybackStatus::Playing => {
@@ -285,13 +280,9 @@ impl CueController {
 
     async fn hard_stop_all(&self) -> Result<()> {
         let state = self.state_tx.borrow().clone();
-        for cue_id in state.active_cues.keys() {
-            let is_group = self
-                .model_handle
-                .get_cue_by_id(cue_id)
-                .await
-                .is_some_and(|cue| matches!(cue.params, CueParam::Group { .. }));
-            if !is_group {
+        let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
+        for cue_id in &root_ids {
+            if state.active_cues.contains_key(cue_id) {
                 self.executor_tx
                     .send(ExecutorCommand::Stop(*cue_id, StopMode::Hard))
                     .await?;
