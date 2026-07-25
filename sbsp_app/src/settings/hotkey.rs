@@ -14,7 +14,7 @@ pub struct HotkeySettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PlaybackHotkey {
-    pub go: Option<String>,
+    pub execute: Option<String>,
     pub load: Option<String>,
     pub pause_and_resume: Option<String>,
     pub pause_all: Option<String>,
@@ -28,7 +28,7 @@ pub struct PlaybackHotkey {
 impl Default for PlaybackHotkey {
     fn default() -> Self {
         Self {
-            go: Some("Enter".to_string()),
+            execute: Some("Enter".to_string()),
             load: Some("L".to_string()),
             pause_and_resume: Some("Space".to_string()),
             pause_all: Some("[".to_string()),

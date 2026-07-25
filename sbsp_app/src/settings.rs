@@ -35,7 +35,7 @@ pub struct GlobalHostSettings {
 impl From<&GlobalHostSettings> for BackendSettings {
     fn from(from: &GlobalHostSettings) -> BackendSettings {
         BackendSettings {
-            advance_cursor_when_go: from.general.advance_cursor_when_go,
+            advance_cursor_when_go: from.general.advance_cursor_when_execute,
             copy_assets_when_add: from.general.copy_assets_when_add,
             audio: BackendAudioSettings {
                 device_id: from.audio.device_id.clone(),
@@ -49,7 +49,7 @@ impl From<&GlobalHostSettings> for BackendSettings {
 
 impl PartialEq<BackendSettings> for GlobalHostSettings {
     fn eq(&self, other: &BackendSettings) -> bool {
-        if self.general.advance_cursor_when_go == other.advance_cursor_when_go
+        if self.general.advance_cursor_when_execute == other.advance_cursor_when_go
             && self.general.copy_assets_when_add == other.copy_assets_when_add
         {
             return true;
@@ -61,7 +61,7 @@ impl PartialEq<BackendSettings> for GlobalHostSettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
-    pub advance_cursor_when_go: bool,
+    pub advance_cursor_when_execute: bool,
     pub lock_cursor_to_selection: bool,
     pub copy_assets_when_add: bool,
     pub seek_amount: f64,
@@ -70,7 +70,7 @@ pub struct GeneralSettings {
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
-            advance_cursor_when_go: false,
+            advance_cursor_when_execute: false,
             lock_cursor_to_selection: true,
             copy_assets_when_add: false,
             seek_amount: 5.0,

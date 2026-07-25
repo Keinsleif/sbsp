@@ -9,11 +9,11 @@ use sbsp_backend::{
 use crate::AppState;
 
 #[tauri::command]
-pub async fn go(state: tauri::State<'_, AppState>) -> Result<(), String> {
+pub async fn execute(state: tauri::State<'_, AppState>, cue_id: Uuid) -> Result<(), String> {
     let handle = state.get_handle();
     handle
         .controller_handle
-        .go()
+        .execute(cue_id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -112,19 +112,6 @@ pub async fn seek_by(
     handle
         .controller_handle
         .seek_by(cue_id, amount)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn set_playback_cursor(
-    state: tauri::State<'_, AppState>,
-    cue_id: Option<Uuid>,
-) -> Result<(), String> {
-    let handle = state.get_handle();
-    handle
-        .controller_handle
-        .set_playback_cursor(cue_id)
         .await
         .map_err(|e| e.to_string())
 }
