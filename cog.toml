@@ -48,6 +48,12 @@ bump_order = 3
 pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
 public_api = false
 
+[monorepo.packages.frontend_settings]
+path = "sbsp_license"
+bump_order = 3
+pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
+public_api = false
+
 [monorepo.packages.app]
 path = "sbsp_app"
 include = [
