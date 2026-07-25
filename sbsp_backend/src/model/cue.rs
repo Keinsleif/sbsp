@@ -142,12 +142,19 @@ impl From<CueList> for Vec<ProjectCue> {
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
+    #[serde(default)]
     pub number: String,
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
     pub notes: String,
+    #[serde(default)]
     pub color: CueColor,
+    #[serde(default)]
     pub pre_wait: f64,
+    #[serde(default)]
     pub chain: CueChain,
+    #[serde(default)]
     pub parent_id: Option<Uuid>,
     pub params: CueParam,
 }
