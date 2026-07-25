@@ -32,7 +32,6 @@ pub struct GlobalHostSettings {
 impl From<&GlobalHostSettings> for BackendSettings {
     fn from(from: &GlobalHostSettings) -> BackendSettings {
         BackendSettings {
-            advance_cursor_when_go: from.general.advance_cursor_when_execute,
             copy_assets_when_add: from.general.copy_assets_when_add,
             audio: BackendAudioSettings {
                 device_id: from.audio.device_id.clone(),
@@ -41,17 +40,6 @@ impl From<&GlobalHostSettings> for BackendSettings {
                 buffer_size: from.audio.buffer_size,
             },
         }
-    }
-}
-
-impl PartialEq<BackendSettings> for GlobalHostSettings {
-    fn eq(&self, other: &BackendSettings) -> bool {
-        if self.general.advance_cursor_when_execute == other.advance_cursor_when_go
-            && self.general.copy_assets_when_add == other.copy_assets_when_add
-        {
-            return true;
-        }
-        false
     }
 }
 

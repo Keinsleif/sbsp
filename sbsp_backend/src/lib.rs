@@ -75,7 +75,6 @@ pub struct FullShowState {
 
 #[derive(Default)]
 pub struct BackendSettings {
-    pub advance_cursor_when_go: bool,
     pub copy_assets_when_add: bool,
     pub audio: BackendAudioSettings,
 }
