@@ -73,7 +73,6 @@ pub struct FullShowState {
     pub show_state: ShowState,
 }
 
-#[cfg(feature = "backend")]
 #[derive(Default)]
 pub struct BackendSettings {
     pub advance_cursor_when_go: bool,
@@ -81,7 +80,6 @@ pub struct BackendSettings {
     pub audio: BackendAudioSettings,
 }
 
-#[cfg(feature = "backend")]
 #[derive(Default, Clone, PartialEq)]
 pub struct BackendAudioSettings {
     pub device_id: Option<String>,

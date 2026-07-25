@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+#[cfg(feature = "manager")]
 use std::{path::PathBuf, sync::RwLock};
 
+#[cfg(feature = "manager")]
 use base64::prelude::*;
+#[cfg(feature = "manager")]
 use ed25519_dalek::{
     SIGNATURE_LENGTH, Signature, Verifier, VerifyingKey, pkcs8::DecodePublicKey as _,
 };
 
+#[cfg(feature = "manager")]
 use data::{LicenseEdition, LicenseFile};
 
+#[cfg(feature = "manager")]
 use crate::data::LicenseInformation;
 
 pub mod data;
 
+#[cfg(feature = "manager")]
 pub struct LicenseManager {
     public_key: VerifyingKey,
     current_license: RwLock<Option<LicenseInformation>>,
 }
 
+#[cfg(feature = "manager")]
 impl LicenseManager {
     pub fn new_from_pem(pem: &str) -> Self {
         let public_key = VerifyingKey::from_public_key_pem(pem).unwrap();

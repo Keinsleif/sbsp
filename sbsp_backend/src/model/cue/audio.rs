@@ -1,26 +1,16 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use std::{
-    ops::{Add, Mul, Sub},
-    path::PathBuf,
-};
+use std::path::PathBuf;
+#[cfg(feature = "backend")]
+use std::ops::{Add, Mul, Sub};
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
-#[ts(as = "f32")]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[cfg_attr(feature = "type_export", ts(as = "f32"))]
 pub struct Decibels(f32);
-
-impl Decibels {
-    pub const MUTE: Self = Self(-60.0);
-    pub const IDENTITY: Self = Self(0.0);
-
-    pub fn as_amplitude(&self) -> f32 {
-        10.0f32.powf(self.0 / 20.0)
-    }
-}
 
 impl Default for Decibels {
     fn default() -> Self {
@@ -28,18 +18,31 @@ impl Default for Decibels {
     }
 }
 
+impl Decibels {
+    pub const MUTE: Self = Self(-60.0);
+    pub const IDENTITY: Self = Self(0.0);
+
+    #[cfg(feature = "backend")]
+    pub fn as_amplitude(&self) -> f32 {
+        10.0f32.powf(self.0 / 20.0)
+    }
+}
+
+#[cfg(feature = "backend")]
 impl From<f32> for Decibels {
     fn from(value: f32) -> Self {
         Self(value)
     }
 }
 
+#[cfg(feature = "backend")]
 impl From<Decibels> for f32 {
     fn from(value: Decibels) -> Self {
         value.0
     }
 }
 
+#[cfg(feature = "backend")]
 impl Add for Decibels {
     type Output = Decibels;
 
@@ -48,6 +51,7 @@ impl Add for Decibels {
     }
 }
 
+#[cfg(feature = "backend")]
 impl Sub for Decibels {
     type Output = Decibels;
 
@@ -56,6 +60,7 @@ impl Sub for Decibels {
     }
 }
 
+#[cfg(feature = "backend")]
 impl Mul for Decibels {
     type Output = Decibels;
 
@@ -64,6 +69,7 @@ impl Mul for Decibels {
     }
 }
 
+#[cfg(feature = "backend")]
 impl Mul<f32> for Decibels {
     type Output = Decibels;
 
@@ -72,7 +78,8 @@ impl Mul<f32> for Decibels {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueParam {
     pub target: PathBuf,
@@ -88,7 +95,8 @@ pub struct AudioCueParam {
     pub envelope: Vec<EnvelopeSegment>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FadeParam {
     pub duration: f64,
@@ -104,7 +112,8 @@ impl Default for FadeParam {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct EnvelopeSegment {
     pub start: f64,
@@ -112,7 +121,8 @@ pub struct EnvelopeSegment {
     pub volume: Decibels,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     content = "intensity",
@@ -126,6 +136,7 @@ pub enum Easing {
     InOutPow(f64),
 }
 
+#[cfg(feature = "backend")]
 impl Easing {
     pub fn get_factor(&self, mut x: f64) -> f64 {
         match self {
@@ -145,7 +156,8 @@ impl Easing {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,
