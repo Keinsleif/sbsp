@@ -49,7 +49,7 @@ pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
 public_api = false
 
 [monorepo.packages.frontend_settings]
-path = "sbsp_license"
+path = "sbsp_frontend_settings"
 bump_order = 3
 pre_bump_hooks = ["cargo set-version {{version}} -p sbsp_{{package}}"]
 public_api = false
