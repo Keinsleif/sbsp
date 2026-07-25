@@ -13,17 +13,15 @@ use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings,
     controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
     event::BackendEvent,
     executor::{ExecutorCommand, ExecutorEvent, StopMode},
     manager::ShowModelHandle,
-    model::cue::{CueParam, group::GroupMode},
+    model::cue::CueParam,
 };
 
 pub struct CueController {
     model_handle: ShowModelHandle,
-    settings_rx: watch::Receiver<BackendSettings>,
     executor_tx: mpsc::Sender<ExecutorCommand>,
     command_rx: mpsc::Receiver<ControllerCommand>,
 
@@ -31,33 +29,27 @@ pub struct CueController {
     state_tx: watch::Sender<ShowState>,
     event_tx: broadcast::Sender<BackendEvent>,
     event_rx: broadcast::Receiver<BackendEvent>,
-
-    advance_cursor_when_go: bool,
 }
 
 impl CueController {
     pub fn new(
         model_handle: ShowModelHandle,
-        settings_rx: watch::Receiver<BackendSettings>,
         executor_tx: mpsc::Sender<ExecutorCommand>,
         executor_event_rx: mpsc::Receiver<ExecutorEvent>,
         state_tx: watch::Sender<ShowState>,
         event_tx: broadcast::Sender<BackendEvent>,
     ) -> (Self, CueControllerHandle) {
         let event_rx = event_tx.subscribe();
-        let advance_cursor_when_go = settings_rx.borrow().advance_cursor_when_go;
         let (command_tx, command_rx) = mpsc::channel::<ControllerCommand>(32);
         (
             Self {
                 model_handle,
-                settings_rx,
                 executor_tx,
                 command_rx,
                 executor_event_rx,
                 state_tx,
                 event_tx,
                 event_rx,
-                advance_cursor_when_go,
             },
             CueControllerHandle { command_tx },
         )
@@ -67,9 +59,6 @@ impl CueController {
         log::info!("CueController run loop started.");
         loop {
             tokio::select! {
-                Ok(_) = self.settings_rx.changed() => {
-                    self.advance_cursor_when_go = self.settings_rx.borrow().advance_cursor_when_go;
-                }
                 Some(command) = self.command_rx.recv() => {
                     if let Err(e) = self.handle_command(command).await {
                         log::error!("Error handling controller command: {}", e);
@@ -85,44 +74,17 @@ impl CueController {
                         Ok(event) => {
                             match event {
                                 BackendEvent::ShowModelLoaded{..} => {
-                                    {
-                                        let model = self.model_handle.read().await;
-                                        if let Some(first_id) = model.cue_list.root_ids.first() {
-                                            self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = Some(*first_id);
-                                            });
-                                        } else {
-                                            self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = None;
-                                            });
-                                        }
-                                    }
                                     if let Err(e) = self.hard_stop_all().await {
                                         log::error!("Failed to stop active cues before reset. {}", e);
                                     }
                                 },
                                 BackendEvent::ShowModelReset{..} => {
-                                    self.state_tx.send_modify(|state| {
-                                        state.playback_cursor = None;
-                                    });
                                     if let Err(e) = self.hard_stop_all().await {
                                         log::error!("Failed to stop active cues before reset. {}", e);
                                     }
                                 },
                                 BackendEvent::CueRemoved{cue_ids} => {
                                     let state = self.state_tx.borrow().clone();
-                                    if let Some(cursor) = state.playback_cursor && cue_ids.contains(&cursor) {
-                                        let model = self.model_handle.read().await;
-                                        if let Some(first_id) = model.cue_list.root_ids.first() {
-                                            self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = Some(*first_id);
-                                            });
-                                        } else {
-                                            self.state_tx.send_modify(|state| {
-                                                state.playback_cursor = None;
-                                            });
-                                        }
-                                    }
                                     for rm_id in cue_ids {
                                         if state.active_cues.contains_key(&rm_id)
                                             && let Err(e) = self.executor_tx.send(ExecutorCommand::Stop(rm_id, StopMode::Hard)).await {
@@ -153,17 +115,8 @@ impl CueController {
     async fn handle_command(&self, command: ControllerCommand) -> Result<(), anyhow::Error> {
         let state = self.state_tx.borrow().clone();
         match command {
-            ControllerCommand::Go => {
-                let cue_id = if let Some(cursor) = state.playback_cursor {
-                    cursor
-                } else {
-                    anyhow::bail!("GO: playback_cursor is unavailable.");
-                };
+            ControllerCommand::Execute(cue_id) => {
                 self.handle_go(cue_id).await?;
-
-                if self.advance_cursor_when_go {
-                    self.update_playback_cursor().await?;
-                }
                 Ok(())
             }
             ControllerCommand::Load(cue_id) => {
@@ -308,33 +261,6 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::SetPlaybackCursor { cue_id } => {
-                if let Some(cursor_cue_id) = cue_id
-                    && self
-                        .model_handle
-                        .get_cue_by_id(&cursor_cue_id)
-                        .await
-                        .is_none()
-                {
-                    anyhow::bail!(
-                        "Invalid playback cursor destination cue_id. cue_id = {}",
-                        cursor_cue_id
-                    );
-                }
-                self.state_tx.send_modify(|state| {
-                    if state.playback_cursor.ne(&cue_id) {
-                        state.playback_cursor = cue_id;
-                        if self
-                            .event_tx
-                            .send(BackendEvent::PlaybackCursorMoved { cue_id })
-                            .is_err()
-                        {
-                            log::trace!("No UI clients are listening to playback events.");
-                        }
-                    }
-                });
-                Ok(())
-            }
         }
     }
 
@@ -354,43 +280,6 @@ impl CueController {
         } else {
             anyhow::bail!("invalid cue id. cue_id={}", cue_id);
         }
-        Ok(())
-    }
-
-    async fn update_playback_cursor(&self) -> Result<()> {
-        let state = self.state_tx.borrow().clone();
-        let playback_cursor = if let Some(cursor) = state.playback_cursor {
-            cursor
-        } else {
-            anyhow::bail!("Playback cursor unavailable.");
-        };
-        let next_cursor = if let Some(cue) = self.model_handle.get_cue_by_id(&playback_cursor).await
-            && let CueParam::Group { base, children } = &cue.params
-            && let GroupMode::StartFirst { enter } = base.mode
-            && enter
-        {
-            if let Some(target_id) = children.get(1) {
-                Some(*target_id)
-            } else {
-                self.model_handle
-                    .get_next_cue_id_by_id(&playback_cursor)
-                    .await
-            }
-        } else {
-            self.model_handle
-                .get_next_cue_id_by_id(&playback_cursor)
-                .await
-        };
-        self.set_playback_cursor(next_cursor).await?;
-        Ok(())
-    }
-
-    async fn set_playback_cursor(&self, cursor: Option<Uuid>) -> Result<()> {
-        self.state_tx.send_modify(|state| {
-            state.playback_cursor = cursor;
-        });
-        self.event_tx
-            .send(BackendEvent::PlaybackCursorMoved { cue_id: cursor })?;
         Ok(())
     }
 
@@ -731,7 +620,6 @@ mod tests {
         }
         let (controller, controller_handle) = CueController::new(
             handle.clone(),
-            settings_rx,
             exec_tx,
             playback_event_rx,
             state_tx,
@@ -756,44 +644,12 @@ mod tests {
 
         tokio::spawn(controller.run());
 
-        controller_handle
-            .set_playback_cursor(Some(cue_id))
-            .await
-            .unwrap();
-        controller_handle.go().await.unwrap();
+        controller_handle.execute(cue_id).await.unwrap();
 
         if let Some(ExecutorCommand::Execute(id)) = exec_rx.recv().await {
             assert_eq!(id, cue_id);
         } else {
             unreachable!();
-        }
-    }
-
-    #[tokio::test]
-    async fn set_playback_cursor() {
-        let cue_id = Uuid::new_v4();
-        let cue_id_next = Uuid::new_v4();
-        let (controller, controller_handle, _, _, state_rx, mut event_rx) =
-            setup_controller(&[cue_id, cue_id_next]).await;
-
-        tokio::spawn(controller.run());
-
-        assert_eq!(state_rx.borrow().playback_cursor, None);
-
-        controller_handle
-            .set_playback_cursor(Some(cue_id_next))
-            .await
-            .unwrap();
-
-        let event = event_rx.recv().await.unwrap();
-        assert_eq!(
-            event,
-            BackendEvent::PlaybackCursorMoved {
-                cue_id: Some(cue_id_next)
-            }
-        );
-        if let Some(playback_cursor) = state_rx.borrow().playback_cursor {
-            assert_eq!(playback_cursor, cue_id_next);
         }
     }
 

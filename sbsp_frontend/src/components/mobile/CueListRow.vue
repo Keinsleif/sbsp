@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
-const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
+const isPlaybackCursor = computed(() => uiState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 
 const status = computed(() => {

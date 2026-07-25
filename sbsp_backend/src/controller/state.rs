@@ -55,14 +55,12 @@ pub struct ActiveCue {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowState {
-    pub playback_cursor: Option<Uuid>,
     pub active_cues: IndexMap<Uuid, ActiveCue>,
 }
 
 impl ShowState {
     pub fn new() -> Self {
         Self {
-            playback_cursor: None,
             active_cues: IndexMap::new(),
         }
     }

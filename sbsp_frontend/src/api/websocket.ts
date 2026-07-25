@@ -321,11 +321,8 @@ export function useWebsocketApi(): IBackendAdapter {
     processAsset: async function (path: string): Promise<void> {
       this.sendCommand({ type: 'assetProcessor', command: 'requestFileAssetData', path: path });
     },
-    setPlaybackCursor: async function (cueId: string | null): Promise<void> {
-      this.sendCommand({ type: 'control', command: 'setPlaybackCursor', params: { cueId: cueId } });
-    },
-    sendGo: async function (): Promise<void> {
-      this.sendCommand({ type: 'control', command: 'go' });
+    sendExecute: async function (cueId: string): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'execute', params: cueId });
     },
     sendLoad: async function (cueId: string): Promise<void> {
       this.sendCommand({ type: 'control', command: 'load', params: cueId });

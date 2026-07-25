@@ -323,7 +323,7 @@ const click = (event: MouseEvent, index: number) => {
         }
       }
       uiState.selected = lastSelected;
-      uiState.setPlaybackCursor(lastSelected);
+      uiState.tryUpdatePlaybackCursor(lastSelected);
     } else {
       uiState.setSelected(clickedId);
     }

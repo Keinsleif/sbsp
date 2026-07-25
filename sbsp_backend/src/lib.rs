@@ -142,7 +142,6 @@ pub fn start_backend(
         ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
-        settings_rx.clone(),
         executor_command_tx,
         executor_event_rx,
         state_tx,

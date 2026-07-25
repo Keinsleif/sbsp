@@ -9,7 +9,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
 export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
-    advanceCursorWhenGo: false,
+    advanceCursorWhenExecute: false,
     lockCursorToSelection: true,
     copyAssetsWhenAdd: false,
     seekAmount: 5,
@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   },
   hotkey: {
     playback: {
-      go: 'Space',
+      execute: 'Space',
       load: 'L',
       pauseAndResume: 'P',
       pauseAll: '[',
