@@ -19,8 +19,8 @@ impl CueControllerHandle {
         Ok(())
     }
 
-    pub async fn go(&self) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::Go).await?;
+    pub async fn execute(&self, uuid: Uuid) -> anyhow::Result<()> {
+        self.command_tx.send(ControllerCommand::Execute(uuid)).await?;
         Ok(())
     }
 
@@ -78,13 +78,6 @@ impl CueControllerHandle {
     pub async fn perform_action(&self, uuid: Uuid, action: CueAction) -> anyhow::Result<()> {
         self.command_tx
             .send(ControllerCommand::PerformAction(uuid, action))
-            .await?;
-        Ok(())
-    }
-
-    pub async fn set_playback_cursor(&self, uuid: Option<Uuid>) -> anyhow::Result<()> {
-        self.command_tx
-            .send(ControllerCommand::SetPlaybackCursor { cue_id: uuid })
             .await?;
         Ok(())
     }

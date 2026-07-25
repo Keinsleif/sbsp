@@ -28,9 +28,6 @@ pub enum BackendEvent {
     CueStatus(CueStatusEventParam),
 
     // System Events
-    PlaybackCursorMoved {
-        cue_id: Option<Uuid>,
-    },
     SyncState(SyncData),
 
     // Model Events

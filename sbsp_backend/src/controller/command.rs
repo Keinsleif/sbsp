@@ -15,7 +15,7 @@ use crate::action::CueAction;
     rename_all_fields = "camelCase"
 )]
 pub enum ControllerCommand {
-    Go,
+    Execute(Uuid),
     Load(Uuid),
     Pause(Uuid),
     Resume(Uuid),
@@ -26,5 +26,4 @@ pub enum ControllerCommand {
     ResumeAll,
     StopAll,
     PerformAction(Uuid, CueAction),
-    SetPlaybackCursor { cue_id: Option<Uuid> },
 }
