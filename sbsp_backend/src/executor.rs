@@ -263,7 +263,16 @@ impl Executor {
                     }
                     ScopeContext::GroupPause => {}
                     ScopeContext::GroupResume => {}
-                    ScopeContext::GroupStop => {}
+                    ScopeContext::GroupStop => {
+                        self.executor_event_tx
+                            .send(ExecutorEvent::Stopping {
+                                cue_id,
+                                position: 0.0,
+                                duration: 0.0,
+                            })
+                            .await
+                            .ok();
+                    }
                     ScopeContext::Playback => {
                         self.active_instances.insert(
                             cue_id,
@@ -694,24 +703,36 @@ impl Executor {
                             }
                         }
                         CueParam::Group { .. } => {
-                            // TODO: check and fade decendants?
-                            let children = self
+                            let mut visited = HashSet::new();
+                            let mut queue = self
                                 .model_handle
                                 .get_all_children_by_id(&params.target)
                                 .await;
-                            for child in children {
-                                if self.active_instances.contains_key(&child.id)
-                                    && let CueParam::Audio(_) = child.params
-                                    && let Err(e) = self
-                                        .audio_tx
-                                        .send(AudioCommand::FadeVolume {
-                                            id: child.id,
-                                            volume: params.volume,
-                                            fade_param: params.fade_param,
-                                        })
-                                        .await
-                                {
-                                    log::error!("Failed to fade group child. e={}", e);
+
+                            while let Some(child) = queue.pop() {
+                                if !visited.insert(child.id) {
+                                    continue;
+                                }
+                                match &child.params {
+                                    CueParam::Audio(_) => {
+                                        if self.active_instances.contains_key(&child.id)
+                                            && let Err(e) = self
+                                                .audio_tx
+                                                .send(AudioCommand::FadeVolume {
+                                                    id: child.id,
+                                                    volume: params.volume,
+                                                    fade_param: params.fade_param,
+                                                })
+                                                .await
+                                        {
+                                            log::error!("Failed to fade group child. e={}", e);
+                                        }
+                                    }
+                                    CueParam::Group { .. } => {
+                                        let grandchildren = self.model_handle.get_all_children_by_id(&child.id).await;
+                                        queue.extend(grandchildren);
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
