@@ -4131,7 +4131,7 @@ limitations under the License.
 
 - Used by
 
-    - [ed25519 2.2.3]( https://github.com/RustCrypto/signatures/tree/master/ed25519 )
+    - [ed25519 3.0.0]( https://github.com/RustCrypto/signatures )
 
 ```text
                               Apache License
@@ -5421,6 +5421,7 @@ limitations under the License.
     - [atomic-waker 1.1.2]( https://github.com/smol-rs/atomic-waker )
     - [base64 0.21.7]( https://github.com/marshallpierce/rust-base64 )
     - [base64 0.22.1]( https://github.com/marshallpierce/rust-base64 )
+    - [base64 0.23.0]( https://github.com/marshallpierce/rust-base64 )
     - [bitflags 1.3.2]( https://github.com/bitflags/bitflags )
     - [bitflags 2.13.0]( https://github.com/bitflags/bitflags )
     - [blocking 1.6.2]( https://github.com/smol-rs/blocking )
@@ -5957,19 +5958,24 @@ limitations under the License.
 
     - [base64ct 1.8.3]( https://github.com/RustCrypto/formats )
     - [block-buffer 0.10.4]( https://github.com/RustCrypto/utils )
+    - [block-buffer 0.12.1]( https://github.com/RustCrypto/utils )
     - [chacha20 0.10.1]( https://github.com/RustCrypto/stream-ciphers )
-    - [const-oid 0.9.6]( https://github.com/RustCrypto/formats/tree/master/const-oid )
+    - [const-oid 0.10.2]( https://github.com/RustCrypto/formats )
     - [cpufeatures 0.2.17]( https://github.com/RustCrypto/utils )
     - [cpufeatures 0.3.0]( https://github.com/RustCrypto/utils )
     - [crypto-common 0.1.7]( https://github.com/RustCrypto/traits )
-    - [der 0.7.10]( https://github.com/RustCrypto/formats/tree/master/der )
+    - [crypto-common 0.2.2]( https://github.com/RustCrypto/traits )
+    - [der 0.8.1]( https://github.com/RustCrypto/formats )
     - [digest 0.10.7]( https://github.com/RustCrypto/traits )
-    - [pem-rfc7468 0.7.0]( https://github.com/RustCrypto/formats/tree/master/pem-rfc7468 )
-    - [pkcs8 0.10.2]( https://github.com/RustCrypto/formats/tree/master/pkcs8 )
+    - [digest 0.11.3]( https://github.com/RustCrypto/traits )
+    - [hybrid-array 0.4.13]( https://github.com/RustCrypto/hybrid-array )
+    - [pem-rfc7468 1.0.0]( https://github.com/RustCrypto/formats )
+    - [pkcs8 0.11.0]( https://github.com/RustCrypto/formats )
     - [sha1 0.10.7]( https://github.com/RustCrypto/hashes )
     - [sha2 0.10.9]( https://github.com/RustCrypto/hashes )
-    - [signature 2.2.0]( https://github.com/RustCrypto/traits/tree/master/signature )
-    - [spki 0.7.3]( https://github.com/RustCrypto/formats/tree/master/spki )
+    - [sha2 0.11.0]( https://github.com/RustCrypto/hashes )
+    - [signature 3.0.0]( https://github.com/RustCrypto/traits )
+    - [spki 0.8.0]( https://github.com/RustCrypto/formats )
 
 ```text
                               Apache License
@@ -8981,7 +8987,7 @@ limitations under the License.
     - [dyn-clone 1.0.20]( https://github.com/dtolnay/dyn-clone )
     - [erased-serde 0.4.10]( https://github.com/dtolnay/erased-serde )
     - [fdeflate 0.3.7]( https://github.com/image-rs/fdeflate )
-    - [fiat-crypto 0.2.9]( https://github.com/mit-plv/fiat-crypto )
+    - [fiat-crypto 0.3.0]( https://github.com/mit-plv/fiat-crypto )
     - [field-offset 0.3.6]( https://github.com/Diggsey/rust-field-offset )
     - [ident_case 1.0.1]( https://github.com/TedDriggs/ident_case )
     - [itoa 1.0.18]( https://github.com/dtolnay/itoa )
@@ -9264,7 +9270,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [ed25519-dalek 2.2.0]( https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek )
+    - [curve25519-dalek 5.0.0]( https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek )
+
+```text
+Copyright (c) 2016-2021 isis agora lovecruft. All rights reserved.
+Copyright (c) 2016-2021 Henry de Valence. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS
+IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+```
+
+---
+
+### BSD 3-Clause &quot;New&quot; or &quot;Revised&quot; License
+
+- Used by
+
+    - [ed25519-dalek 3.0.0]( https://github.com/dalek-cryptography/curve25519-dalek/tree/main/ed25519-dalek )
 
 ```text
 Copyright (c) 2017-2019 isis agora lovecruft. All rights reserved.
@@ -9305,7 +9352,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - Used by
 
     - [alloc-stdlib 0.2.4]( https://github.com/dropbox/rust-alloc-no-stdlib )
-    - [curve25519-dalek 4.1.3]( https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek )
 
 ```text
 Copyright (c) &lt;year&gt; &lt;owner&gt;. 
@@ -9439,10 +9485,11 @@ insights.
 
 - Used by
 
-    - [sbsp_app 2.4.5]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_backend 1.5.3]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_app 2.5.4]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.5.5]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_frontend_settings 0.1.0]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote_app 2.4.5]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote_app 2.5.4]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
@@ -14160,34 +14207,6 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@types/node@24.13.3](https://github.com/DefinitelyTyped/DefinitelyTyped)
-license: MIT
-
-```text
-    MIT License
-
-    Copyright (c) Microsoft Corporation.
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE
-
-```
-
 ### [@types/web-bluetooth@0.0.21](https://github.com/DefinitelyTyped/DefinitelyTyped)
 license: MIT
 
@@ -17446,34 +17465,6 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-```
-
-### [undici-types@7.18.2](https://github.com/nodejs/undici)
-license: MIT
-
-```text
-MIT License
-
-Copyright (c) Matteo Collina and Undici contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 
 ```
 
