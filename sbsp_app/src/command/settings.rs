@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use crate::{AppState, settings::GlobalHostSettings};
+use crate::AppState;
+use sbsp_frontend_settings::GlobalHostSettings;
 use std::path::Path;
 
 #[tauri::command]
@@ -15,7 +16,7 @@ pub async fn set_settings(
     new_settings: GlobalHostSettings,
 ) -> Result<(), String> {
     if new_settings != *state.settings_manager.read().await {
-        state.settings_manager.update(&new_settings).await;
+        state.settings_manager.set(new_settings).await;
         if let Err(e) = state.settings_manager.save().await {
             log::error!("Failed to save config. {}", e);
             Err(format!("Failed to save config. {}", e))

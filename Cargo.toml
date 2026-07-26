@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "sbsp_backend",
     "sbsp_license",
+    "sbsp_frontend_settings",
     "sbsp_app",
     "sbsp_remote_app",
 ]
@@ -14,6 +15,25 @@ license = "Elastic-2.0"
 homepage = "https://keinsleif.github.io/sbsp/docs/"
 repository = "https://github.com/Keinsleif/sbsp"
 publish = false
+
+[workspace.dependencies]
+tokio = "1"
+log = "0.4"
+humantime = "2.4.0"
+anyhow = "1.0"
+serde = "1"
+serde_json = "1.0"
+ts-rs = "12"
+tauri = "2"
+tauri-build = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-log = { version = "2", features = ["colored"] }
+tauri-plugin-os = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-window-state = "2"
+uuid = "1"
+clap = { version = "4.6", features = ["derive"] }
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.

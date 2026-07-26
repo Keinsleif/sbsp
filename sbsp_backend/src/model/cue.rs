@@ -7,7 +7,6 @@ pub mod group;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 pub use uuid::Uuid;
 
 #[cfg(feature = "backend")]
@@ -138,21 +137,30 @@ impl From<CueList> for Vec<ProjectCue> {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
+    #[serde(default)]
     pub number: String,
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
     pub notes: String,
+    #[serde(default)]
     pub color: CueColor,
+    #[serde(default)]
     pub pre_wait: f64,
+    #[serde(default)]
     pub chain: CueChain,
+    #[serde(default)]
     pub parent_id: Option<Uuid>,
     pub params: CueParam,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum CueColor {
     #[default]
@@ -167,7 +175,8 @@ pub enum CueColor {
     Grey,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -184,7 +193,8 @@ pub enum CueChain {
     },
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -205,13 +215,15 @@ pub enum CueParam {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct WaitCueParam {
     pub duration: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FadeCueParam {
     pub target: Uuid,
@@ -219,13 +231,15 @@ pub struct FadeCueParam {
     pub fade_param: FadeParam,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct StartCueParam {
     pub target: Uuid,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct StopCueParam {
     pub target: Uuid,
@@ -233,13 +247,15 @@ pub struct StopCueParam {
     pub hard: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct PauseCueParam {
     pub target: Uuid,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct LoadCueParam {
     pub target: Uuid,

@@ -2,22 +2,49 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub mod hotkey;
+#[cfg(feature = "manager")]
 pub mod manager;
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use ts_rs::TS;
 
 use hotkey::HotkeySettings;
-use sbsp_backend::model::cue::{
+use sbsp_backend::{BackendAudioSettings, BackendSettings, model::cue::{
     Cue, CueChain, CueColor, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam,
     StopCueParam, Uuid, WaitCueParam,
     audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
     group::{GroupCueParamBase, GroupMode},
-};
+}};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, TS)]
-#[ts(export)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase", default)]
+pub struct GlobalHostSettings {
+    pub general: GeneralSettings,
+    #[serde(default)]
+    pub audio: AudioHardwareSettings,
+    pub appearance: AppearanceSettings,
+    pub hotkey: HotkeySettings,
+    pub template: TemplateSettings,
+    pub name_format: NameFormatSettings,
+}
+
+impl From<&GlobalHostSettings> for BackendSettings {
+    fn from(from: &GlobalHostSettings) -> BackendSettings {
+        BackendSettings {
+            copy_assets_when_add: from.general.copy_assets_when_add,
+            audio: BackendAudioSettings {
+                device_id: from.audio.device_id.clone(),
+                channel_count: from.audio.channel_count,
+                sample_rate: from.audio.sample_rate,
+                buffer_size: from.audio.buffer_size,
+            },
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalRemoteSettings {
     pub general: GeneralSettings,
@@ -27,7 +54,8 @@ pub struct GlobalRemoteSettings {
     pub name_format: NameFormatSettings,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
     #[serde(alias = "advanceCursorWhenGo")]
@@ -48,7 +76,18 @@ impl Default for GeneralSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase", default)]
+pub struct AudioHardwareSettings {
+    pub device_id: Option<String>,
+    pub channel_count: Option<u16>,
+    pub sample_rate: Option<u32>,
+    pub buffer_size: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppearanceSettings {
     pub language: Option<String>,
@@ -56,7 +95,8 @@ pub struct AppearanceSettings {
     pub hide_controls: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum DarkMode {
     #[default]
@@ -65,7 +105,8 @@ pub enum DarkMode {
     System,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct TemplateSettings {
     pub audio: Cue,
@@ -205,7 +246,8 @@ impl Default for TemplateSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct NameFormatSettings {
     pub audio: String,

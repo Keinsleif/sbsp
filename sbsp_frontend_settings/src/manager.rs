@@ -1,44 +1,41 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+use serde::{de::DeserializeOwned, Serialize};
 use std::path::{Path, PathBuf};
 use tokio::sync::RwLock;
 
-use super::GlobalRemoteSettings;
-
-pub struct GlobalSettingsManager {
+pub struct SettingsManager<T> {
     path: Option<PathBuf>,
-    settings: RwLock<GlobalRemoteSettings>,
+    settings: RwLock<T>,
 }
 
-impl GlobalSettingsManager {
+impl<T> SettingsManager<T>
+where
+    T: Serialize + DeserializeOwned + Clone + Default + Send + Sync + 'static,
+{
     pub fn new(path: Option<PathBuf>) -> Self {
-        let settings = GlobalRemoteSettings::default();
-        Self {
-            path,
-            settings: RwLock::new(settings),
-        }
+        Self { path, settings: RwLock::new(T::default()) }
     }
 
-    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, GlobalRemoteSettings> {
+    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, T> {
         self.settings.read().await
     }
 
-    pub async fn update(&self, new_settings: &GlobalRemoteSettings) {
-        let mut settings = self.settings.write().await;
-        *settings = new_settings.clone();
+    pub async fn set(&self, new_settings: T) {
+        *self.settings.write().await = new_settings;
     }
 
-    pub async fn load(&self) -> Result<GlobalRemoteSettings, anyhow::Error> {
+    pub async fn load(&self) -> Result<T, anyhow::Error> {
         if let Some(path) = &self.path {
             let content = tokio::fs::read_to_string(path.clone()).await?;
 
             let new_settings = tokio::task::spawn_blocking(move || {
-                serde_json::from_str::<GlobalRemoteSettings>(&content)
+                serde_json::from_str::<T>(&content)
             })
             .await??;
 
-            self.update(&new_settings).await;
+            self.set(new_settings.clone()).await;
 
             log::info!("GlobalSettings loaded from: {}", path.display());
             Ok(new_settings)
@@ -70,23 +67,14 @@ impl GlobalSettingsManager {
         }
     }
 
-    pub async fn import_from_file(
-        &self,
-        path: &Path,
-    ) -> Result<GlobalRemoteSettings, anyhow::Error> {
+    pub async fn import_from_file(&self, path: &Path) -> Result<T, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
-
-        let new_settings = tokio::task::spawn_blocking(move || {
-            serde_json::from_str::<GlobalRemoteSettings>(&content)
-        })
-        .await??;
-
-        self.update(&new_settings).await;
-
+        let settings = tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
+        self.set(settings.clone()).await;
         self.save().await?;
 
         log::info!("GlobalSettings imported from: {}", path.display());
-        Ok(new_settings)
+        Ok(settings)
     }
 
     pub async fn export_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
@@ -99,6 +87,7 @@ impl GlobalSettingsManager {
             tokio::fs::create_dir_all(parent).await?;
         }
         tokio::fs::write(path, content).await?;
+
         log::info!("GlobalSettings saved to: {}", path.display());
         Ok(())
     }

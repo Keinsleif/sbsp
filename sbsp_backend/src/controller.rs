@@ -567,10 +567,7 @@ mod tests {
         let (state_tx, state_rx) = watch::channel::<ShowState>(ShowState::new());
         let (event_tx, event_rx) = broadcast::channel::<BackendEvent>(32);
 
-        let (_, settings_rx) = watch::channel(BackendSettings {
-            advance_cursor_when_go: true,
-            ..Default::default()
-        });
+        let (_, settings_rx) = watch::channel(BackendSettings::default());
 
         let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx.clone());
         let mut write_lock = manager.write().await;

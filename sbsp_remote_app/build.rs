@@ -6,6 +6,7 @@ use sbsp_backend::{
     model::ShowModel,
     ts_rs::{Config, TS},
 };
+use sbsp_frontend_settings::GlobalRemoteSettings;
 
 fn main() {
     println!("cargo:rerun-if-changed=../../sbsp_backend/src/model.rs");
@@ -22,6 +23,8 @@ fn main() {
     <AssetData as TS>::export_all(&config).unwrap();
     <ServiceEntry as TS>::export_all(&config).unwrap();
     <FileList as TS>::export_all(&config).unwrap();
+
+    <GlobalRemoteSettings as TS>::export_all(&config).unwrap();
 
     tauri_build::build()
 }

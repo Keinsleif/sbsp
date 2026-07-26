@@ -2,9 +2,9 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -16,7 +16,8 @@ pub enum GroupMode {
     StartFirst { enter: bool },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct GroupCueParamBase {
     pub mode: GroupMode,
