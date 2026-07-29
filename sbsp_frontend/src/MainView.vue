@@ -65,10 +65,10 @@ useBackendEvent((event) => {
         if (uiState.playbackCursor != null) {
           const cue = showModel.getCueById(uiState.playbackCursor);
           if (cue != null) {
-            if (cue.cursorAdvanceTrigger === 'inherit') {
+            if (cue.cursorAdvanceTriggerOverride === 'none') {
               cursorAdvanceTrigger = uiSettings.settings.general.cursorAdvanceTrigger;
             } else {
-              cursorAdvanceTrigger = cue.cursorAdvanceTrigger;
+              cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }
           }
         }
