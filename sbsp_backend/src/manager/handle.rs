@@ -350,7 +350,7 @@ mod tests {
     use crate::{
         manager::{ShowModelHandle, project::ProjectStatus}, model::{
             ShowModel, cue::{
-                Cue, CueChain, CueColor, CueCursorAdvanceTrigger, CueParam, WaitCueParam, group::{GroupCueParamBase, GroupMode},
+                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, WaitCueParam, group::{GroupCueParamBase, GroupMode},
             },
         },
     };
@@ -367,7 +367,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -380,7 +380,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -420,7 +420,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -434,7 +434,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -450,7 +450,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -495,7 +495,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -509,7 +509,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -525,7 +525,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -572,7 +572,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: Some(group1_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -586,7 +586,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -602,7 +602,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: Some(group2_id),
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -621,7 +621,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {

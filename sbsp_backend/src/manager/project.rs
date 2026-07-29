@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::model::ShowModel;
 use crate::model::{
     cue::{
-        CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, CueCursorAdvanceTrigger, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase,
+        CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, CueCursorAdvanceTriggerOverride, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase,
     }, settings::ShowSettings,
 };
 
@@ -115,7 +115,7 @@ pub struct ProjectCue {
     #[serde(default)]
     pub treat_stop_as_completed: bool,
     #[serde(default)]
-    pub cursor_advance_trigger: CueCursorAdvanceTrigger,
+    pub cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride,
     pub params: ProjectCueParam,
 }
 

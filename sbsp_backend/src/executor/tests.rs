@@ -12,7 +12,7 @@ use uuid::Uuid;
 use crate::{
     BackendSettings, controller::state::AudioStateParam, engine::audio_engine::{AudioCommand, AudioEngineEvent}, event::BackendEvent, manager::ShowModelManager, model::{
         self, cue::{
-            CueColor, CueCursorAdvanceTrigger, audio::{Decibels, Easing, EnvelopeSegment, FadeParam, SoundType},
+            CueColor, CueCursorAdvanceTriggerOverride, audio::{Decibels, Easing, EnvelopeSegment, FadeParam, SoundType},
         },
     },
 };
@@ -51,7 +51,7 @@ async fn setup_executor(
             pre_wait: 0.0,
             chain: model::cue::CueChain::DoNotChain,
             treat_stop_as_completed: false,
-            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: model::cue::CueParam::Audio(AudioCueParam {
                 target: path,
@@ -152,7 +152,7 @@ fn make_audio_cue(id: Uuid, parent_id: Option<Uuid>, path: PathBuf) -> Cue {
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Audio(AudioCueParam {
             target: path,
@@ -179,7 +179,7 @@ fn make_start_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Start(model::cue::StartCueParam { target }),
     }
@@ -195,7 +195,7 @@ fn make_stop_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid, hard: bool) ->
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Stop(model::cue::StopCueParam { target, hard }),
     }
@@ -211,7 +211,7 @@ fn make_pause_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Pause(model::cue::PauseCueParam { target }),
     }
@@ -227,7 +227,7 @@ fn make_load_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Load(model::cue::LoadCueParam { target }),
     }
@@ -248,7 +248,7 @@ fn make_concurrency_group_cue(id: Uuid, parent_id: Option<Uuid>, children: Vec<U
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Group {
             base: model::cue::group::GroupCueParamBase {
@@ -274,7 +274,7 @@ fn make_playlist_group_cue(
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id,
         params: model::cue::CueParam::Group {
             base: crate::model::cue::group::GroupCueParamBase {
@@ -300,7 +300,7 @@ async fn play_command() {
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
         treat_stop_as_completed: false,
-        cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
         parent_id: None,
         params: model::cue::CueParam::Audio(AudioCueParam {
             target: path.clone(),

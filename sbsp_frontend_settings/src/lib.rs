@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{BackendAudioSettings, BackendSettings, model::cue::{
-    Cue, CueChain, CueColor, CueCursorAdvanceTrigger, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::{GroupCueParamBase, GroupMode},
+    Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::{GroupCueParamBase, GroupMode},
 }};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
@@ -138,7 +138,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
@@ -162,7 +162,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
             },
@@ -175,7 +175,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Fade(FadeCueParam {
                     target: Uuid::nil(),
@@ -195,7 +195,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Start(StartCueParam {
                     target: Uuid::nil(),
@@ -210,7 +210,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Stop(StopCueParam {
                     target: Uuid::nil(),
@@ -226,7 +226,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Pause(PauseCueParam {
                     target: Uuid::nil(),
@@ -241,7 +241,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Load(LoadCueParam {
                     target: Uuid::nil(),
@@ -256,7 +256,7 @@ impl Default for TemplateSettings {
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
                 treat_stop_as_completed: false,
-                cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Group {
                     base: GroupCueParamBase {
