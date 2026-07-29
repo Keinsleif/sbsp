@@ -1118,7 +1118,7 @@ impl Executor {
                     }
                 }
             } else {
-                let as_completed = self.model_handle.get_cue_by_id(&cue_id).await.is_some_and(|cue| cue.treat_stop_as_completed && origin != DispatchOrigin::Group );
+                let as_completed = stop_mode == StopMode::Soft && self.model_handle.get_cue_by_id(&cue_id).await.is_some_and(|cue| cue.treat_stop_as_completed && origin != DispatchOrigin::Group );
                 match active_instance.engine_type {
                     EngineType::Audio => {
                         let command = match stop_mode {
