@@ -220,11 +220,11 @@ impl Executor {
                     return;
                 }
 
-                is_completed = is_completed
-                    || self
-                        .active_instances
-                        .remove(&parent.id)
-                        .is_some_and(|instance| instance.pending_stop_as_completed);
+                let pending_stop_as_completed = self
+                    .active_instances
+                    .remove(&parent.id)
+                    .is_some_and(|instance| instance.pending_stop_as_completed);
+                is_completed |= pending_stop_as_completed;
 
                 if is_completed {
                     self.task_stack
