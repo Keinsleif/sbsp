@@ -631,6 +631,8 @@ impl ShowModelManager {
             cue.color = new_cue.color;
             cue.pre_wait = new_cue.pre_wait;
             cue.chain = new_cue.chain;
+            cue.cursor_advance_trigger = new_cue.cursor_advance_trigger;
+            cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
             match (&mut cue.params, new_cue.params) {
                 (CueParam::Audio(p), CueParam::Audio(new_p)) => {
                     *p = new_p;
