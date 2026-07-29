@@ -6,26 +6,27 @@ import { ref, watch } from 'vue';
 import type { Cue } from '../../types/Cue';
 import SelectWrapper from '../wrapper/SelectWrapper.vue';
 import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
-// import { useI18n } from 'vue-i18n';
+import { useI18n } from 'vue-i18n';
+import type { CueCursorAdvanceTriggerOverride } from '@/types/CueCursorAdvanceTriggerOverride.ts';
 
-// const { t } = useI18n();
+const { t } = useI18n();
 
 const selectedCue = defineModel<Cue | null>();
 const emit = defineEmits(['update']);
 
-const cursorAdvanceTrigger = ref();
-const treatStopAsCompleted = ref();
+const cursorAdvanceTriggerOverride = ref<CueCursorAdvanceTriggerOverride>('none');
+const treatStopAsCompleted = ref<boolean>(false);
 
 watch(selectedCue, () => {
-  cursorAdvanceTrigger.value = selectedCue.value?.cursorAdvanceTrigger ?? null;
-  treatStopAsCompleted.value = selectedCue.value?.treatStopAsCompleted ?? null;
+  cursorAdvanceTriggerOverride.value = selectedCue.value?.cursorAdvanceTriggerOverride ?? 'none';
+  treatStopAsCompleted.value = selectedCue.value?.treatStopAsCompleted ?? false;
 }, { immediate: true });
 
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
     return;
   }
-  selectedCue.value.cursorAdvanceTrigger = cursorAdvanceTrigger.value;
+  selectedCue.value.cursorAdvanceTriggerOverride = cursorAdvanceTriggerOverride.value;
   selectedCue.value.treatStopAsCompleted = treatStopAsCompleted.value;
   emit('update');
 };
@@ -34,14 +35,14 @@ const saveEditorValue = () => {
 <template>
   <div class="flex min-w-180 flex-col gap-2 p-3">
     <select-wrapper
-      v-model="cursorAdvanceTrigger"
+      v-model="cursorAdvanceTriggerOverride"
       class="grow-0"
-      :label="'Playback cursor advance trigger override'"
+      :label="t('main.bottomEditor.trigger.cursorAdvanceTriggerOverride.title')"
       :items="[
-        { value: 'inherit', name: 'Inherit' },
-        { value: 'onTriggered', name: 'On Triggered' },
-        { value: 'onCompleted', name: 'On Completed' },
-        { value: 'manual', name: 'Manual' },
+        { value: 'none', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.none') },
+        { value: 'onTriggered', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onTriggered') },
+        { value: 'onCompleted', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onCompleted') },
+        { value: 'manual', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.manual') },
       ]"
       autocomplete="off"
       @keydown.stop
@@ -49,7 +50,7 @@ const saveEditorValue = () => {
     <checkbox-wrapper
       v-model="treatStopAsCompleted"
       class="self-start"
-      :label="'Treat Stop as Completed'"
+      :label="t('main.bottomEditor.trigger.treatStopAsCompleted')"
       @update:model-value="saveEditorValue"
     />
   </div>

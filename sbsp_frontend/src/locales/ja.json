@@ -82,7 +82,12 @@
           "copyAssetsWhenAdd": "キューを追加するときにアセットをコピーする",
           "lockCursorToSelection": "再生カーソルを選択範囲にロック",
           "seekAmount": "シーク秒数",
-          "advanceCursorWhenExecute": "実行時に再生カーソルを進める"
+          "cursorAdvanceTrigger": {
+            "manual": "手動",
+            "onCompleted": "完了時",
+            "onTriggered": "実行時",
+            "title": "再生カーソル更新きっかけ"
+          }
         },
         "hotkey": {
           "audio": {
@@ -284,7 +289,20 @@
         "volume": "音量",
         "envelopeVisible": "音量変化を表示"
       },
-      "noSelection": "選択なし"
+      "noSelection": "選択なし",
+      "trigger": {
+        "cursorAdvanceTrigger": {
+          "none": "なし",
+          "onTriggered": "実行時",
+          "onCompleted": "完了時",
+          "manual": "手動"
+        },
+        "title": "トリガー",
+        "cursorAdvanceTriggerOverride": {
+          "title": "再生カーソル更新きっかけ（設定を上書き）"
+        },
+        "treatStopAsCompleted": "停止を完了として扱う"
+      }
     },
     "chainMode": {
       "afterComplete": "完了後",

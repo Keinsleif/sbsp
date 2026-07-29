@@ -360,11 +360,11 @@ const recallQLabPreset = () => {
             <select-wrapper
               v-model="editingSettings.global.general.cursorAdvanceTrigger"
               class="grow-0"
-              :label="'Playback cursor advance trigger'"
+              :label="t('dialog.settings.global.general.cursorAdvanceTrigger.title')"
               :items="[
-                { value: 'onTriggered', name: 'On Triggered' },
-                { value: 'onCompleted', name: 'On Completed' },
-                { value: 'manual', name: 'Manual' },
+                { value: 'onTriggered', name: t('dialog.settings.global.general.cursorAdvanceTrigger.onTriggered') },
+                { value: 'onCompleted', name: t('dialog.settings.global.general.cursorAdvanceTrigger.onCompleted') },
+                { value: 'manual', name: t('dialog.settings.global.general.cursorAdvanceTrigger.manual') },
               ]"
               autocomplete="off"
               @keydown.stop
