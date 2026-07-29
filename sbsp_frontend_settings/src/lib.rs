@@ -130,6 +130,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
@@ -152,6 +153,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
             },
@@ -163,6 +165,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Fade(FadeCueParam {
                     target: Uuid::nil(),
@@ -181,6 +184,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Start(StartCueParam {
                     target: Uuid::nil(),
@@ -194,6 +198,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Stop(StopCueParam {
                     target: Uuid::nil(),
@@ -208,6 +213,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Pause(PauseCueParam {
                     target: Uuid::nil(),
@@ -221,6 +227,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Load(LoadCueParam {
                     target: Uuid::nil(),
@@ -234,6 +241,7 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
                 parent_id: None,
                 params: CueParam::Group {
                     base: GroupCueParamBase {
