@@ -369,6 +369,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -380,6 +381,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -418,6 +420,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -430,6 +433,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -444,6 +448,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -487,6 +492,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: Some(group_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -499,6 +505,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -513,6 +520,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -558,6 +566,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: Some(group1_id),
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -570,6 +579,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
         };
@@ -584,6 +594,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: Some(group2_id),
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -601,6 +612,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Group {
                 base: GroupCueParamBase {

@@ -38,5 +38,6 @@ pub enum WaitCommand {
     Stop {
         wait_type: WaitType,
         instance_id: Uuid,
+        as_completed: bool,
     },
 }

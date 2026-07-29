@@ -584,6 +584,7 @@ mod tests {
                     color: CueColor::None,
                     pre_wait: 0.0,
                     chain: model::cue::CueChain::DoNotChain,
+                    treat_stop_as_completed: false,
                     parent_id: None,
                     params: model::cue::CueParam::Audio(AudioCueParam {
                         target: PathBuf::from("./I.G.Y.flac"),

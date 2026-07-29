@@ -1211,6 +1211,7 @@ mod tests {
                             color: CueColor::None,
                             pre_wait: 0.0,
                             chain: CueChain::DoNotChain,
+                            treat_stop_as_completed: false,
                             parent_id: None,
                             params: CueParam::Audio(AudioCueParam {
                                 target: temp_target.path().to_path_buf(),
@@ -1245,6 +1246,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target_after.path().to_path_buf(),
@@ -1316,6 +1318,7 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target.path().to_path_buf(),

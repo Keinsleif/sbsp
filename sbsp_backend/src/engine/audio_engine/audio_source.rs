@@ -45,6 +45,7 @@ pub enum AudioPlaybackState {
     Pausing,
     Paused,
     Resuming,
+    FadeOuting,
     SoftStopping,
     HardStopping,
     Stopped,
@@ -60,6 +61,7 @@ impl AudioPlaybackState {
             | AudioPlaybackState::Pausing
             | AudioPlaybackState::Paused
             | AudioPlaybackState::Resuming
+            | AudioPlaybackState::FadeOuting
             | AudioPlaybackState::SoftStopping
             | AudioPlaybackState::HardStopping => false,
         }
@@ -74,6 +76,7 @@ impl AudioPlaybackState {
             AudioPlaybackState::Playing
             | AudioPlaybackState::Pausing
             | AudioPlaybackState::Resuming
+            | AudioPlaybackState::FadeOuting
             | AudioPlaybackState::SoftStopping
             | AudioPlaybackState::HardStopping => true,
         }
@@ -89,6 +92,7 @@ impl TryFrom<u8> for AudioPlaybackState {
             x if x == Self::Pausing as u8 => Ok(Self::Pausing),
             x if x == Self::Paused as u8 => Ok(Self::Paused),
             x if x == Self::Resuming as u8 => Ok(Self::Resuming),
+            x if x == Self::FadeOuting as u8 => Ok(Self::FadeOuting),
             x if x == Self::SoftStopping as u8 => Ok(Self::SoftStopping),
             x if x == Self::HardStopping as u8 => Ok(Self::HardStopping),
             x if x == Self::Stopped as u8 => Ok(Self::Stopped),
@@ -114,6 +118,7 @@ enum AudioSourceControlCommand {
     Start,
     Pause,
     Resume,
+    FadeOut,
     SoftStop,
     HardStop,
     Seek {
@@ -185,6 +190,14 @@ impl AudioSourceHandle {
 
     pub fn pause(&mut self) {
         let _ = self.control.push(AudioSourceControlCommand::Pause);
+    }
+
+    pub fn fade_out(&mut self) {
+        let state = self.state();
+        if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
+            return;
+        }
+        let _ = self.control.push(AudioSourceControlCommand::FadeOut);
     }
 
     pub fn stop(&mut self, is_hard: bool) {
@@ -522,6 +535,19 @@ where
                                     .set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
+                        AudioSourceControlCommand::FadeOut => match state {
+                            AudioPlaybackState::Playing
+                            | AudioPlaybackState::Pausing
+                            | AudioPlaybackState::Resuming => {
+                                state = AudioPlaybackState::FadeOuting;
+                                self.control_volume
+                                    .set_volume(Decibels::MUTE, self.fadeout_param);
+                            }
+                            AudioPlaybackState::Loaded | AudioPlaybackState::Paused => {
+                                state = AudioPlaybackState::Stopped;
+                            }
+                            _ => {}
+                        }
                         AudioSourceControlCommand::SoftStop => match state {
                             AudioPlaybackState::Playing
                             | AudioPlaybackState::Pausing
@@ -539,6 +565,7 @@ where
                             AudioPlaybackState::Playing
                             | AudioPlaybackState::Pausing
                             | AudioPlaybackState::Resuming
+                            | AudioPlaybackState::FadeOuting
                             | AudioPlaybackState::SoftStopping => {
                                 state = AudioPlaybackState::HardStopping;
                                 self.control_volume
@@ -574,6 +601,9 @@ where
                     AudioPlaybackState::Resuming => {
                         state = AudioPlaybackState::Playing;
                     }
+                    AudioPlaybackState::FadeOuting => {
+                        state = AudioPlaybackState::Completed;
+                    } 
                     AudioPlaybackState::SoftStopping | AudioPlaybackState::HardStopping => {
                         state = AudioPlaybackState::Stopped;
                     }

@@ -57,6 +57,7 @@ async fn setup_executor(
             color: CueColor::None,
             pre_wait: 0.0,
             chain: model::cue::CueChain::DoNotChain,
+            treat_stop_as_completed: false,
             parent_id: None,
             params: model::cue::CueParam::Audio(AudioCueParam {
                 target: path,
@@ -156,6 +157,7 @@ fn make_audio_cue(id: Uuid, parent_id: Option<Uuid>, path: PathBuf) -> Cue {
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Audio(AudioCueParam {
             target: path,
@@ -181,6 +183,7 @@ fn make_start_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Start(model::cue::StartCueParam { target }),
     }
@@ -195,6 +198,7 @@ fn make_stop_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid, hard: bool) ->
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Stop(model::cue::StopCueParam { target, hard }),
     }
@@ -209,6 +213,7 @@ fn make_pause_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Pause(model::cue::PauseCueParam { target }),
     }
@@ -223,6 +228,7 @@ fn make_load_cue(id: Uuid, parent_id: Option<Uuid>, target: Uuid) -> Cue {
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Load(model::cue::LoadCueParam { target }),
     }
@@ -242,6 +248,7 @@ fn make_concurrency_group_cue(id: Uuid, parent_id: Option<Uuid>, children: Vec<U
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Group {
             base: model::cue::group::GroupCueParamBase {
@@ -266,6 +273,7 @@ fn make_playlist_group_cue(
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id,
         params: model::cue::CueParam::Group {
             base: crate::model::cue::group::GroupCueParamBase {
@@ -290,6 +298,7 @@ async fn play_command() {
         color: CueColor::None,
         pre_wait: 0.0,
         chain: model::cue::CueChain::DoNotChain,
+        treat_stop_as_completed: false,
         parent_id: None,
         params: model::cue::CueParam::Audio(AudioCueParam {
             target: path.clone(),
@@ -780,7 +789,7 @@ async fn stop_cue_stops_active_target() {
 
     assert!(matches!(
         audio_rx.recv().await.unwrap(),
-        AudioCommand::SoftStop { id } if id == target_id
+        AudioCommand::SoftStop { id, as_completed } if id == target_id && !as_completed
     ));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),

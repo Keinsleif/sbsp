@@ -59,6 +59,7 @@ impl CueList {
             color: cue.color,
             pre_wait: cue.pre_wait,
             chain: cue.chain,
+            treat_stop_as_completed: cue.treat_stop_as_completed,
             parent_id,
             params: flat_params,
         };
@@ -108,6 +109,7 @@ impl CueList {
                     color: flat_cue.color,
                     pre_wait: flat_cue.pre_wait,
                     chain: flat_cue.chain,
+                    treat_stop_as_completed: flat_cue.treat_stop_as_completed,
                     params: cue_params,
                 });
             }
@@ -154,6 +156,8 @@ pub struct Cue {
     pub pre_wait: f64,
     #[serde(default)]
     pub chain: CueChain,
+    #[serde(default)]
+    pub treat_stop_as_completed: bool,
     #[serde(default)]
     pub parent_id: Option<Uuid>,
     pub params: CueParam,
