@@ -62,7 +62,11 @@ const barColor = computed(() => {
   const activeCueStatus = props.activeCue.status;
   if (activeCueStatus === 'preWaiting') {
     return 'var(--p-yellow-500)';
-  } else if (activeCueStatus === 'paused' || activeCueStatus === 'preWaitPaused' || activeCueStatus === 'stopping') {
+  } else if (
+    activeCueStatus === 'paused' ||
+    activeCueStatus === 'preWaitPaused' ||
+    activeCueStatus === 'stopping'
+  ) {
     return 'var(--p-orange-500)';
   } else {
     return 'var(--p-primary-color)';

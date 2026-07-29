@@ -103,7 +103,7 @@ const editorTab = computed({
         <tab
           value="trigger"
           v-show="selectedCue != null"
-        >{{ t('main.bottomEditor.trigger.title') }}
+          >{{ t('main.bottomEditor.trigger.title') }}
         </tab>
         <tab
           value="audio"

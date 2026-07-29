@@ -53,7 +53,7 @@ export const useUiState = defineStore(
           selected.value = null;
         }
       }
-    }
+    };
 
     const tryUpdatePlaybackCursor = (id: string | null) => {
       if (getLockCursorToSelection()) {

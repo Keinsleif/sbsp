@@ -362,9 +362,18 @@ const recallQLabPreset = () => {
               class="grow-0"
               :label="t('dialog.settings.global.general.cursorAdvanceTrigger.title')"
               :items="[
-                { value: 'onTriggered', name: t('dialog.settings.global.general.cursorAdvanceTrigger.onTriggered') },
-                { value: 'onCompleted', name: t('dialog.settings.global.general.cursorAdvanceTrigger.onCompleted') },
-                { value: 'manual', name: t('dialog.settings.global.general.cursorAdvanceTrigger.manual') },
+                {
+                  value: 'onTriggered',
+                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.onTriggered'),
+                },
+                {
+                  value: 'onCompleted',
+                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.onCompleted'),
+                },
+                {
+                  value: 'manual',
+                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.manual'),
+                },
               ]"
               autocomplete="off"
               @keydown.stop

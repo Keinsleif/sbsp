@@ -17,10 +17,14 @@ const emit = defineEmits(['update']);
 const cursorAdvanceTriggerOverride = ref<CueCursorAdvanceTriggerOverride>('none');
 const treatStopAsCompleted = ref<boolean>(false);
 
-watch(selectedCue, () => {
-  cursorAdvanceTriggerOverride.value = selectedCue.value?.cursorAdvanceTriggerOverride ?? 'none';
-  treatStopAsCompleted.value = selectedCue.value?.treatStopAsCompleted ?? false;
-}, { immediate: true });
+watch(
+  selectedCue,
+  () => {
+    cursorAdvanceTriggerOverride.value = selectedCue.value?.cursorAdvanceTriggerOverride ?? 'none';
+    treatStopAsCompleted.value = selectedCue.value?.treatStopAsCompleted ?? false;
+  },
+  { immediate: true },
+);
 
 const saveEditorValue = () => {
   if (selectedCue.value == null) {
@@ -40,8 +44,14 @@ const saveEditorValue = () => {
       :label="t('main.bottomEditor.trigger.cursorAdvanceTriggerOverride.title')"
       :items="[
         { value: 'none', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.none') },
-        { value: 'onTriggered', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onTriggered') },
-        { value: 'onCompleted', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onCompleted') },
+        {
+          value: 'onTriggered',
+          name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onTriggered'),
+        },
+        {
+          value: 'onCompleted',
+          name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.onCompleted'),
+        },
         { value: 'manual', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.manual') },
       ]"
       autocomplete="off"

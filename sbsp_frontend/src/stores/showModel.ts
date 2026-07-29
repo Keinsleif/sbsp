@@ -132,7 +132,7 @@ export const useShowModel = defineStore('showModel', {
 
           if (cue.parentId) {
             const parent = this.cues[cue.parentId];
-            
+
             if (parent?.params?.type === 'group' && Array.isArray(parent.params.children)) {
               const { children } = parent.params;
               const idx = children.indexOf(currentId);
