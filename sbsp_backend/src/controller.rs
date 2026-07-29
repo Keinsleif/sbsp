@@ -533,14 +533,9 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
-        BackendSettings,
-        event::CueStatusEventParam,
-        manager::ShowModelManager,
-        model::{
-            self,
-            cue::{
-                Cue, CueColor,
-                audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+        BackendSettings, event::CueStatusEventParam, manager::ShowModelManager, model::{
+            self, cue::{
+                Cue, CueColor, CueCursorAdvanceTrigger, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
         },
     };
@@ -585,6 +580,7 @@ mod tests {
                     pre_wait: 0.0,
                     chain: model::cue::CueChain::DoNotChain,
                     treat_stop_as_completed: false,
+                    cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
                     parent_id: None,
                     params: model::cue::CueParam::Audio(AudioCueParam {
                         target: PathBuf::from("./I.G.Y.flac"),

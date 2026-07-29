@@ -60,6 +60,7 @@ impl CueList {
             pre_wait: cue.pre_wait,
             chain: cue.chain,
             treat_stop_as_completed: cue.treat_stop_as_completed,
+            cursor_advance_trigger: cue.cursor_advance_trigger,
             parent_id,
             params: flat_params,
         };
@@ -110,6 +111,7 @@ impl CueList {
                     pre_wait: flat_cue.pre_wait,
                     chain: flat_cue.chain,
                     treat_stop_as_completed: flat_cue.treat_stop_as_completed,
+                    cursor_advance_trigger: flat_cue.cursor_advance_trigger,
                     params: cue_params,
                 });
             }
@@ -159,6 +161,8 @@ pub struct Cue {
     #[serde(default)]
     pub treat_stop_as_completed: bool,
     #[serde(default)]
+    pub cursor_advance_trigger: CueCursorAdvanceTrigger,
+    #[serde(default)]
     pub parent_id: Option<Uuid>,
     pub params: CueParam,
 }
@@ -195,6 +199,17 @@ pub enum CueChain {
     AfterComplete {
         target_id: Option<Uuid>,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub enum CueCursorAdvanceTrigger {
+    #[default]
+    Inherit,
+    OnTriggered,
+    OnCompleted,
+    Manual,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

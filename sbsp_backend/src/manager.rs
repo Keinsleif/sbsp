@@ -1153,16 +1153,10 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        BackendSettings,
-        event::BackendEvent,
-        manager::{ProjectStatus, ProjectType, command::InsertPosition},
-        model::{
-            ShowModel,
-            cue::{
-                Cue, CueChain, CueColor, CueList, CueParam,
-                audio::{AudioCueParam, Decibels, SoundType},
-            },
-            settings::ShowSettings,
+        BackendSettings, event::BackendEvent, manager::{ProjectStatus, ProjectType, command::InsertPosition}, model::{
+            ShowModel, cue::{
+                Cue, CueChain, CueColor, CueCursorAdvanceTrigger, CueList, CueParam, audio::{AudioCueParam, Decibels, SoundType},
+            }, settings::ShowSettings,
         },
     };
     use tempfile::{NamedTempFile, tempdir};
@@ -1212,6 +1206,7 @@ mod tests {
                             pre_wait: 0.0,
                             chain: CueChain::DoNotChain,
                             treat_stop_as_completed: false,
+                            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
                             parent_id: None,
                             params: CueParam::Audio(AudioCueParam {
                                 target: temp_target.path().to_path_buf(),
@@ -1247,6 +1242,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
+            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target_after.path().to_path_buf(),
@@ -1319,6 +1315,7 @@ mod tests {
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
             treat_stop_as_completed: false,
+            cursor_advance_trigger: CueCursorAdvanceTrigger::Inherit,
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target.path().to_path_buf(),

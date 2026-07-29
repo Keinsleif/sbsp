@@ -60,15 +60,38 @@ useBackendEvent((event) => {
           life: 3000,
         });
       }
-      if (uiSettings.settings.general.advanceCursorWhenExecute && event.param.type === 'triggered' && event.param.cueId === uiState.playbackCursor) {
-        const cue = showModel.getCueById(uiState.playbackCursor);
-        let nextCursor;
-        if (cue != null && cue.params.type === 'group' && cue.params.mode.type === 'startFirst' && cue.params.mode.enter) {
-          nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
-        } else {
-          nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+      if (event.param.cueId === uiState.playbackCursor) {
+        let cursorAdvanceTrigger: 'onTriggered' | 'onCompleted' | 'manual' = 'manual';
+        if (uiState.playbackCursor != null) {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          if (cue != null) {
+            if (cue.cursorAdvanceTrigger === 'inherit') {
+              cursorAdvanceTrigger = uiSettings.settings.general.cursorAdvanceTrigger;
+            } else {
+              cursorAdvanceTrigger = cue.cursorAdvanceTrigger;
+            }
+          }
         }
-        uiState.setPlaybackCursor(nextCursor);
+        if(cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          let nextCursor;
+          if (cue != null && cue.params.type === 'group' && cue.params.mode.type === 'startFirst' && cue.params.mode.enter) {
+            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+          } else {
+            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+          }
+          uiState.setPlaybackCursor(nextCursor);
+        }
+        if(cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed') {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          let nextCursor;
+          if (cue != null && cue.params.type === 'group' && cue.params.mode.type === 'startFirst' && cue.params.mode.enter) {
+            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+          } else {
+            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+          }
+          uiState.setPlaybackCursor(nextCursor);
+        }
       }
       showState.handleCueStateEvent(event.param);
       break;
