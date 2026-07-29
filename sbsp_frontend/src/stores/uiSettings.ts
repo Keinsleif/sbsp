@@ -9,7 +9,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
 export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
-    advanceCursorWhenExecute: false,
+    cursorAdvanceTrigger: 'manual',
     lockCursorToSelection: true,
     copyAssetsWhenAdd: false,
     seekAmount: 5,
@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -72,6 +73,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -89,6 +91,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -114,6 +117,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -131,6 +135,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -149,6 +154,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -166,6 +172,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
@@ -183,6 +190,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       chain: {
         type: 'doNotChain',
       },
+      cursorAdvanceTriggerOverride: 'none',
       treatStopAsCompleted: false,
       parentId: null,
       params: {
