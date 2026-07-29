@@ -203,7 +203,7 @@ impl Executor {
             }
             Task::SettleStop {
                 cue_id,
-                is_completed,
+                mut is_completed,
             } => {
                 let Some(parent) = self.model_handle.get_parent_by_id(&cue_id).await else {
                     return;
@@ -220,7 +220,7 @@ impl Executor {
                     return;
                 }
 
-                self.active_instances.remove(&parent.id);
+                is_completed = is_completed || self.active_instances.remove(&parent.id).is_some_and(|instance| instance.pending_stop_as_completed);
 
                 if is_completed {
                     self.task_stack
