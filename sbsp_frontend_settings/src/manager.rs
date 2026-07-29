@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::path::{Path, PathBuf};
 use tokio::sync::RwLock;
 
@@ -15,7 +15,10 @@ where
     T: Serialize + DeserializeOwned + Clone + Default + Send + Sync + 'static,
 {
     pub fn new(path: Option<PathBuf>) -> Self {
-        Self { path, settings: RwLock::new(T::default()) }
+        Self {
+            path,
+            settings: RwLock::new(T::default()),
+        }
     }
 
     pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, T> {
@@ -30,10 +33,8 @@ where
         if let Some(path) = &self.path {
             let content = tokio::fs::read_to_string(path.clone()).await?;
 
-            let new_settings = tokio::task::spawn_blocking(move || {
-                serde_json::from_str::<T>(&content)
-            })
-            .await??;
+            let new_settings =
+                tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
 
             self.set(new_settings.clone()).await;
 
@@ -69,7 +70,8 @@ where
 
     pub async fn import_from_file(&self, path: &Path) -> Result<T, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
-        let settings = tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
+        let settings =
+            tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
         self.set(settings.clone()).await;
         self.save().await?;
 

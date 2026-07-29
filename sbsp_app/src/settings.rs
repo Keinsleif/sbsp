@@ -3,8 +3,8 @@
 
 use std::path::{Path, PathBuf};
 
-use sbsp_frontend_settings::{manager::SettingsManager, GlobalHostSettings};
 use sbsp_backend::BackendSettings;
+use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{RwLockReadGuard, watch};
 
 pub struct GlobalSettingsManager {
@@ -21,13 +21,17 @@ impl GlobalSettingsManager {
     }
 
     pub async fn set(&self, new_settings: GlobalHostSettings) {
-        self.settings_tx.send_modify(|b| *b = BackendSettings::from(&new_settings));
+        self.settings_tx
+            .send_modify(|b| *b = BackendSettings::from(&new_settings));
         self.inner.set(new_settings).await;
     }
 
     pub async fn import_from_file(&self, path: &Path) -> Result<GlobalHostSettings, anyhow::Error> {
         let content = tokio::fs::read_to_string(path).await?;
-        let mut settings = tokio::task::spawn_blocking(move || serde_json::from_str::<GlobalHostSettings>(&content)).await??;
+        let mut settings = tokio::task::spawn_blocking(move || {
+            serde_json::from_str::<GlobalHostSettings>(&content)
+        })
+        .await??;
         sanitize_audio(&mut settings);
         self.set(settings.clone()).await;
         self.save().await?;
@@ -51,9 +55,15 @@ impl GlobalSettingsManager {
         Ok(())
     }
 
-    pub async fn read(&self) -> RwLockReadGuard<'_, GlobalHostSettings> { self.inner.read().await }
-    pub async fn load(&self) -> Result<GlobalHostSettings, anyhow::Error> { self.inner.load().await }
-    pub async fn save(&self) -> Result<(), anyhow::Error> { self.inner.save().await }
+    pub async fn read(&self) -> RwLockReadGuard<'_, GlobalHostSettings> {
+        self.inner.read().await
+    }
+    pub async fn load(&self) -> Result<GlobalHostSettings, anyhow::Error> {
+        self.inner.load().await
+    }
+    pub async fn save(&self) -> Result<(), anyhow::Error> {
+        self.inner.save().await
+    }
 }
 
 fn sanitize_audio(settings: &mut GlobalHostSettings) {

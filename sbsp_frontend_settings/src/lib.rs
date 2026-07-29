@@ -9,9 +9,15 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use hotkey::HotkeySettings;
-use sbsp_backend::{BackendAudioSettings, BackendSettings, model::cue::{
-    Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType}, group::{GroupCueParamBase, GroupMode},
-}};
+use sbsp_backend::{
+    BackendAudioSettings, BackendSettings,
+    model::cue::{
+        Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, FadeCueParam,
+        LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam,
+        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+        group::{GroupCueParamBase, GroupMode},
+    },
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]

@@ -1155,10 +1155,16 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        BackendSettings, event::BackendEvent, manager::{ProjectStatus, ProjectType, command::InsertPosition}, model::{
-            ShowModel, cue::{
-                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam, audio::{AudioCueParam, Decibels, SoundType},
-            }, settings::ShowSettings,
+        BackendSettings,
+        event::BackendEvent,
+        manager::{ProjectStatus, ProjectType, command::InsertPosition},
+        model::{
+            ShowModel,
+            cue::{
+                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam,
+                audio::{AudioCueParam, Decibels, SoundType},
+            },
+            settings::ShowSettings,
         },
     };
     use tempfile::{NamedTempFile, tempdir};

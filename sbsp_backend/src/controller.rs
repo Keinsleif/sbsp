@@ -533,9 +533,14 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::{
-        BackendSettings, event::CueStatusEventParam, manager::ShowModelManager, model::{
-            self, cue::{
-                Cue, CueColor, CueCursorAdvanceTriggerOverride, audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+        BackendSettings,
+        event::CueStatusEventParam,
+        manager::ShowModelManager,
+        model::{
+            self,
+            cue::{
+                Cue, CueColor, CueCursorAdvanceTriggerOverride,
+                audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
         },
     };

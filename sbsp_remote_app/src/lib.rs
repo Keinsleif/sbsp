@@ -19,7 +19,8 @@ use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
-pub type GlobalSettingsManager = sbsp_frontend_settings::manager::SettingsManager<GlobalRemoteSettings>;
+pub type GlobalSettingsManager =
+    sbsp_frontend_settings::manager::SettingsManager<GlobalRemoteSettings>;
 
 #[cfg(debug_assertions)]
 const LOG_LEVEL: LevelFilter = LevelFilter::Debug;

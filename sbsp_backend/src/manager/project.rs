@@ -10,8 +10,11 @@ use uuid::Uuid;
 use crate::model::ShowModel;
 use crate::model::{
     cue::{
-        CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, CueCursorAdvanceTriggerOverride, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase,
-    }, settings::ShowSettings,
+        CueChain, CueColor, CueCursorAdvanceTriggerOverride, FadeCueParam, LoadCueParam,
+        PauseCueParam, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam,
+        group::GroupCueParamBase,
+    },
+    settings::ShowSettings,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]

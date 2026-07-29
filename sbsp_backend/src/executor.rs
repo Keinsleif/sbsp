@@ -45,7 +45,7 @@ enum ChainType {
 }
 
 enum Task {
-    Dispatch{
+    Dispatch {
         command: ExecutorCommand,
         origin: DispatchOrigin,
     },
@@ -153,7 +153,7 @@ impl Executor {
 
     async fn apply(&mut self, task: Task) {
         match task {
-            Task::Dispatch{ command, origin } => {
+            Task::Dispatch { command, origin } => {
                 if let Err(e) = self.process_command(command, origin).await {
                     log::error!("Failed to execute command: e={}", e);
                     self.error_stack.push(e.to_string());
@@ -220,7 +220,11 @@ impl Executor {
                     return;
                 }
 
-                is_completed = is_completed || self.active_instances.remove(&parent.id).is_some_and(|instance| instance.pending_stop_as_completed);
+                is_completed = is_completed
+                    || self
+                        .active_instances
+                        .remove(&parent.id)
+                        .is_some_and(|instance| instance.pending_stop_as_completed);
 
                 if is_completed {
                     self.task_stack
@@ -408,7 +412,11 @@ impl Executor {
         }
     }
 
-    async fn process_command(&mut self, command: ExecutorCommand, origin: DispatchOrigin) -> Result<(), anyhow::Error> {
+    async fn process_command(
+        &mut self,
+        command: ExecutorCommand,
+        origin: DispatchOrigin,
+    ) -> Result<(), anyhow::Error> {
         match command {
             ExecutorCommand::Load(cue_id) => {
                 if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
@@ -450,7 +458,9 @@ impl Executor {
             }
             ExecutorCommand::Pause(cue_id) => self.pause_cue(cue_id).await?,
             ExecutorCommand::Resume(cue_id) => self.resume_cue(cue_id).await?,
-            ExecutorCommand::Stop(cue_id, stop_mode) => self.stop_cue(cue_id, stop_mode, origin).await?,
+            ExecutorCommand::Stop(cue_id, stop_mode) => {
+                self.stop_cue(cue_id, stop_mode, origin).await?
+            }
             ExecutorCommand::SeekTo(cue_id, position) => self.seek_to_cue(cue_id, position).await?,
             ExecutorCommand::SeekBy(cue_id, amount) => self.seek_by_cue(cue_id, amount).await?,
             ExecutorCommand::PerformAction(cue_id, action) => {
@@ -600,8 +610,10 @@ impl Executor {
                                 context,
                                 watermark: self.error_stack.len(),
                             });
-                            self.task_stack
-                                .push(Task::Dispatch { command: ExecutorCommand::Load(*first_id), origin: DispatchOrigin::Group });
+                            self.task_stack.push(Task::Dispatch {
+                                command: ExecutorCommand::Load(*first_id),
+                                origin: DispatchOrigin::Group,
+                            });
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
                                 context,
@@ -629,8 +641,10 @@ impl Executor {
                                 watermark: self.error_stack.len(),
                             });
                             for cue_id in children.iter().rev() {
-                                self.task_stack
-                                    .push(Task::Dispatch { command: ExecutorCommand::Load(*cue_id), origin: DispatchOrigin::Group });
+                                self.task_stack.push(Task::Dispatch {
+                                    command: ExecutorCommand::Load(*cue_id),
+                                    origin: DispatchOrigin::Group,
+                                });
                             }
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
@@ -752,7 +766,10 @@ impl Executor {
                                         }
                                     }
                                     CueParam::Group { .. } => {
-                                        let grandchildren = self.model_handle.get_all_children_by_id(&child.id).await;
+                                        let grandchildren = self
+                                            .model_handle
+                                            .get_all_children_by_id(&child.id)
+                                            .await;
                                         queue.extend(grandchildren);
                                     }
                                     _ => {}
@@ -795,12 +812,16 @@ impl Executor {
                     && instance.is_triggered
                 {
                     if instance.is_paused {
-                        self.task_stack
-                            .push(Task::Dispatch { command: ExecutorCommand::Resume(params.target), origin: DispatchOrigin::Playback });
+                        self.task_stack.push(Task::Dispatch {
+                            command: ExecutorCommand::Resume(params.target),
+                            origin: DispatchOrigin::Playback,
+                        });
                     }
                 } else {
-                    self.task_stack
-                        .push(Task::Dispatch { command: ExecutorCommand::Execute(params.target), origin: DispatchOrigin::Playback });
+                    self.task_stack.push(Task::Dispatch {
+                        command: ExecutorCommand::Execute(params.target),
+                        origin: DispatchOrigin::Playback,
+                    });
                 }
                 self.task_stack.push(Task::BeginScope {
                     cue_id: cue.id,
@@ -823,10 +844,10 @@ impl Executor {
                     } else {
                         StopMode::Soft
                     };
-                    self.task_stack.push(Task::Dispatch { command: ExecutorCommand::Stop(
-                        params.target,
-                        stop_mode,
-                    ), origin: DispatchOrigin::Playback });
+                    self.task_stack.push(Task::Dispatch {
+                        command: ExecutorCommand::Stop(params.target, stop_mode),
+                        origin: DispatchOrigin::Playback,
+                    });
                 }
                 self.task_stack.push(Task::BeginScope {
                     cue_id: cue.id,
@@ -847,8 +868,10 @@ impl Executor {
                     && instance.is_triggered
                     && !instance.is_paused
                 {
-                    self.task_stack
-                        .push(Task::Dispatch { command: ExecutorCommand::Pause(params.target), origin: DispatchOrigin::Playback });
+                    self.task_stack.push(Task::Dispatch {
+                        command: ExecutorCommand::Pause(params.target),
+                        origin: DispatchOrigin::Playback,
+                    });
                 }
                 self.task_stack.push(Task::BeginScope {
                     cue_id: cue.id,
@@ -866,8 +889,10 @@ impl Executor {
                     watermark: self.error_stack.len(),
                 });
                 if !self.active_instances.contains_key(&params.target) {
-                    self.task_stack
-                        .push(Task::Dispatch { command: ExecutorCommand::Load(params.target), origin: DispatchOrigin::Playback });
+                    self.task_stack.push(Task::Dispatch {
+                        command: ExecutorCommand::Load(params.target),
+                        origin: DispatchOrigin::Playback,
+                    });
                 }
                 self.task_stack.push(Task::BeginScope {
                     cue_id: cue.id,
@@ -888,8 +913,10 @@ impl Executor {
                                 context,
                                 watermark: self.error_stack.len(),
                             });
-                            self.task_stack
-                                .push(Task::Dispatch { command: ExecutorCommand::Execute(*first_id), origin: DispatchOrigin::Group });
+                            self.task_stack.push(Task::Dispatch {
+                                command: ExecutorCommand::Execute(*first_id),
+                                origin: DispatchOrigin::Group,
+                            });
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
                                 context,
@@ -907,8 +934,10 @@ impl Executor {
                                 watermark: self.error_stack.len(),
                             });
                             for cue_id in children.iter().rev() {
-                                self.task_stack
-                                    .push(Task::Dispatch { command: ExecutorCommand::Execute(*cue_id), origin: DispatchOrigin::Group });
+                                self.task_stack.push(Task::Dispatch {
+                                    command: ExecutorCommand::Execute(*cue_id),
+                                    origin: DispatchOrigin::Group,
+                                });
                             }
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
@@ -974,8 +1003,10 @@ impl Executor {
                                 watermark: self.error_stack.len(),
                             });
                             for child_id in active_children {
-                                self.task_stack
-                                    .push(Task::Dispatch { command: ExecutorCommand::Pause(*child_id), origin: DispatchOrigin::Group });
+                                self.task_stack.push(Task::Dispatch {
+                                    command: ExecutorCommand::Pause(*child_id),
+                                    origin: DispatchOrigin::Group,
+                                });
                             }
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
@@ -1041,8 +1072,10 @@ impl Executor {
                                 watermark: self.error_stack.len(),
                             });
                             for child_id in active_children {
-                                self.task_stack
-                                    .push(Task::Dispatch { command: ExecutorCommand::Resume(*child_id), origin: DispatchOrigin::Group });
+                                self.task_stack.push(Task::Dispatch {
+                                    command: ExecutorCommand::Resume(*child_id),
+                                    origin: DispatchOrigin::Group,
+                                });
                             }
                             self.task_stack.push(Task::BeginScope {
                                 cue_id: cue.id,
@@ -1056,7 +1089,12 @@ impl Executor {
         Ok(())
     }
 
-    async fn stop_cue(&mut self, cue_id: Uuid, stop_mode: StopMode, origin: DispatchOrigin) -> Result<(), anyhow::Error> {
+    async fn stop_cue(
+        &mut self,
+        cue_id: Uuid,
+        stop_mode: StopMode,
+        origin: DispatchOrigin,
+    ) -> Result<(), anyhow::Error> {
         if let Some(active_instance) = self.active_instances.get_mut(&cue_id) {
             let is_prewaiting = active_instance.is_prewaiting;
             if is_prewaiting {
@@ -1114,10 +1152,10 @@ impl Executor {
                                     watermark: self.error_stack.len(),
                                 });
                                 for child_id in active_children {
-                                    self.task_stack.push(Task::Dispatch { command: ExecutorCommand::Stop(
-                                        *child_id,
-                                        StopMode::Hard,
-                                    ), origin: DispatchOrigin::Group });
+                                    self.task_stack.push(Task::Dispatch {
+                                        command: ExecutorCommand::Stop(*child_id, StopMode::Hard),
+                                        origin: DispatchOrigin::Group,
+                                    });
                                 }
                                 self.task_stack.push(Task::BeginScope {
                                     cue_id: cue.id,
@@ -1128,7 +1166,14 @@ impl Executor {
                     }
                 }
             } else {
-                let as_completed = stop_mode == StopMode::Soft && self.model_handle.get_cue_by_id(&cue_id).await.is_some_and(|cue| cue.treat_stop_as_completed && origin != DispatchOrigin::Group );
+                let as_completed = stop_mode == StopMode::Soft
+                    && self
+                        .model_handle
+                        .get_cue_by_id(&cue_id)
+                        .await
+                        .is_some_and(|cue| {
+                            cue.treat_stop_as_completed && origin != DispatchOrigin::Group
+                        });
                 match active_instance.engine_type {
                     EngineType::Audio => {
                         active_instance.pending_stop_as_completed = as_completed;
@@ -1180,9 +1225,10 @@ impl Executor {
                                     watermark: self.error_stack.len(),
                                 });
                                 for child_id in active_children {
-                                    self.task_stack.push(Task::Dispatch { command: ExecutorCommand::Stop(
-                                        *child_id, stop_mode,
-                                    ), origin: DispatchOrigin::Group });
+                                    self.task_stack.push(Task::Dispatch {
+                                        command: ExecutorCommand::Stop(*child_id, stop_mode),
+                                        origin: DispatchOrigin::Group,
+                                    });
                                 }
                                 self.task_stack.push(Task::BeginScope {
                                     cue_id: cue.id,
@@ -1354,7 +1400,10 @@ impl Executor {
                         return Ok(());
                     }
                     AudioEngineEvent::Stopped { .. } => {
-                        let as_completed = self.active_instances.remove(&cue_id).is_some_and(|instance| instance.pending_stop_as_completed);
+                        let as_completed = self
+                            .active_instances
+                            .remove(&cue_id)
+                            .is_some_and(|instance| instance.pending_stop_as_completed);
                         if as_completed {
                             return self.emit_completed(cue_id).await;
                         } else {
@@ -1502,7 +1551,10 @@ impl Executor {
                         ExecutorEvent::Seeked { cue_id, position }
                     }
                     WaitEvent::Stopped { .. } => {
-                        let as_completed = self.active_instances.remove(&cue_id).is_some_and(|instance| instance.pending_stop_as_completed);
+                        let as_completed = self
+                            .active_instances
+                            .remove(&cue_id)
+                            .is_some_and(|instance| instance.pending_stop_as_completed);
                         if as_completed {
                             return self.emit_completed(cue_id).await;
                         } else {
@@ -1556,20 +1608,28 @@ impl Executor {
     }
 
     async fn resolve_after_start_chain(&mut self, cue_id: Uuid) {
-        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Start).await else { return };
+        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Start).await else {
+            return;
+        };
 
         if self.record_and_check_chain_trigger(target) {
-            self.task_stack
-                .push(Task::Dispatch { command: ExecutorCommand::Execute(target), origin: DispatchOrigin::Chain });
+            self.task_stack.push(Task::Dispatch {
+                command: ExecutorCommand::Execute(target),
+                origin: DispatchOrigin::Chain,
+            });
         }
     }
 
     async fn resolve_after_complete_chain(&mut self, cue_id: Uuid) {
-        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Complete).await else { return };
+        let Some(target) = self.resolve_chain_target(cue_id, ChainType::Complete).await else {
+            return;
+        };
 
         if self.record_and_check_chain_trigger(target) {
-            self.task_stack
-                .push(Task::Dispatch { command: ExecutorCommand::Execute(target), origin: DispatchOrigin::Chain });
+            self.task_stack.push(Task::Dispatch {
+                command: ExecutorCommand::Execute(target),
+                origin: DispatchOrigin::Chain,
+            });
         }
     }
 

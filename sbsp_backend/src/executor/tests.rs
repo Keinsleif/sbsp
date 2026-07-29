@@ -10,9 +10,16 @@ use tokio::sync::{
 use uuid::Uuid;
 
 use crate::{
-    BackendSettings, controller::state::AudioStateParam, engine::audio_engine::{AudioCommand, AudioEngineEvent}, event::BackendEvent, manager::ShowModelManager, model::{
-        self, cue::{
-            CueColor, CueCursorAdvanceTriggerOverride, audio::{Decibels, Easing, EnvelopeSegment, FadeParam, SoundType},
+    BackendSettings,
+    controller::state::AudioStateParam,
+    engine::audio_engine::{AudioCommand, AudioEngineEvent},
+    event::BackendEvent,
+    manager::ShowModelManager,
+    model::{
+        self,
+        cue::{
+            CueColor, CueCursorAdvanceTriggerOverride,
+            audio::{Decibels, Easing, EnvelopeSegment, FadeParam, SoundType},
         },
     },
 };

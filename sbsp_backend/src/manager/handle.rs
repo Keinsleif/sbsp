@@ -348,9 +348,12 @@ mod tests {
     use tokio::sync::{RwLock, mpsc};
 
     use crate::{
-        manager::{ShowModelHandle, project::ProjectStatus}, model::{
-            ShowModel, cue::{
-                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, WaitCueParam, group::{GroupCueParamBase, GroupMode},
+        manager::{ShowModelHandle, project::ProjectStatus},
+        model::{
+            ShowModel,
+            cue::{
+                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, WaitCueParam,
+                group::{GroupCueParamBase, GroupMode},
             },
         },
     };
