@@ -55,6 +55,7 @@ const saveEditorValue = () => {
         { value: 'manual', name: t('main.bottomEditor.trigger.cursorAdvanceTrigger.manual') },
       ]"
       autocomplete="off"
+      @update:model-value="saveEditorValue"
       @keydown.stop
     />
     <checkbox-wrapper
