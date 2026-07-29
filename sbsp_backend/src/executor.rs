@@ -36,6 +36,7 @@ struct ActiveInstance {
     is_triggered: bool,  // specify loaded or triggered
     is_prewaiting: bool, // specify prewaiting or playing
     is_paused: bool,     // specify paused or playing
+    pending_stop_as_completed: bool,
 }
 
 enum ChainType {
@@ -177,6 +178,7 @@ impl Executor {
                                 is_prewaiting: false,
                                 is_triggered: true,
                                 is_paused: false,
+                                pending_stop_as_completed: false,
                             }
                         });
 
@@ -260,6 +262,7 @@ impl Executor {
                                 is_prewaiting: false,
                                 is_triggered: true,
                                 is_paused: false,
+                                pending_stop_as_completed: false,
                             },
                         );
                         self.executor_event_tx
@@ -292,6 +295,7 @@ impl Executor {
                                 is_prewaiting: false,
                                 is_triggered: true,
                                 is_paused: false,
+                                pending_stop_as_completed: false,
                             },
                         );
                         self.executor_event_tx
@@ -518,6 +522,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: false,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -536,6 +541,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: false,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -554,6 +560,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: false,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -565,6 +572,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: false,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -583,6 +591,7 @@ impl Executor {
                                     is_prewaiting: false,
                                     is_triggered: false,
                                     is_paused: false,
+                                    pending_stop_as_completed: false,
                                 },
                             );
                             let context = ScopeContext::GroupLoad { child_count: 1 };
@@ -608,6 +617,7 @@ impl Executor {
                                     is_prewaiting: false,
                                     is_triggered: false,
                                     is_paused: false,
+                                    pending_stop_as_completed: false,
                                 },
                             );
                             let context = ScopeContext::GroupLoad {
@@ -673,6 +683,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: true,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -691,6 +702,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: true,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -765,6 +777,7 @@ impl Executor {
                         is_prewaiting: false,
                         is_triggered: true,
                         is_paused: false,
+                        pending_stop_as_completed: false,
                     },
                 );
             }
@@ -1044,7 +1057,7 @@ impl Executor {
     }
 
     async fn stop_cue(&mut self, cue_id: Uuid, stop_mode: StopMode, origin: DispatchOrigin) -> Result<(), anyhow::Error> {
-        if let Some(active_instance) = self.active_instances.get(&cue_id) {
+        if let Some(active_instance) = self.active_instances.get_mut(&cue_id) {
             let is_prewaiting = active_instance.is_prewaiting;
             if is_prewaiting {
                 if let Err(e) = self
@@ -1052,7 +1065,6 @@ impl Executor {
                     .send(WaitCommand::Stop {
                         wait_type: WaitType::PreWait,
                         instance_id: cue_id,
-                        as_completed: false,
                     })
                     .await
                 {
@@ -1069,7 +1081,6 @@ impl Executor {
                             .send(WaitCommand::Stop {
                                 wait_type: WaitType::Wait,
                                 instance_id: cue_id,
-                                as_completed: false,
                             })
                             .await?;
                     }
@@ -1078,7 +1089,6 @@ impl Executor {
                             .send(WaitCommand::Stop {
                                 wait_type: WaitType::FadeWait,
                                 instance_id: cue_id,
-                                as_completed: false,
                             })
                             .await?;
                     }
@@ -1121,18 +1131,19 @@ impl Executor {
                 let as_completed = stop_mode == StopMode::Soft && self.model_handle.get_cue_by_id(&cue_id).await.is_some_and(|cue| cue.treat_stop_as_completed && origin != DispatchOrigin::Group );
                 match active_instance.engine_type {
                     EngineType::Audio => {
+                        active_instance.pending_stop_as_completed = as_completed;
                         let command = match stop_mode {
-                            StopMode::Soft => AudioCommand::SoftStop { id: cue_id, as_completed },
+                            StopMode::Soft => AudioCommand::SoftStop { id: cue_id },
                             StopMode::Hard => AudioCommand::HardStop { id: cue_id },
                         };
                         self.audio_tx.send(command).await?;
                     }
                     EngineType::Wait => {
+                        active_instance.pending_stop_as_completed = as_completed;
                         self.wait_tx
                             .send(WaitCommand::Stop {
                                 wait_type: WaitType::Wait,
                                 instance_id: cue_id,
-                                as_completed,
                             })
                             .await?;
                     }
@@ -1152,6 +1163,7 @@ impl Executor {
                             log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
                             return Ok(());
                         }
+                        active_instance.pending_stop_as_completed = as_completed;
                         if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
                             && let CueParam::Group { children, .. } = cue.params
                         {
@@ -1342,8 +1354,12 @@ impl Executor {
                         return Ok(());
                     }
                     AudioEngineEvent::Stopped { .. } => {
-                        self.active_instances.remove(&cue_id);
-                        return self.emit_stopped(cue_id).await;
+                        let as_completed = self.active_instances.remove(&cue_id).is_some_and(|instance| instance.pending_stop_as_completed);
+                        if as_completed {
+                            return self.emit_completed(cue_id).await;
+                        } else {
+                            return self.emit_stopped(cue_id).await;
+                        }
                     }
                     AudioEngineEvent::Completed { .. } => {
                         self.active_instances.remove(&cue_id);
@@ -1486,8 +1502,12 @@ impl Executor {
                         ExecutorEvent::Seeked { cue_id, position }
                     }
                     WaitEvent::Stopped { .. } => {
-                        self.active_instances.remove(&cue_id);
-                        return self.emit_stopped(cue_id).await;
+                        let as_completed = self.active_instances.remove(&cue_id).is_some_and(|instance| instance.pending_stop_as_completed);
+                        if as_completed {
+                            return self.emit_completed(cue_id).await;
+                        } else {
+                            return self.emit_stopped(cue_id).await;
+                        }
                     }
                     WaitEvent::Completed { .. } => {
                         self.active_instances.remove(&cue_id);

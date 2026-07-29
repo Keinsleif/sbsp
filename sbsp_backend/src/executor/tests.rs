@@ -791,7 +791,7 @@ async fn stop_cue_stops_active_target() {
 
     assert!(matches!(
         audio_rx.recv().await.unwrap(),
-        AudioCommand::SoftStop { id, as_completed } if id == target_id && !as_completed
+        AudioCommand::SoftStop { id } if id == target_id
     ));
     assert!(matches!(
         playback_event_rx.recv().await.unwrap(),

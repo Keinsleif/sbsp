@@ -297,8 +297,8 @@ impl AudioEngine {
                         }
                         AudioCommand::Pause { id } => self.handle_pause(id).await,
                         AudioCommand::Resume { id } => self.handle_resume(id).await,
-                        AudioCommand::SoftStop { id, as_completed } => self.handle_stop(id, false, as_completed).await,
-                        AudioCommand::HardStop { id } => self.handle_stop(id, true, false).await,
+                        AudioCommand::SoftStop { id } => self.handle_stop(id, false).await,
+                        AudioCommand::HardStop { id } => self.handle_stop(id, true).await,
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
                         AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
@@ -341,7 +341,6 @@ impl AudioEngine {
                                     }
                                     AudioEngineEvent::Paused { instance_id: id, position, duration: playing_sound.handle.duration }
                                 },
-                                AudioPlaybackState::FadeOuting |
                                 AudioPlaybackState::HardStopping |
                                 AudioPlaybackState::SoftStopping => {
                                     AudioEngineEvent::Stopping { instance_id: id, position, duration: playing_sound.handle.duration }
@@ -529,13 +528,9 @@ impl AudioEngine {
         }
     }
 
-    async fn handle_stop(&mut self, id: Uuid, is_hard: bool, as_completed: bool) -> Result<()> {
+    async fn handle_stop(&mut self, id: Uuid, is_hard: bool) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            if as_completed {
-                playing_sound.handle.fade_out();
-            } else {
-                playing_sound.handle.stop(is_hard);
-            }
+            playing_sound.handle.stop(is_hard);
             Ok(())
         } else if let Some(mut loaded_sound) = self.loaded_sounds.remove(&id) {
             loaded_sound.stop(is_hard);

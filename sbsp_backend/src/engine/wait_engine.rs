@@ -192,12 +192,8 @@ impl WaitEngine {
                                 Err(anyhow::anyhow!("Instance with ID {} with {:?} not found for seek by.", instance_id, wait_type))
                             }
                         },
-                        WaitCommand::Stop{wait_type, instance_id, as_completed} => {
-                            let wait_event = if as_completed {
-                                WaitEvent::Completed { instance_id }
-                            } else {
-                                WaitEvent::Stopped { instance_id }
-                            };
+                        WaitCommand::Stop{wait_type, instance_id} => {
+                            let wait_event = WaitEvent::Stopped { instance_id };
                             let event = Self::wrap_wait_event(wait_type, wait_event);
                             if self.waiting_instances.remove(&(wait_type, instance_id)).is_some() || self.loaded_instances.remove(&(wait_type, instance_id)).is_some() {
                                 if let Err(e) = self.event_tx.send(event).await {
