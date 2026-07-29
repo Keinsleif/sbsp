@@ -229,7 +229,7 @@ const recallMusicBeePreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.advanceCursorWhenExecute = false;
+  editingSettings.value.global.general.cursorAdvanceTrigger = 'manual';
 };
 
 const recallQLabPreset = () => {
@@ -247,7 +247,7 @@ const recallQLabPreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.advanceCursorWhenExecute = true;
+  editingSettings.value.global.general.cursorAdvanceTrigger = 'onTriggered';
 };
 </script>
 
@@ -357,10 +357,17 @@ const recallQLabPreset = () => {
             v-show="tab === 'globalGeneral'"
             class="flex flex-col gap-4 p-4"
           >
-            <checkbox-wrapper
-              v-model="editingSettings.global.general.advanceCursorWhenExecute"
-              :label="t('dialog.settings.global.general.advanceCursorWhenExecute')"
-              hide-details
+            <select-wrapper
+              v-model="editingSettings.global.general.cursorAdvanceTrigger"
+              class="grow-0"
+              :label="'Playback cursor advance trigger'"
+              :items="[
+                { value: 'onTriggered', name: 'On Triggered' },
+                { value: 'onCompleted', name: 'On Completed' },
+                { value: 'manual', name: 'Manual' },
+              ]"
+              autocomplete="off"
+              @keydown.stop
             />
             <checkbox-wrapper
               v-model="editingSettings.global.general.lockCursorToSelection"

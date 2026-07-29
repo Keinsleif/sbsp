@@ -17,6 +17,7 @@ import AudioTimeLevelEditor from '../editor/AudioTimeLevelEditor.vue';
 import FadeBasicEditor from '../editor/FadeBasicEditor.vue';
 import PlaybakcBasicEditor from '../editor/PlaybakcBasicEditor.vue';
 import GroupBasicEditor from '../editor/GroupBasicEditor.vue';
+import TriggerEditor from '../editor/TriggerEditor.vue';
 
 const { t } = useI18n();
 const selectedCue = defineModel<Cue | null>();
@@ -100,6 +101,11 @@ const editorTab = computed({
           >{{ t('main.bottomEditor.basics.title') }}</tab
         >
         <tab
+          value="trigger"
+          v-show="selectedCue != null"
+        >{{ 'Trigger' }}
+        </tab>
+        <tab
           value="audio"
           v-show="selectedCue != null && selectedCue.params.type == 'audio'"
           >{{ t('main.bottomEditor.audio.title') }}</tab
@@ -142,6 +148,12 @@ const editorTab = computed({
           <BasicEditor
             v-model="selectedCue"
             :chain-override="props.chainOverride"
+            @update="edited"
+          />
+        </tab-panel>
+        <tab-panel value="trigger">
+          <TriggerEditor
+            v-model="selectedCue"
             @update="edited"
           />
         </tab-panel>
