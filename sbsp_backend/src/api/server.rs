@@ -7,7 +7,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use async_recursion::async_recursion;
 use axum::{
     Router,
     extract::{
@@ -332,7 +331,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
                                         && project_type == ProjectType::ProjectFolder
                                         && let Some(parent) = path.parent()
-                                        && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
+                                        && let Ok(file_list) = get_dirs(parent.to_path_buf()).await {
                                             let ws_message = WsFeedback::AssetList(file_list);
                                             if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                                 log::info!("WebSocket client disconnected (send error).");
@@ -470,73 +469,72 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     }
 }
 
-#[async_recursion]
-async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<FileList>> {
-    let mut entries = tokio::fs::read_dir(root_dir).await?;
-    let mut root_list = vec![];
-    let parent_dir = parent.unwrap_or(PathBuf::from("."));
-    loop {
-        let entry_option = entries.next_entry().await?;
-        if let Some(entry) = entry_option {
-            let metadata = entry.metadata().await?;
-            let path = entry.path();
+async fn get_dirs(root_dir: PathBuf) -> anyhow::Result<Vec<FileList>> {
+    tokio::task::spawn_blocking(move || get_dirs_recursive(root_dir, None)).await?
+}
 
-            let entry_name = path
-                .file_name()
-                .unwrap()
-                .to_os_string()
-                .into_string()
-                .unwrap();
-            if metadata.is_dir() {
-                let file_list = get_dirs(path, Some(parent_dir.join(&entry_name))).await?;
+fn get_dirs_recursive(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<FileList>> {
+    let entries = std::fs::read_dir(root_dir)?;
+    let mut root_list = vec![];
+    let parent_dir = parent.unwrap_or_else(|| PathBuf::from("."));
+    for entry_result in entries {
+        let entry = entry_result?;
+        let metadata = entry.metadata()?;
+        let path = entry.path();
+
+        let entry_name = path
+            .file_name()
+            .unwrap()
+            .to_os_string()
+            .into_string()
+            .unwrap();
+        if metadata.is_dir() {
+            let file_list = get_dirs_recursive(path, Some(parent_dir.join(&entry_name)))?;
+            root_list.push(FileList::Dir {
+                name: entry_name,
+                files: file_list,
+            });
+            continue;
+        }
+        if metadata.is_file() {
+            let extension = if let Some(ext) = path.extension() {
+                ext.to_os_string().into_string().unwrap()
+            } else {
+                "".into()
+            };
+            root_list.push(FileList::File {
+                name: entry_name.clone(),
+                path: parent_dir.join(&entry_name),
+                extension,
+            });
+            continue;
+        }
+
+        if let Ok(symlink) = std::fs::read_link(path) {
+            if symlink.is_dir() {
+                let file_list = get_dirs_recursive(symlink, Some(parent_dir.join(&entry_name)))?;
                 root_list.push(FileList::Dir {
                     name: entry_name,
                     files: file_list,
                 });
-                continue;
-            }
-            if metadata.is_file() {
-                let extension = if let Some(ext) = path.extension() {
+            } else {
+                let extension = if let Some(ext) = symlink.extension() {
                     ext.to_os_string().into_string().unwrap()
                 } else {
                     "".into()
                 };
+                let file_name = symlink
+                    .file_name()
+                    .unwrap()
+                    .to_os_string()
+                    .into_string()
+                    .unwrap();
                 root_list.push(FileList::File {
-                    name: entry_name.clone(),
+                    name: file_name,
                     path: parent_dir.join(&entry_name),
                     extension,
                 });
-                continue;
             }
-
-            if let Ok(symlink) = tokio::fs::read_link(path).await {
-                if symlink.is_dir() {
-                    let file_list = get_dirs(symlink, Some(parent_dir.join(&entry_name))).await?;
-                    root_list.push(FileList::Dir {
-                        name: entry_name,
-                        files: file_list,
-                    });
-                } else {
-                    let extension = if let Some(ext) = symlink.extension() {
-                        ext.to_os_string().into_string().unwrap()
-                    } else {
-                        "".into()
-                    };
-                    let file_name = symlink
-                        .file_name()
-                        .unwrap()
-                        .to_os_string()
-                        .into_string()
-                        .unwrap();
-                    root_list.push(FileList::File {
-                        name: file_name,
-                        path: parent_dir.join(&entry_name),
-                        extension,
-                    });
-                }
-            }
-        } else {
-            break;
         }
     }
     Ok(root_list)

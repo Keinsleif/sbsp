@@ -23,7 +23,6 @@ backend = [
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
-    "dep:async-recursion",
     "dep:normpath",
 ]
 apiserver = [
@@ -64,7 +63,6 @@ rtrb = { version = "0.3.3", optional = true}
 symphonia = { version = "0.5.4", features = ["all"], optional = true }
 anyhow = { version = "1.0", optional = true }
 ebur128 = { version = "0.1.10", optional = true }
-async-recursion = { version = "1.1.1", optional = true }
 normpath = { version = "1.5.1", optional = true }
 
 env_logger = { version = "0.11.8", optional = true }
