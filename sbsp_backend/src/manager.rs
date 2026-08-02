@@ -1164,7 +1164,7 @@ mod tests {
                 Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam,
                 audio::{AudioCueParam, Decibels, SoundType},
             },
-            settings::ShowSettings,
+            settings::{CursorAdvanceTrigger, ShowSettings},
         },
     };
     use tempfile::{NamedTempFile, tempdir};
@@ -1249,8 +1249,10 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
-            treat_stop_as_completed: false,
-            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
+            treat_stop_as_completed: true,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::Override(
+                CursorAdvanceTrigger::OnCompleted,
+            ),
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target_after.path().to_path_buf(),
