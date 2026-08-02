@@ -239,14 +239,6 @@ export const curveToEasing = (curve: Curve): Easing => {
   }
 };
 
-export const getLockCursorToSelection = () => {
-  if (__IS_HOST__) {
-    return useUiSettings().settings.general.lockCursorToSelection;
-  } else {
-    return useShowModel().settings.remote.lockCursorToSelection;
-  }
-};
-
 export const getDuration = (cue: Cue | null | undefined): number | null => {
   const assetResult = useAssetResult();
   if (cue == null) {

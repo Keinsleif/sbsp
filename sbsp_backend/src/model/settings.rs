@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 pub struct ShowSettings {
     pub general: ShowGeneralSettings,
     pub audio: ShowAudioSettings,
-    pub remote: ShowRemoteSettings,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -55,11 +54,4 @@ impl Default for ShowAudioSettings {
             lufs_target: -14.0,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase", default)]
-pub struct ShowRemoteSettings {
-    pub lock_cursor_to_selection: bool,
 }

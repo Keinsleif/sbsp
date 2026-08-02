@@ -3,9 +3,10 @@
 
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getLockCursorToSelection, PERMISSIONS } from '../utils.ts';
+import { PERMISSIONS } from '../utils.ts';
 import { useShowModel } from './showModel.ts';
 import type { Permissions } from '../types/Permissions.ts';
+import { useUiSettings } from './uiSettings.ts';
 
 export const useUiState = defineStore(
   'uiState',
@@ -35,7 +36,8 @@ export const useUiState = defineStore(
 
     const setPlaybackCursor = (id: string | null) => {
       playbackCursor.value = id;
-      if (getLockCursorToSelection()) {
+      const uiSettings = useUiSettings();
+      if (uiSettings.settings.general.lockCursorToSelection) {
         const cueId = id;
         if (cueId != null) {
           if (selected.value !== cueId) {
@@ -56,7 +58,8 @@ export const useUiState = defineStore(
     };
 
     const tryUpdatePlaybackCursor = (id: string | null) => {
-      if (getLockCursorToSelection()) {
+      const uiSettings = useUiSettings();
+      if (uiSettings.settings.general.lockCursorToSelection) {
         playbackCursor.value = id;
       }
     };
