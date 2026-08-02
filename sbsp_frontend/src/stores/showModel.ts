@@ -11,6 +11,22 @@ import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
 
+const DEFAULT_SHOW_MODEL: ShowModel = {
+  name: 'Untitled',
+  cues: {},
+  rootIds: [],
+  settings: {
+    general: {
+      cursorAdvanceTrigger: 'manual',
+      copyAssetsDestination: '.',
+    },
+    audio: {
+      monoOutput: false,
+      lufsTarget: -14,
+    },
+  },
+};
+
 export type FlatCueEntry = {
   cue: Cue;
   level: number;
@@ -98,25 +114,7 @@ const recursiveCueCheck = (
 };
 
 export const useShowModel = defineStore('showModel', {
-  state: () =>
-    ({
-      name: 'Untitled',
-      cues: {},
-      rootIds: [],
-      settings: {
-        general: {
-          cursorAdvanceTrigger: 'manual',
-          copyAssetsDestination: '.',
-        },
-        audio: {
-          monoOutput: false,
-          lufsTarget: -14,
-        },
-        remote: {
-          lockCursorToSelection: false,
-        },
-      },
-    }) as ShowModel,
+  state: () => DEFAULT_SHOW_MODEL,
   getters: {
     getCueById() {
       return (cue_id: string): Cue | undefined => {
