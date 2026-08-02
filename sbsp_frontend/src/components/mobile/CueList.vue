@@ -6,16 +6,17 @@ import { mdiChevronDoubleDown, mdiRepeat } from '@mdi/js';
 import { useI18n } from 'vue-i18n';
 import { useShowModel } from '../../stores/showModel';
 import CueListRow from './CueListRow.vue';
-import { getLockCursorToSelection } from '../../utils';
 import { useUiState } from '../../stores/uiState';
 import PathIcon from '../display/PathIcon.vue';
+import { useUiSettings } from '@/stores/uiSettings.ts';
 
 const { t } = useI18n();
 const showModel = useShowModel();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 const setPlaybackCursor = (cueId: string) => {
-  if (uiState.mode !== 'view' && getLockCursorToSelection()) {
+  if (uiState.mode !== 'view' && uiSettings.settings.general.lockCursorToSelection) {
     uiState.setPlaybackCursor(cueId);
   }
 };

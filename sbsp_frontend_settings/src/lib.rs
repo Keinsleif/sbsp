@@ -46,7 +46,7 @@ impl From<&GlobalHostSettings> for BackendSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalRemoteSettings {
@@ -55,6 +55,21 @@ pub struct GlobalRemoteSettings {
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
     pub name_format: NameFormatSettings,
+}
+
+impl Default for GlobalRemoteSettings {
+    fn default() -> Self {
+        Self {
+            general: GeneralSettings {
+                lock_cursor_to_selection: false,
+                ..Default::default()
+            },
+            appearance: Default::default(),
+            hotkey: Default::default(),
+            template: Default::default(),
+            name_format: Default::default(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

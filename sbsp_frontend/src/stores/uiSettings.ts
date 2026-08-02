@@ -9,7 +9,7 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
 export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
-    lockCursorToSelection: true,
+    lockCursorToSelection: __IS_HOST__,
     copyAssetsWhenAdd: false,
     seekAmount: 5,
   },

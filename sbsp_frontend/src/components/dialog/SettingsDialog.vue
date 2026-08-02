@@ -48,7 +48,6 @@ const tabItems = computed(() => [
   { type: 'group', value: 'showModel', label: t('dialog.settings.tab.category.inThisShowModel') },
   { type: 'tab', value: 'showGeneral', label: t('dialog.settings.tab.general') },
   { type: 'tab', value: 'audioLogic', label: t('dialog.settings.tab.audioLogic') },
-  { type: 'tab', value: 'remote', label: t('dialog.settings.tab.remote') },
   { type: 'group', value: 'global', label: t('dialog.settings.tab.category.global') },
   { type: 'tab', value: 'globalGeneral', label: t('dialog.settings.tab.general') },
   { type: 'tab', value: 'appearance', label: t('dialog.settings.tab.appearance') },
@@ -361,15 +360,6 @@ const recallQLabPreset = () => {
               :label="t('dialog.settings.show.audioLogic.targetLufs')"
               suffix="LUFS"
               :precision="2"
-            />
-          </div>
-          <div
-            v-show="tab === 'remote'"
-            class="flex flex-col gap-4 p-4"
-          >
-            <checkbox-wrapper
-              v-model="editingSettings.show.remote.lockCursorToSelection"
-              :label="t('dialog.settings.show.remote.lockCursorToSelection')"
             />
           </div>
           <div
