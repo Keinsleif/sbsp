@@ -321,7 +321,7 @@ const recallQLabPreset = () => {
             />
             <select-wrapper
               v-model="editingSettings.show.general.cursorAdvanceTrigger"
-              class="grow-0"
+              class="w-125"
               :label="t('dialog.settings.show.general.cursorAdvanceTrigger.title')"
               :items="[
                 {
