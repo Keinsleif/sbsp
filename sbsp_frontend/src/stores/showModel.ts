@@ -114,7 +114,7 @@ const recursiveCueCheck = (
 };
 
 export const useShowModel = defineStore('showModel', {
-  state: () => DEFAULT_SHOW_MODEL,
+  state: () => structuredClone(DEFAULT_SHOW_MODEL),
   getters: {
     getCueById() {
       return (cue_id: string): Cue | undefined => {
