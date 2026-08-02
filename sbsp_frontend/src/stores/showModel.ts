@@ -105,6 +105,7 @@ export const useShowModel = defineStore('showModel', {
       rootIds: [],
       settings: {
         general: {
+          cursorAdvanceTrigger: 'manual',
           copyAssetsDestination: '.',
         },
         audio: {
