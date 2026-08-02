@@ -2,9 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{
-    collections::HashMap,
-    path::PathBuf,
-    time::{Duration, Instant},
+    collections::{HashMap, HashSet}, path::{Path, PathBuf}, time::{Duration, Instant},
 };
 
 use axum::{
@@ -470,10 +468,14 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
 }
 
 async fn get_dirs(root_dir: PathBuf) -> anyhow::Result<Vec<FileList>> {
-    tokio::task::spawn_blocking(move || get_dirs_recursive(root_dir, None)).await?
+    tokio::task::spawn_blocking(move || {
+        let root_canonical = std::fs::canonicalize(&root_dir)?;
+        let mut stack = HashSet::from([root_canonical]);
+        get_dirs_recursive(&root_dir, None, &mut stack)
+    }).await?
 }
 
-fn get_dirs_recursive(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<FileList>> {
+fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut HashSet<PathBuf>) -> anyhow::Result<Vec<FileList>> {
     let entries = std::fs::read_dir(root_dir)?;
     let mut root_list = vec![];
     let parent_dir = parent.unwrap_or_else(|| PathBuf::from("."));
@@ -489,7 +491,15 @@ fn get_dirs_recursive(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Res
             .into_string()
             .unwrap();
         if metadata.is_dir() {
-            let file_list = get_dirs_recursive(path, Some(parent_dir.join(&entry_name)))?;
+            let canonical = match std::fs::canonicalize(&path) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            if !stack.insert(canonical.clone()) {
+                continue;
+            }
+            let file_list = get_dirs_recursive(&canonical, Some(parent_dir.join(&entry_name)), stack)?;
+            stack.remove(&canonical);
             root_list.push(FileList::Dir {
                 name: entry_name,
                 files: file_list,
@@ -510,20 +520,33 @@ fn get_dirs_recursive(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Res
             continue;
         }
 
-        if let Ok(symlink) = std::fs::read_link(path) {
-            if symlink.is_dir() {
-                let file_list = get_dirs_recursive(symlink, Some(parent_dir.join(&entry_name)))?;
+        if let Ok(symlink) = std::fs::read_link(&path) {
+            let resolved = if symlink.is_relative() {
+                path.parent().unwrap_or_else(|| Path::new(".")).join(symlink)
+            } else {
+                symlink
+            };
+            let canonical = match std::fs::canonicalize(&resolved) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            if canonical.is_dir() {
+                if !stack.insert(canonical.clone()) {
+                    continue;
+                }
+                let file_list = get_dirs_recursive(&canonical, Some(parent_dir.join(&entry_name)), stack)?;
+                stack.remove(&canonical);
                 root_list.push(FileList::Dir {
                     name: entry_name,
                     files: file_list,
                 });
             } else {
-                let extension = if let Some(ext) = symlink.extension() {
+                let extension = if let Some(ext) = canonical.extension() {
                     ext.to_os_string().into_string().unwrap()
                 } else {
                     "".into()
                 };
-                let file_name = symlink
+                let file_name = canonical
                     .file_name()
                     .unwrap()
                     .to_os_string()
