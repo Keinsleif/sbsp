@@ -33,6 +33,7 @@ tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 uuid = "1"
+base64 = "0.23"
 clap = { version = "4.6", features = ["derive"] }
 
 [profile.dev]
