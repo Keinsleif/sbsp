@@ -81,13 +81,7 @@
         "general": {
           "copyAssetsWhenAdd": "キューを追加するときにアセットをコピーする",
           "lockCursorToSelection": "再生カーソルを選択範囲にロック",
-          "seekAmount": "シーク秒数",
-          "cursorAdvanceTrigger": {
-            "manual": "手動",
-            "onCompleted": "完了時",
-            "onTriggered": "実行時",
-            "title": "再生カーソル更新きっかけ"
-          }
+          "seekAmount": "シーク秒数"
         },
         "hotkey": {
           "audio": {
@@ -177,7 +171,13 @@
             "description": "アセットをコピーするディレクトリへの相対パス (ShowModelごとの設定)",
             "title": "アセットの保存先"
           },
-          "showModelName": "ShowModelの名前"
+          "showModelName": "ShowModelの名前",
+          "cursorAdvanceTrigger": {
+            "title": "再生カーソル更新きっかけ",
+            "onTriggered": "実行時",
+            "onCompleted": "完了時",
+            "manual": "手動"
+          }
         },
         "remote": {
           "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"

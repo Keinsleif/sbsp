@@ -11,9 +11,12 @@ pub use uuid::Uuid;
 
 #[cfg(feature = "backend")]
 use crate::manager::project::{ProjectCue, ProjectCueParam};
-use crate::model::cue::{
-    audio::{AudioCueParam, Decibels, FadeParam},
-    group::GroupCueParamBase,
+use crate::model::{
+    cue::{
+        audio::{AudioCueParam, Decibels, FadeParam},
+        group::GroupCueParamBase,
+    },
+    settings::CursorAdvanceTrigger,
 };
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
@@ -207,9 +210,8 @@ pub enum CueChain {
 pub enum CueCursorAdvanceTriggerOverride {
     #[default]
     None,
-    OnTriggered,
-    OnCompleted,
-    Manual,
+    #[serde(untagged)]
+    Override(CursorAdvanceTrigger),
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]

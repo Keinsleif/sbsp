@@ -229,7 +229,6 @@ const recallMusicBeePreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.cursorAdvanceTrigger = 'manual';
 };
 
 const recallQLabPreset = () => {
@@ -247,7 +246,6 @@ const recallQLabPreset = () => {
   editingSettings.value.global.hotkey.audioAction = {
     toggleRepeat: 'R',
   };
-  editingSettings.value.global.general.cursorAdvanceTrigger = 'onTriggered';
 };
 </script>
 
@@ -321,6 +319,27 @@ const recallQLabPreset = () => {
               class="w-125"
               :label="t('dialog.settings.show.general.showModelName')"
             />
+            <select-wrapper
+              v-model="editingSettings.show.general.cursorAdvanceTrigger"
+              class="grow-0"
+              :label="t('dialog.settings.show.general.cursorAdvanceTrigger.title')"
+              :items="[
+                {
+                  value: 'onTriggered',
+                  name: t('dialog.settings.show.general.cursorAdvanceTrigger.onTriggered'),
+                },
+                {
+                  value: 'onCompleted',
+                  name: t('dialog.settings.show.general.cursorAdvanceTrigger.onCompleted'),
+                },
+                {
+                  value: 'manual',
+                  name: t('dialog.settings.show.general.cursorAdvanceTrigger.manual'),
+                },
+              ]"
+              autocomplete="off"
+              @keydown.stop
+            />
             <text-input
               v-model="editingSettings.show.general.copyAssetsDestination"
               class="w-125"
@@ -357,27 +376,6 @@ const recallQLabPreset = () => {
             v-show="tab === 'globalGeneral'"
             class="flex flex-col gap-4 p-4"
           >
-            <select-wrapper
-              v-model="editingSettings.global.general.cursorAdvanceTrigger"
-              class="grow-0"
-              :label="t('dialog.settings.global.general.cursorAdvanceTrigger.title')"
-              :items="[
-                {
-                  value: 'onTriggered',
-                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.onTriggered'),
-                },
-                {
-                  value: 'onCompleted',
-                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.onCompleted'),
-                },
-                {
-                  value: 'manual',
-                  name: t('dialog.settings.global.general.cursorAdvanceTrigger.manual'),
-                },
-              ]"
-              autocomplete="off"
-              @keydown.stop
-            />
             <checkbox-wrapper
               v-model="editingSettings.global.general.lockCursorToSelection"
               :label="t('dialog.settings.global.general.lockCursorToSelection')"

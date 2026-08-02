@@ -20,6 +20,7 @@ import { useHotkey } from './composables/useHotkey.ts';
 import type { PlaybackStatus } from './types/PlaybackStatus.ts';
 import { useToast } from 'primevue/usetoast';
 import { useBackendEvent } from './composables/useBackendEvent.ts';
+import type { CursorAdvanceTrigger } from './types/CursorAdvanceTrigger.ts';
 
 const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
@@ -61,12 +62,12 @@ useBackendEvent((event) => {
         });
       }
       if (event.param.cueId === uiState.playbackCursor) {
-        let cursorAdvanceTrigger: 'onTriggered' | 'onCompleted' | 'manual' = 'manual';
+        let cursorAdvanceTrigger: CursorAdvanceTrigger = 'manual';
         if (uiState.playbackCursor != null) {
           const cue = showModel.getCueById(uiState.playbackCursor);
           if (cue != null) {
             if (cue.cursorAdvanceTriggerOverride === 'none') {
-              cursorAdvanceTrigger = uiSettings.settings.general.cursorAdvanceTrigger;
+              cursorAdvanceTrigger = showModel.settings.general.cursorAdvanceTrigger;
             } else {
               cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }

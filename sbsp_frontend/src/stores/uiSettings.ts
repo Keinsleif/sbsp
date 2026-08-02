@@ -9,7 +9,6 @@ import type { GlobalRemoteSettings } from '../types/GlobalRemoteSettings';
 
 export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
   general: {
-    cursorAdvanceTrigger: 'manual',
     lockCursorToSelection: true,
     copyAssetsWhenAdd: false,
     seekAmount: 5,

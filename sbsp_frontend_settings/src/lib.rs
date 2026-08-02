@@ -61,8 +61,6 @@ pub struct GlobalRemoteSettings {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
-    #[serde(default)]
-    pub cursor_advance_trigger: CursorAdvanceTrigger,
     pub lock_cursor_to_selection: bool,
     pub copy_assets_when_add: bool,
     pub seek_amount: f64,
@@ -71,22 +69,11 @@ pub struct GeneralSettings {
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
-            cursor_advance_trigger: CursorAdvanceTrigger::default(),
             lock_cursor_to_selection: true,
             copy_assets_when_add: false,
             seek_amount: 5.0,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub enum CursorAdvanceTrigger {
-    OnTriggered,
-    OnCompleted,
-    #[default]
-    Manual,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
