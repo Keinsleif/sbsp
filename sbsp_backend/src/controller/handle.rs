@@ -20,7 +20,9 @@ impl CueControllerHandle {
     }
 
     pub async fn execute(&self, uuid: Uuid) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::Execute(uuid)).await?;
+        self.command_tx
+            .send(ControllerCommand::Execute(uuid))
+            .await?;
         Ok(())
     }
 

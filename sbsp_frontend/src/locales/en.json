@@ -81,8 +81,7 @@
         "general": {
           "copyAssetsWhenAdd": "Copy assets when adding Cue",
           "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
-          "seekAmount": "Seek amount",
-          "advanceCursorWhenExecute": "Advance cursor when EXECUTE"
+          "seekAmount": "Seek amount"
         },
         "hotkey": {
           "audio": {
@@ -172,7 +171,13 @@
             "description": "Relative path to the directory for copying assets. (per-show setting)",
             "title": "Assets directory"
           },
-          "showModelName": "Show Model name"
+          "showModelName": "Show Model name",
+          "cursorAdvanceTrigger": {
+            "title": "Playback cursor advance trigger",
+            "onTriggered": "On Triggered",
+            "onCompleted": "On Completed",
+            "manual": "Manual"
+          }
         },
         "remote": {
           "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
@@ -284,7 +289,20 @@
         "volume": "Volume",
         "envelopeVisible": "Show envelope"
       },
-      "noSelection": "No Selection"
+      "noSelection": "No Selection",
+      "trigger": {
+        "cursorAdvanceTrigger": {
+          "onTriggered": "On Triggered",
+          "onCompleted": "On Completed",
+          "manual": "Manual",
+          "none": "None"
+        },
+        "treatStopAsCompleted": "Treat Stop as Completed",
+        "title": "Trigger",
+        "cursorAdvanceTriggerOverride": {
+          "title": "Playback cursor advance trigger (override global settings)"
+        }
+      }
     },
     "chainMode": {
       "afterStart": "After-Start",

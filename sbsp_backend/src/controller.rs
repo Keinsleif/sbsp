@@ -539,7 +539,7 @@ mod tests {
         model::{
             self,
             cue::{
-                Cue, CueColor,
+                Cue, CueColor, CueCursorAdvanceTriggerOverride,
                 audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
             },
         },
@@ -584,6 +584,8 @@ mod tests {
                     color: CueColor::None,
                     pre_wait: 0.0,
                     chain: model::cue::CueChain::DoNotChain,
+                    treat_stop_as_completed: false,
+                    cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                     parent_id: None,
                     params: model::cue::CueParam::Audio(AudioCueParam {
                         target: PathBuf::from("./I.G.Y.flac"),

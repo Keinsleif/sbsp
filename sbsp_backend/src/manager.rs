@@ -631,6 +631,8 @@ impl ShowModelManager {
             cue.color = new_cue.color;
             cue.pre_wait = new_cue.pre_wait;
             cue.chain = new_cue.chain;
+            cue.cursor_advance_trigger_override = new_cue.cursor_advance_trigger_override;
+            cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
             match (&mut cue.params, new_cue.params) {
                 (CueParam::Audio(p), CueParam::Audio(new_p)) => {
                     *p = new_p;
@@ -1159,10 +1161,10 @@ mod tests {
         model::{
             ShowModel,
             cue::{
-                Cue, CueChain, CueColor, CueList, CueParam,
+                Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam,
                 audio::{AudioCueParam, Decibels, SoundType},
             },
-            settings::ShowSettings,
+            settings::{CursorAdvanceTrigger, ShowSettings},
         },
     };
     use tempfile::{NamedTempFile, tempdir};
@@ -1211,6 +1213,8 @@ mod tests {
                             color: CueColor::None,
                             pre_wait: 0.0,
                             chain: CueChain::DoNotChain,
+                            treat_stop_as_completed: false,
+                            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                             parent_id: None,
                             params: CueParam::Audio(AudioCueParam {
                                 target: temp_target.path().to_path_buf(),
@@ -1245,6 +1249,10 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: true,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::Override(
+                CursorAdvanceTrigger::OnCompleted,
+            ),
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target_after.path().to_path_buf(),
@@ -1316,6 +1324,8 @@ mod tests {
             color: CueColor::None,
             pre_wait: 0.0,
             chain: CueChain::DoNotChain,
+            treat_stop_as_completed: false,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
             parent_id: None,
             params: CueParam::Audio(AudioCueParam {
                 target: temp_target.path().to_path_buf(),

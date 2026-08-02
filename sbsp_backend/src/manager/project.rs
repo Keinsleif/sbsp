@@ -10,8 +10,9 @@ use uuid::Uuid;
 use crate::model::ShowModel;
 use crate::model::{
     cue::{
-        CueChain, CueColor, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam, StopCueParam,
-        WaitCueParam, audio::AudioCueParam, group::GroupCueParamBase,
+        CueChain, CueColor, CueCursorAdvanceTriggerOverride, FadeCueParam, LoadCueParam,
+        PauseCueParam, StartCueParam, StopCueParam, WaitCueParam, audio::AudioCueParam,
+        group::GroupCueParamBase,
     },
     settings::ShowSettings,
 };
@@ -102,14 +103,22 @@ impl TryFrom<ProjectShowModel> for ShowModel {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectCue {
     pub id: Uuid,
+    #[serde(default)]
     pub number: String,
+    #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
     pub notes: String,
     #[serde(default)]
     pub color: CueColor,
+    #[serde(default)]
     pub pre_wait: f64,
     #[serde(default)]
     pub chain: CueChain,
+    #[serde(default)]
+    pub treat_stop_as_completed: bool,
+    #[serde(default)]
+    pub cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride,
     pub params: ProjectCueParam,
 }
 

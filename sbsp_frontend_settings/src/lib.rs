@@ -9,12 +9,15 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use hotkey::HotkeySettings;
-use sbsp_backend::{BackendAudioSettings, BackendSettings, model::cue::{
-    Cue, CueChain, CueColor, CueParam, FadeCueParam, LoadCueParam, PauseCueParam, StartCueParam,
-    StopCueParam, Uuid, WaitCueParam,
-    audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
-    group::{GroupCueParamBase, GroupMode},
-}};
+use sbsp_backend::{
+    BackendAudioSettings, BackendSettings,
+    model::cue::{
+        Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, FadeCueParam,
+        LoadCueParam, PauseCueParam, StartCueParam, StopCueParam, Uuid, WaitCueParam,
+        audio::{AudioCueParam, Decibels, Easing, FadeParam, SoundType},
+        group::{GroupCueParamBase, GroupMode},
+    },
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
@@ -58,8 +61,6 @@ pub struct GlobalRemoteSettings {
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
-    #[serde(alias = "advanceCursorWhenGo")]
-    pub advance_cursor_when_execute: bool,
     pub lock_cursor_to_selection: bool,
     pub copy_assets_when_add: bool,
     pub seek_amount: f64,
@@ -68,7 +69,6 @@ pub struct GeneralSettings {
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
-            advance_cursor_when_execute: false,
             lock_cursor_to_selection: true,
             copy_assets_when_add: false,
             seek_amount: 5.0,
@@ -95,7 +95,7 @@ pub struct AppearanceSettings {
     pub hide_controls: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum DarkMode {
@@ -130,6 +130,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Audio(AudioCueParam {
                     target: PathBuf::new(),
@@ -152,6 +154,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
             },
@@ -163,6 +167,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Fade(FadeCueParam {
                     target: Uuid::nil(),
@@ -181,6 +187,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Start(StartCueParam {
                     target: Uuid::nil(),
@@ -194,6 +202,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Stop(StopCueParam {
                     target: Uuid::nil(),
@@ -208,6 +218,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Pause(PauseCueParam {
                     target: Uuid::nil(),
@@ -221,6 +233,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Load(LoadCueParam {
                     target: Uuid::nil(),
@@ -234,6 +248,8 @@ impl Default for TemplateSettings {
                 color: CueColor::None,
                 pre_wait: 0.0,
                 chain: CueChain::DoNotChain,
+                treat_stop_as_completed: false,
+                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
                 parent_id: None,
                 params: CueParam::Group {
                     base: GroupCueParamBase {

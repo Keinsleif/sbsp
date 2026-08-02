@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use std::path::PathBuf;
 #[cfg(feature = "backend")]
 use std::ops::{Add, Mul, Sub};
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 

@@ -20,6 +20,7 @@ import { useHotkey } from './composables/useHotkey.ts';
 import type { PlaybackStatus } from './types/PlaybackStatus.ts';
 import { useToast } from 'primevue/usetoast';
 import { useBackendEvent } from './composables/useBackendEvent.ts';
+import type { CursorAdvanceTrigger } from './types/CursorAdvanceTrigger.ts';
 
 const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
@@ -60,15 +61,48 @@ useBackendEvent((event) => {
           life: 3000,
         });
       }
-      if (uiSettings.settings.general.advanceCursorWhenExecute && event.param.type === 'triggered' && event.param.cueId === uiState.playbackCursor) {
-        const cue = showModel.getCueById(uiState.playbackCursor);
-        let nextCursor;
-        if (cue != null && cue.params.type === 'group' && cue.params.mode.type === 'startFirst' && cue.params.mode.enter) {
-          nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
-        } else {
-          nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+      if (event.param.cueId === uiState.playbackCursor) {
+        let cursorAdvanceTrigger: CursorAdvanceTrigger = 'manual';
+        if (uiState.playbackCursor != null) {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          if (cue != null) {
+            if (cue.cursorAdvanceTriggerOverride === 'none') {
+              cursorAdvanceTrigger = showModel.settings.general.cursorAdvanceTrigger;
+            } else {
+              cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
+            }
+          }
         }
-        uiState.setPlaybackCursor(nextCursor);
+        if (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          let nextCursor;
+          if (
+            cue != null &&
+            cue.params.type === 'group' &&
+            cue.params.mode.type === 'startFirst' &&
+            cue.params.mode.enter
+          ) {
+            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+          } else {
+            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+          }
+          uiState.setPlaybackCursor(nextCursor);
+        }
+        if (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed') {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          let nextCursor;
+          if (
+            cue != null &&
+            cue.params.type === 'group' &&
+            cue.params.mode.type === 'startFirst' &&
+            cue.params.mode.enter
+          ) {
+            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+          } else {
+            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+          }
+          uiState.setPlaybackCursor(nextCursor);
+        }
       }
       showState.handleCueStateEvent(event.param);
       break;
