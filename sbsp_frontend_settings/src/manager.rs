@@ -3,7 +3,8 @@
 
 use serde::{Serialize, de::DeserializeOwned};
 use std::path::{Path, PathBuf};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, RwLockReadGuard};
+use tokio::{fs, task};
 
 pub struct SettingsManager<T> {
     path: Option<PathBuf>,
@@ -21,7 +22,7 @@ where
         }
     }
 
-    pub async fn read(&self) -> tokio::sync::RwLockReadGuard<'_, T> {
+    pub async fn read(&self) -> RwLockReadGuard<'_, T> {
         self.settings.read().await
     }
 
@@ -31,10 +32,10 @@ where
 
     pub async fn load(&self) -> Result<T, anyhow::Error> {
         if let Some(path) = &self.path {
-            let content = tokio::fs::read_to_string(path.clone()).await?;
+            let content = fs::read_to_string(path.clone()).await?;
 
             let new_settings =
-                tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
+                task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
 
             self.set(new_settings.clone()).await;
 
@@ -52,13 +53,13 @@ where
             let settings = self.settings.read().await.clone();
 
             let content =
-                tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
+                task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
                     .await??;
 
             if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent).await?;
+                fs::create_dir_all(parent).await?;
             }
-            tokio::fs::write(path.clone(), content).await?;
+            fs::write(path.clone(), content).await?;
             log::info!("GlobalSettings saved to: {}", path.display());
             Ok(())
         } else {
@@ -69,9 +70,9 @@ where
     }
 
     pub async fn import_from_file(&self, path: &Path) -> Result<T, anyhow::Error> {
-        let content = tokio::fs::read_to_string(path).await?;
+        let content = fs::read_to_string(path).await?;
         let settings =
-            tokio::task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
+            task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
         self.set(settings.clone()).await;
         self.save().await?;
 
@@ -83,12 +84,12 @@ where
         let settings = self.settings.read().await.clone();
 
         let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
+            task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
 
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
+            fs::create_dir_all(parent).await?;
         }
-        tokio::fs::write(path, content).await?;
+        fs::write(path, content).await?;
 
         log::info!("GlobalSettings saved to: {}", path.display());
         Ok(())
