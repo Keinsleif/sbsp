@@ -134,145 +134,65 @@ pub struct TemplateSettings {
     pub group: Cue,
 }
 
+fn template_with_params(params: CueParam) -> Cue {
+    Cue {
+        id: Uuid::nil(),
+        number: "".to_string(),
+        name: None,
+        notes: "".to_string(),
+        color: CueColor::None,
+        pre_wait: 0.0,
+        chain: CueChain::DoNotChain,
+        treat_stop_as_completed: false,
+        cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
+        parent_id: None,
+        params,
+    }
+}
+
 impl Default for TemplateSettings {
     fn default() -> Self {
         Self {
-            audio: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Audio(AudioCueParam {
-                    target: PathBuf::new(),
-                    start_time: None,
-                    fade_in_param: None,
-                    end_time: None,
-                    fade_out_param: None,
-                    volume: Decibels::IDENTITY,
-                    pan: 0.0,
-                    repeat: false,
-                    sound_type: SoundType::Streaming,
-                    envelope: Vec::new(),
-                }),
-            },
-            wait: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Wait(WaitCueParam { duration: 5.0 }),
-            },
-            fade: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Fade(FadeCueParam {
-                    target: Uuid::nil(),
-                    volume: Decibels::IDENTITY,
-                    fade_param: FadeParam {
-                        duration: 3.0,
-                        easing: Easing::InOutPow(2.0),
-                    },
-                }),
-            },
-            start: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Start(StartCueParam {
-                    target: Uuid::nil(),
-                }),
-            },
-            stop: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Stop(StopCueParam {
-                    target: Uuid::nil(),
-                    hard: false,
-                }),
-            },
-            pause: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Pause(PauseCueParam {
-                    target: Uuid::nil(),
-                }),
-            },
-            load: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Load(LoadCueParam {
-                    target: Uuid::nil(),
-                }),
-            },
-            group: Cue {
-                id: Uuid::nil(),
-                number: "".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: CueParam::Group {
-                    base: GroupCueParamBase {
-                        mode: GroupMode::Playlist { repeat: true },
-                    },
-                    children: Vec::new(),
+            audio: template_with_params(CueParam::Audio(AudioCueParam {
+                target: PathBuf::new(),
+                start_time: None,
+                fade_in_param: None,
+                end_time: None,
+                fade_out_param: None,
+                volume: Decibels::IDENTITY,
+                pan: 0.0,
+                repeat: false,
+                sound_type: SoundType::Streaming,
+                envelope: Vec::new(),
+            })),
+            wait: template_with_params(CueParam::Wait(WaitCueParam { duration: 5.0 })),
+            fade: template_with_params(CueParam::Fade(FadeCueParam {
+                target: Uuid::nil(),
+                volume: Decibels::IDENTITY,
+                fade_param: FadeParam {
+                    duration: 3.0,
+                    easing: Easing::InOutPow(2.0),
                 },
-            },
+            })),
+            start: template_with_params(CueParam::Start(StartCueParam {
+                target: Uuid::nil(),
+            })),
+            stop: template_with_params(CueParam::Stop(StopCueParam {
+                target: Uuid::nil(),
+                hard: false,
+            })),
+            pause: template_with_params(CueParam::Pause(PauseCueParam {
+                target: Uuid::nil(),
+            })),
+            load: template_with_params(CueParam::Load(LoadCueParam {
+                target: Uuid::nil(),
+            })),
+            group: template_with_params(CueParam::Group {
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: true },
+                },
+                children: Vec::new(),
+            }),
         }
     }
 }

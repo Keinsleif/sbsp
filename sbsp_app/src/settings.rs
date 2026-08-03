@@ -59,7 +59,11 @@ impl GlobalSettingsManager {
         self.inner.read().await
     }
     pub async fn load(&self) -> Result<GlobalHostSettings, anyhow::Error> {
-        self.inner.load().await
+        let new_settings = self.inner.load().await?;
+        self.settings_tx.send_modify(|backend_state| {
+            *backend_state = BackendSettings::from(&new_settings);
+        });
+        Ok(new_settings)
     }
     pub async fn save(&self) -> Result<(), anyhow::Error> {
         self.inner.save().await

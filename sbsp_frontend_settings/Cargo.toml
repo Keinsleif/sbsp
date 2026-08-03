@@ -21,6 +21,6 @@ serde.workspace = true
 anyhow = { workspace = true, optional = true }
 log = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
-tokio = { workspace = true, features = ["sync"], optional = true }
+tokio = { workspace = true, features = ["sync", "fs", "rt"], optional = true }
 
 ts-rs = { workspace = true, optional = true }
