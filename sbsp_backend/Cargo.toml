@@ -23,7 +23,6 @@ backend = [
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
-    "dep:async-recursion",
     "dep:normpath",
 ]
 apiserver = [
@@ -59,23 +58,22 @@ indexmap = { version = "2", features = ["serde"] }
 log = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs", "signal"], optional = true }
 serde_json = { workspace = true, optional = true }
-rodio = { version = "0.22.2", default-features = false, features = ["playback", "symphonia-all"], optional = true }
-rtrb = { version = "0.3.3", optional = true}
-symphonia = { version = "0.5.4", features = ["all"], optional = true }
+rodio = { version = "0.22", default-features = false, features = ["playback", "symphonia-all", "symphonia-simd"], optional = true }
+rtrb = { version = "0.3", optional = true }
+symphonia = { version = "0.5", features = ["all", "opt-simd"], optional = true }
 anyhow = { version = "1.0", optional = true }
-ebur128 = { version = "0.1.10", optional = true }
-async-recursion = { version = "1.1.1", optional = true }
-normpath = { version = "1.5.1", optional = true }
+ebur128 = { version = "0.1", optional = true }
+normpath = { version = "1.5", optional = true }
 
-env_logger = { version = "0.11.8", optional = true }
+env_logger = { version = "0.11", optional = true }
 clap = { workspace = true, optional = true }
 
 rand = { version = "0.10", optional = true }
-base64 = { version = "0.22.1", optional = true }
+base64 = { workspace = true, optional = true }
 sha2 = { version = "0.10", optional = true }
 bitflags = { version = "2.11", optional = true }
 mdns-sd = { version = "0.17", optional = true, default-features = false, features = ["async"]}
-gethostname = { version = "1.0.2", optional = true }
+gethostname = { version = "1.1", optional = true }
 
 axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "http2", "ws"], optional = true }
 
@@ -86,4 +84,4 @@ ts-rs = { workspace = true, features = ["uuid-impl", "indexmap-impl"], optional 
 
 [dev-dependencies]
 tempfile = "3.22.0"
-env_logger = "0.11.8"
+env_logger = "0.11"
