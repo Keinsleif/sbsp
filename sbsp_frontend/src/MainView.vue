@@ -71,37 +71,20 @@ useBackendEvent((event) => {
             } else {
               cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }
+            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered')) {
+              let nextCursor;
+              if (
+                cue.params.type === 'group' &&
+                cue.params.mode.type === 'startFirst' &&
+                cue.params.mode.enter
+              ) {
+                nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+              } else {
+                nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+              }
+              uiState.setPlaybackCursor(nextCursor);
+            }
           }
-        }
-        if (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') {
-          const cue = showModel.getCueById(uiState.playbackCursor);
-          let nextCursor;
-          if (
-            cue != null &&
-            cue.params.type === 'group' &&
-            cue.params.mode.type === 'startFirst' &&
-            cue.params.mode.enter
-          ) {
-            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
-          } else {
-            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
-          }
-          uiState.setPlaybackCursor(nextCursor);
-        }
-        if (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed') {
-          const cue = showModel.getCueById(uiState.playbackCursor);
-          let nextCursor;
-          if (
-            cue != null &&
-            cue.params.type === 'group' &&
-            cue.params.mode.type === 'startFirst' &&
-            cue.params.mode.enter
-          ) {
-            nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
-          } else {
-            nextCursor = showModel.getNextCueById(uiState.playbackCursor);
-          }
-          uiState.setPlaybackCursor(nextCursor);
         }
       }
       showState.handleCueStateEvent(event.param);
