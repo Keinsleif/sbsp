@@ -471,14 +471,13 @@ async fn get_dirs(root_dir: PathBuf) -> anyhow::Result<Vec<FileList>> {
     tokio::task::spawn_blocking(move || {
         let root_canonical = std::fs::canonicalize(&root_dir)?;
         let mut stack = HashSet::from([root_canonical]);
-        get_dirs_recursive(&root_dir, None, &mut stack)
+        get_dirs_recursive(&root_dir, &mut stack)
     }).await?
 }
 
-fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut HashSet<PathBuf>) -> anyhow::Result<Vec<FileList>> {
+fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::Result<Vec<FileList>> {
     let entries = std::fs::read_dir(root_dir)?;
     let mut root_list = vec![];
-    let parent_dir = parent.unwrap_or_else(|| PathBuf::from("."));
     for entry_result in entries {
         let Ok(entry) = entry_result else { continue };
         let Ok(metadata) = entry.metadata() else { continue };
@@ -487,15 +486,15 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
         let Some(entry_name) = path.file_name().map(|name| name.to_string_lossy().into_owned()) else {
             continue;
         };
+        let canonical = match std::fs::canonicalize(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
         if metadata.is_dir() {
-            let canonical = match std::fs::canonicalize(&path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
             if !stack.insert(canonical.clone()) {
                 continue;
             }
-            let file_list = get_dirs_recursive(&canonical, Some(parent_dir.join(&entry_name)), stack)?;
+            let file_list = get_dirs_recursive(&canonical, stack)?;
             stack.remove(&canonical);
             root_list.push(FileList::Dir {
                 name: entry_name,
@@ -507,7 +506,7 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
             let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
             root_list.push(FileList::File {
                 name: entry_name.clone(),
-                path: parent_dir.join(&entry_name),
+                path: canonical,
                 extension,
             });
             continue;
@@ -527,7 +526,7 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
                 if !stack.insert(canonical.clone()) {
                     continue;
                 }
-                let file_list = get_dirs_recursive(&canonical, Some(parent_dir.join(&entry_name)), stack)?;
+                let file_list = get_dirs_recursive(&canonical, stack)?;
                 stack.remove(&canonical);
                 root_list.push(FileList::Dir {
                     name: entry_name,
@@ -537,7 +536,7 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
                 let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
                 root_list.push(FileList::File {
                     name: entry_name.clone(),
-                    path: parent_dir.join(&entry_name),
+                    path: canonical,
                     extension,
                 });
             }
