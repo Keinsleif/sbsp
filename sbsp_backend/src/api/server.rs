@@ -480,16 +480,13 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
     let mut root_list = vec![];
     let parent_dir = parent.unwrap_or_else(|| PathBuf::from("."));
     for entry_result in entries {
-        let entry = entry_result?;
-        let metadata = entry.metadata()?;
+        let Ok(entry) = entry_result else { continue };
+        let Ok(metadata) = entry.metadata() else { continue };
         let path = entry.path();
 
-        let entry_name = path
-            .file_name()
-            .unwrap()
-            .to_os_string()
-            .into_string()
-            .unwrap();
+        let Some(entry_name) = path.file_name().map(|name| name.to_string_lossy().into_owned()) else {
+            continue;
+        };
         if metadata.is_dir() {
             let canonical = match std::fs::canonicalize(&path) {
                 Ok(c) => c,
@@ -507,11 +504,7 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
             continue;
         }
         if metadata.is_file() {
-            let extension = if let Some(ext) = path.extension() {
-                ext.to_os_string().into_string().unwrap()
-            } else {
-                "".into()
-            };
+            let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
             root_list.push(FileList::File {
                 name: entry_name.clone(),
                 path: parent_dir.join(&entry_name),
@@ -541,19 +534,9 @@ fn get_dirs_recursive(root_dir: &Path, parent: Option<PathBuf>, stack: &mut Hash
                     files: file_list,
                 });
             } else {
-                let extension = if let Some(ext) = canonical.extension() {
-                    ext.to_os_string().into_string().unwrap()
-                } else {
-                    "".into()
-                };
-                let file_name = canonical
-                    .file_name()
-                    .unwrap()
-                    .to_os_string()
-                    .into_string()
-                    .unwrap();
+                let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
                 root_list.push(FileList::File {
-                    name: file_name,
+                    name: entry_name.clone(),
                     path: parent_dir.join(&entry_name),
                     extension,
                 });
