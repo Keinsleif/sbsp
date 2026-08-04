@@ -2,6 +2,26 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## app-2.6.0 - 2026-08-04
+#### Features
+- cursor advance logic (#164) - (dbed47c) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) group stop behavier (#161) - (a82e8f9) - *Keinsleif*
+- (**frontend**) apply tabular-nums for time display (#159) - (7dd1bad) - *Keinsleif*
+- hard stop all on load and reset ShowModel (#171) - (e28f164) - *Keinsleif*
+- frontend settings management (#169) - (42d0d16) - *Keinsleif*
+- backend file enumerate logic (#168) - (86a70d4) - *Keinsleif*
+#### Refactoring
+- (**frontend**) simplify cursor advance (#170) - (761f18a) - *Keinsleif*
+- decrease deps (#166) - (1589283) - *Keinsleif*
+- rm remote lock_cursor_to_selection option (#165) - (5887441) - *Keinsleif*
+- crate separation & dependency management (#162) - (26d5a46) - *Keinsleif*
+- playback cursor logic migration (#160) - (323ad08) - *Keinsleif*
+#### Style
+- (**backend**) apply clippy suggestion for format! argument (#155) - (a89ae18) - *Keinsleif*
+
+- - -
+
 ## app-2.5.4 - 2026-07-19
 #### Bug Fixes
 - (**frontend**) invalid param of ActiveCueItem on MonitorPanel (#150) - (e7a4974) - *Keinsleif*

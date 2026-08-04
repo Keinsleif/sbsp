@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend-2.6.0 - 2026-08-04
+#### Features
+- cursor advance logic (#164) - (dbed47c) - *Keinsleif*
+#### Bug Fixes
+- (**frontend**) apply tabular-nums for time display (#159) - (7dd1bad) - *Keinsleif*
+- hard stop all on load and reset ShowModel (#171) - (e28f164) - *Keinsleif*
+#### Refactoring
+- (**frontend**) simplify cursor advance (#170) - (761f18a) - *Keinsleif*
+- rm remote lock_cursor_to_selection option (#165) - (5887441) - *Keinsleif*
+- playback cursor logic migration (#160) - (323ad08) - *Keinsleif*
+
+- - -
+
 ## frontend-2.5.3 - 2026-07-19
 #### Bug Fixes
 - (**frontend**) invalid param of ActiveCueItem on MonitorPanel (#150) - (e7a4974) - *Keinsleif*

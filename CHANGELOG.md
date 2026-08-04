@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.6.0](https://github.com/Keinsleif/sbsp/compare/26d5a46bcbf5494a565cd89ccbb2cf0ed1495018..2.6.0) - 2026-08-04
+### Package updates
+- [backend-1.6.0](sbsp_backend) bumped to [backend-1.6.0](https://github.com/Keinsleif/sbsp/compare/backend-1.5.5..backend-1.6.0)
+- [app-2.6.0](sbsp_app) bumped to [app-2.6.0](https://github.com/Keinsleif/sbsp/compare/app-2.5.4..app-2.6.0)
+- [frontend_settings](sbsp_frontend_settings) bumped to [frontend_settings-0.1.0](https://github.com/Keinsleif/sbsp/compare/f52cfe2e3321a1f1a560489f812425f1d096a4b8..frontend_settings-0.1.0)
+- [frontend-2.6.0](sbsp_frontend) bumped to [frontend-2.6.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.3..frontend-2.6.0)
+- [remote_app-2.6.0](sbsp_remote_app) bumped to [remote_app-2.6.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.4..remote_app-2.6.0)
+### Global changes
+#### Refactoring
+- decrease deps (#166) - ([1589283](https://github.com/Keinsleif/sbsp/commit/158928386c6ffe939d4d680e6c4560df7d0cc5b9)) - [@Keinsleif](https://github.com/Keinsleif)
+- crate separation & dependency management (#162) - ([26d5a46](https://github.com/Keinsleif/sbsp/commit/26d5a46bcbf5494a565cd89ccbb2cf0ed1495018)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.5.4](https://github.com/Keinsleif/sbsp/compare/c6d2a0c6dc10cd80de09cb5bf10755c92c1cc75a..2.5.4) - 2026-07-19
 ### Package updates
 - [frontend-2.5.3](sbsp_frontend) bumped to [frontend-2.5.3](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.2..frontend-2.5.3)

@@ -2,6 +2,24 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## backend-1.6.0 - 2026-08-04
+#### Features
+- cursor advance logic (#164) - (dbed47c) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) group stop behavier (#161) - (a82e8f9) - *Keinsleif*
+- hard stop all on load and reset ShowModel (#171) - (e28f164) - *Keinsleif*
+- backend file enumerate logic (#168) - (86a70d4) - *Keinsleif*
+#### Refactoring
+- (**backend**) stack based executor logic (#151) - (e6f85b3) - *Keinsleif*
+- decrease deps (#166) - (1589283) - *Keinsleif*
+- rm remote lock_cursor_to_selection option (#165) - (5887441) - *Keinsleif*
+- crate separation & dependency management (#162) - (26d5a46) - *Keinsleif*
+- playback cursor logic migration (#160) - (323ad08) - *Keinsleif*
+#### Style
+- (**backend**) apply clippy suggestion for format! argument (#155) - (a89ae18) - *Keinsleif*
+
+- - -
+
 ## backend-1.5.5 - 2026-07-19
 #### Bug Fixes
 - (**backend**) executor logic (#146) - (9548ff3) - *Keinsleif*
