@@ -140,7 +140,7 @@ export const createWindowMenu = () => {
                 buttons: 'OkCancel',
                 kind: 'warning',
               });
-              if (result === 'Cancel') {
+              if (result !== 'Ok') {
                 return;
               }
             } catch (e) {
@@ -174,7 +174,7 @@ export const createWindowMenu = () => {
           } else {
             api.host?.fileNew();
           }
-        })();
+        })().catch((e) => console.error(e));
       },
     });
 
@@ -191,7 +191,7 @@ export const createWindowMenu = () => {
                 buttons: 'OkCancel',
                 kind: 'warning',
               });
-              if (result === 'Cancel') {
+              if (result !== 'Ok') {
                 return;
               }
             } catch (e) {
@@ -200,7 +200,7 @@ export const createWindowMenu = () => {
             }
           }
           api.host?.fileOpen();
-        })();
+        })().catch((e) => console.error(e));
       },
     });
 
