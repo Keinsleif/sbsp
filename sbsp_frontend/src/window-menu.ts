@@ -10,6 +10,7 @@ import { useUiSettings } from './stores/uiSettings';
 import { useApi } from './api';
 import { appLogDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
+import { useShowState } from './stores/showState';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
@@ -20,6 +21,7 @@ export const createWindowMenu = () => {
   const isMacOs = api.isMacOs();
   let connected = api.remote ? false : true;
   const uiState = useUiState();
+  const showState = useShowState();
   let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
   const items = {
@@ -131,39 +133,48 @@ export const createWindowMenu = () => {
       text: t('menu.file.new'),
       enabled: __IS_HOST__,
       action: () => {
-        api.isModified().then((isModified) => {
+        (async () => {
+          if (Object.values(showState.activeCues).length > 0) {
+            try {
+              const result = await message(t('menu.file.warningBeforeLoadAndReset'), {
+                buttons: 'OkCancel',
+                kind: 'warning',
+              });
+              if (result === 'Cancel') {
+                return;
+              }
+            } catch (e) {
+              console.error(e);
+              return;
+            }
+          }
+          const isModified = await api.isModified();
           if (isModified) {
-            message(t('dialog.saveConfirm.content'), {
+            const result = await message(t('dialog.saveConfirm.content'), {
               buttons: {
                 yes: t('dialog.saveConfirm.save'),
                 no: t('dialog.saveConfirm.dontSave'),
                 cancel: t('dialog.saveConfirm.cancel'),
               },
-            })
-              .then((result) => {
-                switch (result) {
-                  case t('dialog.saveConfirm.save'):
-                    api.host
-                      ?.fileSave()
-                      .then((isSaved) => {
-                        if (isSaved) {
-                          api.host?.fileNew();
-                        }
-                      })
-                      .catch((e) => console.error(e));
-                    break;
-                  case t('dialog.saveConfirm.dontSave'):
-                    api.host?.fileNew();
-                    break;
-                  case t('dialog.saveConfirm.cancel'):
-                    break;
+            });
+            switch (result) {
+              case t('dialog.saveConfirm.save'): {
+                const isSaved = await api.host?.fileSave()
+                if (isSaved) {
+                  api.host?.fileNew();
                 }
-              })
-              .catch((e) => console.error(e));
+                break;
+              }
+              case t('dialog.saveConfirm.dontSave'):
+                api.host?.fileNew();
+                break;
+              case t('dialog.saveConfirm.cancel'):
+                break;
+            }
           } else {
             api.host?.fileNew();
           }
-        });
+        })();
       },
     });
 
@@ -173,7 +184,23 @@ export const createWindowMenu = () => {
       enabled: __IS_HOST__,
       accelerator: isMacOs ? '⌘ + O' : 'Ctrl + O',
       action: () => {
-        api.host?.fileOpen();
+        (async () => {
+          if (Object.values(showState.activeCues).length > 0) {
+            try {
+              const result = await message(t('menu.file.warningBeforeLoadAndReset'), {
+                buttons: 'OkCancel',
+                kind: 'warning',
+              });
+              if (result === 'Cancel') {
+                return;
+              }
+            } catch (e) {
+              console.error(e);
+              return;
+            }
+          }
+          api.host?.fileOpen();
+        })();
       },
     });
 
