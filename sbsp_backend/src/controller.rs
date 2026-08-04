@@ -280,13 +280,10 @@ impl CueController {
 
     async fn hard_stop_all(&self) -> Result<()> {
         let state = self.state_tx.borrow().clone();
-        let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
-        for cue_id in &root_ids {
-            if state.active_cues.contains_key(cue_id) {
-                self.executor_tx
-                    .send(ExecutorCommand::Stop(*cue_id, StopMode::Hard))
-                    .await?;
-            }
+        for cue_id in state.active_cues.keys() {
+            self.executor_tx
+                .send(ExecutorCommand::Stop(*cue_id, StopMode::Hard))
+                .await?;
         }
         Ok(())
     }

@@ -373,7 +373,8 @@
       "open": "開く",
       "save": "保存",
       "saveAs": "名前をつけて保存",
-      "title": "ファイル"
+      "title": "ファイル",
+      "warningBeforeLoadAndReset": "アクティブなキューが停止されます。続行しますか?"
     },
     "help": {
       "checkUpdate": "アップデートを確認",

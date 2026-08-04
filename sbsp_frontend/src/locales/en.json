@@ -373,7 +373,8 @@
       "open": "Open",
       "save": "Save",
       "saveAs": "Save As...",
-      "title": "File"
+      "title": "File",
+      "warningBeforeLoadAndReset": "The active cue will be stopped. Do you want to proceed?"
     },
     "help": {
       "checkUpdate": "Check for updates",
