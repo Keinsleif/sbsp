@@ -79,7 +79,6 @@
           "systemSettings": "System Settings"
         },
         "general": {
-          "advanceCursorWhenGo": "Advance cursor when GO",
           "copyAssetsWhenAdd": "Copy assets when adding Cue",
           "lockCursorToSelection": "Lock Cursor to Selection (on Main side)",
           "seekAmount": "Seek amount"
@@ -90,7 +89,6 @@
             "toggleRepeat": "ToggleRepeat"
           },
           "playback": {
-            "go": "Go",
             "load": "Load",
             "pauseAll": "Pause All",
             "pauseAndResume": "Pause & Resume",
@@ -99,7 +97,8 @@
             "seekForward": "Seek Forward (seconds set in General Settings)",
             "stop": "Stop",
             "stopAll": "Stop All",
-            "title": "Playback"
+            "title": "Playback",
+            "execute": "Execute"
           }
         },
         "nameFormat": {
@@ -172,7 +171,13 @@
             "description": "Relative path to the directory for copying assets. (per-show setting)",
             "title": "Assets directory"
           },
-          "showModelName": "Show Model name"
+          "showModelName": "Show Model name",
+          "cursorAdvanceTrigger": {
+            "title": "Playback cursor advance trigger",
+            "onTriggered": "On Triggered",
+            "onCompleted": "On Completed",
+            "manual": "Manual"
+          }
         },
         "remote": {
           "lockCursorToSelection": "Lock Cursor to Selection (on Remote side)"
@@ -284,7 +289,20 @@
         "volume": "Volume",
         "envelopeVisible": "Show envelope"
       },
-      "noSelection": "No Selection"
+      "noSelection": "No Selection",
+      "trigger": {
+        "cursorAdvanceTrigger": {
+          "onTriggered": "On Triggered",
+          "onCompleted": "On Completed",
+          "manual": "Manual",
+          "none": "None"
+        },
+        "treatStopAsCompleted": "Treat Stop as Completed",
+        "title": "Trigger",
+        "cursorAdvanceTriggerOverride": {
+          "title": "Playback cursor advance trigger (override global settings)"
+        }
+      }
     },
     "chainMode": {
       "afterStart": "After-Start",
@@ -355,7 +373,8 @@
       "open": "Open",
       "save": "Save",
       "saveAs": "Save As...",
-      "title": "File"
+      "title": "File",
+      "warningBeforeLoadAndReset": "The active cue will be stopped. Do you want to proceed?"
     },
     "help": {
       "checkUpdate": "Check for updates",

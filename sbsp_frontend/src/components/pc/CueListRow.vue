@@ -23,7 +23,6 @@ import {
   calculateDuration,
   formatToSeconds,
   getCueIcon,
-  getLockCursorToSelection,
   secondsToFormat,
 } from '../../utils';
 import { useApi } from '../../api';
@@ -45,7 +44,7 @@ const props = defineProps<{
 }>();
 
 const isSelected = computed(() => uiState.selectedRows.has(props.item.cue.id));
-const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
+const isPlaybackCursor = computed(() => uiState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 
 const preWaitRef = useTemplateRef('preWait');
@@ -138,12 +137,6 @@ const durationText = computed(() => {
     calculateDuration(props.item.cue.params, assetResult.getMetadata(props.item.cue.id)?.duration),
   );
 });
-
-const setPlaybackCursor = (cueId: string) => {
-  if (getLockCursorToSelection()) {
-    api.setPlaybackCursor(cueId);
-  }
-};
 
 const dragStart = (event: DragEvent) => {
   const targetId = props.item.cue.id;
@@ -314,7 +307,7 @@ const isPlayingActive = computed((): boolean => {
     >
       <button
         class="cursor-pointer"
-        @click="setPlaybackCursor(props.item.cue.id)"
+        @click="uiState.setPlaybackCursor(props.item.cue.id)"
       >
         <path-icon :icon="isPlaybackCursor ? mdiArrowRightBold : null" />
       </button>
@@ -353,7 +346,7 @@ const isPlayingActive = computed((): boolean => {
     </td>
     <td
       headers="cuelist_number"
-      class="text-center"
+      class="text-center tabular-nums"
       @dblclick="openEditable($event, 'cuelist_number')"
       @blur="closeEditable($event.target, true, 'cuelist_number')"
       @keydown.enter.stop="closeEditable($event.target, true, 'cuelist_number')"
@@ -404,7 +397,7 @@ const isPlayingActive = computed((): boolean => {
           "
         />
         <div
-          class="absolute left-0 w-full text-center"
+          class="absolute left-0 w-full text-center tabular-nums"
           style="top: 50%; transform: translateY(-50%)"
           @dblclick="if (!isPreWaitActive) openEditable($event, 'cuelist_pre_wait');"
           @blur="closeEditable($event.target, true, 'cuelist_pre_wait')"
@@ -431,7 +424,7 @@ const isPlayingActive = computed((): boolean => {
           "
         />
         <div
-          class="absolute left-0 w-full text-center"
+          class="absolute left-0 w-full text-center tabular-nums"
           style="top: 50%; transform: translateY(-50%)"
           @dblclick="if (!isPlayingActive) openEditable($event, 'cuelist_duration');"
           @blur="closeEditable($event.target, true, 'cuelist_duration')"

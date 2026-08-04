@@ -31,7 +31,7 @@ const props = defineProps<{
 }>();
 
 const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
-const isPlaybackCursor = computed(() => showState.playbackCursor === props.item.cue.id);
+const isPlaybackCursor = computed(() => uiState.playbackCursor === props.item.cue.id);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 
 const status = computed(() => {
@@ -107,7 +107,7 @@ const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
     </td>
     <td
       headers="cuelist_number"
-      class="border-x border-(--p-form-field-border-color) px-1 text-center"
+      class="border-x border-(--p-form-field-border-color) px-1 text-center tabular-nums"
     >
       {{ item.cue.number }}
     </td>

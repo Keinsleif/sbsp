@@ -79,7 +79,6 @@
           "systemSettings": "システムの設定"
         },
         "general": {
-          "advanceCursorWhenGo": "GO実行時に再生カーソルを進める",
           "copyAssetsWhenAdd": "キューを追加するときにアセットをコピーする",
           "lockCursorToSelection": "再生カーソルを選択範囲にロック",
           "seekAmount": "シーク秒数"
@@ -90,7 +89,6 @@
             "toggleRepeat": "リピート切り替え"
           },
           "playback": {
-            "go": "Go",
             "load": "読み込み",
             "pauseAll": "すべて一時停止",
             "pauseAndResume": "一時停止＆再開",
@@ -99,7 +97,8 @@
             "seekForward": "前方へスキップ (全般設定で設定された秒数)",
             "stop": "停止",
             "stopAll": "すべて停止",
-            "title": "再生"
+            "title": "再生",
+            "execute": "実行"
           }
         },
         "nameFormat": {
@@ -172,7 +171,13 @@
             "description": "アセットをコピーするディレクトリへの相対パス (ShowModelごとの設定)",
             "title": "アセットの保存先"
           },
-          "showModelName": "ShowModelの名前"
+          "showModelName": "ShowModelの名前",
+          "cursorAdvanceTrigger": {
+            "title": "再生カーソル更新きっかけ",
+            "onTriggered": "実行時",
+            "onCompleted": "完了時",
+            "manual": "手動"
+          }
         },
         "remote": {
           "lockCursorToSelection": "再生カーソルを選択範囲にロック (リモート側)"
@@ -284,7 +289,20 @@
         "volume": "音量",
         "envelopeVisible": "音量変化を表示"
       },
-      "noSelection": "選択なし"
+      "noSelection": "選択なし",
+      "trigger": {
+        "cursorAdvanceTrigger": {
+          "none": "なし",
+          "onTriggered": "実行時",
+          "onCompleted": "完了時",
+          "manual": "手動"
+        },
+        "title": "トリガー",
+        "cursorAdvanceTriggerOverride": {
+          "title": "再生カーソル更新きっかけ（設定を上書き）"
+        },
+        "treatStopAsCompleted": "停止を完了として扱う"
+      }
     },
     "chainMode": {
       "afterComplete": "完了後",
@@ -355,7 +373,8 @@
       "open": "開く",
       "save": "保存",
       "saveAs": "名前をつけて保存",
-      "title": "ファイル"
+      "title": "ファイル",
+      "warningBeforeLoadAndReset": "アクティブなキューが停止されます。続行しますか?"
     },
     "help": {
       "checkUpdate": "アップデートを確認",

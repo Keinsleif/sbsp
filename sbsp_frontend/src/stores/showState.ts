@@ -10,7 +10,6 @@ import type { CueStatusEventParam } from '../types/CueStatusEventParam';
 import type { ShowState } from '../types/ShowState';
 
 export const useShowState = defineStore('showState', () => {
-  const playbackCursor = ref<string | null>(null);
   const activeCues = ref<{ [id: string]: ActiveCue }>({});
   const syncedData = ref<{
     [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number };
@@ -41,8 +40,6 @@ export const useShowState = defineStore('showState', () => {
   const update = (state: ShowState) => {
     const lastSyncedAt = performance.now();
 
-    updatePlaybackCursor(state.playbackCursor);
-
     const newSyncedData: {
       [cueId in string]: { position: number; status: PlaybackStatus; lastSyncedAt: number };
     } = {};
@@ -59,10 +56,6 @@ export const useShowState = defineStore('showState', () => {
 
     syncedData.value = newSyncedData;
     activeCues.value = newActiveCues;
-  };
-
-  const updatePlaybackCursor = (cursor: string | null) => {
-    playbackCursor.value = cursor;
   };
 
   const handleCueStateEvent = (data: CueStatusEventParam) => {
@@ -264,11 +257,9 @@ export const useShowState = defineStore('showState', () => {
   };
 
   return {
-    playbackCursor,
     activeCues,
     update,
     handleSyncEvent,
-    updatePlaybackCursor,
     calculatePosition,
     handleCueStateEvent,
     getPosition,

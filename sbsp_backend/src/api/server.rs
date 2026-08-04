@@ -2,12 +2,9 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{
-    collections::HashMap,
-    path::PathBuf,
-    time::{Duration, Instant},
+    collections::{HashMap, HashSet}, path::{Path, PathBuf}, time::{Duration, Instant},
 };
 
-use async_recursion::async_recursion;
 use axum::{
     Router,
     extract::{
@@ -61,8 +58,8 @@ where
 {
     log::info!(
         "Starting server with port: {}, discovery: {:?}",
-        &options.port,
-        &options.discoverry
+        options.port,
+        options.discoverry
     );
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
     let salt = generate_salt();
@@ -332,7 +329,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         if let ProjectStatus::Saved{ project_type, path } = state.backend_handle.model_handle.get_project_state().await.clone()
                                         && project_type == ProjectType::ProjectFolder
                                         && let Some(parent) = path.parent()
-                                        && let Ok(file_list) = get_dirs(parent.to_path_buf(), None).await {
+                                        && let Ok(file_list) = get_dirs(parent.to_path_buf()).await {
                                             let ws_message = WsFeedback::AssetList(file_list);
                                             if let Ok(payload) = serde_json::to_string(&ws_message) && socket.send(Message::Text(payload.into())).await.is_err() {
                                                 log::info!("WebSocket client disconnected (send error).");
@@ -470,73 +467,79 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
     }
 }
 
-#[async_recursion]
-async fn get_dirs(root_dir: PathBuf, parent: Option<PathBuf>) -> anyhow::Result<Vec<FileList>> {
-    let mut entries = tokio::fs::read_dir(root_dir).await?;
-    let mut root_list = vec![];
-    let parent_dir = parent.unwrap_or(PathBuf::from("."));
-    loop {
-        let entry_option = entries.next_entry().await?;
-        if let Some(entry) = entry_option {
-            let metadata = entry.metadata().await?;
-            let path = entry.path();
+async fn get_dirs(root_dir: PathBuf) -> anyhow::Result<Vec<FileList>> {
+    tokio::task::spawn_blocking(move || {
+        let root_canonical = std::fs::canonicalize(&root_dir)?;
+        let mut stack = HashSet::from([root_canonical]);
+        get_dirs_recursive(&root_dir, &mut stack)
+    }).await?
+}
 
-            let entry_name = path
-                .file_name()
-                .unwrap()
-                .to_os_string()
-                .into_string()
-                .unwrap();
-            if metadata.is_dir() {
-                let file_list = get_dirs(path, Some(parent_dir.join(&entry_name))).await?;
+fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::Result<Vec<FileList>> {
+    let entries = std::fs::read_dir(root_dir)?;
+    let mut root_list = vec![];
+    for entry_result in entries {
+        let Ok(entry) = entry_result else { continue };
+        let Ok(metadata) = entry.metadata() else { continue };
+        let path = entry.path();
+
+        let Some(entry_name) = path.file_name().map(|name| name.to_string_lossy().into_owned()) else {
+            continue;
+        };
+        let canonical = match std::fs::canonicalize(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        if metadata.is_dir() {
+            if !stack.insert(canonical.clone()) {
+                continue;
+            }
+            let file_list = get_dirs_recursive(&canonical, stack)?;
+            stack.remove(&canonical);
+            root_list.push(FileList::Dir {
+                name: entry_name,
+                files: file_list,
+            });
+            continue;
+        }
+        if metadata.is_file() {
+            let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
+            root_list.push(FileList::File {
+                name: entry_name.clone(),
+                path: canonical,
+                extension,
+            });
+            continue;
+        }
+
+        if let Ok(symlink) = std::fs::read_link(&path) {
+            let resolved = if symlink.is_relative() {
+                path.parent().unwrap_or_else(|| Path::new(".")).join(symlink)
+            } else {
+                symlink
+            };
+            let canonical = match std::fs::canonicalize(&resolved) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            if canonical.is_dir() {
+                if !stack.insert(canonical.clone()) {
+                    continue;
+                }
+                let file_list = get_dirs_recursive(&canonical, stack)?;
+                stack.remove(&canonical);
                 root_list.push(FileList::Dir {
                     name: entry_name,
                     files: file_list,
                 });
-                continue;
-            }
-            if metadata.is_file() {
-                let extension = if let Some(ext) = path.extension() {
-                    ext.to_os_string().into_string().unwrap()
-                } else {
-                    "".into()
-                };
+            } else {
+                let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
                 root_list.push(FileList::File {
                     name: entry_name.clone(),
-                    path: parent_dir.join(&entry_name),
+                    path: canonical,
                     extension,
                 });
-                continue;
             }
-
-            if let Ok(symlink) = tokio::fs::read_link(path).await {
-                if symlink.is_dir() {
-                    let file_list = get_dirs(symlink, Some(parent_dir.join(&entry_name))).await?;
-                    root_list.push(FileList::Dir {
-                        name: entry_name,
-                        files: file_list,
-                    });
-                } else {
-                    let extension = if let Some(ext) = symlink.extension() {
-                        ext.to_os_string().into_string().unwrap()
-                    } else {
-                        "".into()
-                    };
-                    let file_name = symlink
-                        .file_name()
-                        .unwrap()
-                        .to_os_string()
-                        .into_string()
-                        .unwrap();
-                    root_list.push(FileList::File {
-                        name: file_name,
-                        path: parent_dir.join(&entry_name),
-                        extension,
-                    });
-                }
-            }
-        } else {
-            break;
         }
     }
     Ok(root_list)

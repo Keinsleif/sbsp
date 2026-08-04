@@ -73,15 +73,12 @@ pub struct FullShowState {
     pub show_state: ShowState,
 }
 
-#[cfg(feature = "backend")]
 #[derive(Default)]
 pub struct BackendSettings {
-    pub advance_cursor_when_go: bool,
     pub copy_assets_when_add: bool,
     pub audio: BackendAudioSettings,
 }
 
-#[cfg(feature = "backend")]
 #[derive(Default, Clone, PartialEq)]
 pub struct BackendAudioSettings {
     pub device_id: Option<String>,
@@ -142,7 +139,6 @@ pub fn start_backend(
         ShowModelManager::new(event_tx.clone(), settings_rx.clone());
     let (controller, controller_handle) = CueController::new(
         model_handle.clone(),
-        settings_rx.clone(),
         executor_command_tx,
         executor_event_rx,
         state_tx,

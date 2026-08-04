@@ -9,22 +9,34 @@ use serde::{Deserialize, Serialize};
 pub struct ShowSettings {
     pub general: ShowGeneralSettings,
     pub audio: ShowAudioSettings,
-    pub remote: ShowRemoteSettings,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct ShowGeneralSettings {
+    #[serde(default)]
+    pub cursor_advance_trigger: CursorAdvanceTrigger,
     pub copy_assets_destination: String,
 }
 
 impl Default for ShowGeneralSettings {
     fn default() -> Self {
         Self {
+            cursor_advance_trigger: CursorAdvanceTrigger::default(),
             copy_assets_destination: ".".to_string(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub enum CursorAdvanceTrigger {
+    OnTriggered,
+    OnCompleted,
+    #[default]
+    Manual,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -42,11 +54,4 @@ impl Default for ShowAudioSettings {
             lufs_target: -14.0,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase", default)]
-pub struct ShowRemoteSettings {
-    pub lock_cursor_to_selection: bool,
 }

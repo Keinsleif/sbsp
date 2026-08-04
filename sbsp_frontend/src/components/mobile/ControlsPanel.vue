@@ -27,27 +27,29 @@ import { useAssetResult } from '../../stores/assetResult';
 import PathIcon from '../display/PathIcon.vue';
 import ButtonGroup from 'primevue/buttongroup';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
+import { useUiState } from '@/stores/uiState.ts';
 
 const api = useApi();
 const showModel = useShowModel();
 const { getCueById } = storeToRefs(showModel);
 const showState = useShowState();
+const uiState = useUiState();
 const uiSettings = useUiSettings();
 const assetResult = useAssetResult();
 
 const playbackCursorCue = computed(() => {
-  return showState.playbackCursor != null ? getCueById.value(showState.playbackCursor) : null;
+  return uiState.playbackCursor != null ? getCueById.value(uiState.playbackCursor) : null;
 });
 
 const playbackCursorCueDuration = computed(() => {
-  return showState.playbackCursor != null
-    ? assetResult.getMetadata(showState.playbackCursor)?.duration || null
+  return uiState.playbackCursor != null
+    ? assetResult.getMetadata(uiState.playbackCursor)?.duration || null
     : null;
 });
 
 const activeTargetCue = computed(() => {
-  if (showState.playbackCursor == null) return null;
-  const activeCue = showState.activeCues[showState.playbackCursor];
+  if (uiState.playbackCursor == null) return null;
+  const activeCue = showState.activeCues[uiState.playbackCursor];
   if (activeCue == null) return null;
   return activeCue;
 });
@@ -68,8 +70,8 @@ const playbackCursorCueTitle = computed(() => {
 });
 
 const isCueStatus = computed(() => {
-  if (showState.playbackCursor != null) {
-    const activeCue = showState.activeCues[showState.playbackCursor];
+  if (uiState.playbackCursor != null) {
+    const activeCue = showState.activeCues[uiState.playbackCursor];
     if (activeCue != null) {
       return (status: PlaybackStatus) => activeCue.status === status;
     }
@@ -78,20 +80,20 @@ const isCueStatus = computed(() => {
 });
 
 const handleReadyPauseButton = () => {
-  if (showState.playbackCursor != null) {
-    switch (showState.activeCues[showState.playbackCursor]?.status) {
+  if (uiState.playbackCursor != null) {
+    switch (showState.activeCues[uiState.playbackCursor]?.status) {
       case 'preWaiting':
       case 'playing': {
-        api.sendPause(showState.playbackCursor);
+        api.sendPause(uiState.playbackCursor);
         break;
       }
       case 'preWaitPaused':
       case 'paused': {
-        api.sendResume(showState.playbackCursor);
+        api.sendResume(uiState.playbackCursor);
         break;
       }
       case undefined: {
-        api.sendLoad(showState.playbackCursor);
+        api.sendLoad(uiState.playbackCursor);
         break;
       }
     }
@@ -99,9 +101,9 @@ const handleReadyPauseButton = () => {
 };
 
 const skipPrevious = () => {
-  if (showState.playbackCursor != null) {
+  if (uiState.playbackCursor != null) {
     let cursorIndex = showModel.flatCueList.findIndex(
-      (item) => item.cue.id === showState.playbackCursor,
+      (item) => item.cue.id === uiState.playbackCursor,
     );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
@@ -117,19 +119,19 @@ const skipPrevious = () => {
         return;
       }
     }
-    api.setPlaybackCursor(cursorCueRef.cue.id);
+    uiState.setPlaybackCursor(cursorCueRef.cue.id);
   } else {
     const firstCueId = showModel.flatCueList[0]?.cue.id;
     if (firstCueId != null) {
-      api.setPlaybackCursor(firstCueId);
+      uiState.setPlaybackCursor(firstCueId);
     }
   }
 };
 
 const skipNext = () => {
-  if (showState.playbackCursor != null) {
+  if (uiState.playbackCursor != null) {
     let cursorIndex = showModel.flatCueList.findIndex(
-      (item) => item.cue.id === showState.playbackCursor,
+      (item) => item.cue.id === uiState.playbackCursor,
     );
     if (cursorIndex < 0) return;
     const currentLevel = showModel.flatCueList[cursorIndex]!.level;
@@ -145,48 +147,44 @@ const skipNext = () => {
         return;
       }
     }
-    api.setPlaybackCursor(cursorCueRef.cue.id);
+    uiState.setPlaybackCursor(cursorCueRef.cue.id);
   } else {
     const lastCueId = showModel.flatCueList[showModel.flatCueList.length - 1]?.cue.id;
     if (lastCueId != null) {
-      api.setPlaybackCursor(lastCueId);
+      uiState.setPlaybackCursor(lastCueId);
     }
   }
 };
 
 const skipToParent = () => {
-  const cursorEntry = showModel.flatCueList.find(
-    (item) => item.cue.id === showState.playbackCursor,
-  );
+  const cursorEntry = showModel.flatCueList.find((item) => item.cue.id === uiState.playbackCursor);
   if (cursorEntry == null || cursorEntry.parent == null) return;
 
-  api.setPlaybackCursor(cursorEntry.parent);
+  uiState.setPlaybackCursor(cursorEntry.parent);
 };
 
 const skipToChild = () => {
-  const cursorEntry = showModel.flatCueList.find(
-    (item) => item.cue.id === showState.playbackCursor,
-  );
+  const cursorEntry = showModel.flatCueList.find((item) => item.cue.id === uiState.playbackCursor);
   if (cursorEntry == null || cursorEntry.cue.params.type !== 'group') return;
   const firstChildId = cursorEntry.cue.params.children[0];
   if (firstChildId != null) {
-    api.setPlaybackCursor(firstChildId);
+    uiState.setPlaybackCursor(firstChildId);
   }
 };
 
 const rewind = () => {
-  if (showState.playbackCursor != null && activeTargetCue.value != null) {
-    api.sendSeekBy(showState.playbackCursor, -uiSettings.settings.general.seekAmount);
+  if (uiState.playbackCursor != null && activeTargetCue.value != null) {
+    api.sendSeekBy(uiState.playbackCursor, -uiSettings.settings.general.seekAmount);
   }
 };
 const toggleRepeat = () => {
-  if (showState.playbackCursor != null && activeTargetCue.value != null) {
-    api.sendToggleRepeat(showState.playbackCursor);
+  if (uiState.playbackCursor != null && activeTargetCue.value != null) {
+    api.sendToggleRepeat(uiState.playbackCursor);
   }
 };
 const fastForward = () => {
-  if (showState.playbackCursor != null && activeTargetCue.value != null) {
-    api.sendSeekBy(showState.playbackCursor, uiSettings.settings.general.seekAmount);
+  if (uiState.playbackCursor != null && activeTargetCue.value != null) {
+    api.sendSeekBy(uiState.playbackCursor, uiSettings.settings.general.seekAmount);
   }
 };
 </script>
@@ -233,7 +231,7 @@ const fastForward = () => {
     </button-group>
 
     <seek-bar
-      :target-id="showState.playbackCursor"
+      :target-id="uiState.playbackCursor"
       class="mt-auto"
     />
     <button-group>
@@ -267,30 +265,30 @@ const fastForward = () => {
         :icon="mdiStop"
         :active="isCueStatus('stopping')"
         active-color="red.500"
-        :disabled="showState.playbackCursor == null"
+        :disabled="uiState.playbackCursor == null"
         class="grow"
         severity="secondary"
         :blink="isCueStatus('stopping')"
         @click="
-          if (showState.playbackCursor != null) {
-            api.sendStop(showState.playbackCursor);
+          if (uiState.playbackCursor != null) {
+            api.sendStop(uiState.playbackCursor);
           }
         "
       />
       <button-wrapper
         :icon="mdiPlay"
         :active="isCueStatus('playing') || isCueStatus('preWaiting')"
-        :disabled="showState.playbackCursor == null"
+        :disabled="uiState.playbackCursor == null"
         active-color="green.500"
         class="grow"
         severity="secondary"
         :blink="isCueStatus('preWaiting')"
         @click="
-          if (showState.playbackCursor != null) {
+          if (uiState.playbackCursor != null) {
             if (isCueStatus('paused') || isCueStatus('preWaitPaused')) {
-              api.sendResume(showState.playbackCursor);
+              api.sendResume(uiState.playbackCursor);
             } else {
-              api.sendGo();
+              api.sendExecute(uiState.playbackCursor);
             }
           }
         "
@@ -298,7 +296,7 @@ const fastForward = () => {
       <button-wrapper
         :icon="mdiPause"
         :active="isCueStatus('paused') || isCueStatus('loaded')"
-        :disabled="showState.playbackCursor == null"
+        :disabled="uiState.playbackCursor == null"
         active-color="orange.500"
         class="grow"
         severity="secondary"

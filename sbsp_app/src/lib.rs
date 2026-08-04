@@ -28,7 +28,7 @@ use tokio::{
 };
 use tower_http::services::ServeDir;
 
-use crate::settings::manager::GlobalSettingsManager;
+use crate::settings::GlobalSettingsManager;
 
 const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
@@ -295,7 +295,7 @@ pub fn run() {
             command::listen_level_meter,
             command::unlisten_level_meter,
             command::get_hardware,
-            command::controller::go,
+            command::controller::execute,
             command::controller::pause,
             command::controller::resume,
             command::controller::stop,
@@ -305,7 +305,6 @@ pub fn run() {
             command::controller::load,
             command::controller::seek_to,
             command::controller::seek_by,
-            command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
             command::controller::set_volume,
             command::model_manager::get_show_model,

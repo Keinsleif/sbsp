@@ -14,13 +14,13 @@ import { useUiSettings } from './stores/uiSettings.ts';
 import { useI18n } from 'vue-i18n';
 import { useApi } from './api';
 import { usePositionTicker } from './composables/usePosition.ts';
-import { getLockCursorToSelection } from './utils.ts';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { message } from '@tauri-apps/plugin-dialog';
 import { useHotkey } from './composables/useHotkey.ts';
 import type { PlaybackStatus } from './types/PlaybackStatus.ts';
 import { useToast } from 'primevue/usetoast';
 import { useBackendEvent } from './composables/useBackendEvent.ts';
+import type { CursorAdvanceTrigger } from './types/CursorAdvanceTrigger.ts';
 
 const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
@@ -61,30 +61,34 @@ useBackendEvent((event) => {
           life: 3000,
         });
       }
-      showState.handleCueStateEvent(event.param);
-      break;
-    case 'playbackCursorMoved': {
-      showState.updatePlaybackCursor(event.param.cueId);
-      if (getLockCursorToSelection()) {
-        const cueId = event.param.cueId;
-        if (cueId != null) {
-          if (uiState.selected !== cueId) {
-            uiState.selected = cueId;
-            uiState.expandToVisible(cueId);
-            // This operation not using uiState.addSelected to avoid updating playbackcursor.
-            if (!uiState.selectedRows.has(cueId)) {
-              uiState.selectedRows.clear();
-              uiState.selectedRows.add(cueId);
+      if (event.param.cueId === uiState.playbackCursor) {
+        let cursorAdvanceTrigger: CursorAdvanceTrigger = 'manual';
+        if (uiState.playbackCursor != null) {
+          const cue = showModel.getCueById(uiState.playbackCursor);
+          if (cue != null) {
+            if (cue.cursorAdvanceTriggerOverride === 'none') {
+              cursorAdvanceTrigger = showModel.settings.general.cursorAdvanceTrigger;
+            } else {
+              cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
+            }
+            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')) {
+              let nextCursor;
+              if (
+                cue.params.type === 'group' &&
+                cue.params.mode.type === 'startFirst' &&
+                cue.params.mode.enter
+              ) {
+                nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+              } else {
+                nextCursor = showModel.getNextCueById(uiState.playbackCursor);
+              }
+              uiState.setPlaybackCursor(nextCursor);
             }
           }
-        } else {
-          // This operation not using uiState.addSelected to avoid updating playbackcursor.
-          uiState.selectedRows.clear();
-          uiState.selected = null;
         }
       }
+      showState.handleCueStateEvent(event.param);
       break;
-    }
     case 'syncState':
       showState.handleSyncEvent(event.param);
       break;
@@ -94,6 +98,7 @@ useBackendEvent((event) => {
       toast.add({ severity: 'success', summary: t('notification.modelLoaded'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
       api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
       uiState.resetSelected();
+      uiState.setPlaybackCursor(event.param.model.rootIds[0] ?? null);
       break;
     }
     case 'showModelSaved': {
@@ -105,9 +110,13 @@ useBackendEvent((event) => {
       showModel.updateAll(event.param.model);
       api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
       uiState.resetSelected();
+      uiState.setPlaybackCursor(null);
       break;
     case 'cueRemoved':
       uiState.removeFromSelected(event.param.cueIds);
+      if (uiState.playbackCursor != null && event.param.cueIds.includes(uiState.playbackCursor)) {
+        uiState.setPlaybackCursor(null);
+      }
       break;
     case 'cueListUpdated':
       showModel.$patch({ cues: event.param.cues, rootIds: event.param.rootIds });
@@ -244,23 +253,8 @@ onMounted(() => {
     .then((fullState) => {
       showModel.updateAll(fullState.showModel);
       showState.update(fullState.showState);
-      if (getLockCursorToSelection()) {
-        const cueId = fullState.showState.playbackCursor;
-        if (cueId != null) {
-          if (uiState.selected !== cueId) {
-            uiState.selected = cueId;
-            uiState.expandToVisible(cueId);
-            // This operation not using uiState.addSelected to avoid updating playbackcursor.
-            if (!uiState.selectedRows.has(cueId)) {
-              uiState.selectedRows.clear();
-              uiState.selectedRows.add(cueId);
-            }
-          }
-        } else {
-          // This operation not using uiState.addSelected to avoid updating playbackcursor.
-          uiState.selectedRows.clear();
-          uiState.selected = null;
-        }
+      if (uiState.playbackCursor == null) {
+        uiState.setPlaybackCursor(fullState.showModel.rootIds[0] ?? null);
       }
     })
     .catch((e) => console.error(e.toString()));
@@ -305,11 +299,11 @@ if (api.host) {
 }
 
 useHotkey(
-  () => uiSettings.settings.hotkey.playback.go,
+  () => uiSettings.settings.hotkey.playback.execute,
   (e) => {
     e.preventDefault();
-    if (uiState.mode !== 'view') {
-      api.sendGo();
+    if (uiState.mode !== 'view' && uiState.playbackCursor != null) {
+      api.sendExecute(uiState.playbackCursor);
     }
   },
 );

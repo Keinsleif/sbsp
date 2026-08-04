@@ -11,6 +11,22 @@ import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
 
+const DEFAULT_SHOW_MODEL: ShowModel = {
+  name: 'Untitled',
+  cues: {},
+  rootIds: [],
+  settings: {
+    general: {
+      cursorAdvanceTrigger: 'manual',
+      copyAssetsDestination: '.',
+    },
+    audio: {
+      monoOutput: false,
+      lufsTarget: -14,
+    },
+  },
+};
+
 export type FlatCueEntry = {
   cue: Cue;
   level: number;
@@ -98,28 +114,47 @@ const recursiveCueCheck = (
 };
 
 export const useShowModel = defineStore('showModel', {
-  state: () =>
-    ({
-      name: 'Untitled',
-      cues: {},
-      rootIds: [],
-      settings: {
-        general: {
-          copyAssetsDestination: '.',
-        },
-        audio: {
-          monoOutput: false,
-          lufsTarget: -14,
-        },
-        remote: {
-          lockCursorToSelection: false,
-        },
-      },
-    }) as ShowModel,
+  state: () => structuredClone(DEFAULT_SHOW_MODEL),
   getters: {
     getCueById() {
       return (cue_id: string): Cue | undefined => {
         return this.flatCueList.find((entry) => entry.cue.id === cue_id)?.cue;
+      };
+    },
+    getNextCueById() {
+      return (cueId: string): string | null => {
+        let currentId = cueId;
+
+        while (true) {
+          const cue = this.cues[currentId];
+          if (cue == null) return null;
+
+          if (cue.parentId) {
+            const parent = this.cues[cue.parentId];
+
+            if (parent?.params?.type === 'group' && Array.isArray(parent.params.children)) {
+              const { children } = parent.params;
+              const idx = children.indexOf(currentId);
+
+              if (idx !== -1) {
+                const nextId = children[idx + 1];
+                if (nextId != null) {
+                  return nextId;
+                }
+                currentId = cue.parentId;
+                continue;
+              }
+            }
+            return null;
+          }
+
+          const rootIdx = this.rootIds.indexOf(currentId);
+          if (rootIdx !== -1) {
+            return this.rootIds[rootIdx + 1] ?? null;
+          }
+
+          return null;
+        }
       };
     },
     getSelectedCues(): Cue[] {

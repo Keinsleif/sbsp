@@ -38,7 +38,7 @@ const api = useApi();
 const hasFocus = useWindowFocus();
 
 const playbackCursorCue = computed(() => {
-  return showState.playbackCursor != null ? getCueById.value(showState.playbackCursor) : null;
+  return uiState.playbackCursor != null ? getCueById.value(uiState.playbackCursor) : null;
 });
 
 const playbackCursorCueTitle = computed(() => {
@@ -52,8 +52,8 @@ const playbackCursorCueTitle = computed(() => {
 });
 
 const isCueStatus = computed(() => {
-  if (showState.playbackCursor != null) {
-    const activeCue = showState.activeCues[showState.playbackCursor];
+  if (uiState.playbackCursor != null) {
+    const activeCue = showState.activeCues[uiState.playbackCursor];
     if (activeCue != null) {
       return (status: PlaybackStatus) => activeCue.status === status;
     }
@@ -62,20 +62,20 @@ const isCueStatus = computed(() => {
 });
 
 const handleReadyPauseButton = () => {
-  if (showState.playbackCursor != null) {
-    switch (showState.activeCues[showState.playbackCursor]?.status) {
+  if (uiState.playbackCursor != null) {
+    switch (showState.activeCues[uiState.playbackCursor]?.status) {
       case 'preWaiting':
       case 'playing': {
-        api.sendPause(showState.playbackCursor);
+        api.sendPause(uiState.playbackCursor);
         break;
       }
       case 'preWaitPaused':
       case 'paused': {
-        api.sendResume(showState.playbackCursor);
+        api.sendResume(uiState.playbackCursor);
         break;
       }
       case undefined: {
-        api.sendLoad(showState.playbackCursor);
+        api.sendLoad(uiState.playbackCursor);
         break;
       }
     }
@@ -94,15 +94,10 @@ const time = useNow();
         class="flex grow items-center border border-(--p-form-field-border-color)"
         :class="hasFocus ? '' : 'bg-red-500'"
       >
-        <div
-          class="flex items-end pr-3 pl-3 text-center"
-          style="font-size: 4em; line-height: 1"
-        >
+        <div class="flex items-end pr-3 pl-3 text-center text-6xl tabular-nums">
           <span>{{ String(time.getHours()).padStart(2, '0') }}</span
           >:<span>{{ String(time.getMinutes()).padStart(2, '0') }}</span
-          >.<span style="font-size: 32pt; line-height: 1">{{
-            String(time.getSeconds()).padStart(2, '0')
-          }}</span>
+          >.<span class="text-4xl">{{ String(time.getSeconds()).padStart(2, '0') }}</span>
         </div>
       </div>
       <div
@@ -118,10 +113,10 @@ const time = useNow();
             :active="isCueStatus('stopping')"
             :blink="isCueStatus('stopping')"
             active-color="red.500"
-            :disabled="showState.playbackCursor == null"
+            :disabled="uiState.playbackCursor == null"
             @click="
-              if (showState.playbackCursor != null) {
-                api.sendStop(showState.playbackCursor);
+              if (uiState.playbackCursor != null) {
+                api.sendStop(uiState.playbackCursor);
               }
             "
           />
@@ -129,15 +124,15 @@ const time = useNow();
             :icon="mdiPlay"
             severity="secondary"
             :active="isCueStatus('playing') || isCueStatus('preWaiting')"
-            :disabled="showState.playbackCursor == null"
+            :disabled="uiState.playbackCursor == null"
             active-color="green.600"
             :blink="isCueStatus('preWaiting')"
             @click="
-              if (showState.playbackCursor != null) {
+              if (uiState.playbackCursor != null) {
                 if (isCueStatus('paused') || isCueStatus('preWaitPaused')) {
-                  api.sendResume(showState.playbackCursor);
+                  api.sendResume(uiState.playbackCursor);
                 } else {
-                  api.sendGo();
+                  api.sendExecute(uiState.playbackCursor);
                 }
               }
             "
@@ -146,7 +141,7 @@ const time = useNow();
             :icon="mdiPause"
             severity="secondary"
             :active="isCueStatus('paused') || isCueStatus('loaded')"
-            :disabled="showState.playbackCursor == null"
+            :disabled="uiState.playbackCursor == null"
             active-color="orange.600"
             :blink="isCueStatus('loaded')"
             @click="handleReadyPauseButton"

@@ -187,11 +187,8 @@ export function useTauriApi(): IBackendAdapter {
     processAsset: function (path: string): Promise<void> {
       return invoke('process_asset', { path: path });
     },
-    setPlaybackCursor: function (cueId: string | null): Promise<void> {
-      return invoke('set_playback_cursor', { cueId: cueId });
-    },
-    sendGo: function (): Promise<void> {
-      return invoke('go');
+    sendExecute: function (cueId: string): Promise<void> {
+      return invoke('execute', { cueId: cueId });
     },
     sendLoad: function (cueId: string): Promise<void> {
       return invoke('load', { cueId: cueId });

@@ -2,19 +2,21 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct HotkeySettings {
     playback: PlaybackHotkey,
     audio_action: AudioActionHotkey,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct PlaybackHotkey {
-    pub go: Option<String>,
+    #[serde(alias = "go")]
+    pub execute: Option<String>,
     pub load: Option<String>,
     pub pause_and_resume: Option<String>,
     pub pause_all: Option<String>,
@@ -28,20 +30,21 @@ pub struct PlaybackHotkey {
 impl Default for PlaybackHotkey {
     fn default() -> Self {
         Self {
-            go: Some("Enter".to_string()),
+            execute: Some("Enter".to_string()),
             load: Some("L".to_string()),
             pause_and_resume: Some("Space".to_string()),
             pause_all: Some("[".to_string()),
             resume_all: Some("]".to_string()),
             stop: Some("Backspace".to_string()),
             stop_all: Some("Escape".to_string()),
-            seek_forward: None,
-            seek_backward: None,
+            seek_forward: Some("ArrowRight".to_string()),
+            seek_backward: Some("ArrowLeft".to_string()),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct AudioActionHotkey {
     pub toggle_repeat: Option<String>,

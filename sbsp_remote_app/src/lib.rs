@@ -2,7 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 mod command;
-mod settings;
 
 use std::time::SystemTime;
 
@@ -15,11 +14,13 @@ use sbsp_backend::{
     },
     event::BackendEvent,
 };
+use sbsp_frontend_settings::GlobalRemoteSettings;
 use tauri::{AppHandle, Emitter, Manager as _, ipc::Channel};
 use tauri_plugin_log::fern::colors::{Color, ColoredLevelConfig};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
-use crate::settings::manager::GlobalSettingsManager;
+pub type GlobalSettingsManager =
+    sbsp_frontend_settings::manager::SettingsManager<GlobalRemoteSettings>;
 
 #[cfg(debug_assertions)]
 const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
@@ -258,7 +259,7 @@ pub fn run() {
             command::get_third_party_notices,
             command::process_asset,
             command::listen_level_meter,
-            command::controller::go,
+            command::controller::execute,
             command::controller::pause,
             command::controller::resume,
             command::controller::stop,
@@ -268,7 +269,6 @@ pub fn run() {
             command::controller::load,
             command::controller::seek_to,
             command::controller::seek_by,
-            command::controller::set_playback_cursor,
             command::controller::toggle_repeat,
             command::controller::set_volume,
             command::model_manager::get_show_model,

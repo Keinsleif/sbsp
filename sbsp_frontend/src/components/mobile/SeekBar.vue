@@ -84,7 +84,7 @@ const onpointerup = () => {
       @pointerdown="sliderChanging = true"
       @pointerup="onpointerup"
     />
-    <div class="mt-2 flex flex-row">
+    <div class="mt-2 flex flex-row tabular-nums">
       <div
         ref="elapsed"
         class="mr-auto ml-0 px-1"

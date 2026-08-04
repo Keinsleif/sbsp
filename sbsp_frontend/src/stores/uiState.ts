@@ -3,16 +3,17 @@
 
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getLockCursorToSelection, PERMISSIONS } from '../utils.ts';
-import { useApi } from '../api/index.ts';
+import { PERMISSIONS } from '../utils.ts';
 import { useShowModel } from './showModel.ts';
 import type { Permissions } from '../types/Permissions.ts';
+import { useUiSettings } from './uiSettings.ts';
 
 export const useUiState = defineStore(
   'uiState',
   () => {
     const permission = ref<Permissions>(0b0111);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
+    const playbackCursor = ref<string | null>(null);
     const selected = ref<string | null>(null);
     const selectedRows = ref<Set<string>>(new Set());
     const expandedRows = ref<string[]>([]);
@@ -34,11 +35,32 @@ export const useUiState = defineStore(
     const lastUpdateCheckDate = ref<number>(0);
 
     const setPlaybackCursor = (id: string | null) => {
-      const api = useApi();
-      if (getLockCursorToSelection()) {
-        api.setPlaybackCursor(id).catch((e) => {
-          console.error('Failed to set cursor. ' + e);
-        });
+      playbackCursor.value = id;
+      const uiSettings = useUiSettings();
+      if (uiSettings.settings.general.lockCursorToSelection) {
+        const cueId = id;
+        if (cueId != null) {
+          if (selected.value !== cueId) {
+            selected.value = cueId;
+            expandToVisible(cueId);
+            // This operation not using uiState.addSelected to avoid updating playbackcursor.
+            if (!selectedRows.value.has(cueId)) {
+              selectedRows.value.clear();
+              selectedRows.value.add(cueId);
+            }
+          }
+        } else {
+          // This operation not using uiState.addSelected to avoid updating playbackcursor.
+          selectedRows.value.clear();
+          selected.value = null;
+        }
+      }
+    };
+
+    const tryUpdatePlaybackCursor = (id: string | null) => {
+      const uiSettings = useUiSettings();
+      if (uiSettings.settings.general.lockCursorToSelection) {
+        playbackCursor.value = id;
       }
     };
 
@@ -48,18 +70,18 @@ export const useUiState = defineStore(
     };
     const clearSelected = () => {
       resetSelected();
-      setPlaybackCursor(null);
+      tryUpdatePlaybackCursor(null);
     };
     const setSelected = (id: string) => {
       selected.value = id;
       selectedRows.value.clear();
       selectedRows.value.add(id);
-      setPlaybackCursor(id);
+      tryUpdatePlaybackCursor(id);
     };
     const addSelected = (id: string) => {
       selected.value = id;
       selectedRows.value.add(id);
-      setPlaybackCursor(id);
+      tryUpdatePlaybackCursor(id);
     };
     const removeFromSelected = (ids: string[]) => {
       let rm_selected = false;
@@ -72,7 +94,7 @@ export const useUiState = defineStore(
       if (rm_selected) {
         const newValue = selectedRows.value.values().next().value || null;
         selected.value = newValue;
-        setPlaybackCursor(selected.value);
+        tryUpdatePlaybackCursor(selected.value);
       }
     };
 
@@ -155,6 +177,7 @@ export const useUiState = defineStore(
     return {
       permission,
       mode,
+      playbackCursor,
       selected,
       selectedRows,
       expandedRows,
@@ -176,6 +199,7 @@ export const useUiState = defineStore(
       lastUpdateCheckDate,
       setPermission,
       setPlaybackCursor,
+      tryUpdatePlaybackCursor,
       resetSelected,
       clearSelected,
       setSelected,
