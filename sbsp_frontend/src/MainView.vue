@@ -71,7 +71,7 @@ useBackendEvent((event) => {
             } else {
               cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }
-            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered')) {
+            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')) {
               let nextCursor;
               if (
                 cue.params.type === 'group' &&
