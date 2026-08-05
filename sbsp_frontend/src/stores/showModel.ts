@@ -193,7 +193,7 @@ export const useShowModel = defineStore('showModel', {
               newCue.params.target = target;
             }
             const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
-            api.addCue(newCue, position);
+            api.addCue(newCue, position).catch((e) => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -204,7 +204,7 @@ export const useShowModel = defineStore('showModel', {
               newCues.push(newCue);
             }
             const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
-            api.addCues(newCues, position);
+            api.addCues(newCues, position).catch((e) => console.error(e));
           }
         })
         .catch((e) => console.error(e));
@@ -218,7 +218,7 @@ export const useShowModel = defineStore('showModel', {
         if (newCue.params.type === 'audio' && target != null) {
           newCue.params.target = target;
         }
-        api.addCue(newCue, position);
+        api.addCue(newCue, position).catch((e) => console.error(e));
       } else if (paths.length > 1) {
         const newCues = [] as Cue[];
         for (const asset_path of paths) {
@@ -228,7 +228,7 @@ export const useShowModel = defineStore('showModel', {
           }
           newCues.push(newCue);
         }
-        api.addCues(newCues, position);
+        api.addCues(newCues, position).catch((e) => console.error(e));
       }
     },
     addEmptyWaitCue() {
@@ -237,7 +237,7 @@ export const useShowModel = defineStore('showModel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
       const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
-      api.addCue(newCue, position);
+      api.addCue(newCue, position).catch((e) => console.error(e));
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
@@ -252,7 +252,7 @@ export const useShowModel = defineStore('showModel', {
         ) {
           newCue.params.target = uiState.selected;
           const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
-          api.addCue(newCue, position);
+          api.addCue(newCue, position).catch((e) => console.error(e));
         }
       }
     },
@@ -288,7 +288,7 @@ export const useShowModel = defineStore('showModel', {
       ) {
         newCue.params.target = uiState.selected;
         const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
-        api.addCue(newCue, position);
+        api.addCue(newCue, position).catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
