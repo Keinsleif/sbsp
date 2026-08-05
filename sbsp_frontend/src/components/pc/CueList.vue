@@ -16,18 +16,22 @@ import {
 } from '@mdi/js';
 import { useUiState } from '../../stores/uiState';
 import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+import { AUDIO_EXTENSIONS, useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
 import type { Cue } from '../../types/Cue';
 import { useThrottleFn } from '@vueuse/core';
 import { useHotkey } from '@/composables/useHotkey.ts';
 import PathIcon from '../display/PathIcon.vue';
 import ContextMenu from 'primevue/contextmenu';
-import { isUserTyping } from '@/utils.ts';
+import { getExtension, isUserTyping } from '@/utils.ts';
 import CueListEmptyRow from './CueListEmptyRow.vue';
+import type { InsertPosition } from '@/types/InsertPosition.ts';
+import { useOsFileDrop } from '@/composables/useFileDrop.ts';
+import { useToast } from 'primevue/usetoast';
 
 const { t } = useI18n();
 const api = useApi();
+const toast = useToast();
 
 const showModel = useShowModel();
 const uiState = useUiState();
@@ -288,13 +292,12 @@ const findRowIndexAtPoint = (x: number, y: number): number | null => {
   return idx === -1 ? null : idx;
 };
 
-const updateDragOverFromPoint = (x: number, y: number) => {
+const updateDragOverFromPoint = (x: number, y: number, excludeIds: string[] = []) => {
   const idx = findRowIndexAtPoint(x, y);
   const row = idx != null ? renderRows.value[idx] : null;
   const targetId = row?.kind === 'entry' ? row.entry.cue.id : null;
-  const state = reorderState.value;
 
-  if (idx == null || (targetId != null && state?.cueIds.includes(targetId))) {
+  if (idx == null || (targetId != null && excludeIds.includes(targetId))) {
     dragOverIndex.value = null;
   } else {
     dragOverIndex.value = idx;
@@ -315,7 +318,7 @@ const runAutoScroll = () => {
     const ratio = Math.min(1, (lastPointerY - (rect.bottom - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE);
     wrapper.scrollTop += AUTO_SCROLL_MAX_SPEED * ratio;
   }
-  updateDragOverFromPoint(lastPointerX, lastPointerY);
+  updateDragOverFromPoint(lastPointerX, lastPointerY, reorderState.value.cueIds);
   autoScrollRAF = requestAnimationFrame(runAutoScroll);
 };
 
@@ -327,6 +330,14 @@ const stopAutoScroll = () => {
     cancelAnimationFrame(autoScrollRAF);
     autoScrollRAF = null;
   }
+};
+
+const resolveDropTarget = (index: number | null): InsertPosition | null => {
+  const row = index != null ? renderRows.value[index] : null;
+  if (row == null) return null;
+  if (row.kind === 'entry') return { type: 'before', target: row.entry.cue.id };
+  if (row.kind === 'end-slot') return { type: 'inside', target: row.parentId, index: null };
+  return null;
 };
 
 const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
@@ -364,7 +375,7 @@ const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
 
   lastPointerX = event.clientX;
   lastPointerY = event.clientY;
-  updateDragOverFromPoint(lastPointerX, lastPointerY);
+  updateDragOverFromPoint(lastPointerX, lastPointerY, reorderState.value.cueIds);
 };
 
 const onReorderPointerMove = (event: PointerEvent) => {
@@ -385,7 +396,7 @@ const onReorderPointerMove = (event: PointerEvent) => {
       stopAutoScroll();
     }
   }
-  updateDragOverFromPoint(event.clientX, event.clientY);
+  updateDragOverFromPoint(event.clientX, event.clientY, reorderState.value?.cueIds);
 };
 
 const finishReorder = (commit: boolean) => {
@@ -401,12 +412,8 @@ const finishReorder = (commit: boolean) => {
   state.ghostEl.remove();
 
   if (commit && dragOverIndex.value != null && uiState.mode === 'edit') {
-    const row = renderRows.value[dragOverIndex.value];
-    if (row?.kind === 'entry') {
-      api.moveCues(state.cueIds, { type: 'before', target: row.entry.cue.id });
-    } else if (row?.kind === 'end-slot') {
-      api.moveCues(state.cueIds, { type: 'inside', target: row.parentId, index: null });
-    }
+    const target = resolveDropTarget(dragOverIndex.value);
+    if (target != null) api.moveCues(state.cueIds, target);
   }
 
   reorderState.value = null;
@@ -424,6 +431,39 @@ const onReorderPointerCancel = (event: PointerEvent) => {
 const onReorderKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') finishReorder(false);
 };
+
+useOsFileDrop({
+  target: () => cuelistWrapperRef.value,
+  onOver: (x, y) => {
+    updateDragOverFromPoint(x, y);
+  },
+  onLeave: () => {
+    dragOverIndex.value = null;
+  },
+  onDrop: (files, x, y) => {
+    updateDragOverFromPoint(x, y);
+    const target = resolveDropTarget(dragOverIndex.value);
+    if (target == null) return;
+    for (const f of files) {
+      if (f.kind === 'path') {
+        const ext = getExtension(f.path);
+        if (AUDIO_EXTENSIONS.includes(ext)) {
+          showModel.addAudioCueWithPath([f.path], target);
+        } else {
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToAddCue'),
+            detail: t('notification.invalidFileType'),
+            life: 3000,
+          })
+        }
+      } else {
+        // TODO: implement file upload feature
+      }
+    }
+    dragOverIndex.value = null;
+  },
+});
 
 const click = (event: MouseEvent, index: number) => {
   if (event.button !== 0) {
