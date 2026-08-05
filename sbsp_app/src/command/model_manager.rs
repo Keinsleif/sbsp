@@ -39,62 +39,28 @@ pub async fn update_cue(state: tauri::State<'_, AppState>, cue: Cue) -> Result<(
 pub async fn add_cue(
     state: tauri::State<'_, AppState>,
     cue: Cue,
-    target_id: Option<Uuid>,
-    to_before: bool,
+    position: InsertPosition,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    if let Some(target) = target_id {
-        if to_before {
-            handle
-                .model_handle
-                .add_cue(cue, InsertPosition::Before { target })
-                .await
-                .map_err(|e| e.to_string())
-        } else {
-            handle
-                .model_handle
-                .add_cue(cue, InsertPosition::After { target })
-                .await
-                .map_err(|e| e.to_string())
-        }
-    } else {
-        handle
-            .model_handle
-            .add_cue(cue, InsertPosition::LAST)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    handle
+        .model_handle
+        .add_cue(cue, position)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn add_cues(
     state: tauri::State<'_, AppState>,
     cues: Vec<Cue>,
-    target_id: Option<Uuid>,
-    to_before: bool,
+    position: InsertPosition,
 ) -> Result<(), String> {
     let handle = state.get_handle();
-    if let Some(target) = target_id {
-        if to_before {
-            handle
-                .model_handle
-                .add_cues(cues, InsertPosition::Before { target })
-                .await
-                .map_err(|e| e.to_string())
-        } else {
-            handle
-                .model_handle
-                .add_cues(cues, InsertPosition::After { target })
-                .await
-                .map_err(|e| e.to_string())
-        }
-    } else {
-        handle
-            .model_handle
-            .add_cues(cues, InsertPosition::LAST)
-            .await
-            .map_err(|e| e.to_string())
-    }
+    handle
+        .model_handle
+        .add_cues(cues, position)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

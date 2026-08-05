@@ -93,7 +93,11 @@ const paste = () => {
   const cues: Cue[] = internalClipboard.value;
 
   if (cues.length > 0 && uiState.mode === 'edit') {
-    api.addCues(cues, uiState.selected, false);
+    if (uiState.selected != null) {
+      api.addCues(cues, { type: 'after', target: uiState.selected });
+    } else {
+      api.addCues(cues, { type: 'inside', target: null, index: null });
+    }
   }
 };
 

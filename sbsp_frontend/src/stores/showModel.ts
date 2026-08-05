@@ -10,6 +10,7 @@ import { useUiSettings } from './uiSettings';
 import { toRaw } from 'vue';
 import type { CueChain } from '../types/CueChain';
 import { useApi } from '../api';
+import type { InsertPosition } from '@/types/InsertPosition';
 
 const DEFAULT_SHOW_MODEL: ShowModel = {
   name: 'Untitled',
@@ -191,7 +192,8 @@ export const useShowModel = defineStore('showModel', {
             if (newCue.params.type === 'audio' && target != null) {
               newCue.params.target = target;
             }
-            api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+            const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
+            api.addCue(newCue, position);
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -201,17 +203,41 @@ export const useShowModel = defineStore('showModel', {
               }
               newCues.push(newCue);
             }
-            api.addCues(newCues, uiState.selected, false).catch((e) => console.error(e));
+            const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
+            api.addCues(newCues, position);
           }
         })
         .catch((e) => console.error(e));
+    },
+    addAudioCueWithPath(paths: string[], position: InsertPosition) {
+      const uiSettings = useUiSettings();
+      const api = useApi();
+      if (paths.length === 1) {
+        const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
+        const target = paths[0];
+        if (newCue.params.type === 'audio' && target != null) {
+          newCue.params.target = target;
+        }
+        api.addCue(newCue, position);
+      } else if (paths.length > 1) {
+        const newCues = [] as Cue[];
+        for (const asset_path of paths) {
+          const newCue = structuredClone(toRaw(uiSettings.settings.template.audio)) as Cue;
+          if (newCue.params.type === 'audio') {
+            newCue.params.target = asset_path;
+          }
+          newCues.push(newCue);
+        }
+        api.addCues(newCues, position);
+      }
     },
     addEmptyWaitCue() {
       const uiState = useUiState();
       const uiSettings = useUiSettings();
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.wait)) as Cue;
-      api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+      const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
+      api.addCue(newCue, position);
     },
     addEmptyFadeCue() {
       const uiState = useUiState();
@@ -225,7 +251,8 @@ export const useShowModel = defineStore('showModel', {
           (targetCue.params.type === 'audio' || targetCue.params.type === 'group')
         ) {
           newCue.params.target = uiState.selected;
-          api.addCue(newCue, uiState.selected, false).catch((e) => console.error(e));
+          const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
+          api.addCue(newCue, position);
         }
       }
     },
@@ -260,9 +287,8 @@ export const useShowModel = defineStore('showModel', {
           newCue.params.type === 'load')
       ) {
         newCue.params.target = uiState.selected;
-        api
-          .addCue(newCue, uiState.selected, type === 'load' || type === 'start')
-          .catch((e) => console.error(e));
+        const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
+        api.addCue(newCue, position);
       }
     },
     addEmptyGroupCue() {
@@ -271,8 +297,9 @@ export const useShowModel = defineStore('showModel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type === 'group') {
+        const position: InsertPosition = uiState.selected != null ? { type: 'after', target: uiState.selected } : { type: 'inside', target: null, index: null };
         api
-          .addCue(newCue, uiState.selected, false)
+          .addCue(newCue, position)
           .then((id) => {
             if (uiState.selectedRows.size > 0) {
               api

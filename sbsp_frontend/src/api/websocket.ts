@@ -372,61 +372,28 @@ export function useWebsocketApi(): IBackendAdapter {
     updateCue: async function (cue: Cue): Promise<void> {
       this.sendCommand({ type: 'model', command: 'updateCue', params: cue });
     },
-    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+    addCue: async function (cue: Cue, position: InsertPosition): Promise<string> {
       cue.id = v4();
-      if (targetId != null) {
-        if (toBefore) {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCue',
-            params: { cue: cue, position: { type: 'before', target: targetId } },
-          });
-        } else {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCue',
-            params: { cue: cue, position: { type: 'after', target: targetId } },
-          });
-        }
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'addCue',
-          params: { cue: cue, position: { type: 'inside', target: null, index: null } },
-        });
-      }
+      this.sendCommand({
+        type: 'model',
+        command: 'addCue',
+        params: { cue, position },
+      });
       return cue.id;
     },
     addCues: async function (
       cues: Cue[],
-      targetId: string | null,
-      toBefore: boolean,
+      position: InsertPosition
     ): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;
       });
-      if (targetId != null) {
-        if (toBefore) {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCues',
-            params: { cues: cues, position: { type: 'before', target: targetId } },
-          });
-        } else {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCues',
-            params: { cues: cues, position: { type: 'after', target: targetId } },
-          });
-        }
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'addCues',
-          params: { cues: cues, position: { type: 'inside', target: null, index: null } },
-        });
-      }
+      this.sendCommand({
+        type: 'model',
+        command: 'addCues',
+        params: { cues, position },
+      });
       return cueIds;
     },
     removeCue: async function (cueId: string, confirm_remove: boolean = true): Promise<void> {
