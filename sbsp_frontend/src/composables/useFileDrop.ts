@@ -5,9 +5,7 @@ import { onMounted, onUnmounted } from 'vue';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 
-export type DroppedFile =
-  | { kind: 'path'; path: string }
-  | { kind: 'file'; file: File };
+export type DroppedFile = { kind: 'path'; path: string } | { kind: 'file'; file: File };
 
 export interface UseOsFileDropOptions {
   onOver?: (x: number, y: number) => void;
@@ -18,6 +16,8 @@ export interface UseOsFileDropOptions {
 
 export function useOsFileDrop(options: UseOsFileDropOptions) {
   let unlistenTauri: UnlistenFn | null = null;
+  let disposed = false;
+  let target: HTMLElement | null = null;
 
   const dragEnter = (e: DragEvent) => e.preventDefault();
   const dragOver = (e: DragEvent) => {
@@ -27,7 +27,7 @@ export function useOsFileDrop(options: UseOsFileDropOptions) {
   };
   const dragLeave = (e: DragEvent) => {
     const related = e.relatedTarget as Node | null;
-    const container = options.target?.() ?? document.body;
+    const container = target ?? document.documentElement;
     if (related == null || !container.contains(related)) {
       options.onLeave?.();
     }
@@ -41,45 +41,66 @@ export function useOsFileDrop(options: UseOsFileDropOptions) {
     options.onLeave?.();
   };
 
-  onMounted(async () => {
+  onMounted(() => {
+    target = options.target?.() ?? null;
     if (__IS_TAURI__) {
-      const dpr = window.devicePixelRatio || 1;
-      unlistenTauri = await getCurrentWebviewWindow().onDragDropEvent((event) => {
-        const p = event.payload;
-        const x = 'position' in p ? p.position.x / dpr : 0;
-        const y = 'position' in p ? p.position.y / dpr : 0;
-        switch (p.type) {
-          case 'enter':
-          case 'over':
-            options.onOver?.(x, y);
-            break;
-          case 'drop':
-            options.onDrop(
-              p.paths.map((path): DroppedFile => ({ kind: 'path', path })),
-              x,
-              y,
-            );
-            options.onLeave?.();
-            break;
-          case 'leave':
-            options.onLeave?.();
-            break;
-        }
-      });
+      getCurrentWebviewWindow()
+        .onDragDropEvent((event) => {
+          if (disposed) return;
+          const dpr = window.devicePixelRatio || 1;
+          const p = event.payload;
+          const x = 'position' in p ? p.position.x / dpr : 0;
+          const y = 'position' in p ? p.position.y / dpr : 0;
+          switch (p.type) {
+            case 'enter':
+            case 'over':
+              options.onOver?.(x, y);
+              break;
+            case 'drop':
+              if (p.paths.length > 0) {
+                options.onDrop(
+                  p.paths.map((path): DroppedFile => ({ kind: 'path', path })),
+                  x,
+                  y,
+                );
+              }
+              options.onLeave?.();
+              break;
+            case 'leave':
+              options.onLeave?.();
+              break;
+          }
+        })
+        .then((unlistenFn) => {
+          if (disposed) {
+            unlistenFn();
+          } else {
+            unlistenTauri = unlistenFn;
+          }
+        })
+        .catch((e) => {
+          console.error(e);
+        });
     } else {
-      const el: HTMLElement | Window = options.target?.() ?? window;
-      el.addEventListener('dragenter', dragEnter as EventListener);
-      el.addEventListener('dragover', dragOver as EventListener);
-      el.addEventListener('dragleave', dragLeave as EventListener);
-      el.addEventListener('drop', drop as EventListener);
+      if (!disposed) {
+        const el: HTMLElement | Window = target ?? window;
+        el.addEventListener('dragenter', dragEnter as EventListener);
+        el.addEventListener('dragover', dragOver as EventListener);
+        el.addEventListener('dragleave', dragLeave as EventListener);
+        el.addEventListener('drop', drop as EventListener);
+      }
     }
   });
 
   onUnmounted(() => {
-    if (unlistenTauri != null) {
-      unlistenTauri();
+    disposed = true;
+    if (__IS_TAURI__) {
+      if (unlistenTauri != null) {
+        unlistenTauri();
+        unlistenTauri = null;
+      }
     } else {
-      const el: HTMLElement | Window = options.target?.() ?? window;
+      const el: HTMLElement | Window = target ?? window;
       el.removeEventListener('dragenter', dragEnter as EventListener);
       el.removeEventListener('dragover', dragOver as EventListener);
       el.removeEventListener('dragleave', dragLeave as EventListener);
