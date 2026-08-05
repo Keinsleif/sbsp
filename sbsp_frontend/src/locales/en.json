@@ -316,7 +316,8 @@
         "cut": "Cut",
         "paste": "Paste",
         "delete": "Delete"
-      }
+      },
+      "movingCue": "Move {0} cues"
     },
     "duration": "Duration",
     "footBar": {

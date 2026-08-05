@@ -42,6 +42,7 @@ const props = defineProps<{
   item: FlatCueEntry;
   isDragOver: boolean;
 }>();
+const emit = defineEmits(['handlePointerdown']);
 
 const isSelected = computed(() => uiState.selectedRows.has(props.item.cue.id));
 const isPlaybackCursor = computed(() => uiState.playbackCursor === props.item.cue.id);
@@ -137,26 +138,6 @@ const durationText = computed(() => {
     calculateDuration(props.item.cue.params, assetResult.getMetadata(props.item.cue.id)?.duration),
   );
 });
-
-const dragStart = (event: DragEvent) => {
-  const targetId = props.item.cue.id;
-  if (targetId && event.dataTransfer) {
-    if (!uiState.selectedRows.has(targetId)) {
-      uiState.setSelected(targetId);
-    }
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.dropEffect = 'move';
-  }
-};
-
-const drop = (event: DragEvent) => {
-  event.preventDefault();
-  if (event.dataTransfer) {
-    const targetId = props.item.cue.id;
-    if (targetId == null) return;
-    api.moveCues(Array.from(uiState.selectedRows), { type: 'before', target: targetId });
-  }
-};
 
 const openEditable = (e: MouseEvent, editType: string) => {
   if (uiState.mode !== 'edit') {
@@ -280,18 +261,15 @@ const isPlayingActive = computed((): boolean => {
       $style['cue-row'],
     ]"
     :data-cue-color="item.cue.color"
-    @drop="drop"
   >
     <td
       headers="cuelist_handle"
       class="px-0"
       :class="uiState.mode == 'edit' ? 'cursor-grab' : ''"
-      :draggable="uiState.mode == 'edit' ? 'true' : 'false'"
-      @dragstart="dragStart"
       @pointerdown="
         (e) => {
           if (uiState.mode == 'edit') {
-            e.stopPropagation();
+            emit('handlePointerdown', e);
           }
         }
       "

@@ -341,7 +341,8 @@
         "cut": "カット",
         "delete": "削除",
         "paste": "貼り付け"
-      }
+      },
+      "movingCue": "{0}件のCueを移動"
     }
   },
   "menu": {

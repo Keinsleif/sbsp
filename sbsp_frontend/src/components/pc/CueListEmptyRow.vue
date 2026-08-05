@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { useApi } from '@/api';
-import { useUiState } from '@/stores/uiState';
 import TreeIndentGuide from '../display/TreeIndentGuide.vue';
 
 const props = defineProps<{
@@ -11,26 +9,11 @@ const props = defineProps<{
   isDragOver: boolean;
   level: number;
 }>();
-
-const api = useApi();
-const uiState = useUiState();
-
-const drop = (event: DragEvent) => {
-  event.preventDefault();
-  if (event.dataTransfer) {
-    api.moveCues(Array.from(uiState.selectedRows), {
-      type: 'inside',
-      target: props.parentId,
-      index: null,
-    });
-  }
-};
 </script>
 
 <template>
   <tr
     :class="[$style['cue-row'], props.isDragOver ? $style['drag-over-row'] : '']"
-    @drop="drop"
   >
     <td
       class="h-6"

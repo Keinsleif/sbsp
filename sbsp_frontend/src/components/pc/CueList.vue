@@ -258,23 +258,167 @@ useHotkey('$mod+Backspace', () => {
   }
 });
 
+const cuelistWrapperRef = useTemplateRef('cuelistWrapper');
 const dragOverIndex = ref<number | null>(null);
 
-const dragOver = (event: DragEvent, index: number, id: string | null) => {
-  if (id != null && uiState.selectedRows.has(id)) {
-    if (dragOverIndex.value != null) {
-      dragOverIndex.value = null;
-    }
+type ReorderState = {
+  pointerId: number;
+  cueIds: string[];
+  ghostEl: HTMLDivElement;
+};
+const reorderState = ref<ReorderState | null>(null);
+
+const AUTO_SCROLL_EDGE = 48; // px
+const AUTO_SCROLL_MAX_SPEED = 16; // px/frame
+let autoScrollRAF: number | null = null;
+let lastPointerX = 0;
+let lastPointerY = 0;
+
+const findRowIndexAtPoint = (x: number, y: number): number | null => {
+  const body = cueListBodyRef.value;
+  if (body == null) return null;
+  const el = document.elementFromPoint(x, y);
+  const tr = (el as HTMLElement | null)?.closest('tr');
+  if (tr == null || tr.parentElement !== body) return null;
+  const idx = Array.prototype.indexOf.call(body.children, tr);
+  return idx === -1 ? null : idx;
+};
+
+const updateDragOverFromPoint = (x: number, y: number) => {
+  const idx = findRowIndexAtPoint(x, y);
+  const row = idx != null ? renderRows.value[idx] : null;
+  const targetId = row?.kind === 'entry' ? row.entry.cue.id : null;
+  const state = reorderState.value;
+
+  if (idx == null || (targetId != null && state?.cueIds.includes(targetId))) {
+    dragOverIndex.value = null;
   } else {
-    event.preventDefault();
-    if (dragOverIndex.value !== index) {
-      dragOverIndex.value = index;
-    }
+    dragOverIndex.value = idx;
   }
 };
 
-const dragEnd = () => {
+const runAutoScroll = () => {
+  const wrapper = cuelistWrapperRef.value;
+  if (wrapper == null || reorderState.value == null) {
+    autoScrollRAF = null;
+    return;
+  }
+  const rect = wrapper.getBoundingClientRect();
+  if (lastPointerY < rect.top + AUTO_SCROLL_EDGE) {
+    const ratio = Math.min(1, (rect.top + AUTO_SCROLL_EDGE - lastPointerY) / AUTO_SCROLL_EDGE);
+    wrapper.scrollTop -= AUTO_SCROLL_MAX_SPEED * ratio;
+  } else if (lastPointerY > rect.bottom - AUTO_SCROLL_EDGE) {
+    const ratio = Math.min(1, (lastPointerY - (rect.bottom - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE);
+    wrapper.scrollTop += AUTO_SCROLL_MAX_SPEED * ratio;
+  }
+  updateDragOverFromPoint(lastPointerX, lastPointerY);
+  autoScrollRAF = requestAnimationFrame(runAutoScroll);
+};
+
+const ensureAutoScroll = () => {
+  if (autoScrollRAF == null) autoScrollRAF = requestAnimationFrame(runAutoScroll);
+};
+const stopAutoScroll = () => {
+  if (autoScrollRAF != null) {
+    cancelAnimationFrame(autoScrollRAF);
+    autoScrollRAF = null;
+  }
+};
+
+const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
+  if (uiState.mode !== 'edit' || event.button !== 0) return;
+  event.stopPropagation();
+
+  if (!uiState.selectedRows.has(cueId)) {
+    uiState.setSelected(cueId);
+  }
+  const cueIds = Array.from(uiState.selectedRows);
+
+  const ghostEl = document.createElement('div');
+  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', [cueIds.length]) : '';
+  Object.assign(ghostEl.style, {
+    position: 'fixed',
+    left: `${event.clientX + 16}px`,
+    top: `${event.clientY + 8}px`,
+    padding: '2px 10px',
+    borderRadius: '4px',
+    background: 'var(--p-primary-color)',
+    fontSize: '0.75em',
+    pointerEvents: 'none',
+    zIndex: '9999',
+  } satisfies Partial<CSSStyleDeclaration>);
+  document.body.appendChild(ghostEl);
+
+  reorderState.value = { pointerId: event.pointerId, cueIds, ghostEl };
+  (event.target as HTMLElement).setPointerCapture(event.pointerId);
+
+  window.addEventListener('pointermove', onReorderPointerMove);
+  window.addEventListener('pointerup', onReorderPointerUp);
+  window.addEventListener('pointercancel', onReorderPointerCancel);
+  document.addEventListener('keydown', onReorderKeydown);
+  document.body.style.cursor = 'grabbing';
+
+  lastPointerX = event.clientX;
+  lastPointerY = event.clientY;
+  updateDragOverFromPoint(lastPointerX, lastPointerY);
+};
+
+const onReorderPointerMove = (event: PointerEvent) => {
+  const state = reorderState.value;
+  if (state == null || event.pointerId !== state.pointerId) return;
+
+  lastPointerX = event.clientX;
+  lastPointerY = event.clientY;
+  state.ghostEl.style.left = `${event.clientX + 16}px`;
+  state.ghostEl.style.top = `${event.clientY + 8}px`;
+
+  const wrapper = cuelistWrapperRef.value;
+  if (wrapper != null) {
+    const rect = wrapper.getBoundingClientRect();
+    if (event.clientY < rect.top + AUTO_SCROLL_EDGE || event.clientY > rect.bottom - AUTO_SCROLL_EDGE) {
+      ensureAutoScroll();
+    } else {
+      stopAutoScroll();
+    }
+  }
+  updateDragOverFromPoint(event.clientX, event.clientY);
+};
+
+const finishReorder = (commit: boolean) => {
+  const state = reorderState.value;
+  if (state == null) return;
+
+  stopAutoScroll();
+  window.removeEventListener('pointermove', onReorderPointerMove);
+  window.removeEventListener('pointerup', onReorderPointerUp);
+  window.removeEventListener('pointercancel', onReorderPointerCancel);
+  document.removeEventListener('keydown', onReorderKeydown);
+  document.body.style.cursor = '';
+  state.ghostEl.remove();
+
+  if (commit && dragOverIndex.value != null && uiState.mode === 'edit') {
+    const row = renderRows.value[dragOverIndex.value];
+    if (row?.kind === 'entry') {
+      api.moveCues(state.cueIds, { type: 'before', target: row.entry.cue.id });
+    } else if (row?.kind === 'end-slot') {
+      api.moveCues(state.cueIds, { type: 'inside', target: row.parentId, index: null });
+    }
+  }
+
+  reorderState.value = null;
   dragOverIndex.value = null;
+};
+
+const onReorderPointerUp = (event: PointerEvent) => {
+  if (reorderState.value?.pointerId !== event.pointerId) return;
+  finishReorder(true);
+};
+const onReorderPointerCancel = (event: PointerEvent) => {
+  if (reorderState.value?.pointerId !== event.pointerId) return;
+  finishReorder(false);
+};
+const onReorderKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') finishReorder(false);
 };
 
 const click = (event: MouseEvent, index: number) => {
@@ -355,6 +499,7 @@ const click = (event: MouseEvent, index: number) => {
     class="h-full scroll-pt-8 overflow-x-auto overflow-y-scroll"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
+    ref="cuelistWrapper"
     @copy="copyHandler"
     @cut="cutHandler"
     @paste="pasteHandler"
@@ -457,8 +602,7 @@ const click = (event: MouseEvent, index: number) => {
             v-if="row.kind === 'entry'"
             :item="row.entry"
             :is-drag-over="dragOverIndex === i"
-            @dragover="dragOver($event, i, row.entry.cue.id)"
-            @dragend="dragEnd"
+            @handle-pointerdown="onHandlePointerDown($event, row.entry.cue.id)"
             @pointerdown.stop="click($event, i)"
             @contextmenu.prevent="
               if (uiState.mode == 'edit') {
@@ -474,7 +618,6 @@ const click = (event: MouseEvent, index: number) => {
             :parent-id="row.parentId"
             :level="row.level"
             :is-drag-over="dragOverIndex === i"
-            @dragover="dragOver($event, i, null)"
           />
         </template>
       </tbody>
