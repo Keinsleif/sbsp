@@ -106,7 +106,8 @@ impl AudioEngine {
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
         let builder = Self::get_builder(&backend_settings)?;
-        let sink = builder.open_stream()?;
+        let mut sink = builder.open_stream()?;
+        sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
             (output_config.channel_count(), output_config.sample_rate())
@@ -148,7 +149,8 @@ impl AudioEngine {
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
         let builder = Self::get_builder(&backend_settings)?;
-        let sink = builder.open_stream()?;
+        let mut sink = builder.open_stream()?;
+        sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
             (output_config.channel_count(), output_config.sample_rate())
@@ -190,7 +192,8 @@ impl AudioEngine {
         self.output = None;
         let is_mono = self.is_mono.clone();
         let builder = Self::get_builder(backend)?;
-        let sink = builder.open_stream()?;
+        let mut sink = builder.open_stream()?;
+        sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
             let output_config = sink.config();
             (output_config.channel_count(), output_config.sample_rate())

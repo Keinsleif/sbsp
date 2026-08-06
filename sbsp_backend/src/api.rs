@@ -1,22 +1,25 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+#[cfg(any(feature = "server", feature = "client"))]
+use std::str::FromStr;
+
 use crate::{
     FullShowState, asset_processor::AssetProcessorCommand, controller::ControllerCommand,
     event::BackendEvent, manager::ModelCommand,
 };
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "apiclient")]
+#[cfg(feature = "client")]
 pub mod client;
 mod file_list;
-#[cfg(feature = "apiserver")]
+#[cfg(feature = "server")]
 pub mod server;
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 mod auth;
 
 #[cfg(feature = "type_export")]
@@ -31,12 +34,42 @@ pub use file_list::FileList;
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct Permissions(u8);
 
-#[cfg(any(feature = "apiserver", feature = "apiclient"))]
+#[cfg(any(feature = "server", feature = "client"))]
 bitflags! {
     impl Permissions: u8 {
         const READ = 0b0001;
         const CONTROL = 0b0010;
         const EDIT = 0b0100;
+    }
+}
+
+#[cfg(any(feature = "server", feature = "client"))]
+impl FromStr for Permissions {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut perms = Self::empty();
+        
+        for item in s.split(',') {
+            match item.trim().to_lowercase().as_str() {
+                "read" | "r" => perms |= Self::READ,
+                "control" | "c" => perms |= Self::CONTROL,
+                "edit" | "e" => perms |= Self::EDIT,
+                other => {
+                    if let Ok(num) = other.parse::<u8>() {
+                        perms |= Self::from_bits_truncate(num);
+                    } else {
+                        return Err(format!("Invalid permission specifier: '{other}'"));
+                    }
+                }
+            }
+        }
+        
+        if perms.is_empty() {
+            return Err("No permissions are specified".to_string());
+        }
+
+        Ok(perms)
     }
 }
 
@@ -46,6 +79,24 @@ bitflags! {
 pub struct PermissionInfo {
     pub password: String,
     pub permission: Permissions,
+}
+
+#[cfg(any(feature = "server", feature = "client"))]
+impl FromStr for PermissionInfo {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (password, perm_str) = s
+            .split_once(':')
+            .ok_or_else(|| "Format error: permission must be in '<password>:<permissions>' format".to_string())?;
+
+        let permission = perm_str.parse::<Permissions>()?;
+
+        Ok(PermissionInfo {
+            password: password.to_string(),
+            permission,
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

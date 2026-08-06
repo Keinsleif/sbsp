@@ -8,9 +8,9 @@ repository.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "apiserver"
+name = "server"
 path = "src/main.rs"
-required-features = ["backend", "apiserver", "cli"]
+required-features = ["backend", "server", "cli"]
 
 [features]
 default = ["backend"]
@@ -25,7 +25,7 @@ backend = [
     "dep:ebur128",
     "dep:normpath",
 ]
-apiserver = [
+server = [
     "backend",
     "dep:axum",
     "dep:rand",
@@ -36,7 +36,7 @@ apiserver = [
     "dep:gethostname",
     "dep:serde_json",
 ]
-apiclient = [
+client = [
     "backend",
     "dep:tokio-tungstenite",
     "dep:futures-util",
@@ -48,7 +48,7 @@ apiclient = [
     "dep:gethostname",
     "dep:serde_json",
 ]
-cli = ["dep:env_logger", "dep:clap"]
+cli = ["dep:env_logger", "dep:clap", "dep:termtree"]
 type_export = ["dep:ts-rs"]
 
 [dependencies]
@@ -67,6 +67,7 @@ normpath = { version = "1.5", optional = true }
 
 env_logger = { version = "0.11", optional = true }
 clap = { workspace = true, optional = true }
+termtree = { version = "1.0.0", optional = true }
 
 rand = { version = "0.10", optional = true }
 base64 = { workspace = true, optional = true }
