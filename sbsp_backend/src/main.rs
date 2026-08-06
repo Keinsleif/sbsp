@@ -49,37 +49,34 @@ async fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
     if args.get_hardware {
-        if let Ok(hardware) = get_supported_hardware() {
-            let mut root = Tree::new("Supported Hardware".to_owned());
-            for (id, device) in &hardware.devices {
-                let is_default = if id == &hardware.default { " [Default]" } else { "" };
-                let mut dev_node = Tree::new(format!(
-                    "{} (ID: {}){is_default}", device.name, id
-                ));
-                dev_node.push(format!(
-                    "Defaults: {} ch @ {} Hz",
-                    device.default_channel_count, device.default_sample_rate
-                ));
-                let mut configs_node = Tree::new("Frame Configs".to_string());
-                for (i, config) in device.supported_configs.iter().enumerate() {
-                    let mut cfg_node = Tree::new(format!("Config #{}", i + 1));
-                    cfg_node.push(format!("Channels: {}", config.channel_count));
-                    
-                    let rates: Vec<_> = config.sample_rates.iter().map(|r| r.to_string()).collect();
-                    cfg_node.push(format!("Sample Rates: [{}] Hz", rates.join(", ")));
-                    
-                    let buffers: Vec<_> = config.buffer_sizes.iter().map(|b| b.to_string()).collect();
-                    cfg_node.push(format!("Buffer Sizes: [{}]", buffers.join(", ")));
+        let hardware = get_supported_hardware()?;
+        let mut root = Tree::new("Supported Hardware".to_owned());
+        for (id, device) in &hardware.devices {
+            let is_default = if id == &hardware.default { " [Default]" } else { "" };
+            let mut dev_node = Tree::new(format!(
+                "{} (ID: {}){is_default}", device.name, id
+            ));
+            dev_node.push(format!(
+                "Defaults: {} ch @ {} Hz",
+                device.default_channel_count, device.default_sample_rate
+            ));
+            let mut configs_node = Tree::new("Frame Configs".to_string());
+            for (i, config) in device.supported_configs.iter().enumerate() {
+                let mut cfg_node = Tree::new(format!("Config #{}", i + 1));
+                cfg_node.push(format!("Channels: {}", config.channel_count));
+                
+                let rates: Vec<_> = config.sample_rates.iter().map(|r| r.to_string()).collect();
+                cfg_node.push(format!("Sample Rates: [{}] Hz", rates.join(", ")));
+                
+                let buffers: Vec<_> = config.buffer_sizes.iter().map(|b| b.to_string()).collect();
+                cfg_node.push(format!("Buffer Sizes: [{}]", buffers.join(", ")));
 
-                    configs_node.push(cfg_node);
-                }
-                dev_node.push(configs_node);
-                root.push(dev_node);
+                configs_node.push(cfg_node);
             }
-            println!("{}", root);
-        } else {
-            println!("No supported hardware.");
+            dev_node.push(configs_node);
+            root.push(dev_node);
         }
+        println!("{}", root);
         return Ok(());
     }
 
