@@ -341,7 +341,8 @@
         "cut": "カット",
         "delete": "削除",
         "paste": "貼り付け"
-      }
+      },
+      "movingCue": "{0}件のCueを移動"
     }
   },
   "menu": {
@@ -404,7 +405,9 @@
     "operationFailed": "操作に失敗しました",
     "failedToStartServer": "サーバーの起動に失敗しました",
     "failedToStopServer": "サーバーの停止に失敗しました",
-    "failedToLoadLicense": "ライセンスの読み込みに失敗しました"
+    "failedToLoadLicense": "ライセンスの読み込みに失敗しました",
+    "failedToAddCue": "キューの追加に失敗しました",
+    "invalidFileType": "ドロップされたファイルはサポートされていません"
   },
   "view": {
     "connect": {

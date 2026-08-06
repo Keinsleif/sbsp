@@ -23,7 +23,7 @@
         "title": "SBS Player Remote",
         "width": 1280,
         "height": 720,
-        "dragDropEnabled": false
+        "dragDropEnabled": true
       }
     ],
     "security": {

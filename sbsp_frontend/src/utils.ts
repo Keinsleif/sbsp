@@ -369,3 +369,21 @@ export const camelToTitleCase = (str: string) => {
     .replace(/^./, (match: string) => match.toUpperCase())
     .trim();
 };
+
+/**
+ * Extract extension from file paht
+ * @param {string} path - file paht
+ * @returns {string} - extension (ex: "txt", "jpg"）empty if no extension
+ */
+export const getExtension = (path: string) => {
+  const fileName = path.split(/[/\\]/).pop();
+  if (fileName == null) return '';
+
+  const dotIndex = fileName.lastIndexOf('.');
+
+  if (dotIndex <= 0 || dotIndex === fileName.length - 1) {
+    return '';
+  }
+
+  return fileName.substring(dotIndex + 1).toLowerCase();
+}

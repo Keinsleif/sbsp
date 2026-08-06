@@ -316,7 +316,8 @@
         "cut": "Cut",
         "paste": "Paste",
         "delete": "Delete"
-      }
+      },
+      "movingCue": "Move {0} cues"
     },
     "duration": "Duration",
     "footBar": {
@@ -404,7 +405,9 @@
     "operationFailed": "Operation failed",
     "failedToStartServer": "Failed to start server",
     "failedToStopServer": "Failed to stop server",
-    "failedToLoadLicense": "Failed to load License"
+    "failedToLoadLicense": "Failed to load License",
+    "failedToAddCue": "Failed to add cue.",
+    "invalidFileType": "Dropped file type not supported."
   },
   "view": {
     "connect": {

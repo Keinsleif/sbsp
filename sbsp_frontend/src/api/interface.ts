@@ -62,8 +62,8 @@ export interface IBackendAdapter {
 
   // Model commands
   updateCue(cue: Cue): Promise<void>;
-  addCue(cue: Cue, targetId: string | null, toBefore: boolean): Promise<string>;
-  addCues(cues: Cue[], targetId: string | null, toBefore: boolean): Promise<string[]>;
+  addCue(cue: Cue, position: InsertPosition): Promise<string>;
+  addCues(cues: Cue[], position: InsertPosition): Promise<string[]>;
   removeCue(cueId: string, confirm_remove?: boolean): Promise<void>;
   removeCues(cueIds: string[], confirm_remove?: boolean): Promise<void>;
   moveCue(cueId: string, position: InsertPosition): Promise<void>;
