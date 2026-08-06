@@ -5,9 +5,10 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use sbsp_backend::{
-    BackendAudioSettings, BackendSettings, api::{ApiServerOptions, server::start_apiserver}, start_backend
+    BackendAudioSettings, BackendSettings, api::{ApiServerOptions, PermissionInfo, server::start_apiserver}, helper::get_supported_hardware, start_backend
 };
 use tokio::sync::watch;
+use termtree::Tree;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -20,11 +21,8 @@ struct Args {
     #[arg(short, long, default_value = "SBS Player API Server")]
     discovery: Option<String>,
 
-    #[arg(long, long_about = "")]
-    auth: Option<String>,
-
-    #[arg(long)]
-    advance_cursor_when_go: bool,
+    #[arg(long, long_help = "List of PermissionInfo string in '<password>:<permission>' format.")]
+    auth: Vec<PermissionInfo>,
 
     #[arg(long)]
     copy_assets_when_add: bool,
@@ -32,16 +30,16 @@ struct Args {
     #[arg(long)]
     get_hardware: bool,
 
-    #[args(long)]
+    #[arg(long)]
     device_id: Option<String>,
 
-    #[args(long)]
+    #[arg(long)]
     channel_count: Option<u16>,
 
-    #[args(long)]
+    #[arg(long)]
     sample_rate: Option<u32>,
 
-    #[args(long)]
+    #[arg(long)]
     buffer_size: Option<u32>,
 }
 
@@ -49,13 +47,48 @@ struct Args {
 async fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
     let args = Args::parse();
+
+    if args.get_hardware {
+        if let Ok(hardware) = get_supported_hardware() {
+            let mut root = Tree::new("Supported Hardware".to_owned());
+            for (id, device) in &hardware.devices {
+                let is_default = if id == &hardware.default { " [Default]" } else { "" };
+                let mut dev_node = Tree::new(format!(
+                    "{} (ID: {}){is_default}", device.name, id
+                ));
+                dev_node.push(format!(
+                    "Defaults: {} ch @ {} Hz",
+                    device.default_channel_count, device.default_sample_rate
+                ));
+                let mut configs_node = Tree::new("Frame Configs".to_string());
+                for (i, config) in device.supported_configs.iter().enumerate() {
+                    let mut cfg_node = Tree::new(format!("Config #{}", i + 1));
+                    cfg_node.push(format!("Channels: {}", config.channel_count));
+                    
+                    let rates: Vec<_> = config.sample_rates.iter().map(|r| r.to_string()).collect();
+                    cfg_node.push(format!("Sample Rates: [{}] Hz", rates.join(", ")));
+                    
+                    let buffers: Vec<_> = config.buffer_sizes.iter().map(|b| b.to_string()).collect();
+                    cfg_node.push(format!("Buffer Sizes: [{}]", buffers.join(", ")));
+
+                    configs_node.push(cfg_node);
+                }
+                dev_node.push(configs_node);
+                root.push(dev_node);
+            }
+            println!("{}", root);
+        } else {
+            println!("No supported hardware.");
+        }
+        return Ok(());
+    }
+
     let (_, settings_rx) = watch::channel(BackendSettings {
-        advance_cursor_when_go: args.advance_cursor_when_go,
         copy_assets_when_add: args.copy_assets_when_add,
         audio: BackendAudioSettings {
             device_id: args.device_id,
             channel_count: args.channel_count,
-            sample_rate: args.channel_count,
+            sample_rate: args.sample_rate,
             buffer_size: args.buffer_size
         },
     });
@@ -79,12 +112,14 @@ async fn main() -> Result<(), anyhow::Error> {
         ApiServerOptions {
             port: args.port,
             discoverry: args.discovery,
-            password: args.password,
+            auth_map: args.auth,
         },
     )
     .await?;
 
     shutdown_signal().await;
+
+    log::info!("Shutting down server...");
 
     shutdown_tx.send(())?;
 
