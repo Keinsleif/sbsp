@@ -160,7 +160,7 @@ const menuItems = computed(() => [
   },
 ]);
 
-const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
+const onArrowUp = useThrottleFn((e: KeyboardEvent, extend: boolean = false) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex = renderRowsCache.findIndex(
@@ -180,7 +180,7 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
         return;
       }
     }
-    if (e.shiftKey) {
+    if (extend) {
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
@@ -206,11 +206,11 @@ useHotkey(
   () => uiSettings.settings.hotkey.edit.cuelistExtendUp,
   (e) => {
     e.preventDefault();
-    onArrowUp(e);
+    onArrowUp(e, true);
   },
 );
 
-const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
+const onArrowDown = useThrottleFn((e: KeyboardEvent, extend: boolean = false) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex = renderRowsCache.findIndex(
@@ -230,7 +230,7 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
         return;
       }
     }
-    if (e.shiftKey) {
+    if (extend) {
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
@@ -262,7 +262,7 @@ useHotkey(
   () => uiSettings.settings.hotkey.edit.cuelistExtendDown,
   (e) => {
     e.preventDefault();
-    onArrowDown(e);
+    onArrowDown(e, true);
   },
 );
 
