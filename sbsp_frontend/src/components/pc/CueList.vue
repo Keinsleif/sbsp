@@ -268,7 +268,8 @@ useHotkey(
 
 useHotkey(
   () => uiSettings.settings.hotkey.edit.selectAll,
-  () => {
+  (e) => {
+    e.preventDefault();
     // This operation not set uiState.selected. But selecting all will includes uiState.selected
     uiState.selectedRows.clear();
     showModel.flatCueList
@@ -279,7 +280,8 @@ useHotkey(
 
 useHotkey(
   () => uiSettings.settings.hotkey.edit.delete,
-  () => {
+  (e) => {
+    e.preventDefault();
     if (uiState.mode === 'edit') {
       api.removeCues(Array.from(uiState.selectedRows));
     }
