@@ -19,6 +19,21 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
     hideControls: false,
   },
   hotkey: {
+    file: {
+      open: '$mod+O',
+      save: '$mod+S',
+      saveAs: '$mod+Shift+S',
+      exportToFolder: null,
+    },
+    edit: {
+      delete: '$mod+Backscape',
+      selectAll: '$mod+A',
+      renumberCues: '$mod+R',
+      cuelistMoveUp: 'ArrowUp',
+      cuelistExtendUp: 'Shift+ArrowUp',
+      cuelistMoveDown: 'ArrowDown',
+      cuelistExtendDown: 'Shift+ArrowDown',
+    },
     playback: {
       execute: 'Space',
       load: 'L',
