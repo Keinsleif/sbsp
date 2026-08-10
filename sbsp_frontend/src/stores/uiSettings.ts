@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
       exportToFolder: null,
     },
     edit: {
-      delete: '$mod+Backscape',
+      delete: '$mod+Backspace',
       selectAll: '$mod+A',
       renumberCues: '$mod+R',
       cuelistMoveUp: 'ArrowUp',
