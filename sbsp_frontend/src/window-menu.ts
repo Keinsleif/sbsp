@@ -26,6 +26,7 @@ export const createWindowMenu = () => {
   const showState = useShowState();
   let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
+  let initiated = false;
   const items = {
     file: {
       new: null as MenuItemHolder,
@@ -76,6 +77,7 @@ export const createWindowMenu = () => {
   let menu: Menu | null = null;
 
   const updateLocale = () => {
+    if (!initiated) return;
     Object.entries(items).forEach(([submenuId, menus]) => {
       Object.entries(menus).forEach(([menuId, menuItem]) => {
         menuItem?.setText(t(`menu.${submenuId}.${menuId}`));
@@ -85,6 +87,7 @@ export const createWindowMenu = () => {
   };
 
   const updateConnectionStatus = (isConnected: boolean) => {
+    if (!initiated) return;
     if (__IS_REMOTE__) {
       connected = isConnected;
       (items.file.disconnect as MenuItem | null)?.setEnabled(connected);
@@ -94,10 +97,12 @@ export const createWindowMenu = () => {
 
   const updateEditMode = (newMode: 'edit' | 'run' | 'view') => {
     mode = newMode;
+    if (!initiated) return;
     updateEditMenuItemStats();
   };
 
   const updateHotkey = (newHotkeySettings: HotkeySettings) => {
+    if (!initiated) return;
     (items.file.open as MenuItem).setAccelerator(
       newHotkeySettings.file.open?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
     );
@@ -508,6 +513,7 @@ export const createWindowMenu = () => {
       items: [submenues.file, submenues.edit, submenues.cue, submenues.tools, submenues.help],
     });
     menu.setAsAppMenu();
+    initiated = true;
   };
 
   return { init, updateLocale, updateConnectionStatus, updateEditMode, updateHotkey };
