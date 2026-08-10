@@ -99,6 +99,23 @@
             "stopAll": "Stop All",
             "title": "Playback",
             "execute": "Execute"
+          },
+          "file": {
+            "title": "File",
+            "open": "Open",
+            "save": "Save",
+            "saveAs": "Save As",
+            "exportToFolder": "Export to Folder"
+          },
+          "edit": {
+            "delete": "Delete Cue",
+            "title": "Edit",
+            "selectAll": "Select All Cues",
+            "renumberCues": "Renumber selected cues",
+            "cuelistMoveUp": "Move selection up",
+            "cuelistExtendUp": "Extend selection up",
+            "cuelistMoveDown": "Move selection down",
+            "cuelistExtendDown": "Extend selection down"
           }
         },
         "nameFormat": {

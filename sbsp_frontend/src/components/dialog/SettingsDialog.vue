@@ -459,6 +459,77 @@ const recallQLabPreset = () => {
             class="p-3"
           >
             <h2 class="mb-3">
+              {{ t('dialog.settings.global.hotkey.file.title') }}
+            </h2>
+            <div class="flex flex-row items-start gap-4">
+              <div class="flex flex-col gap-4">
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.file.open"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.file.open')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.file.save"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.file.save')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.file.saveAs"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.file.saveAs')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.file.exportToFolder"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.file.exportToFolder')"
+                />
+              </div>
+            </div>
+            <divider />
+            <h2 class="mb-3">
+              {{ t('dialog.settings.global.hotkey.edit.title') }}
+            </h2>
+            <div class="flex flex-row items-start gap-4">
+              <div class="flex flex-col gap-4">
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.delete"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.delete')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.selectAll"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.selectAll')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.renumberCues"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.renumberCues')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.cuelistMoveUp"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.cuelistMoveUp')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.cuelistExtendUp"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.cuelistExtendUp')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.cuelistMoveDown"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.cuelistMoveDown')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.edit.cuelistExtendDown"
+                  class="w-70"
+                  :label="t('dialog.settings.global.hotkey.edit.cuelistExtendDown')"
+                />
+              </div>
+            </div>
+            <divider />
+            <h2 class="mb-3">
               {{ t('dialog.settings.global.hotkey.playback.title') }}
             </h2>
             <div class="flex flex-row items-start gap-4">
