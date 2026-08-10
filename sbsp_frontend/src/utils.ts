@@ -386,4 +386,4 @@ export const getExtension = (path: string) => {
   }
 
   return fileName.substring(dotIndex + 1).toLowerCase();
-}
+};

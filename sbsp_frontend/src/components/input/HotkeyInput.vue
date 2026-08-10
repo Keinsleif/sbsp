@@ -12,7 +12,9 @@ import { MOD_KEY } from '@/composables/useHotkey.ts';
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 const hotkey = defineModel<string | null>({ default: '' });
-const hotkeyDisplay = computed(() => hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY) : '')
+const hotkeyDisplay = computed(() =>
+  hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY) : '',
+);
 const props = defineProps<{
   label?: string;
 }>();

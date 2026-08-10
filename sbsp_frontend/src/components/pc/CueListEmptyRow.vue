@@ -12,9 +12,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <tr
-    :class="[$style['cue-row'], props.isDragOver ? $style['drag-over-row'] : '']"
-  >
+  <tr :class="[$style['cue-row'], props.isDragOver ? $style['drag-over-row'] : '']">
     <td
       class="h-6"
       colspan="5"

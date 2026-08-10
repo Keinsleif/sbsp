@@ -98,13 +98,27 @@ export const createWindowMenu = () => {
   };
 
   const updateHotkey = (newHotkeySettings: HotkeySettings) => {
-    (items.file.open as MenuItem).setAccelerator(newHotkeySettings.file.open?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.file.save as MenuItem).setAccelerator(newHotkeySettings.file.save?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.file.saveAs as MenuItem).setAccelerator(newHotkeySettings.file.saveAs?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.file.exportToFolder as MenuItem).setAccelerator(newHotkeySettings.file.exportToFolder?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.edit.deleteCue as MenuItem).setAccelerator(newHotkeySettings.edit.delete?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.edit.selectAllCues as MenuItem).setAccelerator(newHotkeySettings.edit.selectAll?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
-    (items.tools.renumber as MenuItem).setAccelerator(newHotkeySettings.edit.renumberCues?.replace('$mod', MOD_KEY_DISPLAY) ?? null);
+    (items.file.open as MenuItem).setAccelerator(
+      newHotkeySettings.file.open?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.file.save as MenuItem).setAccelerator(
+      newHotkeySettings.file.save?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.file.saveAs as MenuItem).setAccelerator(
+      newHotkeySettings.file.saveAs?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.file.exportToFolder as MenuItem).setAccelerator(
+      newHotkeySettings.file.exportToFolder?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.edit.deleteCue as MenuItem).setAccelerator(
+      newHotkeySettings.edit.delete?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.edit.selectAllCues as MenuItem).setAccelerator(
+      newHotkeySettings.edit.selectAll?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
+    (items.tools.renumber as MenuItem).setAccelerator(
+      newHotkeySettings.edit.renumberCues?.replace('$mod', MOD_KEY_DISPLAY) ?? null,
+    );
   };
 
   let lastEditEnableStats = connected && mode === 'edit';
@@ -171,7 +185,7 @@ export const createWindowMenu = () => {
             });
             switch (result) {
               case t('dialog.saveConfirm.save'): {
-                const isSaved = await api.host?.fileSave()
+                const isSaved = await api.host?.fileSave();
                 if (isSaved) {
                   api.host?.fileNew();
                 }

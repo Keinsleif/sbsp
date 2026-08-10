@@ -381,10 +381,7 @@ export function useWebsocketApi(): IBackendAdapter {
       });
       return cue.id;
     },
-    addCues: async function (
-      cues: Cue[],
-      position: InsertPosition
-    ): Promise<string[]> {
+    addCues: async function (cues: Cue[], position: InsertPosition): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;

@@ -63,9 +63,9 @@ watch(
 watch(
   () => uiSettings.settings.hotkey,
   (newSettings) => {
-    windowMenu?.updateHotkey(newSettings)
+    windowMenu?.updateHotkey(newSettings);
   },
-)
+);
 
 watch(
   () => uiState.mode,
