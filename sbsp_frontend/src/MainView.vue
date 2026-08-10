@@ -282,19 +282,24 @@ onUnmounted(() => {
 });
 
 if (api.host) {
-  useHotkey('$mod+O', (e) => {
+  useHotkey(() => uiSettings.settings.hotkey.file.open, (e) => {
     e.preventDefault();
     api.host?.fileOpen();
   });
 
-  useHotkey('$mod+S', (e) => {
+  useHotkey(() => uiSettings.settings.hotkey.file.save, (e) => {
     e.preventDefault();
     api.host?.fileSave();
   });
 
-  useHotkey('$mod+Shift+A', (e) => {
+  useHotkey(() => uiSettings.settings.hotkey.file.saveAs, (e) => {
     e.preventDefault();
     api.host?.fileSaveAs();
+  });
+
+  useHotkey(() => uiSettings.settings.hotkey.file.exportToFolder, (e) => {
+    e.preventDefault();
+    api.host?.exportToFolder();
   });
 }
 
@@ -428,7 +433,7 @@ useHotkey(
   },
 );
 
-useHotkey('$mod+R', (e) => {
+useHotkey(() => uiSettings.settings.hotkey.edit.renumberCues, (e) => {
   e.preventDefault();
   if (uiState.mode === 'edit') {
     uiState.isRenumberCueDialogOpen = true;

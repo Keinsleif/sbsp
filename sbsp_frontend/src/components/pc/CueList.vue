@@ -28,6 +28,7 @@ import CueListEmptyRow from './CueListEmptyRow.vue';
 import type { InsertPosition } from '@/types/InsertPosition.ts';
 import { useOsFileDrop } from '@/composables/useFileDrop.ts';
 import { useToast } from 'primevue/usetoast';
+import { useUiSettings } from '@/stores/uiSettings.ts';
 
 const { t } = useI18n();
 const api = useApi();
@@ -35,6 +36,7 @@ const toast = useToast();
 
 const showModel = useShowModel();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 const cueListBodyRef = useTemplateRef('cuelistBody');
 
@@ -193,14 +195,20 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('ArrowUp', (e) => {
-  e.preventDefault();
-  onArrowUp(e);
-});
-useHotkey('Shift+ArrowUp', (e) => {
-  e.preventDefault();
-  onArrowUp(e);
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistMoveUp,
+  (e) => {
+    e.preventDefault();
+    onArrowUp(e);
+  },
+);
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistExtendUp,
+  (e) => {
+    e.preventDefault();
+    onArrowUp(e);
+  },
+);
 
 const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   const renderRowsCache = renderRows.value;
@@ -243,28 +251,40 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('ArrowDown', (e) => {
-  e.preventDefault();
-  onArrowDown(e);
-});
-useHotkey('Shift+ArrowDown', (e) => {
-  e.preventDefault();
-  onArrowDown(e);
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistMoveDown,
+  (e) => {
+    e.preventDefault();
+    onArrowDown(e);
+  },
+);
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistExtendDown,
+  (e) => {
+    e.preventDefault();
+    onArrowDown(e);
+  },
+);
 
-useHotkey('$mod+A', () => {
-  // This operation not set uiState.selected. But selecting all will includes uiState.selected
-  uiState.selectedRows.clear();
-  showModel.flatCueList
-    .filter((item) => !item.isHidden)
-    .forEach((value) => uiState.selectedRows.add(value.cue.id));
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.selectAll,
+  () => {
+    // This operation not set uiState.selected. But selecting all will includes uiState.selected
+    uiState.selectedRows.clear();
+    showModel.flatCueList
+      .filter((item) => !item.isHidden)
+      .forEach((value) => uiState.selectedRows.add(value.cue.id));
+  },
+);
 
-useHotkey('$mod+Backspace', () => {
-  if (uiState.mode === 'edit') {
-    api.removeCues(Array.from(uiState.selectedRows));
-  }
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.delete,
+  () => {
+    if (uiState.mode === 'edit') {
+      api.removeCues(Array.from(uiState.selectedRows));
+    }
+  },
+);
 
 const cuelistWrapperRef = useTemplateRef('cuelistWrapper');
 const dragOverIndex = ref<number | null>(null);
@@ -390,7 +410,10 @@ const onReorderPointerMove = (event: PointerEvent) => {
   const wrapper = cuelistWrapperRef.value;
   if (wrapper != null) {
     const rect = wrapper.getBoundingClientRect();
-    if (event.clientY < rect.top + AUTO_SCROLL_EDGE || event.clientY > rect.bottom - AUTO_SCROLL_EDGE) {
+    if (
+      event.clientY < rect.top + AUTO_SCROLL_EDGE ||
+      event.clientY > rect.bottom - AUTO_SCROLL_EDGE
+    ) {
       ensureAutoScroll();
     } else {
       stopAutoScroll();
@@ -455,7 +478,7 @@ useOsFileDrop({
             summary: t('notification.failedToAddCue'),
             detail: t('notification.invalidFileType'),
             life: 3000,
-          })
+          });
         }
       } else {
         // TODO: implement file upload feature
