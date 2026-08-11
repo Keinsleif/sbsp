@@ -3,14 +3,18 @@ import { mdiClose } from '@mdi/js';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import FloatLabel from 'primevue/floatlabel';
 import InputText from 'primevue/inputtext';
+import { MOD_KEY } from '@/composables/useHotkey.ts';
 
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 const hotkey = defineModel<string | null>({ default: '' });
+const hotkeyDisplay = computed(() =>
+  hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY) : '',
+);
 const props = defineProps<{
   label?: string;
 }>();
@@ -58,7 +62,7 @@ const inputId = useId();
       class="w-125"
     >
       <input-text
-        v-model="hotkey"
+        :model-value="hotkeyDisplay"
         class="h-full w-full"
         :id="inputId"
         autocomplete="off"

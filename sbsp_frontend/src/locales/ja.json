@@ -99,6 +99,23 @@
             "stopAll": "すべて停止",
             "title": "再生",
             "execute": "実行"
+          },
+          "file": {
+            "title": "ファイル操作",
+            "open": "開く",
+            "exportToFolder": "フォルダにエクスポート",
+            "save": "保存",
+            "saveAs": "名前をつけて保存"
+          },
+          "edit": {
+            "cuelistExtendDown": "CueListの選択範囲を下に拡大",
+            "cuelistExtendUp": "CueListの選択範囲を上に拡大",
+            "cuelistMoveDown": "CueListの選択を下に移動",
+            "cuelistMoveUp": "CueListの選択を上に移動",
+            "delete": "キューを削除",
+            "renumberCues": "キュー番号の振り直し",
+            "selectAll": "すべてのキューを選択",
+            "title": "編集"
           }
         },
         "nameFormat": {

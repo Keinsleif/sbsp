@@ -71,14 +71,18 @@ useBackendEvent((event) => {
             } else {
               cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }
-            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')) {
+            if (
+              (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') ||
+              (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')
+            ) {
               let nextCursor;
               if (
                 cue.params.type === 'group' &&
                 cue.params.mode.type === 'startFirst' &&
                 cue.params.mode.enter
               ) {
-                nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+                nextCursor =
+                  cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
               } else {
                 nextCursor = showModel.getNextCueById(uiState.playbackCursor);
               }
@@ -282,20 +286,37 @@ onUnmounted(() => {
 });
 
 if (api.host) {
-  useHotkey('$mod+O', (e) => {
-    e.preventDefault();
-    api.host?.fileOpen();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.open,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileOpen();
+    },
+  );
 
-  useHotkey('$mod+S', (e) => {
-    e.preventDefault();
-    api.host?.fileSave();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.save,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileSave();
+    },
+  );
 
-  useHotkey('$mod+Shift+A', (e) => {
-    e.preventDefault();
-    api.host?.fileSaveAs();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.saveAs,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileSaveAs();
+    },
+  );
+
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.exportToFolder,
+    (e) => {
+      e.preventDefault();
+      api.host?.exportToFolder();
+    },
+  );
 }
 
 useHotkey(
@@ -428,12 +449,15 @@ useHotkey(
   },
 );
 
-useHotkey('$mod+R', (e) => {
-  e.preventDefault();
-  if (uiState.mode === 'edit') {
-    uiState.isRenumberCueDialogOpen = true;
-  }
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.renumberCues,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode === 'edit') {
+      uiState.isRenumberCueDialogOpen = true;
+    }
+  },
+);
 </script>
 
 <template>

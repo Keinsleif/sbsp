@@ -54,11 +54,16 @@ watch(
 );
 
 watch(
-  () => uiSettings.settings.appearance,
-  (newSettings, oldSettings) => {
-    if (newSettings.language !== oldSettings.language) {
-      setLanguage(newSettings.language);
-    }
+  () => uiSettings.settings.appearance.language,
+  (newLanguage) => {
+    setLanguage(newLanguage);
+  },
+);
+
+watch(
+  () => uiSettings.settings.hotkey,
+  (newSettings) => {
+    windowMenu?.updateHotkey(newSettings);
   },
 );
 

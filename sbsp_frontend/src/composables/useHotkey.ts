@@ -4,7 +4,10 @@
 import { toValue, watchEffect, type MaybeRefOrGetter } from 'vue';
 import { tinykeys } from 'tinykeys';
 import { isUserTyping } from '@/utils';
+import { useApi } from '@/api';
 
+export const MOD_KEY = useApi().isMacOs() ? 'Cmd' : 'Ctrl';
+export const MOD_KEY_DISPLAY = useApi().isMacOs() ? '⌘' : 'Ctrl';
 export type HotkeyListener = (event: KeyboardEvent) => void;
 
 const normalize = (key: string) => key.trim().replace('Ctrl', '$mod').replace('Cmd', '$mod');
