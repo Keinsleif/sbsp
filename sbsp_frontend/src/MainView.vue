@@ -195,21 +195,21 @@ useBackendEvent((event) => {
               summary: t('notification.audioOutputFallback.both.summary'),
               detail: t('notification.audioOutputFallback.both.detail'),
               life: 3000,
-            })
+            });
           } else if (event.param.error.device) {
             toast.add({
               severity: 'error',
               summary: t('notification.audioOutputFallback.device.summary'),
               detail: t('notification.audioOutputFallback.device.detail'),
               life: 3000,
-            })
+            });
           } else if (event.param.error.config) {
             toast.add({
               severity: 'error',
               summary: t('notification.audioOutputFallback.config.summary'),
               detail: t('notification.audioOutputFallback.config.detail'),
               life: 3000,
-            })
+            });
           }
           break;
         case 'custom':

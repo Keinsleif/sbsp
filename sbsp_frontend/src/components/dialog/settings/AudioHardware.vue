@@ -38,7 +38,10 @@ const devices = computed(() => {
 });
 const deviceId = computed({
   get() {
-    if (rawSettings.value.deviceId != null && devices.value.find((d) => d.value === rawSettings.value.deviceId) == null) {
+    if (
+      rawSettings.value.deviceId != null &&
+      devices.value.find((d) => d.value === rawSettings.value.deviceId) == null
+    ) {
       return null;
     }
     return rawSettings.value.deviceId;
@@ -46,7 +49,7 @@ const deviceId = computed({
   set(value) {
     rawSettings.value.deviceId = value;
   },
-})
+});
 
 const channelCounts = computed(() => {
   const supportedHW = supportedHardware.value;
@@ -80,8 +83,7 @@ const sampleRates = computed(() => {
     const id = deviceId.value || supportedHW.default;
     const device = supportedHW.devices[id];
     if (device != null) {
-      const channels =
-        channelCount.value || device.defaultChannelCount;
+      const channels = channelCount.value || device.defaultChannelCount;
       let sampleRates: { name: string; value: number | null }[] = [
         { name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null },
       ];
@@ -104,7 +106,7 @@ const sampleRate = computed({
   set(value) {
     rawSettings.value.sampleRate = value;
   },
-})
+});
 
 const bufferSizes = computed(() => {
   const supportedHW = supportedHardware.value;
@@ -112,8 +114,7 @@ const bufferSizes = computed(() => {
     const id = deviceId.value || supportedHW.default;
     const device = supportedHW.devices[id];
     if (device != null) {
-      const channels =
-        channelCount.value || device.defaultChannelCount;
+      const channels = channelCount.value || device.defaultChannelCount;
       let bufferSizes: { name: string; value: number | null }[] = [
         { name: `${t('general.default')}`, value: null },
       ];
@@ -145,16 +146,32 @@ const fallbackInfo = computed(() => {
   };
   const settings = rawSettings.value;
 
-  if (devices.value.length !== 0 && settings.deviceId != null && devices.value.find((d) => d.value === settings.deviceId) == null) {
+  if (
+    devices.value.length !== 0 &&
+    settings.deviceId != null &&
+    devices.value.find((d) => d.value === settings.deviceId) == null
+  ) {
     info.device = true;
   }
-  if (channelCounts.value.length !== 0 && settings.channelCount != null && channelCounts.value.find((c) => c.value === settings.channelCount) == null) {
+  if (
+    channelCounts.value.length !== 0 &&
+    settings.channelCount != null &&
+    channelCounts.value.find((c) => c.value === settings.channelCount) == null
+  ) {
     info.config = true;
   }
-  if (sampleRates.value.length !== 0 && settings.sampleRate != null && sampleRates.value.find((s) => s.value === settings.sampleRate) == null) {
+  if (
+    sampleRates.value.length !== 0 &&
+    settings.sampleRate != null &&
+    sampleRates.value.find((s) => s.value === settings.sampleRate) == null
+  ) {
     info.config = true;
   }
-  if (bufferSizes.value.length !== 0 && settings.bufferSize != null && bufferSizes.value.find((b) => b.value === settings.bufferSize) == null) {
+  if (
+    bufferSizes.value.length !== 0 &&
+    settings.bufferSize != null &&
+    bufferSizes.value.find((b) => b.value === settings.bufferSize) == null
+  ) {
     info.config = true;
   }
 
@@ -177,13 +194,29 @@ const fallbackInfo = computed(() => {
       {{ t('dialog.settings.global.audioHardware.warning') }}
     </Message>
   </div>
-  <h2>{{ t('dialog.settings.global.audioHardware.device') }} <path-icon v-show="fallbackInfo.device" class="text-orange-500" :icon="mdiAlert" :title="t('dialog.settings.global.audioHardware.deviceIdFallbackTitle')" /></h2>
+  <h2>
+    {{ t('dialog.settings.global.audioHardware.device') }}
+    <path-icon
+      v-show="fallbackInfo.device"
+      class="text-orange-500"
+      :icon="mdiAlert"
+      :title="t('dialog.settings.global.audioHardware.deviceIdFallbackTitle')"
+    />
+  </h2>
   <select-wrapper
     v-model="deviceId"
     :label="t('dialog.settings.global.audioHardware.device')"
     :items="devices"
   />
-  <h2>{{ t('dialog.settings.global.audioHardware.deviceConfig') }} <path-icon v-show="fallbackInfo.config" class="text-orange-500" :icon="mdiAlert" :title="t('dialog.settings.global.audioHardware.configFallbackTitle')" /></h2>
+  <h2>
+    {{ t('dialog.settings.global.audioHardware.deviceConfig') }}
+    <path-icon
+      v-show="fallbackInfo.config"
+      class="text-orange-500"
+      :icon="mdiAlert"
+      :title="t('dialog.settings.global.audioHardware.configFallbackTitle')"
+    />
+  </h2>
   <select-wrapper
     v-model="channelCount"
     :label="t('dialog.settings.global.audioHardware.channelCount')"
