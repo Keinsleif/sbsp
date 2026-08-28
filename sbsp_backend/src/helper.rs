@@ -85,10 +85,11 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
                 entry.0.insert(config.max_sample_rate());
             }
             if !configs.is_empty() {
+                let name = format!("{} {}", description.name(), description.driver().map(|d| format!("({})", d)).unwrap_or("".to_string()));
                 hardwares.insert(
                     id.to_string(),
                     DeviceInformation {
-                        name: description.name().to_string(),
+                        name,
                         supported_configs: configs
                             .into_iter()
                             .map(
