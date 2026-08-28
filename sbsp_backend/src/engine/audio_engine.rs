@@ -331,7 +331,7 @@ impl AudioEngine {
                 builder = builder
                     .with_config(&config)
                     .with_sample_format(SampleFormat::F32);
-            } else {
+            } else if settings.channel_count.is_some() || settings.sample_rate.is_some() || settings.buffer_size.is_some() {
                 fallback_info.config = true;
             }
             return Ok((builder, fallback_info));
