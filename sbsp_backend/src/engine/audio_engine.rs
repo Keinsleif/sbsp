@@ -239,11 +239,12 @@ impl AudioEngine {
                     {
                         continue;
                     }
-                    if let Some(buffer_size) = settings.buffer_size
-                        && let SupportedBufferSize::Range { min, max } = config.buffer_size()
-                        && (buffer_size < *min || buffer_size > *max)
-                    {
-                        continue;
+                    if let Some(buffer_size) = settings.buffer_size {
+                        match config.buffer_size() {
+                            SupportedBufferSize::Range { min, max } if (buffer_size < *min || buffer_size > *max) => continue,
+                            SupportedBufferSize::Range { .. } => {}
+                            SupportedBufferSize::Unknown => continue,
+                        }
                     }
                     
                     if let Some(sample_rate) = target_sample_rate
