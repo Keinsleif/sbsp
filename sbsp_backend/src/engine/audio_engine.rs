@@ -14,7 +14,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, DeviceTrait, Source, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -66,6 +66,17 @@ impl AudioOutput {
     }
 }
 
+struct OutputFallbackInfo {
+    device: bool,
+    config: bool,
+}
+
+impl OutputFallbackInfo {
+    fn is_fallbacked(&self) -> bool {
+        self.device || self.config
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 struct LastStatus {
     state: AudioPlaybackState,
@@ -101,7 +112,11 @@ impl AudioEngine {
     ) -> Result<Self> {
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let builder = Self::get_builder(&backend_settings)?;
+        let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
+        if fallback_info.is_fallbacked()
+            && let Err(e) = event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })) {
+                log::error!("Failed to send audio output fallback event. e={}", e);
+            }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -144,7 +159,11 @@ impl AudioEngine {
         let shared_level = SharedLevel::default();
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let builder = Self::get_builder(&backend_settings)?;
+        let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
+        if fallback_info.is_fallbacked()
+            && let Err(e) = event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })) {
+                log::error!("Failed to send audio output fallback event. e={}", e);
+            }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -183,11 +202,15 @@ impl AudioEngine {
         ))
     }
 
-    fn rebuild_output(&mut self, backend: &BackendAudioSettings) -> Result<()> {
+    async fn rebuild_output(&mut self, backend: &BackendAudioSettings) -> Result<()> {
         log::debug!("Rebuilding Audio Output...");
         self.output = None;
         let is_mono = self.is_mono.clone();
-        let builder = Self::get_builder(backend)?;
+        let (builder, fallback_info) = Self::get_builder(backend)?;
+        if fallback_info.is_fallbacked()
+            && let Err(e) = self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })).await {
+                log::error!("Failed to send audio output fallback event. e={}", e);
+            }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -218,8 +241,25 @@ impl AudioEngine {
         Ok(())
     }
 
-    fn get_builder(settings: &BackendAudioSettings) -> Result<DeviceSinkBuilder> {
-        if let Ok(device) = Self::get_device(&settings.device_id) {
+    fn get_builder(settings: &BackendAudioSettings) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
+        let mut fallback_info = OutputFallbackInfo { device: false, config: false };
+        let device_result = if let Some(device_id) = &settings.device_id
+            && let Ok(id) = DeviceId::from_str(device_id)
+            && let Ok(host) = rodio::cpal::host_from_id(id.0)
+            && let Some(device) = host.device_by_id(&id)
+            && device.supports_output()
+        {
+            Ok(device)
+        } else {
+            let host = rodio::cpal::default_host();
+            if settings.device_id.is_some() {
+                fallback_info.device = true;
+            }
+            host.default_output_device()
+                .ok_or(anyhow::anyhow!("No default device found."))
+        };
+
+        if let Ok(device) = device_result {
             let mut matched_config = None;
 
             let default_sample_rate = device
@@ -262,25 +302,12 @@ impl AudioEngine {
                 }
                 
                 builder = builder.with_config(&config).with_sample_format(SampleFormat::F32);
+            } else {
+                fallback_info.config = true;
             }
-            return Ok(builder);
+            return Ok((builder, fallback_info));
         }
         Err(anyhow::anyhow!("Failed to create DeviceSinkBuilder."))
-    }
-
-    fn get_device(device_id: &Option<String>) -> Result<Device> {
-        if let Some(device_id) = device_id
-            && let Ok(id) = DeviceId::from_str(device_id)
-            && let Ok(host) = rodio::cpal::host_from_id(id.0)
-            && let Some(device) = host.device_by_id(&id)
-            && device.supports_output()
-        {
-            Ok(device)
-        } else {
-            let host = rodio::cpal::default_host();
-            host.default_output_device()
-                .ok_or(anyhow::anyhow!("No default device found."))
-        }
     }
 
     pub async fn run(mut self) {
@@ -292,7 +319,7 @@ impl AudioEngine {
                 Ok(_) = self.backend_settings_rx.changed() => {
                     let settings = self.backend_settings_rx.borrow().audio.clone();
                     if settings != self.backend_settings
-                    && let Err(e) = self.rebuild_output(&settings) {
+                    && let Err(e) = self.rebuild_output(&settings).await {
                         log::error!("Failed to rebuild output. e={}", e);
                     }
                 }

@@ -424,7 +424,21 @@
     "failedToStopServer": "サーバーの停止に失敗しました",
     "failedToLoadLicense": "ライセンスの読み込みに失敗しました",
     "failedToAddCue": "キューの追加に失敗しました",
-    "invalidFileType": "ドロップされたファイルはサポートされていません"
+    "invalidFileType": "ドロップされたファイルはサポートされていません",
+    "audioOutputFallback": {
+      "both": {
+        "detail": "指定されたオーディオ設定の適用に失敗しました。デフォルト設定を適用します。",
+        "summary": "オーディオ設定の適用に失敗しました"
+      },
+      "config": {
+        "detail": "指定されたデバイス設定の適用に失敗しました。デフォルト設定を適用します。",
+        "summary": "デバイス設定の適用に失敗しました"
+      },
+      "device": {
+        "detail": "指定された音声デバイスの適用に失敗しました。デフォルトデバイスを使用します。",
+        "summary": "音声デバイスの適用に失敗しました"
+      }
+    }
   },
   "view": {
     "connect": {

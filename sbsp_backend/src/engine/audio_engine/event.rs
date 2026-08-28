@@ -54,22 +54,8 @@ pub enum AudioEngineEvent {
         instance_id: Uuid,
         error: String,
     },
-}
-
-impl AudioEngineEvent {
-    pub fn id(&self) -> Uuid {
-        match self {
-            Self::Loaded { instance_id, .. } => *instance_id,
-            Self::Started { instance_id, .. } => *instance_id,
-            Self::Progress { instance_id, .. } => *instance_id,
-            Self::Paused { instance_id, .. } => *instance_id,
-            Self::Resumed { instance_id } => *instance_id,
-            Self::Seeked { instance_id, .. } => *instance_id,
-            Self::Stopping { instance_id, .. } => *instance_id,
-            Self::Stopped { instance_id } => *instance_id,
-            Self::Completed { instance_id } => *instance_id,
-            Self::StateParamUpdated { instance_id, .. } => *instance_id,
-            Self::Error { instance_id, .. } => *instance_id,
-        }
-    }
+    AudioOutputFallback {
+        device: bool,
+        config: bool,
+    },
 }
