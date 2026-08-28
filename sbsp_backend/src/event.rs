@@ -150,10 +150,7 @@ pub enum BackendError {
     LoadFromFile { path: PathBuf, message: String },
     ExportToFolder { path: PathBuf, message: String },
     CueEdit { message: String },
-    AudioOutputFallback {
-        device: bool,
-        config: bool,
-    },
+    AudioOutputFallback { device: bool, config: bool },
     Custom { id: usize, message: String },
 }
 
@@ -165,10 +162,14 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
         use crate::executor::ExecutorEvent;
 
         if let ExecutorEvent::AudioOutputFallback { device, config } = value {
-            Ok(BackendEvent::OperationFailed { error: BackendError::AudioOutputFallback { device, config } })
+            Ok(BackendEvent::OperationFailed {
+                error: BackendError::AudioOutputFallback { device, config },
+            })
         } else {
             let status_param = match value {
-                ExecutorEvent::Triggered { cue_id } => Some(CueStatusEventParam::Triggered { cue_id }),
+                ExecutorEvent::Triggered { cue_id } => {
+                    Some(CueStatusEventParam::Triggered { cue_id })
+                }
                 ExecutorEvent::Loaded {
                     cue_id,
                     position,
@@ -194,7 +195,9 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
                 } => Some(CueStatusEventParam::Paused { cue_id, position }),
                 ExecutorEvent::Resumed { cue_id } => Some(CueStatusEventParam::Resumed { cue_id }),
                 ExecutorEvent::Stopped { cue_id } => Some(CueStatusEventParam::Stopped { cue_id }),
-                ExecutorEvent::Completed { cue_id } => Some(CueStatusEventParam::Completed { cue_id }),
+                ExecutorEvent::Completed { cue_id } => {
+                    Some(CueStatusEventParam::Completed { cue_id })
+                }
                 ExecutorEvent::Progress { .. } => None,
                 ExecutorEvent::Seeked { cue_id, position } => {
                     Some(CueStatusEventParam::Seeked { cue_id, position })

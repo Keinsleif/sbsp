@@ -49,7 +49,7 @@ impl FromStr for Permissions {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut perms = Self::empty();
-        
+
         for item in s.split(',') {
             match item.trim().to_lowercase().as_str() {
                 "read" | "r" => perms |= Self::READ,
@@ -64,7 +64,7 @@ impl FromStr for Permissions {
                 }
             }
         }
-        
+
         if perms.is_empty() {
             return Err("No permissions are specified".to_string());
         }
@@ -86,9 +86,9 @@ impl FromStr for PermissionInfo {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (password, perm_str) = s
-            .split_once(':')
-            .ok_or_else(|| "Format error: permission must be in '<password>:<permissions>' format".to_string())?;
+        let (password, perm_str) = s.split_once(':').ok_or_else(|| {
+            "Format error: permission must be in '<password>:<permissions>' format".to_string()
+        })?;
 
         let permission = perm_str.parse::<Permissions>()?;
 

@@ -1331,10 +1331,11 @@ impl Executor {
     async fn handle_engine_event(&mut self, event: EngineEvent) -> Result<(), anyhow::Error> {
         match event {
             EngineEvent::Audio(audio_event) => {
-
                 let playback_event = match audio_event {
                     AudioEngineEvent::Loaded {
-                        instance_id, position, duration
+                        instance_id,
+                        position,
+                        duration,
                     } => ExecutorEvent::Loaded {
                         cue_id: instance_id,
                         position,
@@ -1352,7 +1353,9 @@ impl Executor {
                         initial_params: StateParam::Audio(initial_params),
                     },
                     AudioEngineEvent::Progress {
-                        instance_id, position, duration
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         let event = ExecutorEvent::Progress {
                             cue_id: instance_id,
@@ -1365,7 +1368,9 @@ impl Executor {
                         return Ok(());
                     }
                     AudioEngineEvent::Paused {
-                        instance_id, position, duration
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         self.active_instances
                             .entry(instance_id)
@@ -1380,13 +1385,21 @@ impl Executor {
                         self.active_instances
                             .entry(instance_id)
                             .and_modify(|instance| instance.is_paused = false);
-                        ExecutorEvent::Resumed { cue_id: instance_id }
+                        ExecutorEvent::Resumed {
+                            cue_id: instance_id,
+                        }
                     }
-                    AudioEngineEvent::Seeked { instance_id, position } => {
-                        ExecutorEvent::Seeked { cue_id: instance_id, position }
-                    }
+                    AudioEngineEvent::Seeked {
+                        instance_id,
+                        position,
+                    } => ExecutorEvent::Seeked {
+                        cue_id: instance_id,
+                        position,
+                    },
                     AudioEngineEvent::Stopping {
-                        instance_id, position, duration
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         let event = ExecutorEvent::Stopping {
                             cue_id: instance_id,
@@ -1413,12 +1426,13 @@ impl Executor {
                         self.active_instances.remove(&instance_id);
                         return self.emit_completed(instance_id).await;
                     }
-                    AudioEngineEvent::StateParamUpdated { instance_id, params } => {
-                        ExecutorEvent::StateParamUpdated {
-                            cue_id: instance_id,
-                            params: StateParam::Audio(params),
-                        }
-                    }
+                    AudioEngineEvent::StateParamUpdated {
+                        instance_id,
+                        params,
+                    } => ExecutorEvent::StateParamUpdated {
+                        cue_id: instance_id,
+                        params: StateParam::Audio(params),
+                    },
                     AudioEngineEvent::Error { instance_id, error } => {
                         self.active_instances.remove(&instance_id);
                         return self.emit_error(instance_id, error).await;

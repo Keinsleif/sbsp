@@ -14,7 +14,11 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, DeviceTrait, Source, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, DeviceTrait, Source,
+    cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
+    mixer::Mixer,
+    source::Zero,
+    stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -114,9 +118,14 @@ impl AudioEngine {
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
         let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
-            && let Err(e) = event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })) {
-                log::error!("Failed to send audio output fallback event. e={}", e);
-            }
+            && let Err(e) =
+                event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
+                    device: fallback_info.device,
+                    config: fallback_info.config,
+                }))
+        {
+            log::error!("Failed to send audio output fallback event. e={}", e);
+        }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -161,9 +170,14 @@ impl AudioEngine {
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
         let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
-            && let Err(e) = event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })) {
-                log::error!("Failed to send audio output fallback event. e={}", e);
-            }
+            && let Err(e) =
+                event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
+                    device: fallback_info.device,
+                    config: fallback_info.config,
+                }))
+        {
+            log::error!("Failed to send audio output fallback event. e={}", e);
+        }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -208,9 +222,16 @@ impl AudioEngine {
         let is_mono = self.is_mono.clone();
         let (builder, fallback_info) = Self::get_builder(backend)?;
         if fallback_info.is_fallbacked()
-            && let Err(e) = self.event_tx.send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback { device: fallback_info.device, config: fallback_info.config })).await {
-                log::error!("Failed to send audio output fallback event. e={}", e);
-            }
+            && let Err(e) = self
+                .event_tx
+                .send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
+                    device: fallback_info.device,
+                    config: fallback_info.config,
+                }))
+                .await
+        {
+            log::error!("Failed to send audio output fallback event. e={}", e);
+        }
         let mut sink = builder.open_stream()?;
         sink.log_on_drop(false);
         let (channel_count, sample_rate) = {
@@ -241,8 +262,13 @@ impl AudioEngine {
         Ok(())
     }
 
-    fn get_builder(settings: &BackendAudioSettings) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
-        let mut fallback_info = OutputFallbackInfo { device: false, config: false };
+    fn get_builder(
+        settings: &BackendAudioSettings,
+    ) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
+        let mut fallback_info = OutputFallbackInfo {
+            device: false,
+            config: false,
+        };
         let device_result = if let Some(device_id) = &settings.device_id
             && let Ok(id) = DeviceId::from_str(device_id)
             && let Ok(host) = rodio::cpal::host_from_id(id.0)
@@ -262,10 +288,7 @@ impl AudioEngine {
         if let Ok(device) = device_result {
             let mut matched_config = None;
 
-            let default_sample_rate = device
-                .default_output_config()
-                .ok()
-                .map(|c| c.sample_rate());
+            let default_sample_rate = device.default_output_config().ok().map(|c| c.sample_rate());
 
             let target_sample_rate = settings.sample_rate.or(default_sample_rate);
 
@@ -281,12 +304,16 @@ impl AudioEngine {
                     }
                     if let Some(buffer_size) = settings.buffer_size {
                         match config.buffer_size() {
-                            SupportedBufferSize::Range { min, max } if (buffer_size < *min || buffer_size > *max) => continue,
+                            SupportedBufferSize::Range { min, max }
+                                if (buffer_size < *min || buffer_size > *max) =>
+                            {
+                                continue;
+                            }
                             SupportedBufferSize::Range { .. } => {}
                             SupportedBufferSize::Unknown => continue,
                         }
                     }
-                    
+
                     if let Some(sample_rate) = target_sample_rate
                         && let Some(config) = config.try_with_sample_rate(sample_rate)
                     {
@@ -300,8 +327,10 @@ impl AudioEngine {
                 if let Some(buffer_size) = settings.buffer_size {
                     config.buffer_size = BufferSize::Fixed(buffer_size);
                 }
-                
-                builder = builder.with_config(&config).with_sample_format(SampleFormat::F32);
+
+                builder = builder
+                    .with_config(&config)
+                    .with_sample_format(SampleFormat::F32);
             } else {
                 fallback_info.config = true;
             }
