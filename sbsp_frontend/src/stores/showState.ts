@@ -62,6 +62,8 @@ export const useShowState = defineStore('showState', () => {
     const lastSyncedAt = performance.now();
     console.debug(`${data.type.toUpperCase()}: ${data.cueId}`);
     switch (data.type) {
+      case 'triggered':
+        break;
       case 'loaded': {
         if (syncedData.value[data.cueId] == null) {
           syncedData.value[data.cueId] = {
