@@ -154,7 +154,7 @@ const fallbackInfo = computed(() => {
   if (sampleRates.value.length !== 0 && settings.sampleRate != null && sampleRates.value.find((s) => s.value === settings.sampleRate) == null) {
     info.config = true;
   }
-  if (bufferSizes.value.length !== 0 && settings.bufferSize != null && sampleRates.value.find((b) => b.value === settings.bufferSize) == null) {
+  if (bufferSizes.value.length !== 0 && settings.bufferSize != null && bufferSizes.value.find((b) => b.value === settings.bufferSize) == null) {
     info.config = true;
   }
 
