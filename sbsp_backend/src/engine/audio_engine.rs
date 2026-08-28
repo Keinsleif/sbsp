@@ -260,7 +260,8 @@ impl AudioEngine {
                 if let Some(buffer_size) = settings.buffer_size {
                     config.buffer_size = BufferSize::Fixed(buffer_size);
                 }
-                builder = builder.with_config(&config);
+                
+                builder = builder.with_config(&config).with_sample_format(SampleFormat::F32);
             }
             return Ok(builder);
         }
