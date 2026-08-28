@@ -16,7 +16,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "backend")]
 const FRAME_SIZES: &[u32] = &[32, 64, 128, 256, 512, 1024, 2048, 4096];
 #[cfg(feature = "backend")]
-const SUPPORTED_SAMPLE_RATE: u32 = 192000;
+const COMMON_SAMPLE_RATES: &[u32] = &[
+    8000, 11025, 16000, 22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000,
+];
 
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug)]
@@ -74,15 +76,18 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
         {
             let mut configs = IndexMap::new();
             for config in supported_confs {
-                if config.sample_format() != SampleFormat::F32
-                    || config.max_sample_rate() > SUPPORTED_SAMPLE_RATE
-                {
+                if config.sample_format() != SampleFormat::F32 {
                     continue;
                 }
                 let entry = configs
                     .entry(config.channels())
                     .or_insert((BTreeSet::new(), *(config.buffer_size())));
-                entry.0.insert(config.max_sample_rate());
+
+                for &rate in COMMON_SAMPLE_RATES {
+                    if rate >= config.min_sample_rate() && rate <= config.max_sample_rate() {
+                        entry.0.insert(rate);
+                    }
+                }
             }
             if !configs.is_empty() {
                 let name = format!(
