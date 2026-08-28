@@ -167,7 +167,10 @@
           "sampleRate": "Sample Rate",
           "bufferSize": "Buffer Size",
           "warning": "Applying changes will restart the engine and kill all audio cues.",
-          "saveWarning": "Stop playback and apply settings?\nAll active audio cues will be terminated."
+          "saveWarning": "Stop playback and apply settings?\nAll active audio cues will be terminated.",
+          "deviceIdFallbackTitle": "The specified audio device is unavailable.",
+          "deviceConfig": "Device configuration",
+          "configFallbackTitle": "The specified device configuration is unavailable."
         }
       },
       "preset": {

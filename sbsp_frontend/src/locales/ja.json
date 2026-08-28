@@ -167,7 +167,10 @@
           "saveWarning": "実行中の音声を停止して設定を適用しますか？\nこの操作により、再生中のすべてのオーディオが停止します。",
           "bufferSize": "バッファサイズ",
           "device": "出力デバイス",
-          "sampleRate": "サンプリングレート"
+          "sampleRate": "サンプリングレート",
+          "configFallbackTitle": "指定された設定が利用できませんでした",
+          "deviceConfig": "デバイス設定",
+          "deviceIdFallbackTitle": "指定されたデバイスが利用できませんでした"
         }
       },
       "preset": {
