@@ -14,11 +14,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source,
-    cpal::{DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
-    mixer::Mixer,
-    source::Zero,
-    stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, Device, DeviceTrait, Source, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -226,31 +222,43 @@ impl AudioEngine {
         if let Ok(device) = Self::get_device(&settings.device_id) {
             let mut matched_config = None;
 
+            let default_sample_rate = device
+                .default_output_config()
+                .ok()
+                .map(|c| c.sample_rate());
+
+            let target_sample_rate = settings.sample_rate.or(default_sample_rate);
+
             if let Ok(configs) = device.supported_output_configs() {
                 for config in configs {
                     if config.sample_format() != SampleFormat::F32 {
                         continue;
                     }
                     if let Some(channels) = settings.channel_count
-                        && config.channels() < channels
+                        && config.channels() != channels
                     {
                         continue;
                     }
                     if let Some(buffer_size) = settings.buffer_size
                         && let SupportedBufferSize::Range { min, max } = config.buffer_size()
-                        && (buffer_size <= *min || buffer_size >= *max)
+                        && (buffer_size < *min || buffer_size > *max)
                     {
                         continue;
                     }
-                    if let Some(sample_rate) = settings.sample_rate
+                    
+                    if let Some(sample_rate) = target_sample_rate
                         && let Some(config) = config.try_with_sample_rate(sample_rate)
                     {
                         matched_config = Some(config.config());
+                        break;
                     }
                 }
             }
             let mut builder = DeviceSinkBuilder::from_device(device)?;
-            if let Some(config) = matched_config {
+            if let Some(mut config) = matched_config {
+                if let Some(buffer_size) = settings.buffer_size {
+                    config.buffer_size = BufferSize::Fixed(buffer_size);
+                }
                 builder = builder.with_config(&config);
             }
             return Ok(builder);
