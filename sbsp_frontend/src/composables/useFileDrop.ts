@@ -47,28 +47,29 @@ export function useOsFileDrop(options: UseOsFileDropOptions) {
       getCurrentWebviewWindow()
         .onDragDropEvent((event) => {
           if (disposed) return;
-          const dpr = window.devicePixelRatio || 1;
           const p = event.payload;
-          const x = 'position' in p ? p.position.x / dpr : 0;
-          const y = 'position' in p ? p.position.y / dpr : 0;
-          switch (p.type) {
-            case 'enter':
-            case 'over':
-              options.onOver?.(x, y);
-              break;
-            case 'drop':
-              if (p.paths.length > 0) {
-                options.onDrop(
-                  p.paths.map((path): DroppedFile => ({ kind: 'path', path })),
-                  x,
-                  y,
-                );
-              }
-              options.onLeave?.();
-              break;
-            case 'leave':
-              options.onLeave?.();
-              break;
+          if (p.type === 'leave') {
+            options.onLeave?.();
+          } else {
+            const dpr = window.devicePixelRatio || 1;
+            const x = p.position.x / dpr; // window offset is already applied.
+            const y = p.position.y / dpr;
+            switch (p.type) {
+              case 'enter':
+              case 'over':
+                options.onOver?.(x, y);
+                break;
+              case 'drop':
+                if (p.paths.length > 0) {
+                  options.onDrop(
+                    p.paths.map((path): DroppedFile => ({ kind: 'path', path })),
+                    x,
+                    y,
+                  );
+                }
+                options.onLeave?.();
+                break;
+            }
           }
         })
         .then((unlistenFn) => {
