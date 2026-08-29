@@ -469,22 +469,30 @@ useOsFileDrop({
     updateDragOverFromPoint(x, y);
     const target = resolveDropTarget(dragOverIndex.value);
     if (target == null) return;
+    const acceptedPaths = new Set<string>();
+    let invalidFileExists = false;
     for (const f of files) {
       if (f.kind === 'path') {
         const ext = getExtension(f.path);
         if (AUDIO_EXTENSIONS.includes(ext)) {
-          showModel.addAudioCueWithPath([f.path], target);
+          acceptedPaths.add(f.path);
         } else {
-          toast.add({
-            severity: 'error',
-            summary: t('notification.failedToAddCue'),
-            detail: t('notification.invalidFileType'),
-            life: 3000,
-          });
+          invalidFileExists = true;
         }
       } else {
         // TODO: implement file upload feature
       }
+    }
+    if (acceptedPaths.size > 0) {
+      showModel.addAudioCueWithPath(Array.from(acceptedPaths), target);
+    }
+    if (invalidFileExists) {
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToAddCue'),
+        detail: t('notification.invalidFileType'),
+        life: 3000,
+      });
     }
     dragOverIndex.value = null;
   },
