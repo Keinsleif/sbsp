@@ -508,6 +508,7 @@ impl CueController {
                 }
             }
             ExecutorEvent::PreWaitCompleted { .. } => {} // skip to keep active cue because cue will be started. but event is emitted for client.
+            ExecutorEvent::AudioOutputFallback { .. } => {}
         }
 
         if state_changed && self.state_tx.send(show_state).is_err() {

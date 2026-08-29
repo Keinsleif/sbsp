@@ -150,6 +150,7 @@ pub enum BackendError {
     LoadFromFile { path: PathBuf, message: String },
     ExportToFolder { path: PathBuf, message: String },
     CueEdit { message: String },
+    AudioOutputFallback { device: bool, config: bool },
     Custom { id: usize, message: String },
 }
 
@@ -160,65 +161,76 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
     fn try_from(value: ExecutorEvent) -> Result<Self, Self::Error> {
         use crate::executor::ExecutorEvent;
 
-        let status_param = match value {
-            ExecutorEvent::Triggered { cue_id } => Some(CueStatusEventParam::Triggered { cue_id }),
-            ExecutorEvent::Loaded {
-                cue_id,
-                position,
-                duration,
-            } => Some(CueStatusEventParam::Loaded {
-                cue_id,
-                position,
-                duration,
-            }),
-            ExecutorEvent::Started {
-                cue_id,
-                position,
-                duration,
-                initial_params,
-            } => Some(CueStatusEventParam::Started {
-                cue_id,
-                position,
-                duration,
-                params: initial_params,
-            }),
-            ExecutorEvent::Paused {
-                cue_id, position, ..
-            } => Some(CueStatusEventParam::Paused { cue_id, position }),
-            ExecutorEvent::Resumed { cue_id } => Some(CueStatusEventParam::Resumed { cue_id }),
-            ExecutorEvent::Stopped { cue_id } => Some(CueStatusEventParam::Stopped { cue_id }),
-            ExecutorEvent::Completed { cue_id } => Some(CueStatusEventParam::Completed { cue_id }),
-            ExecutorEvent::Progress { .. } => None,
-            ExecutorEvent::Seeked { cue_id, position } => {
-                Some(CueStatusEventParam::Seeked { cue_id, position })
-            }
-            ExecutorEvent::Stopping { cue_id, .. } => {
-                Some(CueStatusEventParam::Stopping { cue_id })
-            }
-            ExecutorEvent::StateParamUpdated { cue_id, params } => {
-                Some(CueStatusEventParam::StateParamUpdated { cue_id, params })
-            }
-            ExecutorEvent::Error { cue_id, error } => {
-                Some(CueStatusEventParam::Error { cue_id, error })
-            }
-            ExecutorEvent::PreWaitStarted { cue_id, duration } => {
-                Some(CueStatusEventParam::PreWaitStarted { cue_id, duration })
-            }
-            ExecutorEvent::PreWaitProgress { .. } => None,
-            ExecutorEvent::PreWaitPaused {
-                cue_id, position, ..
-            } => Some(CueStatusEventParam::PreWaitPaused { cue_id, position }),
-            ExecutorEvent::PreWaitResumed { cue_id } => {
-                Some(CueStatusEventParam::PreWaitResumed { cue_id })
-            }
-            ExecutorEvent::PreWaitCompleted { cue_id } => {
-                Some(CueStatusEventParam::PreWaitCompleted { cue_id })
-            }
-        };
-        if let Some(param) = status_param {
-            Ok(BackendEvent::CueStatus(param))
+        if let ExecutorEvent::AudioOutputFallback { device, config } = value {
+            Ok(BackendEvent::OperationFailed {
+                error: BackendError::AudioOutputFallback { device, config },
+            })
         } else {
-            Err(())
+            let status_param = match value {
+                ExecutorEvent::Triggered { cue_id } => {
+                    Some(CueStatusEventParam::Triggered { cue_id })
+                }
+                ExecutorEvent::Loaded {
+                    cue_id,
+                    position,
+                    duration,
+                } => Some(CueStatusEventParam::Loaded {
+                    cue_id,
+                    position,
+                    duration,
+                }),
+                ExecutorEvent::Started {
+                    cue_id,
+                    position,
+                    duration,
+                    initial_params,
+                } => Some(CueStatusEventParam::Started {
+                    cue_id,
+                    position,
+                    duration,
+                    params: initial_params,
+                }),
+                ExecutorEvent::Paused {
+                    cue_id, position, ..
+                } => Some(CueStatusEventParam::Paused { cue_id, position }),
+                ExecutorEvent::Resumed { cue_id } => Some(CueStatusEventParam::Resumed { cue_id }),
+                ExecutorEvent::Stopped { cue_id } => Some(CueStatusEventParam::Stopped { cue_id }),
+                ExecutorEvent::Completed { cue_id } => {
+                    Some(CueStatusEventParam::Completed { cue_id })
+                }
+                ExecutorEvent::Progress { .. } => None,
+                ExecutorEvent::Seeked { cue_id, position } => {
+                    Some(CueStatusEventParam::Seeked { cue_id, position })
+                }
+                ExecutorEvent::Stopping { cue_id, .. } => {
+                    Some(CueStatusEventParam::Stopping { cue_id })
+                }
+                ExecutorEvent::StateParamUpdated { cue_id, params } => {
+                    Some(CueStatusEventParam::StateParamUpdated { cue_id, params })
+                }
+                ExecutorEvent::Error { cue_id, error } => {
+                    Some(CueStatusEventParam::Error { cue_id, error })
+                }
+                ExecutorEvent::PreWaitStarted { cue_id, duration } => {
+                    Some(CueStatusEventParam::PreWaitStarted { cue_id, duration })
+                }
+                ExecutorEvent::PreWaitProgress { .. } => None,
+                ExecutorEvent::PreWaitPaused {
+                    cue_id, position, ..
+                } => Some(CueStatusEventParam::PreWaitPaused { cue_id, position }),
+                ExecutorEvent::PreWaitResumed { cue_id } => {
+                    Some(CueStatusEventParam::PreWaitResumed { cue_id })
+                }
+                ExecutorEvent::PreWaitCompleted { cue_id } => {
+                    Some(CueStatusEventParam::PreWaitCompleted { cue_id })
+                }
+                ExecutorEvent::AudioOutputFallback { .. } => None,
+            };
+            if let Some(param) = status_param {
+                Ok(BackendEvent::CueStatus(param))
+            } else {
+                Err(())
+            }
         }
     }
 }

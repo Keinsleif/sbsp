@@ -2,7 +2,9 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{
-    collections::{HashMap, HashSet}, path::{Path, PathBuf}, time::{Duration, Instant},
+    collections::{HashMap, HashSet},
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
 };
 
 use axum::{
@@ -472,18 +474,27 @@ async fn get_dirs(root_dir: PathBuf) -> anyhow::Result<Vec<FileList>> {
         let root_canonical = std::fs::canonicalize(&root_dir)?;
         let mut stack = HashSet::from([root_canonical]);
         get_dirs_recursive(&root_dir, &mut stack)
-    }).await?
+    })
+    .await?
 }
 
-fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::Result<Vec<FileList>> {
+fn get_dirs_recursive(
+    root_dir: &Path,
+    stack: &mut HashSet<PathBuf>,
+) -> anyhow::Result<Vec<FileList>> {
     let entries = std::fs::read_dir(root_dir)?;
     let mut root_list = vec![];
     for entry_result in entries {
         let Ok(entry) = entry_result else { continue };
-        let Ok(metadata) = entry.metadata() else { continue };
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
         let path = entry.path();
 
-        let Some(entry_name) = path.file_name().map(|name| name.to_string_lossy().into_owned()) else {
+        let Some(entry_name) = path
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+        else {
             continue;
         };
         let canonical = match std::fs::canonicalize(&path) {
@@ -503,7 +514,10 @@ fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::
             continue;
         }
         if metadata.is_file() {
-            let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
+            let extension = path
+                .extension()
+                .map(|ext| ext.to_string_lossy().into_owned())
+                .unwrap_or_default();
             root_list.push(FileList::File {
                 name: entry_name.clone(),
                 path: canonical,
@@ -514,7 +528,9 @@ fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::
 
         if let Ok(symlink) = std::fs::read_link(&path) {
             let resolved = if symlink.is_relative() {
-                path.parent().unwrap_or_else(|| Path::new(".")).join(symlink)
+                path.parent()
+                    .unwrap_or_else(|| Path::new("."))
+                    .join(symlink)
             } else {
                 symlink
             };
@@ -533,7 +549,10 @@ fn get_dirs_recursive(root_dir: &Path, stack: &mut HashSet<PathBuf>) -> anyhow::
                     files: file_list,
                 });
             } else {
-                let extension = path.extension().map(|ext| ext.to_string_lossy().into_owned()).unwrap_or_default();
+                let extension = path
+                    .extension()
+                    .map(|ext| ext.to_string_lossy().into_owned())
+                    .unwrap_or_default();
                 root_list.push(FileList::File {
                     name: entry_name.clone(),
                     path: canonical,

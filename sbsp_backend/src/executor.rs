@@ -1331,32 +1331,34 @@ impl Executor {
     async fn handle_engine_event(&mut self, event: EngineEvent) -> Result<(), anyhow::Error> {
         match event {
             EngineEvent::Audio(audio_event) => {
-                let cue_id = audio_event.id();
-
                 let playback_event = match audio_event {
                     AudioEngineEvent::Loaded {
-                        position, duration, ..
+                        instance_id,
+                        position,
+                        duration,
                     } => ExecutorEvent::Loaded {
-                        cue_id,
+                        cue_id: instance_id,
                         position,
                         duration,
                     },
                     AudioEngineEvent::Started {
+                        instance_id,
                         position,
                         duration,
                         initial_params,
-                        ..
                     } => ExecutorEvent::Started {
-                        cue_id,
+                        cue_id: instance_id,
                         position,
                         duration,
                         initial_params: StateParam::Audio(initial_params),
                     },
                     AudioEngineEvent::Progress {
-                        position, duration, ..
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         let event = ExecutorEvent::Progress {
-                            cue_id,
+                            cue_id: instance_id,
                             position,
                             duration,
                         };
@@ -1366,31 +1368,41 @@ impl Executor {
                         return Ok(());
                     }
                     AudioEngineEvent::Paused {
-                        position, duration, ..
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         self.active_instances
-                            .entry(cue_id)
+                            .entry(instance_id)
                             .and_modify(|instance| instance.is_paused = true);
                         ExecutorEvent::Paused {
-                            cue_id,
+                            cue_id: instance_id,
                             position,
                             duration,
                         }
                     }
-                    AudioEngineEvent::Resumed { .. } => {
+                    AudioEngineEvent::Resumed { instance_id } => {
                         self.active_instances
-                            .entry(cue_id)
+                            .entry(instance_id)
                             .and_modify(|instance| instance.is_paused = false);
-                        ExecutorEvent::Resumed { cue_id }
+                        ExecutorEvent::Resumed {
+                            cue_id: instance_id,
+                        }
                     }
-                    AudioEngineEvent::Seeked { position, .. } => {
-                        ExecutorEvent::Seeked { cue_id, position }
-                    }
+                    AudioEngineEvent::Seeked {
+                        instance_id,
+                        position,
+                    } => ExecutorEvent::Seeked {
+                        cue_id: instance_id,
+                        position,
+                    },
                     AudioEngineEvent::Stopping {
-                        position, duration, ..
+                        instance_id,
+                        position,
+                        duration,
                     } => {
                         let event = ExecutorEvent::Stopping {
-                            cue_id,
+                            cue_id: instance_id,
                             position,
                             duration,
                         };
@@ -1399,30 +1411,34 @@ impl Executor {
                         }
                         return Ok(());
                     }
-                    AudioEngineEvent::Stopped { .. } => {
+                    AudioEngineEvent::Stopped { instance_id } => {
                         let as_completed = self
                             .active_instances
-                            .remove(&cue_id)
+                            .remove(&instance_id)
                             .is_some_and(|instance| instance.pending_stop_as_completed);
                         if as_completed {
-                            return self.emit_completed(cue_id).await;
+                            return self.emit_completed(instance_id).await;
                         } else {
-                            return self.emit_stopped(cue_id).await;
+                            return self.emit_stopped(instance_id).await;
                         }
                     }
-                    AudioEngineEvent::Completed { .. } => {
-                        self.active_instances.remove(&cue_id);
-                        return self.emit_completed(cue_id).await;
+                    AudioEngineEvent::Completed { instance_id } => {
+                        self.active_instances.remove(&instance_id);
+                        return self.emit_completed(instance_id).await;
                     }
-                    AudioEngineEvent::StateParamUpdated { params, .. } => {
-                        ExecutorEvent::StateParamUpdated {
-                            cue_id,
-                            params: StateParam::Audio(params),
-                        }
+                    AudioEngineEvent::StateParamUpdated {
+                        instance_id,
+                        params,
+                    } => ExecutorEvent::StateParamUpdated {
+                        cue_id: instance_id,
+                        params: StateParam::Audio(params),
+                    },
+                    AudioEngineEvent::Error { instance_id, error } => {
+                        self.active_instances.remove(&instance_id);
+                        return self.emit_error(instance_id, error).await;
                     }
-                    AudioEngineEvent::Error { error, .. } => {
-                        self.active_instances.remove(&cue_id);
-                        return self.emit_error(cue_id, error).await;
+                    AudioEngineEvent::AudioOutputFallback { device, config } => {
+                        ExecutorEvent::AudioOutputFallback { device, config }
                     }
                 };
 

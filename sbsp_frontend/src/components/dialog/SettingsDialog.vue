@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, onMounted, ref, toRaw, watch } from 'vue';
+import { computed, ref, toRaw, watch } from 'vue';
 import { useShowModel } from '../../stores/showModel';
 import type { ShowSettings } from '../../types/ShowSettings';
 import HotkeyInput from '../input/HotkeyInput.vue';
@@ -13,19 +13,16 @@ import type { GlobalRemoteSettings } from '../../types/GlobalRemoteSettings';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '../../api';
 import TemplateSettings from './settings/TemplateSettings.vue';
-import type { SupportedHardware } from '../../types/SupportedHardware';
 import { useShowState } from '../../stores/showState';
 import { message } from '@tauri-apps/plugin-dialog';
-import type { AudioHardwareSettings } from '../../types/AudioHardwareSettings';
 import Drawer from 'primevue/drawer';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import NumberInput from '../input/NumberInput.vue';
 import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
-import PathIcon from '../display/PathIcon.vue';
-import { mdiAlert } from '@mdi/js';
 import SelectWrapper from '../wrapper/SelectWrapper.vue';
 import Divider from 'primevue/divider';
-import Message from 'primevue/message';
+import AudioHardware from './settings/AudioHardware.vue';
+import type { AudioHardwareSettings } from '@/types/AudioHardwareSettings.ts';
 
 const { t } = useI18n();
 const api = useApi();
@@ -41,7 +38,6 @@ const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalHostSettings | GlobalRemoteSettings;
 }>({ show: structuredClone(toRaw(showModel.settings)), global: uiSettings.clone() });
-const supportedHardware = ref<SupportedHardware | null>(null);
 
 const tabItems = computed(() => [
   { type: 'tab', value: 'preset', label: t('dialog.settings.tab.preset') },
@@ -58,83 +54,6 @@ const tabItems = computed(() => [
   { type: 'tab', value: 'template', label: t('dialog.settings.tab.template') },
   { type: 'tab', value: 'nameFormat', label: t('dialog.settings.tab.nameFormat') },
 ]);
-
-const devices = computed(() => {
-  const supportedHW = supportedHardware.value;
-  if (supportedHW != null) {
-    const devices: { name: string; value: string | null }[] = [
-      { name: t('general.default'), value: null },
-    ];
-    for (const dev in supportedHW.devices) {
-      devices.push({ name: supportedHW.devices[dev]!.name, value: dev });
-    }
-    return devices;
-  }
-  return [];
-});
-const channelCounts = computed(() => {
-  const supportedHW = supportedHardware.value;
-  if ('audio' in editingSettings.value.global && supportedHW != null) {
-    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')} (${device.defaultChannelCount})`, value: null },
-      ];
-      device.supportedConfigs.forEach((fc) => {
-        channels.push({ value: fc.channelCount, name: fc.channelCount.toString() });
-      });
-      return channels;
-    }
-  }
-  return [];
-});
-const sampleRates = computed(() => {
-  const supportedHW = supportedHardware.value;
-  if ('audio' in editingSettings.value.global && supportedHW != null) {
-    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels =
-        editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
-      let sampleRates: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null },
-      ];
-      for (const fc of device.supportedConfigs) {
-        if (fc.channelCount === channels) {
-          sampleRates = sampleRates.concat(
-            fc.sampleRates.map((sr) => ({ value: sr, name: (sr / 1000).toString() + ' kHz' })),
-          );
-        }
-      }
-      return sampleRates;
-    }
-  }
-  return [];
-});
-const bufferSizes = computed(() => {
-  const supportedHW = supportedHardware.value;
-  if ('audio' in editingSettings.value.global && supportedHW != null) {
-    const id = editingSettings.value.global.audio.deviceId || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels =
-        editingSettings.value.global.audio.channelCount || device.defaultChannelCount;
-      let bufferSizes: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')}`, value: null },
-      ];
-      for (const fc of device.supportedConfigs) {
-        if (fc.channelCount === channels) {
-          bufferSizes = bufferSizes.concat(
-            fc.bufferSizes.map((bs) => ({ value: bs, name: bs.toString() + ' Frames' })),
-          );
-        }
-      }
-      return bufferSizes;
-    }
-  }
-  return [];
-});
 
 watch(
   () => showModel.settings,
@@ -163,12 +82,6 @@ watch(isSettingsDialogOpen, (newState) => {
       show: structuredClone(toRaw(showModel.settings)),
       global: uiSettings.clone(),
     };
-  }
-});
-
-onMounted(() => {
-  if (api.host) {
-    api.host.getHardware().then((value) => (supportedHardware.value = value));
   }
 });
 
@@ -419,40 +332,7 @@ const recallQLabPreset = () => {
             v-show="tab === 'audioHardware'"
             class="flex flex-col gap-4 p-4"
           >
-            <div>
-              <Message
-                class="shrink-0"
-                severity="error"
-              >
-                <template #icon="innerProps">
-                  <path-icon
-                    :class="innerProps.class"
-                    :icon="mdiAlert"
-                  />
-                </template>
-                {{ t('dialog.settings.global.audioHardware.warning') }}
-              </Message>
-            </div>
-            <select-wrapper
-              v-model="editingSettings.global.audio.deviceId"
-              :label="t('dialog.settings.global.audioHardware.device')"
-              :items="devices"
-            />
-            <select-wrapper
-              v-model="editingSettings.global.audio.channelCount"
-              :label="t('dialog.settings.global.audioHardware.channelCount')"
-              :items="channelCounts"
-            />
-            <select-wrapper
-              v-model="editingSettings.global.audio.sampleRate"
-              :label="t('dialog.settings.global.audioHardware.sampleRate')"
-              :items="sampleRates"
-            />
-            <select-wrapper
-              v-model="editingSettings.global.audio.bufferSize"
-              :label="t('dialog.settings.global.audioHardware.bufferSize')"
-              :items="bufferSizes"
-            />
+            <AudioHardware v-model="editingSettings.global.audio" />
           </div>
           <div
             v-show="tab === 'hotkey'"

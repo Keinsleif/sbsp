@@ -77,4 +77,8 @@ pub enum ExecutorEvent {
         cue_id: Uuid,
         error: String,
     },
+    AudioOutputFallback {
+        device: bool,
+        config: bool,
+    },
 }
