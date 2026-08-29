@@ -73,12 +73,12 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
             && let Ok(supported_confs) = device.supported_output_configs()
             && let Ok(default_config) = device.default_output_config()
         {
-            let mut configs = IndexMap::new();
+            let mut configs: IndexMap<u16, BTreeMap<u32, BTreeSet<u32>>> = IndexMap::new();
             for config in supported_confs {
                 if config.sample_format() != SampleFormat::F32 {
                     continue;
                 }
-                let entry = configs.entry(config.channels()).or_insert(BTreeMap::new());
+                let entry = configs.entry(config.channels()).or_default();
 
                 for &rate in COMMON_SAMPLE_RATES {
                     if rate >= config.min_sample_rate() && rate <= config.max_sample_rate() {
