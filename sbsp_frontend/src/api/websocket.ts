@@ -485,11 +485,10 @@ export function useWebsocketApi(): IBackendAdapter {
             filepath.text().then((text) => {
               try {
                 const parsed = settingsParser(text)
-                const result = settingsValidator(parsed);
-                if (result.success) {
-                  resolve(result.data);
+                if (parsed.success) {
+                  resolve(parsed.data);
                 } else {
-                  reject(result.errors);
+                  reject(parsed.errors);
                 }
                 // resolve(JSON.parse(text));
               } catch {
