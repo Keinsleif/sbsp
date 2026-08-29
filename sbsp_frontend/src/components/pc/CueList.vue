@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref, toRaw, useTemplateRef } from 'vue';
+import { computed, onUnmounted, ref, toRaw, useTemplateRef } from 'vue';
 import { useShowModel, type FlatCueEntry } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
@@ -569,6 +569,10 @@ const click = (event: MouseEvent, index: number) => {
 //   }
 //   uiState.clearSelected();
 // };
+
+onUnmounted(() => {
+  finishReorder(false);
+});
 </script>
 
 <template>
