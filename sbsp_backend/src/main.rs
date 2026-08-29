@@ -73,11 +73,12 @@ async fn main() -> Result<(), anyhow::Error> {
                 let mut cfg_node = Tree::new(format!("Config #{}", i + 1));
                 cfg_node.push(format!("Channels: {}", config.channel_count));
 
-                let rates: Vec<_> = config.sample_rates.iter().map(|r| r.to_string()).collect();
-                cfg_node.push(format!("Sample Rates: [{}] Hz", rates.join(", ")));
-
-                let buffers: Vec<_> = config.buffer_sizes.iter().map(|b| b.to_string()).collect();
-                cfg_node.push(format!("Buffer Sizes: [{}]", buffers.join(", ")));
+                let mut rates_node = Tree::new("Sample Rates".to_string());
+                for (rate, buffer_sizes) in &config.sample_rates {
+                    let sizes: Vec<_> = buffer_sizes.iter().map(|b| b.to_string()).collect();
+                    rates_node.push(format!("{} Hz -> Buffers: [{}]", rate, sizes.join(", ")));
+                }
+                cfg_node.push(rates_node);
 
                 configs_node.push(cfg_node);
             }
