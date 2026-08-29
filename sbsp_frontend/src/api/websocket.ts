@@ -24,7 +24,7 @@ import type { Permissions } from '../types/Permissions';
 import type { BackendError } from '../types/BackendError';
 import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
-import { settingsParser, settingsValidator } from '../typia';
+import { parseOrDefault, settingsValidator } from '../typia';
 import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
 import { type BackendEventListener } from './interface';
 
@@ -450,13 +450,14 @@ export function useWebsocketApi(): IBackendAdapter {
     getSettings: async function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       const settings = localStorage.getItem(GLOBAL_SETTINGS_STORAGE_KEY);
       if (settings != null) {
-        const parsed = settingsParser(settings);
-        if (parsed.success) {
-          return parsed.data;
+        const parsed = parseOrDefault(settings, DEFAULT_SETTINGS);
+        const validationResult = settingsValidator(parsed);
+        if (validationResult.success) {
+          return validationResult.data;
         } else {
           console.error(
             'Failed to parse settings. Overwriting storage with defaults.',
-            parsed.errors,
+            validationResult.errors,
           );
           localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
           return structuredClone(DEFAULT_SETTINGS);
@@ -483,7 +484,8 @@ export function useWebsocketApi(): IBackendAdapter {
             }
             filepath.text().then((text) => {
               try {
-                const result = settingsValidator(JSON.parse(text));
+                const parsed = parseOrDefault(text, DEFAULT_SETTINGS)
+                const result = settingsValidator(parsed);
                 if (result.success) {
                   resolve(result.data);
                 } else {
