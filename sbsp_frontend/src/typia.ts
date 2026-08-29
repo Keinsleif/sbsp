@@ -2,17 +2,15 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import typia, { type IValidation } from 'typia';
-import type { GlobalHostSettings } from './types/GlobalHostSettings';
 import type { GlobalRemoteSettings } from './types/GlobalRemoteSettings';
 
-export type GlobalSettings = GlobalHostSettings | GlobalRemoteSettings;
 type PlainObject = Record<string, unknown>;
 
-export const settingsValidator: (input: unknown) => IValidation<GlobalSettings> = typia.createValidate<GlobalSettings>();
+export const settingsValidator: (input: unknown) => IValidation<GlobalRemoteSettings> = typia.createValidate<GlobalRemoteSettings>();
 
 const settingsPartialValidator: (
   input: unknown,
-) => IValidation<Partial<GlobalSettings>> = typia.createValidate<Partial<GlobalSettings>>();
+) => IValidation<Partial<GlobalRemoteSettings>> = typia.createValidate<Partial<GlobalRemoteSettings>>();
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -82,7 +80,7 @@ function setDeepValue(target: Record<string, unknown>, tokens: string[], value: 
   if (last) current[last] = value;
 }
 
-export function parseOrDefault(text: string, defaultValues: GlobalSettings): GlobalSettings {
+export function parseOrDefault(text: string, defaultValues: GlobalRemoteSettings): GlobalRemoteSettings {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -115,6 +113,6 @@ export function parseOrDefault(text: string, defaultValues: GlobalSettings): Glo
 
 export const settingsParser: (
   input: string,
-) => typia.IValidation<GlobalHostSettings | GlobalRemoteSettings> = typia.json.createValidateParse<
-  GlobalHostSettings | GlobalRemoteSettings
+) => typia.IValidation<GlobalRemoteSettings> = typia.json.createValidateParse<
+  GlobalRemoteSettings
 >();
