@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, onUnmounted, ref, toRaw, useTemplateRef } from 'vue';
+import { computed, onUnmounted, ref, toRaw, useTemplateRef, watch } from 'vue';
 import { useShowModel, type FlatCueEntry } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
@@ -456,6 +456,14 @@ const onReorderPointerCancel = (event: PointerEvent) => {
 const onReorderKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') finishReorder(false);
 };
+
+if (__IS_HOST__) {
+  watch(() => uiState.mode, (newMode) => {
+    if (newMode !== 'edit') {
+      dragOverIndex.value = null;
+    }
+  });
+}
 
 useOsFileDrop({
   target: () => cuelistWrapperRef.value,
