@@ -53,23 +53,30 @@ const deviceId = computed({
 
 const channelCounts = computed(() => {
   const supportedHW = supportedHardware.value;
-  if (supportedHW != null) {
-    const id = deviceId.value || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')} (${device.defaultChannelCount})`, value: null },
-      ];
-      device.supportedConfigs.forEach((fc) => {
-        channels.push({ value: fc.channelCount, name: fc.channelCount.toString() });
-      });
-      return channels;
-    }
-  }
-  return [];
+  if (supportedHW == null) return [];
+  const id = deviceId.value || supportedHW.default;
+  const device = supportedHW.devices[id];
+  if (device == null) return [];
+
+  const uniqueChannelCounts = new Set<number>();
+  device.supportedConfigs.forEach((fc) => {
+    uniqueChannelCounts.add(fc.channelCount);
+  });
+  return [
+    { name: `${t('general.default')} (${device.defaultChannelCount})`, value: null },
+    ...Array.from(uniqueChannelCounts)
+      .sort((a, b) => a - b)
+      .map((c) => ({ value: c, name: c.toString() })),
+  ];
 });
 const channelCount = computed({
   get() {
+    if (
+      rawSettings.value.channelCount != null &&
+      channelCounts.value.find((c) => c.value === rawSettings.value.channelCount) == null
+    ) {
+      return null;
+    }
     return rawSettings.value.channelCount;
   },
   set(value) {
@@ -79,28 +86,39 @@ const channelCount = computed({
 
 const sampleRates = computed(() => {
   const supportedHW = supportedHardware.value;
-  if (supportedHW != null) {
-    const id = deviceId.value || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels = channelCount.value || device.defaultChannelCount;
-      let sampleRates: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null },
-      ];
-      for (const fc of device.supportedConfigs) {
-        if (fc.channelCount === channels) {
-          sampleRates = sampleRates.concat(
-            fc.sampleRates.map((sr) => ({ value: sr, name: (sr / 1000).toString() + ' kHz' })),
-          );
+  if (supportedHW == null) return [];
+  const id = deviceId.value || supportedHW.default;
+  const device = supportedHW.devices[id];
+  if (device == null) return [];
+
+  const channels = channelCount.value || device.defaultChannelCount;
+
+  const uniqueSampleRates = new Set<number>();
+  for (const fc of device.supportedConfigs) {
+    if (fc.channelCount === channels) {
+      for (const srStr of Object.keys(fc.sampleRates)) {
+        const sr = Number(srStr);
+        if (!isNaN(sr)) {
+          uniqueSampleRates.add(sr);
         }
       }
-      return sampleRates;
     }
   }
-  return [];
+  return [
+    { name: `${t('general.default')} (${device.defaultSampleRate / 1000} kHz)`, value: null },
+    ...Array.from(uniqueSampleRates)
+      .sort((a, b) => a - b)
+      .map((sr) => ({ value: sr, name: (sr / 1000).toString() + ' kHz' })),
+  ];
 });
 const sampleRate = computed({
   get() {
+    if (
+      rawSettings.value.sampleRate != null &&
+      sampleRates.value.find((sr) => sr.value === rawSettings.value.sampleRate) == null
+    ) {
+      return null;
+    }
     return rawSettings.value.sampleRate;
   },
   set(value) {
@@ -110,28 +128,40 @@ const sampleRate = computed({
 
 const bufferSizes = computed(() => {
   const supportedHW = supportedHardware.value;
-  if (supportedHW != null) {
-    const id = deviceId.value || supportedHW.default;
-    const device = supportedHW.devices[id];
-    if (device != null) {
-      const channels = channelCount.value || device.defaultChannelCount;
-      let bufferSizes: { name: string; value: number | null }[] = [
-        { name: `${t('general.default')}`, value: null },
-      ];
-      for (const fc of device.supportedConfigs) {
-        if (fc.channelCount === channels) {
-          bufferSizes = bufferSizes.concat(
-            fc.bufferSizes.map((bs) => ({ value: bs, name: bs.toString() + ' Frames' })),
-          );
+  if (supportedHW == null) return [];
+  const id = deviceId.value || supportedHW.default;
+  const device = supportedHW.devices[id];
+  if (device == null) return [];
+
+  const channels = channelCount.value || device.defaultChannelCount;
+  const realSampleRate = sampleRate.value || device.defaultSampleRate;
+
+  const uniqueBufferSizes = new Set<number>();
+  for (const fc of device.supportedConfigs) {
+    if (fc.channelCount === channels) {
+      const supportedBufferSizes = fc.sampleRates[realSampleRate];
+      if (supportedBufferSizes != null) {
+        for (const bs of supportedBufferSizes) {
+          uniqueBufferSizes.add(bs);
         }
       }
-      return bufferSizes;
     }
   }
-  return [];
+  return [
+    { name: `${t('general.default')}`, value: null },
+    ...Array.from(uniqueBufferSizes)
+      .sort((a, b) => a - b)
+      .map((bs) => ({ value: bs, name: bs.toString() + ' Frames' })),
+  ];
 });
 const bufferSize = computed({
   get() {
+    if (
+      rawSettings.value.bufferSize != null &&
+      bufferSizes.value.find((bs) => bs.value === rawSettings.value.bufferSize) == null
+    ) {
+      return null;
+    }
     return rawSettings.value.bufferSize;
   },
   set(value) {
