@@ -119,7 +119,7 @@ impl AudioEngine {
         let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
             && let Err(e) =
-                event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
+                event_tx.try_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
                     device: fallback_info.device,
                     config: fallback_info.config,
                 }))
@@ -171,7 +171,7 @@ impl AudioEngine {
         let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
             && let Err(e) =
-                event_tx.blocking_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
+                event_tx.try_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
                     device: fallback_info.device,
                     config: fallback_info.config,
                 }))
@@ -331,7 +331,10 @@ impl AudioEngine {
                 builder = builder
                     .with_config(&config)
                     .with_sample_format(SampleFormat::F32);
-            } else if settings.channel_count.is_some() || settings.sample_rate.is_some() || settings.buffer_size.is_some() {
+            } else if settings.channel_count.is_some()
+                || settings.sample_rate.is_some()
+                || settings.buffer_size.is_some()
+            {
                 fallback_info.config = true;
             }
             return Ok((builder, fallback_info));
