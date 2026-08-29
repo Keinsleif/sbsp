@@ -11,13 +11,12 @@ import { useApi } from './api';
 import { appLogDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { useShowState } from './stores/showState';
-import { MOD_KEY_DISPLAY } from './composables/useHotkey';
 import type { HotkeySettings } from './types/HotkeySettings';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
 const keyToDisplay = (key: string | null) => {
-  return key?.replace('$mod', MOD_KEY_DISPLAY)?.replace('Control', 'Ctrl') ?? null;
+  return key?.replace('$mod', 'CMDORCONTROL')?.replace('Control', 'Ctrl')?.replace('Meta', 'Super') ?? null;
 }
 
 export const createWindowMenu = () => {
