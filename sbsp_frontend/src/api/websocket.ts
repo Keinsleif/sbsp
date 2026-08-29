@@ -24,7 +24,7 @@ import type { Permissions } from '../types/Permissions';
 import type { BackendError } from '../types/BackendError';
 import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
-import { parseOrDefault, settingsValidator } from '../typia';
+import { parseOrDefault, settingsParser, settingsValidator } from '../typia';
 import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
 import { type BackendEventListener } from './interface';
 
@@ -484,7 +484,7 @@ export function useWebsocketApi(): IBackendAdapter {
             }
             filepath.text().then((text) => {
               try {
-                const parsed = parseOrDefault(text, DEFAULT_SETTINGS)
+                const parsed = settingsParser(text)
                 const result = settingsValidator(parsed);
                 if (result.success) {
                   resolve(result.data);
