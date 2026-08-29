@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "backend")]
 use anyhow::Result;
@@ -43,8 +43,7 @@ pub struct DeviceInformation {
 #[serde(rename_all = "camelCase")]
 pub struct FrameConfig {
     pub channel_count: u16,
-    pub sample_rates: BTreeSet<u32>,
-    pub buffer_sizes: BTreeSet<u32>,
+    pub sample_rates: BTreeMap<u32, BTreeSet<u32>>,
 }
 
 #[cfg(feature = "backend")]
@@ -79,13 +78,11 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
                 if config.sample_format() != SampleFormat::F32 {
                     continue;
                 }
-                let entry = configs
-                    .entry(config.channels())
-                    .or_insert((BTreeSet::new(), *(config.buffer_size())));
+                let entry = configs.entry(config.channels()).or_insert(BTreeMap::new());
 
                 for &rate in COMMON_SAMPLE_RATES {
                     if rate >= config.min_sample_rate() && rate <= config.max_sample_rate() {
-                        entry.0.insert(rate);
+                        entry.insert(rate, get_buffer_sizes(*config.buffer_size()));
                     }
                 }
             }
@@ -104,13 +101,10 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
                         name,
                         supported_configs: configs
                             .into_iter()
-                            .map(
-                                |(channel_count, (sample_rates, buffer_sizes))| FrameConfig {
-                                    channel_count,
-                                    sample_rates,
-                                    buffer_sizes: get_buffer_sizes(buffer_sizes),
-                                },
-                            )
+                            .map(|(channel_count, sample_rates)| FrameConfig {
+                                channel_count,
+                                sample_rates,
+                            })
                             .collect(),
                         default_channel_count: default_config.channels(),
                         default_sample_rate: default_config.sample_rate(),
