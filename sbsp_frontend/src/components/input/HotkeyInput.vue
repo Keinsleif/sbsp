@@ -7,13 +7,16 @@ import { computed, useId } from 'vue';
 import FloatLabel from 'primevue/floatlabel';
 import InputText from 'primevue/inputtext';
 import { MOD_KEY } from '@/composables/useHotkey.ts';
+import { useApi } from '@/api/index.ts';
 
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+const api = useApi();
+
 const hotkey = defineModel<string | null>({ default: '' });
 const hotkeyDisplay = computed(() =>
-  hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY) : '',
+  hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY).replace('Control', 'Ctrl') : '',
 );
 const props = defineProps<{
   label?: string;
@@ -23,10 +26,10 @@ const keyinput = (event: KeyboardEvent) => {
   event.preventDefault();
   let shortcut = '';
   if (event.ctrlKey) {
-    shortcut += 'Ctrl+';
+    shortcut += api.isMacOs() ? 'Control+' : '$mod+';
   }
   if (event.metaKey) {
-    shortcut += 'Cmd+';
+    shortcut += api.isMacOs() ? '$mod+' : 'Meta+';
   }
   if (event.altKey) {
     shortcut += 'Alt+';
@@ -35,9 +38,9 @@ const keyinput = (event: KeyboardEvent) => {
     shortcut += 'Shift+';
   }
   if (event.key === 'Control') {
-    shortcut = 'Ctrl';
+    shortcut = api.isMacOs() ? 'Control' : '$mod';
   } else if (event.key === 'Meta' || event.key === 'OS') {
-    shortcut = 'Cmd';
+    shortcut = api.isMacOs() ? '$mod' : 'Meta';
   } else if (event.key === 'Alt') {
     shortcut = 'Alt';
   } else if (event.key === 'Shift') {
