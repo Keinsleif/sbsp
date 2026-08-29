@@ -466,6 +466,8 @@ useOsFileDrop({
     dragOverIndex.value = null;
   },
   onDrop: (files, x, y) => {
+    if (__IS_REMOTE__) return; // TODO: implement remote side behavier
+    if (uiState.mode !== "edit") return;
     updateDragOverFromPoint(x, y);
     const target = resolveDropTarget(dragOverIndex.value);
     if (target == null) return;
