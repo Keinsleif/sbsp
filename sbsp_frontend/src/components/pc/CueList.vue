@@ -372,7 +372,7 @@ const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
   const cueIds = Array.from(uiState.selectedRows);
 
   const ghostEl = document.createElement('div');
-  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', [cueIds.length]) : '';
+  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', cueIds.length) : '';
   Object.assign(ghostEl.style, {
     position: 'fixed',
     left: `${event.clientX + 16}px`,
