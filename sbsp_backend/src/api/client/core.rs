@@ -366,9 +366,8 @@ pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
                 _ = services_tx.closed() => break,
             }
         }
-        let mut result = mdns.shutdown();
-        while let Err(Error::Again) = result {
-            result = mdns.shutdown();
+        while let Err(Error::Again) = mdns.shutdown() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
     });
     Ok(services_rx)
