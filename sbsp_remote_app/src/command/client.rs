@@ -44,8 +44,7 @@ pub async fn start_server_discovery(
     state: tauri::State<'_, AppState>,
     channel: Channel<Vec<ServiceEntry>>,
 ) -> Result<(), String> {
-    state.start_discovery(channel).await;
-    Ok(())
+    state.start_discovery(channel).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -319,12 +319,22 @@ pub async fn create_remote_backend(
     ))
 }
 
-pub fn start_discovery() -> watch::Receiver<Vec<ServiceEntry>> {
+pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
     let (services_tx, services_rx) = watch::channel(Vec::new());
+    let service_type = "_sbsp._tcp.local.";
+    let mdns = match ServiceDaemon::new() {
+        Ok(mdns) => mdns,
+        Err(e) => {
+            anyhow::bail!("Failed to initialize mdns deamon: {}", e);
+        },
+    };
+    let receiver = match mdns.browse(service_type) {
+        Ok(receiver) => receiver,
+        Err(e) => {
+            anyhow::bail!("Failed to start mdns discovery: {}", e);
+        },
+    };
     tokio::spawn(async move {
-        let service_type = "_sbsp._tcp.local.";
-        let mdns = ServiceDaemon::new().expect("Failed to create daemon");
-        let receiver = mdns.browse(service_type).expect("Failed to browse");
         loop {
             tokio::select! {
                 Ok(event) = receiver.recv_async() => {
@@ -361,5 +371,5 @@ pub fn start_discovery() -> watch::Receiver<Vec<ServiceEntry>> {
             result = mdns.shutdown();
         }
     });
-    services_rx
+    Ok(services_rx)
 }
