@@ -85,17 +85,30 @@ pub async fn create_remote_backend(
     }
 
     loop {
-        if let Ok(Some(message)) = websocket.try_next().await {
-            if let Message::Text(text) = &message
-                && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated { perm } = feedback
-            {
-                permission = perm;
-                break;
-            } else if let Message::Close { .. } = &message {
+        let message = match websocket.try_next().await {
+            Ok(Some(message)) => message,
+            Ok(None) => anyhow::bail!("Connection closed during authentication."),
+            Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
+        };
+        match &message {
+            Message::Text(text) => match serde_json::from_str::<WsFeedback>(text) {
+                Ok(WsFeedback::Authenticated { perm }) => {
+                    permission = perm;
+                    break;
+                }
+                Ok(WsFeedback::Error(error)) => {
+                    anyhow::bail!("Authentication rejected by server: {:?}", error);
+                }
+                Err(e) => {
+                    anyhow::bail!("Failed to parse during authentication: {}", e);
+                }
+                _ => {}
+            }
+            Message::Close { .. } => {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
             }
+            _ => {}
         }
     }
 
