@@ -62,30 +62,40 @@ pub async fn create_remote_backend(
 
     let permission;
 
-    let message = match websocket.try_next().await {
-        Ok(Some(message)) => message,
-        Ok(None) => anyhow::bail!("Connection closed during authentication."),
-        Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
-    };
-    if let Message::Text(text) = &message
-        && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-        && let WsFeedback::Hello { auth } = feedback
-    {
-        let response = if let Some(pass) = password {
-            let secret = generate_secret(&pass, &auth.salt);
-            Some(generate_authentication_string(&secret, &auth.challenge))
-        } else {
-            None
+    loop {
+        let message = match websocket.try_next().await {
+            Ok(Some(message)) => message,
+            Ok(None) => anyhow::bail!("Connection closed during authentication."),
+            Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
         };
-        if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
-            && websocket.send(Message::Text(payload.into())).await.is_err()
-        {
-            log::info!("WebSocket client disconnected (send error).");
-            anyhow::bail!("Connection closed during authentication.");
+        match &message {
+            Message::Text(text) => match serde_json::from_str::<WsFeedback>(text) {
+                Ok(WsFeedback::Hello { auth }) => {
+                    let response: Option<String> = if let Some(pass) = &password {
+                        let secret = generate_secret(pass, &auth.salt);
+                        Some(generate_authentication_string(&secret, &auth.challenge))
+                    } else {
+                        None
+                    };
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
+                        && websocket.send(Message::Text(payload.into())).await.is_err()
+                    {
+                        log::info!("WebSocket client disconnected (send error).");
+                        anyhow::bail!("Connection closed during authentication.");
+                    } else {
+                        break;
+                    }
+                }
+                Ok(_) => anyhow::bail!("Unexpected message during authentication."),
+                Err(e) => anyhow::bail!("Failed to parse message during authentication: {}", e),
+            }
+            Message::Close { .. } => {
+                log::info!("WebSocket server sent close message.");
+                anyhow::bail!("Connection closed during authentication.");
+            }
+            Message::Ping(_) | Message::Pong(_) => {}
+            _ => anyhow::bail!("Unexpected message during authentication."),
         }
-    } else if let Message::Close { .. } = &message {
-        log::info!("WebSocket server sent close message.");
-        anyhow::bail!("Connection closed during authentication.");
     }
 
     loop {
