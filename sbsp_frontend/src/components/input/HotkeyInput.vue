@@ -60,6 +60,28 @@ const keyinput = (event: KeyboardEvent) => {
   hotkey.value = shortcut;
 };
 
+const keyup = (event: KeyboardEvent) => {
+  event.preventDefault();
+
+  if (!hotkeyPreview.value) return;
+
+  let shortcut = '';
+  if (event.ctrlKey && event.key !== 'Control') {
+    shortcut += api.isMacOs() ? 'Control+' : '$mod+';
+  }
+  if (event.metaKey && event.key !== 'Meta') {
+    shortcut += api.isMacOs() ? '$mod+' : 'Meta+';
+  }
+  if (event.altKey && event.key !== 'Alt') {
+    shortcut += 'Alt+';
+  }
+  if (event.shiftKey && event.key !== 'Shift') {
+    shortcut += 'Shift+';
+  }
+
+  hotkeyPreview.value = shortcut;
+};
+
 const resetPreview = () => {
   if (hotkeyPreview.value) {
     hotkeyPreview.value = '';
@@ -88,7 +110,7 @@ const inputId = useId();
           },
         }"
         @keydown.stop="keyinput($event)"
-        @keyup.stop="resetPreview()"
+        @keyup.stop="keyup($event)"
         @blur="resetPreview()"
       />
       <label :for="inputId">{{ props.label || '' }}</label>
