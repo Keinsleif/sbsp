@@ -113,16 +113,17 @@ pub async fn create_remote_backend(
                 Ok(WsFeedback::Error(error)) => {
                     anyhow::bail!("Authentication rejected by server: {:?}", error);
                 }
+                Ok(_) => anyhow::bail!("Unexpected message during authentication."),
                 Err(e) => {
                     anyhow::bail!("Failed to parse during authentication: {}", e);
                 }
-                _ => {}
             }
             Message::Close { .. } => {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
             }
-            _ => {}
+            Message::Ping(_) | Message::Pong(_) => {}
+            _ => anyhow::bail!("Unexpected message during authentication."),
         }
     }
 
