@@ -15,7 +15,11 @@ import type { HotkeySettings } from './types/HotkeySettings';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
+const MODIFIER_ONLY_TOKENS = new Set(['Control', 'Meta', '$mod', 'Alt', 'Shift']);
 const keyToDisplay = (key: string | null) => {
+  if (!key || !MODIFIER_ONLY_TOKENS.has(key)) {
+    return null;
+  }
   return key?.replace('$mod', 'CMDORCONTROL')?.replace('Control', 'Ctrl')?.replace('Meta', 'Super') ?? null;
 }
 
