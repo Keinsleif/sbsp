@@ -21,6 +21,16 @@ const isContainer = (v: unknown): v is Record<string, unknown> => {
   return v != null && typeof v === "object";
 };
 
+/**
+ * Deeply merges properties from a source object into a target object.
+ *
+ * Nested plain objects are merged recursively, while other source values replace
+ * corresponding target values. Prototype-related keys are ignored.
+ *
+ * @param target - The object providing the initial properties
+ * @param source - The object whose properties are merged into the target
+ * @returns A merged copy of the target object
+ */
 function mergeDeeply<T extends PlainObject>(target: T, source: PlainObject): T {
   if (!isObject(target) || !isObject(source)) {
     return { ...target };
@@ -46,6 +56,12 @@ function mergeDeeply<T extends PlainObject>(target: T, source: PlainObject): T {
   return result as T;
 }
 
+/**
+ * Converts a validation error path into an array of property tokens.
+ *
+ * @param path - The validation error path to parse
+ * @returns The property and array-index tokens extracted from the path
+ */
 function parseErrorPath(path: string): string[] {
   return path
     .replace(/^\$input\.?/, "")
@@ -55,6 +71,13 @@ function parseErrorPath(path: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Retrieves a nested value from a source object using property tokens.
+ *
+ * @param source - The value to traverse
+ * @param tokens - The property names and array indices defining the nested path
+ * @returns The value at the specified path, or `undefined` if traversal reaches a non-container
+ */
 function getDeepValue(source: unknown, tokens: string[]): unknown {
   let current: unknown = source;
   for (const key of tokens) {
@@ -64,6 +87,13 @@ function getDeepValue(source: unknown, tokens: string[]): unknown {
   return current;
 }
 
+/**
+ * Assigns a value at a nested path, creating intermediate objects or arrays as needed.
+ *
+ * @param target - The object to update
+ * @param tokens - Property names and array indices forming the nested path
+ * @param value - The value to assign
+ */
 function setDeepValue(target: Record<string, unknown>, tokens: string[], value: unknown): void {
   let current: Record<string, unknown> = target;
   for (let i = 0; i < tokens.length - 1; i++) {
@@ -80,6 +110,16 @@ function setDeepValue(target: Record<string, unknown>, tokens: string[], value: 
   if (last) current[last] = value;
 }
 
+/**
+ * Parses remote settings and merges them with default values.
+ *
+ * Invalid JSON or non-object input produces a cloned copy of the defaults. Invalid
+ * setting values are replaced with their corresponding defaults.
+ *
+ * @param text - The JSON-encoded settings
+ * @param defaultValues - The settings used for missing or invalid values
+ * @returns The merged and validated remote settings
+ */
 export function parseOrDefault(text: string, defaultValues: GlobalRemoteSettings): GlobalRemoteSettings {
   let parsed: unknown;
   try {

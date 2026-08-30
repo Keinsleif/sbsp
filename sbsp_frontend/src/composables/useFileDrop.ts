@@ -14,6 +14,11 @@ export interface UseOsFileDropOptions {
   target?: () => HTMLElement | null;
 }
 
+/**
+ * Registers operating-system file-drop handling for Tauri and browser environments.
+ *
+ * @param options - Drag event callbacks and an optional target element resolver.
+ */
 export function useOsFileDrop(options: UseOsFileDropOptions) {
   let unlistenTauri: UnlistenFn | null = null;
   let disposed = false;

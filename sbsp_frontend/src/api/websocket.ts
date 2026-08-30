@@ -82,6 +82,11 @@ interface IWebsocketBackendAdapter extends IBackendAdapter {
   flushQueue: () => void;
 }
 
+/**
+ * Creates a browser-based WebSocket backend adapter for remote server communication.
+ *
+ * @returns The configured backend adapter
+ */
 export function useWebsocketApi(): IBackendAdapter {
   const remoteApi: IBackendRemoteAdapter = {
     isConnected: async function (): Promise<[boolean, Permissions | null]> {
