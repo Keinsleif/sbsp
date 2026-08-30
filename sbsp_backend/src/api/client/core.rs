@@ -57,6 +57,7 @@ pub async fn create_remote_backend(
     let project_status_clone = project_status.clone();
     let event_tx_clone = event_tx.clone();
 
+    // This server not supports TLS. Use proxy to support secure connection.
     let (mut websocket, _) = connect_async(format!("ws://{}/ws", address)).await?;
 
     let permission;
