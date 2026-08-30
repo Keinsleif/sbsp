@@ -62,27 +62,30 @@ pub async fn create_remote_backend(
 
     let permission;
 
-    if let Ok(Some(message)) = websocket.try_next().await {
-        if let Message::Text(text) = &message
-            && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-            && let WsFeedback::Hello { auth } = feedback
+    let message = match websocket.try_next().await {
+        Ok(Some(message)) => message,
+        Ok(None) => anyhow::bail!("Connection closed during authentication."),
+        Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
+    };
+    if let Message::Text(text) = &message
+        && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
+        && let WsFeedback::Hello { auth } = feedback
+    {
+        let response = if let Some(pass) = password {
+            let secret = generate_secret(&pass, &auth.salt);
+            Some(generate_authentication_string(&secret, &auth.challenge))
+        } else {
+            None
+        };
+        if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
+            && websocket.send(Message::Text(payload.into())).await.is_err()
         {
-            let response = if let Some(pass) = password {
-                let secret = generate_secret(&pass, &auth.salt);
-                Some(generate_authentication_string(&secret, &auth.challenge))
-            } else {
-                None
-            };
-            if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
-                && websocket.send(Message::Text(payload.into())).await.is_err()
-            {
-                log::info!("WebSocket client disconnected (send error).");
-                anyhow::bail!("Connection closed during authentication.");
-            }
-        } else if let Message::Close { .. } = &message {
-            log::info!("WebSocket server sent close message.");
+            log::info!("WebSocket client disconnected (send error).");
             anyhow::bail!("Connection closed during authentication.");
         }
+    } else if let Message::Close { .. } = &message {
+        log::info!("WebSocket server sent close message.");
+        anyhow::bail!("Connection closed during authentication.");
     }
 
     loop {
@@ -122,7 +125,18 @@ pub async fn create_remote_backend(
     tokio::spawn(async move {
         loop {
             tokio::select! {
-                Ok(Some(message)) = websocket.try_next() => {
+                websock_result = websocket.try_next() => {
+                    let message = match websock_result {
+                        Ok(Some(message)) => message,
+                        Ok(None) => {
+                            log::info!("WebSocket client disconnected.");
+                            break;
+                        },
+                        Err(e) => {
+                            log::info!("WebSocket client disconnected: {}", e);
+                            break;
+                        }
+                    };
                     match message {
                         Message::Text(text) => {
                             if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
