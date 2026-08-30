@@ -15,7 +15,7 @@ import type { HotkeySettings } from './types/HotkeySettings';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
-const MODIFIER_ONLY_TOKENS = new Set(['Control', 'Meta', '$mod', 'Alt', 'Shift']);
+const MODIFIER_ONLY_TOKENS = new Set(['Control', 'Ctrl', 'Meta', '$mod', 'Alt', 'AltGraph', 'Shift']);
 const keyToDisplay = (key: string | null) => {
   if (!key || MODIFIER_ONLY_TOKENS.has(key)) {
     return null;

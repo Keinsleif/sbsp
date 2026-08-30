@@ -14,7 +14,7 @@ import { useApi } from '@/api/index.ts';
 
 const api = useApi();
 
-const MODIFIER_KEYS = new Set(['Control', 'Meta', 'OS', 'Alt', 'Shift']);
+const MODIFIER_KEYS = new Set(['Control', 'Meta', 'OS', 'Alt', 'AltGraph', 'Shift']);
 
 const hotkey = defineModel<string | null>({ default: '' });
 const hotkeyPreview = ref('');
