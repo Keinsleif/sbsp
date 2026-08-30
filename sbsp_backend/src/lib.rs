@@ -25,9 +25,7 @@ use crate::{controller::state::ShowState, manager::project::ProjectStatus, model
 pub use ts_rs;
 
 pub mod action;
-#[cfg(feature = "backend")]
 pub mod asset_processor;
-#[cfg(feature = "backend")]
 pub mod controller;
 #[cfg(feature = "backend")]
 mod engine;
@@ -35,33 +33,10 @@ pub mod event;
 #[cfg(feature = "backend")]
 mod executor;
 pub mod helper;
-#[cfg(feature = "backend")]
 pub mod manager;
 pub mod model;
 
-#[cfg(any(feature = "server", feature = "client"))]
-pub mod api;
-
-#[cfg(feature = "type_export")]
-pub mod asset_processor {
-    mod data;
-    pub use data::{AssetData, AssetMetadata};
-    mod command;
-    pub use command::AssetProcessorCommand;
-}
-#[cfg(feature = "type_export")]
-pub mod controller {
-    mod command;
-    pub mod state;
-    pub use command::ControllerCommand;
-}
-#[cfg(feature = "type_export")]
-pub mod manager {
-    mod command;
-    pub use command::{InsertPosition, ModelCommand};
-    pub mod project;
-}
-#[cfg(feature = "type_export")]
+#[cfg(any(feature = "server", feature = "client", feature = "type_export"))]
 pub mod api;
 
 #[derive(Serialize, Deserialize, Clone)]

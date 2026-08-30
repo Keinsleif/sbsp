@@ -1,34 +1,26 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+mod file_list;
+#[cfg(any(feature = "client", feature = "type_export"))]
+pub mod client;
+#[cfg(feature = "server")]
+pub mod server;
+#[cfg(any(feature = "server", feature = "client"))]
+mod auth;
+
+pub use file_list::FileList;
+
+use serde::{Deserialize, Serialize};
 #[cfg(any(feature = "server", feature = "client"))]
 use std::str::FromStr;
+#[cfg(any(feature = "server", feature = "client"))]
+use bitflags::bitflags;
 
 use crate::{
     FullShowState, asset_processor::AssetProcessorCommand, controller::ControllerCommand,
     event::BackendEvent, manager::ModelCommand,
 };
-
-#[cfg(any(feature = "server", feature = "client"))]
-use bitflags::bitflags;
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "client")]
-pub mod client;
-mod file_list;
-#[cfg(feature = "server")]
-pub mod server;
-
-#[cfg(any(feature = "server", feature = "client"))]
-mod auth;
-
-#[cfg(feature = "type_export")]
-pub mod client {
-    mod service_entry;
-    pub use service_entry::ServiceEntry;
-}
-
-pub use file_list::FileList;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
