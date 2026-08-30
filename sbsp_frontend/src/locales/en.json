@@ -337,7 +337,7 @@
         "paste": "Paste",
         "delete": "Delete"
       },
-      "movingCue": "Move {0} cues"
+      "movingCue": "Move {n} cue | Move {n} cues"
     },
     "duration": "Duration",
     "footBar": {

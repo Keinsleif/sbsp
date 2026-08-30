@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref, toRaw, useTemplateRef } from 'vue';
+import { computed, onUnmounted, ref, toRaw, useTemplateRef, watch } from 'vue';
 import { useShowModel, type FlatCueEntry } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
@@ -372,7 +372,7 @@ const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
   const cueIds = Array.from(uiState.selectedRows);
 
   const ghostEl = document.createElement('div');
-  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', [cueIds.length]) : '';
+  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', cueIds.length) : '';
   Object.assign(ghostEl.style, {
     position: 'fixed',
     left: `${event.clientX + 16}px`,
@@ -457,34 +457,54 @@ const onReorderKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') finishReorder(false);
 };
 
+if (__IS_HOST__) {
+  watch(() => uiState.mode, (newMode) => {
+    if (newMode !== 'edit') {
+      dragOverIndex.value = null;
+    }
+  });
+}
+
 useOsFileDrop({
   target: () => cuelistWrapperRef.value,
   onOver: (x, y) => {
+    if (__IS_REMOTE__) return; // TODO: implement remote side behavier
+    if (uiState.mode !== "edit") return;
     updateDragOverFromPoint(x, y);
   },
   onLeave: () => {
     dragOverIndex.value = null;
   },
   onDrop: (files, x, y) => {
+    if (__IS_REMOTE__) return; // TODO: implement remote side behavier
+    if (uiState.mode !== "edit") return;
     updateDragOverFromPoint(x, y);
     const target = resolveDropTarget(dragOverIndex.value);
     if (target == null) return;
+    const acceptedPaths = new Set<string>();
+    let invalidFileExists = false;
     for (const f of files) {
       if (f.kind === 'path') {
         const ext = getExtension(f.path);
         if (AUDIO_EXTENSIONS.includes(ext)) {
-          showModel.addAudioCueWithPath([f.path], target);
+          acceptedPaths.add(f.path);
         } else {
-          toast.add({
-            severity: 'error',
-            summary: t('notification.failedToAddCue'),
-            detail: t('notification.invalidFileType'),
-            life: 3000,
-          });
+          invalidFileExists = true;
         }
       } else {
         // TODO: implement file upload feature
       }
+    }
+    if (acceptedPaths.size > 0) {
+      showModel.addAudioCueWithPath(Array.from(acceptedPaths), target);
+    }
+    if (invalidFileExists) {
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToAddCue'),
+        detail: t('notification.invalidFileType'),
+        life: 3000,
+      });
     }
     dragOverIndex.value = null;
   },
@@ -561,6 +581,10 @@ const click = (event: MouseEvent, index: number) => {
 //   }
 //   uiState.clearSelected();
 // };
+
+onUnmounted(() => {
+  finishReorder(false);
+});
 </script>
 
 <template>
