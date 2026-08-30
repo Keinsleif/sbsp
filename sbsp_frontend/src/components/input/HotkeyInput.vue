@@ -60,8 +60,8 @@ const keyinput = (event: KeyboardEvent) => {
   hotkey.value = shortcut;
 };
 
-const keyup = (event: KeyboardEvent) => {
-  if (MODIFIER_KEYS.has(event.key) && hotkeyPreview.value) {
+const resetPreview = () => {
+  if (hotkeyPreview.value) {
     hotkeyPreview.value = '';
   }
 };
@@ -88,7 +88,8 @@ const inputId = useId();
           },
         }"
         @keydown.stop="keyinput($event)"
-        @keyup.stop="keyup($event)"
+        @keyup.stop="resetPreview()"
+        @blur="resetPreview()"
       />
       <label :for="inputId">{{ props.label || '' }}</label>
     </float-label>
