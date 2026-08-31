@@ -293,9 +293,12 @@ impl ShowModelManager {
                     for cue_id in cue_ids {
                         if let Some(cue) = model.cue_list.cues.get_mut(&cue_id) {
                             if targets.remove(&cue_id) {
-                                cue.number = format!("{}{}{}", prefix, number, suffix);
+                                let new_number = format!("{}{}{}", prefix, number, suffix);
+                                if cue.number != new_number {
+                                    cue.number = new_number;
+                                    renumbered = true;
+                                }
                                 number += increment;
-                                renumbered = true;
                                 if targets.is_empty() {
                                     break 'outer;
                                 }
