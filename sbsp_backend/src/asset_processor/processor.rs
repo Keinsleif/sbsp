@@ -3,6 +3,7 @@
 
 use symphonia::core::codecs::CODEC_TYPE_NULL;
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
@@ -110,13 +111,10 @@ impl AssetProcessor {
                     match result_recv {
                         Some(result) => {
                             let mut cache = self.cache.write().await;
-                            if let Ok(data) = &result.data {
-                                if let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
+                            if let Ok(data) = &result.data
+                                && let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
                                     cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified, data: data.clone() });
-                                } else {
-                                    cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified: SystemTime::now(), data: data.clone() });
                                 }
-                            }
                             self.processing.write().await.retain(|value| *value != result.actual_path);
                             if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
                                 log::error!("Failed to send process result to event bus. {}", e);
@@ -195,6 +193,14 @@ impl AssetProcessor {
         let before_count = cache.entries.len();
 
         cache.entries.retain(|path, _| active_paths.contains(path));
+
+        let mut active_cache_paths = HashSet::new();
+        for (path, entry) in &cache.entries {
+            if let Ok(metadata) = tokio::fs::metadata(entry.data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() && last_modified == entry.last_modified {
+                active_cache_paths.insert(path.clone());
+            }
+        }
+        cache.entries.retain(|path, _| active_cache_paths.contains(path));
 
         let after_count = cache.entries.len();
         log::info!(
