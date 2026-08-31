@@ -270,13 +270,17 @@ impl AssetProcessor {
 
         let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
 
-        let total_samples = codec_params.n_frames.unwrap_or(0);
-        let mut samples_per_peaks = (sample_rate as f64 * 0.1).max(1.0) as u64;
+        let total_frames = codec_params.n_frames.unwrap_or(0);
 
-        if total_samples > 0 && (total_samples / samples_per_peaks) > WAVEFORM_THRESHOLD as u64 {
-            samples_per_peaks = (total_samples - (total_samples % (WAVEFORM_THRESHOLD - 1) as u64))
-                / (WAVEFORM_THRESHOLD - 1) as u64;
-        }
+        let frames_per_peak = {
+            let default_frames_per_peak = (sample_rate as f64 * 0.1).max(1.0) as u64;
+            if total_frames > 0 {
+                let calcurate_interval = total_frames.div_ceil(WAVEFORM_THRESHOLD as u64);
+                default_frames_per_peak.max(calcurate_interval)
+            } else {
+                default_frames_per_peak
+            }
+        };
 
         let mut sample_buf = None;
         let mut ebur128 = if let Some(channels) = channel_count {
@@ -289,11 +293,11 @@ impl AssetProcessor {
             None
         };
 
-        let mut first_audio_sample: Option<u64> = None;
-        let mut last_audio_sample: Option<u64> = None;
+        let mut first_audio_frame: Option<u64> = None;
+        let mut last_audio_frame: Option<u64> = None;
         let mut max_audio_sample: f32 = 0.0;
         let mut waveform = Vec::with_capacity(WAVEFORM_THRESHOLD);
-        let mut sample_index: u64 = 0;
+        let mut frame_index: u64 = 0;
         let mut peak_counter: u64 = 0;
         let mut max_in_current_peak: f32 = 0.0;
 
@@ -310,8 +314,9 @@ impl AssetProcessor {
             match decoder.decode(&packet) {
                 Ok(decoded) => {
                     let decoded_spec = *decoded.spec();
+                    let channels = decoded_spec.channels.count();
                     if channel_count.is_none() {
-                        channel_count = Some(decoded_spec.channels.count())
+                        channel_count = Some(channels)
                     }
                     if ebur128.is_none() {
                         ebur128 = Some(EbuR128::new(
@@ -339,18 +344,19 @@ impl AssetProcessor {
                         if let Some(ebur) = &mut ebur128 {
                             ebur.add_frames_f32(samples)?;
                         }
-                        for &sample in samples {
-                            if sample.abs() >= AUDIO_THRESHOLD {
-                                if first_audio_sample.is_none() {
-                                    first_audio_sample = Some(sample_index);
+                        for frame in samples.chunks(channels) {
+                            let frame_max = frame.iter().map(|s| s.abs()).fold(0.0f32, |acc, val| acc.max(val));
+                            if frame_max >= AUDIO_THRESHOLD {
+                                if first_audio_frame.is_none() {
+                                    first_audio_frame = Some(frame_index);
                                 }
-                                last_audio_sample = Some(sample_index);
+                                last_audio_frame = Some(frame_index);
                             }
-                            max_in_current_peak = max_in_current_peak.max(sample.abs());
+                            max_in_current_peak = max_in_current_peak.max(frame_max);
 
-                            sample_index += 1;
+                            frame_index += 1;
                             peak_counter += 1;
-                            if peak_counter >= samples_per_peaks {
+                            if peak_counter >= frames_per_peak {
                                 waveform.push(max_in_current_peak);
                                 if max_in_current_peak > max_audio_sample {
                                     max_audio_sample = max_in_current_peak;
@@ -369,21 +375,17 @@ impl AssetProcessor {
         ignore_end_of_stream_error(result)?;
         do_verification(decoder.finalize())?;
 
-        let channels = channel_count.unwrap_or(2);
-
         if peak_counter > 0 {
             waveform.push(max_in_current_peak);
         }
 
         let start_time = codec_params
             .time_base
-            .zip(
-                first_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64),
-            )
+            .zip(first_audio_frame)
             .map(calc_secs_from_timebase);
         let end_time = codec_params
             .time_base
-            .zip(last_audio_sample.map(|samples| (samples as f64 / channels as f64).floor() as u64))
+            .zip(last_audio_frame)
             .map(calc_secs_from_timebase);
 
         let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
