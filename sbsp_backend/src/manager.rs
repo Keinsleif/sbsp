@@ -15,6 +15,6 @@ mod tests;
 pub use command::{InsertPosition, ModelCommand};
 
 #[cfg(feature = "backend")]
-pub use core::*;
+pub use self::core::*;
 #[cfg(feature = "backend")]
 pub use handle::ShowModelHandle;

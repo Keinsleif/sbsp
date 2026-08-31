@@ -13,6 +13,6 @@ mod tests;
 pub use command::ControllerCommand;
 
 #[cfg(feature = "backend")]
-pub use core::*;
+pub use self::core::*;
 #[cfg(feature = "backend")]
 pub use handle::CueControllerHandle;
