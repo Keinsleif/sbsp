@@ -139,15 +139,15 @@ useBackendEvent((event) => {
       break;
     }
     case 'assetResult': {
-      if ('Ok' in event.param.data) {
-        assetResult.add(event.param.path, event.param.data.Ok);
+      if ('Ok' in event.param.result) {
+        assetResult.add(event.param.path, event.param.result.Ok);
       } else {
         assetResult.addError(event.param.path);
-        console.error(event.param.data.Err);
+        console.error(event.param.result.Err);
         toast.add({
           severity: 'error',
           summary: t('notification.assetResult'),
-          detail: event.param.data.Err,
+          detail: event.param.result.Err,
           life: 5000,
         });
       }
