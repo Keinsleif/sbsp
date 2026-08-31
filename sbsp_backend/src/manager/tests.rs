@@ -19,7 +19,10 @@ use tempfile::{NamedTempFile, tempdir};
 use tokio::sync::{broadcast, watch};
 use uuid::Uuid;
 
-use super::{ShowModelHandle, ShowModelManager, project::ProjectStatus, project::ProjectType, command::InsertPosition};
+use super::{
+    ShowModelHandle, ShowModelManager, command::InsertPosition, project::ProjectStatus,
+    project::ProjectType,
+};
 
 async fn setup_manager(
     initial_model: Option<ShowModel>,

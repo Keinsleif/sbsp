@@ -1,11 +1,14 @@
-
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::path::PathBuf;
 
 use crate::{
-    BackendSettings, event::{BackendEvent, CueStatusEventParam}, executor::{ExecutorCommand, ExecutorEvent}, manager::ShowModelManager, model::{
+    BackendSettings,
+    event::{BackendEvent, CueStatusEventParam},
+    executor::{ExecutorCommand, ExecutorEvent},
+    manager::ShowModelManager,
+    model::{
         self,
         cue::{
             Cue, CueColor, CueCursorAdvanceTriggerOverride,
@@ -14,12 +17,12 @@ use crate::{
     },
 };
 
-use super::{state::{ShowState, StateParam, PlaybackStatus}, CueController, CueControllerHandle};
-
-use tokio::sync::{
-    mpsc,
-    watch,broadcast
+use super::{
+    CueController, CueControllerHandle,
+    state::{PlaybackStatus, ShowState, StateParam},
 };
+
+use tokio::sync::{broadcast, mpsc, watch};
 use uuid::Uuid;
 
 async fn setup_controller(
@@ -99,8 +102,7 @@ async fn setup_controller(
 #[tokio::test]
 async fn go_command() {
     let cue_id = Uuid::new_v4();
-    let (controller, controller_handle, mut exec_rx, _, _, _) =
-        setup_controller(&[cue_id]).await;
+    let (controller, controller_handle, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
 
     tokio::spawn(controller.run());
 

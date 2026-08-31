@@ -25,10 +25,18 @@ use tokio::{
 
 use super::{WsCommand, WsFeedback};
 use crate::{
-    BackendHandle, FullShowState, api::{
+    BackendHandle, FullShowState,
+    api::{
         ApiServerOptions, AuthInfo, FileList, PermissionInfo, Permissions, WsError,
         auth::{check_authentication_string, generate_salt, generate_secret},
-    }, asset_processor::AssetProcessorCommand, controller::state::ShowState, event::{BackendEvent, CueState, SyncData}, manager::{ModelCommand, project::{ProjectStatus, ProjectType}},
+    },
+    asset_processor::AssetProcessorCommand,
+    controller::state::ShowState,
+    event::{BackendEvent, CueState, SyncData},
+    manager::{
+        ModelCommand,
+        project::{ProjectStatus, ProjectType},
+    },
 };
 
 const SMOOTH_FACTOR: f64 = 0.2;

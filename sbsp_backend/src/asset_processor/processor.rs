@@ -18,9 +18,13 @@ use symphonia::core::{
 };
 use tokio::sync::{RwLock, Semaphore, broadcast, mpsc};
 
+use super::{
+    command::AssetProcessorCommand,
+    data::{AssetData, AssetMetadata},
+    handle::AssetProcessorHandle,
+};
 use crate::event::BackendEvent;
 use crate::manager::ShowModelHandle;
-use super::{command::AssetProcessorCommand, data::{AssetData, AssetMetadata}, handle::AssetProcessorHandle};
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;

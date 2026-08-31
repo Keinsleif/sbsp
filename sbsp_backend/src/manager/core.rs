@@ -14,7 +14,11 @@ use anyhow::anyhow;
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
-use super::{ModelCommand, ShowModelHandle, InsertPosition, guard::RollbackGuard, project::{ProjectFile, ProjectStatus, ProjectType}};
+use super::{
+    InsertPosition, ModelCommand, ShowModelHandle,
+    guard::RollbackGuard,
+    project::{ProjectFile, ProjectStatus, ProjectType},
+};
 use crate::{
     BackendSettings,
     event::{BackendError, BackendEvent},
