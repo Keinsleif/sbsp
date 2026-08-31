@@ -82,7 +82,10 @@ pub fn get_supported_hardware() -> Result<SupportedHardware> {
 
                 for &rate in COMMON_SAMPLE_RATES {
                     if rate >= config.min_sample_rate() && rate <= config.max_sample_rate() {
-                        entry.entry(rate).or_default().extend(get_buffer_sizes(*config.buffer_size()));
+                        entry
+                            .entry(rate)
+                            .or_default()
+                            .extend(get_buffer_sizes(*config.buffer_size()));
                     }
                 }
             }
