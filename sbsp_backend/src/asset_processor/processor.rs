@@ -60,7 +60,8 @@ pub struct AssetProcessor {
 
     command_rx: mpsc::Receiver<AssetProcessorCommand>,
     event_tx: broadcast::Sender<BackendEvent>,
-    result_tx: broadcast::Sender<ProcessResult>,
+    result_internal_tx: mpsc::Sender<ProcessResult>,
+    result_internal_rx: mpsc::Receiver<ProcessResult>,
 
     semaphore: Arc<Semaphore>,
     cache: Arc<RwLock<AssetCache>>,
@@ -74,7 +75,7 @@ impl AssetProcessor {
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
-        let (result_tx, _) = broadcast::channel(32);
+        let (result_internal_tx, result_internal_rx) = mpsc::channel(32);
         let cores = std::thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(4);
@@ -83,7 +84,8 @@ impl AssetProcessor {
                 model_handle,
                 command_rx,
                 event_tx,
-                result_tx,
+                result_internal_tx,
+                result_internal_rx,
                 semaphore: Arc::new(Semaphore::new((cores - 1).max(1))),
                 cache: cache.clone(),
                 processing: Arc::new(RwLock::new(Vec::new())),
@@ -93,7 +95,6 @@ impl AssetProcessor {
     }
 
     pub async fn run(mut self) {
-        let mut result_rx = self.result_tx.subscribe();
         let mut event_rx = self.event_tx.subscribe();
         loop {
             tokio::select! {
@@ -105,9 +106,9 @@ impl AssetProcessor {
                         }
                     }
                 },
-                result = result_rx.recv() => {
-                    match result {
-                        Ok(result) => {
+                result_recv = self.result_internal_rx.recv() => {
+                    match result_recv {
+                        Some(result) => {
                             let mut cache = self.cache.write().await;
                             if let Ok(data) = &result.data {
                                 if let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
@@ -121,10 +122,7 @@ impl AssetProcessor {
                                 log::error!("Failed to send process result to event bus. {}", e);
                             }
                         }
-                        Err(broadcast::error::RecvError::Closed) => break,
-                        Err(_) => {
-                            log::warn!("AssetResult receiver Lagged.");
-                        }
+                        None => break,
                     }
                 },
                 result = event_rx.recv() => {
@@ -171,19 +169,20 @@ impl AssetProcessor {
         processing.push(actual_path.clone());
 
         let actual_path_clone = actual_path.clone();
-        let result_tx = self.result_tx.clone();
+        let result_tx = self.result_internal_tx.clone();
         let event_tx = self.event_tx.clone();
         let permit = self.semaphore.clone().acquire_owned().await.unwrap();
         tokio::task::spawn_blocking(move || {
             let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
                 .map_err(|e| e.to_string());
-            result_tx
-                .send(ProcessResult {
+            if let Err(e) = result_tx
+                .blocking_send(ProcessResult {
                     path,
                     actual_path: actual_path_clone,
                     data: asset_data,
-                })
-                .unwrap();
+                }) {
+                    log::error!("Failed to send results to internal channel: {}", e);
+                }
             drop(permit);
         });
         log::info!("Asset Process started. file={:?}", actual_path);
