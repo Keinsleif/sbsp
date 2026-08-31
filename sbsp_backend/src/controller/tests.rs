@@ -28,7 +28,6 @@ use uuid::Uuid;
 async fn setup_controller(
     cue_ids: &[Uuid],
 ) -> (
-    CueController,
     CueControllerHandle,
     mpsc::Receiver<ExecutorCommand>,
     mpsc::Sender<ExecutorEvent>,
@@ -43,44 +42,48 @@ async fn setup_controller(
     let (_, settings_rx) = watch::channel(BackendSettings::default());
 
     let (manager, handle) = ShowModelManager::new(event_tx.clone(), settings_rx.clone());
-    let mut write_lock = manager.write().await;
-    write_lock.name = "TestShowModel".to_string();
-    for cue_id in cue_ids {
-        write_lock.cue_list.root_ids.push(*cue_id);
-        write_lock.cue_list.cues.insert(
-            *cue_id,
-            Cue {
-                id: *cue_id,
-                number: "1".to_string(),
-                name: None,
-                notes: "".to_string(),
-                color: CueColor::None,
-                pre_wait: 0.0,
-                chain: model::cue::CueChain::DoNotChain,
-                treat_stop_as_completed: false,
-                cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
-                parent_id: None,
-                params: model::cue::CueParam::Audio(AudioCueParam {
-                    target: PathBuf::from("./I.G.Y.flac"),
-                    start_time: Some(5.0),
-                    fade_in_param: Some(FadeParam {
-                        duration: 2.0,
-                        easing: Easing::Linear,
+    {
+        let mut write_lock = manager.write().await;
+        write_lock.name = "TestShowModel".to_string();
+        for cue_id in cue_ids {
+            write_lock.cue_list.root_ids.push(*cue_id);
+            write_lock.cue_list.cues.insert(
+                *cue_id,
+                Cue {
+                    id: *cue_id,
+                    number: "1".to_string(),
+                    name: None,
+                    notes: "".to_string(),
+                    color: CueColor::None,
+                    pre_wait: 0.0,
+                    chain: model::cue::CueChain::DoNotChain,
+                    treat_stop_as_completed: false,
+                    cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::None,
+                    parent_id: None,
+                    params: model::cue::CueParam::Audio(AudioCueParam {
+                        target: PathBuf::from("./I.G.Y.flac"),
+                        start_time: Some(5.0),
+                        fade_in_param: Some(FadeParam {
+                            duration: 2.0,
+                            easing: Easing::Linear,
+                        }),
+                        end_time: Some(50.0),
+                        fade_out_param: Some(FadeParam {
+                            duration: 5.0,
+                            easing: Easing::InPow(2.0),
+                        }),
+                        volume: Decibels::IDENTITY,
+                        pan: 0.0,
+                        repeat: false,
+                        sound_type: SoundType::Streaming,
+                        envelope: Vec::new(),
                     }),
-                    end_time: Some(50.0),
-                    fade_out_param: Some(FadeParam {
-                        duration: 5.0,
-                        easing: Easing::InPow(2.0),
-                    }),
-                    volume: Decibels::IDENTITY,
-                    pan: 0.0,
-                    repeat: false,
-                    sound_type: SoundType::Streaming,
-                    envelope: Vec::new(),
-                }),
-            },
-        );
+                },
+            );
+        }
     }
+    tokio::spawn(manager.run());
+
     let (controller, controller_handle) = CueController::new(
         handle.clone(),
         exec_tx,
@@ -88,9 +91,9 @@ async fn setup_controller(
         state_tx,
         event_tx,
     );
+    tokio::spawn(controller.run());
 
     (
-        controller,
         controller_handle,
         exec_rx,
         playback_event_tx,
@@ -102,9 +105,7 @@ async fn setup_controller(
 #[tokio::test]
 async fn go_command() {
     let cue_id = Uuid::new_v4();
-    let (controller, controller_handle, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
-
-    tokio::spawn(controller.run());
+    let (controller_handle, mut exec_rx, _, _, _) = setup_controller(&[cue_id]).await;
 
     controller_handle.execute(cue_id).await.unwrap();
 
@@ -118,10 +119,8 @@ async fn go_command() {
 #[tokio::test]
 async fn started_event() {
     let cue_id = Uuid::new_v4();
-    let (controller, _, _, playback_event_tx, state_rx, mut event_rx) =
+    let (_, _, playback_event_tx, state_rx, mut event_rx) =
         setup_controller(&[cue_id]).await;
-
-    tokio::spawn(controller.run());
 
     playback_event_tx
         .send(ExecutorEvent::Started {
@@ -156,9 +155,8 @@ async fn started_event() {
 #[tokio::test]
 async fn progress_event() {
     let cue_id = Uuid::new_v4();
-    let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
         setup_controller(&[cue_id]).await;
-    tokio::spawn(controller.run());
 
     state_rx.mark_unchanged();
 
@@ -198,6 +196,8 @@ async fn progress_event() {
         assert_eq!(active_cue.status, PlaybackStatus::Playing);
         assert_eq!(active_cue.position, 20.0);
         assert_eq!(active_cue.duration, 50.0);
+    } else {
+        unreachable!();
     }
     assert!(event_rx.is_empty());
 }
@@ -205,10 +205,8 @@ async fn progress_event() {
 #[tokio::test]
 async fn pause_n_resume_event() {
     let cue_id = Uuid::new_v4();
-    let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
         setup_controller(&[cue_id]).await;
-
-    tokio::spawn(controller.run());
 
     state_rx.mark_unchanged();
 
@@ -284,10 +282,8 @@ async fn pause_n_resume_event() {
 #[tokio::test]
 async fn completed_event() {
     let cue_id = Uuid::new_v4();
-    let (controller, _, _, playback_event_tx, mut state_rx, mut event_rx) =
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
         setup_controller(&[cue_id]).await;
-
-    tokio::spawn(controller.run());
 
     state_rx.mark_unchanged();
 
