@@ -361,9 +361,7 @@ impl AssetProcessor {
                             peak_counter += 1;
                             if peak_counter >= frames_per_peak {
                                 waveform.push(max_in_current_peak);
-                                if max_in_current_peak > max_audio_sample {
-                                    max_audio_sample = max_in_current_peak;
-                                }
+                                max_audio_sample = max_audio_sample.max(max_in_current_peak);
                                 max_in_current_peak = 0.0;
                                 peak_counter = 0;
                             }
@@ -382,6 +380,7 @@ impl AssetProcessor {
 
         if peak_counter > 0 {
             waveform.push(max_in_current_peak);
+            max_audio_sample = max_audio_sample.max(max_in_current_peak);
         }
 
         let start_time = codec_params
