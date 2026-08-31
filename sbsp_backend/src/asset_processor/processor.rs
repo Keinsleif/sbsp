@@ -11,7 +11,7 @@ use ebur128::EbuR128;
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
     audio::SampleBuffer,
-    codecs::{DecoderOptions, FinalizeResult},
+    codecs::DecoderOptions,
     formats::FormatOptions,
     io::MediaSourceStream,
     meta::MetadataOptions,
@@ -373,7 +373,9 @@ impl AssetProcessor {
         };
 
         ignore_end_of_stream_error(result)?;
-        do_verification(decoder.finalize())?;
+        if let Some(false) = decoder.finalize().verify_ok {
+            anyhow::bail!("Asset verification failed: checksum or stream mismatch");
+        }
 
         if peak_counter > 0 {
             waveform.push(max_in_current_peak);
@@ -423,16 +425,5 @@ fn ignore_end_of_stream_error(
             Ok(())
         }
         _ => result,
-    }
-}
-
-fn do_verification(finalization: FinalizeResult) -> symphonia::core::errors::Result<i32> {
-    match finalization.verify_ok {
-        Some(is_ok) => {
-            log::debug!("verification: {}", if is_ok { "passed" } else { "failed" });
-
-            Ok(i32::from(!is_ok))
-        }
-        _ => Ok(0),
     }
 }
