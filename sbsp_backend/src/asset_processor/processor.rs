@@ -13,7 +13,7 @@ use symphonia::core::{
     audio::SampleBuffer, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
     meta::MetadataOptions, probe::Hint,
 };
-use tokio::sync::{RwLock, Semaphore, broadcast, mpsc};
+use tokio::{sync::{RwLock, Semaphore, broadcast, mpsc}, task::JoinSet};
 
 use super::{
     command::AssetProcessorCommand,
@@ -25,13 +25,6 @@ use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ProcessResult {
-    pub actual_path: PathBuf,
-    pub path: PathBuf,
-    pub data: Result<AssetData, String>,
-}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CacheEntry {
@@ -52,17 +45,30 @@ impl AssetCache {
     }
 }
 
+#[derive(Default)]
+struct ProcessingEntry {
+    orig_paths: HashSet<PathBuf>,
+    metadata: Option<AssetMetadata>,
+}
+
+impl ProcessingEntry {
+    fn with_path(path: PathBuf) -> Self {
+        Self {
+            orig_paths: HashSet::from([path]),
+            metadata: None,
+        }
+    }
+}
+
 pub struct AssetProcessor {
     model_handle: ShowModelHandle,
 
     command_rx: mpsc::Receiver<AssetProcessorCommand>,
     event_tx: broadcast::Sender<BackendEvent>,
-    result_internal_tx: mpsc::Sender<ProcessResult>,
-    result_internal_rx: mpsc::Receiver<ProcessResult>,
 
     semaphore: Arc<Semaphore>,
     cache: Arc<RwLock<AssetCache>>,
-    processing: Arc<RwLock<Vec<PathBuf>>>,
+    processing: Arc<RwLock<HashMap<PathBuf, ProcessingEntry>>>,
 }
 
 impl AssetProcessor {
@@ -72,7 +78,6 @@ impl AssetProcessor {
     ) -> (Self, AssetProcessorHandle) {
         let (command_tx, command_rx) = mpsc::channel::<AssetProcessorCommand>(32);
         let cache = Arc::new(RwLock::new(AssetCache::new()));
-        let (result_internal_tx, result_internal_rx) = mpsc::channel(32);
         let cores = std::thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(4);
@@ -81,11 +86,9 @@ impl AssetProcessor {
                 model_handle,
                 command_rx,
                 event_tx,
-                result_internal_tx,
-                result_internal_rx,
                 semaphore: Arc::new(Semaphore::new((cores - 1).max(1))),
                 cache: cache.clone(),
-                processing: Arc::new(RwLock::new(Vec::new())),
+                processing: Arc::new(RwLock::new(HashMap::new())),
             },
             AssetProcessorHandle { command_tx },
         )
@@ -98,25 +101,9 @@ impl AssetProcessor {
                 Some(command) = self.command_rx.recv() => {
                     match command {
                         AssetProcessorCommand::RequestFileAssetData{path} => {
-                            log::info!("Asset Process requested. file={:?}", path);
+                            log::info!("Asset Processing requested. file={:?}", path);
                             self.handle_process_file(path).await;
                         }
-                    }
-                },
-                result_recv = self.result_internal_rx.recv() => {
-                    match result_recv {
-                        Some(result) => {
-                            let mut cache = self.cache.write().await;
-                            if let Ok(data) = &result.data
-                                && let Ok(metadata) = tokio::fs::metadata(data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() {
-                                    cache.entries.insert(data.metadata.path.clone(), CacheEntry { last_modified, data: data.clone() });
-                                }
-                            self.processing.write().await.retain(|value| *value != result.actual_path);
-                            if let Err(e) = self.event_tx.send(BackendEvent::AssetResult { path: result.path, data: result.data }) {
-                                log::error!("Failed to send process result to event bus. {}", e);
-                            }
-                        }
-                        None => break,
                     }
                 },
                 result = event_rx.recv() => {
@@ -138,69 +125,163 @@ impl AssetProcessor {
 
     async fn handle_process_file(&self, path: PathBuf) {
         let Ok(actual_path) = self.model_handle.get_asset_standard_path(&path).await else {
-            self.event_tx
-                .send(BackendEvent::AssetResult {
-                    path,
-                    data: Err("Failed to resolve path.".to_string()),
-                })
-                .unwrap();
+            if let Err(e) = self.event_tx.send(BackendEvent::AssetResult {
+                path,
+                result: Err("Failed to resolve path.".to_string()),
+            }) {
+                log::error!("Failed to send process result to event bus. {}", e);
+            }
             return;
         };
-        let cache = self.cache.read().await;
-        if let Some(entry) = cache.entries.get(&actual_path) {
-            self.event_tx
-                .send(BackendEvent::AssetResult {
-                    path,
-                    data: Ok(entry.data.clone()),
-                })
-                .unwrap();
-            return;
+        {
+            let entry = {
+                let cache = self.cache.read().await;
+                cache.entries.get(&actual_path).cloned()
+            };
+            if let Some(entry) = entry {
+                let valid = Self::is_cache_entry_valid(&actual_path, entry.last_modified).await;
+                if valid {
+                    if let Err(e) = self.event_tx.send(BackendEvent::AssetResult {
+                        path,
+                        result: Ok(entry.data.clone()),
+                    }) {
+                        log::error!("Failed to send process result to event bus. {}", e);
+                    }
+                    return;
+                } else {
+                    self.cache.write().await.entries.remove(&actual_path);
+                }
+            }
         }
-        let mut processing = self.processing.write().await;
-        if processing.contains(&actual_path) {
-            return;
+        {
+            let mut processing = self.processing.write().await;
+            if let Some(entry) = processing.get_mut(&actual_path) {
+                entry.orig_paths.insert(path.clone());
+                if let Some(metadata) = &entry.metadata
+                    && let Err(e) = self.event_tx.send(BackendEvent::AssetMetadata {
+                        path,
+                        data: metadata.clone(),
+                    })
+                {
+                    log::error!("Failed to send metadata to event bus. {}", e);
+                }
+                return;
+            }
+            processing.insert(
+                actual_path.clone(),
+                ProcessingEntry::with_path(path.clone()),
+            );
         }
-        processing.push(actual_path.clone());
 
         let actual_path_clone = actual_path.clone();
-        let result_tx = self.result_internal_tx.clone();
         let event_tx = self.event_tx.clone();
-        let permit = self.semaphore.clone().acquire_owned().await.unwrap();
+        let cache_lock = self.cache.clone();
+        let processing_lock = self.processing.clone();
+        let permit = match self.semaphore.clone().acquire_owned().await {
+            Ok(permit) => permit,
+            Err(_) => {
+                self.fail_processing(
+                    &actual_path,
+                    Err("Asset processor is shutting down.".to_string()),
+                )
+                .await;
+                return;
+            }
+        };
         tokio::task::spawn_blocking(move || {
-            let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
-                .map_err(|e| e.to_string());
-            if let Err(e) = result_tx.blocking_send(ProcessResult {
-                path,
-                actual_path: actual_path_clone,
-                data: asset_data,
-            }) {
-                log::error!("Failed to send results to internal channel: {}", e);
+            let asset_data = Self::process_asset(
+                actual_path_clone.clone(),
+                event_tx.clone(),
+                cache_lock,
+                processing_lock.clone(),
+            )
+            .map_err(|e| e.to_string());
+            if let Some(entry) = processing_lock.blocking_write().remove(&actual_path_clone) {
+                for orig_path in entry.orig_paths {
+                    if let Err(e) = event_tx.send(BackendEvent::AssetResult {
+                        path: orig_path,
+                        result: asset_data.clone(),
+                    }) {
+                        log::error!("Failed to send process result to event bus. {}", e);
+                    }
+                }
             }
             drop(permit);
         });
-        log::info!("Asset Process started. file={:?}", actual_path);
+        log::info!("Asset Processing started. file={:?}", actual_path);
+    }
+
+    async fn fail_processing(&self, actual_path: &PathBuf, data: Result<AssetData, String>) {
+        if let Some(entry) = self.processing.write().await.remove(actual_path) {
+            for orig_path in entry.orig_paths {
+                if let Err(e) = self.event_tx.send(BackendEvent::AssetResult {
+                    path: orig_path,
+                    result: data.clone(),
+                }) {
+                    log::error!("Failed to send process result to event bus. {}", e);
+                }
+            }
+        }
+    }
+
+    async fn is_cache_entry_valid(file_path: &PathBuf, last_modified: SystemTime) -> bool {
+        match tokio::fs::metadata(file_path).await {
+            Ok(metadata) => matches!(metadata.modified(), Ok(m) if m == last_modified),
+            Err(_) => false,
+        }
     }
 
     async fn filter_current_assets(&self) {
         let active_paths = self.model_handle.get_all_asset_paths().await;
 
-        let mut cache = self.cache.write().await;
-        let before_count = cache.entries.len();
+        let (snapshot, before_count): (Vec<(PathBuf, PathBuf, SystemTime)>, usize) = {
+            let mut cache = self.cache.write().await;
+            let before_len = cache.entries.len();
+            cache.entries.retain(|path, _| active_paths.contains(path));
 
-        cache.entries.retain(|path, _| active_paths.contains(path));
+            (
+                cache
+                    .entries
+                    .iter()
+                    .map(|(path, entry)| {
+                        (
+                            path.clone(),
+                            entry.data.metadata.path.clone(),
+                            entry.last_modified,
+                        )
+                    })
+                    .collect(),
+                before_len,
+            )
+        };
+
+        let checked_paths: HashSet<PathBuf> = snapshot.iter().map(|(p, _, _)| p.clone()).collect();
+
+        let mut join_set = JoinSet::new();
+        for (path, file_path, last_modified) in snapshot {
+            join_set.spawn(async move {
+                let valid = Self::is_cache_entry_valid(&file_path, last_modified).await;
+                (path, valid)
+            });
+        }
 
         let mut active_cache_paths = HashSet::new();
-        for (path, entry) in &cache.entries {
-            if let Ok(metadata) = tokio::fs::metadata(entry.data.metadata.path.clone()).await
-                && let Ok(last_modified) = metadata.modified()
-                && last_modified == entry.last_modified
+        while let Some(result) = join_set.join_next().await {
+            if let Ok((path, valid)) = result
+                && valid
             {
-                active_cache_paths.insert(path.clone());
+                active_cache_paths.insert(path);
             }
         }
-        cache
-            .entries
-            .retain(|path, _| active_cache_paths.contains(path));
+
+        let mut cache = self.cache.write().await;
+        cache.entries.retain(|path, _| {
+            if checked_paths.contains(path) {
+                active_cache_paths.contains(path)
+            } else {
+                true
+            }
+        });
 
         let after_count = cache.entries.len();
         log::info!(
@@ -211,15 +292,17 @@ impl AssetProcessor {
     }
 
     fn process_asset(
-        path: PathBuf,
-        orig_path: PathBuf,
+        standard_path: PathBuf,
         event_tx: broadcast::Sender<BackendEvent>,
+        cache: Arc<RwLock<AssetCache>>,
+        processing: Arc<RwLock<HashMap<PathBuf, ProcessingEntry>>>,
     ) -> anyhow::Result<AssetData> {
-        let src: std::fs::File = std::fs::File::open(&path)?;
+        let src: std::fs::File = std::fs::File::open(&standard_path)?;
+        let last_modified = src.metadata().and_then(|m| m.modified());
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
 
         let mut hint = Hint::new();
-        if let Some(ext_osstr) = path.extension()
+        if let Some(ext_osstr) = standard_path.extension()
             && let Some(ext_str) = ext_osstr.to_str()
         {
             hint.with_extension(ext_str);
@@ -257,16 +340,26 @@ impl AssetProcessor {
         let mut channel_count = codec_params.channels.map(|channels| channels.count());
 
         let mut metadata = AssetMetadata {
-            path: path.clone(),
+            path: standard_path.clone(),
             duration,
             channel_count: channel_count.map(|c| c as u16),
             sample_rate,
         };
 
-        let _ = event_tx.send(BackendEvent::AssetMetadata {
-            path: orig_path,
-            data: metadata.clone(),
-        });
+        {
+            let mut processing_guard = processing.blocking_write();
+            if let Some(entry) = processing_guard.get_mut(&standard_path) {
+                entry.metadata = Some(metadata.clone());
+                for p in &entry.orig_paths {
+                    if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
+                        path: p.clone(),
+                        data: metadata.clone(),
+                    }) {
+                        log::error!("Failed to send metadata to event bus. {}", e);
+                    }
+                }
+            }
+        }
 
         let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
 
@@ -275,8 +368,8 @@ impl AssetProcessor {
         let frames_per_peak = {
             let default_frames_per_peak = (sample_rate as f64 * 0.1).max(1.0) as u64;
             if total_frames > 0 {
-                let calcurate_interval = total_frames.div_ceil(WAVEFORM_THRESHOLD as u64);
-                default_frames_per_peak.max(calcurate_interval)
+                let calculate_interval = total_frames.div_ceil(WAVEFORM_THRESHOLD as u64);
+                default_frames_per_peak.max(calculate_interval)
             } else {
                 default_frames_per_peak
             }
@@ -392,11 +485,15 @@ impl AssetProcessor {
             .zip(last_audio_frame)
             .map(calc_secs_from_timebase);
 
-        let integrated_lufs = ebur128.map(|ebur| ebur.loudness_global().unwrap());
+        let integrated_lufs = ebur128.and_then(|ebur| {
+            ebur.loudness_global()
+                .inspect_err(|e| log::warn!("Failed to calculate integrated LUFS: {}", e))
+                .ok()
+        });
 
         metadata.channel_count = channel_count.map(|c| c as u16);
 
-        Ok(AssetData {
+        let asset_data = AssetData {
             metadata,
             waveform,
             integrated_lufs,
@@ -407,7 +504,19 @@ impl AssetProcessor {
             },
             start_time,
             end_time,
-        })
+        };
+
+        if let Ok(lm_time) = last_modified {
+            cache.blocking_write().entries.insert(
+                standard_path,
+                CacheEntry {
+                    last_modified: lm_time,
+                    data: asset_data.clone(),
+                },
+            );
+        }
+
+        Ok(asset_data)
     }
 }
 
