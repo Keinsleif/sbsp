@@ -349,7 +349,14 @@ pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
     tokio::spawn(async move {
         loop {
             tokio::select! {
-                Ok(event) = receiver.recv_async() => {
+                recv_result = receiver.recv_async() => {
+                    let event = match recv_result {
+                        Ok(event) => event,
+                        Err(e) => {
+                            log::error!("Failed to receive mdns browser results: {}", e);
+                            break;
+                        },
+                    };
                     match event {
                         ServiceEvent::ServiceResolved(resolved) => {
                             let fullname: String = resolved.get_fullname().into();
@@ -374,7 +381,7 @@ pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
                         }
                         _ => {}
                     }
-                }
+                },
                 _ = services_tx.closed() => break,
             }
         }
