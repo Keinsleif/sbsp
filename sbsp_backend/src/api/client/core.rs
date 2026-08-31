@@ -77,7 +77,8 @@ pub async fn create_remote_backend(
                     } else {
                         None
                     };
-                    if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
+                    if let Ok(payload) =
+                        serde_json::to_string(&WsCommand::Authenticate { response })
                         && websocket.send(Message::Text(payload.into())).await.is_err()
                     {
                         log::info!("WebSocket client disconnected (send error).");
@@ -88,7 +89,7 @@ pub async fn create_remote_backend(
                 }
                 Ok(_) => anyhow::bail!("Unexpected message during authentication."),
                 Err(e) => anyhow::bail!("Failed to parse message during authentication: {}", e),
-            }
+            },
             Message::Close { .. } => {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
@@ -117,7 +118,7 @@ pub async fn create_remote_backend(
                 Err(e) => {
                     anyhow::bail!("Failed to parse during authentication: {}", e);
                 }
-            }
+            },
             Message::Close { .. } => {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
@@ -337,13 +338,13 @@ pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
         Ok(mdns) => mdns,
         Err(e) => {
             anyhow::bail!("Failed to initialize mdns deamon: {}", e);
-        },
+        }
     };
     let receiver = match mdns.browse(service_type) {
         Ok(receiver) => receiver,
         Err(e) => {
             anyhow::bail!("Failed to start mdns discovery: {}", e);
-        },
+        }
     };
     tokio::spawn(async move {
         loop {
