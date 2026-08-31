@@ -10,12 +10,8 @@ use std::{collections::HashMap, sync::Arc, time::SystemTime};
 use ebur128::EbuR128;
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
-    audio::SampleBuffer,
-    codecs::DecoderOptions,
-    formats::FormatOptions,
-    io::MediaSourceStream,
-    meta::MetadataOptions,
-    probe::Hint,
+    audio::SampleBuffer, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
+    meta::MetadataOptions, probe::Hint,
 };
 use tokio::sync::{RwLock, Semaphore, broadcast, mpsc};
 
@@ -173,14 +169,13 @@ impl AssetProcessor {
         tokio::task::spawn_blocking(move || {
             let asset_data = Self::process_asset(actual_path_clone.clone(), path.clone(), event_tx)
                 .map_err(|e| e.to_string());
-            if let Err(e) = result_tx
-                .blocking_send(ProcessResult {
-                    path,
-                    actual_path: actual_path_clone,
-                    data: asset_data,
-                }) {
-                    log::error!("Failed to send results to internal channel: {}", e);
-                }
+            if let Err(e) = result_tx.blocking_send(ProcessResult {
+                path,
+                actual_path: actual_path_clone,
+                data: asset_data,
+            }) {
+                log::error!("Failed to send results to internal channel: {}", e);
+            }
             drop(permit);
         });
         log::info!("Asset Process started. file={:?}", actual_path);
@@ -196,11 +191,16 @@ impl AssetProcessor {
 
         let mut active_cache_paths = HashSet::new();
         for (path, entry) in &cache.entries {
-            if let Ok(metadata) = tokio::fs::metadata(entry.data.metadata.path.clone()).await && let Ok(last_modified) = metadata.modified() && last_modified == entry.last_modified {
+            if let Ok(metadata) = tokio::fs::metadata(entry.data.metadata.path.clone()).await
+                && let Ok(last_modified) = metadata.modified()
+                && last_modified == entry.last_modified
+            {
                 active_cache_paths.insert(path.clone());
             }
         }
-        cache.entries.retain(|path, _| active_cache_paths.contains(path));
+        cache
+            .entries
+            .retain(|path, _| active_cache_paths.contains(path));
 
         let after_count = cache.entries.len();
         log::info!(
@@ -345,7 +345,10 @@ impl AssetProcessor {
                             ebur.add_frames_f32(samples)?;
                         }
                         for frame in samples.chunks(channels) {
-                            let frame_max = frame.iter().map(|s| s.abs()).fold(0.0f32, |acc, val| acc.max(val));
+                            let frame_max = frame
+                                .iter()
+                                .map(|s| s.abs())
+                                .fold(0.0f32, |acc, val| acc.max(val));
                             if frame_max >= AUDIO_THRESHOLD {
                                 if first_audio_frame.is_none() {
                                     first_audio_frame = Some(frame_index);
