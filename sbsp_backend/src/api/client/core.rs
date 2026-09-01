@@ -57,45 +57,74 @@ pub async fn create_remote_backend(
     let project_status_clone = project_status.clone();
     let event_tx_clone = event_tx.clone();
 
+    // This server not supports TLS. Use proxy to support secure connection.
     let (mut websocket, _) = connect_async(format!("ws://{}/ws", address)).await?;
 
     let permission;
 
-    if let Ok(Some(message)) = websocket.try_next().await {
-        if let Message::Text(text) = &message
-            && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-            && let WsFeedback::Hello { auth } = feedback
-        {
-            let response = if let Some(pass) = password {
-                let secret = generate_secret(&pass, &auth.salt);
-                Some(generate_authentication_string(&secret, &auth.challenge))
-            } else {
-                None
-            };
-            if let Ok(payload) = serde_json::to_string(&WsCommand::Authenticate { response })
-                && websocket.send(Message::Text(payload.into())).await.is_err()
-            {
-                log::info!("WebSocket client disconnected (send error).");
+    loop {
+        let message = match websocket.try_next().await {
+            Ok(Some(message)) => message,
+            Ok(None) => anyhow::bail!("Connection closed during authentication."),
+            Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
+        };
+        match &message {
+            Message::Text(text) => match serde_json::from_str::<WsFeedback>(text) {
+                Ok(WsFeedback::Hello { auth }) => {
+                    let response: Option<String> = if let Some(pass) = &password {
+                        let secret = generate_secret(pass, &auth.salt);
+                        Some(generate_authentication_string(&secret, &auth.challenge))
+                    } else {
+                        None
+                    };
+                    if let Ok(payload) =
+                        serde_json::to_string(&WsCommand::Authenticate { response })
+                        && websocket.send(Message::Text(payload.into())).await.is_err()
+                    {
+                        log::info!("WebSocket client disconnected (send error).");
+                        anyhow::bail!("Connection closed during authentication.");
+                    } else {
+                        break;
+                    }
+                }
+                Ok(_) => anyhow::bail!("Unexpected message during authentication."),
+                Err(e) => anyhow::bail!("Failed to parse message during authentication: {}", e),
+            },
+            Message::Close { .. } => {
+                log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
             }
-        } else if let Message::Close { .. } = &message {
-            log::info!("WebSocket server sent close message.");
-            anyhow::bail!("Connection closed during authentication.");
+            Message::Ping(_) | Message::Pong(_) => {}
+            _ => anyhow::bail!("Unexpected message during authentication."),
         }
     }
 
     loop {
-        if let Ok(Some(message)) = websocket.try_next().await {
-            if let Message::Text(text) = &message
-                && let Ok(feedback) = serde_json::from_str::<WsFeedback>(text)
-                && let WsFeedback::Authenticated { perm } = feedback
-            {
-                permission = perm;
-                break;
-            } else if let Message::Close { .. } = &message {
+        let message = match websocket.try_next().await {
+            Ok(Some(message)) => message,
+            Ok(None) => anyhow::bail!("Connection closed during authentication."),
+            Err(e) => anyhow::bail!("WebSocket error during authentication: {}", e),
+        };
+        match &message {
+            Message::Text(text) => match serde_json::from_str::<WsFeedback>(text) {
+                Ok(WsFeedback::Authenticated { perm }) => {
+                    permission = perm;
+                    break;
+                }
+                Ok(WsFeedback::Error(error)) => {
+                    anyhow::bail!("Authentication rejected by server: {:?}", error);
+                }
+                Ok(_) => anyhow::bail!("Unexpected message during authentication."),
+                Err(e) => {
+                    anyhow::bail!("Failed to parse during authentication: {}", e);
+                }
+            },
+            Message::Close { .. } => {
                 log::info!("WebSocket server sent close message.");
                 anyhow::bail!("Connection closed during authentication.");
             }
+            Message::Ping(_) | Message::Pong(_) => {}
+            _ => anyhow::bail!("Unexpected message during authentication."),
         }
     }
 
@@ -108,7 +137,18 @@ pub async fn create_remote_backend(
     tokio::spawn(async move {
         loop {
             tokio::select! {
-                Ok(Some(message)) = websocket.try_next() => {
+                websock_result = websocket.try_next() => {
+                    let message = match websock_result {
+                        Ok(Some(message)) => message,
+                        Ok(None) => {
+                            log::info!("WebSocket client disconnected.");
+                            break;
+                        },
+                        Err(e) => {
+                            log::info!("WebSocket client disconnected: {}", e);
+                            break;
+                        }
+                    };
                     match message {
                         Message::Text(text) => {
                             if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
@@ -291,15 +331,32 @@ pub async fn create_remote_backend(
     ))
 }
 
-pub fn start_discovery() -> watch::Receiver<Vec<ServiceEntry>> {
+pub fn start_discovery() -> anyhow::Result<watch::Receiver<Vec<ServiceEntry>>> {
     let (services_tx, services_rx) = watch::channel(Vec::new());
+    let service_type = "_sbsp._tcp.local.";
+    let mdns = match ServiceDaemon::new() {
+        Ok(mdns) => mdns,
+        Err(e) => {
+            anyhow::bail!("Failed to initialize mdns deamon: {}", e);
+        }
+    };
+    let receiver = match mdns.browse(service_type) {
+        Ok(receiver) => receiver,
+        Err(e) => {
+            anyhow::bail!("Failed to start mdns discovery: {}", e);
+        }
+    };
     tokio::spawn(async move {
-        let service_type = "_sbsp._tcp.local.";
-        let mdns = ServiceDaemon::new().expect("Failed to create daemon");
-        let receiver = mdns.browse(service_type).expect("Failed to browse");
         loop {
             tokio::select! {
-                Ok(event) = receiver.recv_async() => {
+                recv_result = receiver.recv_async() => {
+                    let event = match recv_result {
+                        Ok(event) => event,
+                        Err(e) => {
+                            log::error!("Failed to receive mdns browser results: {}", e);
+                            break;
+                        },
+                    };
                     match event {
                         ServiceEvent::ServiceResolved(resolved) => {
                             let fullname: String = resolved.get_fullname().into();
@@ -324,14 +381,13 @@ pub fn start_discovery() -> watch::Receiver<Vec<ServiceEntry>> {
                         }
                         _ => {}
                     }
-                }
+                },
                 _ = services_tx.closed() => break,
             }
         }
-        let mut result = mdns.shutdown();
-        while let Err(Error::Again) = result {
-            result = mdns.shutdown();
+        while let Err(Error::Again) = mdns.shutdown() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
     });
-    services_rx
+    Ok(services_rx)
 }
