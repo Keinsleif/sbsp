@@ -4,9 +4,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    BackendSettings,
-    event::BackendEvent,
-    model::{
+    BackendSettings, event::BackendEvent, manager::DEFAULT_PROJECT_FOLDER_MODEL_FILENAME, model::{
         ShowModel,
         cue::{
             Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam,
@@ -87,7 +85,7 @@ async fn update_cue() {
         }),
         ProjectStatus::Saved {
             project_type: ProjectType::ProjectFolder,
-            path: temp_dir.path().to_path_buf(),
+            path: temp_dir.path().to_path_buf().join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
         },
     )
     .await;
@@ -162,7 +160,7 @@ async fn add_cue() {
         }),
         ProjectStatus::Saved {
             project_type: ProjectType::ProjectFolder,
-            path: temp_dir.path().to_path_buf(),
+            path: temp_dir.path().to_path_buf().join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
         },
     )
     .await;

@@ -28,7 +28,7 @@ use crate::{
     },
 };
 
-const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
+pub const DEFAULT_PROJECT_FOLDER_MODEL_FILENAME: &str = "model.sbsp";
 
 pub struct ShowModelManager {
     model: Arc<RwLock<ShowModel>>,
@@ -82,25 +82,7 @@ impl ShowModelManager {
         match command {
             ModelCommand::UpdateCue(mut cue) => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                if let CueParam::Audio(audio_param) = &mut cue.params
-                    && let Some(model_path) = model_path_option.as_ref()
-                    && self.copy_assets_when_add
-                {
-                    let import_destination = {
-                        let model = self.model.read().await;
-                        model.settings.general.copy_assets_destination.clone()
-                    };
-
-                    let new_target = Self::import_asset_file(
-                        &audio_param.target,
-                        model_path,
-                        &import_destination,
-                    )
-                    .await;
-                    if let Ok(target) = new_target {
-                        audio_param.target = target;
-                    } // ignore failed to import asset. use absolute path
-                }
+                self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
                 if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -130,24 +112,8 @@ impl ShowModelManager {
                     }
                     return;
                 }
-                if let CueParam::Audio(audio_param) = &mut cue.params
-                    && let Some(model_path) = model_path_option.as_ref()
-                    && self.copy_assets_when_add
-                {
-                    let import_destination = {
-                        let model = self.model.read().await;
-                        model.settings.general.copy_assets_destination.clone()
-                    };
-                    let new_target = Self::import_asset_file(
-                        &audio_param.target,
-                        model_path,
-                        &import_destination,
-                    )
-                    .await;
-                    if let Ok(target) = new_target {
-                        audio_param.target = target;
-                    } // ignore failed to import asset. use absolute path
-                }
+                self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
+
                 if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -190,24 +156,8 @@ impl ShowModelManager {
                         }
                         continue;
                     }
-                    if let CueParam::Audio(audio_param) = &mut cue.params
-                        && let Some(model_path) = model_path_option.as_ref()
-                        && self.copy_assets_when_add
-                    {
-                        let import_destination = {
-                            let model = self.model.read().await;
-                            model.settings.general.copy_assets_destination.clone()
-                        };
-                        let new_target = Self::import_asset_file(
-                            &audio_param.target,
-                            model_path,
-                            &import_destination,
-                        )
-                        .await;
-                        if let Ok(target) = new_target {
-                            audio_param.target = target;
-                        } // ignore failed to import asset. use absolute path
-                    }
+                    self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
+
                     valid_cues.push(cue);
                 }
                 if valid_cues.is_empty() {
@@ -332,6 +282,7 @@ impl ShowModelManager {
                 let mut model = self.model.write().await;
                 let mut targets: HashSet<Uuid> = cues.into_iter().collect();
                 let mut number = start_from;
+                let mut renumbered = false;
                 let prefix = prefix.unwrap_or_default();
                 let suffix = suffix.unwrap_or_default();
 
@@ -342,7 +293,11 @@ impl ShowModelManager {
                     for cue_id in cue_ids {
                         if let Some(cue) = model.cue_list.cues.get_mut(&cue_id) {
                             if targets.remove(&cue_id) {
-                                cue.number = format!("{}{}{}", prefix, number, suffix);
+                                let new_number = format!("{}{}{}", prefix, number, suffix);
+                                if cue.number != new_number {
+                                    cue.number = new_number;
+                                    renumbered = true;
+                                }
                                 number += increment;
                                 if targets.is_empty() {
                                     break 'outer;
@@ -359,7 +314,7 @@ impl ShowModelManager {
                     }
                 }
 
-                if number != start_from {
+                if renumbered {
                     self.modify_status.store(true, Ordering::Release);
                     if let Err(e) = self.event_tx.send(BackendEvent::CueListUpdated {
                         cue_list: model.cue_list.clone(),
@@ -576,6 +531,24 @@ impl ShowModelManager {
     #[cfg(test)]
     pub async fn write(&self) -> tokio::sync::RwLockWriteGuard<'_, ShowModel> {
         self.model.write().await
+    }
+
+    async fn import_cue_asset(&self, cue: &mut Cue, model_path: Option<&Path>) {
+        if let CueParam::Audio(audio_param) = &mut cue.params
+            && let Some(model_path) = model_path
+            && let Some(model_dir) = model_path.parent()
+            && self.copy_assets_when_add
+        {
+            let import_destination = {
+                let model = self.model.read().await;
+                model.settings.general.copy_assets_destination.clone()
+            };
+            if let Ok(target) =
+                Self::import_asset_file(&audio_param.target, model_dir, &import_destination).await
+            {
+                audio_param.target = target; // ignore import failure: keep original path
+            }
+        }
     }
 
     async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
@@ -1126,7 +1099,10 @@ impl ShowModelManager {
         } else if audio_dir.is_file() {
             anyhow::bail!("Failed to copy asset to destination. destination is not directory");
         }
-        let asset_file_name = asset_path.file_name().unwrap().to_str().unwrap();
+        let asset_file_name = asset_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| anyhow!("Invalid asset file name. path={:?}", asset_path))?;
         let dest_path = audio_dir.join(asset_file_name);
         if !dest_path.exists() {
             tokio::fs::copy(asset_path, &dest_path).await?;
