@@ -13,7 +13,10 @@ use symphonia::core::{
     audio::SampleBuffer, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
     meta::MetadataOptions, probe::Hint,
 };
-use tokio::{sync::{RwLock, Semaphore, broadcast, mpsc}, task::JoinSet};
+use tokio::{
+    sync::{RwLock, Semaphore, broadcast, mpsc},
+    task::JoinSet,
+};
 
 use super::{
     command::AssetProcessorCommand,
@@ -177,51 +180,48 @@ impl AssetProcessor {
         let event_tx = self.event_tx.clone();
         let cache_lock = self.cache.clone();
         let processing_lock = self.processing.clone();
-        let permit = match self.semaphore.clone().acquire_owned().await {
-            Ok(permit) => permit,
-            Err(_) => {
-                self.fail_processing(
-                    &actual_path,
-                    Err("Asset processor is shutting down.".to_string()),
+        let semaphore = self.semaphore.clone();
+        tokio::spawn(async move {
+            let permit = match semaphore.acquire_owned().await {
+                Ok(permit) => permit,
+                Err(_) => {
+                    if let Some(entry) = processing_lock.blocking_write().remove(&actual_path_clone)
+                    {
+                        for orig_path in entry.orig_paths {
+                            if let Err(e) = event_tx.send(BackendEvent::AssetResult {
+                                path: orig_path,
+                                result: Err("Asset processor is shutting down.".to_string()),
+                            }) {
+                                log::error!("Failed to send process result to event bus. {}", e);
+                            }
+                        }
+                    }
+                    return;
+                }
+            };
+            tokio::task::spawn_blocking(move || {
+                let asset_data = Self::process_asset(
+                    actual_path_clone.clone(),
+                    event_tx.clone(),
+                    cache_lock,
+                    processing_lock.clone(),
                 )
-                .await;
-                return;
-            }
-        };
-        tokio::task::spawn_blocking(move || {
-            let asset_data = Self::process_asset(
-                actual_path_clone.clone(),
-                event_tx.clone(),
-                cache_lock,
-                processing_lock.clone(),
-            )
-            .map_err(|e| e.to_string());
-            if let Some(entry) = processing_lock.blocking_write().remove(&actual_path_clone) {
-                for orig_path in entry.orig_paths {
-                    if let Err(e) = event_tx.send(BackendEvent::AssetResult {
-                        path: orig_path,
-                        result: asset_data.clone(),
-                    }) {
-                        log::error!("Failed to send process result to event bus. {}", e);
+                .map_err(|e| e.to_string());
+                if let Some(entry) = processing_lock.blocking_write().remove(&actual_path_clone) {
+                    for orig_path in entry.orig_paths {
+                        if let Err(e) = event_tx.send(BackendEvent::AssetResult {
+                            path: orig_path,
+                            result: asset_data.clone(),
+                        }) {
+                            log::error!("Failed to send process result to event bus. {}", e);
+                        }
                     }
                 }
-            }
-            drop(permit);
+                drop(permit);
+            });
         });
-        log::info!("Asset Processing started. file={:?}", actual_path);
-    }
 
-    async fn fail_processing(&self, actual_path: &PathBuf, data: Result<AssetData, String>) {
-        if let Some(entry) = self.processing.write().await.remove(actual_path) {
-            for orig_path in entry.orig_paths {
-                if let Err(e) = self.event_tx.send(BackendEvent::AssetResult {
-                    path: orig_path,
-                    result: data.clone(),
-                }) {
-                    log::error!("Failed to send process result to event bus. {}", e);
-                }
-            }
-        }
+        log::info!("Asset Processing started. file={:?}", actual_path);
     }
 
     async fn is_cache_entry_valid(file_path: &PathBuf, last_modified: SystemTime) -> bool {
