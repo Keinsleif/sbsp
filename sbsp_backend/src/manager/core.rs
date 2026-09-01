@@ -11,6 +11,7 @@ use std::{
 };
 
 use anyhow::anyhow;
+use sha2::Digest;
 use tokio::sync::{RwLock, broadcast, mpsc, watch};
 use uuid::Uuid;
 
@@ -82,7 +83,8 @@ impl ShowModelManager {
         match command {
             ModelCommand::UpdateCue(mut cue) => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
+                self.import_cue_asset(&mut cue, model_path_option.as_deref())
+                    .await;
                 if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -112,7 +114,8 @@ impl ShowModelManager {
                     }
                     return;
                 }
-                self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
+                self.import_cue_asset(&mut cue, model_path_option.as_deref())
+                    .await;
 
                 if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
                     if let Err(e) = self.event_tx.send(BackendEvent::OperationFailed {
@@ -156,7 +159,8 @@ impl ShowModelManager {
                         }
                         continue;
                     }
-                    self.import_cue_asset(&mut cue, model_path_option.as_deref()).await;
+                    self.import_cue_asset(&mut cue, model_path_option.as_deref())
+                        .await;
 
                     valid_cues.push(cue);
                 }
@@ -286,25 +290,33 @@ impl ShowModelManager {
                 let prefix = prefix.unwrap_or_default();
                 let suffix = suffix.unwrap_or_default();
 
-                let mut queue: VecDeque<Vec<Uuid>> =
-                    VecDeque::from([model.cue_list.root_ids.clone()]);
+                let mut stack: VecDeque<Uuid> = VecDeque::from(model.cue_list.root_ids.clone());
+                let mut first_found_parent = None;
 
-                'outer: while let Some(cue_ids) = queue.pop_front() {
-                    for cue_id in cue_ids {
-                        if let Some(cue) = model.cue_list.cues.get_mut(&cue_id) {
-                            if targets.remove(&cue_id) {
-                                let new_number = format!("{}{}{}", prefix, number, suffix);
-                                if cue.number != new_number {
-                                    cue.number = new_number;
-                                    renumbered = true;
-                                }
-                                number += increment;
-                                if targets.is_empty() {
-                                    break 'outer;
-                                }
+                'outer: while let Some(cue_id) = stack.pop_front() {
+                    if let Some(cue) = model.cue_list.cues.get_mut(&cue_id) {
+                        if let Some(first_found) = first_found_parent
+                            && first_found != cue.parent_id
+                        {
+                            continue;
+                        }
+                        if targets.remove(&cue_id) {
+                            if first_found_parent.is_none() {
+                                first_found_parent = Some(cue.parent_id);
                             }
-                            if let CueParam::Group { children, .. } = &cue.params {
-                                queue.push_back(children.clone());
+                            let new_number = format!("{}{}{}", prefix, number, suffix);
+                            if cue.number != new_number {
+                                cue.number = new_number;
+                                renumbered = true;
+                            }
+                            number += increment;
+                            if targets.is_empty() {
+                                break 'outer;
+                            }
+                        }
+                        if let CueParam::Group { children, .. } = &cue.params {
+                            for child in children.iter().rev() {
+                                stack.push_front(*child);
                             }
                         }
                     }
@@ -543,8 +555,12 @@ impl ShowModelManager {
                 let model = self.model.read().await;
                 model.settings.general.copy_assets_destination.clone()
             };
-            if let Ok(target) =
-                Self::import_asset_file(&audio_param.target, model_dir, &import_destination).await
+            if let Ok(target) = import_asset_file(
+                audio_param.target.clone(),
+                model_dir.to_path_buf(),
+                import_destination,
+            )
+            .await
             {
                 audio_param.target = target; // ignore import failure: keep original path
             }
@@ -1015,9 +1031,12 @@ impl ShowModelManager {
 
                     for target in targets.values_mut() {
                         let asset_path = parent.join(&*target);
-                        let new_path =
-                            Self::import_asset_file(&asset_path, project_dir, &import_destination)
-                                .await?;
+                        let new_path = import_asset_file(
+                            asset_path,
+                            project_dir.to_path_buf(),
+                            import_destination.clone(),
+                        )
+                        .await?;
                         *target = new_path;
                     }
 
@@ -1049,9 +1068,12 @@ impl ShowModelManager {
                     };
 
                     for target in targets.values_mut() {
-                        let new_path =
-                            Self::import_asset_file(&*target, project_dir, &import_destination)
-                                .await?;
+                        let new_path = import_asset_file(
+                            target.clone(),
+                            project_dir.to_path_buf(),
+                            import_destination.clone(),
+                        )
+                        .await?;
                         *target = new_path;
                     }
 
@@ -1087,34 +1109,86 @@ impl ShowModelManager {
         Ok(model_modified)
     }
 
-    async fn import_asset_file(
-        asset_path: &PathBuf,
-        model_path: &Path,
-        import_destination: &String,
-    ) -> anyhow::Result<PathBuf> {
-        log::info!("Import asset file started. file={:?}", asset_path);
-        let audio_dir = model_path.join(import_destination);
-        if !audio_dir.exists() {
-            tokio::fs::create_dir_all(&audio_dir).await?;
-        } else if audio_dir.is_file() {
-            anyhow::bail!("Failed to copy asset to destination. destination is not directory");
-        }
-        let asset_file_name = asset_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .ok_or_else(|| anyhow!("Invalid asset file name. path={:?}", asset_path))?;
-        let dest_path = audio_dir.join(asset_file_name);
-        if !dest_path.exists() {
-            tokio::fs::copy(asset_path, &dest_path).await?;
-        }
-        Ok([import_destination.clone(), asset_file_name.to_string()]
-            .iter()
-            .collect())
-    }
-
     #[cfg(test)]
     pub async fn set_project_status(&self, new_project_status: ProjectStatus) {
         let mut project_status = self.project_status.write().await;
         *project_status = new_project_status;
     }
+}
+
+async fn import_asset_file(
+    asset_path: PathBuf,
+    model_dir: PathBuf,
+    import_destination: String,
+) -> anyhow::Result<PathBuf> {
+    tokio::task::spawn_blocking(move || {
+        log::info!("Import asset file started. file={:?}", asset_path);
+        let audio_dir = model_dir.join(import_destination);
+        if !audio_dir.exists() {
+            std::fs::create_dir_all(&audio_dir)?;
+        } else if audio_dir.is_file() {
+            anyhow::bail!("Failed to copy asset to destination. destination is not directory");
+        }
+        let asset_file_name = asset_path
+            .file_name()
+            .ok_or_else(|| anyhow!("Invalid asset path. path={:?}", asset_path))?;
+        let dest_path = audio_dir.join(asset_file_name);
+        let copied_path = resolve_dest_path(&asset_path, &dest_path)?;
+        Ok(copied_path.strip_prefix(model_dir)?.to_path_buf())
+    })
+    .await?
+}
+
+fn resolve_dest_path(src: &Path, dest: &Path) -> std::io::Result<PathBuf> {
+    match create_new_copy(src, dest) {
+        Ok(()) => return Ok(dest.to_path_buf()),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+        Err(e) => return Err(e),
+    }
+
+    let src_hash = hash_file(src)?;
+    if src_hash == hash_file(dest)? {
+        return Ok(dest.to_path_buf());
+    }
+
+    let hashed_path = filename_with_suffix(dest, &src_hash[..8]);
+
+    match create_new_copy(src, &hashed_path) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+        Err(e) => return Err(e),
+    }
+
+    Ok(hashed_path)
+}
+
+fn create_new_copy(src: &Path, dest: &Path) -> std::io::Result<()> {
+    let mut dest_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(dest)?;
+    let mut src_file = std::fs::File::open(src)?;
+    std::io::copy(&mut src_file, &mut dest_file)?;
+    Ok(())
+}
+
+fn hash_file(path: &Path) -> std::io::Result<String> {
+    let mut hasher = sha2::Sha256::new();
+    let mut file = std::fs::File::open(path)?;
+    std::io::copy(&mut file, &mut hasher)?;
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>())
+}
+
+fn filename_with_suffix(path: &Path, digest: &str) -> PathBuf {
+    let stem = path.file_stem().unwrap_or_default().to_string_lossy();
+    let ext = path.extension().map(|e| e.to_string_lossy().to_string());
+    let new_name = match ext {
+        Some(ext) => format!("{}_{}.{}", stem, digest, ext),
+        None => format!("{}_{}", stem, digest),
+    };
+    path.with_file_name(new_name)
 }

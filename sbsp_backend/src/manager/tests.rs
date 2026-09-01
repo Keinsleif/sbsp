@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use crate::{
-    BackendSettings, event::BackendEvent, manager::DEFAULT_PROJECT_FOLDER_MODEL_FILENAME, model::{
+    BackendSettings,
+    event::BackendEvent,
+    manager::DEFAULT_PROJECT_FOLDER_MODEL_FILENAME,
+    model::{
         ShowModel,
         cue::{
             Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueList, CueParam,
@@ -85,7 +88,10 @@ async fn update_cue() {
         }),
         ProjectStatus::Saved {
             project_type: ProjectType::ProjectFolder,
-            path: temp_dir.path().to_path_buf().join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
+            path: temp_dir
+                .path()
+                .to_path_buf()
+                .join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
         },
     )
     .await;
@@ -130,12 +136,20 @@ async fn update_cue() {
         audio_param.target = [".", estimated_audio_filename].iter().collect();
     }
 
-    loop {
-        if let Ok(BackendEvent::CueListUpdated { cue_list }) = event_rx.recv().await {
-            assert_eq!(*cue_list.cues.get(&cue_id).unwrap(), estimated_new_cue);
-            break;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match event_rx.recv().await {
+                Ok(BackendEvent::CueListUpdated { cue_list }) => {
+                    assert_eq!(*cue_list.cues.get(&cue_id).unwrap(), estimated_new_cue);
+                    break;
+                }
+                Ok(_) => continue,
+                Err(e) => panic!("event channel closed before CueListUpdated: {e}"),
+            }
         }
-    }
+    })
+    .await
+    .expect("timed out waiting for CueListUpdated");
 
     let model = model_handle.read().await;
     assert_eq!(
@@ -160,7 +174,10 @@ async fn add_cue() {
         }),
         ProjectStatus::Saved {
             project_type: ProjectType::ProjectFolder,
-            path: temp_dir.path().to_path_buf().join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
+            path: temp_dir
+                .path()
+                .to_path_buf()
+                .join(DEFAULT_PROJECT_FOLDER_MODEL_FILENAME),
         },
     )
     .await;
@@ -207,12 +224,20 @@ async fn add_cue() {
         audio_param.target = [".", estimated_audio_filename].iter().collect();
     }
 
-    loop {
-        if let Ok(BackendEvent::CueListUpdated { cue_list }) = event_rx.recv().await {
-            assert_eq!(*cue_list.cues.get(&cue_id).unwrap(), estimated_new_cue);
-            break;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match event_rx.recv().await {
+                Ok(BackendEvent::CueListUpdated { cue_list }) => {
+                    assert_eq!(*cue_list.cues.get(&cue_id).unwrap(), estimated_new_cue);
+                    break;
+                }
+                Ok(_) => continue,
+                Err(e) => panic!("event channel closed before CueListUpdated: {e}"),
+            }
         }
-    }
+    })
+    .await
+    .expect("timed out waiting for CueListUpdated");
 
     let model = model_handle.read().await;
     assert_eq!(
