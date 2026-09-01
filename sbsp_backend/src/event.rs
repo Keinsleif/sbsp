@@ -64,7 +64,7 @@ pub enum BackendEvent {
     },
     AssetResult {
         path: PathBuf,
-        data: Result<AssetData, String>,
+        result: Result<AssetData, String>,
     },
 
     OperationFailed {
