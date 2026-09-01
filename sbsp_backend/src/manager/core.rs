@@ -1134,7 +1134,7 @@ async fn import_asset_file(
             .ok_or_else(|| anyhow!("Invalid asset path. path={:?}", asset_path))?;
         let dest_path = audio_dir.join(asset_file_name);
         let copied_path = resolve_dest_path(&asset_path, &dest_path)?;
-        Ok(copied_path.strip_prefix(audio_dir)?.to_path_buf())
+        Ok(copied_path.strip_prefix(model_dir)?.to_path_buf())
     })
     .await?
 }
