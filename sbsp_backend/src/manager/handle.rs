@@ -319,10 +319,14 @@ impl ShowModelHandle {
     }
 
     pub async fn get_asset_standard_path(&self, path: &PathBuf) -> anyhow::Result<PathBuf> {
+        let import_destination = {
+            let model = self.model.read().await;
+            model.settings.general.copy_assets_destination.clone()
+        };
         if let Some(model_path) = self.get_current_file_path().await
             && let Some(parent) = model_path.parent()
         {
-            Ok(parent.join(path).normalize()?.into_path_buf())
+            Ok(parent.join(import_destination).join(path).normalize()?.into_path_buf())
         } else {
             Ok(path.normalize()?.into_path_buf())
         }
