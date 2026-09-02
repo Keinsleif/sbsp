@@ -1123,6 +1123,7 @@ async fn import_asset_file(
 ) -> anyhow::Result<PathBuf> {
     tokio::task::spawn_blocking(move || {
         log::info!("Import asset file started. file={:?}", asset_path);
+        ensure_relative_safe(Path::new(&import_destination))?;
         let audio_dir = model_dir.join(import_destination);
         if !audio_dir.exists() {
             std::fs::create_dir_all(&audio_dir)?;
@@ -1137,6 +1138,28 @@ async fn import_asset_file(
         Ok(copied_path.strip_prefix(model_dir)?.to_path_buf())
     })
     .await?
+}
+
+fn ensure_relative_safe(path: &Path) -> anyhow::Result<()> {
+    use std::path::Component;
+    for component in path.components() {
+        match component {
+            Component::ParentDir => {
+                anyhow::bail!(
+                    "Invalid import_destination: parent directory references ('..') are not allowed. path={:?}",
+                    path
+                );
+            }
+            Component::Prefix(_) | Component::RootDir => {
+                anyhow::bail!(
+                    "Invalid import_destination: absolute paths are not allowed. path={:?}",
+                    path
+                );
+            }
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn resolve_dest_path(src: &Path, dest: &Path) -> std::io::Result<PathBuf> {
