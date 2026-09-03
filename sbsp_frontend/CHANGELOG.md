@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend-2.7.0 - 2026-09-03
+#### Features
+- (**frontend**) make general shortcuts configurable (#176) - (90d6dc6) - *Keinsleif*
+- add file drag and drop (#172) - (820dc76) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) asset processor behavior (#185) - (487e5fd) - *Keinsleif*
+- (**frontend**) empty cue insert position (#192) - (03cfbf4) - *Keinsleif*
+- (**frontend**) prevent modifier only hotkey (#182) - (0f5728d) - *Keinsleif*
+- audio device config selecting (#179) - (cce1f7d) - *Keinsleif*
+#### Refactoring
+- (**frontend**) normalize settings and hotkey handling (#180) - (dfe3cac) - *Keinsleif*
+#### Miscellaneous Chores
+- update deps (#177) - (417977b) - *Keinsleif*
+- update deps (#173) - (35c28ec) - *Keinsleif*
+
+- - -
+
 ## frontend-2.6.0 - 2026-08-04
 #### Features
 - cursor advance logic (#164) - (dbed47c) - *Keinsleif*

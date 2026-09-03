@@ -2,6 +2,32 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## app-2.7.0 - 2026-09-03
+#### Features
+- (**backend**) server binary improvement (#175) - (5fe176e) - *Keinsleif*
+- (**frontend**) make general shortcuts configurable (#176) - (90d6dc6) - *Keinsleif*
+- add file drag and drop (#172) - (820dc76) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) simple verify for import_destination (#191) - (8e3f785) - *Keinsleif*
+- (**backend**) model manager tests and import process (#187) - (98d2ff9) - *Keinsleif*
+- (**backend**) controller tests (#186) - (6e5f4c3) - *Keinsleif*
+- (**backend**) asset processor behavior (#185) - (487e5fd) - *Keinsleif*
+- (**backend**) api client error handling (#184) - (f7add87) - *Keinsleif*
+- (**frontend**) empty cue insert position (#192) - (03cfbf4) - *Keinsleif*
+- (**frontend**) prevent modifier only hotkey (#182) - (0f5728d) - *Keinsleif*
+- semaphore acquire timing (#190) - (12ab88a) - *Keinsleif*
+- connect & auth loop without timeout (#189) - (b3215bc) - *Keinsleif*
+- copy assets process (#188) - (8005a97) - *Keinsleif*
+- audio device config selecting (#179) - (cce1f7d) - *Keinsleif*
+#### Refactoring
+- (**backend**) type_export feature flags (#183) - (62e21bf) - *Keinsleif*
+- (**frontend**) normalize settings and hotkey handling (#180) - (dfe3cac) - *Keinsleif*
+#### Miscellaneous Chores
+- update deps (#177) - (417977b) - *Keinsleif*
+- update deps (#173) - (35c28ec) - *Keinsleif*
+
+- - -
+
 ## app-2.6.0 - 2026-08-04
 #### Features
 - cursor advance logic (#164) - (dbed47c) - *Keinsleif*

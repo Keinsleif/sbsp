@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.7.0](https://github.com/Keinsleif/sbsp/compare/35c28ec707d9f7c0d0583c4ddc5ceef4922eb7b9..2.7.0) - 2026-09-03
+### Package updates
+- [frontend-2.7.0](sbsp_frontend) bumped to [frontend-2.7.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.6.0..frontend-2.7.0)
+- [remote_app-2.7.0](sbsp_remote_app) bumped to [remote_app-2.7.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.6.0..remote_app-2.7.0)
+- [app-2.7.0](sbsp_app) bumped to [app-2.7.0](https://github.com/Keinsleif/sbsp/compare/app-2.6.0..app-2.7.0)
+- [backend-1.7.0](sbsp_backend) bumped to [backend-1.7.0](https://github.com/Keinsleif/sbsp/compare/backend-1.6.0..backend-1.7.0)
+- [frontend_settings-0.2.0](sbsp_frontend_settings) bumped to [frontend_settings-0.2.0](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.1.0..frontend_settings-0.2.0)
+### Global changes
+#### Features
+- (**backend**) server binary improvement (#175) - ([5fe176e](https://github.com/Keinsleif/sbsp/commit/5fe176eb1f7adda2d8eef2c71c388391ef2dc926)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Miscellaneous Chores
+- update deps (#177) - ([417977b](https://github.com/Keinsleif/sbsp/commit/417977b3f32092ebedefeb8bb2883b66d76494f7)) - [@Keinsleif](https://github.com/Keinsleif)
+- update deps (#173) - ([35c28ec](https://github.com/Keinsleif/sbsp/commit/35c28ec707d9f7c0d0583c4ddc5ceef4922eb7b9)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.6.0](https://github.com/Keinsleif/sbsp/compare/26d5a46bcbf5494a565cd89ccbb2cf0ed1495018..2.6.0) - 2026-08-04
 ### Package updates
 - [backend-1.6.0](sbsp_backend) bumped to [backend-1.6.0](https://github.com/Keinsleif/sbsp/compare/backend-1.5.5..backend-1.6.0)

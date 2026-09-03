@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend_settings-0.2.0 - 2026-09-03
+#### Features
+- (**frontend**) make general shortcuts configurable (#176) - (90d6dc6) - *Keinsleif*
+#### Bug Fixes
+- audio device config selecting (#179) - (cce1f7d) - *Keinsleif*
+
+- - -
+
 ## frontend_settings-0.1.0 - 2026-08-04
 #### Features
 - cursor advance logic (#164) - (dbed47c) - *Keinsleif*
