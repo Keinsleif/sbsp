@@ -99,6 +99,23 @@
             "stopAll": "すべて停止",
             "title": "再生",
             "execute": "実行"
+          },
+          "file": {
+            "title": "ファイル操作",
+            "open": "開く",
+            "exportToFolder": "フォルダにエクスポート",
+            "save": "保存",
+            "saveAs": "名前をつけて保存"
+          },
+          "edit": {
+            "cuelistExtendDown": "CueListの選択範囲を下に拡大",
+            "cuelistExtendUp": "CueListの選択範囲を上に拡大",
+            "cuelistMoveDown": "CueListの選択を下に移動",
+            "cuelistMoveUp": "CueListの選択を上に移動",
+            "delete": "キューを削除",
+            "renumberCues": "キュー番号の振り直し",
+            "selectAll": "すべてのキューを選択",
+            "title": "編集"
           }
         },
         "nameFormat": {
@@ -150,7 +167,10 @@
           "saveWarning": "実行中の音声を停止して設定を適用しますか？\nこの操作により、再生中のすべてのオーディオが停止します。",
           "bufferSize": "バッファサイズ",
           "device": "出力デバイス",
-          "sampleRate": "サンプリングレート"
+          "sampleRate": "サンプリングレート",
+          "configFallbackTitle": "指定された設定が利用できませんでした",
+          "deviceConfig": "デバイス設定",
+          "deviceIdFallbackTitle": "指定されたデバイスが利用できませんでした"
         }
       },
       "preset": {
@@ -341,7 +361,8 @@
         "cut": "カット",
         "delete": "削除",
         "paste": "貼り付け"
-      }
+      },
+      "movingCue": "{0}件のCueを移動"
     }
   },
   "menu": {
@@ -404,7 +425,23 @@
     "operationFailed": "操作に失敗しました",
     "failedToStartServer": "サーバーの起動に失敗しました",
     "failedToStopServer": "サーバーの停止に失敗しました",
-    "failedToLoadLicense": "ライセンスの読み込みに失敗しました"
+    "failedToLoadLicense": "ライセンスの読み込みに失敗しました",
+    "failedToAddCue": "キューの追加に失敗しました",
+    "invalidFileType": "ドロップされたファイルはサポートされていません",
+    "audioOutputFallback": {
+      "both": {
+        "detail": "指定されたオーディオ設定の適用に失敗しました。デフォルト設定を適用します。",
+        "summary": "オーディオ設定の適用に失敗しました"
+      },
+      "config": {
+        "detail": "指定されたデバイス設定の適用に失敗しました。デフォルト設定を適用します。",
+        "summary": "デバイス設定の適用に失敗しました"
+      },
+      "device": {
+        "detail": "指定された音声デバイスの適用に失敗しました。デフォルトデバイスを使用します。",
+        "summary": "音声デバイスの適用に失敗しました"
+      }
+    }
   },
   "view": {
     "connect": {

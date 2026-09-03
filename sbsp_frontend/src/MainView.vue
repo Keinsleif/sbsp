@@ -71,14 +71,18 @@ useBackendEvent((event) => {
             } else {
               cursorAdvanceTrigger = cue.cursorAdvanceTriggerOverride;
             }
-            if ((cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') || (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')) {
+            if (
+              (cursorAdvanceTrigger === 'onTriggered' && event.param.type === 'triggered') ||
+              (cursorAdvanceTrigger === 'onCompleted' && event.param.type === 'completed')
+            ) {
               let nextCursor;
               if (
                 cue.params.type === 'group' &&
                 cue.params.mode.type === 'startFirst' &&
                 cue.params.mode.enter
               ) {
-                nextCursor = cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
+                nextCursor =
+                  cue.params.children[1] ?? showModel.getNextCueById(uiState.playbackCursor);
               } else {
                 nextCursor = showModel.getNextCueById(uiState.playbackCursor);
               }
@@ -135,15 +139,15 @@ useBackendEvent((event) => {
       break;
     }
     case 'assetResult': {
-      if ('Ok' in event.param.data) {
-        assetResult.add(event.param.path, event.param.data.Ok);
+      if ('Ok' in event.param.result) {
+        assetResult.add(event.param.path, event.param.result.Ok);
       } else {
         assetResult.addError(event.param.path);
-        console.error(event.param.data.Err);
+        console.error(event.param.result.Err);
         toast.add({
           severity: 'error',
           summary: t('notification.assetResult'),
-          detail: event.param.data.Err,
+          detail: event.param.result.Err,
           life: 5000,
         });
       }
@@ -183,6 +187,30 @@ useBackendEvent((event) => {
             detail: event.param.error.message,
             life: 3000,
           });
+          break;
+        case 'audioOutputFallback':
+          if (event.param.error.device && event.param.error.config) {
+            toast.add({
+              severity: 'error',
+              summary: t('notification.audioOutputFallback.both.summary'),
+              detail: t('notification.audioOutputFallback.both.detail'),
+              life: 3000,
+            });
+          } else if (event.param.error.device) {
+            toast.add({
+              severity: 'error',
+              summary: t('notification.audioOutputFallback.device.summary'),
+              detail: t('notification.audioOutputFallback.device.detail'),
+              life: 3000,
+            });
+          } else if (event.param.error.config) {
+            toast.add({
+              severity: 'error',
+              summary: t('notification.audioOutputFallback.config.summary'),
+              detail: t('notification.audioOutputFallback.config.detail'),
+              life: 3000,
+            });
+          }
           break;
         case 'custom':
           switch (event.param.error.id) {
@@ -282,20 +310,37 @@ onUnmounted(() => {
 });
 
 if (api.host) {
-  useHotkey('$mod+O', (e) => {
-    e.preventDefault();
-    api.host?.fileOpen();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.open,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileOpen();
+    },
+  );
 
-  useHotkey('$mod+S', (e) => {
-    e.preventDefault();
-    api.host?.fileSave();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.save,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileSave();
+    },
+  );
 
-  useHotkey('$mod+Shift+A', (e) => {
-    e.preventDefault();
-    api.host?.fileSaveAs();
-  });
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.saveAs,
+    (e) => {
+      e.preventDefault();
+      api.host?.fileSaveAs();
+    },
+  );
+
+  useHotkey(
+    () => uiSettings.settings.hotkey.file.exportToFolder,
+    (e) => {
+      e.preventDefault();
+      api.host?.exportToFolder();
+    },
+  );
 }
 
 useHotkey(
@@ -428,12 +473,15 @@ useHotkey(
   },
 );
 
-useHotkey('$mod+R', (e) => {
-  e.preventDefault();
-  if (uiState.mode === 'edit') {
-    uiState.isRenumberCueDialogOpen = true;
-  }
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.renumberCues,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode === 'edit') {
+      uiState.isRenumberCueDialogOpen = true;
+    }
+  },
+);
 </script>
 
 <template>

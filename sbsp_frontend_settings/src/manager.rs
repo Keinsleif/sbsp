@@ -53,8 +53,7 @@ where
             let settings = self.settings.read().await.clone();
 
             let content =
-                task::spawn_blocking(move || serde_json::to_string_pretty(&settings))
-                    .await??;
+                task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
 
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent).await?;
@@ -71,8 +70,7 @@ where
 
     pub async fn import_from_file(&self, path: &Path) -> Result<T, anyhow::Error> {
         let content = fs::read_to_string(path).await?;
-        let settings =
-            task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
+        let settings = task::spawn_blocking(move || serde_json::from_str::<T>(&content)).await??;
         self.set(settings.clone()).await;
         self.save().await?;
 

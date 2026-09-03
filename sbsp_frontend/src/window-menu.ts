@@ -11,19 +11,29 @@ import { useApi } from './api';
 import { appLogDir } from '@tauri-apps/api/path';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { useShowState } from './stores/showState';
+import type { HotkeySettings } from './types/HotkeySettings';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
+
+const MODIFIER_ONLY_TOKENS = new Set(['Control', 'Ctrl', 'Meta', '$mod', 'Alt', 'AltGraph', 'Shift']);
+const keyToDisplay = (key: string | null) => {
+  if (!key || MODIFIER_ONLY_TOKENS.has(key)) {
+    return null;
+  }
+  return key?.replace('$mod', 'CMDORCONTROL')?.replace('Control', 'Ctrl')?.replace('Meta', 'Super') ?? null;
+}
 
 export const createWindowMenu = () => {
   const api = useApi();
   if (__IS_WEBSOCKET__) return;
   const { t } = i18n.global;
-  const isMacOs = api.isMacOs();
   let connected = api.remote ? false : true;
   const uiState = useUiState();
+  const uiSettings = useUiSettings();
   const showState = useShowState();
   let mode: 'edit' | 'run' | 'view' = uiState.mode;
 
+  let initiated = false;
   const items = {
     file: {
       new: null as MenuItemHolder,
@@ -74,6 +84,7 @@ export const createWindowMenu = () => {
   let menu: Menu | null = null;
 
   const updateLocale = () => {
+    if (!initiated) return;
     Object.entries(items).forEach(([submenuId, menus]) => {
       Object.entries(menus).forEach(([menuId, menuItem]) => {
         menuItem?.setText(t(`menu.${submenuId}.${menuId}`));
@@ -83,6 +94,7 @@ export const createWindowMenu = () => {
   };
 
   const updateConnectionStatus = (isConnected: boolean) => {
+    if (!initiated) return;
     if (__IS_REMOTE__) {
       connected = isConnected;
       (items.file.disconnect as MenuItem | null)?.setEnabled(connected);
@@ -92,7 +104,33 @@ export const createWindowMenu = () => {
 
   const updateEditMode = (newMode: 'edit' | 'run' | 'view') => {
     mode = newMode;
+    if (!initiated) return;
     updateEditMenuItemStats();
+  };
+
+  const updateHotkey = (newHotkeySettings: HotkeySettings) => {
+    if (!initiated) return;
+    (items.file.open as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.file.open),
+    );
+    (items.file.save as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.file.save),
+    );
+    (items.file.saveAs as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.file.saveAs),
+    );
+    (items.file.exportToFolder as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.file.exportToFolder),
+    );
+    (items.edit.deleteCue as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.edit.delete),
+    );
+    (items.edit.selectAllCues as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.edit.selectAll),
+    );
+    (items.tools.renumber as MenuItem).setAccelerator(
+      keyToDisplay(newHotkeySettings.edit.renumberCues),
+    );
   };
 
   let lastEditEnableStats = connected && mode === 'edit';
@@ -159,7 +197,7 @@ export const createWindowMenu = () => {
             });
             switch (result) {
               case t('dialog.saveConfirm.save'): {
-                const isSaved = await api.host?.fileSave()
+                const isSaved = await api.host?.fileSave();
                 if (isSaved) {
                   api.host?.fileNew();
                 }
@@ -182,7 +220,7 @@ export const createWindowMenu = () => {
       id: 'id_open',
       text: t('menu.file.open'),
       enabled: __IS_HOST__,
-      accelerator: isMacOs ? '⌘ + O' : 'Ctrl + O',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.file.open) ?? undefined,
       action: () => {
         (async () => {
           if (Object.values(showState.activeCues).length > 0) {
@@ -208,7 +246,7 @@ export const createWindowMenu = () => {
       id: 'id_save',
       text: t('menu.file.save'),
       enabled: __IS_HOST__,
-      accelerator: isMacOs ? '⌘ + S' : 'Ctrl + S',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.file.save) ?? undefined,
       action: () => {
         api.host?.fileSave();
       },
@@ -218,7 +256,7 @@ export const createWindowMenu = () => {
       id: 'id_save_as',
       text: t('menu.file.saveAs'),
       enabled: __IS_HOST__,
-      accelerator: isMacOs ? '⇧ + ⌘ + S' : 'Ctrl + Shift + S',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.file.saveAs) ?? undefined,
       action: () => {
         api.host?.fileSaveAs();
       },
@@ -228,6 +266,7 @@ export const createWindowMenu = () => {
       id: 'id_export_to_folder',
       text: t('menu.file.exportToFolder'),
       enabled: __IS_HOST__,
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.file.exportToFolder) ?? undefined,
       action: () => {
         api.host?.exportToFolder();
       },
@@ -264,7 +303,7 @@ export const createWindowMenu = () => {
       id: 'id_delete',
       text: t('menu.edit.deleteCue'),
       enabled: lastEditEnableStats,
-      accelerator: isMacOs ? '⌘ + ⌫' : 'Ctrl + Backspace',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.edit.delete) ?? undefined,
       action: () => {
         const uiState = useUiState();
         api.removeCues(Array.from(uiState.selectedRows));
@@ -275,7 +314,7 @@ export const createWindowMenu = () => {
       id: 'id_select_all_cues',
       text: t('menu.edit.selectAllCues'),
       enabled: lastEditEnableStats,
-      accelerator: isMacOs ? '⌘ + A' : 'Ctrl + A',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.edit.selectAll) ?? undefined,
       action: () => {
         const uiState = useUiState();
         const showModel = useShowModel();
@@ -419,7 +458,7 @@ export const createWindowMenu = () => {
       id: 'id_renumber',
       text: t('menu.tools.renumber'),
       enabled: lastEditEnableStats,
-      accelerator: isMacOs ? '⌘ + R' : 'Ctrl + R',
+      accelerator: keyToDisplay(uiSettings.settings.hotkey.edit.renumberCues) ?? undefined,
       action: () => {
         const uiState = useUiState();
         uiState.isRenumberCueDialogOpen = true;
@@ -481,7 +520,8 @@ export const createWindowMenu = () => {
       items: [submenues.file, submenues.edit, submenues.cue, submenues.tools, submenues.help],
     });
     menu.setAsAppMenu();
+    initiated = true;
   };
 
-  return { init, updateLocale, updateConnectionStatus, updateEditMode };
+  return { init, updateLocale, updateConnectionStatus, updateEditMode, updateHotkey };
 };

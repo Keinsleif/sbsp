@@ -34,7 +34,7 @@ humantime.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
-sbsp_backend = { path = "../sbsp_backend", features = ["apiserver"] }
+sbsp_backend = { path = "../sbsp_backend", features = ["server"] }
 sbsp_frontend_settings = { path = "../sbsp_frontend_settings" }
 sbsp_license = { path = "../sbsp_license" }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "fs"] }

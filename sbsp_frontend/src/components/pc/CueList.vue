@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref, toRaw, useTemplateRef } from 'vue';
+import { computed, onUnmounted, ref, toRaw, useTemplateRef, watch } from 'vue';
 import { useShowModel, type FlatCueEntry } from '../../stores/showModel';
 import {
   mdiAlphaEBoxOutline,
@@ -16,21 +16,27 @@ import {
 } from '@mdi/js';
 import { useUiState } from '../../stores/uiState';
 import { useI18n } from 'vue-i18n';
-import { useApi } from '../../api';
+import { AUDIO_EXTENSIONS, useApi } from '../../api';
 import CueListRow from './CueListRow.vue';
 import type { Cue } from '../../types/Cue';
 import { useThrottleFn } from '@vueuse/core';
 import { useHotkey } from '@/composables/useHotkey.ts';
 import PathIcon from '../display/PathIcon.vue';
 import ContextMenu from 'primevue/contextmenu';
-import { isUserTyping } from '@/utils.ts';
+import { getExtension, isUserTyping } from '@/utils.ts';
 import CueListEmptyRow from './CueListEmptyRow.vue';
+import type { InsertPosition } from '@/types/InsertPosition.ts';
+import { useOsFileDrop } from '@/composables/useFileDrop.ts';
+import { useToast } from 'primevue/usetoast';
+import { useUiSettings } from '@/stores/uiSettings.ts';
 
 const { t } = useI18n();
 const api = useApi();
+const toast = useToast();
 
 const showModel = useShowModel();
 const uiState = useUiState();
+const uiSettings = useUiSettings();
 
 const cueListBodyRef = useTemplateRef('cuelistBody');
 
@@ -93,7 +99,11 @@ const paste = () => {
   const cues: Cue[] = internalClipboard.value;
 
   if (cues.length > 0 && uiState.mode === 'edit') {
-    api.addCues(cues, uiState.selected, false);
+    if (uiState.selected != null) {
+      api.addCues(cues, { type: 'after', target: uiState.selected });
+    } else {
+      api.addCues(cues, { type: 'inside', target: null, index: null });
+    }
   }
 };
 
@@ -150,7 +160,7 @@ const menuItems = computed(() => [
   },
 ]);
 
-const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
+const onArrowUp = useThrottleFn((e: KeyboardEvent, extend: boolean = false) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex = renderRowsCache.findIndex(
@@ -170,7 +180,7 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
         return;
       }
     }
-    if (e.shiftKey) {
+    if (extend) {
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
@@ -185,16 +195,22 @@ const onArrowUp = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('ArrowUp', (e) => {
-  e.preventDefault();
-  onArrowUp(e);
-});
-useHotkey('Shift+ArrowUp', (e) => {
-  e.preventDefault();
-  onArrowUp(e);
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistMoveUp,
+  (e) => {
+    e.preventDefault();
+    onArrowUp(e);
+  },
+);
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistExtendUp,
+  (e) => {
+    e.preventDefault();
+    onArrowUp(e, true);
+  },
+);
 
-const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
+const onArrowDown = useThrottleFn((e: KeyboardEvent, extend: boolean = false) => {
   const renderRowsCache = renderRows.value;
   if (uiState.selected != null) {
     let cursorIndex = renderRowsCache.findIndex(
@@ -214,7 +230,7 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
         return;
       }
     }
-    if (e.shiftKey) {
+    if (extend) {
       if (cursorCueRef.entry.level !== origLevel) return;
       uiState.addSelected(cursorCueRef.entry.cue.id);
     } else {
@@ -235,47 +251,264 @@ const onArrowDown = useThrottleFn((e: KeyboardEvent) => {
   }
 }, 100);
 
-useHotkey('ArrowDown', (e) => {
-  e.preventDefault();
-  onArrowDown(e);
-});
-useHotkey('Shift+ArrowDown', (e) => {
-  e.preventDefault();
-  onArrowDown(e);
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistMoveDown,
+  (e) => {
+    e.preventDefault();
+    onArrowDown(e);
+  },
+);
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.cuelistExtendDown,
+  (e) => {
+    e.preventDefault();
+    onArrowDown(e, true);
+  },
+);
 
-useHotkey('$mod+A', () => {
-  // This operation not set uiState.selected. But selecting all will includes uiState.selected
-  uiState.selectedRows.clear();
-  showModel.flatCueList
-    .filter((item) => !item.isHidden)
-    .forEach((value) => uiState.selectedRows.add(value.cue.id));
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.selectAll,
+  (e) => {
+    e.preventDefault();
+    // This operation not set uiState.selected. But selecting all will includes uiState.selected
+    uiState.selectedRows.clear();
+    showModel.flatCueList
+      .filter((item) => !item.isHidden)
+      .forEach((value) => uiState.selectedRows.add(value.cue.id));
+  },
+);
 
-useHotkey('$mod+Backspace', () => {
-  if (uiState.mode === 'edit') {
-    api.removeCues(Array.from(uiState.selectedRows));
-  }
-});
+useHotkey(
+  () => uiSettings.settings.hotkey.edit.delete,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode === 'edit') {
+      api.removeCues(Array.from(uiState.selectedRows));
+    }
+  },
+);
 
+const cuelistWrapperRef = useTemplateRef('cuelistWrapper');
 const dragOverIndex = ref<number | null>(null);
 
-const dragOver = (event: DragEvent, index: number, id: string | null) => {
-  if (id != null && uiState.selectedRows.has(id)) {
-    if (dragOverIndex.value != null) {
-      dragOverIndex.value = null;
-    }
+type ReorderState = {
+  pointerId: number;
+  cueIds: string[];
+  ghostEl: HTMLDivElement;
+};
+const reorderState = ref<ReorderState | null>(null);
+
+const AUTO_SCROLL_EDGE = 48; // px
+const AUTO_SCROLL_MAX_SPEED = 16; // px/frame
+let autoScrollRAF: number | null = null;
+let lastPointerX = 0;
+let lastPointerY = 0;
+
+const findRowIndexAtPoint = (x: number, y: number): number | null => {
+  const body = cueListBodyRef.value;
+  if (body == null) return null;
+  const el = document.elementFromPoint(x, y);
+  const tr = (el as HTMLElement | null)?.closest('tr');
+  if (tr == null || tr.parentElement !== body) return null;
+  const idx = Array.prototype.indexOf.call(body.children, tr);
+  return idx === -1 ? null : idx;
+};
+
+const updateDragOverFromPoint = (x: number, y: number, excludeIds: string[] = []) => {
+  const idx = findRowIndexAtPoint(x, y);
+  const row = idx != null ? renderRows.value[idx] : null;
+  const targetId = row?.kind === 'entry' ? row.entry.cue.id : null;
+
+  if (idx == null || (targetId != null && excludeIds.includes(targetId))) {
+    dragOverIndex.value = null;
   } else {
-    event.preventDefault();
-    if (dragOverIndex.value !== index) {
-      dragOverIndex.value = index;
-    }
+    dragOverIndex.value = idx;
   }
 };
 
-const dragEnd = () => {
+const runAutoScroll = () => {
+  const wrapper = cuelistWrapperRef.value;
+  if (wrapper == null || reorderState.value == null) {
+    autoScrollRAF = null;
+    return;
+  }
+  const rect = wrapper.getBoundingClientRect();
+  if (lastPointerY < rect.top + AUTO_SCROLL_EDGE) {
+    const ratio = Math.min(1, (rect.top + AUTO_SCROLL_EDGE - lastPointerY) / AUTO_SCROLL_EDGE);
+    wrapper.scrollTop -= AUTO_SCROLL_MAX_SPEED * ratio;
+  } else if (lastPointerY > rect.bottom - AUTO_SCROLL_EDGE) {
+    const ratio = Math.min(1, (lastPointerY - (rect.bottom - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE);
+    wrapper.scrollTop += AUTO_SCROLL_MAX_SPEED * ratio;
+  }
+  updateDragOverFromPoint(lastPointerX, lastPointerY, reorderState.value.cueIds);
+  autoScrollRAF = requestAnimationFrame(runAutoScroll);
+};
+
+const ensureAutoScroll = () => {
+  if (autoScrollRAF == null) autoScrollRAF = requestAnimationFrame(runAutoScroll);
+};
+const stopAutoScroll = () => {
+  if (autoScrollRAF != null) {
+    cancelAnimationFrame(autoScrollRAF);
+    autoScrollRAF = null;
+  }
+};
+
+const resolveDropTarget = (index: number | null): InsertPosition | null => {
+  const row = index != null ? renderRows.value[index] : null;
+  if (row == null) return null;
+  if (row.kind === 'entry') return { type: 'before', target: row.entry.cue.id };
+  if (row.kind === 'end-slot') return { type: 'inside', target: row.parentId, index: null };
+  return null;
+};
+
+const onHandlePointerDown = (event: PointerEvent, cueId: string) => {
+  if (uiState.mode !== 'edit' || event.button !== 0) return;
+  event.stopPropagation();
+
+  if (!uiState.selectedRows.has(cueId)) {
+    uiState.setSelected(cueId);
+  }
+  const cueIds = Array.from(uiState.selectedRows);
+
+  const ghostEl = document.createElement('div');
+  ghostEl.textContent = cueIds.length > 0 ? t('main.cueList.movingCue', cueIds.length) : '';
+  Object.assign(ghostEl.style, {
+    position: 'fixed',
+    left: `${event.clientX + 16}px`,
+    top: `${event.clientY + 8}px`,
+    padding: '2px 10px',
+    borderRadius: '4px',
+    background: 'var(--p-primary-color)',
+    fontSize: '0.75em',
+    pointerEvents: 'none',
+    zIndex: '9999',
+  } satisfies Partial<CSSStyleDeclaration>);
+  document.body.appendChild(ghostEl);
+
+  reorderState.value = { pointerId: event.pointerId, cueIds, ghostEl };
+  (event.target as HTMLElement).setPointerCapture(event.pointerId);
+
+  window.addEventListener('pointermove', onReorderPointerMove);
+  window.addEventListener('pointerup', onReorderPointerUp);
+  window.addEventListener('pointercancel', onReorderPointerCancel);
+  document.addEventListener('keydown', onReorderKeydown);
+  document.body.style.cursor = 'grabbing';
+
+  lastPointerX = event.clientX;
+  lastPointerY = event.clientY;
+  updateDragOverFromPoint(lastPointerX, lastPointerY, reorderState.value.cueIds);
+};
+
+const onReorderPointerMove = (event: PointerEvent) => {
+  const state = reorderState.value;
+  if (state == null || event.pointerId !== state.pointerId) return;
+
+  lastPointerX = event.clientX;
+  lastPointerY = event.clientY;
+  state.ghostEl.style.left = `${event.clientX + 16}px`;
+  state.ghostEl.style.top = `${event.clientY + 8}px`;
+
+  const wrapper = cuelistWrapperRef.value;
+  if (wrapper != null) {
+    const rect = wrapper.getBoundingClientRect();
+    if (
+      event.clientY < rect.top + AUTO_SCROLL_EDGE ||
+      event.clientY > rect.bottom - AUTO_SCROLL_EDGE
+    ) {
+      ensureAutoScroll();
+    } else {
+      stopAutoScroll();
+    }
+  }
+  updateDragOverFromPoint(event.clientX, event.clientY, reorderState.value?.cueIds);
+};
+
+const finishReorder = (commit: boolean) => {
+  const state = reorderState.value;
+  if (state == null) return;
+
+  stopAutoScroll();
+  window.removeEventListener('pointermove', onReorderPointerMove);
+  window.removeEventListener('pointerup', onReorderPointerUp);
+  window.removeEventListener('pointercancel', onReorderPointerCancel);
+  document.removeEventListener('keydown', onReorderKeydown);
+  document.body.style.cursor = '';
+  state.ghostEl.remove();
+
+  if (commit && dragOverIndex.value != null && uiState.mode === 'edit') {
+    const target = resolveDropTarget(dragOverIndex.value);
+    if (target != null) api.moveCues(state.cueIds, target);
+  }
+
+  reorderState.value = null;
   dragOverIndex.value = null;
 };
+
+const onReorderPointerUp = (event: PointerEvent) => {
+  if (reorderState.value?.pointerId !== event.pointerId) return;
+  finishReorder(true);
+};
+const onReorderPointerCancel = (event: PointerEvent) => {
+  if (reorderState.value?.pointerId !== event.pointerId) return;
+  finishReorder(false);
+};
+const onReorderKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') finishReorder(false);
+};
+
+if (__IS_HOST__) {
+  watch(() => uiState.mode, (newMode) => {
+    if (newMode !== 'edit') {
+      dragOverIndex.value = null;
+    }
+  });
+}
+
+useOsFileDrop({
+  target: () => cuelistWrapperRef.value,
+  onOver: (x, y) => {
+    if (__IS_REMOTE__) return; // TODO: implement remote side behavier
+    if (uiState.mode !== "edit") return;
+    updateDragOverFromPoint(x, y);
+  },
+  onLeave: () => {
+    dragOverIndex.value = null;
+  },
+  onDrop: (files, x, y) => {
+    if (__IS_REMOTE__) return; // TODO: implement remote side behavier
+    if (uiState.mode !== "edit") return;
+    updateDragOverFromPoint(x, y);
+    const target = resolveDropTarget(dragOverIndex.value);
+    if (target == null) return;
+    const acceptedPaths = new Set<string>();
+    let invalidFileExists = false;
+    for (const f of files) {
+      if (f.kind === 'path') {
+        const ext = getExtension(f.path);
+        if (AUDIO_EXTENSIONS.includes(ext)) {
+          acceptedPaths.add(f.path);
+        } else {
+          invalidFileExists = true;
+        }
+      } else {
+        // TODO: implement file upload feature
+      }
+    }
+    if (acceptedPaths.size > 0) {
+      showModel.addAudioCueWithPath(Array.from(acceptedPaths), target);
+    }
+    if (invalidFileExists) {
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToAddCue'),
+        detail: t('notification.invalidFileType'),
+        life: 3000,
+      });
+    }
+    dragOverIndex.value = null;
+  },
+});
 
 const click = (event: MouseEvent, index: number) => {
   if (event.button !== 0) {
@@ -348,6 +581,10 @@ const click = (event: MouseEvent, index: number) => {
 //   }
 //   uiState.clearSelected();
 // };
+
+onUnmounted(() => {
+  finishReorder(false);
+});
 </script>
 
 <template>
@@ -355,6 +592,7 @@ const click = (event: MouseEvent, index: number) => {
     class="h-full scroll-pt-8 overflow-x-auto overflow-y-scroll"
     :class="$style['cuelist-wrapper']"
     tabindex="-1"
+    ref="cuelistWrapper"
     @copy="copyHandler"
     @cut="cutHandler"
     @paste="pasteHandler"
@@ -457,8 +695,7 @@ const click = (event: MouseEvent, index: number) => {
             v-if="row.kind === 'entry'"
             :item="row.entry"
             :is-drag-over="dragOverIndex === i"
-            @dragover="dragOver($event, i, row.entry.cue.id)"
-            @dragend="dragEnd"
+            @handle-pointerdown="onHandlePointerDown($event, row.entry.cue.id)"
             @pointerdown.stop="click($event, i)"
             @contextmenu.prevent="
               if (uiState.mode == 'edit') {
@@ -474,7 +711,6 @@ const click = (event: MouseEvent, index: number) => {
             :parent-id="row.parentId"
             :level="row.level"
             :is-drag-over="dragOverIndex === i"
-            @dragover="dragOver($event, i, null)"
           />
         </template>
       </tbody>

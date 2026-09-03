@@ -230,21 +230,17 @@ export function useTauriApi(): IBackendAdapter {
     updateCue: function (cue: Cue): Promise<void> {
       return invoke('update_cue', { cue: cue });
     },
-    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+    addCue: async function (cue: Cue, position: InsertPosition): Promise<string> {
       cue.id = v4();
-      await invoke('add_cue', { cue: cue, targetId: targetId, toBefore: toBefore });
+      await invoke('add_cue', { cue, position });
       return cue.id;
     },
-    addCues: async function (
-      cues: Cue[],
-      targetId: string | null,
-      toBefore: boolean,
-    ): Promise<string[]> {
+    addCues: async function (cues: Cue[], position: InsertPosition): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;
       });
-      await invoke('add_cues', { cues: cues, targetId: targetId, toBefore: toBefore });
+      await invoke('add_cues', { cues, position });
       return cueIds;
     },
     removeCue: async function (cueId: string, confirm_remove: boolean = true) {

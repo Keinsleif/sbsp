@@ -54,11 +54,16 @@ watch(
 );
 
 watch(
-  () => uiSettings.settings.appearance,
-  (newSettings, oldSettings) => {
-    if (newSettings.language !== oldSettings.language) {
-      setLanguage(newSettings.language);
-    }
+  () => uiSettings.settings.appearance.language,
+  (newLanguage) => {
+    setLanguage(newLanguage);
+  },
+);
+
+watch(
+  () => uiSettings.settings.hotkey,
+  (newSettings) => {
+    windowMenu?.updateHotkey(newSettings);
   },
 );
 
@@ -83,6 +88,8 @@ let unlisten: (() => void) | null = null;
 onMounted(() => {
   void Promise.resolve(windowMenu?.init()).then(() => {
     setLanguage(uiSettings.settings.appearance.language);
+    windowMenu?.updateConnectionStatus(connected.value);
+    windowMenu?.updateHotkey(uiSettings.settings.hotkey);
   });
   if (__IS_REMOTE__) {
     api.remote

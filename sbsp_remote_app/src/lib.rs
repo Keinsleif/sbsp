@@ -164,8 +164,8 @@ impl AppState {
         }
     }
 
-    pub async fn start_discovery(&self, channel: Channel<Vec<ServiceEntry>>) {
-        let mut watch_rx = start_discovery();
+    pub async fn start_discovery(&self, channel: Channel<Vec<ServiceEntry>>) -> anyhow::Result<()> {
+        let mut watch_rx = start_discovery()?;
         let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
         tokio::spawn(async move {
             loop {
@@ -182,6 +182,7 @@ impl AppState {
             }
         });
         *(self.discovery_stop_tx.lock().await) = Some(shutdown_tx);
+        Ok(())
     }
 
     pub async fn stop_discovery(&self) {

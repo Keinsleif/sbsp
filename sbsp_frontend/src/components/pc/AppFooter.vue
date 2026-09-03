@@ -106,7 +106,7 @@ const openServerPanel = () => {
       @click="uiState.isUpdateDialogOpen = true"
     />
     <div class="mr-auto ml-auto whitespace-nowrap">
-      {{ showModel.cueCount }} {{ t('main.footBar.cueCountSuffix') }}
+      {{ t('main.footBar.cueCountSuffix', showModel.cueCount) }}
     </div>
     <div class="flex items-center gap-2">
       <div

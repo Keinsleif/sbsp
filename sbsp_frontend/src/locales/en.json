@@ -99,6 +99,23 @@
             "stopAll": "Stop All",
             "title": "Playback",
             "execute": "Execute"
+          },
+          "file": {
+            "title": "File",
+            "open": "Open",
+            "save": "Save",
+            "saveAs": "Save As",
+            "exportToFolder": "Export to Folder"
+          },
+          "edit": {
+            "delete": "Delete Cue",
+            "title": "Edit",
+            "selectAll": "Select All Cues",
+            "renumberCues": "Renumber selected cues",
+            "cuelistMoveUp": "Move selection up",
+            "cuelistExtendUp": "Extend selection up",
+            "cuelistMoveDown": "Move selection down",
+            "cuelistExtendDown": "Extend selection down"
           }
         },
         "nameFormat": {
@@ -150,7 +167,10 @@
           "sampleRate": "Sample Rate",
           "bufferSize": "Buffer Size",
           "warning": "Applying changes will restart the engine and kill all audio cues.",
-          "saveWarning": "Stop playback and apply settings?\nAll active audio cues will be terminated."
+          "saveWarning": "Stop playback and apply settings?\nAll active audio cues will be terminated.",
+          "deviceIdFallbackTitle": "The specified audio device is unavailable.",
+          "deviceConfig": "Device configuration",
+          "configFallbackTitle": "The specified device configuration is unavailable."
         }
       },
       "preset": {
@@ -316,11 +336,12 @@
         "cut": "Cut",
         "paste": "Paste",
         "delete": "Delete"
-      }
+      },
+      "movingCue": "Move {n} cue | Move {n} cues"
     },
     "duration": "Duration",
     "footBar": {
-      "cueCountSuffix": "cues",
+      "cueCountSuffix": "{n} cue | {n} cues",
       "processingIndicator": "Processing {size} files",
       "modes": {
         "view": "View",
@@ -404,7 +425,23 @@
     "operationFailed": "Operation failed",
     "failedToStartServer": "Failed to start server",
     "failedToStopServer": "Failed to stop server",
-    "failedToLoadLicense": "Failed to load License"
+    "failedToLoadLicense": "Failed to load License",
+    "failedToAddCue": "Failed to add cue.",
+    "invalidFileType": "Dropped file type not supported.",
+    "audioOutputFallback": {
+      "both": {
+        "summary": "Failed to apply Audio Settings",
+        "detail": "The specified audio device and configuration are unavailable. Reverted to default settings."
+      },
+      "device": {
+        "summary": "Failed to apply Audio Device",
+        "detail": "The specified audio device is unavailable. Reverted to the default device."
+      },
+      "config": {
+        "summary": "Failed to apply device configuration",
+        "detail": "The specified device configuration is unavailable. Reverted to default configuration."
+      }
+    }
   },
   "view": {
     "connect": {

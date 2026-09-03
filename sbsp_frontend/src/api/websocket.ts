@@ -24,7 +24,7 @@ import type { Permissions } from '../types/Permissions';
 import type { BackendError } from '../types/BackendError';
 import type { InsertPosition } from '../types/InsertPosition';
 import { i18n } from '../i18n';
-import { settingsParser, settingsValidator } from '../typia';
+import { parseOrDefault, settingsParser, settingsValidator } from '../typia';
 import { DEFAULT_SETTINGS } from '@/stores/uiSettings';
 import { type BackendEventListener } from './interface';
 
@@ -372,61 +372,25 @@ export function useWebsocketApi(): IBackendAdapter {
     updateCue: async function (cue: Cue): Promise<void> {
       this.sendCommand({ type: 'model', command: 'updateCue', params: cue });
     },
-    addCue: async function (cue: Cue, targetId: string | null, toBefore: boolean): Promise<string> {
+    addCue: async function (cue: Cue, position: InsertPosition): Promise<string> {
       cue.id = v4();
-      if (targetId != null) {
-        if (toBefore) {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCue',
-            params: { cue: cue, position: { type: 'before', target: targetId } },
-          });
-        } else {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCue',
-            params: { cue: cue, position: { type: 'after', target: targetId } },
-          });
-        }
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'addCue',
-          params: { cue: cue, position: { type: 'inside', target: null, index: null } },
-        });
-      }
+      this.sendCommand({
+        type: 'model',
+        command: 'addCue',
+        params: { cue, position },
+      });
       return cue.id;
     },
-    addCues: async function (
-      cues: Cue[],
-      targetId: string | null,
-      toBefore: boolean,
-    ): Promise<string[]> {
+    addCues: async function (cues: Cue[], position: InsertPosition): Promise<string[]> {
       const cueIds = cues.map((cue) => {
         cue.id = v4();
         return cue.id;
       });
-      if (targetId != null) {
-        if (toBefore) {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCues',
-            params: { cues: cues, position: { type: 'before', target: targetId } },
-          });
-        } else {
-          this.sendCommand({
-            type: 'model',
-            command: 'addCues',
-            params: { cues: cues, position: { type: 'after', target: targetId } },
-          });
-        }
-      } else {
-        this.sendCommand({
-          type: 'model',
-          command: 'addCues',
-          params: { cues: cues, position: { type: 'inside', target: null, index: null } },
-        });
-      }
+      this.sendCommand({
+        type: 'model',
+        command: 'addCues',
+        params: { cues, position },
+      });
       return cueIds;
     },
     removeCue: async function (cueId: string, confirm_remove: boolean = true): Promise<void> {
@@ -486,13 +450,14 @@ export function useWebsocketApi(): IBackendAdapter {
     getSettings: async function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       const settings = localStorage.getItem(GLOBAL_SETTINGS_STORAGE_KEY);
       if (settings != null) {
-        const parsed = settingsParser(settings);
-        if (parsed.success) {
-          return parsed.data;
+        const parsed = parseOrDefault(settings, DEFAULT_SETTINGS);
+        const validationResult = settingsValidator(parsed);
+        if (validationResult.success) {
+          return validationResult.data;
         } else {
           console.error(
             'Failed to parse settings. Overwriting storage with defaults.',
-            parsed.errors,
+            validationResult.errors,
           );
           localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
           return structuredClone(DEFAULT_SETTINGS);
@@ -519,11 +484,11 @@ export function useWebsocketApi(): IBackendAdapter {
             }
             filepath.text().then((text) => {
               try {
-                const result = settingsValidator(JSON.parse(text));
-                if (result.success) {
-                  resolve(result.data);
+                const parsed = settingsParser(text)
+                if (parsed.success) {
+                  resolve(parsed.data);
                 } else {
-                  reject(result.errors);
+                  reject(parsed.errors);
                 }
                 // resolve(JSON.parse(text));
               } catch {
