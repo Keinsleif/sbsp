@@ -114,11 +114,11 @@ const recursiveCueCheck = (
   return cuelist;
 };
 
-const positionFromSelection = (selected: string | null): InsertPosition =>
+const positionFromSelection = (selected: string | null, type: 'after' | 'before' = 'after'): InsertPosition =>
   selected != null
-    ? { type: 'after', target: selected }
+    ? { type, target: selected }
     : { type: 'inside', target: null, index: null };
-  
+
 export const useShowModel = defineStore('showModel', {
   state: () => structuredClone(DEFAULT_SHOW_MODEL),
   getters: {
@@ -269,8 +269,10 @@ export const useShowModel = defineStore('showModel', {
         return;
       }
       let newCue;
+      let positionType: 'after' | 'before' = 'after';
       switch (type) {
         case 'start':
+          positionType = 'before';
           newCue = structuredClone(toRaw(uiSettings.settings.template.start)) as Cue;
           break;
         case 'stop':
@@ -280,6 +282,7 @@ export const useShowModel = defineStore('showModel', {
           newCue = structuredClone(toRaw(uiSettings.settings.template.pause)) as Cue;
           break;
         case 'load':
+          positionType = 'before';
           newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
           break;
       }
@@ -293,7 +296,7 @@ export const useShowModel = defineStore('showModel', {
       ) {
         newCue.params.target = uiState.selected;
 
-        api.addCue(newCue, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+        api.addCue(newCue, positionFromSelection(uiState.selected, positionType)).catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
