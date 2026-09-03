@@ -341,7 +341,7 @@
     },
     "duration": "Duration",
     "footBar": {
-      "cueCountSuffix": "cues",
+      "cueCountSuffix": "{n} cue | {n} cues",
       "processingIndicator": "Processing {size} files",
       "modes": {
         "view": "View",
