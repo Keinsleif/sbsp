@@ -2,7 +2,10 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 mod envelope;
+mod state;
 mod volume;
+
+pub use self::state::AudioPlaybackState;
 
 use std::{
     f32::consts::SQRT_2,
@@ -36,79 +39,6 @@ const DEFAULT_FADE_PARAM: FadeParam = FadeParam {
     duration: 0.001,
     easing: Easing::Linear,
 };
-
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
-#[repr(u8)]
-pub enum AudioPlaybackState {
-    Loaded,
-    Playing,
-    Pausing,
-    Paused,
-    Resuming,
-    SoftStopping,
-    HardStopping,
-    Stopped,
-    Completed,
-}
-
-impl AudioPlaybackState {
-    fn is_stopped(&self) -> bool {
-        match *self {
-            AudioPlaybackState::Stopped | AudioPlaybackState::Completed => true,
-            AudioPlaybackState::Loaded
-            | AudioPlaybackState::Playing
-            | AudioPlaybackState::Pausing
-            | AudioPlaybackState::Paused
-            | AudioPlaybackState::Resuming
-            | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => false,
-        }
-    }
-
-    fn is_advancing(&self) -> bool {
-        match *self {
-            AudioPlaybackState::Loaded
-            | AudioPlaybackState::Paused
-            | AudioPlaybackState::Stopped
-            | AudioPlaybackState::Completed => false,
-            AudioPlaybackState::Playing
-            | AudioPlaybackState::Pausing
-            | AudioPlaybackState::Resuming
-            | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => true,
-        }
-    }
-}
-
-impl TryFrom<u8> for AudioPlaybackState {
-    type Error = ();
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
-        match value {
-            x if x == Self::Loaded as u8 => Ok(Self::Loaded),
-            x if x == Self::Playing as u8 => Ok(Self::Playing),
-            x if x == Self::Pausing as u8 => Ok(Self::Pausing),
-            x if x == Self::Paused as u8 => Ok(Self::Paused),
-            x if x == Self::Resuming as u8 => Ok(Self::Resuming),
-            x if x == Self::SoftStopping as u8 => Ok(Self::SoftStopping),
-            x if x == Self::HardStopping as u8 => Ok(Self::HardStopping),
-            x if x == Self::Stopped as u8 => Ok(Self::Stopped),
-            x if x == Self::Completed as u8 => Ok(Self::Completed),
-            _ => Err(()),
-        }
-    }
-}
-
-impl PartialEq<u8> for AudioPlaybackState {
-    fn eq(&self, other: &u8) -> bool {
-        (*self as u8) == *other
-    }
-}
-
-impl PartialEq<AudioPlaybackState> for u8 {
-    fn eq(&self, other: &AudioPlaybackState) -> bool {
-        *self == (*other as u8)
-    }
-}
 
 enum AudioSourceControlCommand {
     Start,
