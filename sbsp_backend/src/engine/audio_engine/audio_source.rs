@@ -102,19 +102,21 @@ impl AudioSourceHandle {
     }
 
     pub fn start(&mut self) {
-        if self.state() == AudioPlaybackState::Loaded {
-            let _ = self.control.push(AudioSourceControlCommand::Start);
+        if self.state() == AudioPlaybackState::Loaded && self.control.push(AudioSourceControlCommand::Start).is_err() {
+            log::error!("Failed to send start command to audio thread");
         }
     }
 
     pub fn resume(&mut self) {
-        if self.state() == AudioPlaybackState::Paused {
-            let _ = self.control.push(AudioSourceControlCommand::Resume);
+        if self.state() == AudioPlaybackState::Paused && self.control.push(AudioSourceControlCommand::Resume).is_err() {
+            log::error!("Failed to send resume command to audio thread");
         }
     }
 
     pub fn pause(&mut self) {
-        let _ = self.control.push(AudioSourceControlCommand::Pause);
+        if self.control.push(AudioSourceControlCommand::Pause).is_err() {
+            log::error!("Failed to send pause command to audio thread");
+        }
     }
 
     pub fn stop(&mut self, is_hard: bool) {
@@ -122,20 +124,25 @@ impl AudioSourceHandle {
         if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
             return;
         }
-        if is_hard {
-            let _ = self.control.push(AudioSourceControlCommand::HardStop);
+        let command = if is_hard {
+            AudioSourceControlCommand::HardStop
         } else {
-            let _ = self.control.push(AudioSourceControlCommand::SoftStop);
+            AudioSourceControlCommand::SoftStop
+        };
+        if self.control.push(command).is_err() {
+            log::error!("Failed to send stop command to audio thread");
         }
     }
 
     pub async fn seek_to(&mut self, position: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
         let position = position.clamp(0.0, self.duration);
-        let _ = self.control.push(AudioSourceControlCommand::Seek {
+        if self.control.push(AudioSourceControlCommand::Seek {
             position,
             result: result_tx,
-        });
+        }).is_err() {
+            log::error!("Failed to send seek command to audio thread");
+        }
         match result_rx.await {
             Ok(Ok(_)) => Ok(position),
             Ok(Err(err)) => Err(err),
@@ -146,10 +153,12 @@ impl AudioSourceHandle {
     pub async fn seek_by(&mut self, amount: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
         let position = (self.position() + amount).clamp(0.0, self.duration);
-        let _ = self.control.push(AudioSourceControlCommand::Seek {
+        if self.control.push(AudioSourceControlCommand::Seek {
             position,
             result: result_tx,
-        });
+        }).is_err() {
+            log::error!("Failed to send seek command to audio thread");
+        }
         match result_rx.await {
             Ok(Ok(_)) => Ok(position),
             Ok(Err(err)) => Err(err),
@@ -164,19 +173,23 @@ impl AudioSourceHandle {
     pub fn set_volume(&mut self, volume: Decibels) {
         self.volume = volume;
 
-        let _ = self.control.push(AudioSourceControlCommand::SetVolume {
+        if self.control.push(AudioSourceControlCommand::SetVolume {
             volume: self.volume + self.fade_volume,
             fade_param: DEFAULT_FADE_PARAM,
-        });
+        }).is_err() {
+            log::error!("Failed to send set_volume command to audio thread");
+        }
     }
 
     pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
         self.fade_volume = volume;
 
-        let _ = self.control.push(AudioSourceControlCommand::SetVolume {
+        if self.control.push(AudioSourceControlCommand::SetVolume {
             volume: self.volume + self.fade_volume,
             fade_param,
-        });
+        }).is_err() {
+            log::error!("Failed to send set_fade command to audio thread");
+        }
     }
 }
 
