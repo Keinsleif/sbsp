@@ -511,7 +511,7 @@ impl CueController {
         }
 
         if send_event
-            && let Ok(ui_event) = BackendEvent::try_from(event)
+            && let Some(ui_event) = event.into()
             && self.event_tx.send(ui_event).is_err()
         {
             log::trace!("No UI clients are listening to playback events.");
