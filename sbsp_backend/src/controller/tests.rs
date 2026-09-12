@@ -119,8 +119,7 @@ async fn go_command() {
 #[tokio::test]
 async fn started_event() {
     let cue_id = Uuid::new_v4();
-    let (_, _, playback_event_tx, state_rx, mut event_rx) =
-        setup_controller(&[cue_id]).await;
+    let (_, _, playback_event_tx, state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
     playback_event_tx
         .send(ExecutorEvent::Started {
@@ -155,8 +154,7 @@ async fn started_event() {
 #[tokio::test]
 async fn progress_event() {
     let cue_id = Uuid::new_v4();
-    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
-        setup_controller(&[cue_id]).await;
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
     state_rx.mark_unchanged();
 
@@ -205,8 +203,7 @@ async fn progress_event() {
 #[tokio::test]
 async fn pause_n_resume_event() {
     let cue_id = Uuid::new_v4();
-    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
-        setup_controller(&[cue_id]).await;
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
     state_rx.mark_unchanged();
 
@@ -282,8 +279,7 @@ async fn pause_n_resume_event() {
 #[tokio::test]
 async fn completed_event() {
     let cue_id = Uuid::new_v4();
-    let (_, _, playback_event_tx, mut state_rx, mut event_rx) =
-        setup_controller(&[cue_id]).await;
+    let (_, _, playback_event_tx, mut state_rx, mut event_rx) = setup_controller(&[cue_id]).await;
 
     state_rx.mark_unchanged();
 
