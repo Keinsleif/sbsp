@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 mod envelope;
+mod shared;
 mod state;
 mod volume;
 
@@ -13,7 +14,6 @@ use std::{
     ops::{Deref, DerefMut},
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -25,13 +25,9 @@ use rodio::{
 use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
-use crate::{
-    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
-    model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam},
-};
-
-use super::lowcost_skip::SkipDuration;
-use volume::Volume;
+use crate::model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam};
+use super::{lowcost_skip::SkipDuration, AudioCommandData};
+use self::{volume::Volume,envelope::Envelope, shared::AudioSourceShared};
 
 const MAX_CHANNELS: u16 = 128;
 
@@ -56,22 +52,6 @@ enum AudioSourceControlCommand {
     },
 }
 
-struct AudioSourceShared {
-    state: AtomicU8,
-    position: AtomicU64,
-    repeat: AtomicBool,
-}
-
-impl AudioSourceShared {
-    fn new(repeat: bool) -> Self {
-        Self {
-            state: AtomicU8::new(AudioPlaybackState::Loaded as u8),
-            position: AtomicU64::new(0),
-            repeat: AtomicBool::new(repeat),
-        }
-    }
-}
-
 pub struct AudioSourceHandle {
     shared: Arc<AudioSourceShared>,
     control: Producer<AudioSourceControlCommand>,
@@ -83,18 +63,15 @@ pub struct AudioSourceHandle {
 impl AudioSourceHandle {
     pub fn state(&self) -> AudioPlaybackState {
         self.shared
-            .state
-            .load(Ordering::Acquire)
-            .try_into()
-            .unwrap()
+            .load_state()
     }
 
     pub fn position(&self) -> f64 {
-        f64::from_bits(self.shared.position.load(Ordering::Acquire))
+        self.shared.load_position()
     }
 
     pub fn is_repeating(&self) -> bool {
-        self.shared.repeat.load(Ordering::Acquire)
+        self.shared.load_repeat()
     }
 
     pub fn get_volume(&self) -> Decibels {
@@ -102,13 +79,13 @@ impl AudioSourceHandle {
     }
 
     pub fn start(&mut self) {
-        if self.state() == AudioPlaybackState::Loaded && self.control.push(AudioSourceControlCommand::Start).is_err() {
+        if self.shared.load_state() == AudioPlaybackState::Loaded && self.control.push(AudioSourceControlCommand::Start).is_err() {
             log::error!("Failed to send start command to audio thread");
         }
     }
 
     pub fn resume(&mut self) {
-        if self.state() == AudioPlaybackState::Paused && self.control.push(AudioSourceControlCommand::Resume).is_err() {
+        if self.shared.load_state() == AudioPlaybackState::Paused && self.control.push(AudioSourceControlCommand::Resume).is_err() {
             log::error!("Failed to send resume command to audio thread");
         }
     }
@@ -120,7 +97,7 @@ impl AudioSourceHandle {
     }
 
     pub fn stop(&mut self, is_hard: bool) {
-        let state = self.state();
+        let state = self.shared.load_state();
         if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
             return;
         }
@@ -167,7 +144,7 @@ impl AudioSourceHandle {
     }
 
     pub fn set_repeat(&self, value: bool) {
-        self.shared.repeat.store(value, Ordering::Release);
+        self.shared.store_repeat(value);
     }
 
     pub fn set_volume(&mut self, volume: Decibels) {
@@ -421,8 +398,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let mut state =
-            AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap();
+        let mut state = self.shared.load_state();
 
         if self.current_channel >= self.settings.channel_mapping.output_channels as u16 {
             self.current_channel = 0;
@@ -431,13 +407,10 @@ where
                 self.frames_counted = 0;
 
                 if state.is_advancing() {
-                    self.shared.position.store(
-                        (self.offset_position
+                    self.shared.store_position(
+                        self.offset_position
                             + self.playing_frames_counted as f64
-                                / self.current_span_sample_rate.get() as f64)
-                            .to_bits(),
-                        Ordering::Release,
-                    );
+                                / self.current_span_sample_rate.get() as f64);
                 }
 
                 // Command Handling
@@ -504,7 +477,7 @@ where
                     }
 
                     // State publish
-                    self.shared.state.store(state as u8, Ordering::Release);
+                    self.shared.store_state(state);
                 }
             }
 
@@ -523,7 +496,7 @@ where
                     _ => {}
                 }
                 // State publish
-                self.shared.state.store(state as u8, Ordering::Release);
+                self.shared.store_state(state);
             }
             self.volume.update(dt);
 
@@ -560,7 +533,7 @@ where
                         }
                         self.output_buffer[out_n] = out * factor.as_amplitude();
                     }
-                } else if self.shared.repeat.load(Ordering::Acquire) {
+                } else if self.shared.load_repeat() {
                     let _ = self.try_seek(Duration::ZERO);
                 } else {
                     state = match state {
@@ -570,7 +543,7 @@ where
                         _ => AudioPlaybackState::Completed,
                     };
                     // State publish
-                    self.shared.state.store(state as u8, Ordering::Release);
+                    self.shared.store_state(state);
                 };
 
                 self.playing_frames_counted += 1;
@@ -622,8 +595,7 @@ where
         if result.is_ok() {
             self.offset_position = pos.as_secs_f64();
             self.shared
-                .position
-                .store(self.offset_position.to_bits(), Ordering::Release);
+                .store_position(self.offset_position);
             self.envelope.seek(pos.as_secs_f64());
             self.playing_frames_counted = 0;
             self.frames_counted = 0;
@@ -638,13 +610,10 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        if !AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire))
-            .unwrap()
-            .is_stopped()
+        if !self.shared.load_state().is_stopped()
         {
             self.shared
-                .state
-                .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
+                .store_state(AudioPlaybackState::Stopped);
         }
     }
 }
