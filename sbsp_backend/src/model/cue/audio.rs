@@ -61,15 +61,6 @@ impl Sub for Decibels {
 }
 
 #[cfg(feature = "backend")]
-impl Mul for Decibels {
-    type Output = Decibels;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-#[cfg(feature = "backend")]
 impl Mul<f32> for Decibels {
     type Output = Decibels;
 
