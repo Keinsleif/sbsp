@@ -84,13 +84,9 @@ impl WaitEngine {
                 Some(command) = self.command_rx.recv() => {
                     let result: Result<()> = match command {
                         WaitCommand::Load { wait_type, instance_id, duration } => {
-                            if wait_type.eq(&WaitType::Wait) {
-                                self.loaded_instances.insert((wait_type, instance_id), LoadedInstance { total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
-                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
-                                    Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
-                                } else {
-                                    Ok(())
-                                }
+                            self.loaded_instances.insert((wait_type, instance_id), LoadedInstance { total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
+                            if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
+                                Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                             } else {
                                 Ok(())
                             }
@@ -109,7 +105,7 @@ impl WaitEngine {
                             let wait_event = WaitEvent::Started { instance_id, position: 0.0, duration };
                             let event = Self::wrap_wait_event(wait_type, wait_event);
                             if let Err(e) = self.event_tx.send(event).await {
-                                Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
+                                Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                             } else {
                                 Ok(())
                             }
