@@ -336,7 +336,7 @@ where
         let sample_rate = input.sample_rate();
         let fadeout_param = settings.fadeout_param.unwrap_or(DEFAULT_FADE_PARAM);
         let shared = Arc::new(AudioSourceShared::new(settings.repeat));
-        let (control_pr, control_co) = RingBuffer::new(8);
+        let (control_pr, control_co) = RingBuffer::new(32);
         let control_volume = if let Some(fadein_param) = settings.fadein_param {
             Volume::new_with_fade(Decibels::MUTE, Decibels::IDENTITY, fadein_param)
         } else {
