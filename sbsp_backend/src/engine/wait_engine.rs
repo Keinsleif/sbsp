@@ -84,13 +84,9 @@ impl WaitEngine {
                 Some(command) = self.command_rx.recv() => {
                     let result: Result<()> = match command {
                         WaitCommand::Load { wait_type, instance_id, duration } => {
-                            if wait_type.eq(&WaitType::Wait) {
-                                self.loaded_instances.insert((wait_type, instance_id), LoadedInstance { total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
-                                if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
-                                    Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
-                                } else {
-                                    Ok(())
-                                }
+                            self.loaded_instances.insert((wait_type, instance_id), LoadedInstance { total_duration: Duration::from_secs_f64(duration), remaining_duration: Duration::from_secs_f64(duration) });
+                            if let Err(e) = self.event_tx.send(EngineEvent::Wait(WaitEvent::Loaded { instance_id, position: 0.0 , duration })).await {
+                                Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                             } else {
                                 Ok(())
                             }
@@ -109,7 +105,7 @@ impl WaitEngine {
                             let wait_event = WaitEvent::Started { instance_id, position: 0.0, duration };
                             let event = Self::wrap_wait_event(wait_type, wait_event);
                             if let Err(e) = self.event_tx.send(event).await {
-                                Err(anyhow::anyhow!("Error sending PreWait event: {:?}", e))
+                                Err(anyhow::anyhow!("Error sending Wait event: {:?}", e))
                             } else {
                                 Ok(())
                             }
@@ -119,7 +115,7 @@ impl WaitEngine {
                                 if !waiting_instance.status.eq(&WaitingStatus::Paused) {
                                     let elapsed = waiting_instance.start_time.elapsed();
                                     waiting_instance.status = WaitingStatus::Paused;
-                                    waiting_instance.remaining_duration -= elapsed;
+                                    waiting_instance.remaining_duration = waiting_instance.remaining_duration.saturating_sub(elapsed);
                                     let wait_event = WaitEvent::Paused { instance_id, position: (waiting_instance.total_duration - waiting_instance.remaining_duration).as_secs_f64(), duration: waiting_instance.total_duration.as_secs_f64() };
                                     let event = Self::wrap_wait_event(wait_type, wait_event);
                                     if let Err(e) = self.event_tx.send(event).await {
