@@ -76,13 +76,15 @@ impl Default for ProjectShowModel {
 }
 
 #[cfg(feature = "backend")]
-impl From<ShowModel> for ProjectShowModel {
-    fn from(value: ShowModel) -> Self {
-        Self {
+impl TryFrom<ShowModel> for ProjectShowModel {
+    type Error = anyhow::Error;
+
+    fn try_from(value: ShowModel) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: value.name,
-            cues: value.cue_list.into(),
+            cues: value.cue_list.try_into()?,
             settings: value.settings,
-        }
+        })
     }
 }
 

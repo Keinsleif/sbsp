@@ -1096,7 +1096,7 @@ impl ShowModelManager {
             let model = self.model.read().await;
             ProjectFile {
                 project_type: *project_type,
-                model: model.clone().into(),
+                model: model.clone().try_into()?,
             }
         };
 

@@ -155,14 +155,12 @@ pub enum BackendError {
 }
 
 #[cfg(feature = "backend")]
-impl TryFrom<ExecutorEvent> for BackendEvent {
-    type Error = ();
-
-    fn try_from(value: ExecutorEvent) -> Result<Self, Self::Error> {
+impl From<ExecutorEvent> for Option<BackendEvent> {
+    fn from(value: ExecutorEvent) -> Self {
         use crate::executor::ExecutorEvent;
 
         if let ExecutorEvent::AudioOutputFallback { device, config } = value {
-            Ok(BackendEvent::OperationFailed {
+            Some(BackendEvent::OperationFailed {
                 error: BackendError::AudioOutputFallback { device, config },
             })
         } else {
@@ -226,11 +224,7 @@ impl TryFrom<ExecutorEvent> for BackendEvent {
                 }
                 ExecutorEvent::AudioOutputFallback { .. } => None,
             };
-            if let Some(param) = status_param {
-                Ok(BackendEvent::CueStatus(param))
-            } else {
-                Err(())
-            }
+            status_param.map(BackendEvent::CueStatus)
         }
     }
 }

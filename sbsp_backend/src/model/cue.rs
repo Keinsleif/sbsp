@@ -79,7 +79,7 @@ impl CueList {
         flat_list: &HashMap<Uuid, Cue>,
         cue_ids: &[Uuid],
         cue_list: &mut Vec<ProjectCue>,
-    ) {
+    ) -> Result<(), anyhow::Error> {
         for cue_id in cue_ids {
             if let Some(flat_cue) = flat_list.get(cue_id) {
                 let cue_params = match &flat_cue.params {
@@ -98,7 +98,7 @@ impl CueList {
                     CueParam::Load(load_cue_param) => ProjectCueParam::Load(load_cue_param.clone()),
                     CueParam::Group { base, children } => {
                         let mut child_cues = Vec::with_capacity(children.len());
-                        Self::reconstruct_cue(flat_list, children, &mut child_cues);
+                        Self::reconstruct_cue(flat_list, children, &mut child_cues)?;
                         ProjectCueParam::Group {
                             base: base.clone(),
                             children: Box::new(child_cues),
@@ -117,8 +117,11 @@ impl CueList {
                     cursor_advance_trigger_override: flat_cue.cursor_advance_trigger_override,
                     params: cue_params,
                 });
+            } else {
+                anyhow::bail!("cue_id {} not found in flatten cue list.", cue_id);
             }
         }
+        Ok(())
     }
 }
 
@@ -136,11 +139,12 @@ impl TryFrom<Vec<ProjectCue>> for CueList {
 }
 
 #[cfg(feature = "backend")]
-impl From<CueList> for Vec<ProjectCue> {
-    fn from(value: CueList) -> Self {
+impl TryFrom<CueList> for Vec<ProjectCue> {
+    type Error = anyhow::Error;
+    fn try_from(value: CueList) -> Result<Self, Self::Error> {
         let mut cue_list = Vec::with_capacity(value.root_ids.len());
-        CueList::reconstruct_cue(&value.cues, &value.root_ids, &mut cue_list);
-        cue_list
+        CueList::reconstruct_cue(&value.cues, &value.root_ids, &mut cue_list)?;
+        Ok(cue_list)
     }
 }
 
