@@ -147,6 +147,11 @@ impl Executor {
                 log::debug!("Unclaimed cue errors: {}", self.error_stack.join("; "));
                 self.error_stack.clear();
             }
+
+            if self.active_instances.is_empty() && !self.chain_trigger_history.is_empty() {
+                log::debug!("All active instances stopped. Clearing chain_trigger_history.");
+                self.chain_trigger_history.clear();
+            }
         }
         log::info!("Executor run loop finished.");
     }
