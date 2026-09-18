@@ -271,7 +271,7 @@ impl AudioEngine {
         };
         let device_result = if let Some(device_id) = &settings.device_id
             && let Ok(id) = DeviceId::from_str(device_id)
-            && let Ok(host) = rodio::cpal::host_from_id(id.0)
+            && let Ok(host) = rodio::cpal::host_from_id(id.host())
             && let Some(device) = host.device_by_id(&id)
             && device.supports_output()
         {
