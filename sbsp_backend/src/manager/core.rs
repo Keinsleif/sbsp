@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::{
@@ -932,104 +933,103 @@ impl ShowModelManager {
         let mut model_modified = false;
         let project_status = self.project_status.read().await;
 
-        if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
-        }
+        let Some(parent) = path.parent() else {
+            anyhow::bail!("Invalid path to save");
+        };
+        tokio::fs::create_dir_all(parent).await?;
 
         if project_type == &ProjectType::ProjectFolder {
-            if let Some(project_dir) = path.parent() {
-                let import_destination = {
-                    let model = self.model.read().await;
-                    model.settings.general.copy_assets_destination.clone()
+            let import_destination = {
+                let model = self.model.read().await;
+                model.settings.general.copy_assets_destination.clone()
+            };
+
+            let project_dir = parent;
+
+            if let ProjectStatus::Saved {
+                project_type,
+                path: saved_path,
+            } = &*project_status
+                && *project_type == ProjectType::ProjectFolder
+                && path != saved_path
+            {
+                let Some(parent) = saved_path.parent() else {
+                    return Err(anyhow!("Invalid source project folder path."));
+                };
+                let mut targets: HashMap<_, _> = {
+                    let model = self.read().await;
+                    model
+                        .cue_list
+                        .cues
+                        .values()
+                        .filter_map(|cue| {
+                            if let CueParam::Audio(params) = &cue.params {
+                                Some((cue.id, params.target.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
                 };
 
-                if let ProjectStatus::Saved {
-                    project_type,
-                    path: saved_path,
-                } = &*project_status
-                    && *project_type == ProjectType::ProjectFolder
-                    && path != saved_path
-                {
-                    let Some(parent) = saved_path.parent() else {
-                        return Err(anyhow!("Invalid project folder path."));
-                    };
-                    let mut targets: HashMap<_, _> = {
-                        let model = self.read().await;
-                        model
-                            .cue_list
-                            .cues
-                            .values()
-                            .filter_map(|cue| {
-                                if let CueParam::Audio(params) = &cue.params {
-                                    Some((cue.id, params.target.clone()))
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect()
-                    };
+                for target in targets.values_mut() {
+                    let asset_path = parent.join(&*target);
+                    let new_path = import_asset_file(
+                        asset_path,
+                        project_dir.to_path_buf(),
+                        import_destination.clone(),
+                    )
+                    .await?;
+                    *target = new_path;
+                }
 
-                    for target in targets.values_mut() {
-                        let asset_path = parent.join(&*target);
-                        let new_path = import_asset_file(
-                            asset_path,
-                            project_dir.to_path_buf(),
-                            import_destination.clone(),
-                        )
-                        .await?;
-                        *target = new_path;
-                    }
-
-                    let mut model = self.model.write().await;
-                    for (id, target) in targets {
-                        if let Some(cue) = model.cue_list.cues.get_mut(&id)
-                            && let CueParam::Audio(params) = &mut cue.params
-                        {
-                            params.target = target;
-                        }
-                    }
-                } else {
-                    let mut targets: HashMap<_, _> = {
-                        let model = self.read().await;
-                        model
-                            .cue_list
-                            .cues
-                            .values()
-                            .filter_map(|cue| {
-                                if let CueParam::Audio(params) = &cue.params
-                                    && params.target.is_absolute()
-                                {
-                                    Some((cue.id, params.target.clone()))
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect()
-                    };
-
-                    for target in targets.values_mut() {
-                        let new_path = import_asset_file(
-                            target.clone(),
-                            project_dir.to_path_buf(),
-                            import_destination.clone(),
-                        )
-                        .await?;
-                        *target = new_path;
-                    }
-
-                    let mut model = self.model.write().await;
-                    for (id, target) in targets {
-                        if let Some(cue) = model.cue_list.cues.get_mut(&id)
-                            && let CueParam::Audio(params) = &mut cue.params
-                        {
-                            params.target = target;
-                        }
+                let mut model = self.model.write().await;
+                for (id, target) in targets {
+                    if let Some(cue) = model.cue_list.cues.get_mut(&id)
+                        && let CueParam::Audio(params) = &mut cue.params
+                    {
+                        params.target = target;
                     }
                 }
-                model_modified = true;
             } else {
-                return Err(anyhow!("Invalid project folder path."));
+                let mut targets: HashMap<_, _> = {
+                    let model = self.read().await;
+                    model
+                        .cue_list
+                        .cues
+                        .values()
+                        .filter_map(|cue| {
+                            if let CueParam::Audio(params) = &cue.params
+                                && params.target.is_absolute()
+                            {
+                                Some((cue.id, params.target.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                };
+
+                for target in targets.values_mut() {
+                    let new_path = import_asset_file(
+                        target.clone(),
+                        project_dir.to_path_buf(),
+                        import_destination.clone(),
+                    )
+                    .await?;
+                    *target = new_path;
+                }
+
+                let mut model = self.model.write().await;
+                for (id, target) in targets {
+                    if let Some(cue) = model.cue_list.cues.get_mut(&id)
+                        && let CueParam::Audio(params) = &mut cue.params
+                    {
+                        params.target = target;
+                    }
+                }
             }
+            model_modified = true;
         }
 
         let project_file = {
@@ -1040,11 +1040,22 @@ impl ShowModelManager {
             }
         };
 
-        let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&project_file))
-                .await??;
+        let parent_path = parent.to_path_buf();
+        let dest_path = path.to_path_buf();
+        tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+            let content = serde_json::to_string_pretty(&project_file)?;
+            let mut temp_file = tempfile::NamedTempFile::new_in(parent_path)?;
+            {
+                let file = temp_file.as_file_mut();
+                file.write_all(content.as_bytes())?;
+                file.flush()?;
+                file.sync_all()?;
+            }
+            temp_file.persist(dest_path)?;
+            Ok(())
+        })
+        .await??;
 
-        tokio::fs::write(&path, content).await?;
         log::info!("Show saved to: {}", path.display());
         Ok(model_modified)
     }
