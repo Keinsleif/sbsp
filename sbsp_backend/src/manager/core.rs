@@ -1051,7 +1051,8 @@ impl ShowModelManager {
                 file.flush()?;
                 file.sync_all()?;
             }
-            temp_file.persist(dest_path)?;
+            temp_file.persist(&dest_path)?;
+            sync_parent_dir(&dest_path)?;
             Ok(())
         })
         .await??;
@@ -1065,6 +1066,20 @@ impl ShowModelManager {
         let mut project_status = self.project_status.write().await;
         *project_status = new_project_status;
     }
+}
+
+#[cfg(unix)]
+fn sync_parent_dir(path: &Path) -> std::io::Result<()> {
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    File::open(parent)?.sync_all()
+}
+
+#[cfg(not(unix))]
+fn sync_parent_dir(_path: &Path) -> std::io::Result<()> {
+    Ok(())
 }
 
 async fn import_asset_file(
