@@ -43,16 +43,8 @@ impl GlobalSettingsManager {
     pub async fn export_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
         let mut settings = self.inner.read().await.clone();
         sanitize_audio(&mut settings);
-        let content =
-            tokio::task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
 
-        if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
-        }
-        tokio::fs::write(path, content).await?;
-
-        log::info!("GlobalSettings saved to: {}", path.display());
-        Ok(())
+        SettingsManager::write_settings_to_file(path, settings).await
     }
 
     pub async fn read(&self) -> RwLockReadGuard<'_, GlobalHostSettings> {
