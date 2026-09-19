@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use serde::{Serialize, de::DeserializeOwned};
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tokio::{fs, task};
@@ -52,15 +53,7 @@ where
         if let Some(path) = &self.path {
             let settings = self.settings.read().await.clone();
 
-            let content =
-                task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
-
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent).await?;
-            }
-            fs::write(path.clone(), content).await?;
-            log::info!("GlobalSettings saved to: {}", path.display());
-            Ok(())
+            Self::write_settings_to_file(path, settings).await
         } else {
             Err(anyhow::anyhow!(
                 "Settings file unavailable. Settings only exist in memory."
@@ -80,14 +73,29 @@ where
 
     pub async fn export_to_file(&self, path: &Path) -> Result<(), anyhow::Error> {
         let settings = self.settings.read().await.clone();
+        Self::write_settings_to_file(path, settings).await
+    }
 
-        let content =
-            task::spawn_blocking(move || serde_json::to_string_pretty(&settings)).await??;
+    pub async fn write_settings_to_file(path: &Path, settings: T) -> anyhow::Result<()> {
+        let dest_path = path.to_path_buf();
+        task::spawn_blocking(move || -> anyhow::Result<()> {
+            let Some(parent) = dest_path.parent() else {
+                anyhow::bail!("Invalid path to save");
+            };
+            std::fs::create_dir_all(parent)?;
 
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).await?;
-        }
-        fs::write(path, content).await?;
+            let content = serde_json::to_string_pretty(&settings)?;
+            let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
+            {
+                let file = temp_file.as_file_mut();
+                file.write_all(content.as_bytes())?;
+                file.flush()?;
+                file.sync_all()?;
+            }
+            temp_file.persist(dest_path)?;
+            Ok(())
+        })
+        .await??;
 
         log::info!("GlobalSettings saved to: {}", path.display());
         Ok(())
