@@ -90,6 +90,16 @@ watch(
   { immediate: true },
 );
 
+watch(isSettingsDialogOpen, (newState) => {
+  if (newState) {
+    editingSettings.value = {
+      show: structuredClone(toRaw(showModel.settings)),
+      global: uiSettings.clone(),
+    };
+    showModelName.value = showModel.name;
+  }
+});
+
 const saveSettings = async (): Promise<boolean> => {
   if (
     __IS_HOST__ &&
