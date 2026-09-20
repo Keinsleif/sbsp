@@ -21,6 +21,7 @@ import {
   mdiVolumeHigh,
 } from '@mdi/js';
 import type { Permissions } from './types/Permissions';
+import { MODIFIER_KEYS } from './composables/useHotkey';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -393,3 +394,11 @@ export const getExtension = (path: string) => {
 
   return fileName.substring(dotIndex + 1).toLowerCase();
 };
+
+export function normalizeHotkey(hotkeyStr: string): string {
+  if (!hotkeyStr) return ''
+  const parts = hotkeyStr.toLowerCase().split('+').map(p => p.trim())
+  const modifiers = parts.filter(p => MODIFIER_KEYS.has(p)).sort()
+  const key = parts.filter(p => !MODIFIER_KEYS.has(p))
+  return [...modifiers, ...key].join('+')
+}

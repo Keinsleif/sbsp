@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { mdiClose } from '@mdi/js';
+import { mdiAlert, mdiClose } from '@mdi/js';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import { computed, ref, useId } from 'vue';
 import FloatLabel from 'primevue/floatlabel';
 import InputText from 'primevue/inputtext';
-import { MOD_KEY } from '@/composables/useHotkey.ts';
+import { MOD_KEY, MODIFIER_KEYS } from '@/composables/useHotkey.ts';
 import { useApi } from '@/api/index.ts';
+import { normalizeHotkey } from '@/utils.ts';
+import PathIcon from '../display/PathIcon.vue';
+import { useI18n } from 'vue-i18n';
 
 const api = useApi();
-
-const MODIFIER_KEYS = new Set(['Control', 'Meta', 'OS', 'Alt', 'AltGraph', 'Shift']);
-
+const { t } = useI18n();
 const hotkey = defineModel<string | null>({ default: '' });
 const hotkeyPreview = ref('');
 const hotkeyDisplay = computed(() => {
@@ -26,9 +27,16 @@ const hotkeyDisplay = computed(() => {
 });
 const props = defineProps<{
   label?: string;
+  hotkeySet: string[],
 }>();
+const isDuplicate = computed(() => {
+  const currentHotkey = hotkey.value;
+  if (currentHotkey == null) return false;
+  const count = props.hotkeySet.filter((e) => normalizeHotkey(currentHotkey) === e).length;
+  return count > 1;
+});
 
-const keyinput = (event: KeyboardEvent) => {
+const keydown = (event: KeyboardEvent) => {
   event.preventDefault();
   let shortcut = '';
   if (event.ctrlKey) {
@@ -92,10 +100,9 @@ const inputId = useId();
 </script>
 
 <template>
-  <input-group>
+  <input-group class="w-80">
     <float-label
       variant="on"
-      class="w-125"
     >
       <input-text
         :model-value="hotkeyDisplay"
@@ -109,12 +116,15 @@ const inputId = useId();
             };
           },
         }"
-        @keydown.stop="keyinput($event)"
+        @keydown.stop="keydown($event)"
         @keyup.stop="keyup($event)"
         @blur="resetPreview()"
       />
       <label :for="inputId">{{ props.label || '' }}</label>
     </float-label>
+    <input-group-addon v-show="isDuplicate" v-tooltip.left="t('dialog.settings.global.hotkey.duplicateWarning')">
+      <path-icon class="text-yellow-500" :icon="mdiAlert" />
+    </input-group-addon>
     <input-group-addon>
       <button-wrapper
         :icon="mdiClose"
