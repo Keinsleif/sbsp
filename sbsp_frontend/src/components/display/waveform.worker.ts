@@ -43,6 +43,8 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     canvasWidth = data.width;
     canvasHeight = data.height;
     devicePixelRatio = data.dpr;
+    canvas.width = canvasWidth * devicePixelRatio;
+    canvas.height = canvasHeight * devicePixelRatio;
     return;
   }
 
