@@ -10,16 +10,11 @@ import { onMounted, onUnmounted, ref, toRaw, watch } from 'vue';
 import WaveformWorker from './waveform.worker?worker';
 
 const selectedCue = defineModel<Cue | null>();
-const props = withDefaults(
-  defineProps<{
+const props = defineProps<{
     volume?: number;
     width: number;
     height: number;
-  }>(),
-  {
-    volume: 0,
-  },
-);
+  }>();
 
 const assetResult = useAssetResult();
 const uiState = useUiState();
