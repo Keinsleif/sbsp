@@ -64,10 +64,13 @@ const syncWorkerState = () => {
 
   if (currentWaveform !== lastWaveformSource) {
     lastWaveformSource = currentWaveform;
+    const waveform = currentWaveform
+      ? new Float32Array(toRaw(currentWaveform))
+      : null;
     worker.postMessage({
       type: 'updateData',
-      waveform: currentWaveform ? toRaw(currentWaveform) : null,
-    });
+      waveform: waveform?.buffer ?? null,
+    }, waveform ? [waveform.buffer] : []);
   }
 
   worker.postMessage({
