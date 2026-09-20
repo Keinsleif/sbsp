@@ -344,6 +344,7 @@ export const generateRandomPassword = (): string => {
 };
 
 export const PERMISSIONS = {
+  NONE: 0 as Permissions,
   READ: (1 << 0) as Permissions,
   CONTROL: (1 << 1) as Permissions,
   EDIT: (1 << 2) as Permissions,
@@ -397,8 +398,8 @@ export const getExtension = (path: string) => {
 
 export function normalizeHotkey(hotkeyStr: string): string {
   if (!hotkeyStr) return ''
-  const parts = hotkeyStr.toLowerCase().split('+').map(p => p.trim())
-  const modifiers = parts.filter(p => MODIFIER_KEYS.has(p)).sort()
-  const key = parts.filter(p => !MODIFIER_KEYS.has(p))
-  return [...modifiers, ...key].join('+')
+  const parts = hotkeyStr.split('+').map(p => p.trim()).filter(Boolean);
+  const modifiers = parts.filter(p => MODIFIER_KEYS.has(p)).sort();
+  const key = parts.filter(p => !MODIFIER_KEYS.has(p));
+  return [...modifiers, ...key].join('+');
 }
