@@ -81,7 +81,6 @@ const debouncedResize = debounce(() => {
   worker.postMessage({
     type: 'render',
     volume: props.volume,
-    scaleWaveform: uiState.scaleWaveform,
     width: props.width,
     height: props.height,
   });
