@@ -98,13 +98,12 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
             const topY = centerY - scaledRatio * amp;
             const bottomY = centerY + scaledRatio * amp;
 
-            if (scaledRatio >= CLIP_THRESHOLD) {
-              console.log(scaledRatio);
-              clippedRedPath.moveTo(x, topY);
-              clippedRedPath.lineTo(x, bottomY);
-            } else {
+            if (data.volume == null || scaledRatio < CLIP_THRESHOLD) {
               normalPath.moveTo(x, topY);
               normalPath.lineTo(x, bottomY);
+            } else {
+              clippedRedPath.moveTo(x, topY);
+              clippedRedPath.lineTo(x, bottomY);
             }
           }
         }
