@@ -11,7 +11,7 @@ export interface WorkerMessageInit {
 
 export interface WorkerMessageUpdateData {
   type: 'updateData';
-  waveform: number[];
+  waveform: ArrayBuffer | null;
 }
 
 export interface WorkerMessageRender {
