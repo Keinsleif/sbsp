@@ -992,32 +992,12 @@ impl Executor {
                         log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
                         return Ok(());
                     }
-                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
-                        && let CueParam::Group { children, .. } = cue.params
-                    {
-                        let active_children: Vec<_> = children
-                            .iter()
-                            .filter(|c| self.active_instances.contains_key(c))
-                            .rev()
-                            .collect();
-                        if !active_children.is_empty() {
-                            let context = ScopeContext::GroupPause;
-                            self.task_stack.push(Task::EndScope {
-                                cue_id: cue.id,
-                                context,
-                                watermark: self.error_stack.len(),
-                            });
-                            for child_id in active_children {
-                                self.task_stack.push(Task::Dispatch {
-                                    command: ExecutorCommand::Pause(*child_id),
-                                    origin: DispatchOrigin::Group,
-                                });
-                            }
-                            self.task_stack.push(Task::BeginScope {
-                                cue_id: cue.id,
-                                context,
-                            });
-                        }
+                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                        self.dispatch_to_active_children(
+                            &cue,
+                            ScopeContext::GroupPause,
+                            ExecutorCommand::Pause,
+                        );
                     }
                 }
             }
@@ -1061,32 +1041,12 @@ impl Executor {
                         log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
                         return Ok(());
                     }
-                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
-                        && let CueParam::Group { children, .. } = cue.params
-                    {
-                        let active_children: Vec<_> = children
-                            .iter()
-                            .filter(|c| self.active_instances.contains_key(c))
-                            .rev()
-                            .collect();
-                        if !active_children.is_empty() {
-                            let context = ScopeContext::GroupResume;
-                            self.task_stack.push(Task::EndScope {
-                                cue_id: cue.id,
-                                context,
-                                watermark: self.error_stack.len(),
-                            });
-                            for child_id in active_children {
-                                self.task_stack.push(Task::Dispatch {
-                                    command: ExecutorCommand::Resume(*child_id),
-                                    origin: DispatchOrigin::Group,
-                                });
-                            }
-                            self.task_stack.push(Task::BeginScope {
-                                cue_id: cue.id,
-                                context,
-                            });
-                        }
+                    if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                        self.dispatch_to_active_children(
+                            &cue,
+                            ScopeContext::GroupResume,
+                            ExecutorCommand::Resume,
+                        );
                     }
                 }
             }
@@ -1141,32 +1101,12 @@ impl Executor {
                             log::error!("cyclic group containment; skipping. cue_id={}", cue_id);
                             return Ok(());
                         }
-                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
-                            && let CueParam::Group { children, .. } = cue.params
-                        {
-                            let active_children: Vec<_> = children
-                                .iter()
-                                .filter(|c| self.active_instances.contains_key(c))
-                                .rev()
-                                .collect();
-                            if !active_children.is_empty() {
-                                let context = ScopeContext::GroupStop;
-                                self.task_stack.push(Task::EndScope {
-                                    cue_id: cue.id,
-                                    context,
-                                    watermark: self.error_stack.len(),
-                                });
-                                for child_id in active_children {
-                                    self.task_stack.push(Task::Dispatch {
-                                        command: ExecutorCommand::Stop(*child_id, StopMode::Hard),
-                                        origin: DispatchOrigin::Group,
-                                    });
-                                }
-                                self.task_stack.push(Task::BeginScope {
-                                    cue_id: cue.id,
-                                    context,
-                                });
-                            }
+                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                            self.dispatch_to_active_children(
+                                &cue,
+                                ScopeContext::GroupStop,
+                                |uuid| ExecutorCommand::Stop(uuid, StopMode::Hard),
+                            );
                         }
                     }
                 }
@@ -1214,32 +1154,12 @@ impl Executor {
                             return Ok(());
                         }
                         active_instance.pending_stop_as_completed = as_completed;
-                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await
-                            && let CueParam::Group { children, .. } = cue.params
-                        {
-                            let active_children: Vec<_> = children
-                                .iter()
-                                .filter(|c| self.active_instances.contains_key(c))
-                                .rev()
-                                .collect();
-                            if !active_children.is_empty() {
-                                let context = ScopeContext::GroupStop;
-                                self.task_stack.push(Task::EndScope {
-                                    cue_id: cue.id,
-                                    context,
-                                    watermark: self.error_stack.len(),
-                                });
-                                for child_id in active_children {
-                                    self.task_stack.push(Task::Dispatch {
-                                        command: ExecutorCommand::Stop(*child_id, stop_mode),
-                                        origin: DispatchOrigin::Group,
-                                    });
-                                }
-                                self.task_stack.push(Task::BeginScope {
-                                    cue_id: cue.id,
-                                    context,
-                                });
-                            }
+                        if let Some(cue) = self.model_handle.get_cue_by_id(&cue_id).await {
+                            self.dispatch_to_active_children(
+                                &cue,
+                                ScopeContext::GroupStop,
+                                |uuid| ExecutorCommand::Stop(uuid, stop_mode),
+                            );
                         }
                     }
                 }
@@ -1331,6 +1251,38 @@ impl Executor {
             }
         }
         Ok(())
+    }
+
+    fn dispatch_to_active_children(
+        &mut self,
+        cue: &Cue,
+        context: ScopeContext,
+        command_fn: impl Fn(Uuid) -> ExecutorCommand,
+    ) {
+        if let CueParam::Group { children, .. } = &cue.params {
+            let active_children: Vec<_> = children
+                .iter()
+                .filter(|c| self.active_instances.contains_key(c))
+                .rev()
+                .collect();
+            if !active_children.is_empty() {
+                self.task_stack.push(Task::EndScope {
+                    cue_id: cue.id,
+                    context,
+                    watermark: self.error_stack.len(),
+                });
+                for child_id in active_children {
+                    self.task_stack.push(Task::Dispatch {
+                        command: command_fn(*child_id),
+                        origin: DispatchOrigin::Group,
+                    });
+                }
+                self.task_stack.push(Task::BeginScope {
+                    cue_id: cue.id,
+                    context,
+                });
+            }
+        }
     }
 
     async fn handle_engine_event(&mut self, event: EngineEvent) -> Result<(), anyhow::Error> {
@@ -1511,7 +1463,12 @@ impl Executor {
                                 .send(ExecutorEvent::PreWaitCompleted { cue_id })
                                 .await?;
                             self.active_instances.remove(&cue_id);
-                            anyhow::bail!("PreWait: cue to execute not found. id={}", cue_id);
+                            return self
+                                .emit_error(
+                                    cue_id,
+                                    format!("PreWait: cue to execute not found. id={}", cue_id),
+                                )
+                                .await;
                         }
                     }
                 };

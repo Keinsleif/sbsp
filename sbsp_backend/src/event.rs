@@ -146,6 +146,7 @@ pub enum CueStatusEventParam {
     rename_all_fields = "camelCase"
 )]
 pub enum BackendError {
+    CueExecute { cue_id: Uuid, message: String },
     SaveToFile { path: PathBuf, message: String },
     LoadFromFile { path: PathBuf, message: String },
     ExportToFolder { path: PathBuf, message: String },

@@ -293,6 +293,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         ModelCommand::SaveToFile(_)|
                                         ModelCommand::ExportToFolder(_) |
                                         ModelCommand::LoadFromFile(_) => {
+                                            if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                            && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                                log::error!("Error on responding error. e={}", e);
+                                                return;
+                                            }
                                             log::warn!("File related operation not permitted.");
                                         },
                                         _ => {
