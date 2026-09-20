@@ -63,7 +63,8 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
         handle
             .asset_processor_handle
             .request_file_asset_data(path)
-            .await;
+            .await
+            .map_err(|e| format!("Failed to request asset process e={}", e))?;
         Ok(())
     } else {
         Err("Not connected.".into())

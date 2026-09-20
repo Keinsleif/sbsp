@@ -69,7 +69,8 @@ pub async fn process_asset(state: tauri::State<'_, AppState>, path: PathBuf) -> 
     handle
         .asset_processor_handle
         .request_file_asset_data(path)
-        .await;
+        .await
+        .map_err(|e| format!("Failed to request asset process e={}", e))?;
     Ok(())
 }
 
@@ -83,15 +84,18 @@ pub async fn file_open(app_handle: tauri::AppHandle, window: WebviewWindow) -> R
         .set_parent(&window)
         .add_filter("Show Model", &["sbsp"])
         .pick_file(|file_path_option| {
-            result_tx.send(file_path_option).unwrap();
+            if result_tx.send(file_path_option).is_err() {
+                log::error!("Failed to send dialog selection to command task");
+            }
         });
     if let Ok(Some(file_path)) = result_rx.await {
         model_handle
             .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
             .await
-            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())
+    } else {
+        Err("Failed to retrieve dialog selection".into())
     }
-    Ok(())
 }
 
 #[tauri::command]
@@ -145,19 +149,24 @@ pub async fn file_save_as(
     window: WebviewWindow,
 ) -> Result<bool, String> {
     let handle = state.get_handle();
-    let file_dialog_builder = app_handle
+    let mut file_dialog_builder = app_handle
         .dialog()
         .file()
         .set_parent(&window)
         .add_filter("Show Model", &["sbsp"]);
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
+        if let Some(parent_path) = current_path.parent() {
+            file_dialog_builder = file_dialog_builder.set_directory(parent_path);
+        }
+        if let Some(file_name) = current_path.file_name() {
+            file_dialog_builder = file_dialog_builder.set_file_name(file_name.to_string_lossy());
+        };
         let (result_tx, result_rx) = oneshot::channel();
-        file_dialog_builder
-            .set_directory(current_path.parent().unwrap())
-            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-            .save_file(move |file_path_option| {
-                result_tx.send(file_path_option).unwrap();
-            });
+        file_dialog_builder.save_file(move |file_path_option| {
+            if result_tx.send(file_path_option).is_err() {
+                log::error!("Failed to send dialog selection to command task");
+            }
+        });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
             handle
@@ -172,7 +181,9 @@ pub async fn file_save_as(
     } else {
         let (result_tx, result_rx) = oneshot::channel();
         file_dialog_builder.save_file(move |file_path_option| {
-            result_tx.send(file_path_option).unwrap();
+            if result_tx.send(file_path_option).is_err() {
+                log::error!("Failed to send dialog selection to command task");
+            }
         });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
@@ -195,15 +206,20 @@ pub async fn export_to_folder(
     window: WebviewWindow,
 ) -> Result<bool, String> {
     let handle: sbsp_backend::BackendHandle = state.get_handle();
-    let file_dialog_builder = app_handle.dialog().file().set_parent(&window);
+    let mut file_dialog_builder = app_handle.dialog().file().set_parent(&window);
     if let Some(current_path) = handle.model_handle.get_current_file_path().await.as_ref() {
+        if let Some(parent_path) = current_path.parent() {
+            file_dialog_builder = file_dialog_builder.set_directory(parent_path);
+        }
+        if let Some(file_name) = current_path.file_name() {
+            file_dialog_builder = file_dialog_builder.set_file_name(file_name.to_string_lossy());
+        };
         let (result_tx, result_rx) = oneshot::channel();
-        file_dialog_builder
-            .set_directory(current_path.parent().unwrap())
-            .set_file_name(current_path.file_name().unwrap().to_str().unwrap())
-            .pick_folder(move |file_path_option| {
-                result_tx.send(file_path_option).unwrap();
-            });
+        file_dialog_builder.pick_folder(move |file_path_option| {
+            if result_tx.send(file_path_option).is_err() {
+                log::error!("Failed to send dialog selection to command task");
+            }
+        });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
             handle
@@ -218,7 +234,9 @@ pub async fn export_to_folder(
     } else {
         let (result_tx, result_rx) = oneshot::channel();
         file_dialog_builder.pick_folder(move |file_path_option| {
-            result_tx.send(file_path_option).unwrap();
+            if result_tx.send(file_path_option).is_err() {
+                log::error!("Failed to send dialog selection to command task");
+            }
         });
         if let Ok(Some(file_path)) = result_rx.await {
             let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;

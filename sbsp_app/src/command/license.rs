@@ -20,15 +20,21 @@ pub async fn activate_license(
         .set_parent(&window)
         .add_filter("License File", &["json"])
         .pick_file(|file_path_opt| {
-            if let Some(file_path) = file_path_opt
+            let result = if let Some(file_path) = file_path_opt
                 && let Some(path) = file_path.as_path()
             {
-                result_tx.send(Some(path.to_path_buf())).unwrap();
+                Some(path.to_path_buf())
             } else {
-                result_tx.send(None).unwrap()
+                None
+            };
+            if result_tx.send(result).is_err() {
+                log::error!("Failed to send dialog selection to command task");
             }
         });
-    if let Some(path) = result_rx.await.unwrap() {
+    let result = result_rx
+        .await
+        .map_err(|_| "Failed to retrieve dialog selection".to_string())?;
+    if let Some(path) = result {
         if let Err(e) = license_manager
             .activate_by_file(path.clone())
             .map_err(|e| e.to_string())
