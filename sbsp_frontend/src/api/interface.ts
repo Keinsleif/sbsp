@@ -80,7 +80,7 @@ export interface IBackendAdapter {
 
   // Settings
   getSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
-  setSettings(newSettings: GlobalHostSettings | GlobalRemoteSettings): void;
+  setSettings(newSettings: GlobalHostSettings | GlobalRemoteSettings): Promise<void>;
   reloadSettings(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
   importSettingsFromFile(): Promise<GlobalHostSettings | GlobalRemoteSettings>;
   exportSettingsToFile(): void;
