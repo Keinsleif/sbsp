@@ -26,6 +26,15 @@ const { width: svgWidth } = useElementSize(svgRef);
 const metadata = computed(() =>
   selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
 );
+const volume = computed(() => {
+  if (selectedCue.value) {
+    const peak = assetResult.get(selectedCue.value.id)?.peak;
+    if (peak) {
+      return -peak;
+    }
+  }
+  return 0;
+});
 const timeRange = computed(() => {
   const duration = metadata.value?.duration || 1;
   const start =
@@ -135,6 +144,7 @@ const seek = (event: MouseEvent) => {
         v-model="selectedCue"
         :height="64"
         :width="svgWidth"
+        :volume="volume"
       />
       <rect
         v-if="selectedCue != null && selectedCue.params.type === 'audio'"

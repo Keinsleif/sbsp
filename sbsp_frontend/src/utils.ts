@@ -260,21 +260,27 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
   }
 };
 
-export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
-  let timeoutId: unknown;
-  const wrap = function (...args: unknown[]) {
+export function debounce<T extends (...args: never[]) => unknown>(
+  fn: T,
+  delay: MaybeRef<number>
+) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const wrap = function (...args: Parameters<T>): void {
     wrap.debouncing = true;
-    clearTimeout(timeoutId as number);
+    clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       fn(...args);
       wrap.debouncing = false;
     }, unref(delay));
   };
+
   wrap.debouncing = false;
   wrap.clear = () => {
-    clearTimeout(timeoutId as number);
+    clearTimeout(timeoutId);
   };
   wrap.immediate = fn;
+
   return wrap;
 }
 
