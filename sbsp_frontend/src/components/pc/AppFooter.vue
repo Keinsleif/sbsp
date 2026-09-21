@@ -38,13 +38,13 @@ const ALL_MODES = computed(() => [
 const modes = computed(() => {
   return ALL_MODES.value.filter((val) => {
     if (uiState.permission == null) return false;
-    if (val.value === 'view' && uiState.permission & 0b0001) {
+    if (val.value === 'view' && uiState.permission & PERMISSIONS.READ) {
       return true;
     }
-    if (val.value === 'run' && uiState.permission & 0b0010) {
+    if (val.value === 'run' && uiState.permission & PERMISSIONS.CONTROL) {
       return true;
     }
-    if (val.value === 'edit' && uiState.permission & 0b0100) {
+    if (val.value === 'edit' && uiState.permission & PERMISSIONS.EDIT) {
       return true;
     }
     return false;

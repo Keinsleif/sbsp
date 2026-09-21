@@ -8,10 +8,14 @@ import { useShowModel } from './showModel.ts';
 import type { Permissions } from '../types/Permissions.ts';
 import { useUiSettings } from './uiSettings.ts';
 
+const INITIAL_PERMISSION = __IS_HOST__
+  ? PERMISSIONS.CONTROL | PERMISSIONS.EDIT | PERMISSIONS.READ
+  : PERMISSIONS.NONE;
+
 export const useUiState = defineStore(
   'uiState',
   () => {
-    const permission = ref<Permissions>(0b0111);
+    const permission = ref<Permissions>(INITIAL_PERMISSION);
     const mode = ref<'edit' | 'run' | 'view'>('edit');
     const playbackCursor = ref<string | null>(null);
     const selected = ref<string | null>(null);
