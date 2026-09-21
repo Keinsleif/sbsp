@@ -43,11 +43,14 @@ const playbackCursorCue = computed(() => {
 
 const playbackCursorCueTitle = computed(() => {
   return playbackCursorCue.value != null
-    ? playbackCursorCue.value.number +
-        '・' +
-        (playbackCursorCue.value.name != null
+    ? [
+        playbackCursorCue.value.number,
+        playbackCursorCue.value.name != null
           ? playbackCursorCue.value.name
-          : buildCueName(playbackCursorCue.value))
+          : buildCueName(playbackCursorCue.value),
+      ]
+        .filter(Boolean)
+        .join('・')
     : ' ';
 });
 
