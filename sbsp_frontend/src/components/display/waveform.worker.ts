@@ -23,7 +23,7 @@ export interface WorkerMessageRender {
 
 type WorkerMessage = WorkerMessageInit | WorkerMessageUpdateData | WorkerMessageRender;
 
-const F32_EPSILON = 1.1920929e-7; 
+const F32_EPSILON = 1.1920929e-7;
 const CLIP_THRESHOLD = 1.0 + F32_EPSILON;
 
 let canvas: OffscreenCanvas | null = null;

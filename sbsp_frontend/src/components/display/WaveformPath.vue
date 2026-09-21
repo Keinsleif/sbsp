@@ -11,10 +11,10 @@ import WaveformWorker from './waveform.worker?worker';
 
 const selectedCue = defineModel<Cue | null>();
 const props = defineProps<{
-    volume?: number;
-    width: number;
-    height: number;
-  }>();
+  volume?: number;
+  width: number;
+  height: number;
+}>();
 
 const assetResult = useAssetResult();
 const uiState = useUiState();
@@ -40,7 +40,7 @@ onMounted(() => {
       height: props.height,
       dpr,
     },
-    [offscreen]
+    [offscreen],
   );
 
   syncWorkerState();
@@ -59,13 +59,14 @@ const syncWorkerState = () => {
 
   if (currentWaveform !== lastWaveformSource) {
     lastWaveformSource = currentWaveform;
-    const waveform = currentWaveform
-      ? new Float32Array(toRaw(currentWaveform))
-      : null;
-    worker.postMessage({
-      type: 'updateData',
-      waveform: waveform?.buffer ?? null,
-    }, waveform ? [waveform.buffer] : []);
+    const waveform = currentWaveform ? new Float32Array(toRaw(currentWaveform)) : null;
+    worker.postMessage(
+      {
+        type: 'updateData',
+        waveform: waveform?.buffer ?? null,
+      },
+      waveform ? [waveform.buffer] : [],
+    );
   }
 
   worker.postMessage({
@@ -95,7 +96,7 @@ watch(
   () => {
     syncWorkerState();
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch([() => props.width, () => props.height], () => {
@@ -104,7 +105,12 @@ watch([() => props.width, () => props.height], () => {
 </script>
 
 <template>
-  <foreignObject x="0" y="0" :width="props.width" :height="props.height">
+  <foreignObject
+    x="0"
+    y="0"
+    :width="props.width"
+    :height="props.height"
+  >
     <canvas
       ref="canvasRef"
       :style="{

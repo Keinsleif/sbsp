@@ -12,9 +12,7 @@ const validateVolume = (src: number | undefined): string => {
   if (src == null) {
     return '0.00';
   }
-  if (src > 10) {
-    return '10.00';
-  } else if (src <= -60) {
+  if (src <= -60) {
     return '-∞';
   } else {
     return src.toFixed(2);

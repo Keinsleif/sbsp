@@ -458,18 +458,21 @@ const onReorderKeydown = (event: KeyboardEvent) => {
 };
 
 if (__IS_HOST__) {
-  watch(() => uiState.mode, (newMode) => {
-    if (newMode !== 'edit') {
-      dragOverIndex.value = null;
-    }
-  });
+  watch(
+    () => uiState.mode,
+    (newMode) => {
+      if (newMode !== 'edit') {
+        dragOverIndex.value = null;
+      }
+    },
+  );
 }
 
 useOsFileDrop({
   target: () => cuelistWrapperRef.value,
   onOver: (x, y) => {
     if (__IS_REMOTE__) return; // TODO: implement remote side behavier
-    if (uiState.mode !== "edit") return;
+    if (uiState.mode !== 'edit') return;
     updateDragOverFromPoint(x, y);
   },
   onLeave: () => {
@@ -477,7 +480,7 @@ useOsFileDrop({
   },
   onDrop: (files, x, y) => {
     if (__IS_REMOTE__) return; // TODO: implement remote side behavier
-    if (uiState.mode !== "edit") return;
+    if (uiState.mode !== 'edit') return;
     updateDragOverFromPoint(x, y);
     const target = resolveDropTarget(dragOverIndex.value);
     if (target == null) return;

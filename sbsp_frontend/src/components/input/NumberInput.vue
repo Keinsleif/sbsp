@@ -146,7 +146,7 @@ const inputId = useId();
       <input-text
         v-model="innerModel"
         class="w-full"
-        :input-id="inputId"
+        :id="inputId"
         :disabled="props.disabled"
         autocomplete="off"
         :pt="{
