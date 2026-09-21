@@ -582,7 +582,9 @@ impl ShowModelManager {
                     // modify only base on Group cue param modify.
                     *base = new_base;
                 }
-                _ => {}
+                _ => {
+                    anyhow::bail!("cue param type doesn't match")
+                }
             }
             Ok(())
         } else {
