@@ -442,7 +442,9 @@
         "summary": "Failed to apply device configuration",
         "detail": "The specified device configuration is unavailable. Reverted to default configuration."
       }
-    }
+    },
+    "failedToApplySettings": "Failed to apply settings",
+    "failedToCheckUpdate": "Failed to check update"
   },
   "view": {
     "connect": {

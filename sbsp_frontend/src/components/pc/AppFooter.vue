@@ -14,6 +14,8 @@ import { check } from '@tauri-apps/plugin-updater';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import ProgressSpinnerWrapper from '../wrapper/ProgressSpinnerWrapper.vue';
 import Select from 'primevue/select';
+import { PERMISSIONS } from '@/utils.ts';
+import { useToast } from 'primevue/usetoast';
 
 const isHost = __IS_HOST__;
 
@@ -22,6 +24,7 @@ const { t } = useI18n();
 const showModel = useShowModel();
 const uiState = useUiState();
 const api = useApi();
+const toast = useToast();
 const assetResult = useAssetResult();
 
 const isUpdateAvailable = ref(false);
@@ -59,6 +62,12 @@ onMounted(() => {
       })
       .catch((e) => {
         console.error(e);
+        toast.add({
+          severity: 'error',
+          summary: t('notification.failedToCheckUpdate'),
+          detail: e.toString(),
+          life: 3000,
+        });
       });
   }
 });

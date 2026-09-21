@@ -36,6 +36,12 @@ const checkUpdate = () => {
     .catch((e) => {
       isCheckingUpdate.value = false;
       console.error(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.connectionError'),
+        detail: e.toString(),
+        life: 3000,
+      });
     });
 };
 
