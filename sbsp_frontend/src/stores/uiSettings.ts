@@ -243,9 +243,8 @@ export const useUiSettings = defineStore('uiSettings', () => {
     .catch((e) => console.error(e));
 
   const update = async (newSettings: GlobalHostSettings | GlobalRemoteSettings): Promise<void> => {
-    api.setSettings(newSettings).then(() => {
-      settings.value = newSettings;
-    })
+    await api.setSettings(newSettings);
+    settings.value = newSettings;
   };
 
   const reload = () => {
