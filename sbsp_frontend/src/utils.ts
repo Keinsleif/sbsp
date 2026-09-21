@@ -261,10 +261,7 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
   }
 };
 
-export function debounce<T extends (...args: never[]) => unknown>(
-  fn: T,
-  delay: MaybeRef<number>
-) {
+export function debounce<T extends (...args: never[]) => unknown>(fn: T, delay: MaybeRef<number>) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   const wrap = function (...args: Parameters<T>): void {
@@ -397,9 +394,12 @@ export const getExtension = (path: string) => {
 };
 
 export function normalizeHotkey(hotkeyStr: string): string {
-  if (!hotkeyStr) return ''
-  const parts = hotkeyStr.split('+').map(p => p.trim()).filter(Boolean);
-  const modifiers = parts.filter(p => MODIFIER_KEYS.has(p)).sort();
-  const key = parts.filter(p => !MODIFIER_KEYS.has(p));
+  if (!hotkeyStr) return '';
+  const parts = hotkeyStr
+    .split('+')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const modifiers = parts.filter((p) => MODIFIER_KEYS.has(p)).sort();
+  const key = parts.filter((p) => !MODIFIER_KEYS.has(p));
   return [...modifiers, ...key].join('+');
 }

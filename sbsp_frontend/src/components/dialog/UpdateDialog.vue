@@ -36,6 +36,11 @@ const checkUpdate = () => {
     .catch((e) => {
       isCheckingUpdate.value = false;
       console.error(e);
+      toast.add({
+        severity: 'error',
+        summary: t('notification.failedToCheckUpdate'),
+        life: 3000,
+      });
     });
 };
 

@@ -36,7 +36,7 @@ const showState = useShowState();
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
 const tab = ref('showGeneral');
-const showModelName = ref<string>("");
+const showModelName = ref<string>('');
 const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalHostSettings | GlobalRemoteSettings;
@@ -61,7 +61,7 @@ const tabItems = computed(() => [
 const hotkeySet = computed(() => {
   let set: string[] = [];
   for (const c of Object.values(editingSettings.value.global.hotkey)) {
-    set = set.concat(Object.values(c).filter((e) => e != null)).map(normalizeHotkey)
+    set = set.concat(Object.values(c).filter((e) => e != null)).map(normalizeHotkey);
   }
   return set;
 });

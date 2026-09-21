@@ -23,11 +23,13 @@ const hotkeyDisplay = computed(() => {
   if (hotkeyPreview.value) {
     return hotkeyPreview.value.replace('$mod', MOD_KEY).replace('Control', 'Ctrl');
   }
-  return hotkey.value != null ? hotkey.value.replace('$mod', MOD_KEY).replace('Control', 'Ctrl') : '';
+  return hotkey.value != null
+    ? hotkey.value.replace('$mod', MOD_KEY).replace('Control', 'Ctrl')
+    : '';
 });
 const props = defineProps<{
   label?: string;
-  hotkeySet: string[],
+  hotkeySet: string[];
 }>();
 const isDuplicate = computed(() => {
   const currentHotkey = hotkey.value;
@@ -101,9 +103,7 @@ const inputId = useId();
 
 <template>
   <input-group class="w-80">
-    <float-label
-      variant="on"
-    >
+    <float-label variant="on">
       <input-text
         :model-value="hotkeyDisplay"
         class="h-full w-full"
@@ -122,8 +122,14 @@ const inputId = useId();
       />
       <label :for="inputId">{{ props.label || '' }}</label>
     </float-label>
-    <input-group-addon v-show="isDuplicate" v-tooltip.left="t('dialog.settings.global.hotkey.duplicateWarning')">
-      <path-icon class="text-yellow-500" :icon="mdiAlert" />
+    <input-group-addon
+      v-show="isDuplicate"
+      v-tooltip.left="t('dialog.settings.global.hotkey.duplicateWarning')"
+    >
+      <path-icon
+        class="text-yellow-500"
+        :icon="mdiAlert"
+      />
     </input-group-addon>
     <input-group-addon>
       <button-wrapper

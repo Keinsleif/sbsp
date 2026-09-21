@@ -543,7 +543,7 @@ const menuItems = computed(() => [
         :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
         width="100%"
         :height="`${contentHeight}px`"
-        style="overflow: hidden;"
+        style="overflow: hidden"
         @dblclick="
           (e: MouseEvent) => {
             const { x } = getSVGCoords(e);

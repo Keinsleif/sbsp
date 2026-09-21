@@ -17,7 +17,7 @@ export const useHotkey = (key: MaybeRefOrGetter<string | null>, listener: Hotkey
     if (keys == null) return;
     const unlisten = tinykeys(window, {
       // replace "Ctrl" for old configs
-      [keys.trim().replace("Ctrl", "Control")]: (event) => {
+      [keys.trim().replace('Ctrl', 'Control')]: (event) => {
         if (isUserTyping(event)) return;
         listener(event);
       },

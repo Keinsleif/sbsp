@@ -47,23 +47,23 @@ const decayLoop = (timestamp: number) => {
   const deltaTime = (timestamp - lastTime) / 1000;
   lastTime = timestamp;
 
-  if (levels.left > -60) {
-    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime);
-  }
-  if (levels.right > -60) {
-    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime);
-  }
-
-  if (levels.left > 0) {
+  if (levels.left >= 0) {
     clipping.value.left = true;
     stopLeftClipReset();
     startLeftClipReset();
   }
 
-  if (levels.right > 0) {
+  if (levels.right >= 0) {
     clipping.value.right = true;
     stopRightClipReset();
     startRightClipReset();
+  }
+
+  if (levels.left > -60) {
+    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime);
+  }
+  if (levels.right > -60) {
+    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime);
   }
 
   if (leftRef.value != null && rightRef.value != null) {
@@ -102,7 +102,7 @@ onUnmounted(() => {
       >
         <div
           class="relative border border-(--p-form-field-border-color)"
-          :class="clipping.left ? 'bg-red' : 'bg-surface'"
+          :class="clipping.left ? 'bg-red-500' : ''"
           style="box-sizing: content-box; top: -2px"
           :style="{ width: props.width, height: props.width }"
         />
@@ -179,7 +179,7 @@ onUnmounted(() => {
       >
         <div
           class="relative border border-(--p-form-field-border-color)"
-          :class="clipping.right ? 'bg-red' : 'bg-surface'"
+          :class="clipping.right ? 'bg-red-500' : ''"
           style="box-sizing: content-box; top: -2px"
           :style="{ width: props.width, height: props.width }"
         />
