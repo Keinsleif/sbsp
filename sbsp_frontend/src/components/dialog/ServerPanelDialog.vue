@@ -30,7 +30,6 @@ const qrRef = useTemplateRef<InstanceType<typeof QrViewer>>('qrRef');
 
 const isPasswordVisible = ref(false);
 const isServerInfoDialogOpen = ref(false);
-const copied = ref(false);
 
 const isRunning = ref<boolean>(false);
 const isDiscoverable = ref<boolean>(false);
@@ -117,35 +116,6 @@ const generateServerUrl = async (password: string) => {
   } else {
     server_url.value = '';
   }
-};
-
-const copyQr = () => {
-  if (qrRef.value == null) return;
-  const qrImageData = new XMLSerializer().serializeToString(qrRef.value.$el);
-  const qrImageBlob = new Blob([qrImageData], { type: 'image/svg+xml;charset=utf-8' });
-  const qrImageUrl = URL.createObjectURL(qrImageBlob);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = qrRef.value.$el.clientWidth;
-  canvas.height = qrRef.value.$el.clientHeight;
-  const context = canvas.getContext('2d');
-  if (context == null) return;
-
-  const img = new Image(qrRef.value.$el.clientWidth, qrRef.value.$el.clientHeight);
-  img.addEventListener('load', () => {
-    console.log('loaded');
-    context.drawImage(img, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (blob == null) return;
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    }, 'image/png');
-
-    URL.revokeObjectURL(qrImageUrl);
-    copied.value = true;
-    setTimeout(() => (copied.value = false), 2000);
-  });
-  img.src = qrImageUrl;
 };
 
 watch(isServerPanelOpen, (value) => {
@@ -362,11 +332,6 @@ onUnmounted(() => {
             class="mr-auto ml-auto h-60 w-60"
           />
         </div>
-        <button-wrapper
-          :label="t('dialog.server.info.copyQr')"
-          @click="copyQr"
-        >
-        </button-wrapper>
       </div>
     </Dialog>
   </Dialog>
