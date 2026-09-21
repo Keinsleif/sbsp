@@ -114,10 +114,11 @@ const recursiveCueCheck = (
   return cuelist;
 };
 
-const positionFromSelection = (selected: string | null, type: 'after' | 'before' = 'after'): InsertPosition =>
-  selected != null
-    ? { type, target: selected }
-    : { type: 'inside', target: null, index: null };
+const positionFromSelection = (
+  selected: string | null,
+  type: 'after' | 'before' = 'after',
+): InsertPosition =>
+  selected != null ? { type, target: selected } : { type: 'inside', target: null, index: null };
 
 export const useShowModel = defineStore('showModel', {
   state: () => {
@@ -181,7 +182,7 @@ export const useShowModel = defineStore('showModel', {
       return recursiveCueCheck(state.rootIds, state.cues, uiState.expandedRows);
     },
     cueCount(state) {
-      return Object.keys(state.cues).length;
+      return state.cues.size;
     },
   },
   actions: {
@@ -205,7 +206,9 @@ export const useShowModel = defineStore('showModel', {
               newCue.params.target = target;
             }
 
-            api.addCue(newCue, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+            api
+              .addCue(newCue, positionFromSelection(uiState.selected))
+              .catch((e) => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -216,7 +219,9 @@ export const useShowModel = defineStore('showModel', {
               newCues.push(newCue);
             }
 
-            api.addCues(newCues, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+            api
+              .addCues(newCues, positionFromSelection(uiState.selected))
+              .catch((e) => console.error(e));
           }
         })
         .catch((e) => console.error(e));
@@ -264,7 +269,9 @@ export const useShowModel = defineStore('showModel', {
         ) {
           newCue.params.target = uiState.selected;
 
-          api.addCue(newCue, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+          api
+            .addCue(newCue, positionFromSelection(uiState.selected))
+            .catch((e) => console.error(e));
         }
       }
     },
@@ -303,7 +310,9 @@ export const useShowModel = defineStore('showModel', {
       ) {
         newCue.params.target = uiState.selected;
 
-        api.addCue(newCue, positionFromSelection(uiState.selected, positionType)).catch((e) => console.error(e));
+        api
+          .addCue(newCue, positionFromSelection(uiState.selected, positionType))
+          .catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
@@ -312,7 +321,6 @@ export const useShowModel = defineStore('showModel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type === 'group') {
-
         api
           .addCue(newCue, positionFromSelection(uiState.selected))
           .then((id) => {
