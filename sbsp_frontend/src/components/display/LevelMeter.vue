@@ -47,13 +47,6 @@ const decayLoop = (timestamp: number) => {
   const deltaTime = (timestamp - lastTime) / 1000;
   lastTime = timestamp;
 
-  if (levels.left > -60) {
-    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime);
-  }
-  if (levels.right > -60) {
-    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime);
-  }
-
   if (levels.left >= 0) {
     clipping.value.left = true;
     stopLeftClipReset();
@@ -64,6 +57,13 @@ const decayLoop = (timestamp: number) => {
     clipping.value.right = true;
     stopRightClipReset();
     startRightClipReset();
+  }
+
+  if (levels.left > -60) {
+    levels.left = Math.max(-60, levels.left - DECAY_PER_SEC * deltaTime);
+  }
+  if (levels.right > -60) {
+    levels.right = Math.max(-60, levels.right - DECAY_PER_SEC * deltaTime);
   }
 
   if (leftRef.value != null && rightRef.value != null) {
