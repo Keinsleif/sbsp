@@ -457,16 +457,14 @@ const onReorderKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') finishReorder(false);
 };
 
-if (__IS_HOST__) {
-  watch(
-    () => uiState.mode,
-    (newMode) => {
-      if (newMode !== 'edit') {
-        dragOverIndex.value = null;
-      }
-    },
-  );
-}
+watch(
+  () => uiState.mode,
+  (newMode) => {
+    if (newMode !== 'edit') {
+      dragOverIndex.value = null;
+    }
+  },
+);
 
 useOsFileDrop({
   target: () => cuelistWrapperRef.value,
