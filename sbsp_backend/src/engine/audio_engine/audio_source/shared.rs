@@ -24,6 +24,9 @@ impl AudioSourceShared {
     pub fn load_state(&self) -> AudioPlaybackState {
         let raw = self.state.load(Ordering::Acquire);
 
+        // SAFETY: `state` is only ever modified via `store_state`, which casts valid `AudioPlaybackState`
+        // variants to `u8`. `AudioPlaybackState` must be `#[repr(u8)]` so its discriminant values match `u8`
+        // representations, making every value loaded from `state` a valid enum variant.
         unsafe { std::mem::transmute(raw) }
     }
 
