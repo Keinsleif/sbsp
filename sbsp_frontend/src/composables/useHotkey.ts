@@ -6,6 +6,7 @@ import { tinykeys } from 'tinykeys';
 import { isUserTyping } from '@/utils';
 import { useApi } from '@/api';
 
+export const MODIFIER_KEYS = new Set(['Control', 'Meta', 'OS', 'Alt', 'AltGraph', 'Shift']);
 export const MOD_KEY = useApi().isMacOs() ? 'Cmd' : 'Ctrl';
 export const MOD_KEY_DISPLAY = useApi().isMacOs() ? '⌘' : 'Ctrl';
 export type HotkeyListener = (event: KeyboardEvent) => void;

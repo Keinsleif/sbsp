@@ -297,8 +297,8 @@ export function useTauriApi(): IBackendAdapter {
     getSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       return invoke<GlobalHostSettings | GlobalRemoteSettings>('get_settings');
     },
-    setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
-      invoke('set_settings', { newSettings: newSettings }).catch((e) => console.error(e));
+    setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): Promise<void> {
+      return invoke('set_settings', { newSettings: newSettings });
     },
     reloadSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {
       return invoke<GlobalHostSettings | GlobalRemoteSettings>('reload_settings');

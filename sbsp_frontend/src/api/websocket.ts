@@ -467,7 +467,7 @@ export function useWebsocketApi(): IBackendAdapter {
         return structuredClone(DEFAULT_SETTINGS);
       }
     },
-    setSettings: function (newSettings: GlobalHostSettings | GlobalRemoteSettings): void {
+    setSettings: async function (newSettings: GlobalHostSettings | GlobalRemoteSettings): Promise<void> {
       localStorage.setItem(GLOBAL_SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
     },
     reloadSettings: function (): Promise<GlobalHostSettings | GlobalRemoteSettings> {

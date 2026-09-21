@@ -116,7 +116,8 @@
             "cuelistExtendUp": "Extend selection up",
             "cuelistMoveDown": "Move selection down",
             "cuelistExtendDown": "Extend selection down"
-          }
+          },
+          "duplicateWarning": "This shortcut is already in use."
         },
         "nameFormat": {
           "audio": {

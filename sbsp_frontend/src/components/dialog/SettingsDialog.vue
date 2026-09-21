@@ -23,9 +23,12 @@ import SelectWrapper from '../wrapper/SelectWrapper.vue';
 import Divider from 'primevue/divider';
 import AudioHardware from './settings/AudioHardware.vue';
 import type { AudioHardwareSettings } from '@/types/AudioHardwareSettings.ts';
+import { useToast } from 'primevue/usetoast';
+import { normalizeHotkey } from '@/utils.ts';
 
 const { t } = useI18n();
 const api = useApi();
+const toast = useToast();
 const showModel = useShowModel();
 const uiSettings = useUiSettings();
 const showState = useShowState();
@@ -33,7 +36,7 @@ const showState = useShowState();
 const isSettingsDialogOpen = defineModel<boolean>({ required: true });
 
 const tab = ref('showGeneral');
-const showModelName = ref<string>(showModel.name);
+const showModelName = ref<string>("");
 const editingSettings = ref<{
   show: ShowSettings;
   global: GlobalHostSettings | GlobalRemoteSettings;
@@ -55,11 +58,20 @@ const tabItems = computed(() => [
   { type: 'tab', value: 'nameFormat', label: t('dialog.settings.tab.nameFormat') },
 ]);
 
+const hotkeySet = computed(() => {
+  let set: string[] = [];
+  for (const c of Object.values(editingSettings.value.global.hotkey)) {
+    set = set.concat(Object.values(c).filter((e) => e != null)).map(normalizeHotkey)
+  }
+  return set;
+});
+
 watch(
   () => showModel.settings,
   (newSettings) => {
     editingSettings.value.show = structuredClone(toRaw(newSettings));
   },
+  { immediate: true },
 );
 
 watch(
@@ -67,6 +79,7 @@ watch(
   (newName) => {
     showModelName.value = newName;
   },
+  { immediate: true },
 );
 
 watch(
@@ -74,6 +87,7 @@ watch(
   () => {
     editingSettings.value.global = uiSettings.clone();
   },
+  { immediate: true },
 );
 
 watch(isSettingsDialogOpen, (newState) => {
@@ -82,6 +96,7 @@ watch(isSettingsDialogOpen, (newState) => {
       show: structuredClone(toRaw(showModel.settings)),
       global: uiSettings.clone(),
     };
+    showModelName.value = showModel.name;
   }
 });
 
@@ -111,9 +126,20 @@ const saveSettings = async (): Promise<boolean> => {
       }
     }
   }
-  api.updateShowSettings(editingSettings.value.show);
-  api.updateModelName(showModelName.value);
-  uiSettings.update(editingSettings.value.global);
+  try {
+    await api.updateShowSettings(editingSettings.value.show);
+    await api.updateModelName(showModelName.value);
+    await uiSettings.update(editingSettings.value.global);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    toast.add({
+      severity: 'error',
+      summary: t('notification.failedToApplySettings'),
+      detail: errorMessage,
+      life: 3000,
+    });
+    return false;
+  }
   return true;
 };
 
@@ -345,22 +371,22 @@ const recallQLabPreset = () => {
               <div class="flex flex-col gap-4">
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.file.open"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.file.open')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.file.save"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.file.save')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.file.saveAs"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.file.saveAs')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.file.exportToFolder"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.file.exportToFolder')"
                 />
               </div>
@@ -373,37 +399,37 @@ const recallQLabPreset = () => {
               <div class="flex flex-col gap-4">
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.delete"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.delete')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.selectAll"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.selectAll')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.renumberCues"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.renumberCues')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.cuelistMoveUp"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.cuelistMoveUp')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.cuelistExtendUp"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.cuelistExtendUp')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.cuelistMoveDown"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.cuelistMoveDown')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.edit.cuelistExtendDown"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.edit.cuelistExtendDown')"
                 />
               </div>
@@ -416,49 +442,49 @@ const recallQLabPreset = () => {
               <div class="flex flex-col gap-4">
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.execute"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.execute')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.load"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.load')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.pauseAndResume"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.pauseAndResume')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.pauseAll"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.pauseAll')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.resumeAll"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.resumeAll')"
                 />
               </div>
               <div class="flex flex-col gap-4">
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.stop"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.stop')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.stopAll"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.stopAll')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.seekForward"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.seekForward')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.seekBackward"
-                  class="w-70"
+                  :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.seekBackward')"
                 />
               </div>
@@ -470,7 +496,7 @@ const recallQLabPreset = () => {
             <div class="flex flex-col gap-4">
               <hotkey-input
                 v-model="editingSettings.global.hotkey.audioAction.toggleRepeat"
-                class="w-70"
+                :hotkey-set="hotkeySet"
                 :label="t('dialog.settings.global.hotkey.audio.toggleRepeat')"
               />
             </div>
