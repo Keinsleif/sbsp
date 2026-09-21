@@ -65,7 +65,6 @@ onMounted(() => {
         toast.add({
           severity: 'error',
           summary: t('notification.failedToCheckUpdate'),
-          detail: e.toString(),
           life: 3000,
         });
       });

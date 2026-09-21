@@ -38,8 +38,7 @@ const checkUpdate = () => {
       console.error(e);
       toast.add({
         severity: 'error',
-        summary: t('notification.connectionError'),
-        detail: e.toString(),
+        summary: t('notification.failedToCheckUpdate'),
         life: 3000,
       });
     });
