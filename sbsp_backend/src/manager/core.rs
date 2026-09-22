@@ -1080,7 +1080,7 @@ impl ShowModelManager {
             };
             #[cfg(unix)]
             let mut temp_file = tempfile::Builder::new()
-                .permissions(permissions)
+                .permissions(permissions.clone())
                 .tempfile_in(&parent_path)?;
             #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(&parent_path)?;
