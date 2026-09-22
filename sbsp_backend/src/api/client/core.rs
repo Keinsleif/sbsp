@@ -206,29 +206,17 @@ pub async fn create_remote_backend(
                                                     let mut model_lock = model_clone.write().await;
                                                     model_lock.cue_list = cue_list.clone();
                                                 }
-                                                {
-                                                    let mut project_status = project_status_clone.write().await;
-                                                    *project_status = ProjectStatus::Unsaved;
-                                                }
                                             }
                                             BackendEvent::ModelNameUpdated { new_name } => {
                                                 {
                                                     let mut model_lock = model_clone.write().await;
                                                     model_lock.name = new_name.clone();
                                                 }
-                                                {
-                                                    let mut project_status = project_status_clone.write().await;
-                                                    *project_status = ProjectStatus::Unsaved;
-                                                }
                                             }
                                             BackendEvent::SettingsUpdated { new_settings } => {
                                                 {
                                                     let mut model_lock = model_clone.write().await;
                                                     model_lock.settings = new_settings.deref().clone();
-                                                }
-                                                {
-                                                    let mut project_status = project_status_clone.write().await;
-                                                    *project_status = ProjectStatus::Unsaved;
                                                 }
                                             }
                                             _ => {}
