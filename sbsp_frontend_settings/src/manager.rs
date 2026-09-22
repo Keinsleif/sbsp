@@ -86,25 +86,28 @@ where
 
             let content = serde_json::to_string_pretty(&settings)?;
             #[cfg(unix)]
-            let mut temp_file = {
+            let permissions = {
                 use std::os::unix::fs::PermissionsExt;
-                let permissions = match std::fs::metadata(&dest_path) {
+                match std::fs::metadata(&dest_path) {
                     Ok(metadata) => metadata.permissions(),
                     Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                         std::fs::Permissions::from_mode(0o666)
                     }
                     Err(error) => return Err(error.into()),
-                };
-                tempfile::Builder::new()
-                    .permissions(permissions)
-                    .tempfile_in(parent)?
+                }
             };
+            #[cfg(unix)]
+            let mut temp_file = tempfile::Builder::new()
+                .permissions(permissions)
+                .tempfile_in(parent)?;
             #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
             {
                 let file = temp_file.as_file_mut();
                 file.write_all(content.as_bytes())?;
                 file.flush()?;
+                #[cfg(unix)]
+                file.set_permissions(permissions)?;
                 file.sync_all()?;
             }
             temp_file.persist(&dest_path)?;
