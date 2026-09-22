@@ -31,11 +31,11 @@ fn main() {
     let license_payload = LicenseInformation {
         owner: args.owner,
         edition: if let Some(edition) = args.edition
-            && edition != "pro"
+            && edition == "pro"
         {
-            LicenseEdition::Free
-        } else {
             LicenseEdition::Pro
+        } else {
+            LicenseEdition::Free
         },
         id: Uuid::new_v4(),
         issue_time: SystemTime::now()

@@ -175,12 +175,17 @@ impl ShowModelHandle {
         let model = self.model.read().await;
         let mut result = Vec::new();
         let target_cue = model.cue_list.cues.get(cue_id);
+
         if let Some(target) = target_cue
             && let CueParam::Group { children, .. } = &target.params
         {
             let mut queue: VecDeque<&Vec<Uuid>> = VecDeque::from([children]);
+            let mut visited = HashSet::from([*cue_id]);
             while let Some(cue_ids) = queue.pop_front() {
                 for id in cue_ids {
+                    if !visited.insert(*id) {
+                        continue;
+                    }
                     if let Some(cue) = model.cue_list.cues.get(id) {
                         if let CueParam::Group { children, .. } = &cue.params {
                             queue.push_back(children);
@@ -197,8 +202,13 @@ impl ShowModelHandle {
     pub async fn get_next_cue_id_by_id(&self, cue_id: &Uuid) -> Option<Uuid> {
         let model = self.model.read().await;
         let mut current_id = *cue_id;
+        let mut visited = HashSet::new();
 
         loop {
+            if !visited.insert(current_id) {
+                return None;
+            }
+
             let cue = model.cue_list.cues.get(&current_id)?;
 
             if let Some(parent_id) = cue.parent_id {

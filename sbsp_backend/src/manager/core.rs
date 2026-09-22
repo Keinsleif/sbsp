@@ -21,6 +21,7 @@ use super::{
     guard::RollbackGuard,
     project::{ProjectFile, ProjectStatus, ProjectType},
 };
+use crate::model::cue::audio::AudioCueParam;
 use crate::{
     BackendSettings,
     event::{BackendError, BackendEvent},
@@ -88,10 +89,7 @@ impl ShowModelManager {
     async fn process_command(&self, command: ModelCommand) {
         log::debug!("Model Manager received command: {:?}", command);
         match command {
-            ModelCommand::UpdateCue(mut cue) => {
-                let model_path_option = self.project_status.read().await.to_model_path_option();
-                self.import_cue_asset(&mut cue, model_path_option.as_deref())
-                    .await;
+            ModelCommand::UpdateCue(cue) => {
                 if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
                     self.send_event(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -106,7 +104,6 @@ impl ShowModelManager {
                 });
             }
             ModelCommand::AddCue { mut cue, position } => {
-                let model_path_option = self.project_status.read().await.to_model_path_option();
                 if self.is_cue_exists(&cue.id).await {
                     self.send_event(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -115,8 +112,10 @@ impl ShowModelManager {
                     });
                     return;
                 }
-                self.import_cue_asset(&mut cue, model_path_option.as_deref())
-                    .await;
+                if let CueParam::Audio(p) = &mut cue.params {
+                    let model_path_option = self.project_status.read().await.to_model_path_option();
+                    self.import_cue_asset(p, model_path_option.as_deref()).await;
+                }
 
                 if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
                     self.send_event(BackendEvent::OperationFailed {
@@ -132,7 +131,6 @@ impl ShowModelManager {
                 });
             }
             ModelCommand::AddCues { cues, position } => {
-                let model_path_option = self.project_status.read().await.to_model_path_option();
                 let mut valid_cues = Vec::new();
                 let mut valid_cue_ids = HashSet::new();
 
@@ -152,8 +150,11 @@ impl ShowModelManager {
                         });
                         continue;
                     }
-                    self.import_cue_asset(&mut cue, model_path_option.as_deref())
-                        .await;
+                    if let CueParam::Audio(p) = &mut cue.params {
+                        let model_path_option =
+                            self.project_status.read().await.to_model_path_option();
+                        self.import_cue_asset(p, model_path_option.as_deref()).await;
+                    }
 
                     valid_cues.push(cue);
                 }
@@ -486,9 +487,8 @@ impl ShowModelManager {
         self.model.write().await
     }
 
-    async fn import_cue_asset(&self, cue: &mut Cue, model_path: Option<&Path>) {
-        if let CueParam::Audio(audio_param) = &mut cue.params
-            && let Some(model_path) = model_path
+    async fn import_cue_asset(&self, audio_param: &mut AudioCueParam, model_path: Option<&Path>) {
+        if let Some(model_path) = model_path
             && let Some(model_dir) = model_path.parent()
             && self.copy_assets_when_add
         {
@@ -543,51 +543,67 @@ impl ShowModelManager {
         removed_cues
     }
 
-    async fn update_cue_by_id(&self, cue_id: &Uuid, new_cue: Cue) -> anyhow::Result<()> {
-        let mut model = self.model.write().await;
-
-        if let Some(cue) = model.cue_list.cues.get_mut(cue_id) {
-            // id, parent_id, params.children(group) is not modifiable by Update Command
-            cue.number = new_cue.number;
-            cue.name = new_cue.name;
-            cue.notes = new_cue.notes;
-            cue.color = new_cue.color;
-            cue.pre_wait = new_cue.pre_wait;
-            cue.chain = new_cue.chain;
-            cue.cursor_advance_trigger_override = new_cue.cursor_advance_trigger_override;
-            cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
-            match (&mut cue.params, new_cue.params) {
-                (CueParam::Audio(p), CueParam::Audio(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Wait(p), CueParam::Wait(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Fade(p), CueParam::Fade(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Start(p), CueParam::Start(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Stop(p), CueParam::Stop(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Pause(p), CueParam::Pause(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Load(p), CueParam::Load(new_p)) => {
-                    *p = new_p;
-                }
-                (CueParam::Group { base, .. }, CueParam::Group { base: new_base, .. }) => {
-                    // modify only base on Group cue param modify.
-                    *base = new_base;
-                }
-                _ => {}
+    async fn update_cue_by_id(&self, cue_id: &Uuid, mut new_cue: Cue) -> anyhow::Result<()> {
+        {
+            let model = self.read().await;
+            let Some(cue) = model.cue_list.cues.get(cue_id) else {
+                anyhow::bail!("cue not found. id={}", cue_id);
+            };
+            if std::mem::discriminant(&cue.params) != std::mem::discriminant(&new_cue.params) {
+                anyhow::bail!("cue param type doesn't match")
             }
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("cue not found. id={}", cue_id))
         }
+
+        if let CueParam::Audio(new_p) = &mut new_cue.params {
+            let model_path_option = self.project_status.read().await.to_model_path_option();
+            self.import_cue_asset(new_p, model_path_option.as_deref())
+                .await;
+        }
+
+        let mut model = self.model.write().await;
+        let Some(cue) = model.cue_list.cues.get_mut(cue_id) else {
+            anyhow::bail!("cue not found. id={}", cue_id);
+        };
+        match (&mut cue.params, new_cue.params) {
+            (CueParam::Audio(p), CueParam::Audio(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Wait(p), CueParam::Wait(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Fade(p), CueParam::Fade(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Start(p), CueParam::Start(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Stop(p), CueParam::Stop(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Pause(p), CueParam::Pause(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Load(p), CueParam::Load(new_p)) => {
+                *p = new_p;
+            }
+            (CueParam::Group { base, .. }, CueParam::Group { base: new_base, .. }) => {
+                // modify only base on Group cue param modify.
+                *base = new_base;
+            }
+            _ => {
+                anyhow::bail!("cue param type doesn't match")
+            }
+        }
+        // id, parent_id, params.children(group) is not modifiable by Update Command
+        cue.number = new_cue.number;
+        cue.name = new_cue.name;
+        cue.notes = new_cue.notes;
+        cue.color = new_cue.color;
+        cue.pre_wait = new_cue.pre_wait;
+        cue.chain = new_cue.chain;
+        cue.cursor_advance_trigger_override = new_cue.cursor_advance_trigger_override;
+        cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
+        Ok(())
     }
 
     async fn move_cues_at_position(
