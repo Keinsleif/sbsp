@@ -546,9 +546,10 @@ impl ShowModelManager {
     async fn update_cue_by_id(&self, cue_id: &Uuid, mut new_cue: Cue) -> anyhow::Result<()> {
         {
             let model = self.read().await;
-            if let Some(cue) = model.cue_list.cues.get(cue_id)
-                && std::mem::discriminant(&cue.params) != std::mem::discriminant(&new_cue.params)
-            {
+            let Some(cue) = model.cue_list.cues.get(cue_id) else {
+                anyhow::bail!("cue not found. id={}", cue_id);
+            };
+            if std::mem::discriminant(&cue.params) != std::mem::discriminant(&new_cue.params) {
                 anyhow::bail!("cue param type doesn't match")
             }
         }
