@@ -88,13 +88,15 @@ pub async fn file_open(app_handle: tauri::AppHandle, window: WebviewWindow) -> R
                 log::error!("Failed to send dialog selection to command task");
             }
         });
-    if let Ok(Some(file_path)) = result_rx.await {
-        model_handle
-            .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
-            .await
-            .map_err(|e| e.to_string())
-    } else {
-        Err("Failed to retrieve dialog selection".into())
+    match result_rx.await {
+        Ok(Some(file_path)) => {
+            model_handle
+                .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        Ok(None) => Ok(()),
+        Err(_) => Err("Failed to retrieve dialog selection".into())
     }
 }
 
@@ -128,16 +130,18 @@ pub async fn file_save(
         file_dialog_builder.save_file(move |file_path_option| {
             let _ = result_tx.send(file_path_option);
         });
-        if let Ok(Some(file_path)) = result_rx.await {
-            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle
-                .model_handle
-                .save_as(file_pathbuf)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(true)
-        } else {
-            Ok(false)
+        match result_rx.await {
+            Ok(Some(file_path)) => {
+                let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+                handle
+                    .model_handle
+                    .save_as(file_pathbuf)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(_) => Err("Failed to retrieve dialog selection".into()),
         }
     }
 }
@@ -167,16 +171,18 @@ pub async fn file_save_as(
                 log::error!("Failed to send dialog selection to command task");
             }
         });
-        if let Ok(Some(file_path)) = result_rx.await {
-            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle
-                .model_handle
-                .save_as(file_pathbuf)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(true)
-        } else {
-            Ok(false)
+        match result_rx.await {
+            Ok(Some(file_path)) => {
+                let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+                handle
+                    .model_handle
+                    .save_as(file_pathbuf)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(_) => Err("Failed to retrieve dialog selection".into()),
         }
     } else {
         let (result_tx, result_rx) = oneshot::channel();
@@ -185,16 +191,18 @@ pub async fn file_save_as(
                 log::error!("Failed to send dialog selection to command task");
             }
         });
-        if let Ok(Some(file_path)) = result_rx.await {
-            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle
-                .model_handle
-                .save_as(file_pathbuf)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(true)
-        } else {
-            Ok(false)
+        match result_rx.await {
+            Ok(Some(file_path)) => {
+                let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+                handle
+                    .model_handle
+                    .save_as(file_pathbuf)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(_) => Err("Failed to retrieve dialog selection".into()),
         }
     }
 }
@@ -220,16 +228,18 @@ pub async fn export_to_folder(
                 log::error!("Failed to send dialog selection to command task");
             }
         });
-        if let Ok(Some(file_path)) = result_rx.await {
-            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle
-                .model_handle
-                .export_to_folder(file_pathbuf)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(true)
-        } else {
-            Ok(false)
+        match result_rx.await {
+            Ok(Some(file_path)) => {
+                let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+                handle
+                    .model_handle
+                    .export_to_folder(file_pathbuf)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(_) => Err("Failed to retrieve dialog selection".into()),
         }
     } else {
         let (result_tx, result_rx) = oneshot::channel();
@@ -238,16 +248,18 @@ pub async fn export_to_folder(
                 log::error!("Failed to send dialog selection to command task");
             }
         });
-        if let Ok(Some(file_path)) = result_rx.await {
-            let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
-            handle
-                .model_handle
-                .export_to_folder(file_pathbuf)
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok(true)
-        } else {
-            Ok(false)
+        match result_rx.await {
+            Ok(Some(file_path)) => {
+                let file_pathbuf = file_path.into_path().map_err(|e| e.to_string())?;
+                handle
+                    .model_handle
+                    .export_to_folder(file_pathbuf)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok(true)
+            }
+            Ok(None) => Ok(false),
+            Err(_) => Err("Failed to retrieve dialog selection".into()),
         }
     }
 }
