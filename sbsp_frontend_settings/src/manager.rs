@@ -85,6 +85,21 @@ where
             std::fs::create_dir_all(parent)?;
 
             let content = serde_json::to_string_pretty(&settings)?;
+            #[cfg(unix)]
+            let mut temp_file = {
+                use std::os::unix::fs::PermissionsExt;
+                let permissions = match std::fs::metadata(&dest_path) {
+                    Ok(metadata) => metadata.permissions(),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                        std::fs::Permissions::from_mode(0o666)
+                    }
+                    Err(error) => return Err(error.into()),
+                };
+                tempfile::Builder::new()
+                    .permissions(permissions)
+                    .tempfile_in(parent)?
+            };
+            #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
             {
                 let file = temp_file.as_file_mut();
@@ -93,7 +108,10 @@ where
                 file.sync_all()?;
             }
             temp_file.persist(&dest_path)?;
-            sync_parent_dir(&dest_path)?;
+            #[cfg(unix)]
+            {
+                std::fs::File::open(parent)?.sync_all()?;
+            }
             Ok(())
         })
         .await??;
@@ -101,18 +119,4 @@ where
         log::info!("GlobalSettings saved to: {}", path.display());
         Ok(())
     }
-}
-
-#[cfg(unix)]
-fn sync_parent_dir(path: &Path) -> std::io::Result<()> {
-    let parent = path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."));
-    File::open(parent)?.sync_all()
-}
-
-#[cfg(not(unix))]
-fn sync_parent_dir(_path: &Path) -> std::io::Result<()> {
-    Ok(())
 }
