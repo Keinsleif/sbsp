@@ -397,7 +397,7 @@ export function normalizeHotkey(hotkeyStr: string): string {
   if (!hotkeyStr) return '';
   const parts = hotkeyStr
     .split('+')
-    .map((p) => p.trim())
+    .map((p) => p.trim().replace('Ctrl', 'Control'))
     .filter(Boolean);
   const modifiers = parts.filter((p) => MODIFIER_KEYS.has(p)).sort();
   const key = parts.filter((p) => !MODIFIER_KEYS.has(p));
