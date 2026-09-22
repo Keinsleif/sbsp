@@ -160,7 +160,7 @@ useBackendEvent((event) => {
         case 'cueExecute':
           toast.add({
             severity: 'error',
-            summary: "Failed to execute Cue",
+            summary: t('notification.failedToExecuteCue'),
             detail: event.param.error.message,
             life: 3000,
           });
