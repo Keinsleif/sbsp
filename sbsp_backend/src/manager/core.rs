@@ -547,15 +547,6 @@ impl ShowModelManager {
         let mut model = self.model.write().await;
 
         if let Some(cue) = model.cue_list.cues.get_mut(cue_id) {
-            // id, parent_id, params.children(group) is not modifiable by Update Command
-            cue.number = new_cue.number;
-            cue.name = new_cue.name;
-            cue.notes = new_cue.notes;
-            cue.color = new_cue.color;
-            cue.pre_wait = new_cue.pre_wait;
-            cue.chain = new_cue.chain;
-            cue.cursor_advance_trigger_override = new_cue.cursor_advance_trigger_override;
-            cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
             match (&mut cue.params, new_cue.params) {
                 (CueParam::Audio(p), CueParam::Audio(new_p)) => {
                     *p = new_p;
@@ -586,6 +577,15 @@ impl ShowModelManager {
                     anyhow::bail!("cue param type doesn't match")
                 }
             }
+            // id, parent_id, params.children(group) is not modifiable by Update Command
+            cue.number = new_cue.number;
+            cue.name = new_cue.name;
+            cue.notes = new_cue.notes;
+            cue.color = new_cue.color;
+            cue.pre_wait = new_cue.pre_wait;
+            cue.chain = new_cue.chain;
+            cue.cursor_advance_trigger_override = new_cue.cursor_advance_trigger_override;
+            cue.treat_stop_as_completed = new_cue.treat_stop_as_completed;
             Ok(())
         } else {
             Err(anyhow::anyhow!("cue not found. id={}", cue_id))
