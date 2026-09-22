@@ -999,6 +999,10 @@ impl ShowModelManager {
                     *target = new_path;
                 }
 
+                if !targets.is_empty() {
+                    model_modified = true;
+                }
+
                 let mut model = self.model.write().await;
                 for (id, target) in targets {
                     if let Some(cue) = model.cue_list.cues.get_mut(&id)
@@ -1036,6 +1040,10 @@ impl ShowModelManager {
                     *target = new_path;
                 }
 
+                if !targets.is_empty() {
+                    model_modified = true;
+                }
+
                 let mut model = self.model.write().await;
                 for (id, target) in targets {
                     if let Some(cue) = model.cue_list.cues.get_mut(&id)
@@ -1045,7 +1053,6 @@ impl ShowModelManager {
                     }
                 }
             }
-            model_modified = true;
         }
 
         let project_file = {
