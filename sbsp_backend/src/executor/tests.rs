@@ -1737,7 +1737,10 @@ async fn self_referencing_group_child_is_detected_as_cycle() {
         .await
         .unwrap();
     assert!(matches!(
-        audio_rx.recv().await.unwrap(),
+        tokio::time::timeout(std::time::Duration::from_secs(3), audio_rx.recv())
+            .await
+            .expect("must not hang")
+            .unwrap(),
         AudioCommand::Reconfigure(_)
     ));
     assert!(playback_event_rx.try_recv().is_err());
@@ -1787,7 +1790,10 @@ async fn mutually_referencing_groups_do_not_deadlock() {
         .await
         .unwrap();
     assert!(matches!(
-        audio_rx.recv().await.unwrap(),
+        tokio::time::timeout(std::time::Duration::from_secs(3), audio_rx.recv())
+            .await
+            .expect("must not hang")
+            .unwrap(),
         AudioCommand::Reconfigure(_)
     ));
     assert!(playback_event_rx.try_recv().is_err());
