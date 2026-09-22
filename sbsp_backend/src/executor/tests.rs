@@ -1732,6 +1732,14 @@ async fn self_referencing_group_child_is_detected_as_cycle() {
         ExecutorEvent::Started { cue_id, .. } if cue_id == group_id
     ));
 
+    exec_tx
+        .send(ExecutorCommand::ReconfigureEngines(Default::default()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Reconfigure(_)
+    ));
     assert!(playback_event_rx.try_recv().is_err());
     assert!(audio_rx.try_recv().is_err());
 }
@@ -1774,6 +1782,14 @@ async fn mutually_referencing_groups_do_not_deadlock() {
         ));
     }
 
+    exec_tx
+        .send(ExecutorCommand::ReconfigureEngines(Default::default()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Reconfigure(_)
+    ));
     assert!(playback_event_rx.try_recv().is_err());
     assert!(audio_rx.try_recv().is_err());
 }
@@ -1900,7 +1916,14 @@ async fn start_first_group_loads_and_executes_only_first_child() {
         AudioCommand::Play { id, .. } if id == child_a
     ));
 
-    // child_b にはまだ何も送られない（executor.rsのExecute分岐は先頭の子のみを対象にする）
+    exec_tx
+        .send(ExecutorCommand::ReconfigureEngines(Default::default()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Reconfigure(_)
+    ));
     assert!(audio_rx.try_recv().is_err());
     assert!(playback_event_rx.try_recv().is_err());
 }
@@ -2324,6 +2347,14 @@ async fn seek_to_is_noop_for_active_group_cue() {
         .await
         .unwrap();
 
+    exec_tx
+        .send(ExecutorCommand::ReconfigureEngines(Default::default()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Reconfigure(_)
+    ));
     assert!(audio_rx.try_recv().is_err());
     assert!(playback_event_rx.try_recv().is_err());
 }
@@ -2395,6 +2426,14 @@ async fn perform_action_is_ignored_when_action_type_does_not_match_active_engine
         .await
         .unwrap();
 
+    exec_tx
+        .send(ExecutorCommand::ReconfigureEngines(Default::default()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        audio_rx.recv().await.unwrap(),
+        AudioCommand::Reconfigure(_)
+    ));
     assert!(audio_rx.try_recv().is_err());
     let _ = playback_event_rx.try_recv();
 }

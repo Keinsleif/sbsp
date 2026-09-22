@@ -859,8 +859,26 @@ async fn stopping_event_for_unknown_cue_is_ignored() {
         .await
         .unwrap();
 
-    // active_cues に存在しない cue_id のため send_event=false・state_changed=false
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    playback_event_tx
+        .send(ExecutorEvent::Started {
+            cue_id: known_id,
+            position: 0.0,
+            duration: 50.0,
+            initial_params: StateParam::None,
+        })
+        .await
+        .unwrap();
+
+    state_rx.changed().await.unwrap();
+    assert!(matches!(
+        event_rx.recv().await.unwrap(),
+        BackendEvent::CueStatus(CueStatusEventParam::Started {
+            cue_id,
+            position: 0.0,
+            duration: 50.0,
+            params: StateParam::None,
+        }) if cue_id == known_id
+    ));
     assert!(!state_rx.has_changed().unwrap());
     assert!(event_rx.try_recv().is_err());
 }
@@ -954,7 +972,26 @@ async fn seeked_event_for_unknown_cue_is_ignored() {
         .await
         .unwrap();
 
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    playback_event_tx
+        .send(ExecutorEvent::Started {
+            cue_id: known_id,
+            position: 0.0,
+            duration: 50.0,
+            initial_params: StateParam::None,
+        })
+        .await
+        .unwrap();
+
+    state_rx.changed().await.unwrap();
+    assert!(matches!(
+        event_rx.recv().await.unwrap(),
+        BackendEvent::CueStatus(CueStatusEventParam::Started {
+            cue_id,
+            position: 0.0,
+            duration: 50.0,
+            params: StateParam::None,
+        }) if cue_id == known_id
+    ));
     assert!(!state_rx.has_changed().unwrap());
     assert!(event_rx.try_recv().is_err());
 }
