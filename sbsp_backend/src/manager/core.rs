@@ -90,8 +90,6 @@ impl ShowModelManager {
         match command {
             ModelCommand::UpdateCue(mut cue) => {
                 let model_path_option = self.project_status.read().await.to_model_path_option();
-                self.import_cue_asset(&mut cue, model_path_option.as_deref())
-                    .await;
                 if let Err(e) = self.update_cue_by_id(&cue.id, cue.clone()).await {
                     self.send_event(BackendEvent::OperationFailed {
                         error: BackendError::CueEdit {
@@ -100,6 +98,8 @@ impl ShowModelManager {
                     });
                     return;
                 }
+                self.import_cue_asset(&mut cue, model_path_option.as_deref())
+                    .await;
                 self.modify_status.store(true, Ordering::Release);
                 self.send_event(BackendEvent::CueListUpdated {
                     cue_list: self.model.read().await.cue_list.clone(),
