@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.7.1](https://github.com/Keinsleif/sbsp/compare/656ab13d38b07f739e0cae578e32b6d23361fdf1..2.7.1) - 2026-09-23
+### Package updates
+- [remote_app-2.7.1](sbsp_remote_app) bumped to [remote_app-2.7.1](https://github.com/Keinsleif/sbsp/compare/remote_app-2.7.0..remote_app-2.7.1)
+- [app-2.7.1](sbsp_app) bumped to [app-2.7.1](https://github.com/Keinsleif/sbsp/compare/app-2.7.0..app-2.7.1)
+- [backend-1.7.1](sbsp_backend) bumped to [backend-1.7.1](https://github.com/Keinsleif/sbsp/compare/backend-1.7.0..backend-1.7.1)
+- [license-0.1.2](sbsp_license) bumped to [license-0.1.2](https://github.com/Keinsleif/sbsp/compare/license-0.1.1..license-0.1.2)
+- [frontend_settings-0.2.1](sbsp_frontend_settings) bumped to [frontend_settings-0.2.1](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.2.0..frontend_settings-0.2.1)
+- [frontend-2.7.1](sbsp_frontend) bumped to [frontend-2.7.1](https://github.com/Keinsleif/sbsp/compare/frontend-2.7.0..frontend-2.7.1)
+### Global changes
+#### Bug Fixes
+- (**backend**) file write TOCTOU (#198) - ([4b020b9](https://github.com/Keinsleif/sbsp/commit/4b020b938b83eb9a5c936c4b489f06a39b6ea044)) - [@Keinsleif](https://github.com/Keinsleif)
+- (**backend**) rodio version to latest stable commit to update cpal (#196) - ([656ab13](https://github.com/Keinsleif/sbsp/commit/656ab13d38b07f739e0cae578e32b6d23361fdf1)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Miscellaneous Chores
+- update deps (#210) - ([cc882c8](https://github.com/Keinsleif/sbsp/commit/cc882c84adcda69af3642ca9019a361a3e0ac77a)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.7.0](https://github.com/Keinsleif/sbsp/compare/35c28ec707d9f7c0d0583c4ddc5ceef4922eb7b9..2.7.0) - 2026-09-03
 ### Package updates
 - [frontend-2.7.0](sbsp_frontend) bumped to [frontend-2.7.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.6.0..frontend-2.7.0)

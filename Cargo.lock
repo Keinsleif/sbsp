@@ -376,10 +376,10 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde_core",
- "sha1 0.10.7",
+ "sha1",
  "sync_wrapper",
  "tokio",
- "tokio-tungstenite 0.29.0",
+ "tokio-tungstenite",
  "tower",
  "tower-layer",
  "tower-service",
@@ -1177,7 +1177,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
 dependencies = [
  "block-buffer 0.12.1",
- "const-oid",
  "crypto-common 0.2.2",
 ]
 
@@ -4049,7 +4048,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_app"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "humantime",
@@ -4073,7 +4072,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_backend"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -4098,14 +4097,14 @@ dependencies = [
  "tempfile",
  "termtree",
  "tokio",
- "tokio-tungstenite 0.30.0",
+ "tokio-tungstenite",
  "ts-rs",
  "uuid",
 ]
 
 [[package]]
 name = "sbsp_frontend_settings"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "log",
@@ -4119,7 +4118,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_license"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -4133,7 +4132,7 @@ dependencies = [
 
 [[package]]
 name = "sbsp_remote_app"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "humantime",
@@ -4439,17 +4438,6 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
  "digest 0.10.7",
-]
-
-[[package]]
-name = "sha1"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aacc4cc499359472b4abe1bf11d0b12e688af9a805fa5e3016f9a386dc2d0214"
-dependencies = [
- "cfg-if",
- "cpufeatures 0.3.1",
- "digest 0.11.3",
 ]
 
 [[package]]
@@ -5593,19 +5581,7 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tungstenite 0.29.0",
-]
-
-[[package]]
-name = "tokio-tungstenite"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17a073bfed563fa236697a068031408a93cd9522e08abf9933ead3e73411bd71"
-dependencies = [
- "futures-util",
- "log",
- "tokio",
- "tungstenite 0.30.0",
+ "tungstenite",
 ]
 
 [[package]]
@@ -5901,23 +5877,7 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.9.5",
- "sha1 0.10.7",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "tungstenite"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
-dependencies = [
- "bytes",
- "data-encoding",
- "http",
- "httparse",
- "log",
- "rand 0.10.3",
- "sha1 0.11.0",
+ "sha1",
  "thiserror 2.0.20",
 ]
 

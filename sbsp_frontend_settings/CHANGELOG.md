@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend_settings-0.2.1 - 2026-09-23
+#### Bug Fixes
+- (**backend**) file write TOCTOU (#198) - (4b020b9) - *Keinsleif*
+- apply code quality fixes prior to release (#208) - (aa0dacd) - *Keinsleif*
+
+- - -
+
 ## frontend_settings-0.2.0 - 2026-09-03
 #### Features
 - (**frontend**) make general shortcuts configurable (#176) - (90d6dc6) - *Keinsleif*

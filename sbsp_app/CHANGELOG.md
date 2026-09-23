@@ -2,6 +2,31 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## app-2.7.1 - 2026-09-23
+#### Bug Fixes
+- (**backend**) reporting ignored errors on backend (#201) - (c50b623) - *Keinsleif*
+- (**backend**) file write TOCTOU (#198) - (4b020b9) - *Keinsleif*
+- (**backend**) rodio version to latest stable commit to update cpal (#196) - (656ab13) - *Keinsleif*
+- (**frontend**) add error notifications (#204) - (be5bd98) - *Keinsleif*
+- (**frontend**) warn hotkey duplication (#202) - (f54c512) - *Keinsleif*
+- (**frontend**) waveform rendering lag (#200) - (ca8f057) - *Keinsleif*
+- apply code quality fixes prior to release (#208) - (aa0dacd) - *Keinsleif*
+- preserve backend model state during updates and prevent cue graph cycles (#205) - (d4ec96d) - *Keinsleif*
+- unwrap panic on backend tasks (#199) - (03dadfc) - *Keinsleif*
+- executor chain history leaking (#195) - (4bb4fc5) - *Keinsleif*
+#### Tests
+- (**backend**) fix cuelistupdated event detection (#209) - (7b43976) - *Keinsleif*
+- (**backend**) add lacking test cases (#206) - (4fff6b4) - *Keinsleif*
+#### Refactoring
+- (**frontend**) cue list management (#203) - (a621266) - *Keinsleif*
+- manager event sending (#197) - (a15c7b7) - *Keinsleif*
+- playback engine (#194) - (d761cd9) - *Keinsleif*
+- data models (#193) - (7b14232) - *Keinsleif*
+#### Miscellaneous Chores
+- update deps (#210) - (cc882c8) - *Keinsleif*
+
+- - -
+
 ## app-2.7.0 - 2026-09-03
 #### Features
 - (**backend**) server binary improvement (#175) - (5fe176e) - *Keinsleif*
