@@ -131,6 +131,29 @@ where
     .expect("timed out waiting for expected event")
 }
 
+async fn recv_event_matching_result<F, T>(
+    event_rx: &mut broadcast::Receiver<BackendEvent>,
+    mut extract: F,
+) -> anyhow::Result<T>
+where
+    F: FnMut(&BackendEvent) -> Option<anyhow::Result<T>>,
+{
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match event_rx.recv().await {
+                Ok(event) => {
+                    if let Some(v) = extract(&event) {
+                        return v;
+                    }
+                }
+                Err(e) => panic!("event channel closed unexpectedly: {e}"),
+            }
+        }
+    })
+    .await
+    .expect("timed out waiting for expected event")
+}
+
 #[tokio::test]
 async fn update_cue() {
     let temp_dir = tempdir().unwrap();
@@ -881,11 +904,17 @@ async fn save_command_persists_to_existing_saved_path_without_cuelistupdated() {
 
     model_handle.save().await.unwrap();
 
-    let (project_type, path) = recv_event_matching(&mut event_rx, |e| match e {
-        BackendEvent::ShowModelSaved { project_type, path } => Some((*project_type, path.clone())),
+    let (project_type, path) = recv_event_matching_result(&mut event_rx, |e| match e {
+        BackendEvent::ShowModelSaved { project_type, path } => {
+            Some(Ok((*project_type, path.clone())))
+        }
+        BackendEvent::CueListUpdated { .. } => Some(Err(anyhow::anyhow!(
+            "CueListUpdated event is wrongly emitted."
+        ))),
         _ => None,
     })
-    .await;
+    .await
+    .unwrap();
     assert_eq!(project_type, ProjectType::ProjectFolder);
     assert_eq!(path, model_path);
     assert!(model_path.exists());
@@ -894,7 +923,7 @@ async fn save_command_persists_to_existing_saved_path_without_cuelistupdated() {
         tokio::time::timeout(Duration::from_millis(200), event_rx.recv())
             .await
             .is_err(),
-        "re-saving to the same path with no absolute asset targets should not touch the cue list"
+        "Unexpected event received."
     );
 }
 
