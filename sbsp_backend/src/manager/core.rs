@@ -1071,16 +1071,16 @@ impl ShowModelManager {
             let permissions = {
                 use std::os::unix::fs::PermissionsExt;
                 match std::fs::metadata(&dest_path) {
-                    Ok(metadata) => metadata.permissions(),
+                    Ok(metadata) => Some(metadata.permissions()),
                     Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                        std::fs::Permissions::from_mode(0o666)
+                        None
                     }
                     Err(error) => return Err(error.into()),
                 }
             };
             #[cfg(unix)]
             let mut temp_file = tempfile::Builder::new()
-                .permissions(permissions.clone())
+                .permissions(permissions.clone().unwrap_or_else(|| std::fs::Permissions::from_mode(0o666)))
                 .tempfile_in(&parent_path)?;
             #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(&parent_path)?;
@@ -1090,7 +1090,9 @@ impl ShowModelManager {
                 file.write_all(content.as_bytes())?;
                 file.flush()?;
                 #[cfg(unix)]
-                file.set_permissions(permissions)?;
+                if let Some(perm) = permissions {
+                    file.set_permissions(perm)?;
+                }
                 file.sync_all()?;
             }
             temp_file.persist(&dest_path)?;
