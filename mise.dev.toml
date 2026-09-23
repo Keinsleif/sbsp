@@ -1,5 +1,5 @@
 [tools]
-sccache = "0.16"
+sccache = "0.18"
 "cargo:cargo-audit" = { version = "0.22", depends = ["rust"] }
 
 [env]
