@@ -89,14 +89,12 @@ pub async fn file_open(app_handle: tauri::AppHandle, window: WebviewWindow) -> R
             }
         });
     match result_rx.await {
-        Ok(Some(file_path)) => {
-            model_handle
-                .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
-                .await
-                .map_err(|e| e.to_string())
-        }
+        Ok(Some(file_path)) => model_handle
+            .load_from_file(file_path.into_path().map_err(|e| e.to_string())?)
+            .await
+            .map_err(|e| e.to_string()),
         Ok(None) => Ok(()),
-        Err(_) => Err("Failed to retrieve dialog selection".into())
+        Err(_) => Err("Failed to retrieve dialog selection".into()),
     }
 }
 
