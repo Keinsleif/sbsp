@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use serde::{Serialize, de::DeserializeOwned};
 use std::io::Write as _;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt as _;
 use std::path::{Path, PathBuf};
+
+use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tokio::{fs, task};
 
@@ -87,18 +90,19 @@ where
             let content = serde_json::to_string_pretty(&settings)?;
             #[cfg(unix)]
             let permissions = {
-                use std::os::unix::fs::PermissionsExt;
                 match std::fs::metadata(&dest_path) {
                     Ok(metadata) => Some(metadata.permissions()),
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                        None
-                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
                     Err(error) => return Err(error.into()),
                 }
             };
             #[cfg(unix)]
             let mut temp_file = tempfile::Builder::new()
-                .permissions(permissions.clone().unwrap_or_else(|| std::fs::Permissions::from_mode(0o666)))
+                .permissions(
+                    permissions
+                        .clone()
+                        .unwrap_or_else(|| std::fs::Permissions::from_mode(0o666)),
+                )
                 .tempfile_in(parent)?;
             #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
