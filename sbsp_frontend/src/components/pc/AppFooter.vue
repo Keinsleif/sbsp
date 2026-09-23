@@ -14,6 +14,8 @@ import { check } from '@tauri-apps/plugin-updater';
 import ButtonWrapper from '../wrapper/ButtonWrapper.vue';
 import ProgressSpinnerWrapper from '../wrapper/ProgressSpinnerWrapper.vue';
 import Select from 'primevue/select';
+import { PERMISSIONS } from '@/utils.ts';
+import { useToast } from 'primevue/usetoast';
 
 const isHost = __IS_HOST__;
 
@@ -22,6 +24,7 @@ const { t } = useI18n();
 const showModel = useShowModel();
 const uiState = useUiState();
 const api = useApi();
+const toast = useToast();
 const assetResult = useAssetResult();
 
 const isUpdateAvailable = ref(false);
@@ -35,13 +38,13 @@ const ALL_MODES = computed(() => [
 const modes = computed(() => {
   return ALL_MODES.value.filter((val) => {
     if (uiState.permission == null) return false;
-    if (val.value === 'view' && uiState.permission & 0b0001) {
+    if (val.value === 'view' && uiState.permission & PERMISSIONS.READ) {
       return true;
     }
-    if (val.value === 'run' && uiState.permission & 0b0010) {
+    if (val.value === 'run' && uiState.permission & PERMISSIONS.CONTROL) {
       return true;
     }
-    if (val.value === 'edit' && uiState.permission & 0b0100) {
+    if (val.value === 'edit' && uiState.permission & PERMISSIONS.EDIT) {
       return true;
     }
     return false;
@@ -59,6 +62,11 @@ onMounted(() => {
       })
       .catch((e) => {
         console.error(e);
+        toast.add({
+          severity: 'error',
+          summary: t('notification.failedToCheckUpdate'),
+          life: 3000,
+        });
       });
   }
 });

@@ -13,10 +13,10 @@ pub struct AssetProcessorHandle {
 }
 
 impl AssetProcessorHandle {
-    pub async fn request_file_asset_data(&self, target: PathBuf) {
+    pub async fn request_file_asset_data(&self, target: PathBuf) -> anyhow::Result<()> {
         self.command_tx
             .send(AssetProcessorCommand::RequestFileAssetData { path: target })
-            .await
-            .unwrap();
+            .await?;
+        Ok(())
     }
 }

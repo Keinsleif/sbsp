@@ -46,7 +46,7 @@ export type FlatCueEntry = {
 
 const recursiveCueCheck = (
   list: string[],
-  cues: { [id: string]: Cue },
+  cues: Map<string, Cue>,
   expandedRows: string[],
   level = 0,
   isHidden = false,
@@ -55,7 +55,7 @@ const recursiveCueCheck = (
   const cuelist: FlatCueEntry[] = [];
 
   list.forEach((cueId, index) => {
-    const cue = cues[cueId];
+    const cue = cues.get(cueId);
     if (cue == null) return;
     let chain: CueChain | null = null;
     if (parent?.params.type === 'group') {
@@ -114,17 +114,25 @@ const recursiveCueCheck = (
   return cuelist;
 };
 
-const positionFromSelection = (selected: string | null, type: 'after' | 'before' = 'after'): InsertPosition =>
-  selected != null
-    ? { type, target: selected }
-    : { type: 'inside', target: null, index: null };
+const positionFromSelection = (
+  selected: string | null,
+  type: 'after' | 'before' = 'after',
+): InsertPosition =>
+  selected != null ? { type, target: selected } : { type: 'inside', target: null, index: null };
 
 export const useShowModel = defineStore('showModel', {
-  state: () => structuredClone(DEFAULT_SHOW_MODEL),
+  state: () => {
+    return {
+      name: DEFAULT_SHOW_MODEL.name,
+      cues: new Map<string, Cue>(Object.entries(structuredClone(DEFAULT_SHOW_MODEL.cues))),
+      rootIds: structuredClone(DEFAULT_SHOW_MODEL.rootIds),
+      settings: structuredClone(DEFAULT_SHOW_MODEL.settings),
+    };
+  },
   getters: {
     getCueById() {
-      return (cue_id: string): Cue | undefined => {
-        return this.flatCueList.find((entry) => entry.cue.id === cue_id)?.cue;
+      return (cueId: string): Cue | undefined => {
+        return this.cues.get(cueId);
       };
     },
     getNextCueById() {
@@ -132,11 +140,11 @@ export const useShowModel = defineStore('showModel', {
         let currentId = cueId;
 
         while (true) {
-          const cue = this.cues[currentId];
+          const cue = this.cues.get(currentId);
           if (cue == null) return null;
 
           if (cue.parentId) {
-            const parent = this.cues[cue.parentId];
+            const parent = this.cues.get(cue.parentId);
 
             if (parent?.params?.type === 'group' && Array.isArray(parent.params.children)) {
               const { children } = parent.params;
@@ -174,13 +182,13 @@ export const useShowModel = defineStore('showModel', {
       return recursiveCueCheck(state.rootIds, state.cues, uiState.expandedRows);
     },
     cueCount(state) {
-      return Object.keys(state.cues).length;
+      return state.cues.size;
     },
   },
   actions: {
     updateAll(newModel: ShowModel) {
       this.name = newModel.name;
-      this.cues = newModel.cues;
+      this.cues = new Map<string, Cue>(Object.entries(newModel.cues));
       this.rootIds = newModel.rootIds;
       this.settings = newModel.settings;
     },
@@ -198,7 +206,9 @@ export const useShowModel = defineStore('showModel', {
               newCue.params.target = target;
             }
 
-            api.addCue(newCue, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+            api
+              .addCue(newCue, positionFromSelection(uiState.selected))
+              .catch((e) => console.error(e));
           } else if (assets.length > 1) {
             const newCues = [] as Cue[];
             for (const asset_path of assets) {
@@ -209,7 +219,9 @@ export const useShowModel = defineStore('showModel', {
               newCues.push(newCue);
             }
 
-            api.addCues(newCues, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+            api
+              .addCues(newCues, positionFromSelection(uiState.selected))
+              .catch((e) => console.error(e));
           }
         })
         .catch((e) => console.error(e));
@@ -257,7 +269,9 @@ export const useShowModel = defineStore('showModel', {
         ) {
           newCue.params.target = uiState.selected;
 
-          api.addCue(newCue, positionFromSelection(uiState.selected)).catch((e) => console.error(e));
+          api
+            .addCue(newCue, positionFromSelection(uiState.selected))
+            .catch((e) => console.error(e));
         }
       }
     },
@@ -286,7 +300,7 @@ export const useShowModel = defineStore('showModel', {
           newCue = structuredClone(toRaw(uiSettings.settings.template.load)) as Cue;
           break;
       }
-      const targetCue = this.cues[uiState.selected];
+      const targetCue = this.cues.get(uiState.selected);
       if (
         targetCue != null &&
         (newCue.params.type === 'start' ||
@@ -296,7 +310,9 @@ export const useShowModel = defineStore('showModel', {
       ) {
         newCue.params.target = uiState.selected;
 
-        api.addCue(newCue, positionFromSelection(uiState.selected, positionType)).catch((e) => console.error(e));
+        api
+          .addCue(newCue, positionFromSelection(uiState.selected, positionType))
+          .catch((e) => console.error(e));
       }
     },
     addEmptyGroupCue() {
@@ -305,7 +321,6 @@ export const useShowModel = defineStore('showModel', {
       const api = useApi();
       const newCue = structuredClone(toRaw(uiSettings.settings.template.group)) as Cue;
       if (newCue.params.type === 'group') {
-
         api
           .addCue(newCue, positionFromSelection(uiState.selected))
           .then((id) => {

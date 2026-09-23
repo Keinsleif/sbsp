@@ -42,12 +42,12 @@ const props = withDefaults(
   defineProps<{
     heightPx?: number;
     volume?: number;
-    disabled?: boolean;
+    isActive?: boolean;
   }>(),
   {
     heightPx: 75,
     volume: 0,
-    disabled: false,
+    isActive: false,
   },
 );
 
@@ -174,7 +174,7 @@ watchEffect(() => {
 });
 
 const saveEditorValue = () => {
-  if (props.disabled) return;
+  if (props.isActive) return;
   if (selectedCue.value?.params.type !== 'audio') return;
   selectedCue.value.params.envelope = segments.value;
 
@@ -246,7 +246,7 @@ const handlePointerDown = (
   index: number,
   type: 'volume' | 'start' | 'end' | 'hstart' | 'hend',
 ) => {
-  if (props.disabled) return;
+  if (props.isActive) return;
   e.stopPropagation();
   if (type === 'start' && index === 0) return;
   if (type === 'end' && index === segments.value.length - 1) return;
@@ -254,7 +254,7 @@ const handlePointerDown = (
 };
 
 const handlePointerMove = (e: PointerEvent) => {
-  if (dragging.value == null || props.disabled) return;
+  if (dragging.value == null || props.isActive) return;
   dragging.value.dragged = true;
   const { x, y } = getSVGCoords(e);
 
@@ -334,7 +334,7 @@ useEventListener(document, 'pointermove', handlePointerMove);
 useEventListener(document, 'pointerup', handlePointerUp);
 
 const handleAddOrSplit = (svgX: number) => {
-  if (props.disabled) return;
+  if (props.isActive) return;
   if (!uiState.isEnvelopeVisible) return;
   if (segments.value.length === 0) {
     segments.value.push({ start: 0, end: 1, volume: 0.5 });
@@ -382,21 +382,21 @@ const handleAddOrSplit = (svgX: number) => {
 };
 
 const clearSegments = () => {
-  if (props.disabled || !uiState.isEnvelopeVisible) return;
+  if (props.isActive || !uiState.isEnvelopeVisible) return;
   segments.value = [];
   selectedIdx.value = null;
   saveEditorValue();
 };
 
 const addSegment = () => {
-  if (props.disabled) return;
+  if (props.isActive) return;
   uiState.isEnvelopeVisible = true;
   handleAddOrSplit(0.5);
   saveEditorValue();
 };
 
 const removeSegment = () => {
-  if (props.disabled || !uiState.isEnvelopeVisible) return;
+  if (props.isActive || !uiState.isEnvelopeVisible) return;
   if (selectedIdx.value != null) {
     segments.value.splice(selectedIdx.value, 1);
     if (selectedIdx.value === 0) {
@@ -415,7 +415,7 @@ const removeSegment = () => {
 };
 
 const seek = (event: MouseEvent) => {
-  if (!props.disabled) return;
+  if (!props.isActive) return;
   if (selectedCue.value == null || event.button !== 0) {
     return;
   }
@@ -492,7 +492,7 @@ const menuItems = computed(() => [
           class="w-12"
           size="small"
           :icon="mdiSkipNext"
-          :disabled="props.disabled"
+          :disabled="props.isActive"
           @click="skipFirstSilence"
         />
       </div>
@@ -511,7 +511,7 @@ const menuItems = computed(() => [
           class="w-12"
           size="small"
           :icon="mdiSkipPrevious"
-          :disabled="props.disabled"
+          :disabled="props.isActive"
           @click="skipLastSilence"
         />
       </div>
@@ -543,6 +543,7 @@ const menuItems = computed(() => [
         :viewBox="`0 0 ${svgWidth} ${contentHeight}`"
         width="100%"
         :height="`${contentHeight}px`"
+        style="overflow: hidden"
         @dblclick="
           (e: MouseEvent) => {
             const { x } = getSVGCoords(e);
@@ -555,7 +556,7 @@ const menuItems = computed(() => [
           v-model="selectedCue"
           :width="svgWidth"
           :height="contentHeight"
-          :volume="props.volume"
+          :volume="uiState.scaleWaveform ? props.volume : undefined"
         />
         <rect
           :x="startPos"
@@ -577,7 +578,7 @@ const menuItems = computed(() => [
           width="20"
           :height="contentHeight"
           fill="transparent"
-          :style="{ cursor: props.disabled ? '' : 'ew-resize' }"
+          :style="{ cursor: props.isActive ? '' : 'ew-resize' }"
           @pointerdown="handlePointerDown($event, 0, 'hstart')"
         />
         <rect
@@ -586,7 +587,7 @@ const menuItems = computed(() => [
           width="20"
           :height="contentHeight"
           fill="transparent"
-          :style="{ cursor: props.disabled ? '' : 'ew-resize' }"
+          :style="{ cursor: props.isActive ? '' : 'ew-resize' }"
           @pointerdown="handlePointerDown($event, 0, 'hend')"
         />
         <rect
@@ -618,7 +619,7 @@ const menuItems = computed(() => [
             :key="i"
             :class="{
               [$style['selected']]: selectedIdx == i,
-              [$style['disabled']]: props.disabled,
+              [$style['disabled']]: props.isActive,
             }"
           >
             <rect
@@ -633,23 +634,23 @@ const menuItems = computed(() => [
               :y="decibelsToY(seg.volume) - 10"
               :width="(seg.end - seg.start) * svgWidth * timeRange.delta"
               height="20"
-              :style="{ cursor: props.disabled ? '' : 'ns-resize' }"
+              :style="{ cursor: props.isActive ? '' : 'ns-resize' }"
               fill="transparent"
               @pointerdown="handlePointerDown($event, i, 'volume')"
             />
             <circle
               :cx="(timeRange.start + seg.start * timeRange.delta) * svgWidth"
               :cy="decibelsToY(seg.volume)"
-              :r="i == 0 || props.disabled ? 3 : 8"
-              :class="i == 0 || props.disabled ? $style['handle-locked'] : $style['handle']"
+              :r="i == 0 || props.isActive ? 3 : 8"
+              :class="i == 0 || props.isActive ? $style['handle-locked'] : $style['handle']"
               @pointerdown="handlePointerDown($event, i, 'start')"
             />
             <circle
               :cx="(timeRange.start + seg.end * timeRange.delta) * svgWidth"
               :cy="decibelsToY(seg.volume)"
-              :r="i == segments.length - 1 || props.disabled ? 3 : 8"
+              :r="i == segments.length - 1 || props.isActive ? 3 : 8"
               :class="
-                i == segments.length - 1 || props.disabled
+                i == segments.length - 1 || props.isActive
                   ? $style['handle-locked']
                   : $style['handle']
               "
@@ -666,7 +667,7 @@ const menuItems = computed(() => [
         severity="success"
         variant="outlined"
         size="small"
-        :disabled="props.disabled"
+        :disabled="props.isActive"
         @click="addSegment"
       />
       <button-wrapper
@@ -675,7 +676,7 @@ const menuItems = computed(() => [
         severity="danger"
         variant="outlined"
         size="small"
-        :disabled="props.disabled || selectedIdx == null"
+        :disabled="props.isActive || selectedIdx == null"
         @click="removeSegment"
       />
       <button-wrapper
@@ -684,7 +685,7 @@ const menuItems = computed(() => [
         severity="secondary"
         variant="outlined"
         size="small"
-        :disabled="props.disabled || !uiState.isEnvelopeVisible"
+        :disabled="props.isActive || !uiState.isEnvelopeVisible"
         @click="clearSegments"
       />
     </div>

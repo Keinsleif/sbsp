@@ -116,7 +116,8 @@
             "renumberCues": "キュー番号の振り直し",
             "selectAll": "すべてのキューを選択",
             "title": "編集"
-          }
+          },
+          "duplicateWarning": "ショートカットキーが重複しています"
         },
         "nameFormat": {
           "audio": {
@@ -441,7 +442,10 @@
         "detail": "指定された音声デバイスの適用に失敗しました。デフォルトデバイスを使用します。",
         "summary": "音声デバイスの適用に失敗しました"
       }
-    }
+    },
+    "failedToApplySettings": "設定の適用に失敗しました",
+    "failedToCheckUpdate": "更新の確認に失敗しました",
+    "failedToExecuteCue": "キューの実行に失敗しました"
   },
   "view": {
     "connect": {

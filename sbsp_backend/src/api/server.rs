@@ -293,6 +293,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                         ModelCommand::SaveToFile(_)|
                                         ModelCommand::ExportToFolder(_) |
                                         ModelCommand::LoadFromFile(_) => {
+                                            if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                            && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                                log::error!("Error on responding error. e={}", e);
+                                                return;
+                                            }
                                             log::warn!("File related operation not permitted.");
                                         },
                                         _ => {
@@ -316,7 +321,10 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                     match asset_processor_command {
                                         AssetProcessorCommand::RequestFileAssetData { path } => {
                                             if permission.contains(Permissions::READ) {
-                                                state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await;
+                                                if state.backend_handle.asset_processor_handle.request_file_asset_data(path.clone()).await.is_err() {
+                                                    log::error!("Failed to request process asset.");
+                                                    break;
+                                                }
                                             } else {
                                                 if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
                                                 && let Err(e) = socket.send(Message::Text(payload.into())).await {

@@ -21,6 +21,7 @@ import type { PlaybackStatus } from './types/PlaybackStatus.ts';
 import { useToast } from 'primevue/usetoast';
 import { useBackendEvent } from './composables/useBackendEvent.ts';
 import type { CursorAdvanceTrigger } from './types/CursorAdvanceTrigger.ts';
+import type { Cue } from './types/Cue.ts';
 
 const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
 const xs = breakpoints.smaller('sm');
@@ -123,15 +124,15 @@ useBackendEvent((event) => {
       }
       break;
     case 'cueListUpdated':
-      showModel.$patch({ cues: event.param.cues, rootIds: event.param.rootIds });
+      showModel.cues = new Map<string, Cue>(Object.entries(event.param.cues));
+      showModel.rootIds = event.param.rootIds;
       break;
     case 'modelNameUpdated':
-      showModel.$patch({ name: event.param.newName });
+      showModel.name = event.param.newName;
       api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
       break;
     case 'settingsUpdated': {
-      const settings = event.param.newSettings;
-      showModel.$patch({ settings: settings });
+      showModel.settings = event.param.newSettings;
       break;
     }
     case 'assetMetadata': {
@@ -156,6 +157,14 @@ useBackendEvent((event) => {
     case 'operationFailed':
       console.error(event.param.error);
       switch (event.param.error.type) {
+        case 'cueExecute':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToExecuteCue'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
         case 'saveToFile':
           toast.add({
             severity: 'error',

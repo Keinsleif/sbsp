@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
-    event::BackendEvent,
+    event::{BackendError, BackendEvent},
     executor::{ExecutorCommand, ExecutorEvent, StopMode},
     manager::ShowModelHandle,
 };
@@ -262,6 +262,12 @@ impl CueController {
                 && active_cue.status != PlaybackStatus::Loaded
             {
                 log::warn!("GO: cue already executed.");
+                self.event_tx.send(BackendEvent::OperationFailed {
+                    error: BackendError::CueExecute {
+                        cue_id,
+                        message: "Cue already executed".into(),
+                    },
+                })?;
             } else {
                 self.executor_tx
                     .send(ExecutorCommand::Execute(cue_id))
@@ -511,7 +517,7 @@ impl CueController {
         }
 
         if send_event
-            && let Ok(ui_event) = BackendEvent::try_from(event)
+            && let Some(ui_event) = event.into()
             && self.event_tx.send(ui_event).is_err()
         {
             log::trace!("No UI clients are listening to playback events.");

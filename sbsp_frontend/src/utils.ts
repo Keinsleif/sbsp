@@ -21,6 +21,7 @@ import {
   mdiVolumeHigh,
 } from '@mdi/js';
 import type { Permissions } from './types/Permissions';
+import { MODIFIER_KEYS } from './composables/useHotkey';
 
 export const secondsToFormat = (source_seconds: number | null): string => {
   if (source_seconds == null || isNaN(source_seconds)) {
@@ -260,21 +261,24 @@ export const getDuration = (cue: Cue | null | undefined): number | null => {
   }
 };
 
-export function debounce(fn: (...args: unknown[]) => void, delay: MaybeRef<number>) {
-  let timeoutId: unknown;
-  const wrap = function (...args: unknown[]) {
+export function debounce<T extends (...args: never[]) => unknown>(fn: T, delay: MaybeRef<number>) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const wrap = function (...args: Parameters<T>): void {
     wrap.debouncing = true;
-    clearTimeout(timeoutId as number);
+    clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       fn(...args);
       wrap.debouncing = false;
     }, unref(delay));
   };
+
   wrap.debouncing = false;
   wrap.clear = () => {
-    clearTimeout(timeoutId as number);
+    clearTimeout(timeoutId);
   };
   wrap.immediate = fn;
+
   return wrap;
 }
 
@@ -337,6 +341,7 @@ export const generateRandomPassword = (): string => {
 };
 
 export const PERMISSIONS = {
+  NONE: 0 as Permissions,
   READ: (1 << 0) as Permissions,
   CONTROL: (1 << 1) as Permissions,
   EDIT: (1 << 2) as Permissions,
@@ -387,3 +392,14 @@ export const getExtension = (path: string) => {
 
   return fileName.substring(dotIndex + 1).toLowerCase();
 };
+
+export function normalizeHotkey(hotkeyStr: string): string {
+  if (!hotkeyStr) return '';
+  const parts = hotkeyStr
+    .split('+')
+    .map((p) => p.trim().replace('Ctrl', 'Control'))
+    .filter(Boolean);
+  const modifiers = parts.filter((p) => MODIFIER_KEYS.has(p)).sort();
+  const key = parts.filter((p) => !MODIFIER_KEYS.has(p));
+  return [...modifiers, ...key].join('+');
+}

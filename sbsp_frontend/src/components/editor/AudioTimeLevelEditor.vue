@@ -132,7 +132,7 @@ const isActive = computed(() => {
     <waveform-editor
       v-model="selectedCue"
       :height-px="125"
-      :disabled="isActive"
+      :isActive="isActive"
       :volume="volume"
       @update="emit('update')"
     />

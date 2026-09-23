@@ -15,13 +15,24 @@ import type { HotkeySettings } from './types/HotkeySettings';
 
 type MenuItemHolder = MenuItem | PredefinedMenuItem | null;
 
-const MODIFIER_ONLY_TOKENS = new Set(['Control', 'Ctrl', 'Meta', '$mod', 'Alt', 'AltGraph', 'Shift']);
+const MODIFIER_ONLY_TOKENS = new Set([
+  'Control',
+  'Ctrl',
+  'Meta',
+  '$mod',
+  'Alt',
+  'AltGraph',
+  'Shift',
+]);
 const keyToDisplay = (key: string | null) => {
   if (!key || MODIFIER_ONLY_TOKENS.has(key)) {
     return null;
   }
-  return key?.replace('$mod', 'CMDORCONTROL')?.replace('Control', 'Ctrl')?.replace('Meta', 'Super') ?? null;
-}
+  return (
+    key?.replace('$mod', 'CMDORCONTROL')?.replace('Control', 'Ctrl')?.replace('Meta', 'Super') ??
+    null
+  );
+};
 
 export const createWindowMenu = () => {
   const api = useApi();
@@ -110,21 +121,13 @@ export const createWindowMenu = () => {
 
   const updateHotkey = (newHotkeySettings: HotkeySettings) => {
     if (!initiated) return;
-    (items.file.open as MenuItem).setAccelerator(
-      keyToDisplay(newHotkeySettings.file.open),
-    );
-    (items.file.save as MenuItem).setAccelerator(
-      keyToDisplay(newHotkeySettings.file.save),
-    );
-    (items.file.saveAs as MenuItem).setAccelerator(
-      keyToDisplay(newHotkeySettings.file.saveAs),
-    );
+    (items.file.open as MenuItem).setAccelerator(keyToDisplay(newHotkeySettings.file.open));
+    (items.file.save as MenuItem).setAccelerator(keyToDisplay(newHotkeySettings.file.save));
+    (items.file.saveAs as MenuItem).setAccelerator(keyToDisplay(newHotkeySettings.file.saveAs));
     (items.file.exportToFolder as MenuItem).setAccelerator(
       keyToDisplay(newHotkeySettings.file.exportToFolder),
     );
-    (items.edit.deleteCue as MenuItem).setAccelerator(
-      keyToDisplay(newHotkeySettings.edit.delete),
-    );
+    (items.edit.deleteCue as MenuItem).setAccelerator(keyToDisplay(newHotkeySettings.edit.delete));
     (items.edit.selectAllCues as MenuItem).setAccelerator(
       keyToDisplay(newHotkeySettings.edit.selectAll),
     );

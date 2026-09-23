@@ -116,7 +116,8 @@
             "cuelistExtendUp": "Extend selection up",
             "cuelistMoveDown": "Move selection down",
             "cuelistExtendDown": "Extend selection down"
-          }
+          },
+          "duplicateWarning": "This shortcut is already in use."
         },
         "nameFormat": {
           "audio": {
@@ -441,7 +442,10 @@
         "summary": "Failed to apply device configuration",
         "detail": "The specified device configuration is unavailable. Reverted to default configuration."
       }
-    }
+    },
+    "failedToApplySettings": "Failed to apply settings",
+    "failedToCheckUpdate": "Failed to check update",
+    "failedToExecuteCue": "Failed to execute Cue"
   },
   "view": {
     "connect": {

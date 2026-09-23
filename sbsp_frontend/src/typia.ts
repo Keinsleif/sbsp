@@ -6,11 +6,11 @@ import type { GlobalRemoteSettings } from './types/GlobalRemoteSettings';
 
 type PlainObject = Record<string, unknown>;
 
-export const settingsValidator: (input: unknown) => IValidation<GlobalRemoteSettings> = typia.createValidate<GlobalRemoteSettings>();
+export const settingsValidator: (input: unknown) => IValidation<GlobalRemoteSettings> =
+  typia.createValidate<GlobalRemoteSettings>();
 
-const settingsPartialValidator: (
-  input: unknown,
-) => IValidation<Partial<GlobalRemoteSettings>> = typia.createValidate<Partial<GlobalRemoteSettings>>();
+const settingsPartialValidator: (input: unknown) => IValidation<Partial<GlobalRemoteSettings>> =
+  typia.createValidate<Partial<GlobalRemoteSettings>>();
 
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -18,7 +18,7 @@ const isObject = (obj: unknown): obj is PlainObject =>
   obj != null && typeof obj === 'object' && !Array.isArray(obj);
 
 const isContainer = (v: unknown): v is Record<string, unknown> => {
-  return v != null && typeof v === "object";
+  return v != null && typeof v === 'object';
 };
 
 function mergeDeeply<T extends PlainObject>(target: T, source: PlainObject): T {
@@ -29,14 +29,17 @@ function mergeDeeply<T extends PlainObject>(target: T, source: PlainObject): T {
   const result: PlainObject = { ...target };
 
   for (const [sourceKey, sourceValue] of Object.entries(source)) {
-
     if (sourceKey === '__proto__' || sourceKey === 'constructor' || sourceKey === 'prototype') {
       continue;
     }
 
     const targetValue = target[sourceKey];
 
-    if (isObject(sourceValue) && isObject(targetValue) && Object.prototype.hasOwnProperty.call(target, sourceKey)) {
+    if (
+      isObject(sourceValue) &&
+      isObject(targetValue) &&
+      Object.prototype.hasOwnProperty.call(target, sourceKey)
+    ) {
       result[sourceKey] = mergeDeeply(targetValue, sourceValue);
     } else {
       result[sourceKey] = sourceValue;
@@ -48,10 +51,10 @@ function mergeDeeply<T extends PlainObject>(target: T, source: PlainObject): T {
 
 function parseErrorPath(path: string): string[] {
   return path
-    .replace(/^\$input\.?/, "")
-    .replace(/\[\d+\]$/, "")
-    .replace(/\[(\d+)\]/g, ".$1")
-    .split(".")
+    .replace(/^\$input\.?/, '')
+    .replace(/\[\d+\]$/, '')
+    .replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
     .filter(Boolean);
 }
 
@@ -80,7 +83,10 @@ function setDeepValue(target: Record<string, unknown>, tokens: string[], value: 
   if (last) current[last] = value;
 }
 
-export function parseOrDefault(text: string, defaultValues: GlobalRemoteSettings): GlobalRemoteSettings {
+export function parseOrDefault(
+  text: string,
+  defaultValues: GlobalRemoteSettings,
+): GlobalRemoteSettings {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -111,8 +117,5 @@ export function parseOrDefault(text: string, defaultValues: GlobalRemoteSettings
   return resultObject;
 }
 
-export const settingsParser: (
-  input: string,
-) => typia.IValidation<GlobalRemoteSettings> = typia.json.createValidateParse<
-  GlobalRemoteSettings
->();
+export const settingsParser: (input: string) => typia.IValidation<GlobalRemoteSettings> =
+  typia.json.createValidateParse<GlobalRemoteSettings>();

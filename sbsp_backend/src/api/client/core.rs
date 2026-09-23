@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+use std::ops::Deref;
 use std::sync::{Arc, atomic::AtomicBool};
 use std::time::Duration;
 
@@ -167,35 +168,58 @@ pub async fn create_remote_backend(
                             if let Ok(ws_message) = serde_json::from_str::<WsFeedback>(&text) {
                                 match ws_message {
                                     WsFeedback::Event(ui_event) => {
-                                        if let BackendEvent::ShowModelLoaded { model, project_type, path } = &*ui_event {
-                                            {
-                                                let mut model_lock = model_clone.write().await;
-                                                *model_lock = model.clone();
+                                        match ui_event.deref() {
+                                            BackendEvent::ShowModelLoaded { model, project_type, path } => {
+                                                {
+                                                    let mut model_lock = model_clone.write().await;
+                                                    *model_lock = model.clone();
+                                                }
+                                                {
+                                                    let mut project_status = project_status_clone.write().await;
+                                                    *project_status = ProjectStatus::Saved{
+                                                        project_type: *project_type,
+                                                        path: path.clone(),
+                                                    };
+                                                }
                                             }
-                                            {
-                                                let mut project_status = project_status_clone.write().await;
-                                                *project_status = ProjectStatus::Saved{
-                                                    project_type: *project_type,
-                                                    path: path.clone(),
-                                                };
+                                            BackendEvent::ShowModelSaved {project_type, path} => {
+                                                {
+                                                    let mut project_status = project_status_clone.write().await;
+                                                    *project_status = ProjectStatus::Saved{
+                                                        project_type: *project_type,
+                                                        path: path.clone(),
+                                                    };
+                                                }
                                             }
-                                        } else if let BackendEvent::ShowModelSaved {project_type, path} = &*ui_event {
-                                            {
-                                                let mut project_status = project_status_clone.write().await;
-                                                *project_status = ProjectStatus::Saved{
-                                                    project_type: *project_type,
-                                                    path: path.clone(),
-                                                };
+                                            BackendEvent::ShowModelReset { model } => {
+                                                {
+                                                    let mut model_lock = model_clone.write().await;
+                                                    *model_lock = model.clone();
+                                                }
+                                                {
+                                                    let mut project_status = project_status_clone.write().await;
+                                                    *project_status = ProjectStatus::Unsaved;
+                                                }
                                             }
-                                        } else if let BackendEvent::ShowModelReset { model } = &*ui_event {
-                                            {
-                                                let mut model_lock = model_clone.write().await;
-                                                *model_lock = model.clone();
+                                            BackendEvent::CueListUpdated { cue_list } => {
+                                                {
+                                                    let mut model_lock = model_clone.write().await;
+                                                    model_lock.cue_list = cue_list.clone();
+                                                }
                                             }
-                                            {
-                                                let mut project_status = project_status_clone.write().await;
-                                                *project_status = ProjectStatus::Unsaved;
+                                            BackendEvent::ModelNameUpdated { new_name } => {
+                                                {
+                                                    let mut model_lock = model_clone.write().await;
+                                                    model_lock.name = new_name.clone();
+                                                }
                                             }
+                                            BackendEvent::SettingsUpdated { new_settings } => {
+                                                {
+                                                    let mut model_lock = model_clone.write().await;
+                                                    model_lock.settings = new_settings.deref().clone();
+                                                }
+                                            }
+                                            _ => {}
                                         }
                                         if event_tx_clone.send(*ui_event).is_err() {
                                             log::error!("Failed to send BackendEvent to channel.");

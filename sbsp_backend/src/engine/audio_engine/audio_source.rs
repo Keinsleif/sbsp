@@ -2,16 +2,17 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 mod envelope;
+mod shared;
+mod state;
 mod volume;
+
+pub use self::state::AudioPlaybackState;
 
 use std::{
     f32::consts::SQRT_2,
     num::NonZero,
     ops::{Deref, DerefMut},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
-    },
+    sync::Arc,
     time::Duration,
 };
 
@@ -22,13 +23,9 @@ use rodio::{
 use rtrb::{Consumer, Producer, RingBuffer};
 use tokio::sync::oneshot;
 
-use crate::{
-    engine::audio_engine::{AudioCommandData, audio_source::envelope::Envelope},
-    model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam},
-};
-
-use super::lowcost_skip::SkipDuration;
-use volume::Volume;
+use self::{envelope::Envelope, shared::AudioSourceShared, volume::Volume};
+use super::{AudioCommandData, lowcost_skip::SkipDuration};
+use crate::model::cue::audio::{Decibels, Easing, EnvelopeSegment, FadeParam};
 
 const MAX_CHANNELS: u16 = 128;
 
@@ -36,79 +33,6 @@ const DEFAULT_FADE_PARAM: FadeParam = FadeParam {
     duration: 0.001,
     easing: Easing::Linear,
 };
-
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
-#[repr(u8)]
-pub enum AudioPlaybackState {
-    Loaded,
-    Playing,
-    Pausing,
-    Paused,
-    Resuming,
-    SoftStopping,
-    HardStopping,
-    Stopped,
-    Completed,
-}
-
-impl AudioPlaybackState {
-    fn is_stopped(&self) -> bool {
-        match *self {
-            AudioPlaybackState::Stopped | AudioPlaybackState::Completed => true,
-            AudioPlaybackState::Loaded
-            | AudioPlaybackState::Playing
-            | AudioPlaybackState::Pausing
-            | AudioPlaybackState::Paused
-            | AudioPlaybackState::Resuming
-            | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => false,
-        }
-    }
-
-    fn is_advancing(&self) -> bool {
-        match *self {
-            AudioPlaybackState::Loaded
-            | AudioPlaybackState::Paused
-            | AudioPlaybackState::Stopped
-            | AudioPlaybackState::Completed => false,
-            AudioPlaybackState::Playing
-            | AudioPlaybackState::Pausing
-            | AudioPlaybackState::Resuming
-            | AudioPlaybackState::SoftStopping
-            | AudioPlaybackState::HardStopping => true,
-        }
-    }
-}
-
-impl TryFrom<u8> for AudioPlaybackState {
-    type Error = ();
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
-        match value {
-            x if x == Self::Loaded as u8 => Ok(Self::Loaded),
-            x if x == Self::Playing as u8 => Ok(Self::Playing),
-            x if x == Self::Pausing as u8 => Ok(Self::Pausing),
-            x if x == Self::Paused as u8 => Ok(Self::Paused),
-            x if x == Self::Resuming as u8 => Ok(Self::Resuming),
-            x if x == Self::SoftStopping as u8 => Ok(Self::SoftStopping),
-            x if x == Self::HardStopping as u8 => Ok(Self::HardStopping),
-            x if x == Self::Stopped as u8 => Ok(Self::Stopped),
-            x if x == Self::Completed as u8 => Ok(Self::Completed),
-            _ => Err(()),
-        }
-    }
-}
-
-impl PartialEq<u8> for AudioPlaybackState {
-    fn eq(&self, other: &u8) -> bool {
-        (*self as u8) == *other
-    }
-}
-
-impl PartialEq<AudioPlaybackState> for u8 {
-    fn eq(&self, other: &AudioPlaybackState) -> bool {
-        *self == (*other as u8)
-    }
-}
 
 enum AudioSourceControlCommand {
     Start,
@@ -126,22 +50,6 @@ enum AudioSourceControlCommand {
     },
 }
 
-struct AudioSourceShared {
-    state: AtomicU8,
-    position: AtomicU64,
-    repeat: AtomicBool,
-}
-
-impl AudioSourceShared {
-    fn new(repeat: bool) -> Self {
-        Self {
-            state: AtomicU8::new(AudioPlaybackState::Loaded as u8),
-            position: AtomicU64::new(0),
-            repeat: AtomicBool::new(repeat),
-        }
-    }
-}
-
 pub struct AudioSourceHandle {
     shared: Arc<AudioSourceShared>,
     control: Producer<AudioSourceControlCommand>,
@@ -152,19 +60,15 @@ pub struct AudioSourceHandle {
 
 impl AudioSourceHandle {
     pub fn state(&self) -> AudioPlaybackState {
-        self.shared
-            .state
-            .load(Ordering::Acquire)
-            .try_into()
-            .unwrap()
+        self.shared.load_state()
     }
 
     pub fn position(&self) -> f64 {
-        f64::from_bits(self.shared.position.load(Ordering::Acquire))
+        self.shared.load_position()
     }
 
     pub fn is_repeating(&self) -> bool {
-        self.shared.repeat.load(Ordering::Acquire)
+        self.shared.load_repeat()
     }
 
     pub fn get_volume(&self) -> Decibels {
@@ -172,40 +76,58 @@ impl AudioSourceHandle {
     }
 
     pub fn start(&mut self) {
-        if self.state() == AudioPlaybackState::Loaded {
-            let _ = self.control.push(AudioSourceControlCommand::Start);
+        if self.shared.load_state() == AudioPlaybackState::Loaded
+            && self.control.push(AudioSourceControlCommand::Start).is_err()
+        {
+            log::error!("Failed to send start command to audio thread");
         }
     }
 
     pub fn resume(&mut self) {
-        if self.state() == AudioPlaybackState::Paused {
-            let _ = self.control.push(AudioSourceControlCommand::Resume);
+        if self.shared.load_state() == AudioPlaybackState::Paused
+            && self
+                .control
+                .push(AudioSourceControlCommand::Resume)
+                .is_err()
+        {
+            log::error!("Failed to send resume command to audio thread");
         }
     }
 
     pub fn pause(&mut self) {
-        let _ = self.control.push(AudioSourceControlCommand::Pause);
+        if self.control.push(AudioSourceControlCommand::Pause).is_err() {
+            log::error!("Failed to send pause command to audio thread");
+        }
     }
 
     pub fn stop(&mut self, is_hard: bool) {
-        let state = self.state();
+        let state = self.shared.load_state();
         if state == AudioPlaybackState::Stopped || state == AudioPlaybackState::Completed {
             return;
         }
-        if is_hard {
-            let _ = self.control.push(AudioSourceControlCommand::HardStop);
+        let command = if is_hard {
+            AudioSourceControlCommand::HardStop
         } else {
-            let _ = self.control.push(AudioSourceControlCommand::SoftStop);
+            AudioSourceControlCommand::SoftStop
+        };
+        if self.control.push(command).is_err() {
+            log::error!("Failed to send stop command to audio thread");
         }
     }
 
     pub async fn seek_to(&mut self, position: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
         let position = position.clamp(0.0, self.duration);
-        let _ = self.control.push(AudioSourceControlCommand::Seek {
-            position,
-            result: result_tx,
-        });
+        if self
+            .control
+            .push(AudioSourceControlCommand::Seek {
+                position,
+                result: result_tx,
+            })
+            .is_err()
+        {
+            log::error!("Failed to send seek command to audio thread");
+        }
         match result_rx.await {
             Ok(Ok(_)) => Ok(position),
             Ok(Err(err)) => Err(err),
@@ -216,10 +138,16 @@ impl AudioSourceHandle {
     pub async fn seek_by(&mut self, amount: f64) -> Result<f64, anyhow::Error> {
         let (result_tx, result_rx) = oneshot::channel();
         let position = (self.position() + amount).clamp(0.0, self.duration);
-        let _ = self.control.push(AudioSourceControlCommand::Seek {
-            position,
-            result: result_tx,
-        });
+        if self
+            .control
+            .push(AudioSourceControlCommand::Seek {
+                position,
+                result: result_tx,
+            })
+            .is_err()
+        {
+            log::error!("Failed to send seek command to audio thread");
+        }
         match result_rx.await {
             Ok(Ok(_)) => Ok(position),
             Ok(Err(err)) => Err(err),
@@ -228,25 +156,37 @@ impl AudioSourceHandle {
     }
 
     pub fn set_repeat(&self, value: bool) {
-        self.shared.repeat.store(value, Ordering::Release);
+        self.shared.store_repeat(value);
     }
 
     pub fn set_volume(&mut self, volume: Decibels) {
         self.volume = volume;
 
-        let _ = self.control.push(AudioSourceControlCommand::SetVolume {
-            volume: self.volume + self.fade_volume,
-            fade_param: DEFAULT_FADE_PARAM,
-        });
+        if self
+            .control
+            .push(AudioSourceControlCommand::SetVolume {
+                volume: self.volume + self.fade_volume,
+                fade_param: DEFAULT_FADE_PARAM,
+            })
+            .is_err()
+        {
+            log::error!("Failed to send set_volume command to audio thread");
+        }
     }
 
     pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
         self.fade_volume = volume;
 
-        let _ = self.control.push(AudioSourceControlCommand::SetVolume {
-            volume: self.volume + self.fade_volume,
-            fade_param,
-        });
+        if self
+            .control
+            .push(AudioSourceControlCommand::SetVolume {
+                volume: self.volume + self.fade_volume,
+                fade_param,
+            })
+            .is_err()
+        {
+            log::error!("Failed to send set_fade command to audio thread");
+        }
     }
 }
 
@@ -406,7 +346,7 @@ where
         let sample_rate = input.sample_rate();
         let fadeout_param = settings.fadeout_param.unwrap_or(DEFAULT_FADE_PARAM);
         let shared = Arc::new(AudioSourceShared::new(settings.repeat));
-        let (control_pr, control_co) = RingBuffer::new(8);
+        let (control_pr, control_co) = RingBuffer::new(32);
         let control_volume = if let Some(fadein_param) = settings.fadein_param {
             Volume::new_with_fade(Decibels::MUTE, Decibels::IDENTITY, fadein_param)
         } else {
@@ -478,8 +418,7 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let mut state =
-            AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire)).unwrap();
+        let mut state = self.shared.load_state();
 
         if self.current_channel >= self.settings.channel_mapping.output_channels as u16 {
             self.current_channel = 0;
@@ -488,12 +427,10 @@ where
                 self.frames_counted = 0;
 
                 if state.is_advancing() {
-                    self.shared.position.store(
-                        (self.offset_position
+                    self.shared.store_position(
+                        self.offset_position
                             + self.playing_frames_counted as f64
-                                / self.current_span_sample_rate.get() as f64)
-                            .to_bits(),
-                        Ordering::Release,
+                                / self.current_span_sample_rate.get() as f64,
                     );
                 }
 
@@ -561,7 +498,7 @@ where
                     }
 
                     // State publish
-                    self.shared.state.store(state as u8, Ordering::Release);
+                    self.shared.store_state(state);
                 }
             }
 
@@ -580,7 +517,7 @@ where
                     _ => {}
                 }
                 // State publish
-                self.shared.state.store(state as u8, Ordering::Release);
+                self.shared.store_state(state);
             }
             self.volume.update(dt);
 
@@ -617,7 +554,7 @@ where
                         }
                         self.output_buffer[out_n] = out * factor.as_amplitude();
                     }
-                } else if self.shared.repeat.load(Ordering::Acquire) {
+                } else if self.shared.load_repeat() {
                     let _ = self.try_seek(Duration::ZERO);
                 } else {
                     state = match state {
@@ -627,7 +564,7 @@ where
                         _ => AudioPlaybackState::Completed,
                     };
                     // State publish
-                    self.shared.state.store(state as u8, Ordering::Release);
+                    self.shared.store_state(state);
                 };
 
                 self.playing_frames_counted += 1;
@@ -678,9 +615,7 @@ where
         let result = self.input.try_seek(pos);
         if result.is_ok() {
             self.offset_position = pos.as_secs_f64();
-            self.shared
-                .position
-                .store(self.offset_position.to_bits(), Ordering::Release);
+            self.shared.store_position(self.offset_position);
             self.envelope.seek(pos.as_secs_f64());
             self.playing_frames_counted = 0;
             self.frames_counted = 0;
@@ -695,13 +630,8 @@ where
     I: Source,
 {
     fn drop(&mut self) {
-        if !AudioPlaybackState::try_from(self.shared.state.load(Ordering::Acquire))
-            .unwrap()
-            .is_stopped()
-        {
-            self.shared
-                .state
-                .store(AudioPlaybackState::Stopped as u8, Ordering::Release);
+        if !self.shared.load_state().is_stopped() {
+            self.shared.store_state(AudioPlaybackState::Stopped);
         }
     }
 }
