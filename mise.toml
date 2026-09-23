@@ -1,6 +1,6 @@
 [tools]
 node = "24"
-pnpm = "11"
+pnpm = "12"
 rust = "stable"
 "cargo:tauri-cli" = { version = "2", depends = ["rust"] }
 "cargo:cargo-about" = { version = "0.9", depends = ["rust"] }
