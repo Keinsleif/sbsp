@@ -444,7 +444,8 @@
       }
     },
     "failedToApplySettings": "Failed to apply settings",
-    "failedToCheckUpdate": "Failed to check update"
+    "failedToCheckUpdate": "Failed to check update",
+    "failedToExecuteCue": "Failed to execute Cue"
   },
   "view": {
     "connect": {

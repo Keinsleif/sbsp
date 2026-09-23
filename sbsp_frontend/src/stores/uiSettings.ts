@@ -264,7 +264,7 @@ export const useUiSettings = defineStore('uiSettings', () => {
     api
       .importSettingsFromFile()
       .then((settings) => {
-        update(settings);
+        return update(settings);
       })
       .catch((e) => console.error(e));
   };

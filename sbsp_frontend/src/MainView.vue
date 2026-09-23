@@ -157,6 +157,14 @@ useBackendEvent((event) => {
     case 'operationFailed':
       console.error(event.param.error);
       switch (event.param.error.type) {
+        case 'cueExecute':
+          toast.add({
+            severity: 'error',
+            summary: t('notification.failedToExecuteCue'),
+            detail: event.param.error.message,
+            life: 3000,
+          });
+          break;
         case 'saveToFile':
           toast.add({
             severity: 'error',
