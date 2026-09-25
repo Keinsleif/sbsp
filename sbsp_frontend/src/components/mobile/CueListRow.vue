@@ -30,8 +30,9 @@ const props = defineProps<{
   item: FlatCueEntry;
 }>();
 
-const isExpanded = computed(() => uiState.expandedRows.includes(props.item.cue.id));
+const isExpanded = computed(() => uiState.expandedRows.has(props.item.cue.id));
 const isPlaybackCursor = computed(() => uiState.playbackCursor === props.item.cue.id);
+const isActive = computed(() => props.item.cue.id in showState.activeCues);
 const cueIcon = computed(() => getCueIcon(props.item.cue.params.type));
 
 const status = computed(() => {
@@ -40,26 +41,30 @@ const status = computed(() => {
 });
 
 const rowRef = useTemplateRef('row');
-usePosition((pos) => {
-  if (rowRef.value == null) return;
-  if (props.item.isHidden) return;
-  const position = pos[props.item.cue.id];
-  const activeCue = showState.activeCues[props.item.cue.id];
-  if (activeCue == null || position == null || activeCue.duration === 0) {
-    if (rowRef.value.style.background !== '') {
-      rowRef.value.style.background = '';
+usePosition(
+  (pos) => {
+    if (rowRef.value == null) return;
+    if (props.item.isHidden) return;
+    const position = pos[props.item.cue.id];
+    const activeCue = showState.activeCues[props.item.cue.id];
+    if (activeCue == null || position == null || activeCue.duration === 0) {
+      return;
     }
-    return;
-  }
-  rowRef.value.style.background =
-    (activeCue.status.startsWith('pre')
-      ? 'linear-gradient(to right, rgb(from var(--p-orange-500) r g b / 0.5) '
-      : 'linear-gradient(to right, rgb(from var(--p-primary-color) r g b / 0.5) ') +
-    (position * 100) / activeCue.duration +
-    '%, transparent ' +
-    (position * 100) / activeCue.duration +
-    '%) no-repeat';
-});
+    rowRef.value.style.background =
+      (activeCue.status.startsWith('pre')
+        ? 'linear-gradient(to right, rgb(from var(--p-orange-500) r g b / 0.5) '
+        : 'linear-gradient(to right, rgb(from var(--p-primary-color) r g b / 0.5) ') +
+      (position * 100) / activeCue.duration +
+      '%, transparent ' +
+      (position * 100) / activeCue.duration +
+      '%) no-repeat';
+  },
+  isActive,
+  () => {
+    if (rowRef.value == null) return;
+    rowRef.value.style.background = '';
+  },
+);
 
 const isStatusIn = (statusList: PlaybackStatus[]): boolean => {
   return status.value != null ? statusList.includes(status.value) : false;
