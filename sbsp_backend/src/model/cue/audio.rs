@@ -23,6 +23,7 @@ impl Decibels {
     pub const IDENTITY: Self = Self(0.0);
 
     #[cfg(feature = "backend")]
+    #[inline]
     pub fn as_amplitude(&self) -> f32 {
         10.0f32.powf(self.0 / 20.0)
     }
@@ -46,6 +47,7 @@ impl From<Decibels> for f32 {
 impl Add for Decibels {
     type Output = Decibels;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
@@ -55,6 +57,7 @@ impl Add for Decibels {
 impl Sub for Decibels {
     type Output = Decibels;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
@@ -64,6 +67,7 @@ impl Sub for Decibels {
 impl Mul<f32> for Decibels {
     type Output = Decibels;
 
+    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs)
     }
@@ -129,6 +133,7 @@ pub enum Easing {
 
 #[cfg(feature = "backend")]
 impl Easing {
+    #[inline]
     pub fn get_factor(&self, mut x: f64) -> f64 {
         match self {
             Easing::Linear => x,

@@ -240,6 +240,7 @@ impl ChannelMapping {
         }
     }
 
+    #[inline]
     pub fn get_factor(&self, in_n: usize, out_n: usize) -> f32 {
         if in_n < self.input_channels && out_n < self.output_channels {
             self.map[in_n * self.output_channels + out_n]
