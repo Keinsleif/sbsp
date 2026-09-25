@@ -19,6 +19,7 @@ impl Envelope {
         }
     }
 
+    #[inline]
     pub fn update(&mut self, pos: f64) -> Decibels {
         let pos = pos / self.duration;
         let n = self.segments.len();
