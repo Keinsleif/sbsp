@@ -47,12 +47,12 @@ export type FlatCueEntry = {
 const recursiveCueCheck = (
   list: string[],
   cues: Map<string, Cue>,
-  expandedRows: string[],
+  expandedRows: Set<string>,
   level = 0,
   isHidden = false,
   parent: null | Cue = null,
 ): FlatCueEntry[] => {
-  const cuelist: FlatCueEntry[] = [];
+  let cuelist: FlatCueEntry[] = [];
 
   list.forEach((cueId, index) => {
     const cue = cues.get(cueId);
@@ -75,7 +75,7 @@ const recursiveCueCheck = (
     }
 
     if (cue.params.type === 'group') {
-      const isExpanded = expandedRows.includes(cue.id);
+      const isExpanded = expandedRows.has(cue.id);
       cuelist.push({
         cue: cue,
         level: level,
@@ -87,8 +87,8 @@ const recursiveCueCheck = (
         chain: chain != null ? chain : cue.chain,
         isChainOverrided: chain != null,
       });
-      cuelist.push(
-        ...recursiveCueCheck(
+      cuelist = cuelist.concat(
+        recursiveCueCheck(
           cue.params.children,
           cues,
           expandedRows,
@@ -173,9 +173,7 @@ export const useShowModel = defineStore('showModel', {
     },
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
-      return this.flatCueList
-        .filter((entry) => uiState.selectedRows.has(entry.cue.id))
-        .map((entry) => entry.cue);
+      return Array.from(uiState.selectedRows).map((id) => this.cues.get(id)).filter((cue) => cue != null)
     },
     flatCueList(state) {
       const uiState = useUiState();
@@ -332,7 +330,7 @@ export const useShowModel = defineStore('showModel', {
                   index: 0,
                 })
                 .catch((e) => console.error(e));
-              uiState.expandedRows.push(id);
+              uiState.expandedRows.add(id);
             }
           })
           .catch((e) => console.error(e));
