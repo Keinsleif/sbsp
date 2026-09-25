@@ -98,6 +98,7 @@ useBackendEvent((event) => {
       showState.handleSyncEvent(event.param);
       break;
     case 'showModelLoaded': {
+      assetResult.clear();
       showModel.updateAll(event.param.model);
       // const parts = event.param.path.replace(/\\/g, '/').replace(/\/$/, '').split('/');
       toast.add({ severity: 'success', summary: t('notification.modelLoaded'), life: 3000 }); // detail: `Type: ${camelToTitleCase(event.param.projectType)}\nFile: ${event.param.projectType === 'singleFile' ? parts[parts.length - 1] : parts.slice(-2).join('/') }`,
@@ -112,6 +113,7 @@ useBackendEvent((event) => {
       break;
     }
     case 'showModelReset':
+      assetResult.clear();
       showModel.updateAll(event.param.model);
       api.setTitle((__IS_HOST__ ? 'SBS Player - ' : 'SBS Player Remote - ') + showModel.name);
       uiState.resetSelected();
