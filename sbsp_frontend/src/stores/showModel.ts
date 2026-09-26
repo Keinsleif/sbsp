@@ -52,7 +52,7 @@ const recursiveCueCheck = (
   isHidden = false,
   parent: null | Cue = null,
 ): FlatCueEntry[] => {
-  let cuelist: FlatCueEntry[] = [];
+  const cuelist: FlatCueEntry[] = [];
 
   list.forEach((cueId, index) => {
     const cue = cues.get(cueId);
@@ -87,16 +87,16 @@ const recursiveCueCheck = (
         chain: chain != null ? chain : cue.chain,
         isChainOverrided: chain != null,
       });
-      cuelist = cuelist.concat(
-        recursiveCueCheck(
+      for (const entry of recursiveCueCheck(
           cue.params.children,
           cues,
           expandedRows,
           level + 1,
           !isExpanded || isHidden,
           cue,
-        ),
-      );
+        )) {
+          cuelist.push(entry);
+        }
     } else {
       cuelist.push({
         cue: cue,
