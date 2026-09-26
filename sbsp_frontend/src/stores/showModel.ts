@@ -173,7 +173,9 @@ export const useShowModel = defineStore('showModel', {
     },
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
-      return Array.from(uiState.selectedRows).map((id) => this.cues.get(id)).filter((cue) => cue != null)
+      return Array.from(uiState.selectedRows).map((id) => this.cues.get(id)).filter((cue) => cue != null).sort((a, b) => {
+        return this.flatCueList.findIndex((e) => e.cue.id === a.id) - this.flatCueList.findIndex((e) => e.cue.id === b.id);
+      })
     },
     flatCueList(state) {
       const uiState = useUiState();
