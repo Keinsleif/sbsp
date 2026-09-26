@@ -9,14 +9,14 @@ import { reactive, ref, shallowRef } from 'vue';
 import { useApi } from '../api';
 
 export const useAssetResult = defineStore('assetResult', () => {
-  const metadatas = ref<{ [path: string]: AssetMetadata }>({});
-  const results = shallowRef<{ [path: string]: AssetData }>({});
+  const metadatas = ref<Map<string, AssetMetadata>>(new Map());
+  const results = shallowRef<Map<string, AssetData>>(new Map());
   const processing = reactive<Set<string>>(new Set([]));
   const failed = reactive<Set<string>>(new Set([]));
 
   const add = (path: string, data: AssetData) => {
-    results.value = { ...results.value, [path]: data };
-    metadatas.value[path] = data.metadata;
+    results.value.set(path, data);
+    metadatas.value.set(path, data.metadata);
     processing.delete(path);
   };
   const addError = (path: string) => {
@@ -24,7 +24,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     processing.delete(path);
   };
   const addMetadata = (path: string, data: AssetMetadata) => {
-    metadatas.value[path] = data;
+    metadatas.value.set(path, data);
   };
 
   const resetError = (path: string) => {
@@ -50,7 +50,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     const { getCueById } = storeToRefs(showModel);
     const targetCue = getCueById.value(cueId);
     if (targetCue != null && targetCue.params.type === 'audio') {
-      const result = results.value[targetCue.params.target];
+      const result = results.value.get(targetCue.params.target);
       if (result != null) {
         return result;
       } else {
@@ -70,7 +70,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     const { getCueById } = storeToRefs(showModel);
     const targetCue = getCueById.value(cueId);
     if (targetCue != null && targetCue.params.type === 'audio') {
-      const result = metadatas.value[targetCue.params.target];
+      const result = metadatas.value.get(targetCue.params.target);
       if (result != null) {
         return result;
       } else {
@@ -83,8 +83,10 @@ export const useAssetResult = defineStore('assetResult', () => {
   };
 
   const clear = () => {
-    results.value = {};
-    metadatas.value = {};
+    results.value.clear();
+    metadatas.value.clear();
+    failed.clear();
+    processing.clear();
   }
 
   return {
