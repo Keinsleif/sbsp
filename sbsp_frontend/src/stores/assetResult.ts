@@ -5,18 +5,18 @@ import { defineStore, storeToRefs } from 'pinia';
 import { useShowModel } from './showModel';
 import type { AssetData } from '../types/AssetData';
 import type { AssetMetadata } from '../types/AssetMetadata';
-import { reactive, ref, shallowRef } from 'vue';
+import { reactive, shallowReactive } from 'vue';
 import { useApi } from '../api';
 
 export const useAssetResult = defineStore('assetResult', () => {
-  const metadatas = ref<Map<string, AssetMetadata>>(new Map());
-  const results = shallowRef<Map<string, AssetData>>(new Map());
+  const metadatas = reactive<Map<string, AssetMetadata>>(new Map());
+  const results = shallowReactive<Map<string, AssetData>>(new Map());
   const processing = reactive<Set<string>>(new Set([]));
   const failed = reactive<Set<string>>(new Set([]));
 
   const add = (path: string, data: AssetData) => {
-    results.value.set(path, data);
-    metadatas.value.set(path, data.metadata);
+    results.set(path, data);
+    metadatas.set(path, data.metadata);
     processing.delete(path);
   };
   const addError = (path: string) => {
@@ -24,7 +24,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     processing.delete(path);
   };
   const addMetadata = (path: string, data: AssetMetadata) => {
-    metadatas.value.set(path, data);
+    metadatas.set(path, data);
   };
 
   const resetError = (path: string) => {
@@ -47,10 +47,9 @@ export const useAssetResult = defineStore('assetResult', () => {
       return null;
     }
     const showModel = useShowModel();
-    const { getCueById } = storeToRefs(showModel);
-    const targetCue = getCueById.value(cueId);
+    const targetCue = showModel.getCueById(cueId);
     if (targetCue != null && targetCue.params.type === 'audio') {
-      const result = results.value.get(targetCue.params.target);
+      const result = results.get(targetCue.params.target);
       if (result != null) {
         return result;
       } else {
@@ -70,7 +69,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     const { getCueById } = storeToRefs(showModel);
     const targetCue = getCueById.value(cueId);
     if (targetCue != null && targetCue.params.type === 'audio') {
-      const result = metadatas.value.get(targetCue.params.target);
+      const result = metadatas.get(targetCue.params.target);
       if (result != null) {
         return result;
       } else {
@@ -83,8 +82,8 @@ export const useAssetResult = defineStore('assetResult', () => {
   };
 
   const clear = () => {
-    results.value.clear();
-    metadatas.value.clear();
+    results.clear();
+    metadatas.clear();
     failed.clear();
     processing.clear();
   }
