@@ -171,9 +171,12 @@ export const useShowModel = defineStore('showModel', {
         }
       };
     },
+    // This function is computationally expensive and should not be called frequently.
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
-      return Array.from(uiState.selectedRows).map((id) => this.cues.get(id)).filter((cue) => cue != null)
+      return this.flatCueList
+        .filter((entry) => uiState.selectedRows.has(entry.cue.id))
+        .map((entry) => entry.cue);
     },
     flatCueList(state) {
       const uiState = useUiState();
