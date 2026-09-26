@@ -47,7 +47,7 @@ export type FlatCueEntry = {
 const recursiveCueCheck = (
   list: string[],
   cues: Map<string, Cue>,
-  expandedRows: string[],
+  expandedRows: Set<string>,
   level = 0,
   isHidden = false,
   parent: null | Cue = null,
@@ -75,7 +75,7 @@ const recursiveCueCheck = (
     }
 
     if (cue.params.type === 'group') {
-      const isExpanded = expandedRows.includes(cue.id);
+      const isExpanded = expandedRows.has(cue.id);
       cuelist.push({
         cue: cue,
         level: level,
@@ -87,16 +87,16 @@ const recursiveCueCheck = (
         chain: chain != null ? chain : cue.chain,
         isChainOverrided: chain != null,
       });
-      cuelist.push(
-        ...recursiveCueCheck(
+      for (const entry of recursiveCueCheck(
           cue.params.children,
           cues,
           expandedRows,
           level + 1,
           !isExpanded || isHidden,
           cue,
-        ),
-      );
+        )) {
+          cuelist.push(entry);
+        }
     } else {
       cuelist.push({
         cue: cue,
@@ -171,6 +171,7 @@ export const useShowModel = defineStore('showModel', {
         }
       };
     },
+    // This function is computationally expensive and should not be called frequently.
     getSelectedCues(): Cue[] {
       const uiState = useUiState();
       return this.flatCueList
@@ -332,7 +333,7 @@ export const useShowModel = defineStore('showModel', {
                   index: 0,
                 })
                 .catch((e) => console.error(e));
-              uiState.expandedRows.push(id);
+              uiState.expandedRows.add(id);
             }
           })
           .catch((e) => console.error(e));
