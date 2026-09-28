@@ -6,6 +6,7 @@ members = [
     "sbsp_frontend_settings",
     "sbsp_app",
     "sbsp_remote_app",
+    "sbsp_ui",
 ]
 
 [workspace.package]

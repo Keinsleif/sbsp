@@ -36,7 +36,7 @@ pub mod helper;
 pub mod manager;
 pub mod model;
 
-#[cfg(any(feature = "server", feature = "client", feature = "type_export"))]
+#[cfg(any(feature = "protocol", feature = "type_export"))]
 pub mod api;
 
 #[derive(Serialize, Deserialize, Clone)]
