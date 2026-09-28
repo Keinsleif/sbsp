@@ -126,31 +126,35 @@ impl AssetProcessor {
                     }
                 };
                 let standard_path_clone = standard_path.clone();
-                let event_tx_clone = event_tx.clone();
                 let cache_lock_clone = cache_lock.clone();
+                let event_tx_clone = event_tx.clone();
                 let processing_lock_clone = processing_lock.clone();
-                let result = tokio::task::spawn_blocking(move || {
-                    Self::process_asset(
-                        standard_path_clone,
-                        event_tx_clone,
-                        cache_lock_clone,
-                        processing_lock_clone,
-                    )
-                    .map_err(|e| e.to_string())
-                })
-                .await
-                .unwrap_or_else(|e| Err(e.to_string()));
-                if let Some(entry) = processing_lock.write().await.remove(&standard_path) {
-                    for orig_path in entry.orig_paths {
-                        if let Err(e) = event_tx.send(BackendEvent::AssetResult {
-                            path: orig_path,
-                            result: result.clone(),
-                        }) {
-                            log::error!("Failed to send process result to event bus. {}", e);
+                tokio::spawn(async move {
+                    let event_tx_clone_clone = event_tx_clone.clone();
+                    let processing_lock_clone_clone = processing_lock_clone.clone();
+                    let result = tokio::task::spawn_blocking(move || {
+                        Self::process_asset(
+                            standard_path_clone,
+                            event_tx_clone_clone,
+                            cache_lock_clone,
+                            processing_lock_clone_clone,
+                        )
+                        .map_err(|e| e.to_string())
+                    })
+                    .await
+                    .unwrap_or_else(|e| Err(e.to_string()));
+                    if let Some(entry) = processing_lock_clone.write().await.remove(&standard_path) {
+                        for orig_path in entry.orig_paths {
+                            if let Err(e) = event_tx_clone.send(BackendEvent::AssetResult {
+                                path: orig_path,
+                                result: result.clone(),
+                            }) {
+                                log::error!("Failed to send process result to event bus. {}", e);
+                            }
                         }
                     }
-                }
-                drop(permit);
+                    drop(permit);
+                });
             }
         });
 
