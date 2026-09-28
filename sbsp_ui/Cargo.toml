@@ -1,0 +1,46 @@
+[package]
+name = "sbsp_ui"
+description = "SBSP iced UI (host / remote / web)"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager"]
+web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
+
+[[bin]]
+name = "sbsp_host"
+path = "src/bin/sbsp_host.rs"
+required-features = ["host"]
+
+[[bin]]
+name = "sbsp_remote"
+path = "src/bin/sbsp_remote.rs"
+required-features = ["remote"]
+
+[[bin]]
+name = "sbsp_web"
+path = "src/bin/sbsp_web.rs"
+required-features = ["web"]
+
+[dependencies]
+sbsp_backend = { path = "../sbsp_backend", default-features = false, features = ["protocol"] }
+sbsp_frontend_settings = { path = "../sbsp_frontend_settings", default-features = false }
+
+iced = { version = "0.14", features = ["canvas", "image", "svg", "markdown", "qr_code", "advanced"] }
+iced_futures = "0.14"
+
+i18n-embed = { version = "0.16", features = ["fluent-system"] }
+i18n-embed-fl = "0.10"
+rust-embed = "8"
+unic-langid = { version = "0.9", features = ["macros"] }
+log = { workspace = true }
+
+tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"], optional = true }

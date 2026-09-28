@@ -27,23 +27,24 @@ backend = [
     "dep:sha2",
     "dep:tempfile",
 ]
+protocol = ["dep:bitflags"]
 server = [
     "backend",
+    "protocol",
     "dep:axum",
     "dep:rand",
     "dep:base64",
-    "dep:bitflags",
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
 ]
 client = [
     "backend",
+    "protocol",
     "dep:tokio-tungstenite",
     "dep:futures-util",
     "dep:rand",
     "dep:base64",
-    "dep:bitflags",
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",

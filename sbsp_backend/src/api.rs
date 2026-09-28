@@ -11,10 +11,10 @@ pub mod server;
 
 pub use file_list::FileList;
 
-#[cfg(any(feature = "server", feature = "client"))]
+#[cfg(feature = "protocol")]
 use bitflags::bitflags;
 use serde::{Deserialize, Serialize};
-#[cfg(any(feature = "server", feature = "client"))]
+#[cfg(feature = "protocol")]
 use std::str::FromStr;
 
 use crate::{
@@ -26,7 +26,7 @@ use crate::{
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct Permissions(u8);
 
-#[cfg(any(feature = "server", feature = "client"))]
+#[cfg(feature = "protocol")]
 bitflags! {
     impl Permissions: u8 {
         const READ = 0b0001;
@@ -35,7 +35,7 @@ bitflags! {
     }
 }
 
-#[cfg(any(feature = "server", feature = "client"))]
+#[cfg(feature = "protocol")]
 impl FromStr for Permissions {
     type Err = String;
 
@@ -73,7 +73,7 @@ pub struct PermissionInfo {
     pub permission: Permissions,
 }
 
-#[cfg(any(feature = "server", feature = "client"))]
+#[cfg(feature = "protocol")]
 impl FromStr for PermissionInfo {
     type Err = String;
 
