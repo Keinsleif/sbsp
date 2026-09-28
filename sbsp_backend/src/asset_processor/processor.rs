@@ -5,6 +5,7 @@ use symphonia::core::codecs::CODEC_TYPE_NULL;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use ebur128::EbuR128;
@@ -52,6 +53,7 @@ impl AssetCache {
 struct ProcessingEntry {
     orig_paths: HashSet<PathBuf>,
     metadata: Option<AssetMetadata>,
+    cancel_flag: Arc<AtomicBool>,
 }
 
 impl ProcessingEntry {
@@ -59,6 +61,7 @@ impl ProcessingEntry {
         Self {
             orig_paths: HashSet::from([path]),
             metadata: None,
+            cancel_flag: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -172,10 +175,24 @@ impl AssetProcessor {
                     match result {
                         Ok(BackendEvent::ShowModelLoaded { .. }) |
                         Ok(BackendEvent::ShowModelReset { .. }) => {
+                            {
+                                let processing_guard = self.processing.read().await;
+                                for entry in processing_guard.values() {
+                                    entry.cancel_flag.store(true, Ordering::Release);
+                                }
+                            }
                             self.filter_current_assets().await;
                         }
                         Ok(_) => {},
-                        Err(broadcast::error::RecvError::Closed) => break,
+                        Err(broadcast::error::RecvError::Closed) => {
+                            {
+                                let processing_guard = self.processing.read().await;
+                                for entry in processing_guard.values() {
+                                    entry.cancel_flag.store(true, Ordering::Release);
+                                }
+                            }
+                            break
+                        },
                         Err(_) => {
                             log::warn!("Event monitoring receiver Lagged.");
                         }
@@ -316,6 +333,16 @@ impl AssetProcessor {
         cache: Arc<RwLock<AssetCache>>,
         processing: Arc<RwLock<HashMap<PathBuf, ProcessingEntry>>>,
     ) -> anyhow::Result<AssetData> {
+        let cancel_flag = {
+            if let Some(entry) = processing.blocking_read().get(&standard_path) {
+                entry.cancel_flag.clone()
+            } else {
+                anyhow::bail!("invalid processing state");
+            }
+        };
+        if cancel_flag.load(Ordering::Acquire) {
+            anyhow::bail!("asset processing canceled")
+        }
         let src: std::fs::File = std::fs::File::open(&standard_path)?;
         let last_modified = src.metadata().and_then(|m| m.modified());
         let mss = MediaSourceStream::new(Box::new(src), Default::default());
@@ -367,15 +394,22 @@ impl AssetProcessor {
 
         {
             let mut processing_guard = processing.blocking_write();
-            if let Some(entry) = processing_guard.get_mut(&standard_path) {
-                entry.metadata = Some(metadata.clone());
-                for p in &entry.orig_paths {
-                    if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
-                        path: p.clone(),
-                        data: metadata.clone(),
-                    }) {
-                        log::error!("Failed to send metadata to event bus. {}", e);
+            if cancel_flag.load(Ordering::Acquire) {
+                processing_guard.remove(&standard_path);
+                anyhow::bail!("asset processing canceled");
+            } else {
+                if let Some(entry) = processing_guard.get_mut(&standard_path) {
+                    entry.metadata = Some(metadata.clone());
+                    for p in &entry.orig_paths {
+                        if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
+                            path: p.clone(),
+                            data: metadata.clone(),
+                        }) {
+                            log::error!("Failed to send metadata to event bus. {}", e);
+                        }
                     }
+                } else {
+                    anyhow::bail!("invalid processing state");
                 }
             }
         }
@@ -414,6 +448,11 @@ impl AssetProcessor {
         let mut max_in_current_peak: f32 = 0.0;
 
         let result = loop {
+            if cancel_flag.load(Ordering::Acquire) {
+                processing.blocking_write().remove(&standard_path);
+                anyhow::bail!("asset processing canceled");
+            }
+
             let packet = match format.next_packet() {
                 Ok(packet) => packet,
                 Err(err) => break Err(err),
