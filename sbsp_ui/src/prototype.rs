@@ -5,11 +5,11 @@
 //! items listed in the migration plan on real machines.
 
 use std::collections::BTreeSet;
-use std::time::{Duration, Instant};
 
 use iced::widget::{
     button, column, container, mouse_area, row, scrollable, text, text_editor, text_input,
 };
+use iced::time::{Duration, Instant};
 use iced::{Element, Length, Subscription, Theme, event, keyboard, window};
 use unic_langid::langid;
 
