@@ -3,4 +3,4 @@ sccache = "0.18"
 "cargo:cargo-audit" = { version = "0.22", depends = ["rust"] }
 
 [env]
-RUSTC_WRAPPER="sccache"
+# RUSTC_WRAPPER="sccache"
