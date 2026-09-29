@@ -1,0 +1,27 @@
+product-name = "SBS Player Remote"
+identifier = "com.keinsleif.sbsp.remote"
+version = "0.1.0"
+out-dir = "../target/packages/remote"
+
+binaries = [
+  { path = "../target/release/sbsp_remote", main = true },
+]
+
+description = "A SBS Player Remote Frontend App powered by iced."
+copyright = "© 2025 Keinsleif"
+publisher = "Keinsleif"
+category = "Music"
+
+icons = [
+  "assets/icons/32x32.png",
+  "assets/icons/128x128.png",
+  "assets/icons/128x128@2x.png",
+  "assets/icons/icon.icns",
+  "assets/icons/icon.ico",
+]
+
+formats = ["deb", "appimage", "nsis", "dmg", "app"]
+
+[nsis]
+installer-icon = "assets/icons/icon.ico"
+languages = ["English", "Japanese"]
