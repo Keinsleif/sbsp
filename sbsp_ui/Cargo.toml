@@ -37,6 +37,7 @@ sbsp_frontend_settings = { path = "../sbsp_frontend_settings", default-features 
 iced = { version = "0.14", features = ["canvas", "image", "svg", "markdown", "qr_code", "advanced"] }
 iced_aw = { version = "0.14", default-features = false, features = ["context_menu", "menu", "spinner"] }
 iced_futures = "0.14"
+dark-light = "2"
 
 i18n-embed = { version = "0.16", features = ["fluent-system"] }
 i18n-embed-fl = "0.10"

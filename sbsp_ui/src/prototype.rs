@@ -11,6 +11,8 @@ use iced::widget::{
 };
 use iced::time::{Duration, Instant};
 use iced::{Element, Length, Subscription, Theme, event, keyboard, window};
+
+use crate::theme::ThemeMode;
 use unic_langid::langid;
 
 use crate::fl;
@@ -20,7 +22,7 @@ const ROW_COUNTS: [usize; 3] = [100, 500, 2000];
 pub fn run(target: &'static str) -> iced::Result {
     iced::application(move || App::new(target), App::update, App::view)
         .title(|_: &App| fl!("proto-title"))
-        .theme(|app: &App| if app.dark { Theme::Dark } else { Theme::Light })
+        .theme(|app: &App| crate::theme::resolve(app.theme_mode))
         .subscription(App::subscription)
         .window_size((1100.0, 780.0))
         .run()
@@ -42,7 +44,7 @@ struct CueRow {
 struct App {
     target: &'static str,
     lang: Lang,
-    dark: bool,
+    theme_mode: ThemeMode,
     single_line: String,
     editor: text_editor::Content,
     rows: Vec<CueRow>,
@@ -74,7 +76,7 @@ impl App {
         Self {
             target,
             lang: Lang::En,
-            dark: true,
+            theme_mode: ThemeMode::default(),
             single_line: String::new(),
             editor: text_editor::Content::new(),
             rows: build_rows(500),
@@ -99,7 +101,13 @@ impl App {
                     Lang::Ja => crate::i18n::select(&langid!("ja")),
                 }
             }
-            Message::ToggleTheme => self.dark = !self.dark,
+            Message::ToggleTheme => {
+                self.theme_mode = match self.theme_mode {
+                    ThemeMode::System => ThemeMode::Dark,
+                    ThemeMode::Dark => ThemeMode::Light,
+                    ThemeMode::Light => ThemeMode::System,
+                }
+            }
             Message::ToggleAnimation => {
                 self.animate = !self.animate;
                 self.frames = FrameCounter::default();
@@ -181,7 +189,12 @@ impl App {
                 value = std::env::var("ICED_BACKEND").unwrap_or_else(|_| "(default)".into())
             )),
             button(text(fl!("proto-toggle-language"))).on_press(Message::ToggleLanguage),
-            button(text(fl!("proto-toggle-theme"))).on_press(Message::ToggleTheme),
+            button(text(match self.theme_mode {
+                ThemeMode::System => fl!("proto-toggle-theme-system"),
+                ThemeMode::Dark => fl!("proto-toggle-theme-dark"),
+                ThemeMode::Light => fl!("proto-toggle-theme-light"),
+            }))
+            .on_press(Message::ToggleTheme),
         ]
         .spacing(16)
         .align_y(iced::Alignment::Center);

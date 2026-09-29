@@ -1,7 +1,9 @@
 proto-title = SBSP UI prototype (Phase 0)
 proto-target = Target: { $target }
 proto-toggle-language = 日本語
-proto-toggle-theme = Light / Dark
+proto-toggle-theme-system = Theme: System
+proto-toggle-theme-dark = Theme: Dark
+proto-toggle-theme-light = Theme: Light
 proto-toggle-animation = Animation (frame loop)
 proto-fps = FPS: { $fps }
 proto-renderer-env = ICED_BACKEND = { $value }
