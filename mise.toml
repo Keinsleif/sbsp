@@ -5,6 +5,7 @@ rust = "stable"
 "cargo:tauri-cli" = { version = "2", depends = ["rust"] }
 "cargo:cargo-about" = { version = "0.9", depends = ["rust"] }
 "cargo:cargo-edit" = { version = "0.13", depends = ["rust"] }
+"cargo:cargo-packager" = { version = "0.11", depends = ["rust"] }
 cocogitto = "7"
 
 [tasks.generate_notices]
