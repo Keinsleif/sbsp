@@ -13,6 +13,7 @@ use iced::time::{Duration, Instant};
 use iced::{Element, Length, Subscription, Theme, event, keyboard, window};
 
 use crate::theme::ThemeMode;
+use crate::widgets::{modal, toast};
 use unic_langid::langid;
 
 use crate::fl;
@@ -54,6 +55,8 @@ struct App {
     animate: bool,
     progress: f32,
     frames: FrameCounter,
+    toasts: toast::Toasts,
+    dialog_open: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -68,6 +71,10 @@ enum Message {
     KeyPressed(keyboard::Key),
     ModifiersChanged(keyboard::Modifiers),
     Frame(Instant),
+    ShowToast,
+    ShowDialog,
+    CloseDialog,
+    Toast(toast::Message),
 }
 
 impl App {
@@ -86,6 +93,8 @@ impl App {
             animate: false,
             progress: 0.0,
             frames: FrameCounter::default(),
+            toasts: toast::Toasts::new(),
+            dialog_open: false,
         }
     }
 
@@ -138,6 +147,12 @@ impl App {
                 self.frames.tick(now);
                 self.progress = (self.progress + 0.004) % 1.0;
             }
+            Message::ShowToast => {
+                self.toasts.push(toast::Kind::Info, fl!("proto-toast-message"));
+            }
+            Message::ShowDialog => self.dialog_open = true,
+            Message::CloseDialog => self.dialog_open = false,
+            Message::Toast(message) => self.toasts.update(message),
         }
     }
 
@@ -173,10 +188,12 @@ impl App {
             }
         });
 
+        let toasts = self.toasts.subscription().map(Message::Toast);
+
         if self.animate {
-            Subscription::batch([keys, window::frames().map(Message::Frame)])
+            Subscription::batch([keys, window::frames().map(Message::Frame), toasts])
         } else {
-            keys
+            Subscription::batch([keys, toasts])
         }
     }
 
@@ -189,6 +206,8 @@ impl App {
                 value = std::env::var("ICED_BACKEND").unwrap_or_else(|_| "(default)".into())
             )),
             button(text(fl!("proto-toggle-language"))).on_press(Message::ToggleLanguage),
+            button(text(fl!("proto-show-toast"))).on_press(Message::ShowToast),
+            button(text(fl!("proto-show-dialog"))).on_press(Message::ShowDialog),
             button(text(match self.theme_mode {
                 ThemeMode::System => fl!("proto-toggle-theme-system"),
                 ThemeMode::Dark => fl!("proto-toggle-theme-dark"),
@@ -256,7 +275,7 @@ impl App {
         )
         .height(Length::Fill);
 
-        column![
+        let content: Element<'_, Message> = column![
             header,
             animation,
             ime,
@@ -266,7 +285,23 @@ impl App {
         ]
         .spacing(12)
         .padding(16)
-        .into()
+        .into();
+
+        let content = self.toasts.overlay(content, Message::Toast);
+
+        if self.dialog_open {
+            let dialog = column![
+                text(fl!("proto-dialog-title")).size(18),
+                text(fl!("proto-dialog-body")),
+                button(text(fl!("proto-dialog-close"))).on_press(Message::CloseDialog),
+            ]
+            .spacing(12)
+            .width(320);
+
+            modal::over(content, dialog.into(), Message::CloseDialog)
+        } else {
+            content
+        }
     }
 
     fn cue_row<'a>(&self, index: usize, cue: &CueRow) -> Element<'a, Message> {
