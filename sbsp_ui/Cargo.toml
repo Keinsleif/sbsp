@@ -11,7 +11,7 @@ publish.workspace = true
 
 [features]
 default = []
-host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager"]
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager", "dep:muda"]
 remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
@@ -45,3 +45,8 @@ unic-langid = { version = "0.9", features = ["macros"] }
 log = { workspace = true }
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time"], optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# Only pulled in when the `host` feature enables it (macOS global menu bar).
+# See src/host/native_menu.rs and the migration plan, section 5.1.
+muda = { version = "0.17", optional = true }

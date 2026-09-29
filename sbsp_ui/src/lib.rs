@@ -7,7 +7,9 @@
 compile_error!("feature `web` cannot be combined with `host` or `remote`");
 
 pub mod i18n;
+pub mod menu;
 pub mod prototype;
+pub mod widgets;
 
 #[cfg(feature = "host")]
 pub mod host;
