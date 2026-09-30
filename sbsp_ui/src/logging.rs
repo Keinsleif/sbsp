@@ -18,11 +18,7 @@
 /// before anything that might log (in particular, before starting the
 /// backend).
 pub fn init() {
-    let level = if cfg!(debug_assertions) {
-        log::LevelFilter::Debug
-    } else {
-        log::LevelFilter::Info
-    };
+    let level = log::LevelFilter::Info;
 
     let result = fern::Dispatch::new()
         .format(|out, message, record| {
