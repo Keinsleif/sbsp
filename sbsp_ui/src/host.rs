@@ -4,6 +4,8 @@
 #[cfg(target_os = "macos")]
 pub mod native_menu;
 
+pub mod backend;
+
 pub fn run() -> iced::Result {
     crate::prototype::run("host")
 }
