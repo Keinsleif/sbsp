@@ -23,6 +23,15 @@
 //! independent layers, a click only reaches the backdrop where the card
 //! (which has no click handler of its own placed on top of it) does not
 //! itself claim it.
+//!
+//! `opaque()` must wrap only the card's own container, not the `center()`
+//! around it: `opaque` captures a click when the cursor is over the
+//! *layout bounds of whatever it wraps*, and `center()` reports the full
+//! available (fill) area as its bounds regardless of the child's actual
+//! size. Wrapping `center(...)` in `opaque()` therefore captures clicks
+//! anywhere on screen -- including outside the visible card -- and the
+//! backdrop underneath never sees them. `center(opaque(card))` keeps the
+//! captured area limited to the card's real, tight bounds.
 
 use iced::widget::{center, container, mouse_area, opaque, stack, text};
 use iced::{Color, Element, Length, Theme};
@@ -42,9 +51,9 @@ pub fn over<'a, Message: Clone + 'a>(
     )
     .on_press(on_dismiss);
 
-    let card = center(container(content).style(card_style).padding(20));
+    let card = center(opaque(container(content).style(card_style).padding(20)));
 
-    stack![base, opaque(backdrop), opaque(card)].into()
+    stack![base, opaque(backdrop), card].into()
 }
 
 /// A dialog that must be resolved through its own buttons and should not be
@@ -59,9 +68,9 @@ pub fn over_blocking<'a, Message: Clone + 'a>(
         .height(Length::Fill)
         .style(backdrop_style);
 
-    let card = center(container(content).style(card_style).padding(20));
+    let card = center(opaque(container(content).style(card_style).padding(20)));
 
-    stack![base, opaque(backdrop), opaque(card)].into()
+    stack![base, opaque(backdrop), card].into()
 }
 
 fn card_style(theme: &Theme) -> container::Style {
