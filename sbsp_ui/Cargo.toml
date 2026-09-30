@@ -55,3 +55,8 @@ muda = { version = "0.17", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 iced = { version = "0.14", default-features = false, features = ["tokio"] }
+# stderr logging for the host/remote binaries (see src/logging.rs). Not
+# useful on wasm32 -- stdio isn't connected to the browser console there,
+# and Phase 9's web target will want its own console_log-based setup.
+fern = "0.7"
+humantime = { workspace = true }

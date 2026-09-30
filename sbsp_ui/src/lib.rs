@@ -13,6 +13,9 @@ pub mod prototype;
 pub mod theme;
 pub mod widgets;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod logging;
+
 #[cfg(feature = "host")]
 pub mod host;
 #[cfg(feature = "remote")]
