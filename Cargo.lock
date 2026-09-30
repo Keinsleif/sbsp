@@ -6652,6 +6652,7 @@ dependencies = [
 name = "sbsp_ui"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "dark-light",
  "i18n-embed",
  "i18n-embed-fl",
