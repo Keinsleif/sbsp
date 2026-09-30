@@ -10,7 +10,7 @@ use iced::widget::{
     button, column, container, mouse_area, row, scrollable, text, text_editor, text_input,
 };
 use iced::time::{Duration, Instant};
-use iced::{Element, Length, Subscription, Theme, event, keyboard, window};
+use iced::{Element, Length, Subscription, Task, Theme, event, keyboard, window};
 
 use crate::theme::ThemeMode;
 use crate::widgets::{modal, toast};
@@ -57,9 +57,19 @@ struct App {
     frames: FrameCounter,
     toasts: toast::Toasts,
     dialog_open: bool,
+    // Phase 1 smoke test only (see the migration plan): confirms the
+    // backend starts, FullShowState can be fetched, and events arrive,
+    // all from inside an iced app. Not a real Port/adapter integration
+    // yet -- that's Phase 4+.
+    #[cfg(feature = "host")]
+    backend: Option<crate::host::backend::HostPort>,
 }
 
-#[derive(Debug, Clone)]
+// Not `Debug`: Phase 1 adds `FullState` (an alias for
+// `sbsp_backend::FullShowState`) to this enum, which does not implement
+// `Debug`. iced does not require `Message: Debug` unless its own "debug"
+// feature is enabled (we do not enable it), so this is safe to drop.
+#[derive(Clone)]
 enum Message {
     ToggleLanguage,
     ToggleTheme,
@@ -75,12 +85,39 @@ enum Message {
     ShowDialog,
     CloseDialog,
     Toast(toast::Message),
+    #[cfg(feature = "host")]
+    FullStateLoaded(crate::port::FullState),
+    #[cfg(feature = "host")]
+    PortEvent(crate::port::PortEvent),
+    #[cfg(feature = "host")]
+    BackendError(String),
 }
 
 impl App {
-    fn new(target: &'static str) -> Self {
+    fn new(target: &'static str) -> (Self, Task<Message>) {
         crate::i18n::select(&langid!("en"));
-        Self {
+
+        #[cfg(feature = "host")]
+        let (backend, boot_task) = match crate::host::backend::HostPort::start() {
+            Ok(backend) => {
+                let handle = backend.handle();
+                let task = Task::perform(async move { handle.get_full_state().await }, |result| {
+                    match result {
+                        Ok(state) => Message::FullStateLoaded(state),
+                        Err(e) => Message::BackendError(e.to_string()),
+                    }
+                });
+                (Some(backend), task)
+            }
+            Err(e) => {
+                log::error!("Phase 1 smoke test: failed to start backend: {e}");
+                (None, Task::none())
+            }
+        };
+        #[cfg(not(feature = "host"))]
+        let boot_task = Task::none();
+
+        let app = Self {
             target,
             lang: Lang::En,
             theme_mode: ThemeMode::default(),
@@ -95,7 +132,11 @@ impl App {
             frames: FrameCounter::default(),
             toasts: toast::Toasts::new(),
             dialog_open: false,
-        }
+            #[cfg(feature = "host")]
+            backend,
+        };
+
+        (app, boot_task)
     }
 
     fn update(&mut self, message: Message) {
@@ -153,6 +194,18 @@ impl App {
             Message::ShowDialog => self.dialog_open = true,
             Message::CloseDialog => self.dialog_open = false,
             Message::Toast(message) => self.toasts.update(message),
+            #[cfg(feature = "host")]
+            Message::FullStateLoaded(_state) => {
+                log::info!("Phase 1 smoke test: full state fetched from backend");
+            }
+            #[cfg(feature = "host")]
+            Message::PortEvent(event) => {
+                log::info!("Phase 1 smoke test: backend event received: {event:?}");
+            }
+            #[cfg(feature = "host")]
+            Message::BackendError(message) => {
+                log::error!("Phase 1 smoke test: backend error: {message}");
+            }
         }
     }
 
@@ -190,10 +243,24 @@ impl App {
 
         let toasts = self.toasts.subscription().map(Message::Toast);
 
+        #[cfg(feature = "host")]
+        let backend_events = self
+            .backend
+            .as_ref()
+            .map(|backend| backend.events().map(Message::PortEvent))
+            .unwrap_or(Subscription::none());
+        #[cfg(not(feature = "host"))]
+        let backend_events = Subscription::none();
+
         if self.animate {
-            Subscription::batch([keys, window::frames().map(Message::Frame), toasts])
+            Subscription::batch([
+                keys,
+                window::frames().map(Message::Frame),
+                toasts,
+                backend_events,
+            ])
         } else {
-            Subscription::batch([keys, toasts])
+            Subscription::batch([keys, toasts, backend_events])
         }
     }
 
