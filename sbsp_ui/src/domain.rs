@@ -7,14 +7,14 @@
 //! backend connection, no platform code -- so it's unit-tested directly
 //! with `cargo test`, unlike the UI itself.
 //!
-//! Ported from the Vue frontend's `utils.ts`. Not a 1:1 port: functions
-//! that need to look a cue up by id in the show model (`buildCueName`,
-//! `calculateDuration`, `getDuration`) are deferred until
-//! `state::model::ShowModelState` exists later in Phase 2, since they
-//! belong there rather than in a module that takes no model as input.
+//! Ported from the Vue frontend's `utils.ts` and `stores/showModel.ts`.
+//! Not a 1:1 port of every function in those files -- see each submodule's
+//! doc comment for specifics.
 
+pub mod cue;
 pub mod easing;
 pub mod fader;
+pub mod flat_list;
 pub mod hotkey;
 pub mod text;
 pub mod time;
