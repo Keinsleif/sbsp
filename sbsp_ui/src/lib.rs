@@ -6,6 +6,7 @@
 #[cfg(all(feature = "web", any(feature = "host", feature = "remote")))]
 compile_error!("feature `web` cannot be combined with `host` or `remote`");
 
+pub mod domain;
 pub mod i18n;
 pub mod menu;
 pub mod port;
