@@ -34,7 +34,11 @@ pub fn format_human(source_seconds: f64) -> String {
     } else if minute > 0 {
         // Seconds are zero-padded here (matching the original, which uses
         // its pre-padded `ss` string in this branch) but not in the two
-        // branches below, which use the raw number.
+        // branches below, which use the raw number. Also note this branch
+        // always appends a decimal, even when it trims down to a single
+        // "0" (exact whole seconds, e.g. 90.0 -> "01m 30.0s", not
+        // "01m 30s") -- there is no separate "no decimal" case in here the
+        // way there is for the two branches below.
         format!("{minute:02}m {}s", trim_trailing_zero(second, centisecond, true))
     } else if centisecond == 0 {
         format!("{second}s")
