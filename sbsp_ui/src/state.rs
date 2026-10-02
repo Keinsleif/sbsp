@@ -7,4 +7,5 @@
 //! is pure data transformation.
 
 pub mod model;
+pub mod playback;
 pub mod ui;
