@@ -22,7 +22,7 @@ use crate::{
     event::BackendEvent, manager::ModelCommand,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct Permissions(u8);
 
