@@ -115,12 +115,9 @@ fn entry_button<'a, Message: Clone + 'a>(
 }
 
 fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
-    let content = row![
-        text(label).width(Length::Fill),
-        text("›").size(12),
-    ]
-    .spacing(12)
-    .align_y(Alignment::Center);
+    let content = row![text(label).width(Length::Fill), text("›").size(12),]
+        .spacing(12)
+        .align_y(Alignment::Center);
 
     button(content)
         .width(Length::Fill)

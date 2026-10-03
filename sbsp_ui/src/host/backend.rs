@@ -106,9 +106,7 @@ impl HostPort {
                         }
                         Err(broadcast::error::RecvError::Closed) => break,
                         Err(broadcast::error::RecvError::Lagged(skipped)) => {
-                            log::warn!(
-                                "Backend event subscriber lagged, skipped {skipped} events"
-                            );
+                            log::warn!("Backend event subscriber lagged, skipped {skipped} events");
                         }
                     }
                 }

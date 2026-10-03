@@ -124,7 +124,9 @@ fn chain_override(parent: Option<&Cue>, ids: &[Uuid], index: usize) -> Option<Cu
         GroupMode::Playlist { repeat } => {
             if index + 1 == ids.len() {
                 if *repeat {
-                    Some(CueChain::AfterComplete { target_id: ids.first().copied() })
+                    Some(CueChain::AfterComplete {
+                        target_id: ids.first().copied(),
+                    })
                 } else {
                     Some(CueChain::DoNotChain)
                 }
@@ -149,14 +151,14 @@ pub fn next_cue_id(start: Uuid, cues: &HashMap<Uuid, Cue>, root_ids: &[Uuid]) ->
 
         if let Some(parent_id) = cue.parent_id {
             let parent = cues.get(&parent_id)?;
-            if let CueParam::Group { children, .. } = &parent.params {
-                if let Some(idx) = children.iter().position(|id| *id == current) {
-                    if let Some(&next_id) = children.get(idx + 1) {
-                        return Some(next_id);
-                    }
-                    current = parent_id;
-                    continue;
+            if let CueParam::Group { children, .. } = &parent.params
+                && let Some(idx) = children.iter().position(|id| *id == current)
+            {
+                if let Some(&next_id) = children.get(idx + 1) {
+                    return Some(next_id);
                 }
+                current = parent_id;
+                continue;
             }
             return None;
         }
@@ -201,7 +203,12 @@ mod tests {
 
     /// a, b (group: c, d)
     fn sample() -> (Vec<Uuid>, HashMap<Uuid, Cue>, Uuid, Uuid, Uuid, Uuid) {
-        let (a, b, c, d) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (a, b, c, d) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let mut cues = HashMap::new();
         cues.insert(a, leaf(a, None));
         cues.insert(
@@ -257,7 +264,12 @@ mod tests {
 
     #[test]
     fn playlist_last_child_with_repeat_chains_to_first() {
-        let (a, b, c, d) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (a, b, c, d) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let mut cues = HashMap::new();
         cues.insert(
             b,
@@ -269,12 +281,20 @@ mod tests {
 
         let flat = flatten(&[b], &cues, &HashSet::new());
         let d_entry = flat.iter().find(|e| e.cue_id == d).unwrap();
-        assert_eq!(d_entry.chain, CueChain::AfterComplete { target_id: Some(c) });
+        assert_eq!(
+            d_entry.chain,
+            CueChain::AfterComplete { target_id: Some(c) }
+        );
     }
 
     #[test]
     fn concurrency_never_chains() {
-        let (a, b, c, d) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (a, b, c, d) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let mut cues = HashMap::new();
         cues.insert(b, group(b, None, GroupMode::Concurrency, vec![c, d]));
         cues.insert(c, leaf(c, Some(b)));
@@ -293,7 +313,10 @@ mod tests {
         let mut cues = HashMap::new();
         let mut own_chain_child = leaf(c, Some(b));
         own_chain_child.chain = CueChain::AfterStart { target_id: None };
-        cues.insert(b, group(b, None, GroupMode::StartFirst { enter: true }, vec![c]));
+        cues.insert(
+            b,
+            group(b, None, GroupMode::StartFirst { enter: true }, vec![c]),
+        );
         cues.insert(c, own_chain_child);
         let _ = a;
 
@@ -320,7 +343,12 @@ mod tests {
     fn next_cue_id_walks_up_past_last_child_of_group() {
         // a, group(c, d), e -- next after d (last child of the group)
         // should be e, the group's own next sibling at the root.
-        let (a, b, c, d) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (a, b, c, d) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let e = Uuid::new_v4();
         let mut cues = HashMap::new();
         cues.insert(a, leaf(a, None));

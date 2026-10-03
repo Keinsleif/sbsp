@@ -79,7 +79,13 @@ mod tests {
     #[test]
     fn linear_has_no_power() {
         let curve: Curve = Easing::Linear.into();
-        assert_eq!(curve, Curve { kind: CurveKind::Linear, power: None });
+        assert_eq!(
+            curve,
+            Curve {
+                kind: CurveKind::Linear,
+                power: None
+            }
+        );
     }
 
     #[test]
@@ -87,7 +93,10 @@ mod tests {
         let curve: Curve = Easing::InOutPow(3.0).into();
         assert_eq!(
             curve,
-            Curve { kind: CurveKind::InOutPow, power: Some(3.0) }
+            Curve {
+                kind: CurveKind::InOutPow,
+                power: Some(3.0)
+            }
         );
     }
 
@@ -106,7 +115,10 @@ mod tests {
 
     #[test]
     fn missing_power_defaults_to_two() {
-        let curve = Curve { kind: CurveKind::InPow, power: None };
+        let curve = Curve {
+            kind: CurveKind::InPow,
+            power: None,
+        };
         assert_eq!(Easing::from(curve), Easing::InPow(2.0));
     }
 }

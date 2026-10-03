@@ -38,7 +38,10 @@ pub enum MenuNode {
         checked: Option<bool>,
     },
     /// A nested menu.
-    Submenu { label: String, children: Vec<MenuNode> },
+    Submenu {
+        label: String,
+        children: Vec<MenuNode>,
+    },
     /// A visual divider.
     Separator,
 }
