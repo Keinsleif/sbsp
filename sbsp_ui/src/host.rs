@@ -5,6 +5,7 @@
 pub mod native_menu;
 
 pub mod backend;
+pub mod paths;
 
 pub fn run() -> iced::Result {
     crate::prototype::run("host")

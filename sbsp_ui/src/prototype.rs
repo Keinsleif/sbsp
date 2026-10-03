@@ -86,7 +86,7 @@ enum Message {
     CloseDialog,
     Toast(toast::Message),
     #[cfg(feature = "host")]
-    FullStateLoaded(crate::port::FullState),
+    BackendStarted(crate::host::backend::HostPort, crate::port::FullState),
     #[cfg(feature = "host")]
     PortEvent(crate::port::PortEvent),
     #[cfg(feature = "host")]
@@ -98,22 +98,12 @@ impl App {
         crate::i18n::select(&langid!("en"));
 
         #[cfg(feature = "host")]
-        let (backend, boot_task) = match crate::host::backend::HostPort::start() {
-            Ok(backend) => {
-                let handle = backend.handle();
-                let task = Task::perform(async move { handle.get_full_state().await }, |result| {
-                    match result {
-                        Ok(state) => Message::FullStateLoaded(state),
-                        Err(e) => Message::BackendError(e.to_string()),
-                    }
-                });
-                (Some(backend), task)
+        let boot_task = Task::perform(crate::host::backend::HostPort::start(), |result| {
+            match result {
+                Ok((backend, state)) => Message::BackendStarted(backend, state),
+                Err(e) => Message::BackendError(e.to_string()),
             }
-            Err(e) => {
-                log::error!("Phase 1 smoke test: failed to start backend: {e}");
-                (None, Task::none())
-            }
-        };
+        });
         #[cfg(not(feature = "host"))]
         let boot_task = Task::none();
 
@@ -133,7 +123,7 @@ impl App {
             toasts: toast::Toasts::new(),
             dialog_open: false,
             #[cfg(feature = "host")]
-            backend,
+            backend: None,
         };
 
         (app, boot_task)
@@ -196,8 +186,9 @@ impl App {
             Message::CloseDialog => self.dialog_open = false,
             Message::Toast(message) => self.toasts.update(message),
             #[cfg(feature = "host")]
-            Message::FullStateLoaded(_state) => {
+            Message::BackendStarted(backend, _state) => {
                 log::info!("Phase 1 smoke test: full state fetched from backend");
+                self.backend = Some(backend);
             }
             #[cfg(feature = "host")]
             Message::PortEvent(event) => {
