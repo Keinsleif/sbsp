@@ -60,3 +60,4 @@ iced = { version = "0.14", default-features = false, features = ["tokio"] }
 # and Phase 9's web target will want its own console_log-based setup.
 fern = "0.7"
 humantime = { workspace = true }
+dirs = "5"

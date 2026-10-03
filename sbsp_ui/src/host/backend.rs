@@ -1,77 +1,100 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Phase 1 minimal host-side backend connection.
+//! Host-side backend connection.
 //!
-//! Deliberately skips two things that belong to later phases:
-//! - Settings persistence (Phase 2/7): starts the backend with
-//!   `GlobalHostSettings::default()` and never loads or saves anything.
-//! - Command coverage (Phase 4+): only exposes `get_full_state()`, since
-//!   Phase 1's own goal is just "start the backend, fetch the full state
-//!   once, receive the ongoing event stream" (see the migration plan).
+//! `HostPort::start()` now does two things Phase 1's version didn't:
+//! loads persisted settings (falling back to defaults on first run or a
+//! read error) instead of always using `GlobalHostSettings::default()`,
+//! and fetches the full show state as part of the same call, rather than
+//! as a separate step after construction.
 //!
-//! `HostPort` is kept out of `Message` entirely rather than routed through
-//! it: `BackendHandle` only derives `Clone`, not `Debug`, and
-//! `FullShowState` derives neither `Send`-adjacent nor `Debug`. Since our
-//! `Message` enum derives `Debug`, embedding either directly would break
-//! that derive. `HostPort` lives as a plain field on `App`; only the two
-//! things Phase 1 actually needs out of it -- the fetched `FullState` and
-//! each `PortEvent` -- travel through `Message` (both are `Clone`, and
-//! `PortEvent`/`BackendEvent` also happens to be `Debug`).
+//! That second change is what let `HostPort` move out of `App::new()` and
+//! into a proper boot `Task` (see `prototype.rs`), resolving the risk
+//! flagged in Phase 1's patch: starting the backend synchronously inside
+//! `App::new()`, on the unverified assumption that iced's boot closure
+//! already runs inside the tokio runtime it uses for `Task`/`Subscription`
+//! execution. `start_backend` spawns its manager tasks with `tokio::spawn`
+//! internally, which needs a runtime; a `Task::perform`'d async fn is
+//! guaranteed to run inside one. The other half of that original
+//! workaround -- keeping `HostPort` out of `Message` because
+//! `BackendHandle`/`FullShowState` aren't `Debug` -- is no longer needed
+//! either: `Message` only derives `Clone` now (dropped `Debug` in the
+//! Phase 1 patch, for the same reason), and every field of `HostPort` is a
+//! cheaply-`Clone`-able handle (a `tokio::sync` `Sender`, or a `BackendHandle`
+//! that is itself just a bundle of those), so `HostPort: Clone` costs
+//! nothing beyond what `App` already pays to hold one.
+
+use std::sync::Arc;
 
 use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
-use sbsp_frontend_settings::GlobalHostSettings;
+use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{broadcast, watch};
 
 use crate::port::{FullState, PortEvent};
 
+#[derive(Clone)]
 pub struct HostPort {
     handle: BackendHandle,
     event_tx: broadcast::Sender<PortEvent>,
     // Keeping the sender alive keeps the watch channel open. Settings are
-    // never pushed through it yet (Phase 2/7), but a dropped sender would
-    // mark the channel closed under the backend, which some internal loops
-    // may treat as a shutdown signal.
+    // never pushed through it yet (Phase 7, once there's a settings
+    // dialog), but a dropped sender would mark the channel closed under
+    // the backend, which some internal loops may treat as a shutdown
+    // signal.
     _settings_tx: watch::Sender<BackendSettings>,
+    settings: Arc<SettingsManager<GlobalHostSettings>>,
 }
 
 impl HostPort {
-    /// Starts the backend in-process.
-    ///
-    /// Must be called from a task already running on a Tokio runtime:
-    /// `start_backend` spawns its manager tasks with `tokio::spawn`
-    /// internally. It is currently called directly and synchronously from
-    /// `App::new()` (see `prototype.rs`), on the assumption that iced's
-    /// `application()` boot closure already runs inside the runtime it
-    /// uses for `Task`/`Subscription` execution. That assumption is
-    /// untested. If this panics (something like "there is no reactor
-    /// running" / "must be called from the context of a Tokio 1.x
-    /// runtime"), the fix is to move this call into the app's initial
-    /// `Task` instead and bridge the result back out-of-band (e.g. a
-    /// `OnceLock`) rather than through `Message`, for the `Debug`/`Clone`
-    /// reasons above.
-    pub fn start() -> anyhow::Result<Self> {
+    /// Starts the backend in-process: loads settings (or falls back to
+    /// defaults, logging why), starts the backend with them, and fetches
+    /// the full show state -- everything the app needs before it can show
+    /// its first real frame, in one `Task::perform`-able call.
+    pub async fn start() -> anyhow::Result<(Self, FullState)> {
+        let settings = Arc::new(SettingsManager::<GlobalHostSettings>::new(
+            super::paths::config_path(),
+        ));
+
+        let host_settings = match settings.load().await {
+            Ok(loaded) => loaded,
+            Err(e) => {
+                // Expected on first run (no file yet) as well as on a
+                // genuine read error; either way, defaults are a safe
+                // fallback and not worth distinguishing the two here.
+                log::info!("using default settings ({e})");
+                GlobalHostSettings::default()
+            }
+        };
+
         let (settings_tx, settings_rx) =
-            watch::channel(BackendSettings::from(&GlobalHostSettings::default()));
+            watch::channel(BackendSettings::from(&host_settings));
 
         let (handle, _state_rx, event_tx) = start_backend(settings_rx, true)?;
+        let full_state = handle.get_full_state().await?;
 
-        Ok(Self {
+        let port = Self {
             handle,
             event_tx,
             _settings_tx: settings_tx,
-        })
+            settings,
+        };
+
+        Ok((port, full_state))
     }
 
     pub async fn get_full_state(&self) -> anyhow::Result<FullState> {
         self.handle.get_full_state().await
     }
 
-    /// A cloned handle for issuing calls from a detached `Task` (e.g. the
-    /// boot task in `prototype.rs`), since `HostPort` itself is not `Clone`
-    /// and lives behind `&self`/`&mut self` on `App`.
+    /// A cloned handle for issuing calls from a detached `Task`, since
+    /// `HostPort` itself usually lives behind `&self`/`&mut self` on `App`.
     pub fn handle(&self) -> BackendHandle {
         self.handle.clone()
+    }
+
+    pub fn settings(&self) -> Arc<SettingsManager<GlobalHostSettings>> {
+        self.settings.clone()
     }
 
     /// A `Subscription` streaming every backend event. Safe to return
