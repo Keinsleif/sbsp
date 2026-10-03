@@ -6,6 +6,8 @@
 //! `domain/` functions are called from inside them where the actual logic
 //! is pure data transformation.
 
+pub mod assets;
 pub mod model;
 pub mod playback;
+pub mod settings;
 pub mod ui;
