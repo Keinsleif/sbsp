@@ -484,7 +484,9 @@ impl AssetProcessor {
                     } else if let Some(buffer) = &mut sample_buf
                         && buffer.capacity() < decoded.capacity() * decoded_spec.channels.count()
                     {
-                        *buffer = SampleBuffer::<f32>::new(decoded.capacity() as u64, decoded_spec);
+                        // same implementation in rodio, but it is noop.
+                        let duration = symphonia::core::units::Duration::from(decoded.capacity() as u64);
+                        *buffer = SampleBuffer::<f32>::new(duration, decoded_spec);
                     }
 
                     if let Some(buffer) = &mut sample_buf {
