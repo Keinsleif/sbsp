@@ -45,21 +45,11 @@ pub fn build_cue_name(
             &name_format.wait,
             &values([("duration", format_human(param.duration))]),
         ),
-        CueParam::Fade(param) => {
-            target_named(cues, param.target, &name_format.fade, name_format)
-        }
-        CueParam::Start(param) => {
-            target_named(cues, param.target, &name_format.start, name_format)
-        }
-        CueParam::Stop(param) => {
-            target_named(cues, param.target, &name_format.stop, name_format)
-        }
-        CueParam::Pause(param) => {
-            target_named(cues, param.target, &name_format.pause, name_format)
-        }
-        CueParam::Load(param) => {
-            target_named(cues, param.target, &name_format.load, name_format)
-        }
+        CueParam::Fade(param) => target_named(cues, param.target, &name_format.fade, name_format),
+        CueParam::Start(param) => target_named(cues, param.target, &name_format.start, name_format),
+        CueParam::Stop(param) => target_named(cues, param.target, &name_format.stop, name_format),
+        CueParam::Pause(param) => target_named(cues, param.target, &name_format.pause, name_format),
+        CueParam::Load(param) => target_named(cues, param.target, &name_format.load, name_format),
         CueParam::Group { base, .. } => format_template(
             &name_format.group,
             &values([("mode", camel_to_title_case(group_mode_name(&base.mode)))]),
@@ -102,10 +92,10 @@ pub fn calculate_duration(param: &CueParam, total_duration: Option<f64>) -> Opti
         CueParam::Audio(audio) => {
             let total = total_duration.filter(|d| !d.is_nan())?;
             let mut duration = total;
-            if let Some(end_time) = audio.end_time {
-                if end_time < total {
-                    duration = end_time;
-                }
+            if let Some(end_time) = audio.end_time
+                && end_time < total
+            {
+                duration = end_time;
             }
             if let Some(start_time) = audio.start_time {
                 duration -= start_time;
@@ -127,7 +117,10 @@ pub fn calculate_duration(param: &CueParam, total_duration: Option<f64>) -> Opti
 /// (`state::assets::AssetResults` doesn't exist yet) so this stays testable
 /// without one; it is called with the *cue's* id, matching the original
 /// (`assetResult.getMetadata(cue.id)`, keyed by cue id, not by asset path).
-pub fn get_duration(cue: Option<&Cue>, asset_duration: impl Fn(Uuid) -> Option<f64>) -> Option<f64> {
+pub fn get_duration(
+    cue: Option<&Cue>,
+    asset_duration: impl Fn(Uuid) -> Option<f64>,
+) -> Option<f64> {
     let cue = cue?;
     match &cue.params {
         CueParam::Wait(param) => Some(param.duration),
@@ -142,8 +135,7 @@ mod tests {
     use super::*;
     use sbsp_backend::model::cue::{
         CueChain, CueColor, CueCursorAdvanceTriggerOverride, StartCueParam, WaitCueParam,
-        audio::AudioCueParam,
-        group::GroupCueParamBase,
+        audio::AudioCueParam, group::GroupCueParamBase,
     };
     use std::path::PathBuf;
 
@@ -199,7 +191,11 @@ mod tests {
 
     #[test]
     fn wait_cue_uses_human_duration() {
-        let cue = bare_cue(Uuid::new_v4(), None, CueParam::Wait(WaitCueParam { duration: 90.0 }));
+        let cue = bare_cue(
+            Uuid::new_v4(),
+            None,
+            CueParam::Wait(WaitCueParam { duration: 90.0 }),
+        );
         // format_human(90.0) == "01m 30.0s": the minute-branch always
         // appends ".{ms}", even when ms trims down to a single "0" (see
         // domain::time's doc comment / tests) -- this is not "01m 30s".
@@ -218,7 +214,11 @@ mod tests {
             CueParam::Wait(WaitCueParam { duration: 1.0 }),
         );
         let start_id = Uuid::new_v4();
-        let start = bare_cue(start_id, None, CueParam::Start(StartCueParam { target: target_id }));
+        let start = bare_cue(
+            start_id,
+            None,
+            CueParam::Start(StartCueParam { target: target_id }),
+        );
 
         let mut cues = HashMap::new();
         cues.insert(target_id, target);
@@ -235,7 +235,9 @@ mod tests {
         let start = bare_cue(
             Uuid::new_v4(),
             None,
-            CueParam::Start(StartCueParam { target: Uuid::new_v4() }),
+            CueParam::Start(StartCueParam {
+                target: Uuid::new_v4(),
+            }),
         );
         assert_eq!(
             build_cue_name(Some(&start), &HashMap::new(), &name_format()),
@@ -249,7 +251,9 @@ mod tests {
             Uuid::new_v4(),
             None,
             CueParam::Group {
-                base: GroupCueParamBase { mode: GroupMode::Concurrency },
+                base: GroupCueParamBase {
+                    mode: GroupMode::Concurrency,
+                },
                 children: Vec::new(),
             },
         );
@@ -297,7 +301,12 @@ mod tests {
     #[test]
     fn calculate_duration_non_timed_is_none() {
         assert_eq!(
-            calculate_duration(&CueParam::Start(StartCueParam { target: Uuid::new_v4() }), None),
+            calculate_duration(
+                &CueParam::Start(StartCueParam {
+                    target: Uuid::new_v4()
+                }),
+                None
+            ),
             None
         );
     }

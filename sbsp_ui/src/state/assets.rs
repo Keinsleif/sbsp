@@ -169,7 +169,10 @@ mod tests {
         let path = PathBuf::from("/music/kick.wav");
         let mut assets = AssetResults::new();
         assets.mark_processing(path.clone());
-        assets.add(PathBuf::from("/music/other.wav"), data(&PathBuf::from("/music/other.wav")));
+        assets.add(
+            PathBuf::from("/music/other.wav"),
+            data(&PathBuf::from("/music/other.wav")),
+        );
 
         assets.clear();
 

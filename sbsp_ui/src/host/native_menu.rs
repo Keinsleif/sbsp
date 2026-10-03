@@ -48,10 +48,7 @@ fn append(target: &Submenu, nodes: &[MenuNode]) {
             // enabled state; `checked` has no simple muda equivalent for a
             // plain `MenuItem` and is left to the in-app renderer.
             MenuNode::Item {
-                id,
-                label,
-                enabled,
-                ..
+                id, label, enabled, ..
             } => {
                 let item = MenuItem::with_id(MudaMenuId::new(id.0), label, *enabled, None);
                 target.append(&item).expect("failed to append menu item");

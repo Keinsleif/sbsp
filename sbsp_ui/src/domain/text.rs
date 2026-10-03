@@ -65,7 +65,8 @@ pub fn format_template(template: &str, values: &HashMap<String, String>) -> Stri
 /// empty value.
 fn find_key_end(chars: &[char], start: usize) -> Option<usize> {
     let mut i = start;
-    while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '_' || chars[i].is_whitespace())
+    while i < chars.len()
+        && (chars[i].is_alphanumeric() || chars[i] == '_' || chars[i].is_whitespace())
     {
         i += 1;
     }
@@ -121,13 +122,19 @@ mod tests {
     use super::*;
 
     fn values(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     #[test]
     fn substitutes_known_keys() {
         let v = values(&[("filename", "kick.wav")]);
-        assert_eq!(format_template("Playing {filename}", &v), "Playing kick.wav");
+        assert_eq!(
+            format_template("Playing {filename}", &v),
+            "Playing kick.wav"
+        );
     }
 
     #[test]

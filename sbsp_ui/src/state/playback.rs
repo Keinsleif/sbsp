@@ -80,7 +80,8 @@ impl PlaybackState {
             }
         }
 
-        self.active_cues.retain(|id, _| self.synced_data.contains_key(id));
+        self.active_cues
+            .retain(|id, _| self.synced_data.contains_key(id));
     }
 
     /// A full replace from a freshly (re)connected `ShowState` snapshot.
@@ -113,11 +114,19 @@ impl PlaybackState {
 
         match data {
             E::Triggered { .. } => {}
-            E::Loaded { cue_id, position, duration } => {
+            E::Loaded {
+                cue_id,
+                position,
+                duration,
+            } => {
                 if !self.synced_data.contains_key(cue_id) {
                     self.synced_data.insert(
                         *cue_id,
-                        SyncedCue { position: *position, status: PlaybackStatus::Loaded, last_synced_at: now },
+                        SyncedCue {
+                            position: *position,
+                            status: PlaybackStatus::Loaded,
+                            last_synced_at: now,
+                        },
                     );
                     self.active_cues.insert(
                         *cue_id,
@@ -134,7 +143,11 @@ impl PlaybackState {
             E::PreWaitStarted { cue_id, duration } => {
                 self.synced_data.insert(
                     *cue_id,
-                    SyncedCue { position: 0.0, status: PlaybackStatus::PreWaiting, last_synced_at: now },
+                    SyncedCue {
+                        position: 0.0,
+                        status: PlaybackStatus::PreWaiting,
+                        last_synced_at: now,
+                    },
                 );
                 self.active_cues.insert(
                     *cue_id,
@@ -150,7 +163,11 @@ impl PlaybackState {
             E::PreWaitPaused { cue_id, position } => {
                 self.synced_data.insert(
                     *cue_id,
-                    SyncedCue { position: *position, status: PlaybackStatus::PreWaitPaused, last_synced_at: now },
+                    SyncedCue {
+                        position: *position,
+                        status: PlaybackStatus::PreWaitPaused,
+                        last_synced_at: now,
+                    },
                 );
                 if let Some(active) = self.active_cues.get_mut(cue_id) {
                     active.position = *position;
@@ -164,10 +181,19 @@ impl PlaybackState {
             }
             // The backend auto-triggers the start cue; nothing to do here.
             E::PreWaitCompleted { .. } => {}
-            E::Started { cue_id, position, duration, params } => {
+            E::Started {
+                cue_id,
+                position,
+                duration,
+                params,
+            } => {
                 self.synced_data.insert(
                     *cue_id,
-                    SyncedCue { position: *position, status: PlaybackStatus::Playing, last_synced_at: now },
+                    SyncedCue {
+                        position: *position,
+                        status: PlaybackStatus::Playing,
+                        last_synced_at: now,
+                    },
                 );
                 self.active_cues.insert(
                     *cue_id,
@@ -183,7 +209,11 @@ impl PlaybackState {
             E::Paused { cue_id, position } => {
                 self.synced_data.insert(
                     *cue_id,
-                    SyncedCue { position: *position, status: PlaybackStatus::Paused, last_synced_at: now },
+                    SyncedCue {
+                        position: *position,
+                        status: PlaybackStatus::Paused,
+                        last_synced_at: now,
+                    },
                 );
                 if let Some(active) = self.active_cues.get_mut(cue_id) {
                     active.position = *position;
@@ -226,7 +256,11 @@ impl PlaybackState {
     /// (and `status`, if it changed) is updated to match -- matching the
     /// original, which is called this way once per animation frame to
     /// drive the UI's own reactive state.
-    pub fn calculate_position(&mut self, update_active_cues: bool, now: Instant) -> HashMap<Uuid, f64> {
+    pub fn calculate_position(
+        &mut self,
+        update_active_cues: bool,
+        now: Instant,
+    ) -> HashMap<Uuid, f64> {
         let latency = self.latency;
         let mut positions = HashMap::with_capacity(self.synced_data.len());
 
@@ -283,7 +317,9 @@ fn resolve_position(synced: &SyncedCue, active: &ActiveCue, latency: f64, now: I
     );
 
     if in_flight && active.duration > 0.0 {
-        let elapsed = now.saturating_duration_since(synced.last_synced_at).as_secs_f64();
+        let elapsed = now
+            .saturating_duration_since(synced.last_synced_at)
+            .as_secs_f64();
         let raw = synced.position + latency / 2.0 + elapsed;
 
         if matches!(active.params, StateParam::Audio(p) if p.repeating) {
@@ -303,11 +339,27 @@ mod tests {
     use std::time::Duration;
 
     fn synced(position: f64, status: PlaybackStatus, last_synced_at: Instant) -> SyncedCue {
-        SyncedCue { position, status, last_synced_at }
+        SyncedCue {
+            position,
+            status,
+            last_synced_at,
+        }
     }
 
-    fn active(cue_id: Uuid, position: f64, duration: f64, status: PlaybackStatus, params: StateParam) -> ActiveCue {
-        ActiveCue { cue_id, position, duration, status, params }
+    fn active(
+        cue_id: Uuid,
+        position: f64,
+        duration: f64,
+        status: PlaybackStatus,
+        params: StateParam,
+    ) -> ActiveCue {
+        ActiveCue {
+            cue_id,
+            position,
+            duration,
+            status,
+            params,
+        }
     }
 
     #[test]
@@ -315,8 +367,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(5.0, PlaybackStatus::Paused, t0));
-        state.active_cues.insert(id, active(id, 5.0, 10.0, PlaybackStatus::Paused, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(5.0, PlaybackStatus::Paused, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 5.0, 10.0, PlaybackStatus::Paused, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(3);
         assert_eq!(state.get_position(id, later), Some(5.0));
@@ -327,8 +384,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(2.0, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(2.0, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(1);
         assert_eq!(state.get_position(id, later), Some(3.0));
@@ -339,8 +401,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(9.5, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 9.5, 10.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(9.5, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 9.5, 10.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(5);
         assert_eq!(state.get_position(id, later), Some(10.0));
@@ -351,7 +418,9 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(9.0, PlaybackStatus::Playing, t0));
+        state
+            .synced_data
+            .insert(id, synced(9.0, PlaybackStatus::Playing, t0));
         state.active_cues.insert(
             id,
             active(
@@ -359,7 +428,10 @@ mod tests {
                 9.0,
                 10.0,
                 PlaybackStatus::Playing,
-                StateParam::Audio(AudioStateParam { repeating: true, volume: Default::default() }),
+                StateParam::Audio(AudioStateParam {
+                    repeating: true,
+                    volume: Default::default(),
+                }),
             ),
         );
 
@@ -374,8 +446,13 @@ mod tests {
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
         state.latency = 0.2;
-        state.synced_data.insert(id, synced(0.0, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 0.0, 10.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(0.0, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 0.0, 10.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         assert_eq!(state.get_position(id, t0), Some(0.1));
     }
@@ -385,8 +462,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(1.0, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 1.0, 0.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(1.0, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 1.0, 0.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(5);
         assert_eq!(state.get_position(id, later), Some(1.0));
@@ -403,7 +485,9 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(4.0, PlaybackStatus::Paused, t0));
+        state
+            .synced_data
+            .insert(id, synced(4.0, PlaybackStatus::Paused, t0));
 
         let positions = state.calculate_position(true, t0);
 
@@ -416,8 +500,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(2.0, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(2.0, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(1);
         state.calculate_position(true, later);
@@ -430,8 +519,13 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(id, synced(2.0, PlaybackStatus::Playing, t0));
-        state.active_cues.insert(id, active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None));
+        state
+            .synced_data
+            .insert(id, synced(2.0, PlaybackStatus::Playing, t0));
+        state.active_cues.insert(
+            id,
+            active(id, 2.0, 10.0, PlaybackStatus::Playing, StateParam::None),
+        );
 
         let later = t0 + Duration::from_secs(1);
         state.calculate_position(false, later);
@@ -444,12 +538,15 @@ mod tests {
         let id = Uuid::new_v4();
         let t0 = Instant::now();
         let mut state = PlaybackState::new();
-        state.synced_data.insert(Uuid::new_v4(), synced(1.0, PlaybackStatus::Playing, t0));
+        state
+            .synced_data
+            .insert(Uuid::new_v4(), synced(1.0, PlaybackStatus::Playing, t0));
 
         let mut show_state = ShowState::new();
-        show_state
-            .active_cues
-            .insert(id, active(id, 7.0, 20.0, PlaybackStatus::Paused, StateParam::None));
+        show_state.active_cues.insert(
+            id,
+            active(id, 7.0, 20.0, PlaybackStatus::Paused, StateParam::None),
+        );
 
         state.update(&show_state, t0);
 

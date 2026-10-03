@@ -6,10 +6,10 @@
 
 use std::collections::BTreeSet;
 
+use iced::time::{Duration, Instant};
 use iced::widget::{
     button, column, container, mouse_area, row, scrollable, text, text_editor, text_input,
 };
-use iced::time::{Duration, Instant};
 use iced::{Element, Length, Subscription, Task, Theme, event, keyboard, window};
 
 use crate::theme::ThemeMode;
@@ -189,7 +189,8 @@ impl App {
                 self.progress = (self.progress + 0.004) % 1.0;
             }
             Message::ShowToast => {
-                self.toasts.push(toast::Kind::Info, fl!("proto-toast-message"));
+                self.toasts
+                    .push(toast::Kind::Info, fl!("proto-toast-message"));
             }
             Message::ShowDialog => self.dialog_open = true,
             Message::CloseDialog => self.dialog_open = false,
@@ -411,7 +412,11 @@ fn build_rows(count: usize) -> Vec<CueRow> {
             let is_group = i % 10 == 0;
             CueRow {
                 number: i + 1,
-                indent: if is_group { 0 } else { 1 + (i % 3 == 0) as usize },
+                indent: if is_group {
+                    0
+                } else {
+                    1 + (i % 3 == 0) as usize
+                },
                 is_group,
             }
         })

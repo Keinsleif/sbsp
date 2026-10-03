@@ -39,7 +39,10 @@ pub fn format_human(source_seconds: f64) -> String {
         // "0" (exact whole seconds, e.g. 90.0 -> "01m 30.0s", not
         // "01m 30s") -- there is no separate "no decimal" case in here the
         // way there is for the two branches below.
-        format!("{minute:02}m {}s", trim_trailing_zero(second, centisecond, true))
+        format!(
+            "{minute:02}m {}s",
+            trim_trailing_zero(second, centisecond, true)
+        )
     } else if centisecond == 0 {
         format!("{second}s")
     } else {
@@ -94,7 +97,12 @@ fn split(source_seconds: f64) -> (u64, u64, u64, u64) {
     let second = (total - 3600.0 * hour - 60.0 * minute).floor();
     let centisecond = ((total - 3600.0 * hour - 60.0 * minute - second) * 100.0).floor();
 
-    (hour as u64, minute as u64, second as u64, centisecond as u64)
+    (
+        hour as u64,
+        minute as u64,
+        second as u64,
+        centisecond as u64,
+    )
 }
 
 /// `(3, 50)` -> `"3.5"` (or `"03.5"` with `pad_second`), matching the

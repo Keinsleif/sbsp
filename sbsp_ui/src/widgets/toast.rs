@@ -119,9 +119,13 @@ impl Toasts {
             return base;
         }
 
-        let list = column(self.items.iter().map(|toast| toast_card(toast, on_message.clone())))
-            .spacing(8)
-            .width(320);
+        let list = column(
+            self.items
+                .iter()
+                .map(|toast| toast_card(toast, on_message.clone())),
+        )
+        .spacing(8)
+        .width(320);
 
         let positioned = container(list)
             .width(Length::Fill)
@@ -146,7 +150,10 @@ where
 
     let content = row![
         text(toast.message.clone()).width(Length::Fill),
-        button(text("×")).padding(4).style(button::text).on_press(on_message(Message::Dismiss(id))),
+        button(text("×"))
+            .padding(4)
+            .style(button::text)
+            .on_press(on_message(Message::Dismiss(id))),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
