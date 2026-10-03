@@ -9,5 +9,4 @@
 pub mod assets;
 pub mod model;
 pub mod playback;
-pub mod settings;
 pub mod ui;
