@@ -2,5 +2,5 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub fn run() -> iced::Result {
-    crate::prototype::run("web")
+    crate::app::run("web")
 }

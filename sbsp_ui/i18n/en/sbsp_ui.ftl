@@ -1,27 +1,11 @@
-proto-title = SBSP UI prototype (Phase 0)
-proto-target = Target: { $target }
-proto-toggle-language = 日本語
-proto-toggle-theme-system = Theme: System
-proto-toggle-theme-dark = Theme: Dark
-proto-toggle-theme-light = Theme: Light
-proto-toggle-animation = Animation (frame loop)
-proto-fps = FPS: { $fps }
-proto-renderer-env = ICED_BACKEND = { $value }
-proto-ime-heading = IME / text input
-proto-ime-hint = Type Japanese here (convert, confirm, cancel, select, copy and paste)
-proto-ime-multiline-hint = Multi-line editor
-proto-list-heading = Cue list ({ $count ->
-    [one] { $count } cue
-   *[other] { $count } cues
-})
-proto-list-selected = Selected: { $count }
-proto-list-cue-name = Cue { $number }
-proto-list-group-name = Group { $number }
-proto-list-hint = Click to select, Shift+click for range, Ctrl/Cmd+click to toggle, Up/Down to move
-proto-count-button = { $count } rows
-proto-show-toast = Show toast
-proto-show-dialog = Show dialog
-proto-toast-message = This is a toast notification.
-proto-dialog-title = Example dialog
-proto-dialog-body = Click outside this card, or the button below, to close it.
-proto-dialog-close = Close
+app-title = SBS Player
+menu-file = File
+menu-file-quit = Quit
+menu-view = View
+menu-view-toggle-theme = Toggle Theme
+menu-help = Help
+menu-help-about = About
+menu-help-about-message = SBS Player (iced UI, in development).
+shell-sidebar-placeholder = Sidebar (Phase 6)
+shell-main-placeholder = Main content for { $target } (Phase 4)
+shell-footer-ready = Ready
