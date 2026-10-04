@@ -7,9 +7,10 @@
 //! native global menu instead (see `crate::host::native_menu`).
 
 use iced::widget::{button, container, row, text};
-use iced::{Alignment, Element, Length, Theme};
+use iced::{Alignment, Border, Element, Length, Theme};
 use iced_aw::menu::{Item, Menu, MenuBar};
-use iced_aw::style::menu_bar;
+use iced_aw::style::Status;
+use iced_aw::style::menu_bar::Style;
 
 use crate::menu::{MenuId, MenuNode, MenuSpec};
 
@@ -34,7 +35,47 @@ where
         })
         .collect::<Vec<_>>();
 
-    MenuBar::new(roots).style(menu_bar::primary).into()
+    MenuBar::new(roots)
+        .style(native_style)
+        // iced_aw defaults both of these to false, which reads as broken
+        // against a native menu bar: clicking the already-open root again
+        // (or an item inside a submenu) does nothing, since nothing ever
+        // schedules a close. True matches ordinary menu-bar behavior:
+        // picking an item closes the whole bar, and so does re-clicking
+        // the open root.
+        .close_on_item_click(true)
+        .close_on_background_click(true)
+        .into()
+}
+
+/// Closer to a native menu bar's flat look than `iced_aw`'s own
+/// `menu_bar::primary` (which defaults to an 8px corner radius and a drop
+/// shadow on the dropdown -- noticeably more rounded/padded than any
+/// desktop OS's actual menu).
+fn native_style(theme: &Theme, _status: Status) -> Style {
+    let palette = theme.extended_palette();
+
+    Style {
+        bar_background: palette.background.base.color.into(),
+        bar_border: Border::default(),
+        bar_shadow: iced::Shadow::default(),
+        menu_background: palette.background.base.color.into(),
+        menu_border: Border {
+            color: palette.background.strong.color,
+            width: 1.0,
+            radius: 2.0.into(),
+        },
+        menu_shadow: iced::Shadow {
+            color: iced::Color::BLACK.scale_alpha(0.25),
+            offset: iced::Vector::new(0.0, 2.0),
+            blur_radius: 6.0,
+        },
+        path: palette.primary.weak.color.into(),
+        path_border: Border {
+            radius: 2.0.into(),
+            ..Default::default()
+        },
+    }
 }
 
 fn build_menu<'a, Message, F>(
@@ -73,12 +114,12 @@ where
         })
         .collect::<Vec<_>>();
 
-    Menu::new(items).width(SUBMENU_WIDTH).spacing(4.0)
+    Menu::new(items).width(SUBMENU_WIDTH).spacing(1.0)
 }
 
 fn top_level_button<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
     button(text(label))
-        .padding([4, 10])
+        .padding([3, 8])
         .style(button::text)
         .into()
 }
@@ -104,7 +145,7 @@ fn entry_button<'a, Message: Clone + 'a>(
 
     let btn = button(content)
         .width(Length::Fill)
-        .padding([4, 10])
+        .padding([3, 10])
         .style(button::text);
 
     if enabled {
@@ -121,7 +162,7 @@ fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Mes
 
     button(content)
         .width(Length::Fill)
-        .padding([4, 10])
+        .padding([3, 10])
         .style(button::text)
         .into()
 }
