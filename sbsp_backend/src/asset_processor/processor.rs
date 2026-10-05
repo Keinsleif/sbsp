@@ -97,7 +97,7 @@ impl AssetProcessor {
 
     pub async fn run(mut self) {
         let mut event_rx = self.event_tx.subscribe();
-        let (work_tx, mut work_rx) = mpsc::channel::<PathBuf>(128);
+        let (work_tx, mut work_rx) = mpsc::channel::<(PathBuf, Arc<AtomicBool>)>(128);
 
         let cores = std::thread::available_parallelism()
             .map(|n| n.get())
@@ -108,54 +108,68 @@ impl AssetProcessor {
         let cache_lock = self.cache.clone();
         let event_tx = self.event_tx.clone();
         tokio::spawn(async move {
-            while let Some(standard_path) = work_rx.recv().await {
-                let permit = match semaphore.clone().acquire_owned().await {
-                    Ok(permit) => permit,
-                    Err(_) => {
-                        if let Some(entry) = processing_lock.write().await.remove(&standard_path) {
-                            for orig_path in entry.orig_paths {
-                                if let Err(e) = event_tx.send(BackendEvent::AssetResult {
-                                    path: orig_path,
-                                    result: Err("Asset processor is shutting down.".to_string()),
-                                }) {
-                                    log::error!(
-                                        "Failed to send process result to event bus. {}",
-                                        e
-                                    );
-                                }
-                            }
-                        }
-                        return;
-                    }
+            while let Some((standard_path, cancel_flag)) = work_rx.recv().await {
+                let Ok(permit) = semaphore.clone().acquire_owned().await else {
+                    break;
                 };
+                if cancel_flag.load(Ordering::Acquire) {
+                    drop(permit);
+                    continue;
+                }
                 let standard_path_clone = standard_path.clone();
                 let cache_lock_clone = cache_lock.clone();
                 let event_tx_clone = event_tx.clone();
                 let processing_lock_clone = processing_lock.clone();
                 tokio::spawn(async move {
+                    let standard_path_clone_clone = standard_path_clone.clone();
                     let event_tx_clone_clone = event_tx_clone.clone();
                     let processing_lock_clone_clone = processing_lock_clone.clone();
+                    let cancel_flag_clone = cancel_flag.clone();
                     let result = tokio::task::spawn_blocking(move || {
                         Self::process_asset(
-                            standard_path_clone,
+                            standard_path_clone_clone,
                             event_tx_clone_clone,
-                            cache_lock_clone,
                             processing_lock_clone_clone,
+                            cancel_flag_clone,
                         )
                         .map_err(|e| e.to_string())
                     })
                     .await
                     .unwrap_or_else(|e| Err(e.to_string()));
-                    if let Some(entry) = processing_lock_clone.write().await.remove(&standard_path) {
+
+                    let removed = {
+                        let mut map = processing_lock_clone.write().await;
+                        let live = map
+                            .get(&standard_path_clone)
+                            .is_some_and(|e| Arc::ptr_eq(&e.cancel_flag, &cancel_flag));
+                        let entry = if live {
+                            map.remove(&standard_path_clone)
+                        } else {
+                            None
+                        };
+                        if let (Some(_), Ok((data, Some(lm)))) = (&entry, &result) {
+                            cache_lock_clone.write().await.entries.insert(
+                                standard_path_clone.clone(),
+                                CacheEntry {
+                                    last_modified: *lm,
+                                    data: data.clone(),
+                                },
+                            );
+                        }
+                        entry
+                    };
+
+                    if let Some(entry) = removed {
                         for orig_path in entry.orig_paths {
                             if let Err(e) = event_tx_clone.send(BackendEvent::AssetResult {
                                 path: orig_path,
-                                result: result.clone(),
+                                result: result.clone().map(|e| e.0),
                             }) {
                                 log::error!("Failed to send process result to event bus. {}", e);
                             }
                         }
                     }
+
                     drop(permit);
                 });
             }
@@ -163,34 +177,29 @@ impl AssetProcessor {
 
         loop {
             tokio::select! {
-                Some(command) = self.command_rx.recv() => {
-                    match command {
-                        AssetProcessorCommand::RequestFileAssetData{path} => {
-                            log::info!("Asset Processing requested. file={:?}", path);
-                            self.handle_process_file(path, work_tx.clone()).await;
+                result = self.command_rx.recv() => {
+                    if let Some(command) = result {
+                        match command {
+                            AssetProcessorCommand::RequestFileAssetData{path} => {
+                                log::info!("Asset Processing requested. file={:?}", path);
+                                self.handle_process_file(path, work_tx.clone()).await;
+                            }
                         }
+                    } else {
+                        self.retire_all().await;
+                        break;
                     }
                 },
                 result = event_rx.recv() => {
                     match result {
                         Ok(BackendEvent::ShowModelLoaded { .. }) |
                         Ok(BackendEvent::ShowModelReset { .. }) => {
-                            {
-                                let processing_guard = self.processing.read().await;
-                                for entry in processing_guard.values() {
-                                    entry.cancel_flag.store(true, Ordering::Release);
-                                }
-                            }
+                            self.retire_all().await;
                             self.filter_current_assets().await;
                         }
                         Ok(_) => {},
                         Err(broadcast::error::RecvError::Closed) => {
-                            {
-                                let processing_guard = self.processing.read().await;
-                                for entry in processing_guard.values() {
-                                    entry.cancel_flag.store(true, Ordering::Release);
-                                }
-                            }
+                            self.retire_all().await;
                             break
                         },
                         Err(_) => {
@@ -202,7 +211,18 @@ impl AssetProcessor {
         }
     }
 
-    async fn handle_process_file(&self, path: PathBuf, work_tx: mpsc::Sender<PathBuf>) {
+    async fn retire_all(&self) {
+        let retired = std::mem::take(&mut *self.processing.write().await);
+        for e in retired.values() {
+            e.cancel_flag.store(true, Ordering::Release);
+        }
+    }
+
+    async fn handle_process_file(
+        &self,
+        path: PathBuf,
+        work_tx: mpsc::Sender<(PathBuf, Arc<AtomicBool>)>,
+    ) {
         let Ok(standard_path) = self.model_handle.get_asset_standard_path(&path).await else {
             if let Err(e) = self.event_tx.send(BackendEvent::AssetResult {
                 path,
@@ -232,7 +252,7 @@ impl AssetProcessor {
                 }
             }
         }
-        {
+        let cancel_flag = {
             let mut processing = self.processing.write().await;
             if let Some(entry) = processing.get_mut(&standard_path) {
                 entry.orig_paths.insert(path.clone());
@@ -246,13 +266,13 @@ impl AssetProcessor {
                 }
                 return;
             }
-            processing.insert(
-                standard_path.clone(),
-                ProcessingEntry::with_path(path.clone()),
-            );
-        }
+            let entry = ProcessingEntry::with_path(path.clone());
+            let cancel_flag = entry.cancel_flag.clone();
+            processing.insert(standard_path.clone(), entry);
+            cancel_flag
+        };
 
-        if let Err(e) = work_tx.send(standard_path.clone()).await {
+        if let Err(e) = work_tx.send((standard_path.clone(), cancel_flag)).await {
             log::error!("Failed to send process request to worker task. e={}", e);
             return;
         }
@@ -330,16 +350,9 @@ impl AssetProcessor {
     fn process_asset(
         standard_path: PathBuf,
         event_tx: broadcast::Sender<BackendEvent>,
-        cache: Arc<RwLock<AssetCache>>,
         processing: Arc<RwLock<HashMap<PathBuf, ProcessingEntry>>>,
-    ) -> anyhow::Result<AssetData> {
-        let cancel_flag = {
-            if let Some(entry) = processing.blocking_read().get(&standard_path) {
-                entry.cancel_flag.clone()
-            } else {
-                anyhow::bail!("invalid processing state");
-            }
-        };
+        cancel_flag: Arc<AtomicBool>,
+    ) -> anyhow::Result<(AssetData, Option<SystemTime>)> {
         if cancel_flag.load(Ordering::Acquire) {
             anyhow::bail!("asset processing canceled")
         }
@@ -395,10 +408,9 @@ impl AssetProcessor {
         {
             let mut processing_guard = processing.blocking_write();
             if cancel_flag.load(Ordering::Acquire) {
-                processing_guard.remove(&standard_path);
                 anyhow::bail!("asset processing canceled");
             } else {
-                if let Some(entry) = processing_guard.get_mut(&standard_path) {
+                if let Some(entry) = processing_guard.get_mut(&standard_path) && Arc::ptr_eq(&cancel_flag, &entry.cancel_flag) {
                     entry.metadata = Some(metadata.clone());
                     for p in &entry.orig_paths {
                         if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
@@ -409,7 +421,7 @@ impl AssetProcessor {
                         }
                     }
                 } else {
-                    anyhow::bail!("invalid processing state");
+                    anyhow::bail!("asset processing canceled");
                 }
             }
         }
@@ -449,7 +461,6 @@ impl AssetProcessor {
 
         let result = loop {
             if cancel_flag.load(Ordering::Acquire) {
-                processing.blocking_write().remove(&standard_path);
                 anyhow::bail!("asset processing canceled");
             }
 
@@ -564,17 +575,7 @@ impl AssetProcessor {
             end_time,
         };
 
-        if let Ok(lm_time) = last_modified {
-            cache.blocking_write().entries.insert(
-                standard_path,
-                CacheEntry {
-                    last_modified: lm_time,
-                    data: asset_data.clone(),
-                },
-            );
-        }
-
-        Ok(asset_data)
+        Ok((asset_data, last_modified.ok()))
     }
 }
 
