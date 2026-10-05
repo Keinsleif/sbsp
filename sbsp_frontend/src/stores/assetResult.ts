@@ -85,6 +85,7 @@ export const useAssetResult = defineStore('assetResult', () => {
     results.clear();
     metadatas.clear();
     failed.clear();
+    processing.clear();
   }
 
   return {
