@@ -137,35 +137,33 @@ impl AssetProcessor {
                     .await
                     .unwrap_or_else(|e| Err(e.to_string()));
 
-                    let removed = {
+                    {
                         let mut map = processing_lock_clone.write().await;
                         let live = map
                             .get(&standard_path_clone)
                             .is_some_and(|e| Arc::ptr_eq(&e.cancel_flag, &cancel_flag));
-                        let entry = if live {
+                        let entry_opt = if live {
                             map.remove(&standard_path_clone)
                         } else {
                             None
                         };
-                        if let (Some(_), Ok((data, Some(lm)))) = (&entry, &result) {
-                            cache_lock_clone.write().await.entries.insert(
-                                standard_path_clone.clone(),
-                                CacheEntry {
-                                    last_modified: *lm,
-                                    data: data.clone(),
-                                },
-                            );
-                        }
-                        entry
-                    };
-
-                    if let Some(entry) = removed {
-                        for orig_path in entry.orig_paths {
-                            if let Err(e) = event_tx_clone.send(BackendEvent::AssetResult {
-                                path: orig_path,
-                                result: result.clone().map(|e| e.0),
-                            }) {
-                                log::error!("Failed to send process result to event bus. {}", e);
+                        if let Some(entry) = entry_opt {
+                            for orig_path in entry.orig_paths {
+                                if let Err(e) = event_tx_clone.send(BackendEvent::AssetResult {
+                                    path: orig_path,
+                                    result: result.clone().map(|e| e.0),
+                                }) {
+                                    log::error!("Failed to send process result to event bus. {}", e);
+                                }
+                            }
+                            if let Ok((data, Some(lm))) = &result {
+                                cache_lock_clone.write().await.entries.insert(
+                                    standard_path_clone.clone(),
+                                    CacheEntry {
+                                        last_modified: *lm,
+                                        data: data.clone(),
+                                    },
+                                );
                             }
                         }
                     }
