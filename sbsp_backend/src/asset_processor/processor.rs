@@ -19,7 +19,7 @@ use tokio::{
 };
 
 use super::{
-    cache::{CacheEntry, AssetCache},
+    cache::{AssetCache, CacheEntry},
     command::AssetProcessorCommand,
     data::{AssetData, AssetMetadata},
     handle::AssetProcessorHandle,
@@ -134,7 +134,10 @@ impl AssetProcessor {
                                     path: orig_path,
                                     result: result.clone().map(|e| e.0),
                                 }) {
-                                    log::error!("Failed to send process result to event bus. {}", e);
+                                    log::error!(
+                                        "Failed to send process result to event bus. {}",
+                                        e
+                                    );
                                 }
                             }
                             if let Ok((data, Some(lm))) = &result {
@@ -171,7 +174,24 @@ impl AssetProcessor {
                 },
                 result = event_rx.recv() => {
                     match result {
-                        Ok(BackendEvent::ShowModelLoaded { .. }) |
+                        Ok(BackendEvent::ShowModelSaved { path, .. }) => {
+                            {
+                                let cache_lock = self.cache.read().await;
+                                if let Err(e) = cache_lock.save(&path).await {
+                                    log::warn!("Failed to save cache to file. e={}", e);
+                                }
+                            }
+                        }
+                        Ok(BackendEvent::ShowModelLoaded { path, .. }) => {
+                            self.retire_all().await;
+                            {
+                                let mut cache_lock = self.cache.write().await;
+                                if let Err(e) = cache_lock.load(&path).await {
+                                    log::warn!("Failed to load cache from file. e={}", e);
+                                }
+                            }
+                            self.filter_current_assets().await;
+                        }
                         Ok(BackendEvent::ShowModelReset { .. }) => {
                             self.retire_all().await;
                             self.filter_current_assets().await;
@@ -389,7 +409,9 @@ impl AssetProcessor {
             if cancel_flag.load(Ordering::Acquire) {
                 anyhow::bail!("asset processing canceled");
             } else {
-                if let Some(entry) = processing_guard.get_mut(&standard_path) && Arc::ptr_eq(&cancel_flag, &entry.cancel_flag) {
+                if let Some(entry) = processing_guard.get_mut(&standard_path)
+                    && Arc::ptr_eq(&cancel_flag, &entry.cancel_flag)
+                {
                     entry.metadata = Some(metadata.clone());
                     for p in &entry.orig_paths {
                         if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
