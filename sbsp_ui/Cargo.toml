@@ -61,3 +61,9 @@ iced = { version = "0.14", default-features = false, features = ["tokio"] }
 fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
+
+[dev-dependencies]
+# Headless UI testing (see migration plan, section 8/"iced_test による
+# テスト基盤"). Only used by #[cfg(test)] code, so a plain dev-dependency
+# rather than target-gated like the items above.
+iced_test = "0.14"
