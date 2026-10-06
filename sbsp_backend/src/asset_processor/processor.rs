@@ -20,6 +20,7 @@ use tokio::{
 };
 
 use super::{
+    cache::{CacheEntry, AssetCache},
     command::AssetProcessorCommand,
     data::{AssetData, AssetMetadata},
     handle::AssetProcessorHandle,
@@ -29,25 +30,6 @@ use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
-
-#[derive(Serialize, Deserialize, Clone)]
-struct CacheEntry {
-    last_modified: SystemTime,
-    data: AssetData,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-struct AssetCache {
-    entries: HashMap<PathBuf, CacheEntry>,
-}
-
-impl AssetCache {
-    fn new() -> Self {
-        Self {
-            entries: HashMap::new(),
-        }
-    }
-}
 
 #[derive(Default)]
 struct ProcessingEntry {
