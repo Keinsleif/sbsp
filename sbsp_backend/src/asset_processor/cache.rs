@@ -77,7 +77,7 @@ impl AssetCache {
                 .permissions(
                     permissions
                         .clone()
-                        .unwrap_or_else(|| std::fs::Permissions::from_mode(0o666)),
+                        .unwrap_or_else(|| std::fs::Permissions::from_mode(0o600)),
                 )
                 .tempfile_in(parent)?;
             #[cfg(not(unix))]
