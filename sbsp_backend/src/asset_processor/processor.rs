@@ -79,6 +79,15 @@ impl AssetProcessor {
     pub async fn run(mut self) {
         let mut event_rx = self.event_tx.subscribe();
         let (work_tx, mut work_rx) = mpsc::channel::<(PathBuf, Arc<AtomicBool>)>(128);
+        let (cache_save_tx, mut cache_save_rx) = mpsc::channel::<(PathBuf, AssetCache)>(32);
+
+        tokio::spawn(async move {
+            while let Some((path, cache_snapshot)) = cache_save_rx.recv().await {
+                if let Err(e) = cache_snapshot.save(&path).await {
+                    log::warn!("Failed to save cache to file. path={:?}, e={}", path, e);
+                }
+            }
+        });
 
         let cores = std::thread::available_parallelism()
             .map(|n| n.get())
@@ -175,11 +184,12 @@ impl AssetProcessor {
                 result = event_rx.recv() => {
                     match result {
                         Ok(BackendEvent::ShowModelSaved { path, .. }) => {
-                            {
+                            let snapshot = {
                                 let cache_lock = self.cache.read().await;
-                                if let Err(e) = cache_lock.save(&path).await {
-                                    log::warn!("Failed to save cache to file. e={}", e);
-                                }
+                                cache_lock.clone()
+                            };
+                            if let Err(e) = cache_save_tx.send((path, snapshot)).await {
+                                log::error!("Failed to enqueue cache save request. e={}", e);
                             }
                         }
                         Ok(BackendEvent::ShowModelLoaded { path, .. }) => {
