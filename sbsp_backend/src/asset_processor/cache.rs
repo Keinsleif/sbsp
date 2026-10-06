@@ -140,7 +140,7 @@ fn set_hidden(path: &Path) -> std::io::Result<()> {
 }
 
 fn get_cache_path(model_path: &Path) -> Option<PathBuf> {
-    let path = model_path.with_extension("cache");
+    let path = model_path.with_added_extension("cache");
     let file_name = path.file_name()?.to_str()?;
 
     if file_name.starts_with('.') {
