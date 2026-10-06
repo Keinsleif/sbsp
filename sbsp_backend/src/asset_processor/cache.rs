@@ -2,6 +2,8 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{collections::HashMap, io::Write as _, path::PathBuf, time::SystemTime};
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt as _;
 
 use serde::{Deserialize, Serialize};
 
