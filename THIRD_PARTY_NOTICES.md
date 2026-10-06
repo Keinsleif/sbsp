@@ -6472,7 +6472,6 @@ limitations under the License.
     - [tendril 0.5.1]( https://github.com/servo/html5ever )
     - [toml_datetime 0.6.3]( https://github.com/toml-rs/toml )
     - [tungstenite 0.29.0]( https://github.com/snapview/tungstenite-rs )
-    - [tungstenite 0.30.0]( https://github.com/snapview/tungstenite-rs )
     - [unicase 2.9.0]( https://github.com/seanmonstar/unicase )
     - [unicode-segmentation 1.13.3]( https://github.com/unicode-rs/unicode-segmentation )
     - [url 2.5.8]( https://github.com/servo/rust-url )
@@ -6932,7 +6931,6 @@ limitations under the License.
     - [pem-rfc7468 1.0.0]( https://github.com/RustCrypto/formats )
     - [pkcs8 0.11.0]( https://github.com/RustCrypto/formats )
     - [sha1 0.10.7]( https://github.com/RustCrypto/hashes )
-    - [sha1 0.11.0]( https://github.com/RustCrypto/hashes )
     - [sha2 0.10.9]( https://github.com/RustCrypto/hashes )
     - [sha2 0.11.0]( https://github.com/RustCrypto/hashes )
     - [signature 3.0.0]( https://github.com/RustCrypto/traits )
@@ -10727,11 +10725,11 @@ insights.
 
 - Used by
 
-    - [sbsp_app 2.7.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_backend 1.7.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_frontend_settings 0.2.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_license 0.1.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote_app 2.7.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_app 2.7.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.7.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_frontend_settings 0.2.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_license 0.1.2]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote_app 2.7.1]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
@@ -11867,7 +11865,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Used by
 
     - [tokio-tungstenite 0.29.0]( https://github.com/snapview/tokio-tungstenite )
-    - [tokio-tungstenite 0.30.0]( https://github.com/snapview/tokio-tungstenite )
 
 ```text
 Copyright (c) 2017 Daniel Abramov
@@ -12574,6 +12571,40 @@ SOFTWARE.
 MIT License
 
 Copyright (c) 2017 Emilio Cobos Álvarez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+```
+
+---
+
+### MIT License
+
+- Used by
+
+    - [rmp-serde 1.3.1]( https://github.com/3Hren/msgpack-rust )
+    - [rmp 0.8.15]( https://github.com/3Hren/msgpack-rust )
+
+```text
+MIT License
+
+Copyright (c) 2017 Evgeny Safronov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
