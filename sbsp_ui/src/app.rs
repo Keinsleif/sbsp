@@ -218,3 +218,66 @@ impl State {
         self.toasts.overlay(content, Message::Toast)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `State::new`'s boot `Task` is dropped: `iced_test`'s `Simulator`
+    /// only drives a `view()` `Element` through simulated input, not a
+    /// running `Task`/`Subscription` executor, so there is nothing to poll
+    /// it with here regardless. Run with no features (`cargo test -p
+    /// sbsp_ui`, no `--features`), so this never attempts the `host`-only
+    /// backend boot in the first place.
+    fn new_state() -> State {
+        State::new("host").0
+    }
+
+    #[test]
+    fn menu_toggle_theme_cycles_light_dark_system() {
+        let mut state = new_state();
+        assert_eq!(state.theme_mode, ThemeMode::System);
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click("View").expect("the View menu should be clickable");
+        ui.click("Toggle Theme")
+            .expect("the Toggle Theme item should be clickable");
+
+        for message in ui.into_messages() {
+            state.update(message);
+        }
+
+        assert_eq!(state.theme_mode, ThemeMode::Dark);
+    }
+
+    #[test]
+    fn menu_about_shows_a_toast() {
+        let mut state = new_state();
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click("Help").expect("the Help menu should be clickable");
+        ui.click("About").expect("the About item should be clickable");
+
+        for message in ui.into_messages() {
+            state.update(message);
+        }
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(
+            ui.find("iced UI").is_ok(),
+            "the About toast's message should be visible after the click"
+        );
+    }
+
+    #[test]
+    fn shell_skeleton_renders_its_placeholder_text() {
+        let state = new_state();
+        let mut ui = iced_test::simulator(state.view());
+
+        assert!(ui.find("Ready").is_ok(), "the footer placeholder should render");
+        assert!(
+            ui.find("Phase 6").is_ok(),
+            "the sidebar placeholder should render"
+        );
+    }
+}
