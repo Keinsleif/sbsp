@@ -9,7 +9,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
 use ebur128::EbuR128;
-use serde::{Deserialize, Serialize};
 use symphonia::core::{
     audio::SampleBuffer, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
     meta::MetadataOptions, probe::Hint,
@@ -20,6 +19,7 @@ use tokio::{
 };
 
 use super::{
+    cache::{AssetCache, CacheEntry},
     command::AssetProcessorCommand,
     data::{AssetData, AssetMetadata},
     handle::AssetProcessorHandle,
@@ -29,25 +29,6 @@ use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
-
-#[derive(Serialize, Deserialize, Clone)]
-struct CacheEntry {
-    last_modified: SystemTime,
-    data: AssetData,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-struct AssetCache {
-    entries: HashMap<PathBuf, CacheEntry>,
-}
-
-impl AssetCache {
-    fn new() -> Self {
-        Self {
-            entries: HashMap::new(),
-        }
-    }
-}
 
 #[derive(Default)]
 struct ProcessingEntry {
@@ -98,6 +79,15 @@ impl AssetProcessor {
     pub async fn run(mut self) {
         let mut event_rx = self.event_tx.subscribe();
         let (work_tx, mut work_rx) = mpsc::channel::<(PathBuf, Arc<AtomicBool>)>(128);
+        let (cache_save_tx, mut cache_save_rx) = mpsc::channel::<(PathBuf, AssetCache)>(32);
+
+        tokio::spawn(async move {
+            while let Some((path, cache_snapshot)) = cache_save_rx.recv().await {
+                if let Err(e) = cache_snapshot.save(&path).await {
+                    log::warn!("Failed to save cache to file. path={:?}, e={}", path, e);
+                }
+            }
+        });
 
         let cores = std::thread::available_parallelism()
             .map(|n| n.get())
@@ -153,7 +143,10 @@ impl AssetProcessor {
                                     path: orig_path,
                                     result: result.clone().map(|e| e.0),
                                 }) {
-                                    log::error!("Failed to send process result to event bus. {}", e);
+                                    log::error!(
+                                        "Failed to send process result to event bus. {}",
+                                        e
+                                    );
                                 }
                             }
                             if let Ok((data, Some(lm))) = &result {
@@ -190,7 +183,25 @@ impl AssetProcessor {
                 },
                 result = event_rx.recv() => {
                     match result {
-                        Ok(BackendEvent::ShowModelLoaded { .. }) |
+                        Ok(BackendEvent::ShowModelSaved { path, .. }) => {
+                            let snapshot = {
+                                let cache_lock = self.cache.read().await;
+                                cache_lock.clone()
+                            };
+                            if let Err(e) = cache_save_tx.send((path, snapshot)).await {
+                                log::error!("Failed to enqueue cache save request. e={}", e);
+                            }
+                        }
+                        Ok(BackendEvent::ShowModelLoaded { path, .. }) => {
+                            self.retire_all().await;
+                            {
+                                let mut cache_lock = self.cache.write().await;
+                                if let Err(e) = cache_lock.load(&path).await {
+                                    log::warn!("Failed to load cache from file. e={}", e);
+                                }
+                            }
+                            self.filter_current_assets().await;
+                        }
                         Ok(BackendEvent::ShowModelReset { .. }) => {
                             self.retire_all().await;
                             self.filter_current_assets().await;
@@ -408,7 +419,9 @@ impl AssetProcessor {
             if cancel_flag.load(Ordering::Acquire) {
                 anyhow::bail!("asset processing canceled");
             } else {
-                if let Some(entry) = processing_guard.get_mut(&standard_path) && Arc::ptr_eq(&cancel_flag, &entry.cancel_flag) {
+                if let Some(entry) = processing_guard.get_mut(&standard_path)
+                    && Arc::ptr_eq(&cancel_flag, &entry.cancel_flag)
+                {
                     entry.metadata = Some(metadata.clone());
                     for p in &entry.orig_paths {
                         if let Err(e) = event_tx.send(BackendEvent::AssetMetadata {
