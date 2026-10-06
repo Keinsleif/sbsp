@@ -121,6 +121,12 @@ fn set_hidden(path: &Path) -> std::io::Result<()> {
         .encode_wide()
         .chain(std::iter::once(0))
         .collect();
+
+    // SAFETY: `wide` is a NUL-terminated UTF-16 buffer that outlives this block and
+    // is not modified while it is borrowed, so `wide.as_ptr()` is a valid `PCWSTR`
+    // for both calls. Neither function retains the pointer after returning, and
+    // there are no out-parameters. Failure is reported through the return values,
+    // which are checked below.
     unsafe {
         let attrs = GetFileAttributesW(wide.as_ptr());
         if attrs == INVALID_FILE_ATTRIBUTES {
