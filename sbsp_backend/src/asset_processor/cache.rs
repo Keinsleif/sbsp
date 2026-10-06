@@ -83,11 +83,6 @@ impl AssetCache {
             #[cfg(not(unix))]
             let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
 
-            #[cfg(windows)]
-            if let Err(e) = set_hidden(temp_file.path()) {
-                log::warn!("Failed to hide cache file: {e}");
-            }
-
             {
                 let file = temp_file.as_file_mut();
                 file.write_all(&content)?;
@@ -102,6 +97,10 @@ impl AssetCache {
             #[cfg(unix)]
             {
                 std::fs::File::open(parent)?.sync_all()?;
+            }
+            #[cfg(windows)]
+            if let Err(e) = set_hidden(&path) {
+                log::warn!("Failed to hide cache file: {e}");
             }
             Ok(())
         })
