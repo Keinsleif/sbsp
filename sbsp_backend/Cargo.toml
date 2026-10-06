@@ -27,6 +27,7 @@ backend = [
     "dep:sha2",
     "dep:tempfile",
     "dep:rmp-serde",
+    "dep:windows-sys",
 ]
 server = [
     "backend",
@@ -86,6 +87,12 @@ tokio-tungstenite = { version = "*", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["sink"], optional = true }
 
 ts-rs = { workspace = true, features = ["uuid-impl", "indexmap-impl"], optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", optional = true, features = [
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
+]}
 
 [dev-dependencies]
 env_logger = "0.11"
