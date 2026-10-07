@@ -68,7 +68,7 @@ const normSegments = (seg: Segment[]): Segment[] => {
   return result;
 };
 
-const buildTimeRange = () => {
+const timeRange = computed(() => {
   const duration = metadata.value?.duration ?? 1;
   const start =
     selectedCue.value?.params.type === 'audio'
@@ -79,7 +79,7 @@ const buildTimeRange = () => {
       ? (selectedCue.value.params.endTime ?? duration) / duration
       : 1;
   return { start, end, delta: end - start };
-};
+});
 
 const dragging = ref<{
   index: number;
@@ -107,19 +107,12 @@ watch(selectedCue, (newCue, oldCue) => {
     selectedCue.value != null && selectedCue.value.params.type === 'audio'
       ? normSegments(selectedCue.value.params.envelope)
       : [];
-  timeRange.value = buildTimeRange();
 });
 
 const contentHeight = computed(() => props.heightPx - 4);
 const metadata = computed(() =>
   selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
 );
-
-const timeRange = ref<{
-  start: number;
-  end: number;
-  delta: number;
-}>(buildTimeRange());
 
 const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
 const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
