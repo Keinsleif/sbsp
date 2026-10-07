@@ -257,7 +257,7 @@ const handlePointerDown = (
   dragging.value = { index, type, dragged: false };
 };
 
-const handlePointerMove = useThrottleFn((e: PointerEvent) => {
+const updatePointerPosition = (e: PointerEvent) => {
   if (dragging.value == null || props.isActive) return;
   dragging.value.dragged = true;
   const { x, y } = getSVGCoords(e);
@@ -321,13 +321,19 @@ const handlePointerMove = useThrottleFn((e: PointerEvent) => {
       break;
     }
   }
-}, 50);
+};
 
-const handlePointerUp = () => {
+const handlePointerMove = useThrottleFn(updatePointerPosition, 50);
+
+const handlePointerUp = (e: PointerEvent) => {
   if (dragging.value != null) {
     if (!dragging.value.dragged && !dragging.value.type.startsWith('h')) {
       selectedIdx.value = dragging.value.index;
     } else {
+      if (dragging.value.dragged) {
+        updatePointerPosition(e);
+        if (dragging.value == null) return;
+      }
       saveEditorValue();
     }
     dragging.value = null;
