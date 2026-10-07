@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use iced::widget::{column, container, row, text};
 use iced::{Element, Length, Subscription, Task};
 
+use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{assets::AssetResults, model::ShowModelState, playback::PlaybackState, ui::UiState};
 use crate::theme::ThemeMode;
@@ -49,6 +50,7 @@ pub fn run(target: &'static str) -> iced::Result {
 pub struct State {
     target: &'static str,
     theme_mode: ThemeMode,
+    lang: Language,
     model: ShowModelState,
     ui: UiState,
     playback: PlaybackState,
@@ -61,6 +63,7 @@ pub struct State {
 #[derive(Clone)]
 pub enum Message {
     ToggleTheme,
+    ToggleLanguage,
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
@@ -83,10 +86,18 @@ impl State {
         let boot_task = Task::none();
 
         let is_host = cfg!(feature = "host");
+        let lang = Language::default();
+        // Redundant with LOADER's own lazy initialization today (it loads
+        // the fallback language, which is also Language::default()), but
+        // explicit rather than relying on that coincidence -- if the two
+        // ever diverge this still does the right thing instead of silently
+        // booting in the wrong language.
+        crate::i18n::select(&lang.langid());
 
         let state = Self {
             target,
             theme_mode: ThemeMode::default(),
+            lang,
             model: ShowModelState::default(),
             ui: UiState::new(is_host),
             playback: PlaybackState::new(),
@@ -107,6 +118,10 @@ impl State {
                     ThemeMode::Dark => ThemeMode::Light,
                     ThemeMode::Light => ThemeMode::System,
                 };
+            }
+            Message::ToggleLanguage => {
+                self.lang = self.lang.toggle();
+                crate::i18n::select(&self.lang.langid());
             }
             Message::Menu(id) => self.handle_menu(id),
             Message::Toast(message) => self.toasts.update(message),
@@ -134,6 +149,7 @@ impl State {
     fn handle_menu(&mut self, id: crate::menu::MenuId) {
         match id.0 {
             "view.toggle-theme" => self.update(Message::ToggleTheme),
+            "view.toggle-language" => self.update(Message::ToggleLanguage),
             "help.about" => self.toasts.push(toast::Kind::Info, fl!("menu-help-about-message")),
             // Closing the window cleanly needs update() to return a Task,
             // which nothing else here needs yet; a hard exit is a
@@ -184,7 +200,15 @@ impl State {
             )
             .menu(
                 fl!("menu-view"),
-                vec![MenuNode::item("view.toggle-theme", fl!("menu-view-toggle-theme"))],
+                vec![
+                    MenuNode::item("view.toggle-theme", fl!("menu-view-toggle-theme")),
+                    // Shows the language it would switch *to*, in that
+                    // language's own name (not fl!()'d through the
+                    // currently active one): "English" should stay legible
+                    // as a target even to someone who can't read whatever
+                    // is presently selected, and vice versa.
+                    MenuNode::item("view.toggle-language", self.lang.toggle().label()),
+                ],
             )
             .menu(
                 fl!("menu-help"),
@@ -221,7 +245,18 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use super::*;
+
+    // Every test here is #[serial]: all of them call fl!(), which reads
+    // the single process-wide i18n::LOADER static, and
+    // menu_toggle_language_switches_state calls i18n::select to mutate it.
+    // Without #[serial], cargo test's default parallel execution could
+    // interleave that mutation with any other test's fl!() calls here,
+    // which (depending on timing) would render the wrong language or just
+    // flake intermittently. Tag any new test added to this module the
+    // same way unless it provably never touches fl!()/i18n::LOADER.
 
     /// `State::new`'s boot `Task` is dropped: `iced_test`'s `Simulator`
     /// only drives a `view()` `Element` through simulated input, not a
@@ -234,6 +269,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn menu_toggle_theme_cycles_light_dark_system() {
         let mut state = new_state();
         assert_eq!(state.theme_mode, ThemeMode::System);
@@ -250,7 +286,45 @@ mod tests {
         assert_eq!(state.theme_mode, ThemeMode::Dark);
     }
 
+    /// Deliberately does not assert on any `fl!()`-rendered text after the
+    /// switch (e.g. that the item now reads "English", or that other
+    /// labels appear in Japanese): `i18n::LOADER` is one process-wide
+    /// `static`, and `cargo test` runs tests in parallel on separate
+    /// threads by default, all sharing it. Asserting on rendered text here
+    /// would be racing every other test in this module that calls `fl!()`
+    /// expecting English (`menu_about_shows_a_toast`,
+    /// `shell_skeleton_renders_its_placeholder_text`) -- this test could
+    /// flip the language out from under one of them mid-run, or one of
+    /// them could run while this test's own assertion expects Japanese.
+    /// `state.lang` itself is this test's own field, not shared, so that
+    /// part is safe to check same as `theme_mode` above.
     #[test]
+    #[serial]
+    fn menu_toggle_language_switches_state() {
+        let mut state = new_state();
+        assert_eq!(state.lang, Language::En);
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click("View").expect("the View menu should be clickable");
+        // The item shows the language it switches *to*; starting from
+        // English that's its own name for Japanese, not "Japanese".
+        ui.click("日本語").expect("the language item should be clickable");
+
+        for message in ui.into_messages() {
+            state.update(message);
+        }
+
+        assert_eq!(state.lang, Language::Ja);
+
+        // Leave the shared LOADER back in English: #[serial] only
+        // serializes this module's own tests against each other, not
+        // against fl!()-calling tests elsewhere in the crate that may be
+        // added later and aren't tagged to know about this one.
+        crate::i18n::select(&Language::En.langid());
+    }
+
+    #[test]
+    #[serial]
     fn menu_about_shows_a_toast() {
         let mut state = new_state();
 
@@ -274,6 +348,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn shell_skeleton_renders_its_placeholder_text() {
         let state = new_state();
         let mut ui = iced_test::simulator(state.view());

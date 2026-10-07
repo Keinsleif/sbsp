@@ -67,3 +67,10 @@ dirs = "5"
 # テスト基盤"). Only used by #[cfg(test)] code, so a plain dev-dependency
 # rather than target-gated like the items above.
 iced_test = "0.14"
+# Forces every #[serial]-tagged test below to run one at a time rather
+# than cargo test's default parallel-by-thread execution. Needed because
+# i18n::LOADER is one process-wide static shared by every test in this
+# binary: a test that calls i18n::select (or otherwise depends on which
+# language is currently loaded) races any other such test running
+# concurrently on a different thread.
+serial_test = "3"
