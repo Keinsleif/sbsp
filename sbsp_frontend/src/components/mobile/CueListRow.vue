@@ -44,10 +44,14 @@ const rowRef = useTemplateRef('row');
 usePosition(
   (pos) => {
     if (rowRef.value == null) return;
-    if (props.item.isHidden) return;
+    if (props.item.isHidden) {
+      rowRef.value.style.background = '';
+      return;
+    }
     const position = pos[props.item.cue.id];
     const activeCue = showState.activeCues[props.item.cue.id];
     if (activeCue == null || position == null || activeCue.duration === 0) {
+      rowRef.value.style.background = '';
       return;
     }
     rowRef.value.style.background =
