@@ -19,6 +19,7 @@
 - OGG - OGG Container Format (.ogg, .ogx, .oga)
 - WAV - RIFF waveform Audio Format (.wav)
 - WebM - WebM Container Format (.webm)
+- Opus - Opus Interactive Audio Codec (.opus, .ogg)
 
 ここに記載されているファイル以外にも再生可能であるフォーマットが存在している可能性もあります。
 いくつかの特殊な形式を持ったファイルは再生できないことがあります。
