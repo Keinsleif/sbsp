@@ -131,6 +131,7 @@ watch(selectedCue, (newCue, oldCue) => {
 
 watch(() => metadata.value?.duration, (newDuration, oldDuration) => {
   if (newDuration != null && oldDuration != null) {
+    // Change from valid old duration to new duration is rare case.
     timeRange.value = rebuildTimeRange(timeRange.value, newDuration, oldDuration)
   } else {
     timeRange.value = buildTimeRange();
