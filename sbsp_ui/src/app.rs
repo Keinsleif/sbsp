@@ -263,8 +263,12 @@ mod tests {
         }
 
         let mut ui = iced_test::simulator(state.view());
+        // `Selector`'s `&str` impl matches a widget's full text exactly,
+        // not a substring (learned by running this: an earlier version
+        // here searched for just "iced UI", which failed even though the
+        // toast clearly contained it).
         assert!(
-            ui.find("iced UI").is_ok(),
+            ui.find(fl!("menu-help-about-message").as_str()).is_ok(),
             "the About toast's message should be visible after the click"
         );
     }
@@ -274,9 +278,15 @@ mod tests {
         let state = new_state();
         let mut ui = iced_test::simulator(state.view());
 
-        assert!(ui.find("Ready").is_ok(), "the footer placeholder should render");
         assert!(
-            ui.find("Phase 6").is_ok(),
+            ui.find(fl!("shell-footer-ready").as_str()).is_ok(),
+            "the footer placeholder should render"
+        );
+        // Exact match, not substring (see the note in menu_about_shows_a_toast):
+        // the widget's full text is "Sidebar (Phase 6)", so searching for
+        // just "Phase 6" does not match it.
+        assert!(
+            ui.find(fl!("shell-sidebar-placeholder").as_str()).is_ok(),
             "the sidebar placeholder should render"
         );
     }
