@@ -5,7 +5,7 @@
 import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue';
 import { useAssetResult } from '../../stores/assetResult';
 import { useShowState } from '../../stores/showState';
-import { useElementSize, useEventListener, useMouseInElement } from '@vueuse/core';
+import { useElementSize, useEventListener, useMouseInElement, useThrottleFn } from '@vueuse/core';
 import { secondsToFormat } from '../../utils';
 import type { Cue } from '../../types/Cue';
 import {
@@ -68,7 +68,7 @@ const normSegments = (seg: Segment[]): Segment[] => {
   return result;
 };
 
-const timeRange = computed(() => {
+const buildTimeRange = () => {
   const duration = metadata.value?.duration ?? 1;
   const start =
     selectedCue.value?.params.type === 'audio'
@@ -79,7 +79,7 @@ const timeRange = computed(() => {
       ? (selectedCue.value.params.endTime ?? duration) / duration
       : 1;
   return { start, end, delta: end - start };
-});
+};
 
 const dragging = ref<{
   index: number;
@@ -91,6 +91,11 @@ const segments = ref<Segment[]>(
   selectedCue.value != null && selectedCue.value.params.type === 'audio'
     ? normSegments(selectedCue.value.params.envelope)
     : [],
+);
+
+const contentHeight = computed(() => props.heightPx - 4);
+const metadata = computed(() =>
+  selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
 );
 
 watch(selectedCue, (newCue, oldCue) => {
@@ -107,12 +112,18 @@ watch(selectedCue, (newCue, oldCue) => {
     selectedCue.value != null && selectedCue.value.params.type === 'audio'
       ? normSegments(selectedCue.value.params.envelope)
       : [];
+  timeRange.value = buildTimeRange();
 });
 
-const contentHeight = computed(() => props.heightPx - 4);
-const metadata = computed(() =>
-  selectedCue.value ? assetResult.getMetadata(selectedCue.value.id) : null,
-);
+watch(() => metadata.value?.duration, () => {
+  timeRange.value = buildTimeRange();
+});
+
+const timeRange = ref<{
+  start: number;
+  end: number;
+  delta: number;
+}>(buildTimeRange());
 
 const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
 const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
@@ -246,7 +257,7 @@ const handlePointerDown = (
   dragging.value = { index, type, dragged: false };
 };
 
-const handlePointerMove = (e: PointerEvent) => {
+const handlePointerMove = useThrottleFn((e: PointerEvent) => {
   if (dragging.value == null || props.isActive) return;
   dragging.value.dragged = true;
   const { x, y } = getSVGCoords(e);
@@ -310,7 +321,7 @@ const handlePointerMove = (e: PointerEvent) => {
       break;
     }
   }
-};
+}, 50);
 
 const handlePointerUp = () => {
   if (dragging.value != null) {
