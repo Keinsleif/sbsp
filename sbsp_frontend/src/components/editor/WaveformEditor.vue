@@ -324,17 +324,13 @@ const updatePointerPosition = (e: PointerEvent) => {
   }
 };
 
-const handlePointerMove = useThrottleFn(updatePointerPosition, 50);
+const handlePointerMove = useThrottleFn(updatePointerPosition, 50, true);
 
-const handlePointerUp = (e: PointerEvent) => {
+const handlePointerUp = () => {
   if (dragging.value != null) {
     if (!dragging.value.dragged && !dragging.value.type.startsWith('h')) {
       selectedIdx.value = dragging.value.index;
     } else {
-      if (dragging.value.dragged) {
-        updatePointerPosition(e);
-        if (dragging.value == null) return;
-      }
       saveEditorValue();
     }
     dragging.value = null;
