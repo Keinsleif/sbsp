@@ -29,6 +29,12 @@ import ContextMenu from 'primevue/contextmenu';
 import PathIcon from '../display/PathIcon.vue';
 import WaveformPath from '../display/WaveformPath.vue';
 
+type TimeRange = {
+  start: number;
+  end: number;
+  delta: number;
+};
+
 const { t } = useI18n();
 const api = useApi();
 const showState = useShowState();
@@ -81,6 +87,14 @@ const buildTimeRange = () => {
   return { start, end, delta: end - start };
 };
 
+const rebuildTimeRange = (timeRange: TimeRange, newDuration: number, oldDuration: number): TimeRange => {
+  const ratio = oldDuration / newDuration;
+  timeRange.start = timeRange.start * ratio;
+  timeRange.end = timeRange.end * ratio;
+  timeRange.delta = timeRange.end - timeRange.start;
+  return timeRange;
+};
+
 const dragging = ref<{
   index: number;
   type: 'volume' | 'start' | 'end' | 'hstart' | 'hend';
@@ -115,15 +129,15 @@ watch(selectedCue, (newCue, oldCue) => {
   timeRange.value = buildTimeRange();
 });
 
-watch(() => metadata.value?.duration, () => {
-  timeRange.value = buildTimeRange();
+watch(() => metadata.value?.duration, (newDuration, oldDuration) => {
+  if (newDuration != null && oldDuration != null) {
+    timeRange.value = rebuildTimeRange(timeRange.value, newDuration, oldDuration)
+  } else {
+    timeRange.value = buildTimeRange();
+  }
 });
 
-const timeRange = ref<{
-  start: number;
-  end: number;
-  delta: number;
-}>(buildTimeRange());
+const timeRange = ref<TimeRange>(buildTimeRange());
 
 const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
 const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
