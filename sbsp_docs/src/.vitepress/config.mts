@@ -1,5 +1,17 @@
 import { defineConfig, HeadConfig } from 'vitepress'
 
+const gscMeta: HeadConfig[] = process.env.GSC_VERIFICATION_CODE
+  ? [
+      [
+        'meta',
+        {
+          name: 'google-site-verification',
+          content: process.env.GSC_VERIFICATION_CODE
+        }
+      ]
+    ]
+  : [];
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "SBS Player",
@@ -11,6 +23,7 @@ export default defineConfig({
     ['meta', { property: 'og:site_name', content: 'SBS Player' }],
     ['meta', { property: 'og:image', content: 'https://keinsleif.github.io/sbsp/docs/thumbnail.png' }],
     ['meta', { property: 'og:locale', content: 'ja_JP' }],
+    ...gscMeta,
   ],
   transformHead(context) {
     const head: HeadConfig[] = [];
@@ -29,6 +42,9 @@ export default defineConfig({
     return head
   },
   base: '/sbsp/docs/',
+  sitemap: {
+    hostname: 'https://keinsleif.github.io/sbsp/docs/'
+  },
 
   markdown: {
     breaks: true

@@ -42,6 +42,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build with VitePress
+        env:
+          GSC_VERIFICATION_CODE: ${{ vars.GSC_VERIFICATION_CODE }}
         run: pnpm run docs:build
         working-directory: ./sbsp_docs
 
