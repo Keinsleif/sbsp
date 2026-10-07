@@ -74,27 +74,6 @@ const normSegments = (seg: Segment[]): Segment[] => {
   return result;
 };
 
-const buildTimeRange = () => {
-  const duration = metadata.value?.duration ?? 1;
-  const start =
-    selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.startTime ?? 0) / duration
-      : 0;
-  const end =
-    selectedCue.value?.params.type === 'audio'
-      ? (selectedCue.value.params.endTime ?? duration) / duration
-      : 1;
-  return { start, end, delta: end - start };
-};
-
-const rebuildTimeRange = (timeRange: TimeRange, newDuration: number, oldDuration: number): TimeRange => {
-  const ratio = oldDuration / newDuration;
-  timeRange.start = timeRange.start * ratio;
-  timeRange.end = timeRange.end * ratio;
-  timeRange.delta = timeRange.end - timeRange.start;
-  return timeRange;
-};
-
 const dragging = ref<{
   index: number;
   type: 'volume' | 'start' | 'end' | 'hstart' | 'hend';
@@ -126,19 +105,26 @@ watch(selectedCue, (newCue, oldCue) => {
     selectedCue.value != null && selectedCue.value.params.type === 'audio'
       ? normSegments(selectedCue.value.params.envelope)
       : [];
-  timeRange.value = buildTimeRange();
 });
 
-watch(() => metadata.value?.duration, (newDuration, oldDuration) => {
-  if (newDuration != null && oldDuration != null) {
-    // Change from valid old duration to new duration is rare case.
-    timeRange.value = rebuildTimeRange(timeRange.value, newDuration, oldDuration)
-  } else {
-    timeRange.value = buildTimeRange();
-  }
+const timeRange = ref<TimeRange>({
+  start: 0,
+  end: 1,
+  delta: 1,
 });
 
-const timeRange = ref<TimeRange>(buildTimeRange());
+watchEffect(() => {
+  const duration = metadata.value?.duration ?? 1;
+  const start =
+    selectedCue.value?.params.type === 'audio'
+      ? (selectedCue.value.params.startTime ?? 0) / duration
+      : 0;
+  const end =
+    selectedCue.value?.params.type === 'audio'
+      ? (selectedCue.value.params.endTime ?? duration) / duration
+      : 1;
+  timeRange.value = { start, end, delta: end - start };
+});
 
 const startPos = computed<number>(() => timeRange.value.start * (svgWidth.value - 1));
 const endPos = computed<number>(() => timeRange.value.end * (svgWidth.value - 1) - 1);
