@@ -68,6 +68,8 @@ symphonia-format-isomp4.opt-level = 2
 symphonia-format-mkv.opt-level = 2
 symphonia-format-ogg.opt-level = 2
 symphonia-format-riff.opt-level = 2
+symphonia-adapter-libopus.opt-level = 2
+opusic-sys.opt-level = 2
 
 [profile.release.package]
 sbsp_backend.opt-level = 3
@@ -90,3 +92,5 @@ symphonia-format-isomp4.opt-level = 3
 symphonia-format-mkv.opt-level = 3
 symphonia-format-ogg.opt-level = 3
 symphonia-format-riff.opt-level = 3
+symphonia-adapter-libopus.opt-level = 3
+opusic-sys.opt-level = 3

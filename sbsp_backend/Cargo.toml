@@ -20,6 +20,7 @@ backend = [
     "dep:rodio",
     "dep:rtrb",
     "dep:symphonia",
+    "dep:symphonia-adapter-libopus",
     "dep:log",
     "dep:anyhow",
     "dep:ebur128",
@@ -61,9 +62,10 @@ indexmap = { version = "2", features = ["serde"] }
 log = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "time", "macros", "sync", "fs", "signal"], optional = true }
 serde_json = { workspace = true, optional = true }
-rodio = { version = "0.22", git = "https://github.com/RustAudio/rodio", rev = "c5f1e94290922fe4ee963ce6f85754ea6ba36243", default-features = false, features = ["playback", "symphonia-all", "simd"], optional = true }
+rodio = { version = "0.22", git = "https://github.com/RustAudio/rodio", rev = "c5f1e94290922fe4ee963ce6f85754ea6ba36243", default-features = false, features = ["playback", "symphonia-all", "symphonia-libopus", "simd"], optional = true }
 rtrb = { version = "0.3", optional = true }
 symphonia = { version = "0.5", features = ["all", "opt-simd"], optional = true }
+symphonia-adapter-libopus = { version = "0.2", optional = true }
 anyhow = { version = "1.0", optional = true }
 ebur128 = { version = "0.1", optional = true }
 normpath = { version = "1.5", optional = true }
