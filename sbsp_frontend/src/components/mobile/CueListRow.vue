@@ -48,6 +48,7 @@ usePosition(
     const position = pos[props.item.cue.id];
     const activeCue = showState.activeCues[props.item.cue.id];
     if (activeCue == null || position == null || activeCue.duration === 0) {
+      rowRef.value.style.background = '';
       return;
     }
     rowRef.value.style.background =
