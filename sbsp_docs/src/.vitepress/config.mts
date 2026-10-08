@@ -78,6 +78,12 @@ export default defineConfig({
           { text: '設定画面', link: '/usage/ui/settings' },
         ],
       },
+      {
+        text: 'Tips',
+        items: [
+          { text: '高精度な時計', link: '/tips/clock' },
+        ]
+      },
     ],
 
     socialLinks: [
