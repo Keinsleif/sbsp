@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## app-2.8.0 - 2026-10-08
+#### Features
+- (**backend**) opus codec support (#219) - (99f1568) - *Keinsleif*
+- (**backend**) cache persistenance (#215) - (2147745) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) processor tasks management (#214) - (d6348ce) - *Keinsleif*
+- (**frontend**) clear mobile row background in early return branch (#218) - (f886d6c) - *Keinsleif*
+- (**frontend**) invalid timeRange reactivity in WaveformEditor (#216) - (81faba8) - *Keinsleif*
+#### Performance Improvements
+- (**backend**) audio source iterator (#211) - (eb550c9) - *Keinsleif*
+- (**frontend**) rendering optimizations (#212) - (27c428e) - *Keinsleif*
+
+- - -
+
 ## app-2.7.1 - 2026-09-23
 #### Bug Fixes
 - (**backend**) reporting ignored errors on backend (#201) - (c50b623) - *Keinsleif*

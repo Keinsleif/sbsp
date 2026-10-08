@@ -1,6 +1,6 @@
 {
   "name": "sbsp_frontend",
-  "version": "2.7.1",
+  "version": "2.8.0",
   "private": true,
   "license": "Elastic-2.0",
   "type": "module",

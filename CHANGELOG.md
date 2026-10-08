@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.8.0](https://github.com/Keinsleif/sbsp/compare/eb550c97954e21f028c32df89521a87176e6b4f5..2.8.0) - 2026-10-08
+### Package updates
+- [frontend-2.8.0](sbsp_frontend) bumped to [frontend-2.8.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.7.1..frontend-2.8.0)
+- [remote_app-2.8.0](sbsp_remote_app) bumped to [remote_app-2.8.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.7.1..remote_app-2.8.0)
+- [app-2.8.0](sbsp_app) bumped to [app-2.8.0](https://github.com/Keinsleif/sbsp/compare/app-2.7.1..app-2.8.0)
+- [docs-1.3.0](sbsp_docs) bumped to [docs-1.3.0](https://github.com/Keinsleif/sbsp/compare/docs-1.2.0..docs-1.3.0)
+- [backend-1.8.0](sbsp_backend) bumped to [backend-1.8.0](https://github.com/Keinsleif/sbsp/compare/backend-1.7.1..backend-1.8.0)
+### Global changes
+#### Features
+- (**backend**) opus codec support (#219) - ([99f1568](https://github.com/Keinsleif/sbsp/commit/99f1568c7d3f52e9f3ab9dbb1a12df81c015b884)) - [@Keinsleif](https://github.com/Keinsleif)
+- (**backend**) cache persistenance (#215) - ([2147745](https://github.com/Keinsleif/sbsp/commit/2147745e3e59bf82df8ee5b75eae327ab2eea881)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Performance Improvements
+- (**backend**) audio source iterator (#211) - ([eb550c9](https://github.com/Keinsleif/sbsp/commit/eb550c97954e21f028c32df89521a87176e6b4f5)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.7.1](https://github.com/Keinsleif/sbsp/compare/656ab13d38b07f739e0cae578e32b6d23361fdf1..2.7.1) - 2026-09-23
 ### Package updates
 - [remote_app-2.7.1](sbsp_remote_app) bumped to [remote_app-2.7.1](https://github.com/Keinsleif/sbsp/compare/remote_app-2.7.0..remote_app-2.7.1)

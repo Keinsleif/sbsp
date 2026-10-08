@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## docs-1.3.0 - 2026-10-08
+#### Features
+- (**backend**) opus codec support (#219) - (99f1568) - *Keinsleif*
+#### Documentation
+- add OGP for web page (#153) - (4a8c662) - *Keinsleif*
+
+- - -
+
 ## docs-1.2.0 - 2026-07-19
 #### Features
 - (**docs**) rewrite for new version (#140) - (13ee6ea) - *Keinsleif*
