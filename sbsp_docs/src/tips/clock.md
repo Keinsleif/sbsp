@@ -48,14 +48,14 @@
     - `UpdateInterval`: `0x64` (1秒)
     - `PhaseCorrectRate`: `7`
 
-4. 設定の反映 (任意)
+4. 設定の反映
 
     ```text
     net stop w32time
     net start w32time
     ```
 
-5. 設定の確認 (任意)
+5. 設定の確認
 
     ```text
     w32tm /query /status
