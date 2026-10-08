@@ -106,4 +106,25 @@ impl MenuSpec {
         self.menus.push((label.into(), items));
         self
     }
+
+    /// [`MenuSpec::menu`], but only adds the menu when `condition` holds
+    /// (e.g. a host-only menu in a build shared with remote/web).
+    pub fn menu_if(self, condition: bool, label: impl Into<String>, items: Vec<MenuNode>) -> Self {
+        if condition { self.menu(label, items) } else { self }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn menu_if_only_adds_the_menu_when_the_condition_holds() {
+        let spec = MenuSpec::new()
+            .menu_if(false, "Skipped", Vec::new())
+            .menu_if(true, "Added", Vec::new());
+
+        assert_eq!(spec.menus.len(), 1);
+        assert_eq!(spec.menus[0].0, "Added");
+    }
 }

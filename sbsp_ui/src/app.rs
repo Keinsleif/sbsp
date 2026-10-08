@@ -127,7 +127,21 @@ impl State {
         (state, boot_task)
     }
 
-    fn update(&mut self, message: Message) {
+    /// Messages that need to start something asynchronous (a menu item
+    /// that closes the window or talks to the backend) return their
+    /// `Task` from here; everything else is a plain state change in
+    /// [`State::apply`].
+    fn update(&mut self, message: Message) -> Task<Message> {
+        match message {
+            Message::Menu(id) => self.handle_menu(id),
+            other => {
+                self.apply(other);
+                Task::none()
+            }
+        }
+    }
+
+    fn apply(&mut self, message: Message) {
         match message {
             Message::ToggleTheme => {
                 self.theme_mode = match self.theme_mode {
@@ -142,7 +156,8 @@ impl State {
             }
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
-            Message::Menu(id) => self.handle_menu(id),
+            // Handled in update(): it needs to return a Task.
+            Message::Menu(_) => {}
             Message::Toast(message) => self.toasts.update(message),
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
@@ -190,18 +205,75 @@ impl State {
         }
     }
 
-    fn handle_menu(&mut self, id: crate::menu::MenuId) {
+    fn handle_menu(&mut self, id: crate::menu::MenuId) -> Task<Message> {
         match id.0 {
             "view.toggle-theme" => self.update(Message::ToggleTheme),
             "view.toggle-language" => self.update(Message::ToggleLanguage),
-            "help.about" => self.toasts.push(toast::Kind::Info, fl!("menu-help-about-message")),
-            // Closing the window cleanly needs update() to return a Task,
-            // which nothing else here needs yet; a hard exit is a
-            // placeholder until Phase 7's window-state work gives this a
-            // reason to change.
-            "file.quit" => std::process::exit(0),
-            other => log::warn!("unhandled menu id: {other}"),
+            "help.about" => {
+                self.toasts
+                    .push(toast::Kind::Info, fl!("menu-help-about-message"));
+                Task::none()
+            }
+            "file.quit" => iced::window::latest().and_then(iced::window::close),
+            #[cfg(feature = "host")]
+            "debug.add-test-cue" => self.add_test_cue(),
+            other => {
+                log::warn!("unhandled menu id: {other}");
+                Task::none()
+            }
         }
+    }
+
+    /// TEMPORARY debug aid, removed once Phase 6 has a real way to add
+    /// cues: appends a wait cue ("Wait 1s", "Wait 2s", ...) at the end of
+    /// the root list through the backend, so the cue list can be exercised
+    /// by hand before anything else creates cues. The result comes back
+    /// through `CueListUpdated`, exactly as a real add would.
+    #[cfg(feature = "host")]
+    fn add_test_cue(&self) -> Task<Message> {
+        use sbsp_backend::manager::InsertPosition;
+        use sbsp_backend::model::cue::{
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
+            WaitCueParam,
+        };
+
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        let handle = backend.handle();
+
+        let cue = Cue {
+            id: Uuid::new_v4(),
+            number: String::new(),
+            name: None,
+            notes: String::new(),
+            color: CueColor::default(),
+            pre_wait: 0.0,
+            chain: CueChain::default(),
+            treat_stop_as_completed: false,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
+            parent_id: None,
+            params: CueParam::Wait(WaitCueParam {
+                duration: (self.model.cue_list.cues.len() + 1) as f64,
+            }),
+        };
+
+        Task::perform(
+            async move {
+                handle
+                    .model_handle
+                    .add_cue(
+                        cue,
+                        InsertPosition::Inside {
+                            target: None,
+                            index: None,
+                        },
+                    )
+                    .await
+            },
+            |result| result.err().map(|e| Message::BackendError(e.to_string())),
+        )
+        .and_then(Task::done)
     }
 
     #[cfg(feature = "host")]
@@ -294,6 +366,11 @@ impl State {
                     MenuNode::item("view.toggle-language", self.lang.toggle().label()),
                 ],
             )
+            .menu_if(
+                cfg!(feature = "host"),
+                "Debug",
+                vec![MenuNode::item("debug.add-test-cue", "Add Test Cue")],
+            )
             .menu(
                 fl!("menu-help"),
                 vec![MenuNode::item("help.about", fl!("menu-help-about"))],
@@ -367,7 +444,7 @@ mod tests {
             .expect("the Toggle Theme item should be clickable");
 
         for message in ui.into_messages() {
-            state.update(message);
+            let _ = state.update(message);
         }
 
         assert_eq!(state.theme_mode, ThemeMode::Dark);
@@ -398,7 +475,7 @@ mod tests {
         ui.click("日本語").expect("the language item should be clickable");
 
         for message in ui.into_messages() {
-            state.update(message);
+            let _ = state.update(message);
         }
 
         assert_eq!(state.lang, Language::Ja);
@@ -420,7 +497,7 @@ mod tests {
         ui.click("About").expect("the About item should be clickable");
 
         for message in ui.into_messages() {
-            state.update(message);
+            let _ = state.update(message);
         }
 
         let mut ui = iced_test::simulator(state.view());
@@ -487,7 +564,7 @@ mod tests {
         let mut ui = iced_test::simulator(state.view());
         ui.click("Wait 2s").expect("the second row should be clickable");
         for message in ui.into_messages() {
-            state.update(message);
+            let _ = state.update(message);
         }
 
         assert_eq!(state.ui.selected, Some(ids[1]));
@@ -504,7 +581,7 @@ mod tests {
         let mut ui = iced_test::simulator(state.view());
         ui.click("Wait 3s").expect("the third row should be clickable");
         for message in ui.into_messages() {
-            state.update(message);
+            let _ = state.update(message);
         }
 
         assert_eq!(state.ui.selected_rows, ids.to_vec());
