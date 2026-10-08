@@ -128,7 +128,7 @@
 
     `Create and use a special NTP account` を選択します。
 
-    下の6つのチェックボックスの全てにチェックを入れます。
+    下のチェックボックスはデフォルトの状態を推奨します。
 
     ![MeinbergNTPインストール画面6](meinberg_installer6.png)
 
