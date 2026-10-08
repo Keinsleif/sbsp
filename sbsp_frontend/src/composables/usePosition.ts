@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { onUnmounted } from 'vue';
+import { onUnmounted, unref, watch, type MaybeRef } from 'vue';
 import { useShowState } from '../stores/showState';
 
 type PositionCallback = (positions: { [id: string]: number }) => void;
@@ -30,13 +30,24 @@ const loop = (timestamp: DOMHighResTimeStamp) => {
   rafId = requestAnimationFrame(loop);
 };
 
-export const usePosition = (domTickFn: PositionCallback) => {
+export const usePosition = (domTickFn: PositionCallback, enabled: MaybeRef<boolean> = true, onDeactivate?: () => void) => {
   if (showState == null) {
     showState = useShowState();
   }
-  if (domTickFn) {
-    callbacks.add(domTickFn);
-  }
+  watch(
+    () => unref(enabled),
+    (isActive, _, onCleanup) => {
+      if (isActive && domTickFn) {
+        callbacks.add(domTickFn);
+
+        onCleanup(() => {
+          callbacks.delete(domTickFn);
+          onDeactivate?.();
+        });
+      }
+    },
+    { immediate: true },
+  );
 
   if (rafId == null) {
     rafId = requestAnimationFrame(loop);

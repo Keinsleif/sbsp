@@ -21,6 +21,7 @@ export const AUDIO_EXTENSIONS = [
   'alac',
   'flac',
   'mp3',
+  'opus',
 ];
 
 export const useApi: () => IBackendAdapter = __IS_WEBSOCKET__ ? useWebsocketApi : useTauriApi;

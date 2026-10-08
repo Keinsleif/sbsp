@@ -35,6 +35,7 @@ impl Volume {
         }
     }
 
+    #[inline]
     pub fn set_volume(&mut self, volume: Decibels, fade_param: FadeParam) {
         if let Some(info) = self.fade_info.as_mut() {
             info.from = self.volume;
@@ -51,6 +52,7 @@ impl Volume {
         }
     }
 
+    #[inline]
     pub fn update(&mut self, dt: f64) -> bool {
         if let Some(info) = self.fade_info.as_mut() {
             if info.elapsed >= info.fade_param.duration {

@@ -240,6 +240,7 @@ impl ChannelMapping {
         }
     }
 
+    #[inline]
     pub fn get_factor(&self, in_n: usize, out_n: usize) -> f32 {
         if in_n < self.input_channels && out_n < self.output_channels {
             self.map[in_n * self.output_channels + out_n]
@@ -522,13 +523,13 @@ where
             self.volume.update(dt);
 
             if state.is_advancing() {
-                let factor = self.control_volume.volume
+                let factor = (self.control_volume.volume
                     + self.volume.volume
                     + self.envelope.update(
                         self.offset_position
                             + self.playing_frames_counted as f64
                                 / self.current_span_sample_rate.get() as f64,
-                    );
+                    )).as_amplitude();
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];
@@ -552,7 +553,7 @@ where
                         {
                             out += self.settings.channel_mapping.get_factor(in_n, out_n) * src;
                         }
-                        self.output_buffer[out_n] = out * factor.as_amplitude();
+                        self.output_buffer[out_n] = out * factor;
                     }
                 } else if self.shared.load_repeat() {
                     let _ = self.try_seek(Duration::ZERO);

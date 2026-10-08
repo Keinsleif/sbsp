@@ -20,7 +20,7 @@ export const useUiState = defineStore(
     const playbackCursor = ref<string | null>(null);
     const selected = ref<string | null>(null);
     const selectedRows = ref<Set<string>>(new Set());
-    const expandedRows = ref<string[]>([]);
+    const expandedRows = ref<Set<string>>(new Set());
     const preWaitDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const durationDisplayMode = ref<'elapsed' | 'remain'>('elapsed');
     const sideBarTab = ref<'activeCues' | 'meter'>('activeCues');
@@ -103,13 +103,10 @@ export const useUiState = defineStore(
     };
 
     const toggleExpand = (id: string) => {
-      if (expandedRows.value.includes(id)) {
-        expandedRows.value.splice(
-          expandedRows.value.findIndex((value) => value === id),
-          1,
-        );
+      if (expandedRows.value.has(id)) {
+        expandedRows.value.delete(id);
       } else {
-        expandedRows.value.push(id);
+        expandedRows.value.add(id);
       }
     };
 
@@ -119,8 +116,8 @@ export const useUiState = defineStore(
       while (targetId != null) {
         const target_cue = showModel.getCueById(targetId);
         if (target_cue != null && target_cue.parentId != null) {
-          if (!expandedRows.value.includes(target_cue.parentId)) {
-            expandedRows.value.push(target_cue.parentId);
+          if (!expandedRows.value.has(target_cue.parentId)) {
+            expandedRows.value.add(target_cue.parentId);
           }
           targetId = target_cue.parentId;
         } else {
