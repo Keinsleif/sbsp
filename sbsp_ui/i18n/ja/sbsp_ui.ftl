@@ -7,5 +7,5 @@ menu-help = ヘルプ
 menu-help-about = バージョン情報
 menu-help-about-message = SBS Player（iced UI、開発中）
 shell-sidebar-placeholder = サイドバー（Phase 6）
-shell-main-placeholder = { $target } のメインコンテンツ（Phase 4）
 shell-footer-ready = 準備完了
+cue-list-empty = キューはまだありません

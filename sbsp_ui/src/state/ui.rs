@@ -196,6 +196,47 @@ impl UiState {
         }
     }
 
+    /// Selects every cue between `anchor` and `target` (inclusive) in
+    /// `visible_order` (the flat list's id order, with collapsed-away rows
+    /// already filtered out by the caller -- range selection should span
+    /// what's visibly between the two rows, not skip past a collapsed
+    /// group's hidden children only to land past them). `target` becomes
+    /// `selected`; `anchor` is typically the previous `selected`, found by
+    /// the caller before this replaces it.
+    ///
+    /// This has no equivalent in the original `uiState.ts`: the Vue
+    /// frontend's shift-click range logic lived in `CueList.vue` itself,
+    /// not the store, so there was nothing to port here -- this is new
+    /// logic for Phase 4, not a port.
+    pub fn select_range(
+        &mut self,
+        anchor: Uuid,
+        target: Uuid,
+        visible_order: &[Uuid],
+        lock_cursor_to_selection: bool,
+    ) {
+        let Some(anchor_pos) = visible_order.iter().position(|id| *id == anchor) else {
+            // Anchor no longer visible (e.g. its group just got collapsed);
+            // fall back to a plain single selection rather than guessing
+            // at a range from nowhere.
+            self.set_selected(target, lock_cursor_to_selection);
+            return;
+        };
+        let Some(target_pos) = visible_order.iter().position(|id| *id == target) else {
+            return;
+        };
+
+        let (from, to) = if anchor_pos <= target_pos {
+            (anchor_pos, target_pos)
+        } else {
+            (target_pos, anchor_pos)
+        };
+
+        self.selected_rows = visible_order[from..=to].to_vec();
+        self.selected = Some(target);
+        self.try_update_playback_cursor(Some(target), lock_cursor_to_selection);
+    }
+
     pub fn toggle_expand(&mut self, id: Uuid) {
         if !self.expanded_rows.remove(&id) {
             self.expanded_rows.insert(id);
@@ -372,6 +413,48 @@ mod tests {
         assert!(state.expanded_rows.contains(&parent));
         assert!(state.expanded_rows.contains(&grandparent));
         assert!(!state.expanded_rows.contains(&child));
+    }
+
+    #[test]
+    fn select_range_forward_and_backward_cover_the_same_ids() {
+        let ids: Vec<Uuid> = (0..4).map(|_| Uuid::new_v4()).collect();
+        let (a, b, c, d) = (ids[0], ids[1], ids[2], ids[3]);
+
+        let mut forward = UiState::new(true);
+        forward.select_range(b, d, &ids, false);
+        assert_eq!(forward.selected_rows, vec![b, c, d]);
+        assert_eq!(forward.selected, Some(d));
+
+        let mut backward = UiState::new(true);
+        backward.select_range(d, b, &ids, false);
+        assert_eq!(backward.selected_rows, vec![b, c, d]);
+        assert_eq!(backward.selected, Some(b));
+
+        let _ = a;
+    }
+
+    #[test]
+    fn select_range_with_missing_anchor_falls_back_to_single_selection() {
+        let ids: Vec<Uuid> = (0..3).map(|_| Uuid::new_v4()).collect();
+        let hidden_anchor = Uuid::new_v4();
+
+        let mut state = UiState::new(true);
+        state.select_range(hidden_anchor, ids[1], &ids, false);
+
+        assert_eq!(state.selected_rows, vec![ids[1]]);
+        assert_eq!(state.selected, Some(ids[1]));
+    }
+
+    #[test]
+    fn select_range_with_missing_target_is_a_no_op() {
+        let ids: Vec<Uuid> = (0..3).map(|_| Uuid::new_v4()).collect();
+
+        let mut state = UiState::new(true);
+        state.set_selected(ids[0], false);
+        state.select_range(ids[0], Uuid::new_v4(), &ids, false);
+
+        assert_eq!(state.selected_rows, vec![ids[0]]);
+        assert_eq!(state.selected, Some(ids[0]));
     }
 
     #[test]
