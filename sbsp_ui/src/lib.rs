@@ -8,6 +8,7 @@ compile_error!("feature `web` cannot be combined with `host` or `remote`");
 
 pub mod app;
 pub mod domain;
+pub mod features;
 pub mod i18n;
 pub mod menu;
 pub mod port;

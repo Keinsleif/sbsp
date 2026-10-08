@@ -7,5 +7,5 @@ menu-help = Help
 menu-help-about = About
 menu-help-about-message = SBS Player (iced UI, in development).
 shell-sidebar-placeholder = Sidebar (Phase 6)
-shell-main-placeholder = Main content for { $target } (Phase 4)
 shell-footer-ready = Ready
+cue-list-empty = No cues yet

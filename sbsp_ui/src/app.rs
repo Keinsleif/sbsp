@@ -17,8 +17,9 @@
 use std::time::{Duration, Instant};
 
 use iced::widget::{column, container, row, text};
-use iced::{Element, Length, Subscription, Task};
+use iced::{Element, Length, Subscription, Task, event, keyboard};
 
+use crate::features::cue_list;
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{assets::AssetResults, model::ShowModelState, playback::PlaybackState, ui::UiState};
@@ -29,6 +30,8 @@ use crate::widgets::{menu_bar, toast};
 use crate::host::backend::HostPort;
 #[cfg(feature = "host")]
 use crate::port::{FullState, PortEvent};
+
+use sbsp_frontend_settings::NameFormatSettings;
 
 use crate::fl;
 
@@ -48,9 +51,16 @@ pub fn run(target: &'static str) -> iced::Result {
 }
 
 pub struct State {
-    target: &'static str,
     theme_mode: ThemeMode,
     lang: Language,
+    // Not yet synced from the loaded settings (they live behind an async
+    // RwLock inside HostPort, unreadable from the synchronous view()). The
+    // defaults match what a first run loads anyway; wiring real values in
+    // is a Phase 7 job (a settings dialog is the first thing that can
+    // change them).
+    name_format: NameFormatSettings,
+    lock_cursor_to_selection: bool,
+    modifiers: keyboard::Modifiers,
     model: ShowModelState,
     ui: UiState,
     playback: PlaybackState,
@@ -64,6 +74,8 @@ pub struct State {
 pub enum Message {
     ToggleTheme,
     ToggleLanguage,
+    ModifiersChanged(keyboard::Modifiers),
+    CueList(cue_list::Message),
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
@@ -77,6 +89,8 @@ pub enum Message {
 
 impl State {
     fn new(target: &'static str) -> (Self, Task<Message>) {
+        log::info!("starting sbsp_ui ({target})");
+
         #[cfg(feature = "host")]
         let boot_task = Task::perform(HostPort::start(), |result| match result {
             Ok((backend, state)) => Message::BackendStarted(backend, state),
@@ -95,9 +109,12 @@ impl State {
         crate::i18n::select(&lang.langid());
 
         let state = Self {
-            target,
             theme_mode: ThemeMode::default(),
             lang,
+            name_format: NameFormatSettings::default(),
+            lock_cursor_to_selection: sbsp_frontend_settings::GeneralSettings::default()
+                .lock_cursor_to_selection,
+            modifiers: keyboard::Modifiers::default(),
             model: ShowModelState::default(),
             ui: UiState::new(is_host),
             playback: PlaybackState::new(),
@@ -123,6 +140,8 @@ impl State {
                 self.lang = self.lang.toggle();
                 crate::i18n::select(&self.lang.langid());
             }
+            Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
+            Message::CueList(message) => self.handle_cue_list(message),
             Message::Menu(id) => self.handle_menu(id),
             Message::Toast(message) => self.toasts.update(message),
             Message::Tick(now) => {
@@ -142,6 +161,31 @@ impl State {
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
+            }
+        }
+    }
+
+    fn handle_cue_list(&mut self, message: cue_list::Message) {
+        let lock = self.lock_cursor_to_selection;
+
+        match message {
+            cue_list::Message::ToggleExpand(id) => self.ui.toggle_expand(id),
+            cue_list::Message::Select(id) => {
+                if self.modifiers.shift() {
+                    // Anchor on the current selection; with none yet,
+                    // the clicked row anchors itself (a one-row range).
+                    let anchor = self.ui.selected.unwrap_or(id);
+                    let order = cue_list::visible_order(&self.model, &self.ui);
+                    self.ui.select_range(anchor, id, &order, lock);
+                } else if self.modifiers.command() {
+                    if self.ui.selected_rows.contains(&id) {
+                        self.ui.remove_from_selected(&[id], lock);
+                    } else {
+                        self.ui.add_selected(id, lock);
+                    }
+                } else {
+                    self.ui.set_selected(id, lock);
+                }
             }
         }
     }
@@ -167,6 +211,30 @@ impl State {
         match event {
             BackendEvent::CueStatus(param) => self.playback.handle_cue_state_event(&param, Instant::now()),
             BackendEvent::SyncState(data) => self.playback.handle_sync_event(&data, Instant::now()),
+            BackendEvent::ShowModelLoaded { model, .. } | BackendEvent::ShowModelReset { model } => {
+                self.model = model;
+            }
+            // The authoritative post-mutation list; add_cue/remove_cue/
+            // move_cue and friends (Phase 4's cue list operations) all
+            // produce this rather than a per-operation delta, so handling
+            // just this one event keeps the model in sync with all of them.
+            BackendEvent::CueListUpdated { cue_list } => self.model.cue_list = cue_list,
+            BackendEvent::SettingsUpdated { new_settings } => self.model.settings = *new_settings,
+            BackendEvent::ModelNameUpdated { new_name } => self.model.name = new_name,
+            BackendEvent::AssetMetadata { path, data } => self.assets.add_metadata(path, data),
+            BackendEvent::AssetResult { path, result } => match result {
+                Ok(data) => self.assets.add(path, data),
+                Err(_) => self.assets.add_error(path),
+            },
+            BackendEvent::OperationFailed { error } => {
+                log::warn!("backend operation failed: {error:?}");
+            }
+            // CueRemoved is not separately handled: every path that
+            // removes a cue (remove_cue/remove_cues) also appears to
+            // produce a CueListUpdated for the resulting list, which is
+            // what's actually applied above. If that turns out not to
+            // always hold, cues removed that way would linger in `model`
+            // until something else corrects it -- worth watching for.
             other => log::debug!("unhandled backend event: {other:?}"),
         }
     }
@@ -189,7 +257,23 @@ impl State {
         #[cfg(not(feature = "host"))]
         let backend_events = Subscription::none();
 
-        Subscription::batch([toasts, tick, backend_events])
+        // Only the modifier state is tracked here (needed to tell a plain
+        // click from shift-/ctrl-click in the cue list); key presses
+        // themselves (hotkeys, arrow-key movement) are the next piece of
+        // Phase 4. Events a focused widget already consumed are skipped.
+        let modifiers = event::listen_with(|event, status, _window| {
+            if status == event::Status::Captured {
+                return None;
+            }
+            match event {
+                iced::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
+                    Some(Message::ModifiersChanged(modifiers))
+                }
+                _ => None,
+            }
+        });
+
+        Subscription::batch([toasts, tick, backend_events, modifiers])
     }
 
     fn menu_spec(&self) -> MenuSpec {
@@ -226,7 +310,10 @@ impl State {
             .height(Length::Fill)
             .padding(12);
 
-        let main = container(text(fl!("shell-main-placeholder", target = self.target)))
+        let main = container(
+            cue_list::view(&self.model, &self.ui, &self.playback, &self.name_format)
+                .map(Message::CueList),
+        )
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(12);
@@ -345,6 +432,83 @@ mod tests {
             ui.find(fl!("menu-help-about-message").as_str()).is_ok(),
             "the About toast's message should be visible after the click"
         );
+    }
+
+    /// Three root wait cues named "Wait 1s"/"Wait 2s"/"Wait 3s" (distinct
+    /// names, since `Simulator` selects rows by their exact text).
+    fn populated_state() -> (State, [sbsp_backend::model::cue::Uuid; 3]) {
+        use sbsp_backend::model::cue::{
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
+            WaitCueParam,
+        };
+
+        let ids = [Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
+        let mut state = new_state();
+
+        for (i, id) in ids.iter().enumerate() {
+            state.model.cue_list.cues.insert(
+                *id,
+                Cue {
+                    id: *id,
+                    number: String::new(),
+                    name: None,
+                    notes: String::new(),
+                    color: CueColor::default(),
+                    pre_wait: 0.0,
+                    chain: CueChain::default(),
+                    treat_stop_as_completed: false,
+                    cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
+                    parent_id: None,
+                    params: CueParam::Wait(WaitCueParam {
+                        duration: (i + 1) as f64,
+                    }),
+                },
+            );
+        }
+        state.model.cue_list.root_ids = ids.to_vec();
+
+        (state, ids)
+    }
+
+    #[test]
+    #[serial]
+    fn empty_cue_list_shows_its_placeholder() {
+        let state = new_state();
+        let mut ui = iced_test::simulator(state.view());
+
+        assert!(ui.find(fl!("cue-list-empty").as_str()).is_ok());
+    }
+
+    #[test]
+    #[serial]
+    fn clicking_a_cue_row_selects_it() {
+        let (mut state, ids) = populated_state();
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click("Wait 2s").expect("the second row should be clickable");
+        for message in ui.into_messages() {
+            state.update(message);
+        }
+
+        assert_eq!(state.ui.selected, Some(ids[1]));
+        assert_eq!(state.ui.selected_rows, vec![ids[1]]);
+    }
+
+    #[test]
+    #[serial]
+    fn shift_clicking_selects_the_range_from_the_current_selection() {
+        let (mut state, ids) = populated_state();
+        state.ui.set_selected(ids[0], false);
+        state.modifiers = keyboard::Modifiers::SHIFT;
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click("Wait 3s").expect("the third row should be clickable");
+        for message in ui.into_messages() {
+            state.update(message);
+        }
+
+        assert_eq!(state.ui.selected_rows, ids.to_vec());
+        assert_eq!(state.ui.selected, Some(ids[2]));
     }
 
     #[test]
