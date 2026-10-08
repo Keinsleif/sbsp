@@ -45,7 +45,7 @@
 
     各値を以下のように更新します。
 
-    - `UpdateInterval`: `0x64` (100秒)
+    - `UpdateInterval`: `0x64` (1秒)
     - `PhaseCorrectRate`: `7`
 
 4. 設定の反映 (任意)
