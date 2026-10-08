@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use symphonia::core::codecs::CODEC_TYPE_NULL;
+use symphonia::{core::codecs::CODEC_TYPE_NULL, default::register_enabled_codecs};
 
-use std::collections::HashSet;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{collections::HashMap, sync::Arc, time::SystemTime};
+use std::{
+    path::PathBuf,
+    collections::{HashMap, HashSet},
+    time::SystemTime,
+    sync::{atomic::{AtomicBool, Ordering}, Arc, LazyLock},
+};
 
 use ebur128::EbuR128;
+use symphonia_adapter_libopus::OpusDecoder;
 use symphonia::core::{
-    audio::SampleBuffer, codecs::DecoderOptions, formats::FormatOptions, io::MediaSourceStream,
+    audio::SampleBuffer, codecs::{DecoderOptions, CodecRegistry}, formats::FormatOptions, io::MediaSourceStream,
     meta::MetadataOptions, probe::Hint,
 };
 use tokio::{
@@ -29,6 +32,13 @@ use crate::manager::ShowModelHandle;
 
 const WAVEFORM_THRESHOLD: usize = 2000;
 const AUDIO_THRESHOLD: f32 = 0.001_f32;
+
+static CODEC_REGISTRY: LazyLock<CodecRegistry> = LazyLock::new(|| {
+    let mut registry = CodecRegistry::new();
+    register_enabled_codecs(&mut registry);
+    registry.register_all::<OpusDecoder>();
+    registry
+});
 
 #[derive(Default)]
 struct ProcessingEntry {
@@ -437,7 +447,7 @@ impl AssetProcessor {
             }
         }
 
-        let mut decoder = symphonia::default::get_codecs().make(&codec_params, &decoder_opts)?;
+        let mut decoder = CODEC_REGISTRY.make(&codec_params, &decoder_opts)?;
 
         let total_frames = codec_params.n_frames.unwrap_or(0);
 
