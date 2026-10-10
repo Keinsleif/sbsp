@@ -52,6 +52,73 @@ pub fn visible_order(model: &ShowModelState, ui: &UiState) -> Vec<Uuid> {
     .collect()
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Step {
+    Up,
+    Down,
+}
+
+/// Moves the selection one visible row up/down (the arrow-key bindings),
+/// or with `extend` adds that row to it. Returns the row that became the
+/// selection, for scrolling it into view.
+///
+/// With nothing selected, Up lands on the first visible row and Down on
+/// the last, as in the original. Extending only crosses to a row at the
+/// same nesting level (the original refuses to extend a selection into or
+/// out of a group), and does nothing at either end of the list.
+pub fn move_cursor(
+    model: &ShowModelState,
+    ui: &mut UiState,
+    step: Step,
+    extend: bool,
+    lock_cursor_to_selection: bool,
+) -> Option<Uuid> {
+    let rows: Vec<FlatCueEntry> = flatten(
+        &model.cue_list.root_ids,
+        &model.cue_list.cues,
+        &ui.expanded_rows,
+    )
+    .into_iter()
+    .filter(|entry| !entry.is_hidden)
+    .collect();
+
+    let current = ui
+        .selected
+        .and_then(|id| rows.iter().position(|entry| entry.cue_id == id));
+
+    let target = match current {
+        Some(index) => {
+            let next = match step {
+                Step::Up => index.checked_sub(1)?,
+                Step::Down => index + 1,
+            };
+            let entry = rows.get(next)?;
+            if extend && entry.level != rows[index].level {
+                return None;
+            }
+            entry
+        }
+        None => match step {
+            Step::Up => rows.first()?,
+            Step::Down => rows.last()?,
+        },
+    };
+
+    let id = target.cue_id;
+    if extend {
+        ui.add_selected(id, lock_cursor_to_selection);
+    } else {
+        ui.set_selected(id, lock_cursor_to_selection);
+    }
+    Some(id)
+}
+
+/// Selects every visible row. Like the original, this leaves `selected`
+/// (the single "primary" row) alone.
+pub fn select_all(model: &ShowModelState, ui: &mut UiState) {
+    ui.selected_rows = visible_order(model, ui);
+}
+
 pub fn view<'a>(
     model: &'a ShowModelState,
     ui: &'a UiState,
@@ -278,6 +345,78 @@ mod tests {
         ui.toggle_expand(g);
 
         assert_eq!(visible_order(&model, &ui), vec![a, g, c, d]);
+    }
+
+    #[test]
+    fn arrow_down_with_nothing_selected_lands_on_the_last_row() {
+        let (model, _a, g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(g));
+        assert_eq!(ui.selected, Some(g));
+    }
+
+    #[test]
+    fn arrow_up_with_nothing_selected_lands_on_the_first_row() {
+        let (model, a, _g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+
+        assert_eq!(move_cursor(&model, &mut ui, Step::Up, false, false), Some(a));
+    }
+
+    #[test]
+    fn moving_steps_over_hidden_children_and_into_expanded_ones() {
+        let (model, a, g, c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.set_selected(a, false);
+
+        // Collapsed: a -> g, then the end of the list.
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(g));
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), None);
+        assert_eq!(ui.selected, Some(g));
+
+        // Expanded: g -> c.
+        ui.toggle_expand(g);
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(c));
+    }
+
+    #[test]
+    fn moving_up_stops_at_the_first_row() {
+        let (model, a, _g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.set_selected(a, false);
+
+        assert_eq!(move_cursor(&model, &mut ui, Step::Up, false, false), None);
+        assert_eq!(ui.selected, Some(a));
+    }
+
+    #[test]
+    fn extending_adds_rows_at_the_same_level_only() {
+        let (model, a, g, c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        ui.set_selected(a, false);
+
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, true, false), Some(g));
+        assert_eq!(ui.selected_rows, vec![a, g]);
+
+        // g (level 0) -> c (level 1): refused, selection unchanged.
+        assert_eq!(move_cursor(&model, &mut ui, Step::Down, true, false), None);
+        assert_eq!(ui.selected_rows, vec![a, g]);
+        let _ = c;
+    }
+
+    #[test]
+    fn select_all_covers_visible_rows_only() {
+        let (model, a, g, c, d) = sample();
+        let mut ui = UiState::new(true);
+
+        select_all(&model, &mut ui);
+        assert_eq!(ui.selected_rows, vec![a, g]);
+
+        ui.toggle_expand(g);
+        select_all(&model, &mut ui);
+        assert_eq!(ui.selected_rows, vec![a, g, c, d]);
     }
 
     #[test]

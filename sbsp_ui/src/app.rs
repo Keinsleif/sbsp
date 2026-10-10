@@ -19,15 +19,23 @@ use std::time::{Duration, Instant};
 use iced::widget::{column, container, row, text};
 use iced::{Element, Length, Subscription, Task, event, keyboard};
 
-use crate::features::cue_list;
+#[cfg(feature = "host")]
+use crate::domain::cursor::{CueEvent, CursorMove, advance};
+use crate::features::{cue_list, hotkeys};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
-use crate::state::{assets::AssetResults, model::ShowModelState, playback::PlaybackState, ui::UiState};
+use crate::state::{
+    assets::AssetResults,
+    model::ShowModelState,
+    playback::PlaybackState,
+    ui::{Mode, UiState},
+};
 use crate::theme::ThemeMode;
 use crate::widgets::{menu_bar, toast};
 
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
+use crate::port::Control;
 #[cfg(feature = "host")]
 use crate::port::{FullState, PortEvent};
 
@@ -60,6 +68,10 @@ pub struct State {
     // change them).
     name_format: NameFormatSettings,
     lock_cursor_to_selection: bool,
+    // Same story as above: seek amount and the hotkey table come from
+    // the settings defaults until Phase 7 loads real ones.
+    seek_amount: f64,
+    hotkeys: hotkeys::Bindings,
     modifiers: keyboard::Modifiers,
     model: ShowModelState,
     ui: UiState,
@@ -75,6 +87,7 @@ pub enum Message {
     ToggleTheme,
     ToggleLanguage,
     ModifiersChanged(keyboard::Modifiers),
+    KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
@@ -114,6 +127,11 @@ impl State {
             name_format: NameFormatSettings::default(),
             lock_cursor_to_selection: sbsp_frontend_settings::GeneralSettings::default()
                 .lock_cursor_to_selection,
+            seek_amount: sbsp_frontend_settings::GeneralSettings::default().seek_amount,
+            hotkeys: hotkeys::Bindings::from_settings(
+                &sbsp_frontend_settings::hotkey::HotkeySettings::default(),
+                hotkeys::is_mac(),
+            ),
             modifiers: keyboard::Modifiers::default(),
             model: ShowModelState::default(),
             ui: UiState::new(is_host),
@@ -134,6 +152,7 @@ impl State {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Menu(id) => self.handle_menu(id),
+            Message::KeyPressed(press) => self.handle_key(press),
             other => {
                 self.apply(other);
                 Task::none()
@@ -156,8 +175,8 @@ impl State {
             }
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
-            // Handled in update(): it needs to return a Task.
-            Message::Menu(_) => {}
+            // Handled in update(): they need to return a Task.
+            Message::Menu(_) | Message::KeyPressed(_) => {}
             Message::Toast(message) => self.toasts.update(message),
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
@@ -167,6 +186,11 @@ impl State {
                 log::info!("backend started, {} active cue(s) at connect", state.show_state.active_cues.len());
                 self.playback.update(&state.show_state, Instant::now());
                 self.model = state.show_model;
+                self.ui.set_playback_cursor(
+                    self.model.cue_list.root_ids.first().copied(),
+                    self.lock_cursor_to_selection,
+                    &self.model.cue_list.cues,
+                );
                 self.ui.set_permission(sbsp_backend::api::Permissions::all());
                 self.backend = Some(backend);
             }
@@ -203,6 +227,105 @@ impl State {
                 }
             }
         }
+    }
+
+    fn handle_key(&mut self, press: hotkeys::KeyPress) -> Task<Message> {
+        match self.hotkeys.find(&press) {
+            Some(action) => self.run_action(action),
+            None => Task::none(),
+        }
+    }
+
+    /// What each hotkey does. The guards mirror the original's per-hotkey
+    /// callbacks: selection movement works in every mode, everything that
+    /// plays or stops something is off in view mode.
+    fn run_action(&mut self, action: hotkeys::Action) -> Task<Message> {
+        use cue_list::Step;
+        use hotkeys::Action as A;
+        use sbsp_backend::controller::state::PlaybackStatus as S;
+
+        let lock = self.lock_cursor_to_selection;
+
+        match action {
+            A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown => {
+                let step = if matches!(action, A::CursorUp | A::ExtendUp) {
+                    Step::Up
+                } else {
+                    Step::Down
+                };
+                let extend = matches!(action, A::ExtendUp | A::ExtendDown);
+                // Scrolling the new row into view is a separate piece.
+                let _ = cue_list::move_cursor(&self.model, &mut self.ui, step, extend, lock);
+                return Task::none();
+            }
+            A::SelectAll => {
+                cue_list::select_all(&self.model, &mut self.ui);
+                return Task::none();
+            }
+            _ => {}
+        }
+
+        if self.ui.mode == Mode::View {
+            return Task::none();
+        }
+
+        let selected_rows = || self.ui.selected_rows.iter().copied();
+        let selected_active = self
+            .ui
+            .selected
+            .and_then(|id| self.playback.active_cues.get(&id).map(|cue| (id, cue.status)));
+
+        let controls: Vec<Control> = match action {
+            A::Execute => self.ui.playback_cursor.map(Control::Execute).into_iter().collect(),
+            A::Load => selected_rows().map(Control::Load).collect(),
+            A::Stop => selected_rows().map(Control::Stop).collect(),
+            A::ToggleRepeat => selected_rows().map(Control::ToggleRepeat).collect(),
+            A::PauseAndResume => match selected_active {
+                Some((id, S::PreWaiting | S::Playing)) => vec![Control::Pause(id)],
+                Some((id, S::PreWaitPaused | S::Paused)) => vec![Control::Resume(id)],
+                _ => Vec::new(),
+            },
+            A::PauseAll => vec![Control::PauseAll],
+            A::ResumeAll => vec![Control::ResumeAll],
+            A::StopAll => vec![Control::StopAll],
+            A::SeekForward => selected_active
+                .map(|(id, _)| Control::SeekBy(id, self.seek_amount))
+                .into_iter()
+                .collect(),
+            A::SeekBackward => selected_active
+                .map(|(id, _)| Control::SeekBy(id, -self.seek_amount))
+                .into_iter()
+                .collect(),
+            // Handled above.
+            A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown | A::SelectAll => {
+                Vec::new()
+            }
+        };
+
+        self.send(controls)
+    }
+
+    #[cfg(feature = "host")]
+    fn send(&self, controls: Vec<Control>) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        if controls.is_empty() {
+            return Task::none();
+        }
+
+        Task::perform(backend.send(controls), |result| {
+            result.err().map(|e| Message::BackendError(e.to_string()))
+        })
+    }
+
+    /// Remote/web have no backend connection yet (Phase 8/9).
+    #[cfg(not(feature = "host"))]
+    fn send(&self, controls: Vec<Control>) -> Task<Message> {
+        if !controls.is_empty() {
+            log::warn!("no backend to send {controls:?} to");
+        }
+        Task::none()
     }
 
     fn handle_menu(&mut self, id: crate::menu::MenuId) -> Task<Message> {
@@ -360,15 +483,92 @@ impl State {
         .and_then(Task::done)
     }
 
+    /// Replaces the whole model (a load or a reset): selection starts
+    /// over, cached asset results are dropped, and the playback cursor
+    /// goes to the first cue (a load) or nowhere (a reset).
+    #[cfg(feature = "host")]
+    fn replace_model(&mut self, model: ShowModelState, cursor_to_first: bool) {
+        self.model = model;
+        self.assets.clear();
+        self.ui.reset_selected();
+        let first = cursor_to_first
+            .then(|| self.model.cue_list.root_ids.first().copied())
+            .flatten();
+        self.ui.set_playback_cursor(
+            first,
+            self.lock_cursor_to_selection,
+            &self.model.cue_list.cues,
+        );
+    }
+
+    /// Per-cue status events the UI itself reacts to: errors become
+    /// toasts, and a trigger/completion of the cue under the playback
+    /// cursor may advance the cursor, per the cue's override or else the
+    /// show-wide `cursor_advance_trigger`.
+    #[cfg(feature = "host")]
+    fn on_cue_status(&mut self, param: &sbsp_backend::event::CueStatusEventParam) {
+        use sbsp_backend::event::CueStatusEventParam as E;
+
+        let (cue_id, event) = match param {
+            E::Error { error, .. } => {
+                log::error!("cue error: {error}");
+                self.toasts.push(toast::Kind::Danger, error.clone());
+                return;
+            }
+            E::Triggered { cue_id } => (*cue_id, CueEvent::Triggered),
+            E::Completed { cue_id } => (*cue_id, CueEvent::Completed),
+            _ => return,
+        };
+
+        if self.ui.playback_cursor != Some(cue_id) {
+            return;
+        }
+        let Some(cue) = self.model.cue_list.cues.get(&cue_id) else {
+            return;
+        };
+
+        let moved = advance(
+            cue,
+            &self.model.cue_list.cues,
+            &self.model.cue_list.root_ids,
+            self.model.settings.general.cursor_advance_trigger,
+            event,
+        );
+        if let CursorMove::To(next) = moved {
+            let lock = self.lock_cursor_to_selection;
+            self.ui
+                .set_playback_cursor(next, lock, &self.model.cue_list.cues);
+        }
+    }
+
     #[cfg(feature = "host")]
     fn handle_port_event(&mut self, event: PortEvent) {
         use sbsp_backend::event::BackendEvent;
 
         match event {
-            BackendEvent::CueStatus(param) => self.playback.handle_cue_state_event(&param, Instant::now()),
+            BackendEvent::CueStatus(param) => {
+                self.on_cue_status(&param);
+                self.playback.handle_cue_state_event(&param, Instant::now());
+            }
             BackendEvent::SyncState(data) => self.playback.handle_sync_event(&data, Instant::now()),
-            BackendEvent::ShowModelLoaded { model, .. } | BackendEvent::ShowModelReset { model } => {
-                self.model = model;
+            BackendEvent::ShowModelLoaded { model, .. } => {
+                self.replace_model(model, true);
+            }
+            BackendEvent::ShowModelReset { model } => {
+                self.replace_model(model, false);
+            }
+            BackendEvent::CueRemoved { cue_ids } => {
+                let lock = self.lock_cursor_to_selection;
+                let ids: Vec<_> = cue_ids.iter().copied().collect();
+                self.ui.remove_from_selected(&ids, lock);
+                if self
+                    .ui
+                    .playback_cursor
+                    .is_some_and(|cursor| cue_ids.contains(&cursor))
+                {
+                    self.ui
+                        .set_playback_cursor(None, lock, &self.model.cue_list.cues);
+                }
             }
             // The authoritative post-mutation list; add_cue/remove_cue/
             // move_cue and friends (Phase 4's cue list operations) all
@@ -385,12 +585,6 @@ impl State {
             BackendEvent::OperationFailed { error } => {
                 log::warn!("backend operation failed: {error:?}");
             }
-            // CueRemoved is not separately handled: every path that
-            // removes a cue (remove_cue/remove_cues) also appears to
-            // produce a CueListUpdated for the resulting list, which is
-            // what's actually applied above. If that turns out not to
-            // always hold, cues removed that way would linger in `model`
-            // until something else corrects it -- worth watching for.
             other => log::debug!("unhandled backend event: {other:?}"),
         }
     }
@@ -413,10 +607,10 @@ impl State {
         #[cfg(not(feature = "host"))]
         let backend_events = Subscription::none();
 
-        // Only the modifier state is tracked here (needed to tell a plain
-        // click from shift-/ctrl-click in the cue list); key presses
-        // themselves (hotkeys, arrow-key movement) are the next piece of
-        // Phase 4. Events a focused widget already consumed are skipped.
+        // Modifier state (to tell a plain click from shift-/ctrl-click in
+        // the cue list) and key presses (hotkeys). Events a focused widget
+        // already consumed are skipped, which is also what keeps typing
+        // into a text field from firing playback hotkeys.
         let modifiers = event::listen_with(|event, status, _window| {
             if status == event::Status::Captured {
                 return None;
@@ -425,6 +619,14 @@ impl State {
                 iced::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::ModifiersChanged(modifiers))
                 }
+                iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key,
+                    modified_key,
+                    modifiers,
+                    repeat,
+                    ..
+                }) => hotkeys::KeyPress::new(&key, &modified_key, modifiers, repeat)
+                    .map(Message::KeyPressed),
                 _ => None,
             }
         });
@@ -673,6 +875,74 @@ mod tests {
 
         assert_eq!(state.ui.selected_rows, ids.to_vec());
         assert_eq!(state.ui.selected, Some(ids[2]));
+    }
+
+    fn press(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Message {
+        let press = hotkeys::KeyPress::new(&key, &key, modifiers, false)
+            .expect("test keys are all bindable");
+        Message::KeyPressed(press)
+    }
+
+    fn arrow(named: keyboard::key::Named) -> keyboard::Key {
+        keyboard::Key::Named(named)
+    }
+
+    #[test]
+    #[serial]
+    fn arrow_down_moves_the_selection() {
+        use keyboard::key::Named;
+
+        let (mut state, ids) = populated_state();
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(press(arrow(Named::ArrowDown), keyboard::Modifiers::empty()));
+        assert_eq!(state.ui.selected, Some(ids[1]));
+        assert_eq!(state.ui.selected_rows, vec![ids[1]]);
+
+        let _ = state.update(press(arrow(Named::ArrowUp), keyboard::Modifiers::empty()));
+        assert_eq!(state.ui.selected, Some(ids[0]));
+    }
+
+    #[test]
+    #[serial]
+    fn shift_arrow_extends_the_selection() {
+        use keyboard::key::Named;
+
+        let (mut state, ids) = populated_state();
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(press(arrow(Named::ArrowDown), keyboard::Modifiers::SHIFT));
+        let _ = state.update(press(arrow(Named::ArrowDown), keyboard::Modifiers::SHIFT));
+
+        assert_eq!(state.ui.selected_rows, ids.to_vec());
+        assert_eq!(state.ui.selected, Some(ids[2]));
+    }
+
+    #[test]
+    #[serial]
+    fn ctrl_a_selects_every_row() {
+        let (mut state, ids) = populated_state();
+
+        let _ = state.update(press(
+            keyboard::Key::Character("a".into()),
+            keyboard::Modifiers::CTRL,
+        ));
+
+        assert_eq!(state.ui.selected_rows, ids.to_vec());
+    }
+
+    #[test]
+    #[serial]
+    fn an_unbound_key_changes_nothing() {
+        let (mut state, ids) = populated_state();
+        state.ui.set_selected(ids[1], false);
+
+        let _ = state.update(press(
+            keyboard::Key::Character("q".into()),
+            keyboard::Modifiers::empty(),
+        ));
+
+        assert_eq!(state.ui.selected, Some(ids[1]));
     }
 
     #[test]

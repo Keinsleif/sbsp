@@ -31,7 +31,7 @@ use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{broadcast, watch};
 
-use crate::port::{FullState, PortEvent};
+use crate::port::{Control, FullState, PortEvent};
 
 #[derive(Clone)]
 pub struct HostPort {
@@ -91,6 +91,42 @@ impl HostPort {
     /// `HostPort` itself usually lives behind `&self`/`&mut self` on `App`.
     pub fn handle(&self) -> BackendHandle {
         self.handle.clone()
+    }
+
+    /// Sends playback commands in order. Stops at the first failure, since
+    /// a failed send means the controller is gone and the rest would fail
+    /// the same way.
+    ///
+    /// The returned future owns what it needs (a cloned handle), so it can
+    /// be handed straight to `Task::perform` without borrowing `self`.
+    pub fn send(
+        &self,
+        controls: Vec<Control>,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        use sbsp_backend::action::{AudioAction, CueAction};
+
+        let controller = self.handle.controller_handle.clone();
+        async move {
+            for control in controls {
+                match control {
+                    Control::Execute(id) => controller.execute(id).await?,
+                    Control::Load(id) => controller.load(id).await?,
+                    Control::Pause(id) => controller.pause(id).await?,
+                    Control::Resume(id) => controller.resume(id).await?,
+                    Control::Stop(id) => controller.stop(id).await?,
+                    Control::SeekBy(id, amount) => controller.seek_by(id, amount).await?,
+                    Control::ToggleRepeat(id) => {
+                        controller
+                            .perform_action(id, CueAction::Audio(AudioAction::ToggleRepeat))
+                            .await?
+                    }
+                    Control::PauseAll => controller.pause_all().await?,
+                    Control::ResumeAll => controller.resume_all().await?,
+                    Control::StopAll => controller.stop_all().await?,
+                }
+            }
+            Ok(())
+        }
     }
 
     pub fn settings(&self) -> Arc<SettingsManager<GlobalHostSettings>> {

@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct HotkeySettings {
     #[serde(default)]
-    file: FileHotkey,
+    pub file: FileHotkey,
     #[serde(default)]
-    edit: EditHotkey,
-    playback: PlaybackHotkey,
-    audio_action: AudioActionHotkey,
+    pub edit: EditHotkey,
+    pub playback: PlaybackHotkey,
+    pub audio_action: AudioActionHotkey,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
