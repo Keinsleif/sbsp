@@ -21,3 +21,20 @@
 pub use sbsp_backend::FullShowState as FullState;
 #[cfg(any(feature = "host", feature = "remote"))]
 pub use sbsp_backend::event::BackendEvent as PortEvent;
+
+/// A playback command from the UI to whichever backend it talks to. Kept
+/// as data (not a call on `HostPort`) so a remote/web port can later
+/// serialize the same values instead of invoking a local handle.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Control {
+    Execute(sbsp_backend::model::cue::Uuid),
+    Load(sbsp_backend::model::cue::Uuid),
+    Pause(sbsp_backend::model::cue::Uuid),
+    Resume(sbsp_backend::model::cue::Uuid),
+    Stop(sbsp_backend::model::cue::Uuid),
+    SeekBy(sbsp_backend::model::cue::Uuid, f64),
+    ToggleRepeat(sbsp_backend::model::cue::Uuid),
+    PauseAll,
+    ResumeAll,
+    StopAll,
+}
