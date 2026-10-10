@@ -217,11 +217,95 @@ impl State {
             "file.quit" => iced::window::latest().and_then(iced::window::close),
             #[cfg(feature = "host")]
             "debug.add-test-cue" => self.add_test_cue(),
+            #[cfg(feature = "host")]
+            "debug.add-test-group" => self.add_test_group(),
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
             }
         }
+    }
+
+    /// TEMPORARY debug aid (removed together with `add_test_cue`): appends
+    /// a playlist group holding two wait cues at the end of the root list,
+    /// so expand/collapse of the cue list can be exercised by hand.
+    #[cfg(feature = "host")]
+    fn add_test_group(&self) -> Task<Message> {
+        use sbsp_backend::manager::InsertPosition;
+        use sbsp_backend::model::cue::{
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
+            WaitCueParam,
+            group::{GroupCueParamBase, GroupMode},
+        };
+
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        let handle = backend.handle();
+
+        let make = |name: &str, parent_id: Option<Uuid>, params: CueParam| Cue {
+            id: Uuid::new_v4(),
+            number: String::new(),
+            name: Some(name.to_string()),
+            notes: String::new(),
+            color: CueColor::default(),
+            pre_wait: 0.0,
+            chain: CueChain::default(),
+            treat_stop_as_completed: false,
+            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
+            parent_id,
+            params,
+        };
+
+        let group = make(
+            "Test Group",
+            None,
+            CueParam::Group {
+                base: GroupCueParamBase {
+                    mode: GroupMode::Playlist { repeat: false },
+                },
+                children: Vec::new(),
+            },
+        );
+        let group_id = group.id;
+        let child_a = make(
+            "Child A",
+            Some(group_id),
+            CueParam::Wait(WaitCueParam { duration: 1.0 }),
+        );
+        let child_b = make(
+            "Child B",
+            Some(group_id),
+            CueParam::Wait(WaitCueParam { duration: 2.0 }),
+        );
+
+        Task::perform(
+            async move {
+                let model = &handle.model_handle;
+                model
+                    .add_cue(
+                        group,
+                        InsertPosition::Inside {
+                            target: None,
+                            index: None,
+                        },
+                    )
+                    .await?;
+                for child in [child_a, child_b] {
+                    model
+                        .add_cue(
+                            child,
+                            InsertPosition::Inside {
+                                target: Some(group_id),
+                                index: None,
+                            },
+                        )
+                        .await?;
+                }
+                Ok::<(), anyhow::Error>(())
+            },
+            |result| result.err().map(|e| Message::BackendError(e.to_string())),
+        )
     }
 
     /// TEMPORARY debug aid, removed once Phase 6 has a real way to add
@@ -369,7 +453,10 @@ impl State {
             .menu_if(
                 cfg!(feature = "host"),
                 "Debug",
-                vec![MenuNode::item("debug.add-test-cue", "Add Test Cue")],
+                vec![
+                    MenuNode::item("debug.add-test-cue", "Add Test Cue"),
+                    MenuNode::item("debug.add-test-group", "Add Test Group"),
+                ],
             )
             .menu(
                 fl!("menu-help"),
