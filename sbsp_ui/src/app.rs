@@ -68,6 +68,7 @@ pub struct State {
     // change them).
     name_format: NameFormatSettings,
     lock_cursor_to_selection: bool,
+    cue_view: cue_list::Viewport,
     // Same story as above: seek amount and the hotkey table come from
     // the settings defaults until Phase 7 loads real ones.
     seek_amount: f64,
@@ -139,6 +140,7 @@ impl State {
             name_format: NameFormatSettings::default(),
             lock_cursor_to_selection: sbsp_frontend_settings::GeneralSettings::default()
                 .lock_cursor_to_selection,
+            cue_view: cue_list::Viewport::default(),
             seek_amount: sbsp_frontend_settings::GeneralSettings::default().seek_amount,
             hotkeys: hotkeys::Bindings::from_settings(
                 &sbsp_frontend_settings::hotkey::HotkeySettings::default(),
@@ -222,6 +224,7 @@ impl State {
 
         match message {
             cue_list::Message::ToggleExpand(id) => self.ui.toggle_expand(id),
+            cue_list::Message::Scrolled(viewport) => self.cue_view = viewport,
             cue_list::Message::Select(id) => {
                 if self.modifiers.shift() {
                     // Anchor on the current selection; with none yet,
@@ -267,9 +270,23 @@ impl State {
                     Step::Down
                 };
                 let extend = matches!(action, A::ExtendUp | A::ExtendDown);
-                // Scrolling the new row into view is a separate piece.
-                let _ = cue_list::move_cursor(&self.model, &mut self.ui, step, extend, lock);
-                return Task::none();
+                let Some(id) =
+                    cue_list::move_cursor(&self.model, &mut self.ui, step, extend, lock)
+                else {
+                    return Task::none();
+                };
+                let Some(y) =
+                    cue_list::scroll_offset_for(&self.model, &self.ui, self.cue_view, id)
+                else {
+                    return Task::none();
+                };
+                // Remembered right away: a held arrow key can outrun the
+                // scrollable's own report of where it ended up.
+                self.cue_view.offset_y = y;
+                return iced::widget::operation::scroll_to(
+                    cue_list::LIST_ID,
+                    iced::widget::operation::AbsoluteOffset { x: 0.0, y },
+                );
             }
             A::SelectAll => {
                 cue_list::select_all(&self.model, &mut self.ui);

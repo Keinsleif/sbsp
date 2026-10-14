@@ -31,10 +31,27 @@ use crate::state::ui::UiState;
 
 const INDENT_PER_LEVEL: f32 = 20.0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Rows are a fixed height so the scroll position of any row is just
+/// `index * ROW_HEIGHT`: keeping a row in view then needs no layout
+/// feedback from the widget tree, only the scrollable's own offset and
+/// viewport height (see [`Viewport`]).
+const ROW_HEIGHT: f32 = 30.0;
+
+/// The scrollable's id, for scrolling it from outside.
+pub const LIST_ID: &str = "cue-list";
+
+/// What the list's scrollable last reported about itself.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Viewport {
+    pub offset_y: f32,
+    pub height: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Message {
     Select(Uuid),
     ToggleExpand(Uuid),
+    Scrolled(Viewport),
 }
 
 /// The ids of the rows actually drawn, top to bottom: the flat list with
@@ -115,6 +132,33 @@ pub fn move_cursor(
 
 /// Selects every visible row. Like the original, this leaves `selected`
 /// (the single "primary" row) alone.
+/// The vertical scroll offset that brings `id`'s row fully into view, or
+/// `None` if it already is (or the viewport size is not known yet, i.e.
+/// nothing has been drawn). Scrolls the minimum distance: the row ends up
+/// at whichever edge it was off.
+pub fn scroll_offset_for(
+    model: &ShowModelState,
+    ui: &UiState,
+    viewport: Viewport,
+    id: Uuid,
+) -> Option<f32> {
+    if viewport.height <= 0.0 {
+        return None;
+    }
+
+    let index = visible_order(model, ui).iter().position(|row| *row == id)?;
+    let top = index as f32 * ROW_HEIGHT;
+    let bottom = top + ROW_HEIGHT;
+
+    if top < viewport.offset_y {
+        Some(top)
+    } else if bottom > viewport.offset_y + viewport.height {
+        Some(bottom - viewport.height)
+    } else {
+        None
+    }
+}
+
 pub fn select_all(model: &ShowModelState, ui: &mut UiState) {
     ui.selected_rows = visible_order(model, ui);
 }
@@ -150,6 +194,13 @@ pub fn view<'a>(
     }
 
     scrollable(column(rows).width(Length::Fill))
+        .id(LIST_ID)
+        .on_scroll(|viewport| {
+            Message::Scrolled(Viewport {
+                offset_y: viewport.absolute_offset().y,
+                height: viewport.bounds().height,
+            })
+        })
         .height(Length::Fill)
         .into()
 }
@@ -220,7 +271,8 @@ fn row_view<'a>(
 
     mouse_area(
         container(content)
-            .padding([4, 8])
+            .padding([0, 8])
+            .center_y(ROW_HEIGHT)
             .width(Length::Fill)
             .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor)),
     )
@@ -417,6 +469,44 @@ mod tests {
         ui.toggle_expand(g);
         select_all(&model, &mut ui);
         assert_eq!(ui.selected_rows, vec![a, g, c, d]);
+    }
+
+    #[test]
+    fn scroll_offset_is_none_while_the_row_is_in_view_or_size_unknown() {
+        let (model, a, g, _c, _d) = sample();
+        let ui = UiState::new(true);
+        let view = Viewport { offset_y: 0.0, height: 100.0 };
+
+        assert_eq!(scroll_offset_for(&model, &ui, view, a), None);
+        assert_eq!(scroll_offset_for(&model, &ui, view, g), None);
+        assert_eq!(
+            scroll_offset_for(&model, &ui, Viewport::default(), g),
+            None
+        );
+    }
+
+    #[test]
+    fn scroll_offset_aligns_a_row_below_the_view_to_the_bottom_edge() {
+        let (model, _a, g, _c, d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        // Rows: a(0) g(1) c(2) d(3); a viewport two rows tall at the top.
+        let view = Viewport { offset_y: 0.0, height: 2.0 * ROW_HEIGHT };
+
+        assert_eq!(
+            scroll_offset_for(&model, &ui, view, d),
+            Some(4.0 * ROW_HEIGHT - 2.0 * ROW_HEIGHT)
+        );
+    }
+
+    #[test]
+    fn scroll_offset_aligns_a_row_above_the_view_to_the_top_edge() {
+        let (model, a, g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let view = Viewport { offset_y: 2.0 * ROW_HEIGHT, height: 2.0 * ROW_HEIGHT };
+
+        assert_eq!(scroll_offset_for(&model, &ui, view, a), Some(0.0));
     }
 
     #[test]
