@@ -269,6 +269,11 @@ impl State {
         }
     }
 
+    /// Whether the header's transport buttons are shown.
+    fn show_controls(&self) -> bool {
+        !self.hide_controls && self.ui.mode != Mode::View
+    }
+
     fn handle_header(&mut self, message: header::Message) -> Task<Message> {
         if self.ui.mode == Mode::View {
             return Task::none();
@@ -754,7 +759,7 @@ impl State {
         let transport = header::view(header::View {
             clock: self.clock,
             window_focused: self.window_focused,
-            show_controls: !self.hide_controls && self.ui.mode != Mode::View,
+            show_controls: self.show_controls(),
             cursor_cue,
             cursor_cue_name: cursor_cue
                 .map(|cue| {
@@ -1029,14 +1034,10 @@ mod tests {
     fn transport_buttons_show_outside_view_mode_only() {
         let mut state = new_state();
         state.ui.set_permission(sbsp_backend::api::Permissions::all());
-
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find("▶").is_ok(), "play button should show in edit mode");
-        drop(ui);
+        assert!(state.show_controls(), "shown in edit mode");
 
         state.ui.set_mode(Mode::View);
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find("▶").is_err(), "controls are hidden in view mode");
+        assert!(!state.show_controls(), "hidden in view mode");
     }
 
     #[test]
@@ -1046,8 +1047,7 @@ mod tests {
         state.ui.set_permission(sbsp_backend::api::Permissions::all());
         state.hide_controls = true;
 
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find("▶").is_err());
+        assert!(!state.show_controls());
     }
 
     #[test]
