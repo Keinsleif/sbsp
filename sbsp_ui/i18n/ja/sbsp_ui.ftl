@@ -12,3 +12,6 @@ main-foot-bar-cue-count-suffix = { $n } キュー
 main-foot-bar-modes-view = 閲覧
 main-foot-bar-modes-run = 実行
 main-foot-bar-modes-edit = 編集
+main-name = 名前
+main-pre-wait = 事前待機
+main-duration = 長さ

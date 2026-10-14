@@ -15,19 +15,23 @@
 //! of replace/extend/toggle/range a click means depends on the keyboard
 //! modifiers, which this widget cannot see).
 
-use iced::widget::{Space, button, column, container, mouse_area, row, scrollable, text};
+use iced::widget::{
+    Space, button, center, column, container, mouse_area, row, scrollable, stack, text,
+};
 use iced::{Alignment, Border, Color, Element, Length, Theme};
 
 use sbsp_backend::controller::state::PlaybackStatus;
-use sbsp_backend::model::cue::{Cue, CueColor, Uuid};
+use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
 use sbsp_frontend_settings::NameFormatSettings;
 
-use crate::domain::cue::build_cue_name;
+use crate::domain::cue::{build_cue_name, get_duration};
+use crate::domain::time::format_seconds;
 use crate::domain::flat_list::{FlatCueEntry, flatten};
 use crate::fl;
+use crate::state::assets::AssetResults;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
-use crate::state::ui::UiState;
+use crate::state::ui::{DisplayMode, UiState};
 
 const INDENT_PER_LEVEL: f32 = 20.0;
 
@@ -52,6 +56,9 @@ pub enum Message {
     Select(Uuid),
     ToggleExpand(Uuid),
     Scrolled(Viewport),
+    SetCursor(Uuid),
+    TogglePreWaitDisplay,
+    ToggleDurationDisplay,
 }
 
 /// The ids of the rows actually drawn, top to bottom: the flat list with
@@ -163,10 +170,22 @@ pub fn select_all(model: &ShowModelState, ui: &mut UiState) {
     ui.selected_rows = visible_order(model, ui);
 }
 
+const W_CURSOR: f32 = 28.0;
+const W_STATUS: f32 = 28.0;
+const W_TYPE: f32 = 28.0;
+const W_NUMBER: f32 = 54.0;
+const W_TIME: f32 = 112.0;
+const W_REPEAT: f32 = 28.0;
+const W_CHAIN: f32 = 36.0;
+
+/// The column header plus the rows. Column widths are shared constants
+/// (cells below, header cells here), so the two line up without a table
+/// widget.
 pub fn view<'a>(
     model: &'a ShowModelState,
     ui: &'a UiState,
     playback: &'a PlaybackState,
+    assets: &'a AssetResults,
     name_format: &NameFormatSettings,
 ) -> Element<'a, Message> {
     let flat = flatten(
@@ -180,29 +199,76 @@ pub fn view<'a>(
         .filter(|entry| !entry.is_hidden)
         .filter_map(|entry| {
             let cue = model.cue_list.cues.get(&entry.cue_id)?;
-            Some(row_view(entry, cue, model, ui, playback, name_format))
+            Some(row_view(entry, cue, model, ui, playback, assets, name_format))
         })
         .collect();
 
-    if rows.is_empty() {
-        return container(text(fl!("cue-list-empty")))
+    let body: Element<'a, Message> = if rows.is_empty() {
+        container(text(fl!("cue-list-empty")))
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)
             .center_y(Length::Fill)
-            .into();
-    }
-
-    scrollable(column(rows).width(Length::Fill))
-        .id(LIST_ID)
-        .on_scroll(|viewport| {
-            Message::Scrolled(Viewport {
-                offset_y: viewport.absolute_offset().y,
-                height: viewport.bounds().height,
+            .into()
+    } else {
+        scrollable(column(rows).width(Length::Fill))
+            .id(LIST_ID)
+            .on_scroll(|viewport| {
+                Message::Scrolled(Viewport {
+                    offset_y: viewport.absolute_offset().y,
+                    height: viewport.bounds().height,
+                })
             })
+            .height(Length::Fill)
+            .into()
+    };
+
+    column![header(ui), body].into()
+}
+
+fn cell<'a>(content: impl Into<Element<'a, Message>>, width: f32) -> Element<'a, Message> {
+    container(content).center_x(width).into()
+}
+
+fn header<'a>(ui: &UiState) -> Element<'a, Message> {
+    let display_toggle = |mode: DisplayMode, message: Message| {
+        button(text(match mode {
+            DisplayMode::Elapsed => "E",
+            DisplayMode::Remain => "R",
         })
-        .height(Length::Fill)
-        .into()
+        .size(12))
+        .padding([0, 4])
+        .on_press(message)
+    };
+
+    let time_header = |label: String, mode: DisplayMode, message: Message| {
+        cell(
+            row![text(label), display_toggle(mode, message)]
+                .spacing(4)
+                .align_y(Alignment::Center),
+            W_TIME,
+        )
+    };
+
+    row![
+        Space::new().width(W_CURSOR + W_STATUS + W_TYPE),
+        cell(text("#"), W_NUMBER),
+        container(text(fl!("main-name"))).width(Length::Fill).padding([0, 8]),
+        time_header(
+            fl!("main-pre-wait"),
+            ui.pre_wait_display_mode,
+            Message::TogglePreWaitDisplay,
+        ),
+        time_header(
+            fl!("main-duration"),
+            ui.duration_display_mode,
+            Message::ToggleDurationDisplay,
+        ),
+        Space::new().width(W_REPEAT + W_CHAIN),
+    ]
+    .align_y(Alignment::Center)
+    .padding([4, 8])
+    .into()
 }
 
 fn row_view<'a>(
@@ -211,21 +277,23 @@ fn row_view<'a>(
     model: &'a ShowModelState,
     ui: &UiState,
     playback: &PlaybackState,
+    assets: &AssetResults,
     name_format: &NameFormatSettings,
 ) -> Element<'a, Message> {
     let id = entry.cue_id;
     let is_selected = ui.selected_rows.contains(&id);
     let is_cursor = ui.playback_cursor == Some(id);
+    let active = playback.active_cues.get(&id);
 
-    let number = text(if cue.number.is_empty() {
-        "-".to_string()
-    } else {
-        cue.number.clone()
-    })
-    .width(48);
+    let cursor = button(text(if is_cursor { "→" } else { "" }).center())
+        .width(W_CURSOR)
+        .padding(0)
+        .style(button::text)
+        .on_press(Message::SetCursor(id));
+
+    let status = active.map(|a| status_glyph(a.status)).unwrap_or("");
 
     let indent = Space::new().width(entry.level as f32 * INDENT_PER_LEVEL);
-
     let disclosure: Element<'a, Message> = match entry.group {
         Some(group) => button(text(if group.is_expanded { "▾" } else { "▸" }))
             .padding(0)
@@ -235,52 +303,169 @@ fn row_view<'a>(
             .into(),
         None => Space::new().width(16).into(),
     };
+    let name = text(build_cue_name(Some(cue), &model.cue_list.cues, name_format))
+        .width(Length::Fill);
 
-    let color = cue_color(cue.color);
-    let color_dot = container(Space::new())
-        .width(10)
-        .height(10)
-        .style(move |_theme: &Theme| container::Style {
-            background: Some(color.into()),
-            border: Border {
-                radius: 5.0.into(),
-                ..Default::default()
-            },
-            ..Default::default()
-        });
+    // While a cue is in its pre-wait the pre-wait cell is the live one and
+    // the duration cell stays static; from playback on it flips, as in the
+    // original.
+    let in_pre_wait = active.is_some_and(|a| {
+        matches!(a.status, PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused)
+    });
+    let in_playback = active.is_some_and(|a| {
+        matches!(
+            a.status,
+            PlaybackStatus::Playing | PlaybackStatus::Paused | PlaybackStatus::Stopping
+        )
+    });
+    let live = active.filter(|a| a.duration > 0.0);
 
-    let status = text(
-        playback
-            .active_cues
-            .get(&id)
-            .map(|active| status_glyph(active.status))
-            .unwrap_or(""),
-    )
-    .width(20);
+    let pre_wait = match live.filter(|_| in_pre_wait) {
+        Some(a) => live_time(a.position, a.duration, ui.pre_wait_display_mode),
+        None => (
+            format_seconds((cue.pre_wait != 0.0).then_some(cue.pre_wait)),
+            0.0,
+        ),
+    };
+    let duration = match live.filter(|_| !in_pre_wait) {
+        Some(a) => live_time(a.position, a.duration, ui.duration_display_mode),
+        None => (
+            format_seconds(get_duration(Some(cue), |_| asset_duration(cue, assets))),
+            0.0,
+        ),
+    };
 
-    let name =
-        text(build_cue_name(Some(cue), &model.cue_list.cues, name_format)).width(Length::Fill);
+    let repeats = match &cue.params {
+        CueParam::Audio(audio) => audio.repeat,
+        CueParam::Group { base, .. } => {
+            matches!(base.mode, GroupMode::Playlist { repeat: true })
+        }
+        _ => false,
+    };
 
-    let content = row![number, status, indent, disclosure, color_dot, name]
-        .spacing(8)
-        .align_y(Alignment::Center);
+    let content = row![
+        cursor,
+        cell(text(status), W_STATUS),
+        cell(text(type_glyph(&cue.params)), W_TYPE),
+        cell(text(cue.number.clone()), W_NUMBER),
+        row![indent, disclosure, name]
+            .spacing(4)
+            .align_y(Alignment::Center)
+            .width(Length::Fill),
+        time_cell(pre_wait.0, pre_wait.1, in_pre_wait),
+        time_cell(duration.0, duration.1, in_playback),
+        cell(text(if repeats { "↻" } else { "" }), W_REPEAT),
+        cell(text(chain_glyph(&entry.chain)), W_CHAIN),
+    ]
+    .align_y(Alignment::Center);
 
+    let color = cue.color;
     mouse_area(
         container(content)
             .padding([0, 8])
             .center_y(ROW_HEIGHT)
             .width(Length::Fill)
-            .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor)),
+            .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor, color)),
     )
     .on_press(Message::Select(id))
     .into()
 }
 
-fn row_style(theme: &Theme, is_selected: bool, is_cursor: bool) -> container::Style {
+/// Label and progress (0..=1) for a running cue's time cell: the elapsed
+/// or the remaining time, per the column's display mode.
+fn live_time(position: f64, duration: f64, mode: DisplayMode) -> (String, f32) {
+    let shown = match mode {
+        DisplayMode::Elapsed => position,
+        DisplayMode::Remain => duration - position,
+    };
+    (
+        format_seconds(Some(shown)),
+        (position / duration).clamp(0.0, 1.0) as f32,
+    )
+}
+
+/// An audio cue's duration comes from its analyzed asset, if that has
+/// arrived yet.
+fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
+    match &cue.params {
+        CueParam::Audio(audio) => assets
+            .get_metadata(&audio.target)
+            .and_then(|metadata| metadata.duration),
+        _ => None,
+    }
+}
+
+/// A time field with its progress fill behind the text. `active` outlines
+/// it (the phase currently running).
+fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Message> {
+    // Thousandths, as FillPortion weights: the filled part and the rest.
+    let filled = (progress.clamp(0.0, 1.0) * 1000.0).round() as u16;
+
+    let fill = container(Space::new())
+        .width(Length::FillPortion(filled.max(1)))
+        .height(Length::Fill)
+        .style(|theme: &Theme| container::Style {
+            background: Some(
+                theme
+                    .extended_palette()
+                    .primary
+                    .base
+                    .color
+                    .scale_alpha(0.5)
+                    .into(),
+            ),
+            ..Default::default()
+        });
+    let rest = Space::new().width(Length::FillPortion(1000 - filled.min(999)));
+
+    let bar: Element<'a, Message> = if filled == 0 {
+        Space::new().into()
+    } else {
+        row![fill, rest].height(Length::Fill).into()
+    };
+
+    let field = container(stack![bar, center(text(label))])
+        .width(Length::Fill)
+        .height(ROW_HEIGHT * 0.75)
+        .style(move |theme: &Theme| container::Style {
+            border: if active {
+                Border {
+                    color: theme.extended_palette().primary.base.color,
+                    width: 1.0,
+                    radius: 2.0.into(),
+                }
+            } else {
+                Border::default()
+            },
+            ..Default::default()
+        });
+
+    container(field)
+        .padding([0, 4])
+        .width(W_TIME)
+        .center_y(ROW_HEIGHT)
+        .into()
+}
+
+fn row_style(
+    theme: &Theme,
+    is_selected: bool,
+    is_cursor: bool,
+    color: CueColor,
+) -> container::Style {
     let palette = theme.extended_palette();
 
+    // Selection wins over the cue's own color tint, as in the original.
+    let background = if is_selected {
+        Some(palette.primary.weak.color.into())
+    } else if color != CueColor::None {
+        Some(cue_color(color).scale_alpha(0.2).into())
+    } else {
+        None
+    };
+
     container::Style {
-        background: is_selected.then(|| palette.primary.weak.color.into()),
+        background,
         text_color: is_selected.then_some(palette.primary.weak.text),
         // The playback cursor (the cue that fires next) is a separate
         // concept from the selection (what the user is editing), so it
@@ -295,6 +480,30 @@ fn row_style(theme: &Theme, is_selected: bool, is_cursor: bool) -> container::St
             Border::default()
         },
         ..Default::default()
+    }
+}
+
+/// Stand-ins for the original's icon font (mdi), limited to characters
+/// common system fonts carry; the real icons come with the icon-font
+/// work.
+fn type_glyph(param: &CueParam) -> &'static str {
+    match param {
+        CueParam::Audio(_) => "♪",
+        CueParam::Wait(_) => "⌛",
+        CueParam::Fade(_) => "↘",
+        CueParam::Start(_) => "▷",
+        CueParam::Stop(_) => "□",
+        CueParam::Pause(_) => "Ⅱ",
+        CueParam::Load(_) => "⇧",
+        CueParam::Group { .. } => "▤",
+    }
+}
+
+fn chain_glyph(chain: &CueChain) -> &'static str {
+    match chain {
+        CueChain::DoNotChain => "",
+        CueChain::AfterStart { .. } => "↓",
+        CueChain::AfterComplete { .. } => "⇊",
     }
 }
 
@@ -529,6 +738,23 @@ mod tests {
         };
 
         assert_eq!(scroll_offset_for(&model, &ui, view, a), Some(0.0));
+    }
+
+    #[test]
+    fn live_time_shows_elapsed_or_remaining_with_progress() {
+        let (label, progress) = live_time(15.0, 60.0, DisplayMode::Elapsed);
+        assert_eq!(label, "00:15.00");
+        assert_eq!(progress, 0.25);
+
+        let (label, progress) = live_time(15.0, 60.0, DisplayMode::Remain);
+        assert_eq!(label, "00:45.00");
+        assert_eq!(progress, 0.25);
+    }
+
+    #[test]
+    fn live_time_progress_stays_within_the_bar() {
+        assert_eq!(live_time(90.0, 60.0, DisplayMode::Elapsed).1, 1.0);
+        assert_eq!(live_time(-1.0, 60.0, DisplayMode::Elapsed).1, 0.0);
     }
 
     #[test]
