@@ -132,7 +132,12 @@ mod tests {
         assert_eq!(normalize_hotkey("Control+s"), "Control+s");
     }
 
-    const NONE: Mods = Mods { ctrl: false, shift: false, alt: false, logo: false };
+    const NONE: Mods = Mods {
+        ctrl: false,
+        shift: false,
+        alt: false,
+        logo: false,
+    };
 
     #[test]
     fn parses_a_bare_key() {
@@ -160,7 +165,10 @@ mod tests {
     fn modifiers_must_match_exactly() {
         let plain = Hotkey::parse("ArrowUp", false).unwrap();
         let shift = Hotkey::parse("Shift+ArrowUp", false).unwrap();
-        let shifted = Mods { shift: true, ..NONE };
+        let shifted = Mods {
+            shift: true,
+            ..NONE
+        };
 
         assert!(plain.matches("ArrowUp", NONE));
         assert!(!plain.matches("ArrowUp", shifted));

@@ -7,7 +7,9 @@
 
 use std::collections::HashMap;
 
-use sbsp_backend::model::cue::{Cue, CueCursorAdvanceTriggerOverride, CueParam, Uuid, group::GroupMode};
+use sbsp_backend::model::cue::{
+    Cue, CueCursorAdvanceTriggerOverride, CueParam, Uuid, group::GroupMode,
+};
 use sbsp_backend::model::settings::CursorAdvanceTrigger;
 
 use crate::domain::flat_list::next_cue_id;
@@ -101,7 +103,13 @@ mod tests {
         let (cues, roots, a, _b) = two();
         for event in [CueEvent::Triggered, CueEvent::Completed] {
             assert_eq!(
-                advance(&cues[&a], &cues, &roots, CursorAdvanceTrigger::Manual, event),
+                advance(
+                    &cues[&a],
+                    &cues,
+                    &roots,
+                    CursorAdvanceTrigger::Manual,
+                    event
+                ),
                 CursorMove::Stay
             );
         }
@@ -110,7 +118,15 @@ mod tests {
     #[test]
     fn on_triggered_advances_on_trigger_only() {
         let (cues, roots, a, b) = two();
-        let go = |event| advance(&cues[&a], &cues, &roots, CursorAdvanceTrigger::OnTriggered, event);
+        let go = |event| {
+            advance(
+                &cues[&a],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::OnTriggered,
+                event,
+            )
+        };
 
         assert_eq!(go(CueEvent::Triggered), CursorMove::To(Some(b)));
         assert_eq!(go(CueEvent::Completed), CursorMove::Stay);
@@ -119,7 +135,15 @@ mod tests {
     #[test]
     fn on_completed_advances_on_completion_only() {
         let (cues, roots, a, b) = two();
-        let go = |event| advance(&cues[&a], &cues, &roots, CursorAdvanceTrigger::OnCompleted, event);
+        let go = |event| {
+            advance(
+                &cues[&a],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::OnCompleted,
+                event,
+            )
+        };
 
         assert_eq!(go(CueEvent::Completed), CursorMove::To(Some(b)));
         assert_eq!(go(CueEvent::Triggered), CursorMove::Stay);
@@ -132,7 +156,13 @@ mod tests {
             CueCursorAdvanceTriggerOverride::Override(CursorAdvanceTrigger::OnTriggered);
 
         assert_eq!(
-            advance(&cues[&a], &cues, &roots, CursorAdvanceTrigger::Manual, CueEvent::Triggered),
+            advance(
+                &cues[&a],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::Manual,
+                CueEvent::Triggered
+            ),
             CursorMove::To(Some(b))
         );
     }
@@ -142,14 +172,25 @@ mod tests {
         let (cues, roots, _a, b) = two();
 
         assert_eq!(
-            advance(&cues[&b], &cues, &roots, CursorAdvanceTrigger::OnTriggered, CueEvent::Triggered),
+            advance(
+                &cues[&b],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::OnTriggered,
+                CueEvent::Triggered
+            ),
             CursorMove::To(None)
         );
     }
 
     #[test]
     fn entering_a_start_first_group_skips_its_first_child() {
-        let (g, c1, c2, after) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (g, c1, c2, after) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let group = Cue {
             params: CueParam::Group {
                 base: GroupCueParamBase {
@@ -168,7 +209,13 @@ mod tests {
         let roots = vec![g, after];
 
         assert_eq!(
-            advance(&cues[&g], &cues, &roots, CursorAdvanceTrigger::OnTriggered, CueEvent::Triggered),
+            advance(
+                &cues[&g],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::OnTriggered,
+                CueEvent::Triggered
+            ),
             CursorMove::To(Some(c2))
         );
     }
@@ -193,7 +240,13 @@ mod tests {
         let roots = vec![g, after];
 
         assert_eq!(
-            advance(&cues[&g], &cues, &roots, CursorAdvanceTrigger::OnTriggered, CueEvent::Triggered),
+            advance(
+                &cues[&g],
+                &cues,
+                &roots,
+                CursorAdvanceTrigger::OnTriggered,
+                CueEvent::Triggered
+            ),
             CursorMove::To(Some(after))
         );
     }

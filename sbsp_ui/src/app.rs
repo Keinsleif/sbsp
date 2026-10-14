@@ -198,7 +198,10 @@ impl State {
             }
             #[cfg(feature = "host")]
             Message::BackendStarted(backend, state) => {
-                log::info!("backend started, {} active cue(s) at connect", state.show_state.active_cues.len());
+                log::info!(
+                    "backend started, {} active cue(s) at connect",
+                    state.show_state.active_cues.len()
+                );
                 self.playback.update(&state.show_state, Instant::now());
                 self.model = state.show_model;
                 self.ui.set_playback_cursor(
@@ -206,7 +209,8 @@ impl State {
                     self.lock_cursor_to_selection,
                     &self.model.cue_list.cues,
                 );
-                self.ui.set_permission(sbsp_backend::api::Permissions::all());
+                self.ui
+                    .set_permission(sbsp_backend::api::Permissions::all());
                 self.backend = Some(backend);
             }
             #[cfg(feature = "host")]
@@ -270,13 +274,11 @@ impl State {
                     Step::Down
                 };
                 let extend = matches!(action, A::ExtendUp | A::ExtendDown);
-                let Some(id) =
-                    cue_list::move_cursor(&self.model, &mut self.ui, step, extend, lock)
+                let Some(id) = cue_list::move_cursor(&self.model, &mut self.ui, step, extend, lock)
                 else {
                     return Task::none();
                 };
-                let Some(y) =
-                    cue_list::scroll_offset_for(&self.model, &self.ui, self.cue_view, id)
+                let Some(y) = cue_list::scroll_offset_for(&self.model, &self.ui, self.cue_view, id)
                 else {
                     return Task::none();
                 };
@@ -300,13 +302,20 @@ impl State {
         }
 
         let selected_rows = || self.ui.selected_rows.iter().copied();
-        let selected_active = self
-            .ui
-            .selected
-            .and_then(|id| self.playback.active_cues.get(&id).map(|cue| (id, cue.status)));
+        let selected_active = self.ui.selected.and_then(|id| {
+            self.playback
+                .active_cues
+                .get(&id)
+                .map(|cue| (id, cue.status))
+        });
 
         let controls: Vec<Control> = match action {
-            A::Execute => self.ui.playback_cursor.map(Control::Execute).into_iter().collect(),
+            A::Execute => self
+                .ui
+                .playback_cursor
+                .map(Control::Execute)
+                .into_iter()
+                .collect(),
             A::Load => selected_rows().map(Control::Load).collect(),
             A::Stop => selected_rows().map(Control::Stop).collect(),
             A::ToggleRepeat => selected_rows().map(Control::ToggleRepeat).collect(),
@@ -327,9 +336,7 @@ impl State {
                 .into_iter()
                 .collect(),
             // Handled above.
-            A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown | A::SelectAll => {
-                Vec::new()
-            }
+            A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown | A::SelectAll => Vec::new(),
         };
 
         self.send(controls)
@@ -384,8 +391,7 @@ impl State {
     fn add_test_group(&self) -> Task<Message> {
         use sbsp_backend::manager::InsertPosition;
         use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
-            WaitCueParam,
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid, WaitCueParam,
             group::{GroupCueParamBase, GroupMode},
         };
 
@@ -468,8 +474,7 @@ impl State {
     fn add_test_cue(&self) -> Task<Message> {
         use sbsp_backend::manager::InsertPosition;
         use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
-            WaitCueParam,
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid, WaitCueParam,
         };
 
         let Some(backend) = &self.backend else {
@@ -708,9 +713,9 @@ impl State {
             cue_list::view(&self.model, &self.ui, &self.playback, &self.name_format)
                 .map(Message::CueList),
         )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(12);
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(12);
 
         let body = row![sidebar, main];
 
@@ -789,7 +794,8 @@ mod tests {
         ui.click("View").expect("the View menu should be clickable");
         // The item shows the language it switches *to*; starting from
         // English that's its own name for Japanese, not "Japanese".
-        ui.click("日本語").expect("the language item should be clickable");
+        ui.click("日本語")
+            .expect("the language item should be clickable");
 
         for message in ui.into_messages() {
             let _ = state.update(message);
@@ -811,7 +817,8 @@ mod tests {
 
         let mut ui = iced_test::simulator(state.view());
         ui.click("Help").expect("the Help menu should be clickable");
-        ui.click("About").expect("the About item should be clickable");
+        ui.click("About")
+            .expect("the About item should be clickable");
 
         for message in ui.into_messages() {
             let _ = state.update(message);
@@ -832,8 +839,7 @@ mod tests {
     /// names, since `Simulator` selects rows by their exact text).
     fn populated_state() -> (State, [sbsp_backend::model::cue::Uuid; 3]) {
         use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
-            WaitCueParam,
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid, WaitCueParam,
         };
 
         let ids = [Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
@@ -879,7 +885,8 @@ mod tests {
         let (mut state, ids) = populated_state();
 
         let mut ui = iced_test::simulator(state.view());
-        ui.click("Wait 2s").expect("the second row should be clickable");
+        ui.click("Wait 2s")
+            .expect("the second row should be clickable");
         for message in ui.into_messages() {
             let _ = state.update(message);
         }
@@ -896,7 +903,8 @@ mod tests {
         state.modifiers = keyboard::Modifiers::SHIFT;
 
         let mut ui = iced_test::simulator(state.view());
-        ui.click("Wait 3s").expect("the third row should be clickable");
+        ui.click("Wait 3s")
+            .expect("the third row should be clickable");
         for message in ui.into_messages() {
             let _ = state.update(message);
         }

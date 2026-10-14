@@ -258,12 +258,8 @@ fn row_view<'a>(
     )
     .width(20);
 
-    let name = text(build_cue_name(
-        Some(cue),
-        &model.cue_list.cues,
-        name_format,
-    ))
-    .width(Length::Fill);
+    let name =
+        text(build_cue_name(Some(cue), &model.cue_list.cues, name_format)).width(Length::Fill);
 
     let content = row![number, status, indent, disclosure, color_dot, name]
         .spacing(8)
@@ -336,11 +332,11 @@ fn status_glyph(status: PlaybackStatus) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sbsp_backend::model::ShowModel;
     use sbsp_backend::model::cue::{
         CueChain, CueCursorAdvanceTriggerOverride, CueParam, WaitCueParam,
         group::{GroupCueParamBase, GroupMode},
     };
-    use sbsp_backend::model::ShowModel;
 
     fn leaf(id: Uuid, parent_id: Option<Uuid>) -> Cue {
         Cue {
@@ -372,7 +368,12 @@ mod tests {
 
     /// root: a, group g (children c, d)
     fn sample() -> (ShowModel, Uuid, Uuid, Uuid, Uuid) {
-        let (a, g, c, d) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let (a, g, c, d) = (
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        );
         let mut model = ShowModel::default();
         model.cue_list.cues.insert(a, leaf(a, None));
         model.cue_list.cues.insert(g, group(g, vec![c, d]));
@@ -404,7 +405,10 @@ mod tests {
         let (model, _a, g, _c, _d) = sample();
         let mut ui = UiState::new(true);
 
-        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(g));
+        assert_eq!(
+            move_cursor(&model, &mut ui, Step::Down, false, false),
+            Some(g)
+        );
         assert_eq!(ui.selected, Some(g));
     }
 
@@ -413,7 +417,10 @@ mod tests {
         let (model, a, _g, _c, _d) = sample();
         let mut ui = UiState::new(true);
 
-        assert_eq!(move_cursor(&model, &mut ui, Step::Up, false, false), Some(a));
+        assert_eq!(
+            move_cursor(&model, &mut ui, Step::Up, false, false),
+            Some(a)
+        );
     }
 
     #[test]
@@ -423,13 +430,19 @@ mod tests {
         ui.set_selected(a, false);
 
         // Collapsed: a -> g, then the end of the list.
-        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(g));
+        assert_eq!(
+            move_cursor(&model, &mut ui, Step::Down, false, false),
+            Some(g)
+        );
         assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), None);
         assert_eq!(ui.selected, Some(g));
 
         // Expanded: g -> c.
         ui.toggle_expand(g);
-        assert_eq!(move_cursor(&model, &mut ui, Step::Down, false, false), Some(c));
+        assert_eq!(
+            move_cursor(&model, &mut ui, Step::Down, false, false),
+            Some(c)
+        );
     }
 
     #[test]
@@ -449,7 +462,10 @@ mod tests {
         ui.toggle_expand(g);
         ui.set_selected(a, false);
 
-        assert_eq!(move_cursor(&model, &mut ui, Step::Down, true, false), Some(g));
+        assert_eq!(
+            move_cursor(&model, &mut ui, Step::Down, true, false),
+            Some(g)
+        );
         assert_eq!(ui.selected_rows, vec![a, g]);
 
         // g (level 0) -> c (level 1): refused, selection unchanged.
@@ -475,14 +491,14 @@ mod tests {
     fn scroll_offset_is_none_while_the_row_is_in_view_or_size_unknown() {
         let (model, a, g, _c, _d) = sample();
         let ui = UiState::new(true);
-        let view = Viewport { offset_y: 0.0, height: 100.0 };
+        let view = Viewport {
+            offset_y: 0.0,
+            height: 100.0,
+        };
 
         assert_eq!(scroll_offset_for(&model, &ui, view, a), None);
         assert_eq!(scroll_offset_for(&model, &ui, view, g), None);
-        assert_eq!(
-            scroll_offset_for(&model, &ui, Viewport::default(), g),
-            None
-        );
+        assert_eq!(scroll_offset_for(&model, &ui, Viewport::default(), g), None);
     }
 
     #[test]
@@ -491,7 +507,10 @@ mod tests {
         let mut ui = UiState::new(true);
         ui.toggle_expand(g);
         // Rows: a(0) g(1) c(2) d(3); a viewport two rows tall at the top.
-        let view = Viewport { offset_y: 0.0, height: 2.0 * ROW_HEIGHT };
+        let view = Viewport {
+            offset_y: 0.0,
+            height: 2.0 * ROW_HEIGHT,
+        };
 
         assert_eq!(
             scroll_offset_for(&model, &ui, view, d),
@@ -504,7 +523,10 @@ mod tests {
         let (model, a, g, _c, _d) = sample();
         let mut ui = UiState::new(true);
         ui.toggle_expand(g);
-        let view = Viewport { offset_y: 2.0 * ROW_HEIGHT, height: 2.0 * ROW_HEIGHT };
+        let view = Viewport {
+            offset_y: 2.0 * ROW_HEIGHT,
+            height: 2.0 * ROW_HEIGHT,
+        };
 
         assert_eq!(scroll_offset_for(&model, &ui, view, a), Some(0.0));
     }
