@@ -7,3 +7,4 @@
 
 pub mod cue_list;
 pub mod hotkeys;
+pub mod status_bar;

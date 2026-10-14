@@ -21,7 +21,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, hotkeys};
+use crate::features::{cue_list, hotkeys, status_bar};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -90,6 +90,7 @@ pub enum Message {
     ModifiersChanged(keyboard::Modifiers),
     KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
+    StatusBar(status_bar::Message),
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
@@ -189,6 +190,7 @@ impl State {
             }
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
+            Message::StatusBar(status_bar::Message::ModeSelected(mode)) => self.ui.set_mode(mode),
             // Handled in update(): they need to return a Task.
             Message::Menu(_) | Message::KeyPressed(_) => {}
             Message::Toast(message) => self.toasts.update(message),
@@ -719,9 +721,10 @@ impl State {
 
         let body = row![sidebar, main];
 
-        let footer = container(text(fl!("shell-footer-ready")))
-            .width(Length::Fill)
-            .padding(6);
+        let footer = container(
+            status_bar::view(&self.ui, self.model.cue_list.cues.len()).map(Message::StatusBar),
+        )
+        .width(Length::Fill);
 
         let content: Element<'_, Message> = column![header, body, footer].into();
 
@@ -925,6 +928,32 @@ mod tests {
 
     #[test]
     #[serial]
+    fn selecting_a_mode_switches_it_when_allowed() {
+        let mut state = new_state();
+        // Without the `host` feature a state starts with no permissions.
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+        assert_eq!(state.ui.mode, Mode::Edit);
+
+        let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::View)));
+        assert_eq!(state.ui.mode, Mode::View);
+    }
+
+    #[test]
+    #[serial]
+    fn hotkeys_that_move_the_selection_still_work_in_view_mode() {
+        use keyboard::key::Named;
+
+        let (mut state, ids) = populated_state();
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+        state.ui.set_mode(Mode::View);
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(press(arrow(Named::ArrowDown), keyboard::Modifiers::empty()));
+        assert_eq!(state.ui.selected, Some(ids[1]));
+    }
+
+    #[test]
+    #[serial]
     fn arrow_down_moves_the_selection() {
         use keyboard::key::Named;
 
@@ -988,8 +1017,9 @@ mod tests {
         let mut ui = iced_test::simulator(state.view());
 
         assert!(
-            ui.find(fl!("shell-footer-ready").as_str()).is_ok(),
-            "the footer placeholder should render"
+            ui.find(fl!("main-foot-bar-cue-count-suffix", n = 0_i64).as_str())
+                .is_ok(),
+            "the footer's cue count should render"
         );
         // Exact match, not substring (see the note in menu_about_shows_a_toast):
         // the widget's full text is "Sidebar (Phase 6)", so searching for

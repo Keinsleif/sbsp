@@ -92,6 +92,29 @@ impl UiState {
         }
     }
 
+    /// The modes the held permissions allow, in the order the mode picker
+    /// lists them (view, run, edit).
+    pub fn available_modes(&self) -> Vec<Mode> {
+        [
+            (Mode::View, Permissions::READ),
+            (Mode::Run, Permissions::CONTROL),
+            (Mode::Edit, Permissions::EDIT),
+        ]
+        .into_iter()
+        .filter(|(_, required)| self.permission.contains(*required))
+        .map(|(mode, _)| mode)
+        .collect()
+    }
+
+    /// Switches mode if the permissions allow it; otherwise leaves `mode`
+    /// as it is (the picker only offers allowed modes, so this is the
+    /// guard for anything else that tries).
+    pub fn set_mode(&mut self, mode: Mode) {
+        if self.available_modes().contains(&mode) {
+            self.mode = mode;
+        }
+    }
+
     pub fn set_permission(&mut self, permission: Permissions) {
         self.permission = permission;
         self.validate_mode();
@@ -290,6 +313,32 @@ mod tests {
             parent_id,
             params: CueParam::Wait(WaitCueParam { duration: 1.0 }),
         }
+    }
+
+    #[test]
+    fn modes_follow_permissions_in_picker_order() {
+        let mut ui = UiState::new(true);
+        assert_eq!(ui.available_modes(), vec![Mode::View, Mode::Run, Mode::Edit]);
+
+        ui.set_permission(Permissions::READ | Permissions::CONTROL);
+        assert_eq!(ui.available_modes(), vec![Mode::View, Mode::Run]);
+
+        ui.set_permission(Permissions::empty());
+        assert!(ui.available_modes().is_empty());
+    }
+
+    #[test]
+    fn set_mode_refuses_a_mode_the_permissions_do_not_allow() {
+        let mut ui = UiState::new(true);
+        ui.set_permission(Permissions::READ | Permissions::CONTROL);
+        // Edit was revoked above, which dropped the mode to run.
+        assert_eq!(ui.mode, Mode::Run);
+
+        ui.set_mode(Mode::Edit);
+        assert_eq!(ui.mode, Mode::Run);
+
+        ui.set_mode(Mode::View);
+        assert_eq!(ui.mode, Mode::View);
     }
 
     #[test]
