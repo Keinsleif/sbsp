@@ -92,12 +92,24 @@ pub enum Message {
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
+    /// Result of a fire-and-forget backend call that succeeded.
+    Nothing,
     #[cfg(feature = "host")]
     BackendStarted(HostPort, FullState),
     #[cfg(feature = "host")]
     PortEvent(PortEvent),
     #[cfg(feature = "host")]
     BackendError(String),
+}
+
+/// Turns the outcome of a fire-and-forget backend call into a `Message`
+/// (`Task::perform` needs one value either way).
+#[cfg(feature = "host")]
+fn backend_result(result: anyhow::Result<()>) -> Message {
+    match result {
+        Ok(()) => Message::Nothing,
+        Err(e) => Message::BackendError(e.to_string()),
+    }
 }
 
 impl State {
@@ -178,6 +190,7 @@ impl State {
             // Handled in update(): they need to return a Task.
             Message::Menu(_) | Message::KeyPressed(_) => {}
             Message::Toast(message) => self.toasts.update(message),
+            Message::Nothing => {}
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
             }
@@ -314,9 +327,7 @@ impl State {
             return Task::none();
         }
 
-        Task::perform(backend.send(controls), |result| {
-            result.err().map(|e| Message::BackendError(e.to_string()))
-        })
+        Task::perform(backend.send(controls), backend_result)
     }
 
     /// Remote/web have no backend connection yet (Phase 8/9).
@@ -427,7 +438,7 @@ impl State {
                 }
                 Ok::<(), anyhow::Error>(())
             },
-            |result| result.err().map(|e| Message::BackendError(e.to_string())),
+            backend_result,
         )
     }
 
@@ -478,7 +489,7 @@ impl State {
                     )
                     .await
             },
-            |result| result.err().map(|e| Message::BackendError(e.to_string())),
+            backend_result,
         )
         .and_then(Task::done)
     }
