@@ -114,10 +114,12 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
     let clock = container(
         row![
             text(format!("{:02}:{:02}.", v.clock.hour, v.clock.minute))
-                .size(56)
+                .size(48)
+                .line_height(1.0)
                 .font(Font::MONOSPACE),
             text(format!("{:02}", v.clock.second))
-                .size(34)
+                .size(32)
+                .line_height(1.0)
                 .font(Font::MONOSPACE),
         ]
         .align_y(Alignment::End),
