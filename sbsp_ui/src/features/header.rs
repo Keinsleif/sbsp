@@ -5,8 +5,17 @@
 //! buttons for the playback-cursor cue, and that cue's title and notes.
 //! Ported from `AppHeader.vue`.
 //!
-//! Not here yet: the add-cue buttons shown in edit mode (Phase 6, they
-//! need the editing operations), and the buttons' blinking while a cue is
+//! Layout is the original's: a fixed-height panel in two columns. Left,
+//! the clock (stretching to fill) over the transport buttons; right, the
+//! cue title and notes (stretching) over the add-cue buttons. A bottom
+//! row exists only while its buttons do -- transport buttons outside view
+//! mode, add-cue buttons in edit mode -- and when one is missing the box
+//! above it grows into the space, so the two columns' boxes need not be
+//! the same height.
+//!
+//! Not here yet: working add-cue buttons (Phase 6, they need the editing
+//! operations; they are drawn disabled so the layout is final), and the
+//! buttons' blinking while a cue is
 //! pre-waiting/stopping/loaded -- they are only highlighted for now.
 
 use iced::widget::{button, column, container, row, scrollable, text};
@@ -91,6 +100,8 @@ pub struct View<'a> {
     /// Show the transport buttons (hidden in view mode and by the
     /// `hide_controls` appearance setting).
     pub show_controls: bool,
+    /// Show the add-cue button row (edit mode).
+    pub show_add_cue: bool,
     pub cursor_cue: Option<&'a Cue>,
     /// Display name of `cursor_cue` (its own, or the generated one).
     pub cursor_cue_name: String,
@@ -112,6 +123,7 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
         .align_y(Alignment::End),
     )
     .padding([0, 12])
+    .center_y(Length::Fill)
     .style(move |theme: &Theme| {
         // A red clock is the "this window does not have keyboard focus,
         // your hotkeys are going elsewhere" warning, as in the original.
@@ -122,7 +134,7 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
         style
     });
 
-    let mut left = column![clock].spacing(12);
+    let mut left = column![clock].spacing(12).height(Length::Fill);
     if v.show_controls {
         let has_cursor = v.cursor_cue.is_some();
         let status = v.cursor_status;
@@ -158,7 +170,7 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
         .unwrap_or_default();
     let notes = v.cursor_cue.map(|cue| cue.notes.clone()).unwrap_or_default();
 
-    let right = column![
+    let cue_box = column![
         container(text(title))
             .padding([4, 12])
             .width(Length::Fill)
@@ -169,13 +181,49 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
             .height(Length::Fill)
             .style(container::bordered_box),
     ]
-    .spacing(4);
+    .spacing(4)
+    .height(Length::Fill);
+
+    let mut right = column![cue_box].spacing(12);
+    if v.show_add_cue {
+        right = right.push(add_cue_row());
+    }
 
     row![left, right.width(Length::Fill)]
         .spacing(12)
         .padding(12)
-        .height(150)
+        .height(PANEL_HEIGHT)
         .into()
+}
+
+/// The original's `h-50`.
+const PANEL_HEIGHT: f32 = 200.0;
+
+/// Add-cue buttons, drawn disabled until Phase 6 gives them something to
+/// do. Same size as the transport buttons, so the two bottom rows line up.
+fn add_cue_row<'a>() -> Element<'a, Message> {
+    let group = |icons: &[Icon]| {
+        row(icons
+            .iter()
+            .map(|glyph| transport_button(*glyph, false, Success, None)))
+        .spacing(2)
+    };
+
+    container(
+        row![
+            group(&[Icon::VolumeHigh, Icon::TimerSandEmpty, Icon::ChartBellCurveCumulative]),
+            group(&[Icon::Group]),
+            group(&[
+                Icon::PlayCircleOutline,
+                Icon::StopCircleOutline,
+                Icon::PauseCircleOutline,
+                Icon::UploadCircleOutline,
+            ]),
+        ]
+        .spacing(16),
+    )
+    .align_right(Length::Fill)
+    .into()
 }
 
 #[derive(Clone, Copy)]

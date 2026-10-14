@@ -760,6 +760,7 @@ impl State {
             clock: self.clock,
             window_focused: self.window_focused,
             show_controls: self.show_controls(),
+            show_add_cue: self.ui.mode == Mode::Edit,
             cursor_cue,
             cursor_cue_name: cursor_cue
                 .map(|cue| {
