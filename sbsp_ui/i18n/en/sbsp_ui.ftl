@@ -7,5 +7,11 @@ menu-help = Help
 menu-help-about = About
 menu-help-about-message = SBS Player (iced UI, in development).
 shell-sidebar-placeholder = Sidebar (Phase 6)
-shell-footer-ready = Ready
 cue-list-empty = No cues yet
+main-foot-bar-cue-count-suffix = { $n ->
+    [one] { $n } cue
+   *[other] { $n } cues
+}
+main-foot-bar-modes-view = View
+main-foot-bar-modes-run = Run
+main-foot-bar-modes-edit = Edit

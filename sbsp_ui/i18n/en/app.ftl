@@ -224,13 +224,6 @@ main-cue-list-moving-cue = { $n ->
    *[other] Move { $n } cues
 }
 main-duration = Duration
-main-foot-bar-cue-count-suffix = { $n ->
-    [one] { $n } cue
-   *[other] { $n } cues
-}
-main-foot-bar-modes-edit = Edit
-main-foot-bar-modes-run = Run
-main-foot-bar-modes-view = View
 main-foot-bar-processing-indicator = Processing { $size } files
 main-mobile-active = Active
 main-mobile-controls = Controls
