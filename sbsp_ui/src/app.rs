@@ -491,7 +491,7 @@ impl State {
             },
             backend_result,
         )
-        .and_then(Task::done)
+        .then(Task::done)
     }
 
     /// Replaces the whole model (a load or a reset): selection starts
