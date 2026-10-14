@@ -66,7 +66,7 @@ pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
 
     let count = container(text(fl!(
         "main-foot-bar-cue-count-suffix",
-        n = cue_count as i64
+        n = (cue_count as i64)
     )))
     .center_x(Length::Fill);
 
