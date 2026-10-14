@@ -15,3 +15,6 @@ main-foot-bar-cue-count-suffix = { $n ->
 main-foot-bar-modes-view = View
 main-foot-bar-modes-run = Run
 main-foot-bar-modes-edit = Edit
+main-name = Name
+main-pre-wait = Pre-Wait
+main-duration = Duration

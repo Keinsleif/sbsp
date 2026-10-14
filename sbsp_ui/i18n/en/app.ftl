@@ -223,15 +223,12 @@ main-cue-list-moving-cue = { $n ->
     [one] Move { $n } cue
    *[other] Move { $n } cues
 }
-main-duration = Duration
 main-foot-bar-processing-indicator = Processing { $size } files
 main-mobile-active = Active
 main-mobile-controls = Controls
 main-mobile-list = List
-main-name = Name
 main-notes = Notes
 main-number = Number
-main-pre-wait = Pre-Wait
 main-side-bar-active-cues = Active Cues
 main-side-bar-meter-title = Meter
 menu-cue-audio = Audio Cue

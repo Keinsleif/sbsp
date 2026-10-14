@@ -231,6 +231,12 @@ impl State {
         match message {
             cue_list::Message::ToggleExpand(id) => self.ui.toggle_expand(id),
             cue_list::Message::Scrolled(viewport) => self.cue_view = viewport,
+            cue_list::Message::SetCursor(id) => {
+                self.ui
+                    .set_playback_cursor(Some(id), lock, &self.model.cue_list.cues)
+            }
+            cue_list::Message::TogglePreWaitDisplay => self.ui.toggle_pre_wait_display_mode(),
+            cue_list::Message::ToggleDurationDisplay => self.ui.toggle_duration_display_mode(),
             cue_list::Message::Select(id) => {
                 if self.modifiers.shift() {
                     // Anchor on the current selection; with none yet,
@@ -712,7 +718,13 @@ impl State {
             .padding(12);
 
         let main = container(
-            cue_list::view(&self.model, &self.ui, &self.playback, &self.name_format)
+            cue_list::view(
+                &self.model,
+                &self.ui,
+                &self.playback,
+                &self.assets,
+                &self.name_format,
+            )
                 .map(Message::CueList),
         )
         .width(Length::Fill)
@@ -924,6 +936,31 @@ mod tests {
 
     fn arrow(named: keyboard::key::Named) -> keyboard::Key {
         keyboard::Key::Named(named)
+    }
+
+    #[test]
+    #[serial]
+    fn clicking_the_cursor_column_moves_the_playback_cursor() {
+        let (mut state, ids) = populated_state();
+
+        let _ = state.update(Message::CueList(cue_list::Message::SetCursor(ids[2])));
+
+        assert_eq!(state.ui.playback_cursor, Some(ids[2]));
+    }
+
+    #[test]
+    #[serial]
+    fn the_header_toggles_flip_the_time_display_modes() {
+        use crate::state::ui::DisplayMode;
+
+        let mut state = new_state();
+        assert_eq!(state.ui.pre_wait_display_mode, DisplayMode::Elapsed);
+
+        let _ = state.update(Message::CueList(cue_list::Message::TogglePreWaitDisplay));
+        let _ = state.update(Message::CueList(cue_list::Message::ToggleDurationDisplay));
+
+        assert_eq!(state.ui.pre_wait_display_mode, DisplayMode::Remain);
+        assert_eq!(state.ui.duration_display_mode, DisplayMode::Remain);
     }
 
     #[test]
