@@ -32,6 +32,7 @@ use crate::state::assets::AssetResults;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{DisplayMode, UiState};
+use crate::widgets::icon::{Icon, Tone, icon, toned};
 
 const INDENT_PER_LEVEL: f32 = 20.0;
 
@@ -232,12 +233,15 @@ fn cell<'a>(content: impl Into<Element<'a, Message>>, width: f32) -> Element<'a,
 
 fn header<'a>(ui: &UiState) -> Element<'a, Message> {
     let display_toggle = |mode: DisplayMode, message: Message| {
-        button(text(match mode {
-            DisplayMode::Elapsed => "E",
-            DisplayMode::Remain => "R",
-        })
-        .size(12))
-        .padding([0, 4])
+        button(icon(
+            match mode {
+                DisplayMode::Elapsed => Icon::AlphaEBoxOutline,
+                DisplayMode::Remain => Icon::AlphaRBoxOutline,
+            },
+            20.0,
+        ))
+        .padding(0)
+        .style(button::text)
         .on_press(message)
     };
 
@@ -264,7 +268,8 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
             ui.duration_display_mode,
             Message::ToggleDurationDisplay,
         ),
-        Space::new().width(W_REPEAT + W_CHAIN),
+        cell(icon(Icon::Repeat, 18.0), W_REPEAT),
+        cell(icon(Icon::ChevronDoubleDown, 18.0), W_CHAIN),
     ]
     .align_y(Alignment::Center)
     .padding([4, 8])
@@ -285,23 +290,38 @@ fn row_view<'a>(
     let is_cursor = ui.playback_cursor == Some(id);
     let active = playback.active_cues.get(&id);
 
-    let cursor = button(text(if is_cursor { "→" } else { "" }).center())
+    let cursor_mark: Element<'a, Message> = if is_cursor {
+        icon(Icon::ArrowRightBold, 18.0).into()
+    } else {
+        Space::new().into()
+    };
+    let cursor = button(container(cursor_mark).center_x(Length::Fill))
         .width(W_CURSOR)
         .padding(0)
         .style(button::text)
         .on_press(Message::SetCursor(id));
 
-    let status = active.map(|a| status_glyph(a.status)).unwrap_or("");
+    let status: Element<'a, Message> = match active.and_then(|a| status_icon(a.status)) {
+        Some((glyph, tone)) => toned(glyph, 18.0, tone).into(),
+        None => Space::new().into(),
+    };
 
     let indent = Space::new().width(entry.level as f32 * INDENT_PER_LEVEL);
     let disclosure: Element<'a, Message> = match entry.group {
-        Some(group) => button(text(if group.is_expanded { "▾" } else { "▸" }))
+        Some(group) => button(icon(
+            if group.is_expanded {
+                Icon::MenuDown
+            } else {
+                Icon::MenuRight
+            },
+            18.0,
+        ))
             .padding(0)
-            .width(16)
+            .width(20)
             .style(button::text)
             .on_press(Message::ToggleExpand(id))
             .into(),
-        None => Space::new().width(16).into(),
+        None => Space::new().width(20).into(),
     };
     let name = text(build_cue_name(Some(cue), &model.cue_list.cues, name_format))
         .width(Length::Fill);
@@ -343,10 +363,20 @@ fn row_view<'a>(
         _ => false,
     };
 
+    let repeat_mark: Element<'a, Message> = if repeats {
+        icon(Icon::Repeat, 18.0).into()
+    } else {
+        Space::new().into()
+    };
+    let chain_mark: Element<'a, Message> = match chain_icon(&entry.chain) {
+        Some(glyph) => icon(glyph, 18.0).into(),
+        None => Space::new().into(),
+    };
+
     let content = row![
         cursor,
-        cell(text(status), W_STATUS),
-        cell(text(type_glyph(&cue.params)), W_TYPE),
+        cell(status, W_STATUS),
+        cell(icon(type_icon(&cue.params), 18.0), W_TYPE),
         cell(text(cue.number.clone()), W_NUMBER),
         row![indent, disclosure, name]
             .spacing(4)
@@ -354,8 +384,8 @@ fn row_view<'a>(
             .width(Length::Fill),
         time_cell(pre_wait.0, pre_wait.1, in_pre_wait),
         time_cell(duration.0, duration.1, in_playback),
-        cell(text(if repeats { "↻" } else { "" }), W_REPEAT),
-        cell(text(chain_glyph(&entry.chain)), W_CHAIN),
+        cell(repeat_mark, W_REPEAT),
+        cell(chain_mark, W_CHAIN),
     ]
     .align_y(Alignment::Center);
 
@@ -483,27 +513,24 @@ fn row_style(
     }
 }
 
-/// Stand-ins for the original's icon font (mdi), limited to characters
-/// common system fonts carry; the real icons come with the icon-font
-/// work.
-fn type_glyph(param: &CueParam) -> &'static str {
+fn type_icon(param: &CueParam) -> Icon {
     match param {
-        CueParam::Audio(_) => "♪",
-        CueParam::Wait(_) => "⌛",
-        CueParam::Fade(_) => "↘",
-        CueParam::Start(_) => "▷",
-        CueParam::Stop(_) => "□",
-        CueParam::Pause(_) => "Ⅱ",
-        CueParam::Load(_) => "⇧",
-        CueParam::Group { .. } => "▤",
+        CueParam::Audio(_) => Icon::VolumeHigh,
+        CueParam::Wait(_) => Icon::TimerSandEmpty,
+        CueParam::Fade(_) => Icon::ChartBellCurveCumulative,
+        CueParam::Start(_) => Icon::PlayCircleOutline,
+        CueParam::Stop(_) => Icon::StopCircleOutline,
+        CueParam::Pause(_) => Icon::PauseCircleOutline,
+        CueParam::Load(_) => Icon::UploadCircleOutline,
+        CueParam::Group { .. } => Icon::Group,
     }
 }
 
-fn chain_glyph(chain: &CueChain) -> &'static str {
+fn chain_icon(chain: &CueChain) -> Option<Icon> {
     match chain {
-        CueChain::DoNotChain => "",
-        CueChain::AfterStart { .. } => "↓",
-        CueChain::AfterComplete { .. } => "⇊",
+        CueChain::DoNotChain => None,
+        CueChain::AfterStart { .. } => Some(Icon::ArrowExpandDown),
+        CueChain::AfterComplete { .. } => Some(Icon::ArrowCollapseDown),
     }
 }
 
@@ -524,18 +551,16 @@ fn cue_color(color: CueColor) -> Color {
     }
 }
 
-/// One glyph per playback status, kept to characters common to ordinary
-/// system fonts (the same family as the disclosure triangles above, which
-/// rendered fine in the Phase 0 prototype) rather than emoji-range
-/// symbols that are more likely to show as tofu.
-fn status_glyph(status: PlaybackStatus) -> &'static str {
-    match status {
-        PlaybackStatus::Loaded => "●",
-        PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused => "…",
-        PlaybackStatus::Playing => "▶",
-        PlaybackStatus::Paused => "‖",
-        PlaybackStatus::Stopping => "■",
-    }
+/// The marker for a playback status, as in the original's status column;
+/// pre-waiting reads as playing and its paused state as paused, since the
+/// pre-wait cell itself is what tells the two apart.
+fn status_icon(status: PlaybackStatus) -> Option<(Icon, Tone)> {
+    Some(match status {
+        PlaybackStatus::Loaded => (Icon::Upload, Tone::Warning),
+        PlaybackStatus::PreWaiting | PlaybackStatus::Playing => (Icon::Play, Tone::Success),
+        PlaybackStatus::PreWaitPaused | PlaybackStatus::Paused => (Icon::Pause, Tone::Warning),
+        PlaybackStatus::Stopping => (Icon::TimerSand, Tone::Warning),
+    })
 }
 
 #[cfg(test)]
@@ -758,21 +783,32 @@ mod tests {
     }
 
     #[test]
-    fn every_status_has_a_distinct_glyph() {
+    fn each_distinct_status_has_a_distinct_marker() {
         use std::collections::HashSet;
 
-        let glyphs: HashSet<&str> = [
+        let markers: HashSet<(Icon, Tone)> = [
             PlaybackStatus::Loaded,
-            PlaybackStatus::PreWaiting,
             PlaybackStatus::Playing,
             PlaybackStatus::Paused,
             PlaybackStatus::Stopping,
         ]
         .into_iter()
-        .map(status_glyph)
+        .filter_map(status_icon)
         .collect();
 
-        assert_eq!(glyphs.len(), 5);
+        assert_eq!(markers.len(), 4);
+    }
+
+    #[test]
+    fn pre_wait_statuses_share_their_playback_markers() {
+        assert_eq!(
+            status_icon(PlaybackStatus::PreWaiting),
+            status_icon(PlaybackStatus::Playing)
+        );
+        assert_eq!(
+            status_icon(PlaybackStatus::PreWaitPaused),
+            status_icon(PlaybackStatus::Paused)
+        );
     }
 
     #[test]

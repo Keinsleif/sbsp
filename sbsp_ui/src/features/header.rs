@@ -16,6 +16,7 @@ use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::Cue;
 
 use crate::port::Control;
+use crate::widgets::icon::{Icon, colored};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
@@ -129,19 +130,19 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
 
         let transport = row![
             transport_button(
-                "■",
+                Icon::Stop,
                 matches!(status, Some(S::Stopping)),
                 Danger,
                 has_cursor.then_some(Message::Stop),
             ),
             transport_button(
-                "▶",
+                Icon::Play,
                 matches!(status, Some(S::Playing | S::PreWaiting)),
                 Success,
                 has_cursor.then_some(Message::Play),
             ),
             transport_button(
-                "‖",
+                Icon::Pause,
                 matches!(status, Some(S::Paused | S::Loaded)),
                 Warning,
                 has_cursor.then_some(Message::ReadyPause),
@@ -186,12 +187,26 @@ enum Highlight {
 use Highlight::{Danger, Success, Warning};
 
 fn transport_button<'a>(
-    glyph: &'static str,
+    glyph: Icon,
     active: bool,
     highlight: Highlight,
     on_press: Option<Message>,
 ) -> Element<'a, Message> {
-    button(text(glyph).center())
+    // Lit buttons get an accent background, so their icon switches to the
+    // text color made for it.
+    let glyph = colored(glyph, 22.0, move |theme| {
+        let palette = theme.extended_palette();
+        if !active {
+            return palette.background.base.text;
+        }
+        match highlight {
+            Highlight::Danger => palette.danger.base.text,
+            Highlight::Success => palette.success.base.text,
+            Highlight::Warning => palette.warning.base.text,
+        }
+    });
+
+    button(container(glyph).center_x(Length::Fill))
         .width(44)
         .padding([6, 0])
         .style(move |theme: &Theme, status| {
