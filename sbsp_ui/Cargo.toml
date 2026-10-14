@@ -39,6 +39,9 @@ iced = { version = "0.14", features = ["canvas", "image", "svg", "markdown", "qr
 iced_aw = { version = "0.14", default-features = false, features = ["context_menu", "menu", "spinner"] }
 iced_futures = "0.14"
 dark-light = "2"
+# Wall clock in the header. Already in the workspace's lockfile (pulled in
+# transitively); `clock` is what provides `Local::now()`.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 i18n-embed = { version = "0.16", features = ["fluent-system"] }
 i18n-embed-fl = "0.10"
@@ -61,6 +64,10 @@ iced = { version = "0.14", default-features = false, features = ["tokio"] }
 fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Local::now() on wasm reads the browser's clock through wasm-bindgen.
+chrono = { version = "0.4", default-features = false, features = ["clock", "wasmbind"] }
 
 [dev-dependencies]
 # Headless UI testing (see migration plan, section 8/"iced_test による

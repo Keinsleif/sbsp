@@ -21,7 +21,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, hotkeys, status_bar};
+use crate::features::{cue_list, header, hotkeys, status_bar};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -74,6 +74,9 @@ pub struct State {
     seek_amount: f64,
     hotkeys: hotkeys::Bindings,
     modifiers: keyboard::Modifiers,
+    clock: header::ClockTime,
+    window_focused: bool,
+    hide_controls: bool,
     model: ShowModelState,
     ui: UiState,
     playback: PlaybackState,
@@ -91,6 +94,9 @@ pub enum Message {
     KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
     StatusBar(status_bar::Message),
+    Header(header::Message),
+    ClockTick,
+    WindowFocused(bool),
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
@@ -148,6 +154,9 @@ impl State {
                 hotkeys::is_mac(),
             ),
             modifiers: keyboard::Modifiers::default(),
+            clock: header::local_clock(),
+            window_focused: true,
+            hide_controls: sbsp_frontend_settings::AppearanceSettings::default().hide_controls,
             model: ShowModelState::default(),
             ui: UiState::new(is_host),
             playback: PlaybackState::new(),
@@ -167,6 +176,7 @@ impl State {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Menu(id) => self.handle_menu(id),
+            Message::Header(message) => self.handle_header(message),
             Message::KeyPressed(press) => self.handle_key(press),
             other => {
                 self.apply(other);
@@ -192,7 +202,9 @@ impl State {
             Message::CueList(message) => self.handle_cue_list(message),
             Message::StatusBar(status_bar::Message::ModeSelected(mode)) => self.ui.set_mode(mode),
             // Handled in update(): they need to return a Task.
-            Message::Menu(_) | Message::KeyPressed(_) => {}
+            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) => {}
+            Message::ClockTick => self.clock = header::local_clock(),
+            Message::WindowFocused(focused) => self.window_focused = focused,
             Message::Toast(message) => self.toasts.update(message),
             Message::Nothing => {}
             Message::Tick(now) => {
@@ -255,6 +267,18 @@ impl State {
                 }
             }
         }
+    }
+
+    fn handle_header(&mut self, message: header::Message) -> Task<Message> {
+        if self.ui.mode == Mode::View {
+            return Task::none();
+        }
+        let cursor = self.ui.playback_cursor;
+        let status = cursor
+            .and_then(|id| self.playback.active_cues.get(&id))
+            .map(|active| active.status);
+
+        self.send(header::controls_for(message, cursor, status))
     }
 
     fn handle_key(&mut self, press: hotkeys::KeyPress) -> Task<Message> {
@@ -648,6 +672,11 @@ impl State {
         #[cfg(not(feature = "host"))]
         let backend_events = Subscription::none();
 
+        // Once a second is enough for the header clock to never show a
+        // stale second for long; the half-second period keeps it from
+        // beating against the second boundary.
+        let clock = iced::time::every(Duration::from_millis(500)).map(|_| Message::ClockTick);
+
         // Modifier state (to tell a plain click from shift-/ctrl-click in
         // the cue list) and key presses (hotkeys). Events a focused widget
         // already consumed are skipped, which is also what keeps typing
@@ -659,6 +688,12 @@ impl State {
             match event {
                 iced::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::ModifiersChanged(modifiers))
+                }
+                iced::Event::Window(iced::window::Event::Focused) => {
+                    Some(Message::WindowFocused(true))
+                }
+                iced::Event::Window(iced::window::Event::Unfocused) => {
+                    Some(Message::WindowFocused(false))
                 }
                 iced::Event::Keyboard(keyboard::Event::KeyPressed {
                     key,
@@ -672,7 +707,7 @@ impl State {
             }
         });
 
-        Subscription::batch([toasts, tick, backend_events, modifiers])
+        Subscription::batch([toasts, tick, clock, backend_events, modifiers])
     }
 
     fn menu_spec(&self) -> MenuSpec {
@@ -712,6 +747,32 @@ impl State {
             .width(Length::Fill)
             .padding(4);
 
+        let cursor_cue = self
+            .ui
+            .playback_cursor
+            .and_then(|id| self.model.cue_list.cues.get(&id));
+        let transport = header::view(header::View {
+            clock: self.clock,
+            window_focused: self.window_focused,
+            show_controls: !self.hide_controls && self.ui.mode != Mode::View,
+            cursor_cue,
+            cursor_cue_name: cursor_cue
+                .map(|cue| {
+                    crate::domain::cue::build_cue_name(
+                        Some(cue),
+                        &self.model.cue_list.cues,
+                        &self.name_format,
+                    )
+                })
+                .unwrap_or_default(),
+            cursor_status: self
+                .ui
+                .playback_cursor
+                .and_then(|id| self.playback.active_cues.get(&id))
+                .map(|active| active.status),
+        })
+        .map(Message::Header);
+
         let sidebar = container(text(fl!("shell-sidebar-placeholder")))
             .width(240)
             .height(Length::Fill)
@@ -738,7 +799,7 @@ impl State {
         )
         .width(Length::Fill);
 
-        let content: Element<'_, Message> = column![header, body, footer].into();
+        let content: Element<'_, Message> = column![header, transport, body, footer].into();
 
         self.toasts.overlay(content, Message::Toast)
     }
@@ -961,6 +1022,42 @@ mod tests {
 
         assert_eq!(state.ui.pre_wait_display_mode, DisplayMode::Remain);
         assert_eq!(state.ui.duration_display_mode, DisplayMode::Remain);
+    }
+
+    #[test]
+    #[serial]
+    fn transport_buttons_show_outside_view_mode_only() {
+        let mut state = new_state();
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("▶").is_ok(), "play button should show in edit mode");
+        drop(ui);
+
+        state.ui.set_mode(Mode::View);
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("▶").is_err(), "controls are hidden in view mode");
+    }
+
+    #[test]
+    #[serial]
+    fn hide_controls_setting_hides_the_transport_buttons() {
+        let mut state = new_state();
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+        state.hide_controls = true;
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("▶").is_err());
+    }
+
+    #[test]
+    #[serial]
+    fn window_focus_events_are_tracked() {
+        let mut state = new_state();
+        assert!(state.window_focused);
+
+        let _ = state.update(Message::WindowFocused(false));
+        assert!(!state.window_focused);
     }
 
     #[test]
