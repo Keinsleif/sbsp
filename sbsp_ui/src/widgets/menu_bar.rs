@@ -37,12 +37,6 @@ where
 
     MenuBar::new(roots)
         .style(native_style)
-        // iced_aw defaults both of these to false, which reads as broken
-        // against a native menu bar: clicking the already-open root again
-        // (or an item inside a submenu) does nothing, since nothing ever
-        // schedules a close. True matches ordinary menu-bar behavior:
-        // picking an item closes the whole bar, and so does re-clicking
-        // the open root.
         .close_on_item_click(true)
         .close_on_background_click(true)
         .into()
@@ -114,7 +108,11 @@ where
         })
         .collect::<Vec<_>>();
 
-    Menu::new(items).width(SUBMENU_WIDTH).spacing(1.0)
+    Menu::new(items)
+        .width(SUBMENU_WIDTH)
+        .spacing(1.0)
+        .close_on_item_click(true)
+        .close_on_background_click(true)
 }
 
 fn top_level_button<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
