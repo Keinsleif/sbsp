@@ -67,8 +67,7 @@ impl HostPort {
             }
         };
 
-        let (settings_tx, settings_rx) =
-            watch::channel(BackendSettings::from(&host_settings));
+        let (settings_tx, settings_rx) = watch::channel(BackendSettings::from(&host_settings));
 
         let (handle, _state_rx, event_tx) = start_backend(settings_rx, true)?;
         let full_state = handle.get_full_state().await?;

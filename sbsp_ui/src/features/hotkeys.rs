@@ -68,12 +68,7 @@ pub struct KeyPress {
 }
 
 impl KeyPress {
-    pub fn new(
-        key: &Key,
-        modified_key: &Key,
-        modifiers: Modifiers,
-        repeat: bool,
-    ) -> Option<Self> {
+    pub fn new(key: &Key, modified_key: &Key, modifiers: Modifiers, repeat: bool) -> Option<Self> {
         let mut names = key_names(key);
         for name in key_names(modified_key) {
             if !names.contains(&name) {
@@ -105,7 +100,12 @@ impl KeyPress {
 fn key_names(key: &Key) -> Vec<String> {
     match key {
         Key::Named(
-            Named::Shift | Named::Control | Named::Alt | Named::Super | Named::Meta | Named::AltGraph,
+            Named::Shift
+            | Named::Control
+            | Named::Alt
+            | Named::Super
+            | Named::Meta
+            | Named::AltGraph,
         ) => Vec::new(),
         Key::Named(named) => vec![format!("{named:?}")],
         Key::Character(c) if c.as_str() == " " => vec!["Space".to_owned()],
@@ -156,7 +156,12 @@ impl Bindings {
     pub fn find(&self, press: &KeyPress) -> Option<Action> {
         self.0
             .iter()
-            .find(|(hotkey, _)| press.names.iter().any(|name| hotkey.matches(name, press.mods)))
+            .find(|(hotkey, _)| {
+                press
+                    .names
+                    .iter()
+                    .any(|name| hotkey.matches(name, press.mods))
+            })
             .map(|(_, action)| *action)
             .filter(|action| !press.repeat || action.repeats())
     }
@@ -193,10 +198,22 @@ mod tests {
         let b = bindings();
         let none = Modifiers::empty();
 
-        assert_eq!(b.find(&press(named(Named::Enter), none)), Some(Action::Execute));
-        assert_eq!(b.find(&press(named(Named::Space), none)), Some(Action::PauseAndResume));
-        assert_eq!(b.find(&press(named(Named::Escape), none)), Some(Action::StopAll));
-        assert_eq!(b.find(&press(named(Named::Backspace), none)), Some(Action::Stop));
+        assert_eq!(
+            b.find(&press(named(Named::Enter), none)),
+            Some(Action::Execute)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::Space), none)),
+            Some(Action::PauseAndResume)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::Escape), none)),
+            Some(Action::StopAll)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::Backspace), none)),
+            Some(Action::Stop)
+        );
         assert_eq!(b.find(&press(ch("["), none)), Some(Action::PauseAll));
         assert_eq!(b.find(&press(ch("]"), none)), Some(Action::ResumeAll));
         assert_eq!(b.find(&press(ch("l"), none)), Some(Action::Load));
@@ -234,7 +251,10 @@ mod tests {
     #[test]
     fn mod_a_selects_all_with_ctrl_on_pc() {
         let b = bindings();
-        assert_eq!(b.find(&press(ch("a"), Modifiers::CTRL)), Some(Action::SelectAll));
+        assert_eq!(
+            b.find(&press(ch("a"), Modifiers::CTRL)),
+            Some(Action::SelectAll)
+        );
         assert_eq!(b.find(&press(ch("a"), Modifiers::empty())), None);
     }
 
@@ -251,8 +271,14 @@ mod tests {
 
         assert_eq!(b.find(&held(named(Named::Enter))), None);
         assert_eq!(b.find(&held(named(Named::Space))), None);
-        assert_eq!(b.find(&held(named(Named::ArrowDown))), Some(Action::CursorDown));
-        assert_eq!(b.find(&held(named(Named::ArrowRight))), Some(Action::SeekForward));
+        assert_eq!(
+            b.find(&held(named(Named::ArrowDown))),
+            Some(Action::CursorDown)
+        );
+        assert_eq!(
+            b.find(&held(named(Named::ArrowRight))),
+            Some(Action::SeekForward)
+        );
     }
 
     #[test]
@@ -261,11 +287,22 @@ mod tests {
         settings.playback.execute = None;
         let b = Bindings::from_settings(&settings, false);
 
-        assert_eq!(b.find(&press(named(Named::Enter), Modifiers::empty())), None);
+        assert_eq!(
+            b.find(&press(named(Named::Enter), Modifiers::empty())),
+            None
+        );
     }
 
     #[test]
     fn bare_modifier_presses_are_not_bindable() {
-        assert!(KeyPress::new(&named(Named::Shift), &named(Named::Shift), Modifiers::SHIFT, false).is_none());
+        assert!(
+            KeyPress::new(
+                &named(Named::Shift),
+                &named(Named::Shift),
+                Modifiers::SHIFT,
+                false
+            )
+            .is_none()
+        );
     }
 }
