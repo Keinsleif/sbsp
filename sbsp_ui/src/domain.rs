@@ -15,6 +15,7 @@ pub mod cue;
 pub mod cursor;
 pub mod easing;
 pub mod fader;
+pub mod field;
 pub mod flat_list;
 pub mod hotkey;
 pub mod text;
