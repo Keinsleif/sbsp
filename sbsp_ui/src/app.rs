@@ -532,6 +532,8 @@ impl State {
             "debug.add-test-cue" => self.add_test_cue(),
             #[cfg(feature = "host")]
             "debug.add-test-group" => self.add_test_group(),
+            #[cfg(feature = "host")]
+            "debug.add-test-audio-cue" => self.add_test_audio_cue(),
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
@@ -669,6 +671,75 @@ impl State {
             backend_result,
         )
         .then(Task::done)
+    }
+
+    /// Debug aid: asks for an audio file and adds a cue that plays it, so
+    /// the waveform viewer, durations and the sidebar can be exercised
+    /// before the real editor and file operations exist (Phase 6/7).
+    /// Removed together with the other Debug menu items.
+    #[cfg(feature = "host")]
+    fn add_test_audio_cue(&self) -> Task<Message> {
+        use sbsp_backend::manager::InsertPosition;
+        use sbsp_backend::model::cue::{
+            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
+            audio::{AudioCueParam, Decibels, SoundType},
+        };
+
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        let handle = backend.handle();
+
+        Task::perform(
+            async move {
+                let Some(file) = rfd::AsyncFileDialog::new()
+                    .set_title("Add Test Audio Cue")
+                    .add_filter("Audio", &["wav", "mp3", "flac", "ogg", "m4a", "aac"])
+                    .pick_file()
+                    .await
+                else {
+                    // Cancelled.
+                    return Ok(());
+                };
+
+                let cue = Cue {
+                    id: Uuid::new_v4(),
+                    number: String::new(),
+                    name: None,
+                    notes: String::new(),
+                    color: CueColor::default(),
+                    pre_wait: 0.0,
+                    chain: CueChain::default(),
+                    treat_stop_as_completed: false,
+                    cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
+                    parent_id: None,
+                    params: CueParam::Audio(AudioCueParam {
+                        target: file.path().to_path_buf(),
+                        start_time: None,
+                        fade_in_param: None,
+                        end_time: None,
+                        fade_out_param: None,
+                        volume: Decibels::default(),
+                        pan: 0.0,
+                        repeat: false,
+                        sound_type: SoundType::default(),
+                        envelope: Vec::new(),
+                    }),
+                };
+
+                handle
+                    .model_handle
+                    .add_cue(
+                        cue,
+                        InsertPosition::Inside {
+                            target: None,
+                            index: None,
+                        },
+                    )
+                    .await
+            },
+            backend_result,
+        )
     }
 
     /// Replaces the whole model (a load or a reset): selection starts
@@ -867,6 +938,7 @@ impl State {
                 vec![
                     MenuNode::item("debug.add-test-cue", "Add Test Cue"),
                     MenuNode::item("debug.add-test-group", "Add Test Group"),
+                    MenuNode::item("debug.add-test-audio-cue", "Add Test Audio Cue..."),
                 ],
             )
             .menu(
