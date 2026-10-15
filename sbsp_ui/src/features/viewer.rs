@@ -24,7 +24,7 @@ use iced::widget::canvas::{self, Cache, Canvas, Path as CanvasPath, Stroke};
 use iced::{Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
 use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus};
-use sbsp_backend::model::cue::{AudioCueParam, CueParam, Uuid};
+use sbsp_backend::model::cue::{audio::AudioCueParam, CueParam, Uuid};
 
 use crate::domain::time::format_seconds;
 use crate::state::assets::AssetResults;
