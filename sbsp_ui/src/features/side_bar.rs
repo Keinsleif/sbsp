@@ -312,9 +312,13 @@ impl<Message> canvas::Program<Message> for MeterProgram<'_> {
         for (label, fraction) in SCALE {
             frame.fill_text(canvas::Text {
                 content: label.to_string(),
-                position: Point::new(label_x + 4.0, TOP + bar_h * fraction),
+                // Centered in the label column between the two bars.
+                position: Point::new(label_x + LABEL_W / 2.0, TOP + bar_h * fraction),
                 color: palette.background.base.text,
                 size: 10.0.into(),
+                // `.into()` so this compiles whether the field is typed as
+                // `Horizontal` or as `text::Alignment`.
+                align_x: iced::alignment::Horizontal::Center.into(),
                 align_y: iced::alignment::Vertical::Center,
                 ..canvas::Text::default()
             });
