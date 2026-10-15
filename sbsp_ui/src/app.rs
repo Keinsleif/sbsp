@@ -21,7 +21,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, header, hotkeys, side_bar, status_bar};
+use crate::features::{cue_list, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -91,6 +91,10 @@ pub struct State {
     assets: AssetResults,
     meter: LevelMeterState,
     last_meter_tick: Option<Instant>,
+    viewer: viewer::Viewer,
+    /// Set when the cue list or the cache was replaced, so the next
+    /// `request_assets` pass looks for audio files nobody has analyzed yet.
+    assets_stale: bool,
     toasts: toast::Toasts,
     #[cfg(feature = "host")]
     backend: Option<HostPort>,
@@ -105,6 +109,9 @@ pub enum Message {
     CueList(cue_list::Message),
     StatusBar(status_bar::Message),
     SideBar(side_bar::Message),
+    Viewer(viewer::Message),
+    #[cfg(feature = "host")]
+    AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
     Header(header::Message),
     ClockTick,
@@ -175,6 +182,8 @@ impl State {
             assets: AssetResults::new(),
             meter: LevelMeterState::default(),
             last_meter_tick: None,
+            viewer: viewer::Viewer::default(),
+            assets_stale: false,
             toasts: toast::Toasts::new(),
             #[cfg(feature = "host")]
             backend: None,
@@ -192,6 +201,19 @@ impl State {
             Message::Menu(id) => self.handle_menu(id),
             Message::Header(message) => self.handle_header(message),
             Message::KeyPressed(press) => self.handle_key(press),
+            Message::Viewer(viewer::Message::Seek(id, seconds)) => {
+                // Same guard as the original: View mode does not seek.
+                if self.ui.mode == Mode::View {
+                    Task::none()
+                } else {
+                    self.send(vec![Control::SeekTo(id, seconds)])
+                }
+            }
+            #[cfg(feature = "host")]
+            message @ (Message::BackendStarted(..) | Message::PortEvent(_)) => {
+                self.apply(message);
+                self.request_assets()
+            }
             other => {
                 self.apply(other);
                 Task::none()
@@ -215,6 +237,9 @@ impl State {
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
             Message::StatusBar(status_bar::Message::ModeSelected(mode)) => self.ui.set_mode(mode),
+            Message::StatusBar(status_bar::Message::ToggleBottomTab) => {
+                self.ui.toggle_bottom_tab();
+            }
             Message::StatusBar(status_bar::Message::ToggleSidebar) => {
                 self.ui.toggle_right_sidebar();
                 self.last_meter_tick = None;
@@ -228,7 +253,7 @@ impl State {
             }
             Message::MeterTick(now) => self.tick_meter(now),
             // Handled in update(): they need to return a Task.
-            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) => {}
+            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) | Message::Viewer(_) => {}
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => self.window_focused = focused,
             Message::Toast(message) => self.toasts.update(message),
@@ -252,6 +277,12 @@ impl State {
                 self.ui
                     .set_permission(sbsp_backend::api::Permissions::all());
                 self.backend = Some(backend);
+                self.assets_stale = true;
+            }
+            #[cfg(feature = "host")]
+            Message::AssetRequestFailed(path, message) => {
+                log::warn!("asset request for {} failed: {message}", path.display());
+                self.assets.add_error(path);
             }
             #[cfg(feature = "host")]
             Message::PortEvent(event) => self.handle_port_event(event),
@@ -424,6 +455,46 @@ impl State {
         };
 
         self.send(controls)
+    }
+
+    /// Asks the backend to analyze every audio file in the cue list that
+    /// has no result yet (the viewer needs the waveform, the list needs
+    /// the duration). The original did this lazily as rows rendered; the
+    /// processor already bounds its own concurrency, so asking up front is
+    /// fine and keeps `view()` free of side effects.
+    #[cfg(feature = "host")]
+    fn request_assets(&mut self) -> Task<Message> {
+        use sbsp_backend::model::cue::CueParam;
+
+        if !std::mem::take(&mut self.assets_stale) {
+            return Task::none();
+        }
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+
+        let mut paths: Vec<std::path::PathBuf> = self
+            .model
+            .cue_list
+            .cues
+            .values()
+            .filter_map(|cue| match &cue.params {
+                CueParam::Audio(audio) => Some(audio.target.clone()),
+                _ => None,
+            })
+            .filter(|path| self.assets.get(path).is_none() && self.assets.should_request(path))
+            .collect();
+        paths.sort();
+        paths.dedup();
+
+        Task::batch(paths.into_iter().map(|path| {
+            self.assets.mark_processing(path.clone());
+            let failed_path = path.clone();
+            Task::perform(backend.request_asset(path), move |result| match result {
+                Ok(()) => Message::Nothing,
+                Err(e) => Message::AssetRequestFailed(failed_path.clone(), e.to_string()),
+            })
+        }))
     }
 
     #[cfg(feature = "host")]
@@ -607,6 +678,7 @@ impl State {
     fn replace_model(&mut self, model: ShowModelState, cursor_to_first: bool) {
         self.model = model;
         self.assets.clear();
+        self.assets_stale = true;
         self.ui.reset_selected();
         let first = cursor_to_first
             .then(|| self.model.cue_list.root_ids.first().copied())
@@ -691,7 +763,10 @@ impl State {
             // move_cue and friends (Phase 4's cue list operations) all
             // produce this rather than a per-operation delta, so handling
             // just this one event keeps the model in sync with all of them.
-            BackendEvent::CueListUpdated { cue_list } => self.model.cue_list = cue_list,
+            BackendEvent::CueListUpdated { cue_list } => {
+                self.model.cue_list = cue_list;
+                self.assets_stale = true;
+            }
             BackendEvent::SettingsUpdated { new_settings } => self.model.settings = *new_settings,
             BackendEvent::ModelNameUpdated { new_name } => self.model.name = new_name,
             BackendEvent::AssetMetadata { path, data } => self.assets.add_metadata(path, data),
@@ -846,6 +921,26 @@ impl State {
         .height(Length::Fill)
         .padding(12);
 
+        let main_column: Element<'_, Message> = if self.ui.is_bottom_tab_open {
+            let viewer = container(
+                viewer::view(
+                    &self.viewer,
+                    &self.model,
+                    &self.ui,
+                    &self.playback,
+                    &self.assets,
+                )
+                .map(Message::Viewer),
+            )
+            .width(Length::Fill)
+            .height(viewer::HEIGHT + 2.0)
+            .padding(1)
+            .style(container::bordered_box);
+            column![main, viewer].into()
+        } else {
+            main.into()
+        };
+
         let body: Element<'_, Message> = if self.ui.is_right_sidebar_open {
             let sidebar = container(
                 side_bar::view(
@@ -859,13 +954,13 @@ impl State {
             )
             .width(side_bar::WIDTH)
             .height(Length::Fill);
-            row![main, sidebar].into()
+            row![main_column, sidebar].into()
         } else {
-            row![main].into()
+            main_column
         };
 
         let footer = container(
-            status_bar::view(&self.ui, self.model.cue_list.cues.len(), self.ui.is_right_sidebar_open).map(Message::StatusBar),
+            status_bar::view(&self.ui, self.model.cue_list.cues.len()).map(Message::StatusBar),
         )
         .width(Length::Fill);
 
@@ -1250,5 +1345,35 @@ mod tests {
 
         assert_eq!(state.ui.side_bar_tab, SideBarTab::Meter);
         assert!(state.meter.left.level_db() <= -59.0);
+    }
+
+    #[test]
+    #[serial]
+    fn the_footer_buttons_toggle_the_bottom_tab() {
+        let mut state = new_state();
+        assert!(state.ui.is_bottom_tab_open);
+
+        let _ = state.update(Message::StatusBar(status_bar::Message::ToggleBottomTab));
+        assert!(!state.ui.is_bottom_tab_open);
+
+        // Both layouts still build.
+        let _ = iced_test::simulator(state.view());
+        let _ = state.update(Message::StatusBar(status_bar::Message::ToggleBottomTab));
+        let _ = iced_test::simulator(state.view());
+    }
+
+    #[test]
+    #[serial]
+    fn a_seek_from_the_viewer_is_ignored_in_view_mode() {
+        let mut state = new_state();
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+        let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::View)));
+
+        // Nothing to assert on the Task itself; this guards the match arm
+        // (and that a seek with no backend cannot panic).
+        let _ = state.update(Message::Viewer(viewer::Message::Seek(
+            sbsp_backend::model::cue::Uuid::nil(),
+            1.0,
+        )));
     }
 }

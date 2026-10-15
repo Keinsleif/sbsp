@@ -114,6 +114,7 @@ impl HostPort {
                     Control::Resume(id) => controller.resume(id).await?,
                     Control::Stop(id) => controller.stop(id).await?,
                     Control::SeekBy(id, amount) => controller.seek_by(id, amount).await?,
+                    Control::SeekTo(id, position) => controller.seek_to(id, position).await?,
                     Control::ToggleRepeat(id) => {
                         controller
                             .perform_action(id, CueAction::Audio(AudioAction::ToggleRepeat))
@@ -126,6 +127,17 @@ impl HostPort {
             }
             Ok(())
         }
+    }
+
+    /// Asks the asset processor to analyze `path` (metadata, waveform,
+    /// peak). The answer comes back later as `AssetMetadata`/`AssetResult`
+    /// events, so this only reports whether the request was queued.
+    pub fn request_asset(
+        &self,
+        path: std::path::PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let processor = self.handle.asset_processor_handle.clone();
+        async move { processor.request_file_asset_data(path).await }
     }
 
     /// The engine's current peak level per channel, if there is an audio
