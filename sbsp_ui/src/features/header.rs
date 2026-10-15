@@ -13,9 +13,10 @@
 //! above it grows into the space, so the two columns' boxes need not be
 //! the same height.
 //!
-//! Not here yet: working add-cue buttons (Phase 6, they need the editing
-//! operations; they are drawn disabled so the layout is final), and the
-//! buttons' blinking while a cue is
+//! The add-cue buttons are always enabled, as in the original; the ones
+//! that need a selected cue simply add nothing without it.
+//!
+//! Not here yet: the buttons' blinking while a cue is
 //! pre-waiting/stopping/loaded -- they are only highlighted for now.
 
 use iced::widget::{button, column, container, row, scrollable, text};
@@ -24,6 +25,7 @@ use iced::{Alignment, Element, Font, Length, Theme};
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::Cue;
 
+use crate::domain::new_cue::CueKind;
 use crate::port::Control;
 use crate::widgets::icon::{Icon, colored};
 
@@ -32,6 +34,8 @@ pub enum Message {
     Stop,
     Play,
     ReadyPause,
+    /// An add-cue button (edit mode).
+    AddCue(CueKind),
 }
 
 /// Wall-clock time of day, as shown (24h).
@@ -71,6 +75,8 @@ pub fn controls_for(
 
     use PlaybackStatus as S;
     match message {
+        // Not playback: the app adds a cue.
+        Message::AddCue(_) => Vec::new(),
         Message::Stop => vec![Control::Stop(id)],
         Message::Play => match status {
             Some(S::Paused | S::PreWaitPaused) => vec![Control::Resume(id)],
@@ -201,25 +207,29 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
 /// The original's `h-50`.
 const PANEL_HEIGHT: f32 = 200.0;
 
-/// Add-cue buttons, drawn disabled until Phase 6 gives them something to
-/// do. Same size as the transport buttons, so the two bottom rows line up.
+/// Add-cue buttons. Same size as the transport buttons, so the two bottom
+/// rows line up.
 fn add_cue_row<'a>() -> Element<'a, Message> {
-    let group = |icons: &[Icon]| {
-        row(icons
-            .iter()
-            .map(|glyph| transport_button(*glyph, false, Success, None)))
+    let group = |buttons: &[(Icon, CueKind)]| {
+        row(buttons.iter().map(|(glyph, kind)| {
+            transport_button(*glyph, false, Success, Some(Message::AddCue(*kind)))
+        }))
         .spacing(2)
     };
 
     container(
         row![
-            group(&[Icon::VolumeHigh, Icon::TimerSandEmpty, Icon::ChartBellCurveCumulative]),
-            group(&[Icon::Group]),
             group(&[
-                Icon::PlayCircleOutline,
-                Icon::StopCircleOutline,
-                Icon::PauseCircleOutline,
-                Icon::UploadCircleOutline,
+                (Icon::VolumeHigh, CueKind::Audio),
+                (Icon::TimerSandEmpty, CueKind::Wait),
+                (Icon::ChartBellCurveCumulative, CueKind::Fade),
+            ]),
+            group(&[(Icon::Group, CueKind::Group)]),
+            group(&[
+                (Icon::PlayCircleOutline, CueKind::Start),
+                (Icon::StopCircleOutline, CueKind::Stop),
+                (Icon::PauseCircleOutline, CueKind::Pause),
+                (Icon::UploadCircleOutline, CueKind::Load),
             ]),
         ]
         .spacing(16),
@@ -342,6 +352,12 @@ mod tests {
         assert_eq!(press(Some(S::Paused)), vec![Control::Resume(id)]);
         assert!(press(Some(S::Loaded)).is_empty());
         assert!(press(Some(S::Stopping)).is_empty());
+    }
+
+    #[test]
+    fn an_add_button_sends_no_playback_command() {
+        let id = Uuid::new_v4();
+        assert!(controls_for(Message::AddCue(CueKind::Wait), Some(id), None).is_empty());
     }
 
     #[test]

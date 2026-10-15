@@ -31,7 +31,7 @@ use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{broadcast, watch};
 
-use crate::port::{Control, FullState, PortEvent};
+use crate::port::{Control, FullState, ModelEdit, PortEvent};
 
 #[derive(Clone)]
 pub struct HostPort {
@@ -126,6 +126,47 @@ impl HostPort {
                 }
             }
             Ok(())
+        }
+    }
+
+    /// Applies a model edit. The result comes back as `CueListUpdated`
+    /// (and `CueRemoved`), like any other change; this only reports
+    /// whether the backend took the command.
+    pub fn edit(
+        &self,
+        edit: ModelEdit,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let handle = self.handle.clone();
+        async move {
+            let model = &handle.model_handle;
+            match edit {
+                ModelEdit::AddCues { mut cues, position } => match cues.len() {
+                    0 => Ok(()),
+                    1 => model.add_cue(cues.remove(0), position).await,
+                    _ => model.add_cues(cues, position).await,
+                },
+                ModelEdit::AddGroup {
+                    group,
+                    position,
+                    members,
+                } => {
+                    let group_id = group.id;
+                    model.add_cue(group, position).await?;
+                    if members.is_empty() {
+                        return Ok(());
+                    }
+                    model
+                        .move_cues(
+                            members.into_iter().collect(),
+                            sbsp_backend::manager::InsertPosition::Inside {
+                                target: Some(group_id),
+                                index: Some(0),
+                            },
+                        )
+                        .await
+                }
+                ModelEdit::RemoveCues(ids) => model.remove_cues(ids.into_iter().collect()).await,
+            }
         }
     }
 
