@@ -3,5 +3,6 @@
 
 pub mod icon;
 pub mod menu_bar;
+pub mod progress;
 pub mod modal;
 pub mod toast;

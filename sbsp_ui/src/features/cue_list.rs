@@ -33,6 +33,7 @@ use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{DisplayMode, UiState};
 use crate::widgets::icon::{Icon, Tone, icon, toned};
+use crate::widgets::progress;
 
 const INDENT_PER_LEVEL: f32 = 20.0;
 
@@ -428,31 +429,9 @@ fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
 /// A time field with its progress fill behind the text. `active` outlines
 /// it (the phase currently running).
 fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Message> {
-    // Thousandths, as FillPortion weights: the filled part and the rest.
-    let filled = (progress.clamp(0.0, 1.0) * 1000.0).round() as u16;
-
-    let fill = container(Space::new())
-        .width(Length::FillPortion(filled.max(1)))
-        .height(Length::Fill)
-        .style(|theme: &Theme| container::Style {
-            background: Some(
-                theme
-                    .extended_palette()
-                    .primary
-                    .base
-                    .color
-                    .scale_alpha(0.5)
-                    .into(),
-            ),
-            ..Default::default()
-        });
-    let rest = Space::new().width(Length::FillPortion(1000 - filled.min(999)));
-
-    let bar: Element<'a, Message> = if filled == 0 {
-        Space::new().into()
-    } else {
-        row![fill, rest].height(Length::Fill).into()
-    };
+    let bar = progress::bar(progress, |theme: &Theme| {
+        theme.extended_palette().primary.base.color.scale_alpha(0.5)
+    });
 
     let field = container(stack![bar, center(text(label))])
         .width(Length::Fill)

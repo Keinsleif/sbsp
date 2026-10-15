@@ -10,15 +10,17 @@
 
 use std::fmt;
 
-use iced::widget::{container, pick_list, row, text};
+use iced::widget::{button, container, pick_list, row, text};
 use iced::{Alignment, Element, Length};
 
 use crate::fl;
+use crate::widgets::icon::{self, Icon, Tone};
 use crate::state::ui::{Mode, UiState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
     ModeSelected(Mode),
+    ToggleSidebar,
 }
 
 /// A mode with its translated label, which is what `pick_list` shows.
@@ -50,7 +52,7 @@ fn mode_label(mode: Mode) -> String {
     }
 }
 
-pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
+pub fn view<'a>(ui: &UiState, cue_count: usize, sidebar_open: bool) -> Element<'a, Message> {
     let options: Vec<ModeOption> = ui
         .available_modes()
         .into_iter()
@@ -70,7 +72,16 @@ pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
     )))
     .center_x(Length::Fill);
 
-    row![picker, count]
+    let sidebar_toggle = button(icon::toned(
+        Icon::DockRight,
+        20.0,
+        if sidebar_open { Tone::Primary } else { Tone::Muted },
+    ))
+    .padding(4)
+    .style(button::text)
+    .on_press(Message::ToggleSidebar);
+
+    row![picker, count, sidebar_toggle]
         .align_y(Alignment::Center)
         .padding(6)
         .into()

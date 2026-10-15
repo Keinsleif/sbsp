@@ -37,6 +37,7 @@ pub enum Icon {
     AlphaRBoxOutline,
     ChevronDoubleDown,
     TimerSand,
+    DockRight,
 }
 
 macro_rules! svg_icon {
@@ -75,6 +76,7 @@ impl Icon {
         Icon::AlphaRBoxOutline => svg_icon!("M9,7H13A2,2 0 0,1 15,9V11C15,11.84 14.5,12.55 13.76,12.85L15,17H13L11.8,13H11V17H9V7M11,9V11H13V9H11M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M5,5V19H19V5H5Z"),
         Icon::ChevronDoubleDown => svg_icon!("M16.59,5.59L18,7L12,13L6,7L7.41,5.59L12,10.17L16.59,5.59M16.59,11.59L18,13L12,19L6,13L7.41,11.59L12,16.17L16.59,11.59Z"),
         Icon::TimerSand => svg_icon!("M6,2H18V8H18V8L14,12L18,16V16H18V22H6V16H6V16L10,12L6,8V8H6V2M16,16.5L12,12.5L8,16.5V20H16V16.5M12,11.5L16,7.5V4H8V7.5L12,11.5M10,6H14V6.75L12,8.75L10,6.75V6Z"),
+        Icon::DockRight => svg_icon!("M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z"),
         }
     }
 }
@@ -158,6 +160,7 @@ mod tests {
             Icon::AlphaRBoxOutline,
             Icon::ChevronDoubleDown,
             Icon::TimerSand,
+            Icon::DockRight,
         ] {
             let text = std::str::from_utf8(icon.svg()).expect("svg is utf-8");
             assert!(text.starts_with("<svg"), "{icon:?}");

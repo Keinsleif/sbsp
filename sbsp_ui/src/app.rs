@@ -21,14 +21,15 @@ use iced::{Element, Length, Subscription, Task, event, keyboard};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, header, hotkeys, status_bar};
+use crate::features::{cue_list, header, hotkeys, side_bar, status_bar};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
     assets::AssetResults,
+    level_meter::LevelMeterState,
     model::ShowModelState,
     playback::PlaybackState,
-    ui::{Mode, UiState},
+    ui::{Mode, SideBarTab, UiState},
 };
 use crate::theme::ThemeMode;
 use crate::widgets::{menu_bar, toast};
@@ -48,6 +49,13 @@ use crate::fl;
 /// revisit once there's an actual level meter / progress bar reading it
 /// (Phase 5) to judge smoothness against.
 const POSITION_TICK: Duration = Duration::from_millis(50);
+
+/// Level meter refresh (about 30fps, same as the Tauri host's poll).
+const METER_TICK: Duration = Duration::from_millis(33);
+
+/// Longest step the meter decay takes at once, so a stalled frame (window
+/// dragged, machine asleep) does not drop the bars in a single jump.
+const METER_MAX_DT: f32 = 0.1;
 
 pub fn run(target: &'static str) -> iced::Result {
     iced::application(move || State::new(target), State::update, State::view)
@@ -81,6 +89,8 @@ pub struct State {
     ui: UiState,
     playback: PlaybackState,
     assets: AssetResults,
+    meter: LevelMeterState,
+    last_meter_tick: Option<Instant>,
     toasts: toast::Toasts,
     #[cfg(feature = "host")]
     backend: Option<HostPort>,
@@ -94,6 +104,8 @@ pub enum Message {
     KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
     StatusBar(status_bar::Message),
+    SideBar(side_bar::Message),
+    MeterTick(Instant),
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
@@ -161,6 +173,8 @@ impl State {
             ui: UiState::new(is_host),
             playback: PlaybackState::new(),
             assets: AssetResults::new(),
+            meter: LevelMeterState::default(),
+            last_meter_tick: None,
             toasts: toast::Toasts::new(),
             #[cfg(feature = "host")]
             backend: None,
@@ -201,6 +215,18 @@ impl State {
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
             Message::StatusBar(status_bar::Message::ModeSelected(mode)) => self.ui.set_mode(mode),
+            Message::StatusBar(status_bar::Message::ToggleSidebar) => {
+                self.ui.toggle_right_sidebar();
+                self.last_meter_tick = None;
+            }
+            Message::SideBar(side_bar::Message::SelectTab(tab)) => {
+                self.ui.side_bar_tab = tab;
+                // Starting from silence when the tab comes back, rather than
+                // showing whatever the bars were left at.
+                self.meter.reset();
+                self.last_meter_tick = None;
+            }
+            Message::MeterTick(now) => self.tick_meter(now),
             // Handled in update(): they need to return a Task.
             Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) => {}
             Message::ClockTick => self.clock = header::local_clock(),
@@ -235,6 +261,27 @@ impl State {
                 self.toasts.push(toast::Kind::Danger, message);
             }
         }
+    }
+
+    /// One meter frame: reads the engine's level (host only; a remote has
+    /// no source for it until the protocol carries one), then decays.
+    fn tick_meter(&mut self, now: Instant) {
+        let dt = self
+            .last_meter_tick
+            .map(|last| now.saturating_duration_since(last).as_secs_f32())
+            .unwrap_or(0.0)
+            .min(METER_MAX_DT);
+        self.last_meter_tick = Some(now);
+
+        #[cfg(feature = "host")]
+        if let Some((left, right)) = self.backend.as_ref().and_then(HostPort::level) {
+            // The Tauri host only forwards non-silent frames; same here.
+            if left > 0.001 || right > 0.001 {
+                self.meter.push(left, right);
+            }
+        }
+
+        self.meter.step(dt);
     }
 
     fn handle_cue_list(&mut self, message: cue_list::Message) {
@@ -712,7 +759,13 @@ impl State {
             }
         });
 
-        Subscription::batch([toasts, tick, clock, backend_events, modifiers])
+        let meter = if self.ui.is_right_sidebar_open && self.ui.side_bar_tab == SideBarTab::Meter {
+            iced::time::every(METER_TICK).map(Message::MeterTick)
+        } else {
+            Subscription::none()
+        };
+
+        Subscription::batch([toasts, tick, clock, meter, backend_events, modifiers])
     }
 
     fn menu_spec(&self) -> MenuSpec {
@@ -779,11 +832,6 @@ impl State {
         })
         .map(Message::Header);
 
-        let sidebar = container(text(fl!("shell-sidebar-placeholder")))
-            .width(240)
-            .height(Length::Fill)
-            .padding(12);
-
         let main = container(
             cue_list::view(
                 &self.model,
@@ -798,10 +846,26 @@ impl State {
         .height(Length::Fill)
         .padding(12);
 
-        let body = row![sidebar, main];
+        let body: Element<'_, Message> = if self.ui.is_right_sidebar_open {
+            let sidebar = container(
+                side_bar::view(
+                    &self.model,
+                    &self.ui,
+                    &self.playback,
+                    &self.meter,
+                    &self.name_format,
+                )
+                .map(Message::SideBar),
+            )
+            .width(side_bar::WIDTH)
+            .height(Length::Fill);
+            row![main, sidebar].into()
+        } else {
+            row![main].into()
+        };
 
         let footer = container(
-            status_bar::view(&self.ui, self.model.cue_list.cues.len()).map(Message::StatusBar),
+            status_bar::view(&self.ui, self.model.cue_list.cues.len(), self.ui.is_right_sidebar_open).map(Message::StatusBar),
         )
         .width(Length::Fill);
 
@@ -1147,7 +1211,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn shell_skeleton_renders_its_placeholder_text() {
+    fn shell_skeleton_renders_the_footer_count() {
         let state = new_state();
         let mut ui = iced_test::simulator(state.view());
 
@@ -1156,12 +1220,35 @@ mod tests {
                 .is_ok(),
             "the footer's cue count should render"
         );
-        // Exact match, not substring (see the note in menu_about_shows_a_toast):
-        // the widget's full text is "Sidebar (Phase 6)", so searching for
-        // just "Phase 6" does not match it.
-        assert!(
-            ui.find(fl!("shell-sidebar-placeholder").as_str()).is_ok(),
-            "the sidebar placeholder should render"
-        );
+    }
+
+    #[test]
+    #[serial]
+    fn sidebar_renders_its_tabs_and_can_be_toggled() {
+        let mut state = new_state();
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("main-side-bar-active-cues").as_str()).is_ok());
+        assert!(ui.find(fl!("main-side-bar-meter-title").as_str()).is_ok());
+        drop(ui);
+
+        let _ = state.update(Message::StatusBar(status_bar::Message::ToggleSidebar));
+        assert!(!state.ui.is_right_sidebar_open);
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("main-side-bar-meter-title").as_str()).is_err());
+    }
+
+    #[test]
+    #[serial]
+    fn selecting_the_meter_tab_switches_and_resets() {
+        let mut state = new_state();
+        state.meter.push(1.0, 1.0);
+
+        let _ = state.update(Message::SideBar(side_bar::Message::SelectTab(
+            SideBarTab::Meter,
+        )));
+
+        assert_eq!(state.ui.side_bar_tab, SideBarTab::Meter);
+        assert!(state.meter.left.level_db() <= -59.0);
     }
 }

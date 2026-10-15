@@ -6,7 +6,6 @@ menu-view-toggle-theme = Toggle Theme
 menu-help = Help
 menu-help-about = About
 menu-help-about-message = SBS Player (iced UI, in development).
-shell-sidebar-placeholder = Sidebar (Phase 6)
 cue-list-empty = No cues yet
 main-foot-bar-cue-count-suffix = { $n ->
     [one] { $n } cue
@@ -18,3 +17,5 @@ main-foot-bar-modes-edit = Edit
 main-name = Name
 main-pre-wait = Pre-Wait
 main-duration = Duration
+main-side-bar-active-cues = Active Cues
+main-side-bar-meter-title = Meter

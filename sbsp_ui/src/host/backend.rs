@@ -128,6 +128,13 @@ impl HostPort {
         }
     }
 
+    /// The engine's current peak level per channel, if there is an audio
+    /// output to measure. Cheap (two atomic loads), so the UI can poll it
+    /// every frame.
+    pub fn level(&self) -> Option<(f32, f32)> {
+        self.handle.level_meter.as_ref().map(|level| level.get())
+    }
+
     pub fn settings(&self) -> Arc<SettingsManager<GlobalHostSettings>> {
         self.settings.clone()
     }
