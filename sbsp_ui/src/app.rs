@@ -17,11 +17,11 @@
 use std::time::{Duration, Instant};
 
 use iced::widget::{column, container, row};
-use iced::{Element, Length, Subscription, Task, event, keyboard};
+use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, header, hotkeys, side_bar, status_bar, viewer};
+use crate::features::{cue_list, debug_gallery, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -32,7 +32,7 @@ use crate::state::{
     ui::{Mode, SideBarTab, UiState},
 };
 use crate::theme::ThemeMode;
-use crate::widgets::{menu_bar, toast};
+use crate::widgets::{field, menu_bar, modal, toast};
 
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
@@ -92,6 +92,9 @@ pub struct State {
     meter: LevelMeterState,
     last_meter_tick: Option<Instant>,
     viewer: viewer::Viewer,
+    /// The one text field being edited, if any (shared by every field).
+    fields: field::Drafts,
+    gallery: debug_gallery::Gallery,
     /// Set when the cue list or the cache was replaced, so the next
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
     assets_stale: bool,
@@ -110,6 +113,8 @@ pub enum Message {
     StatusBar(status_bar::Message),
     SideBar(side_bar::Message),
     Viewer(viewer::Message),
+    Field(field::Message),
+    Gallery(debug_gallery::Message),
     #[cfg(feature = "host")]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
@@ -183,6 +188,8 @@ impl State {
             meter: LevelMeterState::default(),
             last_meter_tick: None,
             viewer: viewer::Viewer::default(),
+            fields: field::Drafts::default(),
+            gallery: debug_gallery::Gallery::default(),
             assets_stale: false,
             toasts: toast::Toasts::new(),
             #[cfg(feature = "host")]
@@ -201,6 +208,8 @@ impl State {
             Message::Menu(id) => self.handle_menu(id),
             Message::Header(message) => self.handle_header(message),
             Message::KeyPressed(press) => self.handle_key(press),
+            Message::Field(message) => self.handle_field(message),
+            Message::Gallery(message) => self.handle_gallery(message),
             Message::Viewer(viewer::Message::Seek(id, seconds)) => {
                 // Same guard as the original: View mode does not seek.
                 if self.ui.mode == Mode::View {
@@ -253,7 +262,10 @@ impl State {
             }
             Message::MeterTick(now) => self.tick_meter(now),
             // Handled in update(): they need to return a Task.
-            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) | Message::Viewer(_) => {}
+            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_)
+            | Message::Viewer(_)
+            | Message::Field(_)
+            | Message::Gallery(_) => {}
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => self.window_focused = focused,
             Message::Toast(message) => self.toasts.update(message),
@@ -457,6 +469,34 @@ impl State {
         self.send(controls)
     }
 
+    /// A text field's typing, Enter, focus loss or step button. A finished
+    /// edit goes to whichever part owns that field's value.
+    fn handle_field(&mut self, message: field::Message) -> Task<Message> {
+        let (outcome, task) = self.fields.update(message);
+        if let Some(outcome) = outcome {
+            self.gallery.apply(&outcome);
+        }
+        task.map(Message::Field)
+    }
+
+    fn handle_gallery(&mut self, message: debug_gallery::Message) -> Task<Message> {
+        use debug_gallery::Message as G;
+
+        let field = match message {
+            G::Field(field) => Some(field),
+            G::Volume(message) => self.gallery.volume_message(message, Instant::now()),
+            G::Panning(message) => self.gallery.panning_message(message, Instant::now()),
+            G::Close => {
+                self.gallery.open = false;
+                None
+            }
+        };
+        match field {
+            Some(field) => self.handle_field(field),
+            None => Task::none(),
+        }
+    }
+
     /// Asks the backend to analyze every audio file in the cue list that
     /// has no result yet (the viewer needs the waveform, the list needs
     /// the duration). The original did this lazily as rows rendered; the
@@ -534,6 +574,11 @@ impl State {
             "debug.add-test-group" => self.add_test_group(),
             #[cfg(feature = "host")]
             "debug.add-test-audio-cue" => self.add_test_audio_cue(),
+            #[cfg(feature = "host")]
+            "debug.open-gallery" => {
+                self.gallery.open = true;
+                Task::none()
+            }
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
@@ -880,6 +925,28 @@ impl State {
         // already consumed are skipped, which is also what keeps typing
         // into a text field from firing playback hotkeys.
         let modifiers = event::listen_with(|event, status, _window| {
+            // What a text field being edited needs to know, whether or not
+            // a widget consumed the event: a press or Tab may have taken
+            // the focus away from it, and Escape that a focused field
+            // consumed means "throw the edit away". (Escape nobody
+            // consumed is a hotkey, below.)
+            match &event {
+                iced::Event::Mouse(mouse::Event::ButtonPressed(_)) => {
+                    return Some(Message::Field(field::Message::FocusMayHaveChanged));
+                }
+                iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Tab),
+                    ..
+                }) => return Some(Message::Field(field::Message::FocusMayHaveChanged)),
+                iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) if status == event::Status::Captured => {
+                    return Some(Message::Field(field::Message::Escape));
+                }
+                _ => {}
+            }
+
             if status == event::Status::Captured {
                 return None;
             }
@@ -939,6 +1006,7 @@ impl State {
                     MenuNode::item("debug.add-test-cue", "Add Test Cue"),
                     MenuNode::item("debug.add-test-group", "Add Test Group"),
                     MenuNode::item("debug.add-test-audio-cue", "Add Test Audio Cue..."),
+                    MenuNode::item("debug.open-gallery", "Input Gallery"),
                 ],
             )
             .menu(
@@ -1037,6 +1105,16 @@ impl State {
         .width(Length::Fill);
 
         let content: Element<'_, Message> = column![header, transport, body, footer].into();
+
+        let content = if self.gallery.open {
+            modal::over(
+                content,
+                self.gallery.view(&self.fields).map(Message::Gallery),
+                Message::Gallery(debug_gallery::Message::Close),
+            )
+        } else {
+            content
+        };
 
         self.toasts.overlay(content, Message::Toast)
     }
@@ -1447,5 +1525,45 @@ mod tests {
             sbsp_backend::model::cue::Uuid::nil(),
             1.0,
         )));
+    }
+
+    #[test]
+    #[serial]
+    fn the_gallery_renders_only_when_open() {
+        let mut state = new_state();
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("Input Gallery (debug)").is_err());
+        drop(ui);
+
+        state.gallery.open = true;
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("Input Gallery (debug)").is_ok());
+    }
+
+    #[test]
+    #[serial]
+    fn a_field_edit_is_applied_when_submitted() {
+        let mut state = new_state();
+        state.gallery.open = true;
+        let id = field::FieldId("gallery.number");
+
+        let _ = state.update(Message::Field(field::Message::Input(id, "99".to_string())));
+        assert_eq!(state.gallery.number, Some(5.0), "typing alone changes nothing");
+
+        let _ = state.update(Message::Field(field::Message::Submit(id)));
+        assert_eq!(state.gallery.number, Some(10.0), "clamped to the field's max");
+    }
+
+    #[test]
+    #[serial]
+    fn escape_discards_a_field_edit() {
+        let mut state = new_state();
+        let id = field::FieldId("gallery.number");
+
+        let _ = state.update(Message::Field(field::Message::Input(id, "9".to_string())));
+        let _ = state.update(Message::Field(field::Message::Escape));
+        let _ = state.update(Message::Field(field::Message::Submit(id)));
+
+        assert_eq!(state.gallery.number, Some(5.0));
     }
 }

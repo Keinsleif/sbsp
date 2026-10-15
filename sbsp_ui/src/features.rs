@@ -6,6 +6,7 @@
 //! via `.map()`, the same pattern used for `widgets::toast`.
 
 pub mod cue_list;
+pub mod debug_gallery;
 pub mod header;
 pub mod hotkeys;
 pub mod side_bar;
