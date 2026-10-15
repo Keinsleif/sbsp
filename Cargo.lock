@@ -6726,6 +6726,7 @@ dependencies = [
  "iced_test",
  "log",
  "muda 0.17.2",
+ "rfd",
  "rust-embed",
  "sbsp_backend",
  "sbsp_frontend_settings",
