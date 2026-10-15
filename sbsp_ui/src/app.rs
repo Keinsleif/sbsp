@@ -16,7 +16,7 @@
 
 use std::time::{Duration, Instant};
 
-use iced::widget::{column, container, row, text};
+use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard};
 
 #[cfg(feature = "host")]
