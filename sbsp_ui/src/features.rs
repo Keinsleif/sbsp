@@ -9,4 +9,5 @@ pub mod cue_list;
 pub mod header;
 pub mod hotkeys;
 pub mod side_bar;
+pub mod viewer;
 pub mod status_bar;

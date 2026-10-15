@@ -60,6 +60,7 @@ pub struct UiState {
     pub mode: Mode,
     pub side_bar_tab: SideBarTab,
     pub is_right_sidebar_open: bool,
+    pub is_bottom_tab_open: bool,
     pub playback_cursor: Option<Uuid>,
     pub selected: Option<Uuid>,
     pub selected_rows: Vec<Uuid>,
@@ -84,6 +85,7 @@ impl UiState {
             mode: Mode::Edit,
             side_bar_tab: SideBarTab::ActiveCues,
             is_right_sidebar_open: true,
+            is_bottom_tab_open: true,
             playback_cursor: None,
             selected: None,
             selected_rows: Vec::new(),
@@ -297,6 +299,10 @@ impl UiState {
         self.is_right_sidebar_open = !self.is_right_sidebar_open;
     }
 
+    pub fn toggle_bottom_tab(&mut self) {
+        self.is_bottom_tab_open = !self.is_bottom_tab_open;
+    }
+
     pub fn toggle_pre_wait_display_mode(&mut self) {
         self.pre_wait_display_mode = self.pre_wait_display_mode.toggle();
     }
@@ -337,6 +343,15 @@ mod tests {
 
         ui.toggle_right_sidebar();
         assert!(!ui.is_right_sidebar_open);
+    }
+
+    #[test]
+    fn the_bottom_tab_starts_open_and_toggles() {
+        let mut ui = UiState::new(true);
+        assert!(ui.is_bottom_tab_open);
+
+        ui.toggle_bottom_tab();
+        assert!(!ui.is_bottom_tab_open);
     }
 
     #[test]

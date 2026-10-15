@@ -38,6 +38,7 @@ pub enum Icon {
     ChevronDoubleDown,
     TimerSand,
     DockRight,
+    DockBottom,
 }
 
 macro_rules! svg_icon {
@@ -77,6 +78,7 @@ impl Icon {
         Icon::ChevronDoubleDown => svg_icon!("M16.59,5.59L18,7L12,13L6,7L7.41,5.59L12,10.17L16.59,5.59M16.59,11.59L18,13L12,19L6,13L7.41,11.59L12,16.17L16.59,11.59Z"),
         Icon::TimerSand => svg_icon!("M6,2H18V8H18V8L14,12L18,16V16H18V22H6V16H6V16L10,12L6,8V8H6V2M16,16.5L12,12.5L8,16.5V20H16V16.5M12,11.5L16,7.5V4H8V7.5L12,11.5M10,6H14V6.75L12,8.75L10,6.75V6Z"),
         Icon::DockRight => svg_icon!("M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M15 18H4V6H15Z"),
+        Icon::DockBottom => svg_icon!("M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 13H4V6H20Z"),
         }
     }
 }
@@ -161,6 +163,7 @@ mod tests {
             Icon::ChevronDoubleDown,
             Icon::TimerSand,
             Icon::DockRight,
+            Icon::DockBottom,
         ] {
             let text = std::str::from_utf8(icon.svg()).expect("svg is utf-8");
             assert!(text.starts_with("<svg"), "{icon:?}");

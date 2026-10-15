@@ -33,6 +33,7 @@ pub enum Control {
     Resume(sbsp_backend::model::cue::Uuid),
     Stop(sbsp_backend::model::cue::Uuid),
     SeekBy(sbsp_backend::model::cue::Uuid, f64),
+    SeekTo(sbsp_backend::model::cue::Uuid, f64),
     ToggleRepeat(sbsp_backend::model::cue::Uuid),
     PauseAll,
     ResumeAll,

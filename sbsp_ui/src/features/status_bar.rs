@@ -21,6 +21,7 @@ use crate::state::ui::{Mode, UiState};
 pub enum Message {
     ModeSelected(Mode),
     ToggleSidebar,
+    ToggleBottomTab,
 }
 
 /// A mode with its translated label, which is what `pick_list` shows.
@@ -52,7 +53,7 @@ fn mode_label(mode: Mode) -> String {
     }
 }
 
-pub fn view<'a>(ui: &UiState, cue_count: usize, sidebar_open: bool) -> Element<'a, Message> {
+pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
     let options: Vec<ModeOption> = ui
         .available_modes()
         .into_iter()
@@ -72,16 +73,20 @@ pub fn view<'a>(ui: &UiState, cue_count: usize, sidebar_open: bool) -> Element<'
     )))
     .center_x(Length::Fill);
 
-    let sidebar_toggle = button(icon::toned(
-        Icon::DockRight,
-        20.0,
-        if sidebar_open { Tone::Primary } else { Tone::Muted },
-    ))
-    .padding(4)
-    .style(button::text)
-    .on_press(Message::ToggleSidebar);
+    let toggle = |glyph: Icon, open: bool, message: Message| {
+        button(icon::toned(
+            glyph,
+            20.0,
+            if open { Tone::Primary } else { Tone::Muted },
+        ))
+        .padding(4)
+        .style(button::text)
+        .on_press(message)
+    };
+    let bottom_toggle = toggle(Icon::DockBottom, ui.is_bottom_tab_open, Message::ToggleBottomTab);
+    let sidebar_toggle = toggle(Icon::DockRight, ui.is_right_sidebar_open, Message::ToggleSidebar);
 
-    row![picker, count, sidebar_toggle]
+    row![picker, count, bottom_toggle, sidebar_toggle]
         .align_y(Alignment::Center)
         .padding(6)
         .into()
