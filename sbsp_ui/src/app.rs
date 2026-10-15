@@ -62,7 +62,7 @@ pub fn run(target: &'static str) -> iced::Result {
         .title(|_: &State| fl!("app-title"))
         .theme(|state: &State| crate::theme::resolve(state.theme_mode))
         .subscription(State::subscription)
-        .window_size((1100.0, 780.0))
+        .window_size((1280.0, 720.0))
         .run()
 }
 
