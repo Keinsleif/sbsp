@@ -21,6 +21,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
+use crate::domain::new_cue::{self, CueKind};
 use crate::features::{cue_list, debug_gallery, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -36,11 +37,12 @@ use crate::widgets::{field, menu_bar, modal, toast};
 
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
-use crate::port::Control;
+use crate::port::{Control, ModelEdit};
 #[cfg(feature = "host")]
 use crate::port::{FullState, PortEvent};
 
-use sbsp_frontend_settings::NameFormatSettings;
+use sbsp_backend::model::cue::Uuid;
+use sbsp_frontend_settings::{NameFormatSettings, TemplateSettings};
 
 use crate::fl;
 
@@ -81,6 +83,11 @@ pub struct State {
     // the settings defaults until Phase 7 loads real ones.
     seek_amount: f64,
     hotkeys: hotkeys::Bindings,
+    /// Templates for new cues; the defaults until Phase 7 loads the
+    /// settings.
+    templates: TemplateSettings,
+    /// Cues waiting for the user to confirm their removal.
+    pending_remove: Option<Vec<Uuid>>,
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
@@ -115,6 +122,10 @@ pub enum Message {
     Viewer(viewer::Message),
     Field(field::Message),
     Gallery(debug_gallery::Message),
+    /// The files chosen in the add-audio-cue picker (empty: cancelled).
+    AudioFilesPicked(Vec<std::path::PathBuf>),
+    RemoveConfirmed,
+    RemoveCancelled,
     #[cfg(feature = "host")]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
@@ -177,6 +188,8 @@ impl State {
                 &sbsp_frontend_settings::hotkey::HotkeySettings::default(),
                 hotkeys::is_mac(),
             ),
+            templates: TemplateSettings::default(),
+            pending_remove: None,
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
@@ -210,6 +223,8 @@ impl State {
             Message::KeyPressed(press) => self.handle_key(press),
             Message::Field(message) => self.handle_field(message),
             Message::Gallery(message) => self.handle_gallery(message),
+            Message::AudioFilesPicked(files) => self.add_audio_cues(files),
+            Message::RemoveConfirmed => self.confirm_remove(),
             Message::Viewer(viewer::Message::Seek(id, seconds)) => {
                 // Same guard as the original: View mode does not seek.
                 if self.ui.mode == Mode::View {
@@ -265,7 +280,10 @@ impl State {
             Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_)
             | Message::Viewer(_)
             | Message::Field(_)
-            | Message::Gallery(_) => {}
+            | Message::Gallery(_)
+            | Message::AudioFilesPicked(_)
+            | Message::RemoveConfirmed => {}
+            Message::RemoveCancelled => self.pending_remove = None,
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => self.window_focused = focused,
             Message::Toast(message) => self.toasts.update(message),
@@ -365,6 +383,9 @@ impl State {
     }
 
     fn handle_header(&mut self, message: header::Message) -> Task<Message> {
+        if let header::Message::AddCue(kind) = message {
+            return self.add_cue(kind);
+        }
         if self.ui.mode == Mode::View {
             return Task::none();
         }
@@ -377,6 +398,19 @@ impl State {
     }
 
     fn handle_key(&mut self, press: hotkeys::KeyPress) -> Task<Message> {
+        // Behind the removal confirmation only its own keys work: GO on
+        // Enter must not fire while the question is open.
+        if self.pending_remove.is_some() {
+            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            return if is("Enter") {
+                self.confirm_remove()
+            } else if is("Escape") {
+                self.pending_remove = None;
+                Task::none()
+            } else {
+                Task::none()
+            };
+        }
         match self.hotkeys.find(&press) {
             Some(action) => self.run_action(action),
             None => Task::none(),
@@ -421,6 +455,10 @@ impl State {
                 cue_list::select_all(&self.model, &mut self.ui);
                 return Task::none();
             }
+            A::Delete => {
+                self.request_remove();
+                return Task::none();
+            }
             _ => {}
         }
 
@@ -463,7 +501,12 @@ impl State {
                 .into_iter()
                 .collect(),
             // Handled above.
-            A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown | A::SelectAll => Vec::new(),
+            A::CursorUp
+            | A::ExtendUp
+            | A::CursorDown
+            | A::ExtendDown
+            | A::SelectAll
+            | A::Delete => Vec::new(),
         };
 
         self.send(controls)
@@ -558,8 +601,142 @@ impl State {
         Task::none()
     }
 
+    #[cfg(feature = "host")]
+    fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        Task::perform(backend.edit(edit), backend_result)
+    }
+
+    /// Remote/web have no backend connection yet (Phase 8/9).
+    #[cfg(not(feature = "host"))]
+    fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
+        log::warn!("no backend to send {edit:?} to");
+        Task::none()
+    }
+
+    /// An add-cue button or menu item. Edit mode only. A new cue goes
+    /// after the selection (see `domain::new_cue` for the exceptions); a
+    /// group cue then takes the selected rows into itself and opens.
+    fn add_cue(&mut self, kind: CueKind) -> Task<Message> {
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        if kind == CueKind::Audio {
+            return self.pick_audio_files();
+        }
+
+        let id = Uuid::new_v4();
+        let Some(new) = new_cue::build(
+            kind,
+            id,
+            &self.templates,
+            self.ui.selected,
+            &self.model.cue_list.cues,
+        ) else {
+            return Task::none();
+        };
+
+        if kind == CueKind::Group {
+            let members = self.ui.selected_rows.clone();
+            if !members.is_empty() {
+                self.ui.expanded_rows.insert(id);
+            }
+            return self.send_edit(ModelEdit::AddGroup {
+                group: new.cue,
+                position: new.position,
+                members,
+            });
+        }
+        self.send_edit(ModelEdit::AddCues {
+            cues: vec![new.cue],
+            position: new.position,
+        })
+    }
+
+    #[cfg(feature = "host")]
+    fn pick_audio_files(&self) -> Task<Message> {
+        let title = fl!("menu-cue-audio");
+        Task::perform(
+            async move {
+                rfd::AsyncFileDialog::new()
+                    .set_title(title)
+                    .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
+                    .pick_files()
+                    .await
+                    .map(|files| {
+                        files
+                            .into_iter()
+                            .map(|f| f.path().to_path_buf())
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default()
+            },
+            Message::AudioFilesPicked,
+        )
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn pick_audio_files(&self) -> Task<Message> {
+        log::warn!("no file picker in this build");
+        Task::none()
+    }
+
+    /// The picker answered: one audio cue per file, after the selection as
+    /// it is *now* (the user may have moved it while the dialog was open).
+    fn add_audio_cues(&mut self, files: Vec<std::path::PathBuf>) -> Task<Message> {
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let Some((cues, position)) = new_cue::audio_cues(
+            files,
+            std::iter::repeat_with(Uuid::new_v4),
+            &self.templates,
+            self.ui.selected,
+        ) else {
+            return Task::none();
+        };
+        self.send_edit(ModelEdit::AddCues { cues, position })
+    }
+
+    /// Delete: asks before removing the selected cues. Edit mode only.
+    fn request_remove(&mut self) {
+        if self.ui.mode == Mode::Edit && !self.ui.selected_rows.is_empty() {
+            self.pending_remove = Some(self.ui.selected_rows.clone());
+        }
+    }
+
+    /// The user said yes: removes the cues that are still there.
+    fn confirm_remove(&mut self) -> Task<Message> {
+        let Some(ids) = self.pending_remove.take() else {
+            return Task::none();
+        };
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let ids: Vec<Uuid> = ids
+            .into_iter()
+            .filter(|id| self.model.cue_list.cues.contains_key(id))
+            .collect();
+        if ids.is_empty() {
+            return Task::none();
+        }
+        self.send_edit(ModelEdit::RemoveCues(ids))
+    }
+
     fn handle_menu(&mut self, id: crate::menu::MenuId) -> Task<Message> {
         match id.0 {
+            "cue.add-audio" => self.add_cue(CueKind::Audio),
+            "cue.add-wait" => self.add_cue(CueKind::Wait),
+            "cue.add-fade" => self.add_cue(CueKind::Fade),
+            "cue.add-group" => self.add_cue(CueKind::Group),
+            "cue.add-start" => self.add_cue(CueKind::Start),
+            "cue.add-stop" => self.add_cue(CueKind::Stop),
+            "cue.add-pause" => self.add_cue(CueKind::Pause),
+            "cue.add-load" => self.add_cue(CueKind::Load),
+            "edit.delete" => self.run_action(hotkeys::Action::Delete),
+            "edit.select-all" => self.run_action(hotkeys::Action::SelectAll),
             "view.toggle-theme" => self.update(Message::ToggleTheme),
             "view.toggle-language" => self.update(Message::ToggleLanguage),
             "help.about" => {
@@ -982,10 +1159,34 @@ impl State {
     }
 
     fn menu_spec(&self) -> MenuSpec {
+        let editing = self.ui.mode == Mode::Edit;
+        let add = |id, label: String| MenuNode::item(id, label).enabled(editing);
+
         MenuSpec::new()
             .menu(
                 fl!("menu-file"),
                 vec![MenuNode::item("file.quit", fl!("menu-file-quit"))],
+            )
+            .menu(
+                fl!("menu-edit-title"),
+                vec![
+                    MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues")),
+                    add("edit.delete", fl!("menu-edit-delete-cue")),
+                ],
+            )
+            .menu(
+                fl!("menu-cue-title"),
+                vec![
+                    add("cue.add-audio", fl!("menu-cue-audio")),
+                    add("cue.add-wait", fl!("menu-cue-wait")),
+                    add("cue.add-fade", fl!("menu-cue-fade")),
+                    add("cue.add-group", fl!("menu-cue-group")),
+                    MenuNode::separator(),
+                    add("cue.add-start", fl!("menu-cue-start")),
+                    add("cue.add-stop", fl!("menu-cue-stop")),
+                    add("cue.add-pause", fl!("menu-cue-pause")),
+                    add("cue.add-load", fl!("menu-cue-load")),
+                ],
             )
             .menu(
                 fl!("menu-view"),
@@ -1116,8 +1317,35 @@ impl State {
             content
         };
 
+        let content = match &self.pending_remove {
+            Some(ids) => modal::over_blocking(content, remove_dialog(ids.len())),
+            None => content,
+        };
+
         self.toasts.overlay(content, Message::Toast)
     }
+}
+
+/// "Are you sure you want to remove?" with Cancel / Confirm.
+fn remove_dialog<'a>(count: usize) -> Element<'a, Message> {
+    use iced::widget::{button, text};
+
+    column![
+        text(fl!("dialog-message-confirmation")).size(18),
+        text(fl!("dialog-message-remove-cue")),
+        text(fl!("main-foot-bar-cue-count-suffix", n = count as i64)).size(12),
+        row![
+            button(text(fl!("general-cancel")))
+                .style(button::secondary)
+                .on_press(Message::RemoveCancelled),
+            button(text(fl!("general-confirm")))
+                .style(button::danger)
+                .on_press(Message::RemoveConfirmed),
+        ]
+        .spacing(8),
+    ]
+    .spacing(12)
+    .into()
 }
 
 #[cfg(test)]
@@ -1565,5 +1793,110 @@ mod tests {
         let _ = state.update(Message::Field(field::Message::Submit(id)));
 
         assert_eq!(state.gallery.number, Some(5.0));
+    }
+
+    fn editing_state() -> (State, [Uuid; 3]) {
+        let (mut state, ids) = populated_state();
+        state.ui.set_permission(sbsp_backend::api::Permissions::all());
+        state.ui.set_mode(Mode::Edit);
+        (state, ids)
+    }
+
+    fn ctrl_backspace() -> Message {
+        press(
+            keyboard::Key::Named(keyboard::key::Named::Backspace),
+            keyboard::Modifiers::CTRL,
+        )
+    }
+
+    #[test]
+    #[serial]
+    fn delete_asks_before_removing_and_cancel_keeps_everything() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[1], false);
+
+        let _ = state.update(ctrl_backspace());
+        assert_eq!(state.pending_remove, Some(vec![ids[1]]));
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("dialog-message-remove-cue").as_str()).is_ok());
+        ui.click(fl!("general-cancel").as_str())
+            .expect("the dialog has a cancel button");
+        for message in ui.into_messages() {
+            let _ = state.update(message);
+        }
+
+        assert_eq!(state.pending_remove, None);
+        assert_eq!(state.model.cue_list.cues.len(), 3, "nothing is removed locally");
+    }
+
+    #[test]
+    #[serial]
+    fn confirming_closes_the_dialog() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(ctrl_backspace());
+        let _ = state.update(Message::RemoveConfirmed);
+
+        assert_eq!(state.pending_remove, None);
+    }
+
+    #[test]
+    #[serial]
+    fn delete_needs_edit_mode_and_a_selection() {
+        let (mut state, ids) = editing_state();
+
+        let _ = state.update(ctrl_backspace());
+        assert_eq!(state.pending_remove, None, "nothing selected");
+
+        state.ui.set_selected(ids[0], false);
+        state.ui.set_mode(Mode::Run);
+        let _ = state.update(ctrl_backspace());
+        assert_eq!(state.pending_remove, None, "not in edit mode");
+    }
+
+    #[test]
+    #[serial]
+    fn while_the_question_is_open_only_enter_and_escape_answer_it() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+        let _ = state.update(ctrl_backspace());
+        let _ = state.update(key(keyboard::key::Named::ArrowDown));
+        assert_eq!(state.ui.selected, Some(ids[0]), "other keys do nothing");
+        assert!(state.pending_remove.is_some());
+
+        let _ = state.update(key(keyboard::key::Named::Escape));
+        assert_eq!(state.pending_remove, None);
+
+        let _ = state.update(ctrl_backspace());
+        let _ = state.update(key(keyboard::key::Named::Enter));
+        assert_eq!(state.pending_remove, None);
+    }
+
+    #[test]
+    #[serial]
+    fn adding_a_group_opens_it_only_when_rows_move_into_it() {
+        let (mut state, ids) = editing_state();
+
+        let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
+        assert!(state.ui.expanded_rows.is_empty(), "nothing selected, nothing to open");
+
+        state.ui.set_selected(ids[0], false);
+        let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
+        assert_eq!(state.ui.expanded_rows.len(), 1);
+    }
+
+    #[test]
+    #[serial]
+    fn the_add_buttons_do_nothing_outside_edit_mode() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        state.ui.set_mode(Mode::Run);
+
+        let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
+        assert!(state.ui.expanded_rows.is_empty());
     }
 }

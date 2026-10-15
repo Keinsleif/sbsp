@@ -39,3 +39,22 @@ pub enum Control {
     ResumeAll,
     StopAll,
 }
+
+/// An edit of the show model: the data counterpart of `Control` for the
+/// cue list. Not `PartialEq` because `InsertPosition` is not.
+#[derive(Debug, Clone)]
+pub enum ModelEdit {
+    /// New cues, in order, at `position`.
+    AddCues {
+        cues: Vec<sbsp_backend::model::cue::Cue>,
+        position: sbsp_backend::manager::InsertPosition,
+    },
+    /// A new group cue that then takes `members` into itself (at the
+    /// top, in the backend's order).
+    AddGroup {
+        group: sbsp_backend::model::cue::Cue,
+        position: sbsp_backend::manager::InsertPosition,
+        members: Vec<sbsp_backend::model::cue::Uuid>,
+    },
+    RemoveCues(Vec<sbsp_backend::model::cue::Uuid>),
+}

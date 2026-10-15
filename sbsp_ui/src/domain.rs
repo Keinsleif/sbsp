@@ -18,5 +18,6 @@ pub mod fader;
 pub mod field;
 pub mod flat_list;
 pub mod hotkey;
+pub mod new_cue;
 pub mod text;
 pub mod time;

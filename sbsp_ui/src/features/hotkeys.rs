@@ -10,10 +10,9 @@
 //! it does is the app's business, as in the original where each
 //! `useHotkey` callback carried its own guards.
 //!
-//! File/delete/renumber bindings are not included yet: their actions
-//! (open/save dialogs, cue removal, the renumber dialog) arrive with
-//! Phase 6/7, and a binding with nothing behind it would just swallow
-//! the key.
+//! File and renumber bindings are not included yet: their actions
+//! (open/save dialogs, the renumber dialog) arrive with Phase 6/7, and a
+//! binding with nothing behind it would just swallow the key.
 
 use iced::keyboard::{Key, Modifiers, key::Named};
 use sbsp_frontend_settings::hotkey::HotkeySettings;
@@ -37,6 +36,8 @@ pub enum Action {
     CursorDown,
     ExtendDown,
     SelectAll,
+    /// Remove the selected cues (edit mode, after a confirmation).
+    Delete,
 }
 
 impl Action {
@@ -121,7 +122,7 @@ impl Bindings {
         let playback = &settings.playback;
         let edit = &settings.edit;
 
-        let table: [(&Option<String>, Action); 15] = [
+        let table: [(&Option<String>, Action); 16] = [
             (&playback.execute, Action::Execute),
             (&playback.load, Action::Load),
             (&playback.pause_and_resume, Action::PauseAndResume),
@@ -137,6 +138,7 @@ impl Bindings {
             (&edit.cuelist_move_down, Action::CursorDown),
             (&edit.cuelist_extend_down, Action::ExtendDown),
             (&edit.select_all, Action::SelectAll),
+            (&edit.delete, Action::Delete),
         ];
 
         Self(
@@ -256,6 +258,32 @@ mod tests {
             Some(Action::SelectAll)
         );
         assert_eq!(b.find(&press(ch("a"), Modifiers::empty())), None);
+    }
+
+    #[test]
+    fn mod_backspace_deletes_and_plain_backspace_still_stops() {
+        let b = bindings();
+        assert_eq!(
+            b.find(&press(named(Named::Backspace), Modifiers::CTRL)),
+            Some(Action::Delete)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::Backspace), Modifiers::empty())),
+            Some(Action::Stop)
+        );
+    }
+
+    #[test]
+    fn deleting_does_not_repeat_when_held() {
+        let b = bindings();
+        let held = KeyPress::new(
+            &named(Named::Backspace),
+            &named(Named::Backspace),
+            Modifiers::CTRL,
+            true,
+        )
+        .unwrap();
+        assert_eq!(b.find(&held), None);
     }
 
     #[test]
