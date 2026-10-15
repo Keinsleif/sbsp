@@ -49,9 +49,17 @@ impl DisplayMode {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SideBarTab {
+    ActiveCues,
+    Meter,
+}
+
 pub struct UiState {
     pub permission: Permissions,
     pub mode: Mode,
+    pub side_bar_tab: SideBarTab,
+    pub is_right_sidebar_open: bool,
     pub playback_cursor: Option<Uuid>,
     pub selected: Option<Uuid>,
     pub selected_rows: Vec<Uuid>,
@@ -74,6 +82,8 @@ impl UiState {
         Self {
             permission,
             mode: Mode::Edit,
+            side_bar_tab: SideBarTab::ActiveCues,
+            is_right_sidebar_open: true,
             playback_cursor: None,
             selected: None,
             selected_rows: Vec::new(),
@@ -283,6 +293,10 @@ impl UiState {
         }
     }
 
+    pub fn toggle_right_sidebar(&mut self) {
+        self.is_right_sidebar_open = !self.is_right_sidebar_open;
+    }
+
     pub fn toggle_pre_wait_display_mode(&mut self) {
         self.pre_wait_display_mode = self.pre_wait_display_mode.toggle();
     }
@@ -313,6 +327,16 @@ mod tests {
             parent_id,
             params: CueParam::Wait(WaitCueParam { duration: 1.0 }),
         }
+    }
+
+    #[test]
+    fn the_sidebar_starts_open_and_toggles() {
+        let mut ui = UiState::new(true);
+        assert!(ui.is_right_sidebar_open);
+        assert_eq!(ui.side_bar_tab, SideBarTab::ActiveCues);
+
+        ui.toggle_right_sidebar();
+        assert!(!ui.is_right_sidebar_open);
     }
 
     #[test]

@@ -7,6 +7,7 @@
 //! is pure data transformation.
 
 pub mod assets;
+pub mod level_meter;
 pub mod model;
 pub mod playback;
 pub mod ui;
