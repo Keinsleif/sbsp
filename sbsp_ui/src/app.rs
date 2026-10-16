@@ -1333,7 +1333,7 @@ fn remove_dialog<'a>(count: usize) -> Element<'a, Message> {
     column![
         text(fl!("dialog-message-confirmation")).size(18),
         text(fl!("dialog-message-remove-cue")),
-        text(fl!("main-foot-bar-cue-count-suffix", n = count as i64)).size(12),
+        text(fl!("main-foot-bar-cue-count-suffix", n = (count as i64))).size(12),
         row![
             button(text(fl!("general-cancel")))
                 .style(button::secondary)
