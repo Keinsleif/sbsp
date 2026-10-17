@@ -190,7 +190,7 @@ pub struct VolumeFader<'a> {
     pub enabled: bool,
 }
 
-pub fn volume_fader<'a>(fader: VolumeFader<'a>, drafts: &Drafts) -> Element<'a, FaderMessage> {
+pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage> {
     let VolumeFader {
         id,
         label,

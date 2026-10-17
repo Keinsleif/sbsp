@@ -43,6 +43,7 @@ pub enum Icon {
     ChevronUp,
     CheckboxMarked,
     CheckboxBlankOutline,
+    FileMusic,
 }
 
 macro_rules! svg_icon {
@@ -86,6 +87,7 @@ impl Icon {
         Icon::ChevronDown => svg_icon!("M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"),
         Icon::ChevronUp => svg_icon!("M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z"),
         Icon::CheckboxMarked => svg_icon!("M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"),
+        Icon::FileMusic => svg_icon!("M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13,13H11V18A2,2 0 0,1 9,20A2,2 0 0,1 7,18A2,2 0 0,1 9,16C9.4,16 9.7,16.1 10,16.3V11H13V13M13,9V3.5L18.5,9H13Z"),
         Icon::CheckboxBlankOutline => svg_icon!("M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"),
         }
     }

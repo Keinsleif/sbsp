@@ -135,6 +135,8 @@ pub enum Message {
     Gallery(debug_gallery::Message),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
+    /// The file chosen for an audio cue's target (`None`: cancelled).
+    AudioTargetPicked(Uuid, Option<std::path::PathBuf>),
     RemoveConfirmed,
     RemoveCancelled,
     #[cfg(feature = "host")]
@@ -259,6 +261,7 @@ impl State {
             Message::Editor(message) => self.handle_editor(message),
             Message::Gallery(message) => self.handle_gallery(message),
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
+            Message::AudioTargetPicked(id, file) => self.set_audio_target(id, file),
             Message::RemoveConfirmed => self.confirm_remove(),
             Message::Viewer(viewer::Message::Seek(id, seconds)) => {
                 // Same guard as the original: View mode does not seek.
@@ -318,6 +321,7 @@ impl State {
             | Message::Editor(_)
             | Message::Gallery(_)
             | Message::AudioFilesPicked(_)
+            | Message::AudioTargetPicked(..)
             | Message::RemoveConfirmed => {}
             Message::RemoveCancelled => self.pending_remove = None,
             Message::ClockTick => self.clock = header::local_clock(),
@@ -586,14 +590,52 @@ impl State {
             .selected
             .and_then(|id| self.model.cue_list.cues.get(&id))
             .cloned();
+        let now = Instant::now();
         let position = cue
             .as_ref()
-            .and_then(|cue| self.playback.get_position(cue.id, Instant::now()));
+            .and_then(|cue| self.playback.get_position(cue.id, now));
 
-        match self.editor.update(message, cue.as_ref(), position) {
+        match self.editor.update(message, cue.as_ref(), position, now) {
             editor::Update::None => Task::none(),
             editor::Update::Field(message) => self.handle_field(message),
             editor::Update::Edit(cue) => self.send_edit(ModelEdit::UpdateCue(*cue)),
+            editor::Update::PickAudio(id) => self.pick_audio_target(id),
+        }
+    }
+
+    #[cfg(feature = "host")]
+    fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
+        let title = fl!("main-bottom-editor-audio-target-file");
+        Task::perform(
+            async move {
+                rfd::AsyncFileDialog::new()
+                    .set_title(title)
+                    .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
+                    .pick_file()
+                    .await
+                    .map(|file| file.path().to_path_buf())
+            },
+            move |file| Message::AudioTargetPicked(id, file),
+        )
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn pick_audio_target(&self, _id: Uuid) -> Task<Message> {
+        log::warn!("no file picker in this build");
+        Task::none()
+    }
+
+    /// The picker answered: the cue as it is *now* gets the new target.
+    fn set_audio_target(&mut self, id: Uuid, file: Option<std::path::PathBuf>) -> Task<Message> {
+        let Some(file) = file else {
+            return Task::none();
+        };
+        let Some(cue) = self.model.cue_list.cues.get(&id) else {
+            return Task::none();
+        };
+        match crate::domain::cue_edit::set_audio_target(cue, file) {
+            Some(edited) => self.send_edit(ModelEdit::UpdateCue(edited)),
+            None => Task::none(),
         }
     }
 
