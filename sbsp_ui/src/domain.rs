@@ -12,6 +12,7 @@
 //! doc comment for specifics.
 
 pub mod cue;
+pub mod cue_edit;
 pub mod cursor;
 pub mod easing;
 pub mod fader;

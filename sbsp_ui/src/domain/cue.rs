@@ -20,7 +20,20 @@ use sbsp_frontend_settings::NameFormatSettings;
 use super::text::{camel_to_title_case, format_template};
 use super::time::format_human;
 
-/// Builds a cue's display name from the name-format settings. `None`
+/// The name to show for a cue: the one the user gave it, else the
+/// generated one (the original's `cue.name ?? buildCueName(cue)`).
+pub fn display_name(
+    cue: &Cue,
+    cues: &HashMap<Uuid, Cue>,
+    name_format: &NameFormatSettings,
+) -> String {
+    match &cue.name {
+        Some(name) => name.clone(),
+        None => build_cue_name(Some(cue), cues, name_format),
+    }
+}
+
+/// Builds a cue's generated name from the name-format settings. `None`
 /// (a missing target, matching the original's `cue ?? null`) renders as an
 /// empty string.
 pub fn build_cue_name(

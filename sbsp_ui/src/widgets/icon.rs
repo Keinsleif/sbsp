@@ -41,6 +41,8 @@ pub enum Icon {
     DockBottom,
     ChevronDown,
     ChevronUp,
+    CheckboxMarked,
+    CheckboxBlankOutline,
 }
 
 macro_rules! svg_icon {
@@ -83,6 +85,8 @@ impl Icon {
         Icon::DockBottom => svg_icon!("M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 13H4V6H20Z"),
         Icon::ChevronDown => svg_icon!("M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"),
         Icon::ChevronUp => svg_icon!("M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z"),
+        Icon::CheckboxMarked => svg_icon!("M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"),
+        Icon::CheckboxBlankOutline => svg_icon!("M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"),
         }
     }
 }

@@ -22,7 +22,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::domain::new_cue::{self, CueKind};
-use crate::features::{cue_list, debug_gallery, header, hotkeys, side_bar, status_bar, viewer};
+use crate::features::{cue_list, debug_gallery, editor, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -101,6 +101,7 @@ pub struct State {
     viewer: viewer::Viewer,
     /// The one text field being edited, if any (shared by every field).
     fields: field::Drafts,
+    editor: editor::Editor,
     gallery: debug_gallery::Gallery,
     /// Set when the cue list or the cache was replaced, so the next
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
@@ -121,6 +122,7 @@ pub enum Message {
     SideBar(side_bar::Message),
     Viewer(viewer::Message),
     Field(field::Message),
+    Editor(editor::Message),
     Gallery(debug_gallery::Message),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
@@ -202,6 +204,7 @@ impl State {
             last_meter_tick: None,
             viewer: viewer::Viewer::default(),
             fields: field::Drafts::default(),
+            editor: editor::Editor::default(),
             gallery: debug_gallery::Gallery::default(),
             assets_stale: false,
             toasts: toast::Toasts::new(),
@@ -217,11 +220,34 @@ impl State {
     /// `Task` from here; everything else is a plain state change in
     /// [`State::apply`].
     fn update(&mut self, message: Message) -> Task<Message> {
+        // The notes editor keeps its own copy of the selected cue's notes;
+        // everything that can change either is followed by a check.
+        let sync = !matches!(
+            message,
+            Message::Tick(_) | Message::MeterTick(_) | Message::ClockTick
+        );
+        let task = self.update_inner(message);
+        if sync {
+            self.sync_editor();
+        }
+        task
+    }
+
+    fn sync_editor(&mut self) {
+        let cue = self
+            .ui
+            .selected
+            .and_then(|id| self.model.cue_list.cues.get(&id));
+        self.editor.sync(cue, &self.fields);
+    }
+
+    fn update_inner(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Menu(id) => self.handle_menu(id),
             Message::Header(message) => self.handle_header(message),
             Message::KeyPressed(press) => self.handle_key(press),
             Message::Field(message) => self.handle_field(message),
+            Message::Editor(message) => self.handle_editor(message),
             Message::Gallery(message) => self.handle_gallery(message),
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
             Message::RemoveConfirmed => self.confirm_remove(),
@@ -280,6 +306,7 @@ impl State {
             Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_)
             | Message::Viewer(_)
             | Message::Field(_)
+            | Message::Editor(_)
             | Message::Gallery(_)
             | Message::AudioFilesPicked(_)
             | Message::RemoveConfirmed => {}
@@ -515,11 +542,50 @@ impl State {
     /// A text field's typing, Enter, focus loss or step button. A finished
     /// edit goes to whichever part owns that field's value.
     fn handle_field(&mut self, message: field::Message) -> Task<Message> {
+        // An editor field's edit belongs to the cue selected when it began.
+        let begins_editor_edit = matches!(
+            &message,
+            field::Message::Input(id, _) if editor::owns(*id) && !self.fields.is_editing(*id)
+        );
+
         let (outcome, task) = self.fields.update(message);
+        let mut edit = Task::none();
         if let Some(outcome) = outcome {
             self.gallery.apply(&outcome);
+            let cue = self
+                .editor
+                .draft_cue
+                .and_then(|id| self.model.cue_list.cues.get(&id));
+            if let Some(edited) = cue.and_then(|cue| self.editor.apply(&outcome, cue)) {
+                edit = self.send_edit(ModelEdit::UpdateCue(edited));
+            }
         }
-        task.map(Message::Field)
+        if begins_editor_edit {
+            self.editor.draft_cue = self.ui.selected;
+        }
+
+        Task::batch([task.map(Message::Field), edit])
+    }
+
+    /// The bottom editor (edit mode only).
+    fn handle_editor(&mut self, message: editor::Message) -> Task<Message> {
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let cue = self
+            .ui
+            .selected
+            .and_then(|id| self.model.cue_list.cues.get(&id))
+            .cloned();
+        let position = cue
+            .as_ref()
+            .and_then(|cue| self.playback.get_position(cue.id, Instant::now()));
+
+        match self.editor.update(message, cue.as_ref(), position) {
+            editor::Update::None => Task::none(),
+            editor::Update::Field(message) => self.handle_field(message),
+            editor::Update::Edit(cue) => self.send_edit(ModelEdit::UpdateCue(cue)),
+        }
     }
 
     fn handle_gallery(&mut self, message: debug_gallery::Message) -> Task<Message> {
@@ -1216,6 +1282,40 @@ impl State {
             )
     }
 
+    fn editor_view(&self) -> Element<'_, Message> {
+        let cue = self
+            .ui
+            .selected
+            .and_then(|id| self.model.cue_list.cues.get(&id));
+        let flat = crate::domain::flat_list::flatten(
+            &self.model.cue_list.root_ids,
+            &self.model.cue_list.cues,
+            &self.ui.expanded_rows,
+        );
+        let chain_override = cue.and_then(|cue| {
+            flat.iter()
+                .find(|entry| entry.cue_id == cue.id && entry.is_chain_overridden)
+                .map(|entry| entry.chain.clone())
+        });
+
+        editor::view(
+            &self.editor,
+            editor::Context {
+                cue,
+                model: &self.model,
+                name_format: &self.name_format,
+                drafts: &self.fields,
+                duration: crate::domain::cue::get_duration(cue, |_| {
+                    cue.and_then(|cue| cue_list::asset_duration(cue, &self.assets))
+                }),
+                is_active: cue.is_some_and(|cue| self.playback.active_cues.contains_key(&cue.id)),
+                chain_override,
+            },
+            &flat,
+        )
+        .map(Message::Editor)
+    }
+
     fn view(&self) -> Element<'_, Message> {
         let header = container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
             .width(Length::Fill)
@@ -1233,8 +1333,8 @@ impl State {
             cursor_cue,
             cursor_cue_name: cursor_cue
                 .map(|cue| {
-                    crate::domain::cue::build_cue_name(
-                        Some(cue),
+                    crate::domain::cue::display_name(
+                        cue,
                         &self.model.cue_list.cues,
                         &self.name_format,
                     )
@@ -1263,21 +1363,27 @@ impl State {
         .padding(12);
 
         let main_column: Element<'_, Message> = if self.ui.is_bottom_tab_open {
-            let viewer = container(
-                viewer::view(
-                    &self.viewer,
-                    &self.model,
-                    &self.ui,
-                    &self.playback,
-                    &self.assets,
+            let (bottom, height): (Element<'_, Message>, f32) = if self.ui.mode == Mode::Edit {
+                (self.editor_view(), editor::HEIGHT)
+            } else {
+                (
+                    viewer::view(
+                        &self.viewer,
+                        &self.model,
+                        &self.ui,
+                        &self.playback,
+                        &self.assets,
+                    )
+                    .map(Message::Viewer),
+                    viewer::HEIGHT,
                 )
-                .map(Message::Viewer),
-            )
-            .width(Length::Fill)
-            .height(viewer::HEIGHT + 2.0)
-            .padding(1)
-            .style(container::bordered_box);
-            column![main, viewer].into()
+            };
+            let bottom = container(bottom)
+                .width(Length::Fill)
+                .height(height + 2.0)
+                .padding(1)
+                .style(container::bordered_box);
+            column![main, bottom].into()
         } else {
             main.into()
         };
@@ -1898,5 +2004,73 @@ mod tests {
 
         let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
         assert!(state.ui.expanded_rows.is_empty());
+    }
+
+    #[test]
+    #[serial]
+    fn the_editor_replaces_the_viewer_in_edit_mode() {
+        let (mut state, ids) = editing_state();
+        state.ui.is_bottom_tab_open = true;
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(
+            ui.find(fl!("main-bottom-editor-no-selection").as_str()).is_ok(),
+            "nothing is selected"
+        );
+
+        state.ui.set_selected(ids[0], false);
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("main-bottom-editor-basics-title").as_str()).is_ok());
+        assert!(ui.find(fl!("main-number").as_str()).is_ok());
+
+        state.ui.set_mode(Mode::Run);
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("main-number").as_str()).is_err(), "no editor outside edit mode");
+    }
+
+    #[test]
+    #[serial]
+    fn the_trigger_tab_can_be_opened() {
+        let (mut state, ids) = editing_state();
+        state.ui.is_bottom_tab_open = true;
+        state.ui.set_selected(ids[0], false);
+
+        let mut ui = iced_test::simulator(state.view());
+        ui.click(fl!("main-bottom-editor-trigger-title").as_str())
+            .expect("the tab is a button");
+        for message in ui.into_messages() {
+            let _ = state.update(message);
+        }
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(
+            ui.find(fl!("main-bottom-editor-trigger-treat-stop-as-completed").as_str())
+                .is_ok()
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn an_edit_belongs_to_the_cue_selected_when_it_began() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+
+        let number = field::FieldId("editor.number");
+        let _ = state.update(Message::Editor(editor::Message::Field(
+            field::Message::Input(number, "9".to_string()),
+        )));
+        state.ui.set_selected(ids[1], false);
+
+        assert_eq!(state.editor.draft_cue, Some(ids[0]));
+    }
+
+    #[test]
+    #[serial]
+    fn a_name_the_user_gave_is_what_the_list_shows() {
+        let (mut state, ids) = populated_state();
+        state.model.cue_list.cues.get_mut(&ids[0]).unwrap().name = Some("Opening".to_string());
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find("Opening").is_ok());
     }
 }

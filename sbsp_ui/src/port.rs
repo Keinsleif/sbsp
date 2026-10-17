@@ -57,4 +57,6 @@ pub enum ModelEdit {
         members: Vec<sbsp_backend::model::cue::Uuid>,
     },
     RemoveCues(Vec<sbsp_backend::model::cue::Uuid>),
+    /// Replaces the cue with the same id.
+    UpdateCue(sbsp_backend::model::cue::Cue),
 }
