@@ -2015,16 +2015,20 @@ mod tests {
         let (mut state, ids) = editing_state();
         state.ui.is_bottom_tab_open = true;
 
-        let mut ui = iced_test::simulator(state.view());
-        assert!(
-            ui.find(fl!("main-bottom-editor-no-selection").as_str()).is_ok(),
-            "nothing is selected"
-        );
+        {
+            let mut ui = iced_test::simulator(state.view());
+            assert!(
+                ui.find(fl!("main-bottom-editor-no-selection").as_str()).is_ok(),
+                "nothing is selected"
+            );
+        }
 
         state.ui.set_selected(ids[0], false);
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find(fl!("main-bottom-editor-basics-title").as_str()).is_ok());
-        assert!(ui.find(fl!("main-number").as_str()).is_ok());
+        {
+            let mut ui = iced_test::simulator(state.view());
+            assert!(ui.find(fl!("main-bottom-editor-basics-title").as_str()).is_ok());
+            assert!(ui.find(fl!("main-number").as_str()).is_ok());
+        }
 
         state.ui.set_mode(Mode::Run);
         let mut ui = iced_test::simulator(state.view());
