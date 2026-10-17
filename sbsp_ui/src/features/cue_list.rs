@@ -32,6 +32,7 @@ use crate::state::assets::AssetResults;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{DisplayMode, UiState};
+use crate::theme::fonts;
 use crate::widgets::icon::{Icon, Tone, icon, toned};
 use crate::widgets::progress;
 
@@ -432,7 +433,7 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
         theme.extended_palette().primary.base.color.scale_alpha(0.5)
     });
 
-    let field = container(stack![bar, center(text(label))])
+    let field = container(stack![bar, center(text(label).font(fonts::MONO))])
         .width(Length::Fill)
         .height(ROW_HEIGHT * 0.75)
         .style(move |theme: &Theme| container::Style {
