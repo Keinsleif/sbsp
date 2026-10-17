@@ -20,6 +20,12 @@ use iced::Font;
 
 /// The family names are the fonts' own (their `name` table), which is what
 /// iced looks them up by.
+/// The size of text that does not set one (iced's own default is 16, which
+/// is large for this UI: the sidebar's 260px runs out). BIZ UD glyphs fill
+/// their em box more than iced's default font, so 14 reads about the same
+/// as the original's text.
+pub const TEXT_SIZE: f32 = 14.0;
+
 pub const UI: Font = Font::with_name("BIZ UDPGothic");
 pub const MONO: Font = Font::with_name("BIZ UDGothic");
 
