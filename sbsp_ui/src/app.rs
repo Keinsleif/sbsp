@@ -587,7 +587,7 @@ impl State {
         match self.editor.update(message, cue.as_ref(), position) {
             editor::Update::None => Task::none(),
             editor::Update::Field(message) => self.handle_field(message),
-            editor::Update::Edit(cue) => self.send_edit(ModelEdit::UpdateCue(cue)),
+            editor::Update::Edit(cue) => self.send_edit(ModelEdit::UpdateCue(*cue)),
         }
     }
 
@@ -1298,7 +1298,7 @@ impl State {
         let chain_override = cue.and_then(|cue| {
             flat.iter()
                 .find(|entry| entry.cue_id == cue.id && entry.is_chain_overridden)
-                .map(|entry| entry.chain.clone())
+                .map(|entry| entry.chain)
         });
 
         editor::view(
