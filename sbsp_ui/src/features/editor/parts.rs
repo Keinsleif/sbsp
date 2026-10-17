@@ -205,7 +205,7 @@ pub(super) fn fade_param_input<'a>(input: FadeInput<'a>) -> Element<'a, Message>
                 move |kind| Message::FadeKind(slot, kind),
             ),
         ))
-        .width(Length::Fixed(130.0)),
+        .width(Length::Fixed(120.0)),
     );
 
     let linear = curve.is_none_or(|curve| curve.kind == CurveKind::Linear);

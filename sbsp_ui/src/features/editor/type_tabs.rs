@@ -147,7 +147,7 @@ pub(super) fn fade<'a>(
             volume,
             container(param).align_x(Horizontal::Left),
         ]
-        .spacing(12)
+        .spacing(4)
         .padding(4),
     )
 }
