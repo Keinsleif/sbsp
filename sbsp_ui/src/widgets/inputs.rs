@@ -233,7 +233,7 @@ pub struct PanningFader<'a> {
     pub enabled: bool,
 }
 
-pub fn panning_fader<'a>(fader: PanningFader<'a>, drafts: &Drafts) -> Element<'a, FaderMessage> {
+pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage> {
     let PanningFader {
         id,
         label,
