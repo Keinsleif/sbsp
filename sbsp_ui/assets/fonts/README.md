@@ -4,12 +4,12 @@
 committed by the patches; add them by hand:
 
 | File | Use |
-|---|---|
+| --- | --- |
 | `BIZUDPGothic-Regular.ttf` | UI text (family "BIZ UDPGothic") |
 | `BIZUDGothic-Regular.ttf` | fixed width: clock, elapsed / remaining time (family "BIZ UDGothic") |
 | `OFL.txt` | license text of the two fonts |
 
-Source: https://github.com/googlefonts/morisawa-biz-ud-gothic
+Source: <https://github.com/googlefonts/morisawa-biz-ud-gothic>
 (SIL Open Font License 1.1). Take the files from its `fonts/ttf/` folder
 and the license from `OFL.txt` in the repository root.
 
