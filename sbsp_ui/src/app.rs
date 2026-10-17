@@ -65,6 +65,12 @@ pub fn run(target: &'static str) -> iced::Result {
         .theme(|state: &State| crate::theme::resolve(state.theme_mode))
         .subscription(State::subscription)
         .window_size((1280.0, 720.0))
+        // `settings` replaces the whole `Settings`, so it comes before the
+        // builder calls that fill in its fonts.
+        .settings(iced::Settings {
+            default_text_size: iced::Pixels(crate::theme::fonts::TEXT_SIZE),
+            ..Default::default()
+        })
         .font(crate::theme::fonts::UI_REGULAR)
         .font(crate::theme::fonts::MONO_REGULAR)
         .default_font(crate::theme::fonts::UI)
