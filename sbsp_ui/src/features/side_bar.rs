@@ -58,7 +58,8 @@ pub fn view<'a>(
         tab_button(fl!("main-side-bar-active-cues"), SideBarTab::ActiveCues),
         tab_button(fl!("main-side-bar-meter-title"), SideBarTab::Meter),
     ]
-    .spacing(2);
+    .spacing(1)
+    .padding(1);
 
     let body: Element<'a, Message> = match ui.side_bar_tab {
         SideBarTab::ActiveCues => active_cues(model, ui, playback, name_format),
@@ -66,8 +67,6 @@ pub fn view<'a>(
     };
 
     column![tabs, body]
-        .spacing(8)
-        .padding(8)
         .width(WIDTH)
         .height(Length::Fill)
         .into()
@@ -160,11 +159,11 @@ fn bar_color(status: PlaybackStatus) -> impl Fn(&Theme) -> Color {
 fn active_item<'a>(title: String, active: &ActiveCue) -> Element<'a, Message> {
     let repeating = matches!(active.params, StateParam::Audio(audio) if audio.repeating);
     let mark: Element<'a, Message> = if active.status == PlaybackStatus::Stopping {
-        toned(Icon::TimerSand, 20.0, Tone::Warning).into()
+        toned(Icon::TimerSand, 16.0, Tone::Warning).into()
     } else if repeating {
-        icon(Icon::Repeat, 20.0).into()
+        icon(Icon::Repeat, 16.0).into()
     } else {
-        Space::new().into()
+        Space::new().width(16).height(16).into()
     };
 
     let (elapsed, remain) = readouts(active.status, active.position, active.duration);

@@ -285,7 +285,6 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
     ]
     .align_y(Alignment::Center)
     .height(HEADER_HEIGHT)
-    .padding([0, 8])
     .into()
 }
 

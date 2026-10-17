@@ -1469,8 +1469,7 @@ impl State {
                 .map(Message::CueList),
         )
         .width(Length::Fill)
-        .height(Length::Fill)
-        .padding(12);
+        .height(Length::Fill);
 
         let main_column: Element<'_, Message> = if self.ui.is_bottom_tab_open {
             let (bottom, height): (Element<'_, Message>, f32) = if self.ui.mode == Mode::Edit {
