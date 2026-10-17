@@ -33,6 +33,7 @@ use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{DisplayMode, UiState};
 use crate::theme::fonts;
+use crate::widgets::divider;
 use crate::widgets::icon::{Icon, Tone, icon, toned};
 use crate::widgets::progress;
 
@@ -43,6 +44,7 @@ const INDENT_PER_LEVEL: f32 = 20.0;
 /// feedback from the widget tree, only the scrollable's own offset and
 /// viewport height (see [`Viewport`]).
 const ROW_HEIGHT: f32 = 30.0;
+const HEADER_HEIGHT: f32 = 32.0;
 
 /// The scrollable's id, for scrolling it from outside.
 pub const LIST_ID: &str = "cue-list";
@@ -226,7 +228,7 @@ pub fn view<'a>(
             .into()
     };
 
-    column![header(ui), body].into()
+    column![header(ui), divider::horizontal(), body].into()
 }
 
 fn cell<'a>(content: impl Into<Element<'a, Message>>, width: f32) -> Element<'a, Message> {
@@ -252,29 +254,38 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
             row![text(label), display_toggle(mode, message)]
                 .spacing(4)
                 .align_y(Alignment::Center),
-            W_TIME,
+            W_TIME - 1.0,
         )
     };
 
+    // Each line takes its pixel from the column before it, so the header's
+    // columns stay over the rows' (the name column fills the rest).
     row![
-        Space::new().width(W_CURSOR + W_STATUS + W_TYPE),
-        cell(text("#"), W_NUMBER),
+        Space::new().width(W_CURSOR + W_STATUS + W_TYPE - 1.0),
+        divider::vertical(),
+        cell(text("#"), W_NUMBER - 1.0),
+        divider::vertical(),
         container(text(fl!("main-name"))).width(Length::Fill).padding([0, 8]),
+        divider::vertical(),
         time_header(
             fl!("main-pre-wait"),
             ui.pre_wait_display_mode,
             Message::TogglePreWaitDisplay,
         ),
+        divider::vertical(),
         time_header(
             fl!("main-duration"),
             ui.duration_display_mode,
             Message::ToggleDurationDisplay,
         ),
-        cell(icon(Icon::Repeat, 18.0), W_REPEAT),
+        divider::vertical(),
+        cell(icon(Icon::Repeat, 18.0), W_REPEAT - 1.0),
+        divider::vertical(),
         cell(icon(Icon::ChevronDoubleDown, 18.0), W_CHAIN),
     ]
     .align_y(Alignment::Center)
-    .padding([4, 8])
+    .height(HEADER_HEIGHT)
+    .padding([0, 8])
     .into()
 }
 
@@ -391,13 +402,16 @@ fn row_view<'a>(
     .align_y(Alignment::Center);
 
     let color = cue.color;
-    mouse_area(
+    // The line under the row is part of its height, so a row stays
+    // `ROW_HEIGHT` tall (the scroll position is computed from that).
+    mouse_area(column![
         container(content)
             .padding([0, 8])
-            .center_y(ROW_HEIGHT)
+            .center_y(ROW_HEIGHT - 1.0)
             .width(Length::Fill)
             .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor, color)),
-    )
+        divider::horizontal(),
+    ])
     .on_press(Message::Select(id))
     .into()
 }
@@ -452,7 +466,7 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
     container(field)
         .padding([0, 4])
         .width(W_TIME)
-        .center_y(ROW_HEIGHT)
+        .center_y(ROW_HEIGHT - 1.0)
         .into()
 }
 

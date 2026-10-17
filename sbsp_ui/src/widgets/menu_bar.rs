@@ -6,8 +6,8 @@
 //! Used on every target except the macOS host/remote build, which uses a
 //! native global menu instead (see `crate::host::native_menu`).
 
-use iced::widget::{button, container, row, text};
-use iced::{Alignment, Border, Element, Length, Theme};
+use iced::widget::{button, container, mouse_area, row, text};
+use iced::{Alignment, Border, Element, Length, Theme, mouse};
 use iced_aw::menu::{Item, Menu, MenuBar};
 use iced_aw::style::Status;
 use iced_aw::style::menu_bar::Style;
@@ -110,7 +110,7 @@ where
 
     Menu::new(items)
         .width(SUBMENU_WIDTH)
-        .spacing(1.0)
+        .spacing(0.0)
         .close_on_item_click(true)
         .close_on_background_click(true)
 }
@@ -149,7 +149,7 @@ fn entry_button<'a, Message: Clone + 'a>(
     if enabled {
         btn.on_press_with(on_press).into()
     } else {
-        btn.into()
+        inert(btn.into())
     }
 }
 
@@ -158,20 +158,35 @@ fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Mes
         .spacing(12)
         .align_y(Alignment::Center);
 
-    button(content)
-        .width(Length::Fill)
-        .padding([3, 10])
-        .style(button::text)
+    inert(
+        button(content)
+            .width(Length::Fill)
+            .padding([3, 10])
+            .style(button::text)
+            .into(),
+    )
+}
+
+/// The dropdown is an overlay, and iced hides the cursor from the widgets
+/// below it only where the overlay reports a mouse interaction. A button
+/// without `on_press` reports none, so the buttons and fields under a
+/// disabled item, a submenu entry or a separator would still react to the
+/// pointer.
+fn inert<'a, Message: Clone + 'a>(content: Element<'a, Message>) -> Element<'a, Message> {
+    mouse_area(content)
+        .interaction(mouse::Interaction::Idle)
         .into()
 }
 
 fn separator<'a, Message: Clone + 'a>() -> Element<'a, Message> {
-    container(text(""))
-        .height(1)
-        .width(Length::Fill)
-        .style(|theme: &Theme| container::Style {
-            background: Some(theme.extended_palette().background.strong.color.into()),
-            ..Default::default()
-        })
-        .into()
+    inert(
+        container(text(""))
+            .height(1)
+            .width(Length::Fill)
+            .style(|theme: &Theme| container::Style {
+                background: Some(theme.extended_palette().background.strong.color.into()),
+                ..Default::default()
+            })
+            .into(),
+    )
 }

@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub mod curve;
+pub mod divider;
 pub mod field;
 pub mod icon;
 pub mod inputs;

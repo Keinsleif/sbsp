@@ -33,7 +33,7 @@ use crate::state::{
     ui::{Mode, SideBarTab, UiState},
 };
 use crate::theme::ThemeMode;
-use crate::widgets::{field, menu_bar, modal, toast};
+use crate::widgets::{divider, field, menu_bar, modal, toast};
 
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
@@ -565,10 +565,13 @@ impl State {
         let mut edit = Task::none();
         if let Some(outcome) = outcome {
             self.gallery.apply(&outcome);
-            let cue = self
-                .editor
-                .draft_cue
-                .and_then(|id| self.model.cue_list.cues.get(&id));
+            // A step button press has no draft behind it: it applies to
+            // the cue on screen.
+            let cue_id = match outcome {
+                field::Outcome::Step(..) => self.ui.selected,
+                field::Outcome::Commit(_) => self.editor.draft_cue,
+            };
+            let cue = cue_id.and_then(|id| self.model.cue_list.cues.get(&id));
             if let Some(edited) = cue.and_then(|cue| self.editor.apply(&outcome, cue)) {
                 edit = self.send_edit(ModelEdit::UpdateCue(edited));
             }
@@ -1452,7 +1455,7 @@ impl State {
             )
             .width(side_bar::WIDTH)
             .height(Length::Fill);
-            row![main_column, sidebar].into()
+            row![main_column, divider::vertical(), sidebar].into()
         } else {
             main_column
         };
@@ -1462,7 +1465,15 @@ impl State {
         )
         .width(Length::Fill);
 
-        let content: Element<'_, Message> = column![header, transport, body, footer].into();
+        let content: Element<'_, Message> = column![
+            header,
+            transport,
+            divider::horizontal(),
+            body,
+            divider::horizontal(),
+            footer
+        ]
+        .into();
 
         let content = if self.gallery.open {
             modal::over(
