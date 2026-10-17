@@ -590,7 +590,7 @@ mod tests {
     fn audio_target_and_sound_type_apply_to_audio_cues_only() {
         let cue = audio();
         let moved = set_audio_target(&cue, PathBuf::from("/b.wav")).unwrap();
-        assert!(matches!(&moved.params, CueParam::Audio(a) if a.target == PathBuf::from("/b.wav")));
+        assert!(matches!(&moved.params, CueParam::Audio(a) if a.target == *"/b.wav"));
         assert!(set_audio_target(&cue, PathBuf::from("/a.wav")).is_none());
         assert!(set_audio_target(&wait(1.0), PathBuf::from("/b.wav")).is_none());
 
