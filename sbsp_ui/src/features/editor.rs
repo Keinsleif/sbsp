@@ -494,7 +494,8 @@ pub fn view<'a>(
     let tabs = row(available
         .iter()
         .map(|&tab| tab_button(current, tab, tab.label())))
-    .spacing(4);
+    .spacing(1)
+    .padding(1);
 
     let body = match current {
         Tab::Basics => basics(editor, &ctx, cue, flat),
@@ -506,9 +507,7 @@ pub fn view<'a>(
         Tab::Group => type_tabs::group(&ctx, cue),
     };
 
-    column![tabs, container(body).width(Length::Fill).height(Length::Fill)]
-        .spacing(8)
-        .padding(8)
+    column![tabs, container(body).padding(8).width(Length::Fill).height(Length::Fill)]
         .height(HEIGHT)
         .into()
 }
