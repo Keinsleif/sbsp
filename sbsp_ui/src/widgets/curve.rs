@@ -11,7 +11,7 @@ use iced::{Element, Length, Point, Rectangle, Renderer, Theme, mouse};
 use crate::domain::easing::Curve;
 
 /// The original's `w-16`.
-pub const WIDTH: f32 = 64.0;
+pub const WIDTH: f32 = 48.0;
 pub const HEIGHT: f32 = 48.0;
 
 /// Without a curve (the fade is off) only the grid is drawn.
