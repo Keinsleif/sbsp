@@ -65,6 +65,9 @@ pub fn run(target: &'static str) -> iced::Result {
         .theme(|state: &State| crate::theme::resolve(state.theme_mode))
         .subscription(State::subscription)
         .window_size((1280.0, 720.0))
+        .font(crate::theme::fonts::UI_REGULAR)
+        .font(crate::theme::fonts::MONO_REGULAR)
+        .default_font(crate::theme::fonts::UI)
         .run()
 }
 
