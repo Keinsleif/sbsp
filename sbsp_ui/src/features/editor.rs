@@ -75,7 +75,7 @@ pub enum Update {
     /// A text field message, for the shared drafts.
     Field(field::Message),
     /// Send this edited cue to the backend.
-    Edit(Cue),
+    Edit(Box<Cue>),
 }
 
 pub struct Editor {
@@ -138,7 +138,7 @@ impl Editor {
                     Message::Timestamp => position.and_then(|p| cue_edit::append_timestamp(cue, p)),
                     Message::Field(_) | Message::Notes(_) | Message::Tab(_) => None,
                 };
-                edited.map_or(Update::None, Update::Edit)
+                edited.map_or(Update::None, |cue| Update::Edit(Box::new(cue)))
             }
         }
     }
@@ -169,7 +169,7 @@ impl Editor {
         let id = cue.map(|cue| cue.id);
         let wanted = cue.map(|cue| cue.notes.as_str()).unwrap_or("");
         if self.notes_cue != id
-            || plain(self.notes.text()) != plain(text_editor::Content::with_text(wanted).text())
+            || plain(self.notes.text()) != plain(wanted.to_string())
         {
             self.notes = text_editor::Content::with_text(wanted);
             self.notes_cue = id;
@@ -291,7 +291,6 @@ fn basics<'a>(
     );
 
     let left = column![number, duration, pre_wait, chain_mode]
-        .spacing(8)
         .width(Length::Fixed(160.0));
 
     let name: Element<'a, field::Message> = text_field_with_placeholder(
@@ -362,7 +361,7 @@ fn basics<'a>(
     .spacing(12)
     .align_y(Alignment::End);
 
-    let right = column![name, notes, bottom].spacing(8).width(Length::Fill);
+    let right = column![name, notes, bottom].width(Length::Fill);
 
     row![left, right].spacing(8).into()
 }
