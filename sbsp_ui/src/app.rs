@@ -20,6 +20,7 @@ use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
 #[cfg(feature = "host")]
+use crate::domain::cue_edit;
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::domain::new_cue::{self, CueKind};
 use crate::features::{cue_list, debug_gallery, editor, header, hotkeys, side_bar, status_bar, viewer};
@@ -41,7 +42,7 @@ use crate::port::{Control, ModelEdit};
 #[cfg(feature = "host")]
 use crate::port::{FullState, PortEvent};
 
-use sbsp_backend::model::cue::Uuid;
+use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 use sbsp_frontend_settings::{NameFormatSettings, TemplateSettings};
 
 use crate::fl;
@@ -249,7 +250,39 @@ impl State {
             .ui
             .selected
             .and_then(|id| self.model.cue_list.cues.get(&id));
+        self.editor.file_duration = cue.and_then(|cue| cue_list::asset_duration(cue, &self.assets));
         self.editor.sync(cue, &self.fields);
+    }
+
+    /// What the analysis of the audio cue's file says.
+    fn file_info(&self, cue: Option<&Cue>) -> editor::FileInfo {
+        let Some(cue) = cue else {
+            return editor::FileInfo::default();
+        };
+        let data = match &cue.params {
+            CueParam::Audio(audio) => self.assets.get(&audio.target),
+            _ => None,
+        };
+        editor::FileInfo {
+            duration: cue_list::asset_duration(cue, &self.assets),
+            integrated_lufs: data.and_then(|data| data.integrated_lufs),
+            peak: data.map(|data| f64::from(data.peak)),
+        }
+    }
+
+    /// Sends an edited cue. A volume change of a cue that is playing goes
+    /// to the playing cue as well, as the original's editor does.
+    fn send_cue_edit(&self, before: &Cue, edited: Cue) -> Task<Message> {
+        let volume = match (&before.params, &edited.params) {
+            (CueParam::Audio(old), CueParam::Audio(new))
+                if old.volume != new.volume && self.playback.active_cues.contains_key(&edited.id) =>
+            {
+                Some(Control::SetVolume(edited.id, f64::from(f32::from(new.volume))))
+            }
+            _ => None,
+        };
+        let live = self.send(volume.into_iter().collect());
+        Task::batch([self.send_edit(ModelEdit::UpdateCue(edited)), live])
     }
 
     fn update_inner(&mut self, message: Message) -> Task<Message> {
@@ -572,8 +605,10 @@ impl State {
                 field::Outcome::Commit(_) => self.editor.draft_cue,
             };
             let cue = cue_id.and_then(|id| self.model.cue_list.cues.get(&id));
-            if let Some(edited) = cue.and_then(|cue| self.editor.apply(&outcome, cue)) {
-                edit = self.send_edit(ModelEdit::UpdateCue(edited));
+            if let Some((before, edited)) = cue
+                .and_then(|cue| self.editor.apply(&outcome, cue).map(|edited| (cue, edited)))
+            {
+                edit = self.send_cue_edit(before, edited);
             }
         }
         if begins_editor_edit {
@@ -601,8 +636,27 @@ impl State {
         match self.editor.update(message, cue.as_ref(), position, now) {
             editor::Update::None => Task::none(),
             editor::Update::Field(message) => self.handle_field(message),
-            editor::Update::Edit(cue) => self.send_edit(ModelEdit::UpdateCue(*cue)),
+            editor::Update::Edit(edited) => match cue {
+                Some(before) => self.send_cue_edit(&before, *edited),
+                None => Task::none(),
+            },
             editor::Update::PickAudio(id) => self.pick_audio_target(id),
+            editor::Update::MatchVolume(kind) => {
+                let Some(before) = cue else {
+                    return Task::none();
+                };
+                let info = self.file_info(Some(&before));
+                let volume = match kind {
+                    editor::Match::Lufs => info.integrated_lufs.map(|lufs| {
+                        cue_edit::volume_for_lufs(self.model.settings.audio.lufs_target, lufs)
+                    }),
+                    editor::Match::Peak => info.peak.map(cue_edit::volume_for_peak),
+                };
+                match volume.and_then(|volume| cue_edit::set_level(&before, volume)) {
+                    Some(edited) => self.send_cue_edit(&before, edited),
+                    None => Task::none(),
+                }
+            }
         }
     }
 
@@ -1364,6 +1418,8 @@ impl State {
                 }),
                 is_active: cue.is_some_and(|cue| self.playback.active_cues.contains_key(&cue.id)),
                 chain_override,
+                file: self.file_info(cue),
+                lufs_target: self.model.settings.audio.lufs_target,
             },
             &flat,
         )
