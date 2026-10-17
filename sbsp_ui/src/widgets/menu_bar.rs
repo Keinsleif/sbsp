@@ -37,8 +37,8 @@ where
 
     MenuBar::new(roots)
         .style(native_style)
-        .close_on_item_click(true)
-        .close_on_background_click(true)
+        .close_on_item_click_global(true)
+        .close_on_background_click_global(true)
         .into()
 }
 
@@ -111,8 +111,6 @@ where
     Menu::new(items)
         .width(SUBMENU_WIDTH)
         .spacing(0.0)
-        .close_on_item_click(true)
-        .close_on_background_click(true)
 }
 
 fn top_level_button<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
