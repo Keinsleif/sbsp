@@ -491,6 +491,7 @@ fn basics<'a>(
     );
 
     let left = column![number, duration, pre_wait, chain_mode]
+        .spacing(4)
         .width(Length::Fixed(160.0));
 
     let name: Element<'a, field::Message> = text_field_with_placeholder(
@@ -561,7 +562,7 @@ fn basics<'a>(
     .spacing(12)
     .align_y(Alignment::End);
 
-    let right = column![name, notes, bottom].width(Length::Fill);
+    let right = column![name, notes, bottom].spacing(4).width(Length::Fill);
 
     row![left, right].spacing(8).into()
 }
