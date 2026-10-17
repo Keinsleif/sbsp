@@ -35,6 +35,8 @@ pub enum Control {
     SeekBy(sbsp_backend::model::cue::Uuid, f64),
     SeekTo(sbsp_backend::model::cue::Uuid, f64),
     ToggleRepeat(sbsp_backend::model::cue::Uuid),
+    /// Change the volume (dB) of a playing audio cue.
+    SetVolume(sbsp_backend::model::cue::Uuid, f64),
     PauseAll,
     ResumeAll,
     StopAll,

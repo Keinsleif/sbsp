@@ -52,7 +52,10 @@ const PRE_WAIT: FieldId = FieldId("editor.pre-wait");
 const DURATION: FieldId = FieldId("editor.duration");
 const NOTES: FieldId = FieldId("editor.notes");
 const AUDIO_TARGET: FieldId = FieldId("editor.audio.target");
-const FADE_VOLUME: FieldId = FieldId("editor.fade.volume");
+const VOLUME: FieldId = FieldId("editor.volume");
+const START: FieldId = FieldId("editor.start-time");
+const END: FieldId = FieldId("editor.end-time");
+const PAN: FieldId = FieldId("editor.pan");
 
 /// The duration and intensity fields of a fade parameter.
 fn fade_fields(slot: FadeSlot) -> (FieldId, FieldId) {
@@ -76,7 +79,7 @@ const FADE_SLOTS: [FadeSlot; 3] = [FadeSlot::AudioIn, FadeSlot::AudioOut, FadeSl
 
 /// Whether `id` is one of this editor's fields.
 pub fn owns(id: FieldId) -> bool {
-    [NUMBER, NAME, PRE_WAIT, DURATION, NOTES, AUDIO_TARGET, FADE_VOLUME].contains(&id)
+    [NUMBER, NAME, PRE_WAIT, DURATION, NOTES, AUDIO_TARGET, VOLUME, START, END, PAN].contains(&id)
         || FADE_SLOTS.iter().any(|&slot| {
             let (duration, power) = fade_fields(slot);
             id == duration || id == power
@@ -88,6 +91,7 @@ pub enum Tab {
     Basics,
     Trigger,
     Audio,
+    Levels,
     Fade,
     Playback,
     Group,
@@ -98,7 +102,7 @@ impl Tab {
     fn of(cue: &Cue) -> Vec<Tab> {
         let mut tabs = vec![Tab::Basics, Tab::Trigger];
         match &cue.params {
-            CueParam::Audio(_) => tabs.push(Tab::Audio),
+            CueParam::Audio(_) => tabs.extend([Tab::Audio, Tab::Levels]),
             CueParam::Fade(_) => tabs.push(Tab::Fade),
             CueParam::Start(_) | CueParam::Stop(_) | CueParam::Pause(_) | CueParam::Load(_) => {
                 tabs.push(Tab::Playback);
@@ -114,6 +118,7 @@ impl Tab {
             Tab::Basics => fl!("main-bottom-editor-basics-title"),
             Tab::Trigger => fl!("main-bottom-editor-trigger-title"),
             Tab::Audio => fl!("main-bottom-editor-audio-title"),
+            Tab::Levels => fl!("main-bottom-editor-time-levels-title"),
             Tab::Fade => fl!("main-bottom-editor-fade-title"),
             Tab::Playback => fl!("main-bottom-editor-playback-title"),
             Tab::Group => fl!("main-bottom-editor-group-title"),
@@ -139,7 +144,13 @@ pub enum Message {
     FadeEnabled(FadeSlot, bool),
     FadeKind(FadeSlot, CurveKind),
     FadeTarget(Uuid),
-    FadeVolume(FaderMessage),
+    /// The volume fader of an audio or fade cue.
+    Volume(FaderMessage),
+    Pan(FaderMessage),
+    Repeat(bool),
+    /// Set the volume from the file's loudness / peak.
+    VolumeToLufs,
+    VolumeToPeak,
     PlaybackTarget(Uuid),
     StopHard(bool),
     GroupMode(GroupModeKind),
@@ -156,6 +167,14 @@ pub enum Update {
     Edit(Box<Cue>),
     /// Ask for an audio file for this cue.
     PickAudio(Uuid),
+    /// Set the cue's volume from the analyzed file (the app knows it).
+    MatchVolume(Match),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Match {
+    Lufs,
+    Peak,
 }
 
 pub struct Editor {
@@ -171,6 +190,12 @@ pub struct Editor {
     /// pointer meanwhile (and until the backend's answer arrives).
     drag_volume: Option<(Uuid, f64)>,
     volume_release: DoubleRelease,
+    /// The same for the panning fader.
+    drag_pan: Option<(Uuid, f64)>,
+    pan_release: DoubleRelease,
+    /// The duration of the selected audio cue's file, if analyzed (the
+    /// app keeps it current): an end time at the duration is no end time.
+    pub file_duration: Option<f64>,
 }
 
 impl Default for Editor {
@@ -182,6 +207,9 @@ impl Default for Editor {
             draft_cue: None,
             drag_volume: None,
             volume_release: DoubleRelease::default(),
+            drag_pan: None,
+            pan_release: DoubleRelease::default(),
+            file_duration: None,
         }
     }
 }
@@ -222,12 +250,13 @@ impl Editor {
                     Update::None
                 }
             }
-            Message::FadeVolume(FaderMessage::Field(message)) => Update::Field(message),
-            Message::FadeVolume(FaderMessage::Moved(decibels)) => {
+            Message::Volume(FaderMessage::Field(message))
+            | Message::Pan(FaderMessage::Field(message)) => Update::Field(message),
+            Message::Volume(FaderMessage::Moved(decibels)) => {
                 self.drag_volume = cue.map(|cue| (cue.id, decibels));
                 Update::None
             }
-            Message::FadeVolume(FaderMessage::Released) => {
+            Message::Volume(FaderMessage::Released) => {
                 let Some(cue) = cue else {
                     return Update::None;
                 };
@@ -242,9 +271,34 @@ impl Editor {
                     return Update::None;
                 };
                 self.drag_volume = Some((cue.id, value));
-                edit(cue_edit::set_fade_volume(cue, value))
+                edit(cue_edit::set_level(cue, value))
             }
-            Message::FadeVolume(FaderMessage::Nothing) => Update::None,
+            Message::Pan(FaderMessage::Moved(pan)) => {
+                self.drag_pan = cue.map(|cue| (cue.id, pan));
+                Update::None
+            }
+            Message::Pan(FaderMessage::Released) => {
+                let Some(cue) = cue else {
+                    return Update::None;
+                };
+                let value = if self.pan_release.released(now) {
+                    Some(0.0)
+                } else {
+                    self.drag_pan
+                        .filter(|(id, _)| *id == cue.id)
+                        .map(|(_, value)| value)
+                };
+                let Some(value) = value else {
+                    return Update::None;
+                };
+                self.drag_pan = Some((cue.id, value));
+                edit(cue_edit::set_pan(cue, value))
+            }
+            Message::Volume(FaderMessage::Nothing) | Message::Pan(FaderMessage::Nothing) => {
+                Update::None
+            }
+            Message::VolumeToLufs => Update::MatchVolume(Match::Lufs),
+            Message::VolumeToPeak => Update::MatchVolume(Match::Peak),
             message => {
                 let Some(cue) = cue else {
                     return Update::None;
@@ -272,10 +326,14 @@ impl Editor {
                     Message::GroupMode(kind) => cue_edit::set_group_mode_kind(cue, kind),
                     Message::GroupRepeat(repeat) => cue_edit::set_group_repeat(cue, repeat),
                     Message::GroupEnter(enter) => cue_edit::set_group_enter(cue, enter),
+                    Message::Repeat(repeat) => cue_edit::set_repeat(cue, repeat),
                     Message::Field(_)
                     | Message::Notes(_)
                     | Message::Tab(_)
-                    | Message::FadeVolume(_) => None,
+                    | Message::Volume(_)
+                    | Message::Pan(_)
+                    | Message::VolumeToLufs
+                    | Message::VolumeToPeak => None,
                 };
                 edit(edited)
             }
@@ -307,13 +365,16 @@ impl Editor {
             DURATION => return cue_edit::set_duration(cue, text),
             NOTES => return cue_edit::set_notes(cue, text),
             AUDIO_TARGET => return cue_edit::set_audio_target(cue, PathBuf::from(text)),
-            FADE_VOLUME => {
-                let current = cue_edit::fade_volume(cue)?;
+            VOLUME => {
+                let current = cue_edit::level(cue)?;
                 return match commit_volume(text, current) {
-                    Commit::Value(value) => cue_edit::set_fade_volume(cue, value),
+                    Commit::Value(value) => cue_edit::set_level(cue, value),
                     Commit::Unchanged | Commit::Null => None,
                 };
             }
+            START => return cue_edit::set_start_time(cue, text, self.file_duration),
+            END => return cue_edit::set_end_time(cue, text, self.file_duration),
+            PAN => return cue_edit::set_pan_text(cue, text),
             _ => {}
         }
 
@@ -331,11 +392,19 @@ impl Editor {
         })
     }
 
-    /// The volume to show for a fade cue: the dragged one while dragging.
+    /// The volume to show for an audio or fade cue: the dragged one while
+    /// dragging.
     fn volume_for(&self, cue: &Cue) -> f64 {
         match self.drag_volume {
             Some((id, value)) if id == cue.id => value,
-            _ => cue_edit::fade_volume(cue).unwrap_or(0.0),
+            _ => cue_edit::level(cue).unwrap_or(0.0),
+        }
+    }
+
+    fn pan_for(&self, cue: &Cue) -> f64 {
+        match self.drag_pan {
+            Some((id, value)) if id == cue.id => value,
+            _ => cue_edit::pan(cue).unwrap_or(0.0),
         }
     }
 
@@ -345,11 +414,15 @@ impl Editor {
         // The dragged volume is dropped once the backend's answer matches it
         // (or another cue is shown).
         if let Some((id, value)) = self.drag_volume {
-            let stored = cue
-                .filter(|cue| cue.id == id)
-                .and_then(cue_edit::fade_volume);
+            let stored = cue.filter(|cue| cue.id == id).and_then(cue_edit::level);
             if stored.is_none_or(|stored| (stored - value).abs() < 1e-3) {
                 self.drag_volume = None;
+            }
+        }
+        if let Some((id, value)) = self.drag_pan {
+            let stored = cue.filter(|cue| cue.id == id).and_then(cue_edit::pan);
+            if stored.is_none_or(|stored| (stored - value).abs() < 1e-3) {
+                self.drag_pan = None;
             }
         }
 
@@ -382,6 +455,19 @@ pub struct Context<'a> {
     pub is_active: bool,
     /// The chain a surrounding group imposes, if any.
     pub chain_override: Option<CueChain>,
+    /// The selected audio cue's file, as far as it has been analyzed.
+    pub file: FileInfo,
+    /// The loudness the "LUFS" button aims for.
+    pub lufs_target: f64,
+}
+
+/// What the analysis of an audio cue's file says.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct FileInfo {
+    pub duration: Option<f64>,
+    pub integrated_lufs: Option<f64>,
+    /// dBFS.
+    pub peak: Option<f64>,
 }
 
 /// `flat` is the cue list in display order (hidden rows included), for
@@ -414,6 +500,7 @@ pub fn view<'a>(
         Tab::Basics => basics(editor, &ctx, cue, flat),
         Tab::Trigger => trigger(cue),
         Tab::Audio => type_tabs::audio(&ctx, cue),
+        Tab::Levels => type_tabs::levels(editor, &ctx, cue),
         Tab::Fade => type_tabs::fade(editor, &ctx, cue, flat),
         Tab::Playback => type_tabs::playback(&ctx, cue, flat),
         Tab::Group => type_tabs::group(&ctx, cue),
@@ -817,10 +904,10 @@ mod tests {
         let cue = fade_cue();
         let now = Instant::now();
 
-        let _ = editor.update(Message::FadeVolume(FaderMessage::Moved(-12.0)), Some(&cue), None, now);
+        let _ = editor.update(Message::Volume(FaderMessage::Moved(-12.0)), Some(&cue), None, now);
         assert_eq!(editor.volume_for(&cue), -12.0);
 
-        match editor.update(Message::FadeVolume(FaderMessage::Released), Some(&cue), None, now) {
+        match editor.update(Message::Volume(FaderMessage::Released), Some(&cue), None, now) {
             Update::Edit(edited) => assert_eq!(cue_edit::fade_volume(&edited), Some(-12.0)),
             _ => panic!("expected an edit"),
         }
@@ -830,6 +917,89 @@ mod tests {
         stored.params = cue_edit::set_fade_volume(&cue, -12.0).unwrap().params;
         editor.sync(Some(&stored), &Drafts::default());
         assert!(editor.drag_volume.is_none());
+    }
+
+    fn audio_cue() -> Cue {
+        use sbsp_backend::model::cue::audio::{AudioCueParam, Decibels, SoundType};
+        let mut cue = cue();
+        cue.params = CueParam::Audio(AudioCueParam {
+            target: PathBuf::from("/a.wav"),
+            start_time: None,
+            fade_in_param: None,
+            end_time: None,
+            fade_out_param: None,
+            volume: Decibels::from(0.0),
+            pan: 0.0,
+            repeat: false,
+            sound_type: SoundType::default(),
+            envelope: Vec::new(),
+        });
+        cue
+    }
+
+    #[test]
+    fn audio_cues_have_a_levels_tab() {
+        assert_eq!(
+            Tab::of(&audio_cue()),
+            vec![Tab::Basics, Tab::Trigger, Tab::Audio, Tab::Levels]
+        );
+    }
+
+    #[test]
+    fn time_fields_use_the_files_duration() {
+        let editor = Editor {
+            file_duration: Some(10.0),
+            ..Editor::default()
+        };
+        let cue = audio_cue();
+
+        let edited = editor.apply(&commit(END, "4"), &cue).unwrap();
+        assert_eq!(cue_edit::audio_end(&edited, Some(10.0)), Some(4.0));
+        assert!(editor.apply(&commit(END, "10"), &cue).is_none(), "the duration is no end");
+        let started = editor.apply(&commit(START, "1"), &cue).unwrap();
+        assert_eq!(cue_edit::audio_start(&started), Some(1.0));
+        assert_eq!(cue_edit::pan(&editor.apply(&commit(PAN, "0.5"), &cue).unwrap()), Some(0.5));
+        assert_eq!(cue_edit::level(&editor.apply(&commit(VOLUME, "-6"), &cue).unwrap()), Some(-6.0));
+    }
+
+    #[test]
+    fn the_pan_follows_the_drag_and_a_double_click_centers_it() {
+        let mut editor = Editor::default();
+        let mut cue = audio_cue();
+        cue = cue_edit::set_pan(&cue, 0.5).unwrap();
+        let now = Instant::now();
+
+        let _ = editor.update(Message::Pan(FaderMessage::Moved(-0.25)), Some(&cue), None, now);
+        assert_eq!(editor.pan_for(&cue), -0.25);
+        match editor.update(Message::Pan(FaderMessage::Released), Some(&cue), None, now) {
+            Update::Edit(edited) => assert_eq!(cue_edit::pan(&edited), Some(-0.25)),
+            _ => panic!("expected an edit"),
+        }
+        // A quick second release resets to the center.
+        match editor.update(Message::Pan(FaderMessage::Released), Some(&cue), None, now) {
+            Update::Edit(edited) => assert_eq!(cue_edit::pan(&edited), Some(0.0)),
+            _ => panic!("expected an edit"),
+        }
+    }
+
+    #[test]
+    fn repeat_and_volume_matching_are_requests() {
+        let mut editor = Editor::default();
+        let cue = audio_cue();
+        let now = Instant::now();
+
+        match editor.update(Message::Repeat(true), Some(&cue), None, now) {
+            Update::Edit(edited) => assert!(matches!(&edited.params, CueParam::Audio(a) if a.repeat)),
+            _ => panic!("expected an edit"),
+        }
+        assert!(matches!(
+            editor.update(Message::VolumeToLufs, Some(&cue), None, now),
+            Update::MatchVolume(Match::Lufs)
+        ));
+        assert!(matches!(
+            editor.update(Message::VolumeToPeak, Some(&cue), None, now),
+            Update::MatchVolume(Match::Peak)
+        ));
     }
 
     #[test]

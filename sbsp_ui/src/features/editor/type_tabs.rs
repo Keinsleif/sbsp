@@ -10,21 +10,25 @@
 //! original.
 
 use iced::alignment::Horizontal;
-use iced::widget::{button, column, container, row, scrollable};
+use iced::widget::{button, column, container, row, scrollable, text, tooltip};
 use iced::{Alignment, Element, Length};
 
 use sbsp_backend::model::cue::audio::SoundType;
 use sbsp_backend::model::cue::{Cue, CueParam};
 
 use crate::domain::cue_edit::{self, FadeSlot, GroupModeKind};
+use crate::domain::field::TimeSpec;
 use crate::domain::flat_list::FlatCueEntry;
 use crate::fl;
 use crate::widgets::field;
 use crate::widgets::icon::{Icon, icon};
-use crate::widgets::inputs::{ThumbAmount, VolumeFader, labeled, volume_fader};
+use crate::widgets::divider;
+use crate::widgets::inputs::{
+    PanningFader, ThumbAmount, VolumeFader, labeled, panning_fader, time_input, volume_fader,
+};
 
 use super::parts::{Choice, FadeInput, check, cue_choices, fade_param_input, picker};
-use super::{AUDIO_TARGET, Context, Editor, FADE_VOLUME, Message};
+use super::{AUDIO_TARGET, Context, Editor, END, Message, PAN, START, VOLUME};
 
 fn body<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
     scrollable(container(content).width(Length::Fill))
@@ -121,7 +125,7 @@ pub(super) fn fade<'a>(
     let volume_label = fl!("main-bottom-editor-fade-target-volume");
     let volume = volume_fader(
         VolumeFader {
-            id: FADE_VOLUME,
+            id: VOLUME,
             label: &volume_label,
             volume: editor.volume_for(cue),
             thumb: ThumbAmount::Full,
@@ -129,7 +133,7 @@ pub(super) fn fade<'a>(
         },
         ctx.drafts,
     )
-    .map(Message::FadeVolume);
+    .map(Message::Volume);
 
     let param = fade_param_input(FadeInput {
         slot: FadeSlot::Fade,
@@ -225,4 +229,122 @@ pub(super) fn group<'a>(ctx: &Context<'a>, cue: &'a Cue) -> Element<'a, Message>
         GroupMode::Concurrency => {}
     }
     body(content)
+}
+
+/// Height of the row of faders (the dividers between them need it).
+const FADERS_HEIGHT: f32 = 72.0;
+
+/// Start and end time, volume (with the LUFS / MAX buttons), pan and
+/// repeat of an audio cue. The waveform of the original's tab is a
+/// separate part (step 3c).
+pub(super) fn levels<'a>(
+    editor: &'a Editor,
+    ctx: &Context<'a>,
+    cue: &'a Cue,
+) -> Element<'a, Message> {
+    let CueParam::Audio(audio) = &cue.params else {
+        return column![].into();
+    };
+    let active = ctx.is_active;
+    let spec = TimeSpec::default();
+
+    let time = |id, label: String, value: Option<f64>| {
+        container(
+            time_input(id, Some(&label), value, &spec, ctx.drafts, !active).map(Message::Field),
+        )
+        .width(Length::Fixed(120.0))
+    };
+    let times = row![
+        time(
+            START,
+            fl!("main-bottom-editor-time-levels-start-time"),
+            cue_edit::audio_start(cue),
+        ),
+        time(
+            END,
+            fl!("main-bottom-editor-time-levels-end-time"),
+            cue_edit::audio_end(cue, ctx.file.duration),
+        ),
+    ]
+    .spacing(12);
+
+    // The volume can be changed while the cue plays; the app passes the
+    // change on to the playing cue.
+    let volume_label = fl!("main-bottom-editor-time-levels-volume");
+    let volume = volume_fader(
+        VolumeFader {
+            id: VOLUME,
+            label: &volume_label,
+            volume: editor.volume_for(cue),
+            thumb: ThumbAmount::Decreased,
+            enabled: true,
+        },
+        ctx.drafts,
+    )
+    .map(Message::Volume);
+
+    let hint = |label: String| {
+        container(text(label).size(12))
+            .padding(6)
+            .style(container::rounded_box)
+    };
+    let match_button = |label: &'static str, message: Message, known: bool, hint_text: String| {
+        tooltip(
+            button(text(label).center())
+                .padding([2, 8])
+                .style(button::secondary)
+                .on_press_maybe(known.then_some(message)),
+            hint(hint_text),
+            tooltip::Position::Right,
+        )
+    };
+    let matches = column![
+        match_button(
+            "LUFS",
+            Message::VolumeToLufs,
+            ctx.file.integrated_lufs.is_some(),
+            fl!(
+                "main-bottom-editor-time-levels-lufs-description",
+                targetLUFS = ctx.lufs_target
+            ),
+        ),
+        match_button(
+            "MAX",
+            Message::VolumeToPeak,
+            ctx.file.peak.is_some(),
+            fl!("main-bottom-editor-time-levels-peak-description"),
+        ),
+    ]
+    .spacing(4);
+
+    let pan_label = fl!("main-bottom-editor-time-levels-pan");
+    let pan = panning_fader(
+        PanningFader {
+            id: PAN,
+            label: &pan_label,
+            panning: editor.pan_for(cue),
+            enabled: !active,
+        },
+        ctx.drafts,
+    )
+    .map(Message::Pan);
+
+    let faders = row![
+        row![container(volume).width(Length::Fill), matches]
+            .spacing(8)
+            .width(Length::FillPortion(3)),
+        divider::vertical(),
+        container(pan).width(Length::FillPortion(2)),
+        divider::vertical(),
+        check(
+            fl!("main-bottom-editor-time-levels-repeat"),
+            audio.repeat,
+            (!active).then_some(Message::Repeat(!audio.repeat)),
+        ),
+    ]
+    .spacing(12)
+    .align_y(Alignment::Center)
+    .height(FADERS_HEIGHT);
+
+    body(column![times, faders].spacing(12).padding(4))
 }

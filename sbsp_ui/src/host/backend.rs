@@ -120,6 +120,16 @@ impl HostPort {
                             .perform_action(id, CueAction::Audio(AudioAction::ToggleRepeat))
                             .await?
                     }
+                    Control::SetVolume(id, volume) => {
+                        controller
+                            .perform_action(
+                                id,
+                                CueAction::Audio(AudioAction::SetVolume(
+                                    sbsp_backend::model::cue::audio::Decibels::from(volume as f32),
+                                )),
+                            )
+                            .await?
+                    }
                     Control::PauseAll => controller.pause_all().await?,
                     Control::ResumeAll => controller.resume_all().await?,
                     Control::StopAll => controller.stop_all().await?,

@@ -175,6 +175,124 @@ pub fn set_sound_static(cue: &Cue, is_static: bool) -> Option<Cue> {
 }
 
 // ---------------------------------------------------------------------
+// Time & levels
+
+/// The start and end of the played part as the editor shows them: no
+/// start is 0, no end is the file's duration (when known).
+pub fn audio_start(cue: &Cue) -> Option<f64> {
+    match &cue.params {
+        CueParam::Audio(audio) => Some(audio.start_time.unwrap_or(0.0)),
+        _ => None,
+    }
+}
+
+pub fn audio_end(cue: &Cue, duration: Option<f64>) -> Option<f64> {
+    match &cue.params {
+        CueParam::Audio(audio) => audio.end_time.or(duration),
+        _ => None,
+    }
+}
+
+/// A start of 0 is stored as "no start", as the original does.
+pub fn set_start_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue> {
+    let start = audio_start(cue)?;
+    let spec = TimeSpec {
+        min: Some(0.0),
+        max: audio_end(cue, duration),
+        ..TimeSpec::default()
+    };
+    match commit_time(text, Some(start), &spec) {
+        Commit::Value(value) => with_audio(cue, |audio| {
+            audio.start_time = (value > 0.0).then_some(value);
+        }),
+        Commit::Unchanged | Commit::Null => None,
+    }
+}
+
+/// An end at the file's duration (or an emptied field) is stored as
+/// "no end".
+pub fn set_end_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue> {
+    let start = audio_start(cue)?;
+    if text.trim().is_empty() {
+        return with_audio(cue, |audio| audio.end_time = None);
+    }
+    let spec = TimeSpec {
+        min: Some(start),
+        max: duration,
+        ..TimeSpec::default()
+    };
+    match commit_time(text, audio_end(cue, duration), &spec) {
+        Commit::Value(value) => with_audio(cue, |audio| {
+            audio.end_time = match duration {
+                Some(duration) if value >= duration - 1e-9 => None,
+                _ => Some(value),
+            };
+        }),
+        Commit::Unchanged | Commit::Null => None,
+    }
+}
+
+/// The volume (dB) of an audio or fade cue: what the volume fader shows.
+pub fn level(cue: &Cue) -> Option<f64> {
+    match &cue.params {
+        CueParam::Audio(audio) => Some(f64::from(f32::from(audio.volume))),
+        CueParam::Fade(_) => fade_volume(cue),
+        _ => None,
+    }
+}
+
+pub fn set_level(cue: &Cue, decibels: f64) -> Option<Cue> {
+    match &cue.params {
+        CueParam::Audio(_) => with_audio(cue, |audio| {
+            audio.volume = Decibels::from(decibels as f32);
+        }),
+        CueParam::Fade(_) => set_fade_volume(cue, decibels),
+        _ => None,
+    }
+}
+
+/// The volume that brings a file of `integrated_lufs` to `target`.
+pub fn volume_for_lufs(target: f64, integrated_lufs: f64) -> f64 {
+    target - integrated_lufs
+}
+
+/// The volume that brings a file's `peak` (dBFS) to 0.
+pub fn volume_for_peak(peak: f64) -> f64 {
+    -peak
+}
+
+pub fn pan(cue: &Cue) -> Option<f64> {
+    match &cue.params {
+        CueParam::Audio(audio) => Some(f64::from(audio.pan)),
+        _ => None,
+    }
+}
+
+pub fn set_pan(cue: &Cue, pan: f64) -> Option<Cue> {
+    with_audio(cue, |audio| audio.pan = pan.clamp(-1.0, 1.0) as f32)
+}
+
+/// The pan field: -1 (left) to 1 (right).
+pub const PAN_SPEC: NumberSpec = NumberSpec {
+    min: Some(-1.0),
+    max: Some(1.0),
+    step: 1.0 / 8.0,
+    precision: 3,
+    accept_null: false,
+};
+
+pub fn set_pan_text(cue: &Cue, text: &str) -> Option<Cue> {
+    match commit_number(text, pan(cue), &PAN_SPEC) {
+        Commit::Value(value) => set_pan(cue, value),
+        Commit::Unchanged | Commit::Null => None,
+    }
+}
+
+pub fn set_repeat(cue: &Cue, repeat: bool) -> Option<Cue> {
+    with_audio(cue, |audio| audio.repeat = repeat)
+}
+
+// ---------------------------------------------------------------------
 // Fades
 
 /// The three places a cue holds a fade parameter.
@@ -584,6 +702,76 @@ mod tests {
             fade_param: DEFAULT_FADE,
         });
         cue
+    }
+
+    #[test]
+    fn start_and_end_follow_the_files_duration() {
+        let cue = audio();
+        assert_eq!(audio_start(&cue), Some(0.0));
+        assert_eq!(audio_end(&cue, Some(10.0)), Some(10.0));
+        assert_eq!(audio_end(&cue, None), None);
+
+        let started = set_start_time(&cue, "2", Some(10.0)).unwrap();
+        assert!(matches!(&started.params, CueParam::Audio(a) if a.start_time == Some(2.0)));
+        assert!(set_start_time(&started, "2", Some(10.0)).is_none(), "unchanged");
+        // Back to 0 is "no start".
+        let reset = set_start_time(&started, "0", Some(10.0)).unwrap();
+        assert!(matches!(&reset.params, CueParam::Audio(a) if a.start_time.is_none()));
+        // The start cannot pass the end.
+        let clamped = set_start_time(&cue, "99", Some(10.0)).unwrap();
+        assert!(matches!(&clamped.params, CueParam::Audio(a) if a.start_time == Some(10.0)));
+
+        let ended = set_end_time(&cue, "8", Some(10.0)).unwrap();
+        assert!(matches!(&ended.params, CueParam::Audio(a) if a.end_time == Some(8.0)));
+        // The duration itself, or an empty field, is "no end".
+        let full = set_end_time(&ended, "10", Some(10.0)).unwrap();
+        assert!(matches!(&full.params, CueParam::Audio(a) if a.end_time.is_none()));
+        let emptied = set_end_time(&ended, "", Some(10.0)).unwrap();
+        assert!(matches!(&emptied.params, CueParam::Audio(a) if a.end_time.is_none()));
+        // The end cannot go before the start.
+        let before = set_end_time(&started, "1", Some(10.0)).unwrap();
+        assert!(matches!(&before.params, CueParam::Audio(a) if a.end_time == Some(2.0)));
+        assert!(set_start_time(&wait(1.0), "1", None).is_none());
+    }
+
+    #[test]
+    fn level_is_the_volume_of_audio_and_fade_cues() {
+        let cue = audio();
+        assert_eq!(level(&cue), Some(0.0));
+        let quieter = set_level(&cue, -6.0).unwrap();
+        assert_eq!(level(&quieter), Some(-6.0));
+        assert!(set_level(&quieter, -6.0).is_none());
+
+        let fade = fade_cue();
+        assert_eq!(level(&fade), Some(0.0));
+        assert_eq!(level(&set_level(&fade, -3.0).unwrap()), Some(-3.0));
+        assert_eq!(level(&wait(1.0)), None);
+        assert!(set_level(&wait(1.0), -3.0).is_none());
+    }
+
+    #[test]
+    fn volume_matches_lufs_and_peak() {
+        assert_eq!(volume_for_lufs(-14.0, -20.0), 6.0);
+        assert_eq!(volume_for_lufs(-14.0, -10.0), -4.0);
+        assert_eq!(volume_for_peak(-6.0), 6.0);
+        assert_eq!(volume_for_peak(0.0), 0.0);
+    }
+
+    #[test]
+    fn pan_and_repeat_edit_audio_cues() {
+        let cue = audio();
+        assert_eq!(pan(&cue), Some(0.0));
+        let right = set_pan(&cue, 0.5).unwrap();
+        assert_eq!(pan(&right), Some(0.5));
+        assert_eq!(pan(&set_pan(&cue, 3.0).unwrap()), Some(1.0), "clamped");
+        assert!(set_pan(&right, 0.5).is_none());
+        assert_eq!(pan(&set_pan_text(&cue, "-0.25").unwrap()), Some(-0.25));
+        assert!(set_pan_text(&cue, "abc").is_none());
+
+        let repeated = set_repeat(&cue, true).unwrap();
+        assert!(matches!(&repeated.params, CueParam::Audio(a) if a.repeat));
+        assert!(set_repeat(&repeated, true).is_none());
+        assert!(set_repeat(&wait(1.0), true).is_none());
     }
 
     #[test]
