@@ -7,6 +7,7 @@
 //! The actual color values live in [`palette`], kept separate so they can
 //! be tuned without touching the resolution logic below.
 
+pub mod fonts;
 pub mod palette;
 
 /// The user-facing theme preference, as stored in settings.

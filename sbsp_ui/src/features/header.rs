@@ -20,7 +20,7 @@
 //! pre-waiting/stopping/loaded -- they are only highlighted for now.
 
 use iced::widget::{button, column, container, row, scrollable, text};
-use iced::{Alignment, Element, Font, Length, Theme};
+use iced::{Alignment, Element, Length, Theme};
 
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::Cue;
@@ -122,11 +122,11 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
             text(format!("{:02}:{:02}.", v.clock.hour, v.clock.minute))
                 .size(48)
                 .line_height(1.0)
-                .font(Font::MONOSPACE),
+                .font(crate::theme::fonts::MONO),
             text(format!("{:02}", v.clock.second))
                 .size(32)
                 .line_height(1.0)
-                .font(Font::MONOSPACE),
+                .font(crate::theme::fonts::MONO),
         ]
         .align_y(Alignment::End),
     )

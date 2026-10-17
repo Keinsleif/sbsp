@@ -196,9 +196,9 @@ fn active_item<'a>(title: String, active: &ActiveCue) -> Element<'a, Message> {
             .align_y(Alignment::Center)
             .padding([8, 12]),
         row![
-            text(elapsed).font(iced::Font::MONOSPACE),
+            text(elapsed).font(crate::theme::fonts::MONO),
             Space::new().width(Length::Fill),
-            text(remain).font(iced::Font::MONOSPACE),
+            text(remain).font(crate::theme::fonts::MONO),
         ]
         .padding([0, 12]),
         track,
