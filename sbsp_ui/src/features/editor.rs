@@ -15,25 +15,33 @@
 //! are a multi-line `text_editor`, which keeps its own `Content`; a copy
 //! of its text goes into the same drafts so it ends the same way.
 
-use std::collections::HashMap;
-use std::fmt;
+use std::path::PathBuf;
+use std::time::Instant;
 
-use iced::widget::{Space, button, center, column, container, pick_list, row, text, text_editor};
+use iced::widget::{Space, button, center, column, container, row, text, text_editor};
 use iced::{Alignment, Element, Length, Theme};
 
-use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, Uuid};
+use sbsp_backend::model::cue::{
+    Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
+};
 use sbsp_backend::model::settings::CursorAdvanceTrigger;
 use sbsp_frontend_settings::NameFormatSettings;
 
 use crate::domain::cue::display_name;
-use crate::domain::cue_edit::{self, ChainKind};
+use crate::domain::cue_edit::{self, ChainKind, FadeSlot, GroupModeKind};
+use crate::domain::easing::CurveKind;
+use crate::domain::field::{Commit, commit_volume};
 use crate::domain::field::TimeSpec;
 use crate::domain::flat_list::FlatCueEntry;
 use crate::fl;
 use crate::state::model::ShowModelState;
 use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field, text_field_with_placeholder};
-use crate::widgets::icon::{Icon, icon};
-use crate::widgets::inputs::{labeled, time_input};
+use crate::widgets::inputs::{DoubleRelease, FaderMessage, labeled, time_input};
+
+mod parts;
+mod type_tabs;
+
+use parts::{Choice, check, choice_name, picker};
 
 /// The original's `h-62`.
 pub const HEIGHT: f32 = 248.0;
@@ -43,16 +51,74 @@ const NAME: FieldId = FieldId("editor.name");
 const PRE_WAIT: FieldId = FieldId("editor.pre-wait");
 const DURATION: FieldId = FieldId("editor.duration");
 const NOTES: FieldId = FieldId("editor.notes");
+const AUDIO_TARGET: FieldId = FieldId("editor.audio.target");
+const FADE_VOLUME: FieldId = FieldId("editor.fade.volume");
+
+/// The duration and intensity fields of a fade parameter.
+fn fade_fields(slot: FadeSlot) -> (FieldId, FieldId) {
+    match slot {
+        FadeSlot::AudioIn => (
+            FieldId("editor.fade-in.duration"),
+            FieldId("editor.fade-in.power"),
+        ),
+        FadeSlot::AudioOut => (
+            FieldId("editor.fade-out.duration"),
+            FieldId("editor.fade-out.power"),
+        ),
+        FadeSlot::Fade => (
+            FieldId("editor.fade.duration"),
+            FieldId("editor.fade.power"),
+        ),
+    }
+}
+
+const FADE_SLOTS: [FadeSlot; 3] = [FadeSlot::AudioIn, FadeSlot::AudioOut, FadeSlot::Fade];
 
 /// Whether `id` is one of this editor's fields.
 pub fn owns(id: FieldId) -> bool {
-    [NUMBER, NAME, PRE_WAIT, DURATION, NOTES].contains(&id)
+    [NUMBER, NAME, PRE_WAIT, DURATION, NOTES, AUDIO_TARGET, FADE_VOLUME].contains(&id)
+        || FADE_SLOTS.iter().any(|&slot| {
+            let (duration, power) = fade_fields(slot);
+            id == duration || id == power
+        })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
     Basics,
     Trigger,
+    Audio,
+    Fade,
+    Playback,
+    Group,
+}
+
+impl Tab {
+    /// The tabs a cue has, in order.
+    fn of(cue: &Cue) -> Vec<Tab> {
+        let mut tabs = vec![Tab::Basics, Tab::Trigger];
+        match &cue.params {
+            CueParam::Audio(_) => tabs.push(Tab::Audio),
+            CueParam::Fade(_) => tabs.push(Tab::Fade),
+            CueParam::Start(_) | CueParam::Stop(_) | CueParam::Pause(_) | CueParam::Load(_) => {
+                tabs.push(Tab::Playback);
+            }
+            CueParam::Group { .. } => tabs.push(Tab::Group),
+            CueParam::Wait(_) => {}
+        }
+        tabs
+    }
+
+    fn label(self) -> String {
+        match self {
+            Tab::Basics => fl!("main-bottom-editor-basics-title"),
+            Tab::Trigger => fl!("main-bottom-editor-trigger-title"),
+            Tab::Audio => fl!("main-bottom-editor-audio-title"),
+            Tab::Fade => fl!("main-bottom-editor-fade-title"),
+            Tab::Playback => fl!("main-bottom-editor-playback-title"),
+            Tab::Group => fl!("main-bottom-editor-group-title"),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -67,6 +133,18 @@ pub enum Message {
     TreatStop(bool),
     /// Append the playing position to the notes.
     Timestamp,
+    /// Choose the audio file in a dialog.
+    PickAudio,
+    SoundStatic(bool),
+    FadeEnabled(FadeSlot, bool),
+    FadeKind(FadeSlot, CurveKind),
+    FadeTarget(Uuid),
+    FadeVolume(FaderMessage),
+    PlaybackTarget(Uuid),
+    StopHard(bool),
+    GroupMode(GroupModeKind),
+    GroupRepeat(bool),
+    GroupEnter(bool),
 }
 
 /// What the app has to do after an editor message.
@@ -76,6 +154,8 @@ pub enum Update {
     Field(field::Message),
     /// Send this edited cue to the backend.
     Edit(Box<Cue>),
+    /// Ask for an audio file for this cue.
+    PickAudio(Uuid),
 }
 
 pub struct Editor {
@@ -86,6 +166,11 @@ pub struct Editor {
     /// The cue an edit in progress belongs to. Not the current selection:
     /// the click that ends an edit may already have selected another cue.
     pub draft_cue: Option<Uuid>,
+    /// The volume of a fade cue while its fader is being dragged: the
+    /// value goes to the backend on release, but the fader must follow the
+    /// pointer meanwhile (and until the backend's answer arrives).
+    drag_volume: Option<(Uuid, f64)>,
+    volume_release: DoubleRelease,
 }
 
 impl Default for Editor {
@@ -95,8 +180,14 @@ impl Default for Editor {
             notes: text_editor::Content::new(),
             notes_cue: None,
             draft_cue: None,
+            drag_volume: None,
+            volume_release: DoubleRelease::default(),
         }
     }
+}
+
+fn edit(edited: Option<Cue>) -> Update {
+    edited.map_or(Update::None, |cue| Update::Edit(Box::new(cue)))
 }
 
 /// `Content::text` ends with a newline the text does not have; both sides
@@ -109,7 +200,13 @@ fn plain(text: String) -> String {
 }
 
 impl Editor {
-    pub fn update(&mut self, message: Message, cue: Option<&Cue>, position: Option<f64>) -> Update {
+    pub fn update(
+        &mut self,
+        message: Message,
+        cue: Option<&Cue>,
+        position: Option<f64>,
+        now: Instant,
+    ) -> Update {
         match message {
             Message::Field(message) => Update::Field(message),
             Message::Tab(tab) => {
@@ -125,6 +222,29 @@ impl Editor {
                     Update::None
                 }
             }
+            Message::FadeVolume(FaderMessage::Field(message)) => Update::Field(message),
+            Message::FadeVolume(FaderMessage::Moved(decibels)) => {
+                self.drag_volume = cue.map(|cue| (cue.id, decibels));
+                Update::None
+            }
+            Message::FadeVolume(FaderMessage::Released) => {
+                let Some(cue) = cue else {
+                    return Update::None;
+                };
+                let value = if self.volume_release.released(now) {
+                    Some(0.0)
+                } else {
+                    self.drag_volume
+                        .filter(|(id, _)| *id == cue.id)
+                        .map(|(_, value)| value)
+                };
+                let Some(value) = value else {
+                    return Update::None;
+                };
+                self.drag_volume = Some((cue.id, value));
+                edit(cue_edit::set_fade_volume(cue, value))
+            }
+            Message::FadeVolume(FaderMessage::Nothing) => Update::None,
             message => {
                 let Some(cue) = cue else {
                     return Update::None;
@@ -136,33 +256,103 @@ impl Editor {
                     Message::Advance(value) => cue_edit::set_cursor_advance_override(cue, value),
                     Message::TreatStop(value) => cue_edit::set_treat_stop_as_completed(cue, value),
                     Message::Timestamp => position.and_then(|p| cue_edit::append_timestamp(cue, p)),
-                    Message::Field(_) | Message::Notes(_) | Message::Tab(_) => None,
+                    Message::PickAudio => return Update::PickAudio(cue.id),
+                    Message::SoundStatic(value) => cue_edit::set_sound_static(cue, value),
+                    Message::FadeEnabled(slot, enabled) => cue_edit::set_fade_param(
+                        cue,
+                        slot,
+                        cue_edit::fade_enabled(cue_edit::fade_param(cue, slot), enabled),
+                    ),
+                    Message::FadeKind(slot, kind) => cue_edit::fade_param(cue, slot)
+                        .and_then(|param| cue_edit::fade_with_kind(param, kind))
+                        .and_then(|param| cue_edit::set_fade_param(cue, slot, Some(param))),
+                    Message::FadeTarget(target) => cue_edit::set_fade_target(cue, target),
+                    Message::PlaybackTarget(target) => cue_edit::set_playback_target(cue, target),
+                    Message::StopHard(hard) => cue_edit::set_stop_hard(cue, hard),
+                    Message::GroupMode(kind) => cue_edit::set_group_mode_kind(cue, kind),
+                    Message::GroupRepeat(repeat) => cue_edit::set_group_repeat(cue, repeat),
+                    Message::GroupEnter(enter) => cue_edit::set_group_enter(cue, enter),
+                    Message::Field(_)
+                    | Message::Notes(_)
+                    | Message::Tab(_)
+                    | Message::FadeVolume(_) => None,
                 };
-                edited.map_or(Update::None, |cue| Update::Edit(Box::new(cue)))
+                edit(edited)
             }
         }
     }
 
-    /// A finished text edit of one of this editor's fields, applied to the
-    /// cue it was made on.
+    /// A finished text edit of one of this editor's fields (or a press on
+    /// a step button), applied to the cue it was made on.
     pub fn apply(&self, outcome: &Outcome, cue: &Cue) -> Option<Cue> {
-        let Outcome::Commit(commit) = outcome else {
-            return None;
-        };
-        let text = commit.text.as_str();
-        match commit.field {
-            NUMBER => cue_edit::set_number(cue, text),
-            NAME => cue_edit::set_name(cue, text),
-            PRE_WAIT => cue_edit::set_pre_wait(cue, text),
-            DURATION => cue_edit::set_duration(cue, text),
-            NOTES => cue_edit::set_notes(cue, text),
-            _ => None,
+        match outcome {
+            Outcome::Commit(commit) => self.apply_commit(commit.field, commit.text.as_str(), cue),
+            Outcome::Step(id, direction) => FADE_SLOTS.into_iter().find_map(|slot| {
+                let (_, power) = fade_fields(slot);
+                if *id != power {
+                    return None;
+                }
+                let param = cue_edit::fade_param(cue, slot)?;
+                let stepped = cue_edit::fade_step_power(param, *direction)?;
+                cue_edit::set_fade_param(cue, slot, Some(stepped))
+            }),
+        }
+    }
+
+    fn apply_commit(&self, id: FieldId, text: &str, cue: &Cue) -> Option<Cue> {
+        match id {
+            NUMBER => return cue_edit::set_number(cue, text),
+            NAME => return cue_edit::set_name(cue, text),
+            PRE_WAIT => return cue_edit::set_pre_wait(cue, text),
+            DURATION => return cue_edit::set_duration(cue, text),
+            NOTES => return cue_edit::set_notes(cue, text),
+            AUDIO_TARGET => return cue_edit::set_audio_target(cue, PathBuf::from(text)),
+            FADE_VOLUME => {
+                let current = cue_edit::fade_volume(cue)?;
+                return match commit_volume(text, current) {
+                    Commit::Value(value) => cue_edit::set_fade_volume(cue, value),
+                    Commit::Unchanged | Commit::Null => None,
+                };
+            }
+            _ => {}
+        }
+
+        FADE_SLOTS.into_iter().find_map(|slot| {
+            let (duration, power) = fade_fields(slot);
+            let param = cue_edit::fade_param(cue, slot)?;
+            let changed = if id == duration {
+                cue_edit::fade_with_duration(param, text)
+            } else if id == power {
+                cue_edit::fade_with_power(param, text)
+            } else {
+                None
+            }?;
+            cue_edit::set_fade_param(cue, slot, Some(changed))
+        })
+    }
+
+    /// The volume to show for a fade cue: the dragged one while dragging.
+    fn volume_for(&self, cue: &Cue) -> f64 {
+        match self.drag_volume {
+            Some((id, value)) if id == cue.id => value,
+            _ => cue_edit::fade_volume(cue).unwrap_or(0.0),
         }
     }
 
     /// Keeps the notes editor showing the selected cue's notes, unless
     /// they are being edited right now.
     pub fn sync(&mut self, cue: Option<&Cue>, drafts: &Drafts) {
+        // The dragged volume is dropped once the backend's answer matches it
+        // (or another cue is shown).
+        if let Some((id, value)) = self.drag_volume {
+            let stored = cue
+                .filter(|cue| cue.id == id)
+                .and_then(cue_edit::fade_volume);
+            if stored.is_none_or(|stored| (stored - value).abs() < 1e-3) {
+                self.drag_volume = None;
+            }
+        }
+
         if drafts.is_editing(NOTES) {
             return;
         }
@@ -208,15 +398,25 @@ pub fn view<'a>(
             .into();
     };
 
-    let tabs = row![
-        tab_button(editor.tab, Tab::Basics, fl!("main-bottom-editor-basics-title")),
-        tab_button(editor.tab, Tab::Trigger, fl!("main-bottom-editor-trigger-title")),
-    ]
+    // A tab left over from another kind of cue gives way to Basics.
+    let available = Tab::of(cue);
+    let current = if available.contains(&editor.tab) {
+        editor.tab
+    } else {
+        Tab::Basics
+    };
+    let tabs = row(available
+        .iter()
+        .map(|&tab| tab_button(current, tab, tab.label())))
     .spacing(4);
 
-    let body = match editor.tab {
+    let body = match current {
         Tab::Basics => basics(editor, &ctx, cue, flat),
         Tab::Trigger => trigger(cue),
+        Tab::Audio => type_tabs::audio(&ctx, cue),
+        Tab::Fade => type_tabs::fade(editor, &ctx, cue, flat),
+        Tab::Playback => type_tabs::playback(&ctx, cue, flat),
+        Tab::Group => type_tabs::group(&ctx, cue),
     };
 
     column![tabs, container(body).width(Length::Fill).height(Length::Fill)]
@@ -284,7 +484,7 @@ fn basics<'a>(
                 .into_iter()
                 .map(|kind| Choice::new(kind, chain_label(kind)))
                 .collect(),
-            &chain_kind,
+            Some(&chain_kind),
             !locked,
             Message::ChainKind,
         ),
@@ -333,7 +533,7 @@ fn basics<'a>(
         Some(&fl!("main-bottom-editor-continue-target-cue")),
         picker(
             targets,
-            &cue_edit::chain_target(chain),
+            Some(&cue_edit::chain_target(chain)),
             !locked && chain_kind != ChainKind::DoNotChain,
             Message::ChainTarget,
         ),
@@ -343,7 +543,7 @@ fn basics<'a>(
         Some(&fl!("main-bottom-editor-basics-color")),
         picker(
             COLORS.iter().map(|&color| Choice::new(color, color_label(color))).collect(),
-            &cue.color,
+            Some(&cue.color),
             true,
             Message::Color,
         ),
@@ -374,7 +574,7 @@ fn trigger(cue: &Cue) -> Element<'_, Message> {
                 .iter()
                 .map(|&value| Choice::new(value, advance_label(value)))
                 .collect(),
-            &cue.cursor_advance_trigger_override,
+            Some(&cue.cursor_advance_trigger_override),
             true,
             Message::Advance,
         ),
@@ -385,91 +585,11 @@ fn trigger(cue: &Cue) -> Element<'_, Message> {
         check(
             fl!("main-bottom-editor-trigger-treat-stop-as-completed"),
             cue.treat_stop_as_completed,
-            Message::TreatStop(!cue.treat_stop_as_completed),
+            Some(Message::TreatStop(!cue.treat_stop_as_completed)),
         ),
     ]
     .spacing(12)
     .into()
-}
-
-// ---------------------------------------------------------------------
-// Parts
-
-/// An option with its translated label. Equality is on the value alone,
-/// so the selection survives a language switch.
-#[derive(Clone)]
-struct Choice<T> {
-    value: T,
-    label: String,
-}
-
-impl<T> Choice<T> {
-    fn new(value: T, label: String) -> Self {
-        Self { value, label }
-    }
-}
-
-impl<T: PartialEq> PartialEq for Choice<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.value == other.value
-    }
-}
-
-impl<T> fmt::Display for Choice<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.label)
-    }
-}
-
-/// A drop-down list; without `enabled` just the current choice, greyed
-/// out (`pick_list` has no disabled state).
-fn picker<'a, T>(
-    options: Vec<Choice<T>>,
-    selected: &T,
-    enabled: bool,
-    on_select: impl Fn(T) -> Message + 'a,
-) -> Element<'a, Message>
-where
-    T: Clone + PartialEq + 'a,
-{
-    let current = options.iter().find(|option| option.value == *selected).cloned();
-
-    if !enabled {
-        let label = current.map(|choice| choice.label).unwrap_or_default();
-        return container(text(label))
-            .padding([5, 10])
-            .width(Length::Fill)
-            .style(|theme: &Theme| {
-                let mut style = container::bordered_box(theme);
-                style.text_color = Some(
-                    theme.extended_palette().background.base.text.scale_alpha(0.5),
-                );
-                style
-            })
-            .into();
-    }
-
-    pick_list(options, current, move |choice: Choice<T>| on_select(choice.value))
-        .width(Length::Fill)
-        .into()
-}
-
-/// A labeled check box (a button, as iced's own check box is not used
-/// here).
-fn check<'a>(label: String, checked: bool, on_press: Message) -> Element<'a, Message> {
-    let glyph = if checked {
-        Icon::CheckboxMarked
-    } else {
-        Icon::CheckboxBlankOutline
-    };
-    button(row![icon(glyph, 20.0), text(label)].spacing(8).align_y(Alignment::Center))
-        .style(button::text)
-        .on_press(on_press)
-        .into()
-}
-
-fn choice_name(cue: &Cue, cues: &HashMap<Uuid, Cue>, name_format: &NameFormatSettings) -> String {
-    crate::features::header::cue_title(cue, display_name(cue, cues, name_format))
 }
 
 const COLORS: [CueColor; 9] = [
@@ -614,7 +734,7 @@ mod tests {
     fn a_tab_message_switches_tabs() {
         let mut editor = Editor::default();
         assert!(matches!(
-            editor.update(Message::Tab(Tab::Trigger), None, None),
+            editor.update(Message::Tab(Tab::Trigger), None, None, Instant::now()),
             Update::None
         ));
         assert_eq!(editor.tab, Tab::Trigger);
@@ -625,16 +745,16 @@ mod tests {
         let mut editor = Editor::default();
         let cue = cue();
 
-        match editor.update(Message::TreatStop(true), Some(&cue), None) {
+        match editor.update(Message::TreatStop(true), Some(&cue), None, Instant::now()) {
             Update::Edit(edited) => assert!(edited.treat_stop_as_completed),
             _ => panic!("expected an edit"),
         }
         assert!(matches!(
-            editor.update(Message::TreatStop(false), Some(&cue), None),
+            editor.update(Message::TreatStop(false), Some(&cue), None, Instant::now()),
             Update::None
         ));
         assert!(matches!(
-            editor.update(Message::TreatStop(true), None, None),
+            editor.update(Message::TreatStop(true), None, None, Instant::now()),
             Update::None
         ));
     }
@@ -645,13 +765,80 @@ mod tests {
         let cue = cue();
 
         assert!(matches!(
-            editor.update(Message::Timestamp, Some(&cue), None),
+            editor.update(Message::Timestamp, Some(&cue), None, Instant::now()),
             Update::None
         ));
-        match editor.update(Message::Timestamp, Some(&cue), Some(3.0)) {
+        match editor.update(Message::Timestamp, Some(&cue), Some(3.0), Instant::now()) {
             Update::Edit(edited) => assert_eq!(edited.notes, "memo\n[00:03.00] "),
             _ => panic!("expected an edit"),
         }
+    }
+
+    fn fade_cue() -> Cue {
+        use sbsp_backend::model::cue::{FadeCueParam, audio::{Decibels, Easing, FadeParam}};
+        let mut cue = cue();
+        cue.params = CueParam::Fade(FadeCueParam {
+            target: Uuid::from_u128(2),
+            volume: Decibels::from(-6.0),
+            fade_param: FadeParam {
+                duration: 3.0,
+                easing: Easing::InOutPow(2.0),
+            },
+        });
+        cue
+    }
+
+    #[test]
+    fn each_kind_of_cue_has_its_tabs() {
+        assert_eq!(Tab::of(&cue()), vec![Tab::Basics, Tab::Trigger]);
+        assert_eq!(
+            Tab::of(&fade_cue()),
+            vec![Tab::Basics, Tab::Trigger, Tab::Fade]
+        );
+    }
+
+    #[test]
+    fn fade_fields_edit_the_fade() {
+        let editor = Editor::default();
+        let cue = fade_cue();
+        let (duration, power) = fade_fields(FadeSlot::Fade);
+
+        let edited = editor.apply(&commit(duration, "5"), &cue).unwrap();
+        assert_eq!(cue_edit::fade_param(&edited, FadeSlot::Fade).unwrap().duration, 5.0);
+
+        assert!(editor.apply(&Outcome::Step(power, 1), &cue).is_some());
+        assert!(editor.apply(&commit(duration, "3"), &cue).is_none(), "unchanged");
+    }
+
+    #[test]
+    fn the_fade_volume_follows_the_drag_until_it_is_stored() {
+        let mut editor = Editor::default();
+        let cue = fade_cue();
+        let now = Instant::now();
+
+        let _ = editor.update(Message::FadeVolume(FaderMessage::Moved(-12.0)), Some(&cue), None, now);
+        assert_eq!(editor.volume_for(&cue), -12.0);
+
+        match editor.update(Message::FadeVolume(FaderMessage::Released), Some(&cue), None, now) {
+            Update::Edit(edited) => assert_eq!(cue_edit::fade_volume(&edited), Some(-12.0)),
+            _ => panic!("expected an edit"),
+        }
+
+        // The backend's answer arrives: the drag value is dropped.
+        let mut stored = cue.clone();
+        stored.params = cue_edit::set_fade_volume(&cue, -12.0).unwrap().params;
+        editor.sync(Some(&stored), &Drafts::default());
+        assert!(editor.drag_volume.is_none());
+    }
+
+    #[test]
+    fn picking_audio_asks_the_app() {
+        let mut editor = Editor::default();
+        let cue = cue();
+        assert!(matches!(
+            editor.update(Message::PickAudio, Some(&cue), None, Instant::now()),
+            Update::PickAudio(id) if id == cue.id
+        ));
     }
 
     #[test]
