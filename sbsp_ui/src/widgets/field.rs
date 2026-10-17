@@ -126,7 +126,18 @@ pub fn text_field<'a>(
     drafts: &Drafts,
     enabled: bool,
 ) -> TextInput<'a, Message> {
-    let field = text_input("", drafts.text(id, shown)).id(id.0);
+    text_field_with_placeholder(id, "", shown, drafts, enabled)
+}
+
+/// [`text_field`] with a hint shown while the field is empty.
+pub fn text_field_with_placeholder<'a>(
+    id: FieldId,
+    placeholder: &str,
+    shown: &str,
+    drafts: &Drafts,
+    enabled: bool,
+) -> TextInput<'a, Message> {
+    let field = text_input(placeholder, drafts.text(id, shown)).id(id.0);
     if enabled {
         field
             .on_input(move |text| Message::Input(id, text))

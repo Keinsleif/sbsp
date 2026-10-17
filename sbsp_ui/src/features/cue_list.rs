@@ -24,7 +24,7 @@ use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
 use sbsp_frontend_settings::NameFormatSettings;
 
-use crate::domain::cue::{build_cue_name, get_duration};
+use crate::domain::cue::{display_name, get_duration};
 use crate::domain::time::format_seconds;
 use crate::domain::flat_list::{FlatCueEntry, flatten};
 use crate::fl;
@@ -324,8 +324,7 @@ fn row_view<'a>(
             .into(),
         None => Space::new().width(20).into(),
     };
-    let name = text(build_cue_name(Some(cue), &model.cue_list.cues, name_format))
-        .width(Length::Fill);
+    let name = text(display_name(cue, &model.cue_list.cues, name_format)).width(Length::Fill);
 
     // While a cue is in its pre-wait the pre-wait cell is the live one and
     // the duration cell stays static; from playback on it flips, as in the
@@ -417,7 +416,7 @@ fn live_time(position: f64, duration: f64, mode: DisplayMode) -> (String, f32) {
 
 /// An audio cue's duration comes from its analyzed asset, if that has
 /// arrived yet.
-fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
+pub(crate) fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
     match &cue.params {
         CueParam::Audio(audio) => assets
             .get_metadata(&audio.target)

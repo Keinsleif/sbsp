@@ -104,7 +104,7 @@ fn step_button<'a>(
 
 pub fn time_input<'a>(
     id: FieldId,
-    label: Option<&'a str>,
+    label: Option<&str>,
     value: Option<f64>,
     spec: &TimeSpec,
     drafts: &Drafts,

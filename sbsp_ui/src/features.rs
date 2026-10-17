@@ -7,6 +7,7 @@
 
 pub mod cue_list;
 pub mod debug_gallery;
+pub mod editor;
 pub mod header;
 pub mod hotkeys;
 pub mod side_bar;

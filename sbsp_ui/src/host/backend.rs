@@ -166,6 +166,7 @@ impl HostPort {
                         .await
                 }
                 ModelEdit::RemoveCues(ids) => model.remove_cues(ids.into_iter().collect()).await,
+                ModelEdit::UpdateCue(cue) => model.update_cue(cue).await,
             }
         }
     }
