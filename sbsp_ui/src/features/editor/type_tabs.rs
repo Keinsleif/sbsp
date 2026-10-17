@@ -196,7 +196,7 @@ pub(super) fn group<'a>(ctx: &Context<'a>, cue: &'a Cue) -> Element<'a, Message>
     .into_iter()
     .map(|(kind, label)| Choice::new(kind, label))
     .collect();
-    let mode = labeled(
+    let mode_elem = labeled(
         Some(&fl!("main-bottom-editor-group-mode-label")),
         picker(
             kinds,
@@ -206,7 +206,7 @@ pub(super) fn group<'a>(ctx: &Context<'a>, cue: &'a Cue) -> Element<'a, Message>
         ),
     );
 
-    let mut content = column![container(mode).max_width(400.0)].spacing(12).padding(4);
+    let mut content = column![container(mode_elem).max_width(400.0)].spacing(12).padding(4);
     match mode {
         GroupMode::Playlist { repeat } => {
             content = content.push(check(
