@@ -166,6 +166,29 @@ pub fn add_or_split(segments: &[Segment], x: f64) -> Option<Vec<Segment>> {
     None
 }
 
+/// What the "+" button does: starts an envelope, or splits the longest
+/// segment in the middle, so it has room to act as long as there is any.
+pub fn add_in_longest(segments: &[Segment]) -> Option<Vec<Segment>> {
+    let Some(longest) = segments
+        .iter()
+        .max_by(|a, b| (a.end - a.start).total_cmp(&(b.end - b.start)))
+    else {
+        return add_or_split(segments, 0.5);
+    };
+    add_or_split(segments, (longest.start + longest.end) / 2.0)
+}
+
+/// Whether two envelopes are the same, allowing for the volume having been
+/// through the backend's `f32`.
+pub fn same(a: &[Segment], b: &[Segment]) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(a, b)| {
+            (a.start - b.start).abs() < 1e-9
+                && (a.end - b.end).abs() < 1e-9
+                && (a.volume - b.volume).abs() < 1e-3
+        })
+}
+
 /// Removes a segment; the neighbour of an end segment grows to the edge.
 pub fn remove(segments: &[Segment], index: usize) -> Vec<Segment> {
     let mut result = segments.to_vec();
@@ -286,5 +309,32 @@ mod tests {
         assert_eq!(middle_gone, vec![segments[0], segments[2]]);
         assert_eq!(remove(&segments, 5), segments.to_vec());
         assert!(remove(&[seg(0.0, 1.0, 0.0)], 0).is_empty());
+    }
+
+    #[test]
+    fn plus_splits_the_longest_segment_again_and_again() {
+        let mut segments = Vec::new();
+        for expected in 1..=6 {
+            segments = add_in_longest(&segments).expect("there is room");
+            assert_eq!(segments.len(), expected);
+        }
+        // Still in order, inside 0..1.
+        assert!(segments.windows(2).all(|pair| pair[0].end < pair[1].start));
+        assert_eq!((segments[0].start, segments[5].end), (0.0, 1.0));
+
+        let uneven = [seg(0.0, 0.1, 0.0), seg(0.2, 1.0, -3.0)];
+        let result = add_in_longest(&uneven).unwrap();
+        assert_eq!(result.len(), 3);
+        assert!((result[1].end - 0.6).abs() < 0.01);
+    }
+
+    #[test]
+    fn envelopes_are_the_same_despite_f32_rounding() {
+        let a = [seg(0.0, 1.0, -3.123_456_789)];
+        let b = [seg(0.0, 1.0, f64::from(-3.123_456_789_f32))];
+        assert_ne!(a, b);
+        assert!(same(&a, &b));
+        assert!(!same(&a, &[seg(0.0, 1.0, -4.0)]));
+        assert!(!same(&a, &[]));
     }
 }

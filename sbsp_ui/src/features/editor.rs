@@ -364,14 +364,20 @@ impl Editor {
                     self.working = None;
                     return Update::None;
                 }
-                working.committed = true;
-                edit(cue_edit::set_envelope_and_range(
+                let edited = cue_edit::set_envelope_and_range(
                     cue,
                     &working.segments,
                     working.range.start,
                     working.range.end,
                     self.file.duration,
-                ))
+                );
+                if edited.is_some() {
+                    working.committed = true;
+                } else {
+                    // Nothing changed, so no answer will come to end it.
+                    self.working = None;
+                }
+                edit(edited)
             }
             Message::Wave(waveform_editor::Message::Select(index)) => {
                 self.selected_segment = cue.map(|cue| (cue.id, index));
@@ -413,7 +419,7 @@ impl Editor {
                     Message::AddSegment => {
                         self.envelope_visible = true;
                         let (segments, _) = self.shown(cue);
-                        envelope::add_or_split(&segments, 0.5)
+                        envelope::add_in_longest(&segments)
                             .and_then(|segments| cue_edit::set_envelope(cue, &segments))
                     }
                     Message::RemoveSegment => match self.selected_in(cue) {
@@ -587,7 +593,7 @@ impl Editor {
                 Some(cue) => {
                     let range = self.stored_range(cue);
                     working.committed
-                        && cue_edit::envelope(cue) == working.segments
+                        && envelope::same(&cue_edit::envelope(cue), &working.segments)
                         && (range.start - working.range.start).abs() < 1e-9
                         && (range.end - working.range.end).abs() < 1e-9
                 }
@@ -1287,6 +1293,69 @@ mod tests {
             Update::Edit(edited) => assert!(cue_edit::envelope(&edited).is_empty()),
             _ => panic!("expected an edit"),
         }
+    }
+
+    #[test]
+    fn the_plus_button_keeps_adding_segments() {
+        let mut editor = analyzed();
+        let mut cue = audio_cue();
+        let now = Instant::now();
+
+        for expected in 1..=4 {
+            cue = match editor.update(Message::AddSegment, Some(&cue), None, now) {
+                Update::Edit(edited) => *edited,
+                _ => panic!("expected an edit for segment {expected}"),
+            };
+            assert_eq!(cue_edit::envelope(&cue).len(), expected);
+        }
+    }
+
+    #[test]
+    fn a_dragged_volume_that_the_backend_rounds_still_settles() {
+        let mut editor = analyzed();
+        let cue = audio_cue();
+        let now = Instant::now();
+        let dragged = vec![seg(0.0, 1.0, -3.123_456_789)];
+
+        let _ = editor.update(
+            Message::Wave(waveform_editor::Message::Changed {
+                segments: dragged,
+                range: editor.shown(&cue).1,
+            }),
+            Some(&cue),
+            None,
+            now,
+        );
+        let Update::Edit(edited) =
+            editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now)
+        else {
+            panic!("expected an edit");
+        };
+
+        // The backend keeps the volume as an f32, so it does not equal the
+        // dragged f64 exactly.
+        editor.sync(Some(&edited), &Drafts::default());
+        assert!(editor.working.is_none());
+    }
+
+    #[test]
+    fn a_drag_that_changes_nothing_does_not_stay() {
+        let mut editor = analyzed();
+        let cue = audio_cue();
+        let now = Instant::now();
+
+        let (segments, range) = editor.shown(&cue);
+        let _ = editor.update(
+            Message::Wave(waveform_editor::Message::Changed { segments, range }),
+            Some(&cue),
+            None,
+            now,
+        );
+        assert!(matches!(
+            editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now),
+            Update::None
+        ));
+        assert!(editor.working.is_none());
     }
 
     #[test]

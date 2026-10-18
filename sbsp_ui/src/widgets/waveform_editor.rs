@@ -95,6 +95,8 @@ const LOCKED_RADIUS: f32 = 3.0;
 const GRAB: f32 = 10.0;
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 const DOUBLE_CLICK_DISTANCE: f32 = 6.0;
+/// How far the pointer must go before a press becomes a drag.
+const DRAG_THRESHOLD: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Kind {
@@ -233,6 +235,8 @@ pub struct State {
 struct Drag {
     kind: Kind,
     index: usize,
+    /// Where the pointer went down, within the widget.
+    origin: Point,
     moved: bool,
 }
 
@@ -400,6 +404,12 @@ impl canvas::Program<Message> for Editor<'_> {
                         (position.x - bounds.x).clamp(0.0, size.width),
                         (position.y - bounds.y).clamp(0.0, size.height),
                     );
+                    // A click is not a drag: ignore the pointer's jitter.
+                    if !drag.moved
+                        && (point.x - drag.origin.x).hypot(point.y - drag.origin.y) < DRAG_THRESHOLD
+                    {
+                        return None;
+                    }
                     drag.moved = true;
                     let (segments, range) = dragged(
                         drag.kind,
@@ -457,6 +467,7 @@ impl canvas::Program<Message> for Editor<'_> {
                         state.drag = Some(Drag {
                             kind,
                             index,
+                            origin: point,
                             moved: false,
                         });
                         Some(canvas::Action::request_redraw().and_capture())
