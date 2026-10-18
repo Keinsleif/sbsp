@@ -83,3 +83,6 @@ main-bottom-editor-time-levels-peak-description = 音声のPeakが 0dBFS にな�
 main-bottom-editor-time-levels-start-time = 開始時間
 main-bottom-editor-time-levels-title = 時間と音量
 main-bottom-editor-time-levels-volume = 音量
+main-bottom-editor-time-levels-scale-waveform = 音量に応じて波形を拡大/縮小
+main-bottom-editor-time-levels-skip-first-silence = 開始前の無音をスキップ
+main-bottom-editor-time-levels-skip-last-silence = 終了後の無音をスキップ
