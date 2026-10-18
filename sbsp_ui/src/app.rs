@@ -21,6 +21,8 @@ use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
 use crate::domain::cue_edit;
 use crate::domain::new_cue::{self, CueKind};
+#[cfg(feature = "host")]
+use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{cue_list, debug_gallery, editor, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
