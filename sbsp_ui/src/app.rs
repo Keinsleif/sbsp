@@ -19,9 +19,7 @@ use std::time::{Duration, Instant};
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
-#[cfg(feature = "host")]
 use crate::domain::cue_edit;
-use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::domain::new_cue::{self, CueKind};
 use crate::features::{cue_list, debug_gallery, editor, header, hotkeys, side_bar, status_bar, viewer};
 use crate::i18n::Language;
