@@ -11,6 +11,7 @@
 //! Not a 1:1 port of every function in those files -- see each submodule's
 //! doc comment for specifics.
 
+pub mod clipboard;
 pub mod cue;
 pub mod cue_edit;
 pub mod cursor;

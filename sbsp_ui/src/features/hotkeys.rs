@@ -38,6 +38,14 @@ pub enum Action {
     SelectAll,
     /// Remove the selected cues (edit mode, after a confirmation).
     Delete,
+    /// Copy the selected cues to the app's clipboard.
+    Copy,
+    /// Copy them and remove the originals (edit mode).
+    Cut,
+    /// Add the clipboard's cues after the selection (edit mode).
+    Paste,
+    /// Add copies of the selected cues after them (edit mode).
+    Duplicate,
 }
 
 impl Action {
@@ -141,6 +149,15 @@ impl Bindings {
             (&edit.delete, Action::Delete),
         ];
 
+        // Not in the settings: the original left these to the browser's
+        // own copy / cut / paste events.
+        let fixed = [
+            ("$mod+C", Action::Copy),
+            ("$mod+X", Action::Cut),
+            ("$mod+V", Action::Paste),
+            ("$mod+D", Action::Duplicate),
+        ];
+
         Self(
             table
                 .into_iter()
@@ -151,6 +168,11 @@ impl Bindings {
                     }
                     Some((hotkey?, action))
                 })
+                .chain(
+                    fixed
+                        .into_iter()
+                        .filter_map(|(spec, action)| Some((Hotkey::parse(spec, is_mac)?, action))),
+                )
                 .collect(),
         )
     }
@@ -283,6 +305,29 @@ mod tests {
             true,
         )
         .unwrap();
+        assert_eq!(b.find(&held), None);
+    }
+
+    #[test]
+    fn copy_cut_paste_and_duplicate_are_fixed_mod_keys() {
+        let b = bindings();
+        for (key, action) in [
+            ("c", Action::Copy),
+            ("x", Action::Cut),
+            ("v", Action::Paste),
+            ("d", Action::Duplicate),
+        ] {
+            assert_eq!(b.find(&press(ch(key), Modifiers::CTRL)), Some(action));
+            assert_eq!(b.find(&press(ch(key), Modifiers::empty())), None);
+        }
+        // With the command key on a Mac.
+        let mac = Bindings::from_settings(&HotkeySettings::default(), true);
+        assert_eq!(
+            mac.find(&press(ch("c"), Modifiers::LOGO)),
+            Some(Action::Copy)
+        );
+        // Holding the key does not paste over and over.
+        let held = KeyPress::new(&ch("v"), &ch("v"), Modifiers::CTRL, true).unwrap();
         assert_eq!(b.find(&held), None);
     }
 

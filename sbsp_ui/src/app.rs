@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
-use crate::domain::cue_edit;
+use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
@@ -98,6 +98,11 @@ pub struct State {
     templates: TemplateSettings,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
+    /// What copy and cut took; paste adds copies of these.
+    clipboard: Vec<Cue>,
+    /// The cue list row under the pointer (edit mode), which a right
+    /// click acts on.
+    hovered_row: Option<Uuid>,
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
@@ -204,6 +209,8 @@ impl State {
             ),
             templates: TemplateSettings::default(),
             pending_remove: None,
+            clipboard: Vec::new(),
+            hovered_row: None,
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
@@ -295,6 +302,9 @@ impl State {
             Message::Field(message) => self.handle_field(message),
             Message::Editor(message) => self.handle_editor(message),
             Message::Gallery(message) => self.handle_gallery(message),
+            Message::CueList(cue_list::Message::Context(action)) => {
+                self.run_context_action(action)
+            }
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
             Message::AudioTargetPicked(id, file) => self.set_audio_target(id, file),
             Message::RemoveConfirmed => self.confirm_remove(),
@@ -432,6 +442,26 @@ impl State {
             }
             cue_list::Message::TogglePreWaitDisplay => self.ui.toggle_pre_wait_display_mode(),
             cue_list::Message::ToggleDurationDisplay => self.ui.toggle_duration_display_mode(),
+            cue_list::Message::Hover(id) => self.hovered_row = Some(id),
+            cue_list::Message::HoverEnd(id) => {
+                // Rows swap in either order as the pointer crosses them.
+                if self.hovered_row == Some(id) {
+                    self.hovered_row = None;
+                }
+            }
+            cue_list::Message::RightClicked => {
+                // The menu opens by itself; what it acts on is the row
+                // under the pointer, unless that is in the selection
+                // already (the original did the same).
+                if let Some(id) = self.hovered_row
+                    && self.ui.mode == Mode::Edit
+                    && !self.ui.selected_rows.contains(&id)
+                {
+                    self.ui.set_selected(id, lock);
+                }
+            }
+            // Needs to return a Task: see `update_inner`.
+            cue_list::Message::Context(_) => {}
             cue_list::Message::Select(id) => {
                 if self.modifiers.shift() {
                     // Anchor on the current selection; with none yet,
@@ -534,6 +564,13 @@ impl State {
                 self.request_remove();
                 return Task::none();
             }
+            A::Copy => {
+                self.copy_selection();
+                return Task::none();
+            }
+            A::Cut => return self.cut_selection(),
+            A::Paste => return self.paste_clipboard(),
+            A::Duplicate => return self.duplicate_selection(),
             _ => {}
         }
 
@@ -581,7 +618,11 @@ impl State {
             | A::CursorDown
             | A::ExtendDown
             | A::SelectAll
-            | A::Delete => Vec::new(),
+            | A::Delete
+            | A::Copy
+            | A::Cut
+            | A::Paste
+            | A::Duplicate => Vec::new(),
         };
 
         self.send(controls)
@@ -902,6 +943,99 @@ impl State {
         self.send_edit(ModelEdit::RemoveCues(ids))
     }
 
+    /// The cue list's rows in display order, for the clipboard.
+    fn flat_cues(&self) -> Vec<crate::domain::flat_list::FlatCueEntry> {
+        crate::domain::flat_list::flatten(
+            &self.model.cue_list.root_ids,
+            &self.model.cue_list.cues,
+            &self.ui.expanded_rows,
+        )
+    }
+
+    /// Copy: the selected cues, top first, replace the clipboard's. Works
+    /// in every mode; nothing selected leaves the clipboard alone.
+    fn copy_selection(&mut self) {
+        let cues = clipboard::selected_cues(
+            &self.flat_cues(),
+            &self.model.cue_list.cues,
+            &self.ui.selected_rows,
+        );
+        if !cues.is_empty() {
+            self.clipboard = cues;
+        }
+    }
+
+    /// Cut: copy, then remove the originals without asking (edit mode;
+    /// elsewhere it only copies, as in the original).
+    fn cut_selection(&mut self) -> Task<Message> {
+        self.copy_selection();
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let ids: Vec<Uuid> = self
+            .ui
+            .selected_rows
+            .iter()
+            .copied()
+            .filter(|id| self.model.cue_list.cues.contains_key(id))
+            .collect();
+        if ids.is_empty() {
+            return Task::none();
+        }
+        self.send_edit(ModelEdit::RemoveCues(ids))
+    }
+
+    /// Paste: copies of the clipboard's cues after the selected one (at the
+    /// end of the list with none). Edit mode only.
+    fn paste_clipboard(&mut self) -> Task<Message> {
+        if self.ui.mode != Mode::Edit || self.clipboard.is_empty() {
+            return Task::none();
+        }
+        let target = self
+            .ui
+            .selected
+            .filter(|id| self.model.cue_list.cues.contains_key(id));
+        self.send_edit(ModelEdit::AddCues {
+            cues: clipboard::for_paste(&self.clipboard, Uuid::new_v4),
+            position: new_cue::position_after(target),
+        })
+    }
+
+    /// Duplicate: copies of the selected cues right after them, without
+    /// touching the clipboard. Edit mode only.
+    fn duplicate_selection(&mut self) -> Task<Message> {
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let flat = self.flat_cues();
+        let cues = clipboard::selected_cues(
+            &flat,
+            &self.model.cue_list.cues,
+            &self.ui.selected_rows,
+        );
+        let Some(position) = clipboard::duplicate_position(&flat, &self.ui.selected_rows) else {
+            return Task::none();
+        };
+        if cues.is_empty() {
+            return Task::none();
+        }
+        self.send_edit(ModelEdit::AddCues {
+            cues: clipboard::for_paste(&cues, Uuid::new_v4),
+            position,
+        })
+    }
+
+    fn run_context_action(&mut self, action: cue_list::ContextAction) -> Task<Message> {
+        use cue_list::ContextAction as C;
+        match action {
+            C::Copy => self.run_action(hotkeys::Action::Copy),
+            C::Cut => self.run_action(hotkeys::Action::Cut),
+            C::Paste => self.run_action(hotkeys::Action::Paste),
+            C::Duplicate => self.run_action(hotkeys::Action::Duplicate),
+            C::Delete => self.run_action(hotkeys::Action::Delete),
+        }
+    }
+
     fn handle_menu(&mut self, id: crate::menu::MenuId) -> Task<Message> {
         match id.0 {
             "cue.add-audio" => self.add_cue(CueKind::Audio),
@@ -913,6 +1047,10 @@ impl State {
             "cue.add-pause" => self.add_cue(CueKind::Pause),
             "cue.add-load" => self.add_cue(CueKind::Load),
             "edit.delete" => self.run_action(hotkeys::Action::Delete),
+            "edit.copy" => self.run_action(hotkeys::Action::Copy),
+            "edit.cut" => self.run_action(hotkeys::Action::Cut),
+            "edit.paste" => self.run_action(hotkeys::Action::Paste),
+            "edit.duplicate" => self.run_action(hotkeys::Action::Duplicate),
             "edit.select-all" => self.run_action(hotkeys::Action::SelectAll),
             "view.toggle-theme" => self.update(Message::ToggleTheme),
             "view.toggle-language" => self.update(Message::ToggleLanguage),
@@ -1285,6 +1423,13 @@ impl State {
             // consumed means "throw the edit away". (Escape nobody
             // consumed is a hotkey, below.)
             match &event {
+                // The cue list's context menu consumes the right press;
+                // the app then selects the row it was on.
+                iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right))
+                    if status == event::Status::Captured =>
+                {
+                    return Some(Message::CueList(cue_list::Message::RightClicked));
+                }
                 iced::Event::Mouse(mouse::Event::ButtonPressed(_)) => {
                     return Some(Message::Field(field::Message::FocusMayHaveChanged));
                 }
@@ -1338,6 +1483,7 @@ impl State {
     fn menu_spec(&self) -> MenuSpec {
         let editing = self.ui.mode == Mode::Edit;
         let add = |id, label: String| MenuNode::item(id, label).enabled(editing);
+        let has_selection = !self.ui.selected_rows.is_empty();
 
         MenuSpec::new()
             .menu(
@@ -1347,6 +1493,13 @@ impl State {
             .menu(
                 fl!("menu-edit-title"),
                 vec![
+                    MenuNode::item("edit.copy", fl!("menu-edit-copy")).enabled(has_selection),
+                    MenuNode::item("edit.cut", fl!("menu-edit-cut")).enabled(has_selection),
+                    MenuNode::item("edit.paste", fl!("menu-edit-paste"))
+                        .enabled(editing && !self.clipboard.is_empty()),
+                    MenuNode::item("edit.duplicate", fl!("menu-edit-duplicate"))
+                        .enabled(editing && has_selection),
+                    MenuNode::separator(),
                     MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues")),
                     add("edit.delete", fl!("menu-edit-delete-cue")),
                 ],
@@ -1481,6 +1634,9 @@ impl State {
                 &self.playback,
                 &self.assets,
                 &self.name_format,
+                (self.ui.mode == Mode::Edit).then_some(cue_list::ContextMenu {
+                    can_paste: !self.clipboard.is_empty(),
+                }),
             )
                 .map(Message::CueList),
         )
@@ -2039,6 +2195,79 @@ mod tests {
         state.ui.set_permission(sbsp_backend::api::Permissions::all());
         state.ui.set_mode(Mode::Edit);
         (state, ids)
+    }
+
+    fn mod_key(c: &str) -> Message {
+        press(
+            keyboard::Key::Character(c.into()),
+            keyboard::Modifiers::CTRL,
+        )
+    }
+
+    fn clipboard_ids(state: &State) -> Vec<Uuid> {
+        state.clipboard.iter().map(|cue| cue.id).collect()
+    }
+
+    #[test]
+    #[serial]
+    fn copy_takes_the_selected_cues_top_first() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[2], false);
+        state.ui.add_selected(ids[0], false);
+
+        let _ = state.update(mod_key("c"));
+        assert_eq!(clipboard_ids(&state), vec![ids[0], ids[2]]);
+
+        // Nothing selected: the clipboard keeps what it had.
+        state.ui.clear_selected(false);
+        let _ = state.update(mod_key("c"));
+        assert_eq!(clipboard_ids(&state), vec![ids[0], ids[2]]);
+    }
+
+    #[test]
+    #[serial]
+    fn copy_works_outside_edit_mode_but_cut_keeps_the_cues_there() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_mode(Mode::Run);
+        state.ui.set_selected(ids[1], false);
+
+        let _ = state.update(mod_key("x"));
+        assert_eq!(clipboard_ids(&state), vec![ids[1]]);
+        assert!(state.model.cue_list.cues.contains_key(&ids[1]));
+    }
+
+    #[test]
+    #[serial]
+    fn a_right_click_selects_its_row_unless_it_is_in_the_selection() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        state.ui.add_selected(ids[1], false);
+
+        // On a selected row the selection stays.
+        let _ = state.update(Message::CueList(cue_list::Message::Hover(ids[1])));
+        let _ = state.update(Message::CueList(cue_list::Message::RightClicked));
+        assert_eq!(state.ui.selected_rows.len(), 2);
+
+        // On another row it moves there.
+        let _ = state.update(Message::CueList(cue_list::Message::HoverEnd(ids[1])));
+        let _ = state.update(Message::CueList(cue_list::Message::Hover(ids[2])));
+        let _ = state.update(Message::CueList(cue_list::Message::RightClicked));
+        assert_eq!(state.ui.selected_rows, vec![ids[2]]);
+
+        // Leaving another row does not forget the one now under the pointer.
+        let _ = state.update(Message::CueList(cue_list::Message::Hover(ids[0])));
+        let _ = state.update(Message::CueList(cue_list::Message::HoverEnd(ids[2])));
+        assert_eq!(state.hovered_row, Some(ids[0]));
+    }
+
+    #[test]
+    #[serial]
+    fn the_context_menu_exists_only_in_edit_mode() {
+        let (mut state, _) = editing_state();
+        state.ui.set_mode(Mode::Run);
+        // A right click outside edit mode selects nothing.
+        let _ = state.update(Message::CueList(cue_list::Message::RightClicked));
+        assert!(state.ui.selected_rows.is_empty());
     }
 
     fn ctrl_backspace() -> Message {

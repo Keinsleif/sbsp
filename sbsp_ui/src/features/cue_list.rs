@@ -19,6 +19,7 @@ use iced::widget::{
     Space, button, center, column, container, mouse_area, row, scrollable, stack, text,
 };
 use iced::{Alignment, Border, Color, Element, Length, Theme};
+use iced_aw::ContextMenu as AwContextMenu;
 
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
@@ -64,6 +65,30 @@ pub enum Message {
     SetCursor(Uuid),
     TogglePreWaitDisplay,
     ToggleDurationDisplay,
+    /// The pointer entered / left a row (edit mode): the context menu
+    /// acts on the row under it, and the app cannot see the pointer.
+    Hover(Uuid),
+    HoverEnd(Uuid),
+    /// A right click, whatever it hit: the context menu opens by itself,
+    /// the app only selects the row under the pointer.
+    RightClicked,
+    Context(ContextAction),
+}
+
+/// What the context menu offers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContextAction {
+    Copy,
+    Cut,
+    Paste,
+    Duplicate,
+    Delete,
+}
+
+/// The context menu (edit mode only; the other modes have none).
+#[derive(Debug, Clone, Copy)]
+pub struct ContextMenu {
+    pub can_paste: bool,
 }
 
 /// The ids of the rows actually drawn, top to bottom: the flat list with
@@ -192,6 +217,7 @@ pub fn view<'a>(
     playback: &'a PlaybackState,
     assets: &'a AssetResults,
     name_format: &NameFormatSettings,
+    context_menu: Option<ContextMenu>,
 ) -> Element<'a, Message> {
     let flat = flatten(
         &model.cue_list.root_ids,
@@ -204,7 +230,16 @@ pub fn view<'a>(
         .filter(|entry| !entry.is_hidden)
         .filter_map(|entry| {
             let cue = model.cue_list.cues.get(&entry.cue_id)?;
-            Some(row_view(entry, cue, model, ui, playback, assets, name_format))
+            Some(row_view(
+                entry,
+                cue,
+                model,
+                ui,
+                playback,
+                assets,
+                name_format,
+                context_menu,
+            ))
         })
         .collect();
 
@@ -296,6 +331,7 @@ fn row_view<'a>(
     playback: &PlaybackState,
     assets: &AssetResults,
     name_format: &NameFormatSettings,
+    context_menu: Option<ContextMenu>,
 ) -> Element<'a, Message> {
     let id = entry.cue_id;
     let is_selected = ui.selected_rows.contains(&id);
@@ -403,7 +439,7 @@ fn row_view<'a>(
     let color = cue.color;
     // The line under the row is part of its height, so a row stays
     // `ROW_HEIGHT` tall (the scroll position is computed from that).
-    mouse_area(column![
+    let area = mouse_area(column![
         container(content)
             .padding([0, 8])
             .center_y(ROW_HEIGHT - 1.0)
@@ -411,7 +447,73 @@ fn row_view<'a>(
             .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor, color)),
         divider::horizontal(),
     ])
-    .on_press(Message::Select(id))
+    .on_press(Message::Select(id));
+
+    match context_menu {
+        Some(menu) => AwContextMenu::new(
+            area.on_enter(Message::Hover(id))
+                .on_exit(Message::HoverEnd(id)),
+            move || context_menu_view(menu),
+        )
+        .into(),
+        None => area.into(),
+    }
+}
+
+/// The right-click menu. Items act on the selection, which the app has
+/// already moved to the clicked row if that was not part of it.
+fn context_menu_view<'a>(menu: ContextMenu) -> Element<'a, Message> {
+    let entry = |glyph: Icon, label: String, action: ContextAction, enabled: bool| {
+        button(
+            row![icon(glyph, 18.0), text(label)]
+                .spacing(8)
+                .align_y(Alignment::Center),
+        )
+        .width(Length::Fill)
+        .padding([4, 10])
+        .style(button::text)
+        .on_press_maybe(enabled.then_some(Message::Context(action)))
+    };
+
+    container(
+        column![
+            entry(
+                Icon::ContentCopy,
+                fl!("main-cue-list-context-menu-copy"),
+                ContextAction::Copy,
+                true,
+            ),
+            entry(
+                Icon::ContentCut,
+                fl!("main-cue-list-context-menu-cut"),
+                ContextAction::Cut,
+                true,
+            ),
+            entry(
+                Icon::ContentPaste,
+                fl!("main-cue-list-context-menu-paste"),
+                ContextAction::Paste,
+                menu.can_paste,
+            ),
+            entry(
+                Icon::ContentDuplicate,
+                fl!("main-cue-list-context-menu-duplicate"),
+                ContextAction::Duplicate,
+                true,
+            ),
+            divider::horizontal(),
+            entry(
+                Icon::TrashCan,
+                fl!("main-cue-list-context-menu-delete"),
+                ContextAction::Delete,
+                true,
+            ),
+        ]
+        .spacing(2),
+    )
+    .width(Length::Fixed(180.0))
+    .padding(4)
+    .style(container::rounded_box)
     .into()
 }
 
