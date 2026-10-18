@@ -159,10 +159,6 @@ main-bottom-editor-audio-change-fade-out = Change Fade Out
 main-bottom-editor-time-levels-change-pan = Change Pan
 main-bottom-editor-time-levels-change-volume = Change Volume
 main-bottom-editor-time-levels-envelope-visible = Show envelope
-main-cue-list-context-menu-copy = Copy
-main-cue-list-context-menu-cut = Cut
-main-cue-list-context-menu-delete = Delete
-main-cue-list-context-menu-paste = Paste
 main-cue-list-moving-cue = { $n ->
     [one] Move { $n } cue
    *[other] Move { $n } cues
@@ -171,11 +167,8 @@ main-foot-bar-processing-indicator = Processing { $size } files
 main-mobile-active = Active
 main-mobile-controls = Controls
 main-mobile-list = List
-menu-edit-copy = Copy
-menu-edit-cut = Cut
 menu-edit-export-settings = Export global settings
 menu-edit-import-settings = Import global settings
-menu-edit-paste = Paste
 menu-file-disconnect = Disconnect
 menu-file-export-to-folder = Export to Folder
 menu-file-new = New
