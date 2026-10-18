@@ -30,13 +30,16 @@ use sbsp_frontend_settings::NameFormatSettings;
 use crate::domain::cue::display_name;
 use crate::domain::cue_edit::{self, ChainKind, FadeSlot, GroupModeKind};
 use crate::domain::easing::CurveKind;
+use crate::domain::envelope::{self, Segment};
 use crate::domain::field::{Commit, commit_volume};
 use crate::domain::field::TimeSpec;
 use crate::domain::flat_list::FlatCueEntry;
 use crate::fl;
 use crate::state::model::ShowModelState;
 use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field, text_field_with_placeholder};
+use crate::features::viewer::TimeRange;
 use crate::widgets::inputs::{DoubleRelease, FaderMessage, labeled, time_input};
+use crate::widgets::waveform_editor;
 
 mod parts;
 mod type_tabs;
@@ -44,7 +47,7 @@ mod type_tabs;
 use parts::{Choice, check, choice_name, picker};
 
 /// The original's `h-62`.
-pub const HEIGHT: f32 = 248.0;
+pub const HEIGHT: f32 = 256.0;
 
 const NUMBER: FieldId = FieldId("editor.number");
 const NAME: FieldId = FieldId("editor.name");
@@ -151,6 +154,15 @@ pub enum Message {
     /// Set the volume from the file's loudness / peak.
     VolumeToLufs,
     VolumeToPeak,
+    /// The waveform editor.
+    Wave(waveform_editor::Message),
+    AddSegment,
+    RemoveSegment,
+    ClearSegments,
+    ToggleEnvelope,
+    ToggleScaleWaveform,
+    SkipFirstSilence,
+    SkipLastSilence,
     PlaybackTarget(Uuid),
     StopHard(bool),
     GroupMode(GroupModeKind),
@@ -169,6 +181,8 @@ pub enum Update {
     PickAudio(Uuid),
     /// Set the cue's volume from the analyzed file (the app knows it).
     MatchVolume(Match),
+    /// Seek the playing cue.
+    Seek(Uuid, f64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -193,9 +207,25 @@ pub struct Editor {
     /// The same for the panning fader.
     drag_pan: Option<(Uuid, f64)>,
     pan_release: DoubleRelease,
-    /// The duration of the selected audio cue's file, if analyzed (the
-    /// app keeps it current): an end time at the duration is no end time.
-    pub file_duration: Option<f64>,
+    /// What the analysis of the selected audio cue's file says (the app
+    /// keeps it current): an end time at the duration is no end time.
+    pub file: FileInfo,
+    waveform: waveform_editor::Surface,
+    /// The envelope and the played part while they are dragged, and until
+    /// the backend's answer arrives.
+    working: Option<Working>,
+    /// The envelope segment last clicked.
+    selected_segment: Option<(Uuid, usize)>,
+    envelope_visible: bool,
+    scale_waveform: bool,
+}
+
+struct Working {
+    cue: Uuid,
+    segments: Vec<Segment>,
+    range: TimeRange,
+    /// The drag is over and the edit sent.
+    committed: bool,
 }
 
 impl Default for Editor {
@@ -209,7 +239,12 @@ impl Default for Editor {
             volume_release: DoubleRelease::default(),
             drag_pan: None,
             pan_release: DoubleRelease::default(),
-            file_duration: None,
+            file: FileInfo::default(),
+            waveform: waveform_editor::Surface::default(),
+            working: None,
+            selected_segment: None,
+            envelope_visible: false,
+            scale_waveform: true,
         }
     }
 }
@@ -299,6 +334,49 @@ impl Editor {
             }
             Message::VolumeToLufs => Update::MatchVolume(Match::Lufs),
             Message::VolumeToPeak => Update::MatchVolume(Match::Peak),
+            Message::ToggleEnvelope => {
+                self.envelope_visible = !self.envelope_visible;
+                Update::None
+            }
+            Message::ToggleScaleWaveform => {
+                self.scale_waveform = !self.scale_waveform;
+                Update::None
+            }
+            Message::Wave(waveform_editor::Message::Seek(seconds)) => {
+                cue.map_or(Update::None, |cue| Update::Seek(cue.id, seconds))
+            }
+            Message::Wave(waveform_editor::Message::Changed { segments, range }) => {
+                if let Some(cue) = cue {
+                    self.working = Some(Working {
+                        cue: cue.id,
+                        segments,
+                        range,
+                        committed: false,
+                    });
+                }
+                Update::None
+            }
+            Message::Wave(waveform_editor::Message::Commit) => {
+                let (Some(cue), Some(working)) = (cue, self.working.as_mut()) else {
+                    return Update::None;
+                };
+                if working.cue != cue.id {
+                    self.working = None;
+                    return Update::None;
+                }
+                working.committed = true;
+                edit(cue_edit::set_envelope_and_range(
+                    cue,
+                    &working.segments,
+                    working.range.start,
+                    working.range.end,
+                    self.file.duration,
+                ))
+            }
+            Message::Wave(waveform_editor::Message::Select(index)) => {
+                self.selected_segment = cue.map(|cue| (cue.id, index));
+                Update::None
+            }
             message => {
                 let Some(cue) = cue else {
                     return Update::None;
@@ -327,13 +405,63 @@ impl Editor {
                     Message::GroupRepeat(repeat) => cue_edit::set_group_repeat(cue, repeat),
                     Message::GroupEnter(enter) => cue_edit::set_group_enter(cue, enter),
                     Message::Repeat(repeat) => cue_edit::set_repeat(cue, repeat),
+                    Message::Wave(waveform_editor::Message::Split(x)) => {
+                        let (segments, _) = self.shown(cue);
+                        envelope::add_or_split(&segments, x)
+                            .and_then(|segments| cue_edit::set_envelope(cue, &segments))
+                    }
+                    Message::AddSegment => {
+                        self.envelope_visible = true;
+                        let (segments, _) = self.shown(cue);
+                        envelope::add_or_split(&segments, 0.5)
+                            .and_then(|segments| cue_edit::set_envelope(cue, &segments))
+                    }
+                    Message::RemoveSegment => match self.selected_in(cue) {
+                        Some(index) => {
+                            let (segments, _) = self.shown(cue);
+                            self.selected_segment = None;
+                            cue_edit::set_envelope(cue, &envelope::remove(&segments, index))
+                        }
+                        None => None,
+                    },
+                    Message::ClearSegments => {
+                        self.selected_segment = None;
+                        cue_edit::set_envelope(cue, &[])
+                    }
+                    Message::SkipFirstSilence => {
+                        let (_, range) = self.shown(cue);
+                        match (self.file.sound_start, self.file.duration) {
+                            (Some(start), Some(duration)) if duration > 0.0 => cue_edit::set_range(
+                                cue,
+                                (start / duration).clamp(0.0, range.end),
+                                range.end,
+                                self.file.duration,
+                            ),
+                            _ => None,
+                        }
+                    }
+                    Message::SkipLastSilence => {
+                        let (_, range) = self.shown(cue);
+                        match (self.file.sound_end, self.file.duration) {
+                            (Some(end), Some(duration)) if duration > 0.0 => cue_edit::set_range(
+                                cue,
+                                range.start,
+                                (end / duration).clamp(range.start, 1.0),
+                                self.file.duration,
+                            ),
+                            _ => None,
+                        }
+                    }
                     Message::Field(_)
                     | Message::Notes(_)
                     | Message::Tab(_)
                     | Message::Volume(_)
                     | Message::Pan(_)
                     | Message::VolumeToLufs
-                    | Message::VolumeToPeak => None,
+                    | Message::VolumeToPeak
+                    | Message::ToggleEnvelope
+                    | Message::ToggleScaleWaveform
+                    | Message::Wave(_) => None,
                 };
                 edit(edited)
             }
@@ -372,8 +500,8 @@ impl Editor {
                     Commit::Unchanged | Commit::Null => None,
                 };
             }
-            START => return cue_edit::set_start_time(cue, text, self.file_duration),
-            END => return cue_edit::set_end_time(cue, text, self.file_duration),
+            START => return cue_edit::set_start_time(cue, text, self.file.duration),
+            END => return cue_edit::set_end_time(cue, text, self.file.duration),
             PAN => return cue_edit::set_pan_text(cue, text),
             _ => {}
         }
@@ -401,6 +529,30 @@ impl Editor {
         }
     }
 
+    /// The envelope and the played part to show: the ones being dragged,
+    /// else the cue's.
+    fn shown(&self, cue: &Cue) -> (Vec<Segment>, TimeRange) {
+        if let Some(working) = self.working.as_ref().filter(|w| w.cue == cue.id) {
+            return (working.segments.clone(), working.range);
+        }
+        (cue_edit::envelope(cue), self.stored_range(cue))
+    }
+
+    fn stored_range(&self, cue: &Cue) -> TimeRange {
+        match &cue.params {
+            CueParam::Audio(audio) => {
+                TimeRange::new(self.file.duration, audio.start_time, audio.end_time)
+            }
+            _ => TimeRange::FULL,
+        }
+    }
+
+    /// The selected segment, if it is of this cue and still there.
+    fn selected_in(&self, cue: &Cue) -> Option<usize> {
+        let (id, index) = self.selected_segment?;
+        (id == cue.id && index < cue_edit::envelope(cue).len()).then_some(index)
+    }
+
     fn pan_for(&self, cue: &Cue) -> f64 {
         match self.drag_pan {
             Some((id, value)) if id == cue.id => value,
@@ -423,6 +575,25 @@ impl Editor {
             let stored = cue.filter(|cue| cue.id == id).and_then(cue_edit::pan);
             if stored.is_none_or(|stored| (stored - value).abs() < 1e-3) {
                 self.drag_pan = None;
+            }
+        }
+
+        // The dragged envelope is dropped once the backend's answer matches
+        // it (or another cue is shown).
+        if let Some(working) = &self.working {
+            let stored = cue.filter(|cue| cue.id == working.cue);
+            let settled = match stored {
+                None => true,
+                Some(cue) => {
+                    let range = self.stored_range(cue);
+                    working.committed
+                        && cue_edit::envelope(cue) == working.segments
+                        && (range.start - working.range.start).abs() < 1e-9
+                        && (range.end - working.range.end).abs() < 1e-9
+                }
+            };
+            if settled {
+                self.working = None;
             }
         }
 
@@ -459,6 +630,18 @@ pub struct Context<'a> {
     pub file: FileInfo,
     /// The loudness the "LUFS" button aims for.
     pub lufs_target: f64,
+    /// The selected audio cue's waveform, once analyzed.
+    pub waveform: Option<&'a [f32]>,
+    /// The selected cue's progress while it plays.
+    pub playing: Option<Playing>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Playing {
+    /// How far through the played part (0..1).
+    pub ratio: f64,
+    /// The cue's duration in seconds.
+    pub duration: f64,
 }
 
 /// What the analysis of an audio cue's file says.
@@ -468,6 +651,9 @@ pub struct FileInfo {
     pub integrated_lufs: Option<f64>,
     /// dBFS.
     pub peak: Option<f64>,
+    /// Where the file's first sound begins and its last ends (seconds).
+    pub sound_start: Option<f64>,
+    pub sound_end: Option<f64>,
 }
 
 /// `flat` is the cue list in display order (hidden rows included), for
@@ -947,7 +1133,10 @@ mod tests {
     #[test]
     fn time_fields_use_the_files_duration() {
         let editor = Editor {
-            file_duration: Some(10.0),
+            file: FileInfo {
+                duration: Some(10.0),
+                ..FileInfo::default()
+            },
             ..Editor::default()
         };
         let cue = audio_cue();
@@ -998,6 +1187,147 @@ mod tests {
         assert!(matches!(
             editor.update(Message::VolumeToPeak, Some(&cue), None, now),
             Update::MatchVolume(Match::Peak)
+        ));
+    }
+
+    fn seg(start: f64, end: f64, volume: f64) -> Segment {
+        Segment { start, end, volume }
+    }
+
+    fn analyzed() -> Editor {
+        Editor {
+            file: FileInfo {
+                duration: Some(10.0),
+                sound_start: Some(1.0),
+                sound_end: Some(9.0),
+                ..FileInfo::default()
+            },
+            ..Editor::default()
+        }
+    }
+
+    #[test]
+    fn a_dragged_envelope_is_shown_and_saved_when_the_drag_ends() {
+        let mut editor = analyzed();
+        let cue = audio_cue();
+        let now = Instant::now();
+        let dragged = vec![seg(0.0, 1.0, -6.0)];
+        let range = TimeRange { start: 0.2, end: 1.0 };
+
+        let changed = waveform_editor::Message::Changed {
+            segments: dragged.clone(),
+            range,
+        };
+        assert!(matches!(
+            editor.update(Message::Wave(changed), Some(&cue), None, now),
+            Update::None
+        ));
+        let (segments, shown) = editor.shown(&cue);
+        assert_eq!((segments, shown), (dragged.clone(), range));
+
+        match editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now) {
+            Update::Edit(edited) => {
+                assert_eq!(cue_edit::envelope(&edited), dragged);
+                assert!(matches!(&edited.params, CueParam::Audio(a) if a.start_time == Some(2.0)));
+
+                // It stays on screen until the backend's answer matches it.
+                editor.sync(Some(&cue), &Drafts::default());
+                assert!(editor.working.is_some());
+                editor.sync(Some(&edited), &Drafts::default());
+                assert!(editor.working.is_none());
+            }
+            _ => panic!("expected an edit"),
+        }
+    }
+
+    #[test]
+    fn the_envelope_is_edited_with_the_buttons() {
+        let mut editor = analyzed();
+        let cue = audio_cue();
+        let now = Instant::now();
+
+        // + adds the first segment and shows the envelope.
+        let with = match editor.update(Message::AddSegment, Some(&cue), None, now) {
+            Update::Edit(edited) => *edited,
+            _ => panic!("expected an edit"),
+        };
+        assert!(editor.envelope_visible);
+        assert_eq!(cue_edit::envelope(&with), vec![seg(0.0, 1.0, 0.0)]);
+
+        // A double click splits it.
+        let split = match editor.update(
+            Message::Wave(waveform_editor::Message::Split(0.5)),
+            Some(&with),
+            None,
+            now,
+        ) {
+            Update::Edit(edited) => *edited,
+            _ => panic!("expected an edit"),
+        };
+        assert_eq!(cue_edit::envelope(&split).len(), 2);
+
+        // - needs a selected segment.
+        assert!(matches!(
+            editor.update(Message::RemoveSegment, Some(&split), None, now),
+            Update::None
+        ));
+        let _ = editor.update(
+            Message::Wave(waveform_editor::Message::Select(1)),
+            Some(&split),
+            None,
+            now,
+        );
+        match editor.update(Message::RemoveSegment, Some(&split), None, now) {
+            Update::Edit(edited) => assert_eq!(cue_edit::envelope(&edited).len(), 1),
+            _ => panic!("expected an edit"),
+        }
+        assert_eq!(editor.selected_in(&split), None, "the selection goes with it");
+
+        match editor.update(Message::ClearSegments, Some(&split), None, now) {
+            Update::Edit(edited) => assert!(cue_edit::envelope(&edited).is_empty()),
+            _ => panic!("expected an edit"),
+        }
+    }
+
+    #[test]
+    fn skipping_silence_moves_the_markers_to_the_first_and_last_sound() {
+        let mut editor = analyzed();
+        let cue = audio_cue();
+        let now = Instant::now();
+
+        let first = match editor.update(Message::SkipFirstSilence, Some(&cue), None, now) {
+            Update::Edit(edited) => *edited,
+            _ => panic!("expected an edit"),
+        };
+        assert!(matches!(&first.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time.is_none()));
+
+        match editor.update(Message::SkipLastSilence, Some(&first), None, now) {
+            Update::Edit(edited) => {
+                assert!(matches!(&edited.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time == Some(9.0)));
+            }
+            _ => panic!("expected an edit"),
+        }
+
+        // Without analysis there is nothing to skip to.
+        let mut unknown = Editor::default();
+        assert!(matches!(
+            unknown.update(Message::SkipFirstSilence, Some(&cue), None, now),
+            Update::None
+        ));
+    }
+
+    #[test]
+    fn a_click_while_playing_seeks() {
+        let mut editor = Editor::default();
+        let cue = audio_cue();
+        assert!(matches!(
+            editor.update(
+                Message::Wave(waveform_editor::Message::Seek(4.0)),
+                Some(&cue),
+                None,
+                Instant::now()
+            ),
+            Update::Seek(id, seconds) if id == cue.id && seconds == 4.0
         ));
     }
 

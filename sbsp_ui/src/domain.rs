@@ -15,6 +15,7 @@ pub mod cue;
 pub mod cue_edit;
 pub mod cursor;
 pub mod easing;
+pub mod envelope;
 pub mod fader;
 pub mod field;
 pub mod flat_list;

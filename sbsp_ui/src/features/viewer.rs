@@ -146,6 +146,103 @@ pub fn position_ratio(active: &ActiveCue) -> f64 {
     }
 }
 
+/// The waveform as vertical lines around the center line, scaled by `gain`
+/// dB (`None`: as it is, and nothing is marked as clipping). Samples at or
+/// over full scale are drawn red.
+pub fn draw_peaks(frame: &mut canvas::Frame, waveform: Option<&[f32]>, gain: Option<f32>) {
+    let size = frame.size();
+    let center_y = size.height / 2.0;
+    let gray = Color::from_rgba8(128, 128, 128, 0.8);
+
+    frame.fill_rectangle(Point::new(0.0, center_y), Size::new(size.width, 1.0), gray);
+
+    let Some(waveform) = waveform else {
+        return;
+    };
+    let scale = gain.map_or(1.0, |gain| 10f32.powf(gain / 20.0));
+    let amplitude = size.height * 0.375;
+
+    let mut normal = Vec::new();
+    let mut clipped = Vec::new();
+    for (x, peak) in column_peaks(waveform, size.width as usize)
+        .into_iter()
+        .enumerate()
+    {
+        if peak <= 0.0 {
+            continue;
+        }
+        let scaled = peak * scale;
+        let line = (
+            x as f32 + 0.5,
+            center_y - scaled * amplitude,
+            center_y + scaled * amplitude,
+        );
+        if gain.is_none() || scaled < CLIP_THRESHOLD {
+            normal.push(line);
+        } else {
+            clipped.push(line);
+        }
+    }
+
+    let stroke = |lines: &[(f32, f32, f32)], color: Color, frame: &mut canvas::Frame| {
+        if lines.is_empty() {
+            return;
+        }
+        let path = CanvasPath::new(|builder| {
+            for &(x, top, bottom) in lines {
+                builder.move_to(Point::new(x, top));
+                builder.line_to(Point::new(x, bottom));
+            }
+        });
+        frame.stroke(&path, Stroke::default().with_color(color).with_width(1.0));
+    };
+    stroke(&normal, gray, frame);
+    stroke(&clipped, Color::from_rgba8(200, 96, 96, 0.8), frame);
+}
+
+/// "position / duration" next to the pointer, for a pointer over the whole
+/// width of a file of `duration` seconds.
+pub fn draw_tooltip(frame: &mut canvas::Frame, theme: &Theme, cursor: Point, duration: Option<f64>) {
+    let size = frame.size();
+    let label = match duration {
+        Some(duration) if size.width > 0.0 => format!(
+            "{} / {}",
+            format_seconds(Some(f64::from(cursor.x / size.width) * duration)),
+            format_seconds(Some(duration)),
+        ),
+        _ => "--:--.-- / --:--.--".to_string(),
+    };
+
+    // Right of the pointer, or left of it when there is no room.
+    let x = if cursor.x + 16.0 + TOOLTIP_W > size.width {
+        (cursor.x - 16.0 - TOOLTIP_W).max(0.0)
+    } else {
+        cursor.x + 16.0
+    };
+    let y = cursor.y.min(size.height - TOOLTIP_H).max(0.0);
+
+    let palette = theme.extended_palette();
+    let origin = Point::new(x, y);
+    let box_size = Size::new(TOOLTIP_W, TOOLTIP_H);
+    frame.fill_rectangle(origin, box_size, palette.background.weak.color);
+    frame.stroke_rectangle(
+        origin,
+        box_size,
+        Stroke::default()
+            .with_color(palette.background.strong.color)
+            .with_width(1.0),
+    );
+    frame.fill_text(canvas::Text {
+        content: label,
+        position: Point::new(x + TOOLTIP_W / 2.0, y + TOOLTIP_H / 2.0),
+        color: palette.background.weak.text,
+        size: 12.0.into(),
+        align_x: iced::alignment::Horizontal::Center.into(),
+        align_y: iced::alignment::Vertical::Center,
+        ..canvas::Text::default()
+    });
+}
+
 /// What is selected, resolved against the model and the asset cache.
 struct Target<'a> {
     id: Uuid,
@@ -217,55 +314,8 @@ impl Waveform<'_> {
     }
 
     fn draw_waveform(&self, frame: &mut canvas::Frame) {
-        let size = frame.size();
-        let center_y = size.height / 2.0;
-        let gray = Color::from_rgba8(128, 128, 128, 0.8);
-
-        frame.fill_rectangle(Point::new(0.0, center_y), Size::new(size.width, 1.0), gray);
-
-        let Some(waveform) = self.target.as_ref().and_then(|t| t.waveform) else {
-            return;
-        };
-        let gain = self.target.as_ref().map_or(0.0, |t| t.gain_db);
-        let scale = 10f32.powf(gain / 20.0);
-        let amplitude = size.height * 0.375;
-
-        let mut normal = Vec::new();
-        let mut clipped = Vec::new();
-        for (x, peak) in column_peaks(waveform, size.width as usize)
-            .into_iter()
-            .enumerate()
-        {
-            if peak <= 0.0 {
-                continue;
-            }
-            let scaled = peak * scale;
-            let line = (
-                x as f32 + 0.5,
-                center_y - scaled * amplitude,
-                center_y + scaled * amplitude,
-            );
-            if scaled < CLIP_THRESHOLD {
-                normal.push(line);
-            } else {
-                clipped.push(line);
-            }
-        }
-
-        let stroke = |lines: &[(f32, f32, f32)], color: Color, frame: &mut canvas::Frame| {
-            if lines.is_empty() {
-                return;
-            }
-            let path = CanvasPath::new(|builder| {
-                for &(x, top, bottom) in lines {
-                    builder.move_to(Point::new(x, top));
-                    builder.line_to(Point::new(x, bottom));
-                }
-            });
-            frame.stroke(&path, Stroke::default().with_color(color).with_width(1.0));
-        };
-        stroke(&normal, gray, frame);
-        stroke(&clipped, Color::from_rgba8(200, 96, 96, 0.8), frame);
+        let gain = self.target.as_ref().map(|t| t.gain_db);
+        draw_peaks(frame, self.target.as_ref().and_then(|t| t.waveform), gain);
     }
 
     fn draw_overlay(
@@ -316,44 +366,7 @@ impl Waveform<'_> {
         cursor: Point,
         target: &Target<'_>,
     ) {
-        let size = frame.size();
-        let label = match target.duration {
-            Some(duration) if size.width > 0.0 => format!(
-                "{} / {}",
-                format_seconds(Some(f64::from(cursor.x / size.width) * duration)),
-                format_seconds(Some(duration)),
-            ),
-            _ => "--:--.-- / --:--.--".to_string(),
-        };
-
-        // Right of the pointer, or left of it when there is no room.
-        let x = if cursor.x + 16.0 + TOOLTIP_W > size.width {
-            (cursor.x - 16.0 - TOOLTIP_W).max(0.0)
-        } else {
-            cursor.x + 16.0
-        };
-        let y = cursor.y.min(size.height - TOOLTIP_H).max(0.0);
-
-        let palette = theme.extended_palette();
-        let origin = Point::new(x, y);
-        let box_size = Size::new(TOOLTIP_W, TOOLTIP_H);
-        frame.fill_rectangle(origin, box_size, palette.background.weak.color);
-        frame.stroke_rectangle(
-            origin,
-            box_size,
-            Stroke::default()
-                .with_color(palette.background.strong.color)
-                .with_width(1.0),
-        );
-        frame.fill_text(canvas::Text {
-            content: label,
-            position: Point::new(x + TOOLTIP_W / 2.0, y + TOOLTIP_H / 2.0),
-            color: palette.background.weak.text,
-            size: 12.0.into(),
-            align_x: iced::alignment::Horizontal::Center.into(),
-            align_y: iced::alignment::Vertical::Center,
-            ..canvas::Text::default()
-        });
+        draw_tooltip(frame, theme, cursor, target.duration);
     }
 }
 

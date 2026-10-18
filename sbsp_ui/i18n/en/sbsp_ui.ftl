@@ -86,3 +86,6 @@ main-bottom-editor-time-levels-peak-description = Set volume so that the audio p
 main-bottom-editor-time-levels-start-time = Start Time
 main-bottom-editor-time-levels-title = Time & Levels
 main-bottom-editor-time-levels-volume = Volume
+main-bottom-editor-time-levels-scale-waveform = Scale waveform by volume
+main-bottom-editor-time-levels-skip-first-silence = Skip first silence
+main-bottom-editor-time-levels-skip-last-silence = Skip last silence

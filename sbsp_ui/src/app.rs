@@ -248,7 +248,7 @@ impl State {
             .ui
             .selected
             .and_then(|id| self.model.cue_list.cues.get(&id));
-        self.editor.file_duration = cue.and_then(|cue| cue_list::asset_duration(cue, &self.assets));
+        self.editor.file = self.file_info(cue);
         self.editor.sync(cue, &self.fields);
     }
 
@@ -265,6 +265,8 @@ impl State {
             duration: cue_list::asset_duration(cue, &self.assets),
             integrated_lufs: data.and_then(|data| data.integrated_lufs),
             peak: data.map(|data| f64::from(data.peak)),
+            sound_start: data.and_then(|data| data.start_time),
+            sound_end: data.and_then(|data| data.end_time),
         }
     }
 
@@ -639,6 +641,7 @@ impl State {
                 None => Task::none(),
             },
             editor::Update::PickAudio(id) => self.pick_audio_target(id),
+            editor::Update::Seek(id, seconds) => self.send(vec![Control::SeekTo(id, seconds)]),
             editor::Update::MatchVolume(kind) => {
                 let Some(before) = cue else {
                     return Task::none();
@@ -1418,6 +1421,19 @@ impl State {
                 chain_override,
                 file: self.file_info(cue),
                 lufs_target: self.model.settings.audio.lufs_target,
+                waveform: cue
+                    .and_then(|cue| match &cue.params {
+                        CueParam::Audio(audio) => self.assets.get(&audio.target),
+                        _ => None,
+                    })
+                    .map(|data| data.waveform.as_slice())
+                    .filter(|waveform| !waveform.is_empty()),
+                playing: cue
+                    .and_then(|cue| self.playback.active_cues.get(&cue.id))
+                    .map(|active| editor::Playing {
+                        ratio: viewer::position_ratio(active),
+                        duration: active.duration,
+                    }),
             },
             &flat,
         )

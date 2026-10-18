@@ -17,6 +17,7 @@ use sbsp_backend::model::cue::{
 };
 
 use crate::domain::easing::{Curve, CurveKind};
+use crate::domain::envelope::{self, Segment};
 use crate::domain::field::{
     Commit, NumberSpec, TimeSpec, commit_number, commit_time, step_number,
 };
@@ -290,6 +291,47 @@ pub fn set_pan_text(cue: &Cue, text: &str) -> Option<Cue> {
 
 pub fn set_repeat(cue: &Cue, repeat: bool) -> Option<Cue> {
     with_audio(cue, |audio| audio.repeat = repeat)
+}
+
+/// The cue's envelope as the waveform editor shows it.
+pub fn envelope(cue: &Cue) -> Vec<Segment> {
+    match &cue.params {
+        CueParam::Audio(audio) => envelope::normalize(&audio.envelope),
+        _ => Vec::new(),
+    }
+}
+
+pub fn set_envelope(cue: &Cue, segments: &[Segment]) -> Option<Cue> {
+    with_audio(cue, |audio| {
+        audio.envelope = segments.iter().copied().map(Into::into).collect();
+    })
+}
+
+/// Sets the played part from fractions of the file: the very start is "no
+/// start", the very end "no end". `duration` is the file's (1 if unknown,
+/// as in the original).
+pub fn set_range(cue: &Cue, start: f64, end: f64, duration: Option<f64>) -> Option<Cue> {
+    let duration = duration.unwrap_or(1.0);
+    with_audio(cue, |audio| {
+        audio.start_time = (start != 0.0).then_some(start * duration);
+        audio.end_time = (end != 1.0).then_some(end * duration);
+    })
+}
+
+/// Both at once, as one drag of the waveform editor ends.
+pub fn set_envelope_and_range(
+    cue: &Cue,
+    segments: &[Segment],
+    start: f64,
+    end: f64,
+    duration: Option<f64>,
+) -> Option<Cue> {
+    let with_envelope = set_envelope(cue, segments);
+    let base = with_envelope.as_ref().unwrap_or(cue);
+    match set_range(base, start, end, duration) {
+        Some(edited) => Some(edited),
+        None => with_envelope,
+    }
 }
 
 // ---------------------------------------------------------------------
@@ -772,6 +814,39 @@ mod tests {
         assert!(matches!(&repeated.params, CueParam::Audio(a) if a.repeat));
         assert!(set_repeat(&repeated, true).is_none());
         assert!(set_repeat(&wait(1.0), true).is_none());
+    }
+
+    #[test]
+    fn the_envelope_and_the_played_part_are_stored_as_the_editor_shows_them() {
+        let cue = audio();
+        assert!(envelope(&cue).is_empty());
+
+        let segments = [
+            Segment { start: 0.0, end: 0.5, volume: -3.0 },
+            Segment { start: 0.6, end: 1.0, volume: -9.0 },
+        ];
+        let with = set_envelope(&cue, &segments).unwrap();
+        assert_eq!(envelope(&with), segments.to_vec());
+        assert!(set_envelope(&with, &segments).is_none());
+        assert!(set_envelope(&wait(1.0), &segments).is_none());
+
+        // 0.25 .. 0.75 of a 10 s file.
+        let ranged = set_range(&cue, 0.25, 0.75, Some(10.0)).unwrap();
+        assert!(matches!(&ranged.params, CueParam::Audio(a) if a.start_time == Some(2.5) && a.end_time == Some(7.5)));
+        // The very start and end are "none".
+        let full = set_range(&ranged, 0.0, 1.0, Some(10.0)).unwrap();
+        assert!(matches!(&full.params, CueParam::Audio(a) if a.start_time.is_none() && a.end_time.is_none()));
+        assert!(set_range(&cue, 0.0, 1.0, Some(10.0)).is_none());
+
+        // One drag changes both; one of them changing is enough.
+        let both = set_envelope_and_range(&cue, &segments, 0.5, 1.0, Some(10.0)).unwrap();
+        assert_eq!(envelope(&both), segments.to_vec());
+        assert!(matches!(&both.params, CueParam::Audio(a) if a.start_time == Some(5.0)));
+        let only_range = set_envelope_and_range(&both, &segments, 0.4, 1.0, Some(10.0)).unwrap();
+        assert!(matches!(&only_range.params, CueParam::Audio(a) if a.start_time == Some(4.0)));
+        let only_envelope = set_envelope_and_range(&both, &[], 0.5, 1.0, Some(10.0)).unwrap();
+        assert!(envelope(&only_envelope).is_empty());
+        assert!(set_envelope_and_range(&both, &segments, 0.5, 1.0, Some(10.0)).is_none());
     }
 
     #[test]
