@@ -60,17 +60,18 @@ pub fn normalize(segments: &[EnvelopeSegment]) -> Vec<Segment> {
     result
 }
 
-/// How far down a volume is drawn: 0 dB at the top, silence at the bottom
-/// (the original maps the amplitude, not the dB, linearly).
+/// How far down a volume is drawn: 0 dB at the top, `MIN_DB` at the bottom,
+/// evenly in between (in dB, so each step of the pointer is the same step of
+/// loudness).
 pub fn volume_to_y(volume: f64, height: f64) -> f64 {
-    ((1.0 - 10f64.powf(volume / 20.0)) * height).clamp(0.0, height)
+    (volume.clamp(MIN_DB, 0.0) / MIN_DB * height).clamp(0.0, height)
 }
 
 pub fn y_to_volume(y: f64, height: f64) -> f64 {
     if height <= 0.0 {
         return 0.0;
     }
-    ((1.0 - y / height).log10() * 20.0).clamp(MIN_DB, 0.0)
+    (y / height * MIN_DB).clamp(MIN_DB, 0.0)
 }
 
 pub fn set_volume(segments: &[Segment], index: usize, volume: f64) -> Vec<Segment> {

@@ -289,23 +289,25 @@ impl Editor<'_> {
         });
         frame.fill(&area, primary.scale_alpha(0.2));
 
-        // The ramps over the gaps between segments.
-        let ramps = Path::new(|builder| {
-            for pair in segments.windows(2) {
-                builder.move_to(Point::new(x(pair[0].end), y(&pair[0])));
-                builder.line_to(Point::new(x(pair[1].start), y(&pair[1])));
-            }
-        });
-        frame.stroke(
-            &ramps,
-            Stroke {
-                line_dash: LineDash {
-                    segments: &[8.0, 4.0],
-                    offset: 0,
+        // The ramps over the gaps between segments. One stroke each: a dash
+        // pattern runs on across the pieces of a single path and would join
+        // them with slanted lines.
+        for pair in segments.windows(2) {
+            let ramp = Path::line(
+                Point::new(x(pair[0].end), y(&pair[0])),
+                Point::new(x(pair[1].start), y(&pair[1])),
+            );
+            frame.stroke(
+                &ramp,
+                Stroke {
+                    line_dash: LineDash {
+                        segments: &[8.0, 4.0],
+                        offset: 0,
+                    },
+                    ..Stroke::default().with_color(primary).with_width(3.0)
                 },
-                ..Stroke::default().with_color(primary).with_width(3.0)
-            },
-        );
+            );
+        }
 
         let last = segments.len() - 1;
         for (i, segment) in segments.iter().enumerate() {
