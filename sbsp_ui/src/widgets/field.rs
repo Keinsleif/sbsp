@@ -106,6 +106,13 @@ impl Drafts {
         }
     }
 
+    /// Finishes whatever is being edited now. For a button that acts on
+    /// the values: pressing it takes the focus away, but the field only
+    /// notices a moment later, after the button's own message.
+    pub fn flush(&mut self) -> Option<Outcome> {
+        self.active.take().map(commit_of)
+    }
+
     fn take_if(&mut self, id: FieldId) -> Option<(FieldId, String)> {
         match &self.active {
             Some((field, _)) if *field == id => self.active.take(),
@@ -153,6 +160,16 @@ mod tests {
 
     const A: FieldId = FieldId("a");
     const B: FieldId = FieldId("b");
+
+    #[test]
+    fn flush_finishes_the_edit_in_progress() {
+        let mut drafts = Drafts::default();
+        assert_eq!(drafts.flush(), None);
+        typed(&mut drafts, A, "12");
+        assert_eq!(drafts.flush(), commit(A, "12"));
+        assert!(!drafts.is_editing(A));
+        assert_eq!(drafts.flush(), None);
+    }
 
     fn typed(drafts: &mut Drafts, id: FieldId, text: &str) -> Option<Outcome> {
         drafts.update(Message::Input(id, text.to_string())).0

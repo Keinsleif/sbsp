@@ -23,7 +23,9 @@ use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-use crate::features::{cue_list, debug_gallery, editor, header, hotkeys, side_bar, status_bar, viewer};
+use crate::features::{
+    cue_list, debug_gallery, editor, header, hotkeys, renumber, side_bar, status_bar, viewer,
+};
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::state::{
@@ -98,6 +100,10 @@ pub struct State {
     templates: TemplateSettings,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
+    /// The renumber dialog's values (kept between openings) and whether it
+    /// is open.
+    renumber: renumber::Dialog,
+    renumber_open: bool,
     /// What copy and cut took; paste adds copies of these.
     clipboard: Vec<Cue>,
     /// The cue list row under the pointer (edit mode), which a right
@@ -141,6 +147,7 @@ pub enum Message {
     Field(field::Message),
     Editor(editor::Message),
     Gallery(debug_gallery::Message),
+    Renumber(renumber::Message),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
     /// The file chosen for an audio cue's target (`None`: cancelled).
@@ -211,6 +218,8 @@ impl State {
             ),
             templates: TemplateSettings::default(),
             pending_remove: None,
+            renumber: renumber::Dialog::default(),
+            renumber_open: false,
             clipboard: Vec::new(),
             hovered_row: None,
             cue_drag: None,
@@ -305,6 +314,7 @@ impl State {
             Message::Field(message) => self.handle_field(message),
             Message::Editor(message) => self.handle_editor(message),
             Message::Gallery(message) => self.handle_gallery(message),
+            Message::Renumber(message) => self.handle_renumber(message),
             Message::CueList(cue_list::Message::Context(action)) => {
                 self.run_context_action(action)
             }
@@ -373,6 +383,7 @@ impl State {
             | Message::Field(_)
             | Message::Editor(_)
             | Message::Gallery(_)
+            | Message::Renumber(_)
             | Message::AudioFilesPicked(_)
             | Message::AudioTargetPicked(..)
             | Message::RemoveConfirmed => {}
@@ -555,6 +566,18 @@ impl State {
                 Task::none()
             };
         }
+        // Likewise the renumber dialog: Enter runs it, Escape closes it.
+        if self.renumber_open {
+            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            return if is("Enter") {
+                self.run_renumber()
+            } else if is("Escape") {
+                self.renumber_open = false;
+                Task::none()
+            } else {
+                Task::none()
+            };
+        }
         match self.hotkeys.find(&press) {
             Some(action) => self.run_action(action),
             None => Task::none(),
@@ -610,6 +633,10 @@ impl State {
             A::Cut => return self.cut_selection(),
             A::Paste => return self.paste_clipboard(),
             A::Duplicate => return self.duplicate_selection(),
+            A::Renumber => {
+                self.open_renumber();
+                return Task::none();
+            }
             _ => {}
         }
 
@@ -661,7 +688,8 @@ impl State {
             | A::Copy
             | A::Cut
             | A::Paste
-            | A::Duplicate => Vec::new(),
+            | A::Duplicate
+            | A::Renumber => Vec::new(),
         };
 
         self.send(controls)
@@ -676,10 +704,19 @@ impl State {
             field::Message::Input(id, _) if editor::owns(*id) && !self.fields.is_editing(*id)
         );
 
+        // Enter in one of the renumber dialog's fields runs it, as in the
+        // original; Escape in one closes it.
+        let submits_renumber = self.renumber_open
+            && matches!(&message, field::Message::Submit(id) if renumber::owns(*id));
+        if self.renumber_open && message == field::Message::Escape {
+            self.renumber_open = false;
+        }
+
         let (outcome, task) = self.fields.update(message);
         let mut edit = Task::none();
         if let Some(outcome) = outcome {
             self.gallery.apply(&outcome);
+            self.renumber.apply(&outcome);
             // A step button press has no draft behind it: it applies to
             // the cue on screen.
             let cue_id = match outcome {
@@ -697,7 +734,70 @@ impl State {
             self.editor.draft_cue = self.ui.selected;
         }
 
-        Task::batch([task.map(Message::Field), edit])
+        let run = if submits_renumber {
+            self.run_renumber()
+        } else {
+            Task::none()
+        };
+
+        Task::batch([task.map(Message::Field), edit, run])
+    }
+
+    fn handle_renumber(&mut self, message: renumber::Message) -> Task<Message> {
+        match message {
+            renumber::Message::Field(message) => self.handle_field(message),
+            renumber::Message::Run => self.run_renumber(),
+            renumber::Message::Cancel => {
+                self.renumber_open = false;
+                Task::none()
+            }
+        }
+    }
+
+    /// Opens the renumber dialog for the selected cues. Edit mode only.
+    fn open_renumber(&mut self) {
+        if self.ui.mode == Mode::Edit && !self.ui.selected_rows.is_empty() {
+            self.renumber_open = true;
+        }
+    }
+
+    /// The dialog's Run: renumbers the selected cues in list order and
+    /// closes. Values that cannot be used leave the dialog open.
+    fn run_renumber(&mut self) -> Task<Message> {
+        // The field being edited counts: the button's press may arrive
+        // before the field notices it lost the focus.
+        if let Some(outcome) = self.fields.flush() {
+            self.renumber.apply(&outcome);
+        }
+        if !self.renumber_open {
+            return Task::none();
+        }
+        let Some(request) = self.renumber.request() else {
+            return Task::none();
+        };
+        self.renumber_open = false;
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+
+        let ids: Vec<Uuid> = crate::domain::clipboard::selected_cues(
+            &self.flat_cues(),
+            &self.model.cue_list.cues,
+            &self.ui.selected_rows,
+        )
+        .into_iter()
+        .map(|cue| cue.id)
+        .collect();
+        if ids.is_empty() {
+            return Task::none();
+        }
+        self.send_edit(ModelEdit::RenumberCues {
+            ids,
+            start_from: request.start,
+            increment: request.increment,
+            prefix: request.prefix,
+            suffix: request.suffix,
+        })
     }
 
     /// The bottom editor (edit mode only).
@@ -1133,6 +1233,7 @@ impl State {
             "edit.paste" => self.run_action(hotkeys::Action::Paste),
             "edit.duplicate" => self.run_action(hotkeys::Action::Duplicate),
             "edit.select-all" => self.run_action(hotkeys::Action::SelectAll),
+            "tools.renumber" => self.run_action(hotkeys::Action::Renumber),
             "view.toggle-theme" => self.update(Message::ToggleTheme),
             "view.toggle-language" => self.update(Message::ToggleLanguage),
             "help.about" => {
@@ -1618,6 +1719,13 @@ impl State {
                 ],
             )
             .menu(
+                fl!("menu-tools-title"),
+                vec![
+                    MenuNode::item("tools.renumber", fl!("menu-tools-renumber"))
+                        .enabled(editing && has_selection),
+                ],
+            )
+            .menu(
                 fl!("menu-view"),
                 vec![
                     MenuNode::item("view.toggle-theme", fl!("menu-view-toggle-theme")),
@@ -1816,6 +1924,15 @@ impl State {
         let content = match &self.pending_remove {
             Some(ids) => modal::over_blocking(content, remove_dialog(ids.len())),
             None => content,
+        };
+
+        let content = if self.renumber_open {
+            modal::over_blocking(
+                content,
+                renumber::view(&self.renumber, &self.fields).map(Message::Renumber),
+            )
+        } else {
+            content
         };
 
         self.toasts.overlay(content, Message::Toast)
@@ -2520,6 +2637,96 @@ mod tests {
         let _ = state.update(ctrl_backspace());
         let _ = state.update(key(keyboard::key::Named::Enter));
         assert_eq!(state.pending_remove, None);
+    }
+
+    fn ctrl_r() -> Message {
+        press(
+            keyboard::Key::Character("r".into()),
+            keyboard::Modifiers::CTRL,
+        )
+    }
+
+    #[test]
+    #[serial]
+    fn renumber_opens_with_a_selection_in_edit_mode() {
+        let (mut state, ids) = editing_state();
+
+        let _ = state.update(ctrl_r());
+        assert!(!state.renumber_open, "nothing selected");
+
+        state.ui.set_selected(ids[0], false);
+        state.ui.set_mode(Mode::Run);
+        let _ = state.update(ctrl_r());
+        assert!(!state.renumber_open, "not in edit mode");
+
+        state.ui.set_mode(Mode::Edit);
+        let _ = state.update(ctrl_r());
+        assert!(state.renumber_open);
+    }
+
+    #[test]
+    #[serial]
+    fn the_renumber_dialog_closes_on_escape_and_cancel() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+        let _ = state.update(ctrl_r());
+        let _ = state.update(key(keyboard::key::Named::ArrowDown));
+        assert!(state.renumber_open, "other keys do nothing");
+        assert_eq!(state.ui.selected, Some(ids[0]));
+        let _ = state.update(key(keyboard::key::Named::Escape));
+        assert!(!state.renumber_open);
+
+        let _ = state.update(ctrl_r());
+        let _ = state.update(Message::Renumber(renumber::Message::Cancel));
+        assert!(!state.renumber_open);
+    }
+
+    #[test]
+    #[serial]
+    fn running_closes_the_dialog_and_keeps_the_values() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(ctrl_r());
+        let _ = state.update(Message::Renumber(renumber::Message::Run));
+        assert!(!state.renumber_open);
+
+        let _ = state.update(ctrl_r());
+        assert!(state.renumber_open);
+        assert_eq!(state.renumber, renumber::Dialog::default());
+    }
+
+    #[test]
+    #[serial]
+    fn running_takes_in_the_field_still_being_edited() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        let id = field::FieldId("renumber.start");
+
+        let _ = state.update(ctrl_r());
+        let _ = state.update(Message::Field(field::Message::Input(id, "7".to_owned())));
+        let _ = state.update(Message::Renumber(renumber::Message::Run));
+
+        assert!(!state.renumber_open);
+        assert_eq!(state.renumber.request().map(|r| r.start), Some(7));
+    }
+
+    #[test]
+    #[serial]
+    fn the_renumber_dialog_renders_only_when_open() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        let title = fl!("dialog-renumber-title");
+
+        {
+            let mut ui = iced_test::simulator(state.view());
+            assert!(ui.find(title.as_str()).is_err());
+        }
+        let _ = state.update(ctrl_r());
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(title.as_str()).is_ok());
     }
 
     #[test]

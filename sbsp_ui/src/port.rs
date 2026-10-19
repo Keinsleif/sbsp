@@ -64,6 +64,15 @@ pub enum ModelEdit {
         ids: Vec<sbsp_backend::model::cue::Uuid>,
         position: sbsp_backend::manager::InsertPosition,
     },
+    /// Numbers the cues (in the order given) `start_from`, then
+    /// `start_from + increment`, ..., each between the prefix and suffix.
+    RenumberCues {
+        ids: Vec<sbsp_backend::model::cue::Uuid>,
+        start_from: usize,
+        increment: usize,
+        prefix: Option<String>,
+        suffix: Option<String>,
+    },
     /// Replaces the cue with the same id.
     UpdateCue(sbsp_backend::model::cue::Cue),
 }

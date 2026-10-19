@@ -55,7 +55,7 @@ pub struct NumberInput<'a> {
     pub enabled: bool,
 }
 
-pub fn number_input<'a>(input: NumberInput<'a>, drafts: &Drafts) -> Element<'a, field::Message> {
+pub fn number_input<'a>(input: NumberInput<'_>, drafts: &Drafts) -> Element<'a, field::Message> {
     let NumberInput {
         id,
         label,

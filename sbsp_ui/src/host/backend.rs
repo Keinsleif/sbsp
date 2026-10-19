@@ -179,6 +179,17 @@ impl HostPort {
                 ModelEdit::MoveCues { ids, position } => {
                     model.move_cues(ids.into_iter().collect(), position).await
                 }
+                ModelEdit::RenumberCues {
+                    ids,
+                    start_from,
+                    increment,
+                    prefix,
+                    suffix,
+                } => {
+                    model
+                        .renumber_cues(ids, start_from, increment, prefix, suffix)
+                        .await
+                }
                 ModelEdit::UpdateCue(cue) => model.update_cue(cue).await,
             }
         }

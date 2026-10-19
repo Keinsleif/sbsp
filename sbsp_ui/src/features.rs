@@ -10,6 +10,7 @@ pub mod debug_gallery;
 pub mod editor;
 pub mod header;
 pub mod hotkeys;
+pub mod renumber;
 pub mod side_bar;
 pub mod viewer;
 pub mod status_bar;
