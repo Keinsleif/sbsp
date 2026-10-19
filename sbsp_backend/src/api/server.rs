@@ -2,32 +2,25 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{
-    collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
-    time::{Duration, Instant},
+    collections::{HashMap, HashSet}, net::SocketAddr, path::{Path, PathBuf}, sync::Arc, time::{Duration, Instant},
 };
 
 use axum::{
-    Router,
-    extract::{
-        State, WebSocketUpgrade,
-        ws::{Message, WebSocket},
-    },
-    response::IntoResponse,
-    routing::get,
+    Router, extract::{
+        ConnectInfo, State, WebSocketUpgrade, ws::{Message, WebSocket},
+    }, http::HeaderMap, response::IntoResponse, routing::get,
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use tokio::{
-    sync::{broadcast, watch},
-    time::{MissedTickBehavior, interval},
+    sync::{Mutex, broadcast, watch}, time::{MissedTickBehavior, interval},
 };
 
 use super::{WsCommand, WsFeedback};
 use crate::{
     BackendHandle, FullShowState,
     api::{
-        ApiServerOptions, AuthInfo, FileList, PermissionInfo, Permissions, WsError,
+        ApiServerOptions, AuthInfo, FileList, Permissions, WsError,
         auth::{check_authentication_string, generate_salt, generate_secret},
     },
     asset_processor::AssetProcessorCommand,
@@ -40,6 +33,8 @@ use crate::{
 };
 
 const SMOOTH_FACTOR: f64 = 0.2;
+const MAX_ATTEMPTS: u32 = 5;
+const WINDOW_DURATION: Duration = Duration::from_secs(60);
 
 #[derive(Clone)]
 struct ApiState {
@@ -47,8 +42,15 @@ struct ApiState {
     state_rx: watch::Receiver<ShowState>,
     event_rx_factory: broadcast::Sender<BackendEvent>,
     shutdown_tx: broadcast::Sender<()>,
-    options: ApiServerOptions,
+    secret_map: Vec<(Option<String>, Permissions)>,
     salt: String,
+    rate_limit: Arc<Mutex<HashMap<String, AttemptInfo>>>,
+}
+
+#[derive(Clone)]
+struct AttemptInfo {
+    count: u32,
+    window_start: Instant,
 }
 
 pub async fn start_apiserver_with<F>(
@@ -69,13 +71,25 @@ where
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
     let salt = generate_salt();
 
+    let secret_map = {
+        options.auth_map.into_iter().map(|pi| {
+            if !pi.password.is_empty() {
+                let secret = generate_secret(&pi.password, &salt);
+                (Some(secret), pi.permission)
+            } else {
+                (None, pi.permission)
+            }
+        }).collect()
+    };
+    
     let state = ApiState {
         backend_handle,
         state_rx,
         event_rx_factory: event_tx,
         shutdown_tx: shutdown_tx.clone(),
-        options: options.clone(),
+        secret_map,
         salt,
+        rate_limit: Arc::new(Mutex::new(HashMap::new())),
     };
 
     let mut app = Router::new()
@@ -152,12 +166,37 @@ fn normalize_hostname(hostname_str: &str) -> String {
 
 async fn websocket_handler(
     ws: WebSocketUpgrade,
+    headers: HeaderMap,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(state): State<ApiState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_socket(socket, state))
+    let client_ip = extract_client_ip(&headers).unwrap_or_else(|| addr.ip().to_string());
+
+    ws.on_upgrade(move |socket| handle_socket(socket, state, client_ip))
 }
 
-async fn handle_socket(mut socket: WebSocket, state: ApiState) {
+fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
+    if let Some(xff) = headers.get("x-forwarded-for")
+        && let Ok(xff_str) = xff.to_str()
+            && let Some(real_ip) = xff_str.split(',').next() {
+                let trimmed = real_ip.trim();
+                if !trimmed.is_empty() {
+                    return Some(trimmed.to_string());
+                }
+            }
+
+    if let Some(x_real_ip) = headers.get("x-real-ip")
+        && let Ok(ip_str) = x_real_ip.to_str() {
+            let trimmed = ip_str.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+
+    None
+}
+
+async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
     let base_time = Instant::now();
     let mut latency = 0.0;
     let challenge = generate_salt();
@@ -182,20 +221,35 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                 if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
                     && let WsCommand::Authenticate { response } = command
                 {
-                    for PermissionInfo {
-                        password,
-                        permission: perm,
-                    } in &state.options.auth_map
                     {
-                        if let Some(auth_str) = &response {
-                            let secret = generate_secret(password, &state.salt);
-                            if check_authentication_string(&secret, &challenge, auth_str) {
+                        let mut limits = state.rate_limit.lock().await;
+                        let now = Instant::now();
+                        limits.retain(|_, info| now.duration_since(info.window_start) <= WINDOW_DURATION);
+
+                        let info = limits.entry(ip.clone()).or_insert(AttemptInfo {
+                            count: 0,
+                            window_start: now,
+                        });
+
+                        info.count += 1;
+                        if info.count > MAX_ATTEMPTS {
+                            log::warn!("Rate limit exceeded for IP: {}", ip);
+                            return;
+                        }
+                    }
+                    for (secret, perm) in &state.secret_map {
+                        match (secret, &response) {
+                            (Some(secret), Some(auth_str)) => {
+                                if check_authentication_string(secret, &challenge, auth_str) {
+                                    permission = *perm;
+                                    break 'auth;
+                                }
+                            }
+                            (None, None) => {
                                 permission = *perm;
                                 break 'auth;
                             }
-                        } else if password.is_empty() {
-                            permission = *perm;
-                            break 'auth;
+                            _ => {},
                         }
                     }
                     if let Ok(payload) =
@@ -219,6 +273,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                 return;
             }
         }
+    }
+
+    {
+        let mut limits = state.rate_limit.lock().await;
+        limits.remove(&ip);
     }
 
     if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
@@ -409,22 +468,45 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState) {
                                     }
                                 },
                                 WsCommand::Authenticate { response } => {
+                                    {
+                                        let mut limits = state.rate_limit.lock().await;
+                                        let now = Instant::now();
+                                        limits.retain(|_, info| now.duration_since(info.window_start) <= WINDOW_DURATION);
+
+                                        let info = limits.entry(ip.clone()).or_insert(AttemptInfo {
+                                            count: 0,
+                                            window_start: now,
+                                        });
+
+                                        info.count += 1;
+                                        if info.count > MAX_ATTEMPTS {
+                                            log::warn!("Rate limit exceeded for IP: {}", ip);
+                                            return;
+                                        }
+                                    }
                                     let mut reauth = false;
-                                    for PermissionInfo { password, permission: perm } in &state.options.auth_map {
-                                        if let Some(auth_str) = &response {
-                                            let secret = generate_secret(password, &state.salt);
-                                            if check_authentication_string(&secret, &challenge, auth_str) {
+                                    for (secret, perm) in &state.secret_map {
+                                        match (secret, &response) {
+                                            (Some(secret), Some(auth_str)) => {
+                                                if check_authentication_string(secret, &challenge, auth_str) {
+                                                    permission = *perm;
+                                                    reauth = true;
+                                                    break;
+                                                }
+                                            }
+                                            (None, None) => {
                                                 permission = *perm;
                                                 reauth = true;
                                                 break;
                                             }
-                                        } else if password.is_empty() {
-                                            permission = *perm;
-                                            reauth = true;
-                                            break;
+                                            _ => {},
                                         }
                                     }
                                     if reauth {
+                                        {
+                                            let mut limits = state.rate_limit.lock().await;
+                                            limits.remove(&ip);
+                                        }
                                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
                                         && socket.send(Message::Text(payload.into())).await.is_err()
                                         {
