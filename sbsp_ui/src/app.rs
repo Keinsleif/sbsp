@@ -100,8 +100,7 @@ pub struct State {
     templates: TemplateSettings,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
-    /// The renumber dialog's values (kept between openings) and whether it
-    /// is open.
+    /// The renumber dialog's values and whether it is open.
     renumber: renumber::Dialog,
     renumber_open: bool,
     /// What copy and cut took; paste adds copies of these.
@@ -757,6 +756,7 @@ impl State {
     /// Opens the renumber dialog for the selected cues. Edit mode only.
     fn open_renumber(&mut self) {
         if self.ui.mode == Mode::Edit && !self.ui.selected_rows.is_empty() {
+            self.renumber = renumber::Dialog::default();
             self.renumber_open = true;
         }
     }
@@ -2685,11 +2685,13 @@ mod tests {
 
     #[test]
     #[serial]
-    fn running_closes_the_dialog_and_keeps_the_values() {
+    fn running_closes_the_dialog_and_the_next_opening_starts_over() {
         let (mut state, ids) = editing_state();
         state.ui.set_selected(ids[0], false);
 
+        let id = field::FieldId("renumber.start");
         let _ = state.update(ctrl_r());
+        let _ = state.update(Message::Field(field::Message::Input(id, "7".to_owned())));
         let _ = state.update(Message::Renumber(renumber::Message::Run));
         assert!(!state.renumber_open);
 
