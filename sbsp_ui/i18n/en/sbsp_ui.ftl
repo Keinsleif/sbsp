@@ -104,3 +104,12 @@ main-cue-list-moving-cue = { $n ->
 }
 cue-list-end = end
 cue-list-end-of-list = end of list
+dialog-renumber-increment = Increment
+dialog-renumber-prefix = Prefix
+dialog-renumber-preview = Preview
+dialog-renumber-start-number = Start Number
+dialog-renumber-suffix = Suffix
+dialog-renumber-title = Renumber Cues
+general-run = Run
+menu-tools-renumber = Renumber selected cues
+menu-tools-title = Tools

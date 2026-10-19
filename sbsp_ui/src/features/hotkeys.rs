@@ -10,8 +10,8 @@
 //! it does is the app's business, as in the original where each
 //! `useHotkey` callback carried its own guards.
 //!
-//! File and renumber bindings are not included yet: their actions
-//! (open/save dialogs, the renumber dialog) arrive with Phase 6/7, and a
+//! File bindings are not included yet: their actions
+//! (open/save dialogs) arrive with Phase 7, and a
 //! binding with nothing behind it would just swallow the key.
 
 use iced::keyboard::{Key, Modifiers, key::Named};
@@ -46,6 +46,8 @@ pub enum Action {
     Paste,
     /// Add copies of the selected cues after them (edit mode).
     Duplicate,
+    /// Open the renumber dialog for the selected cues (edit mode).
+    Renumber,
 }
 
 impl Action {
@@ -130,7 +132,7 @@ impl Bindings {
         let playback = &settings.playback;
         let edit = &settings.edit;
 
-        let table: [(&Option<String>, Action); 16] = [
+        let table: [(&Option<String>, Action); 17] = [
             (&playback.execute, Action::Execute),
             (&playback.load, Action::Load),
             (&playback.pause_and_resume, Action::PauseAndResume),
@@ -147,6 +149,7 @@ impl Bindings {
             (&edit.cuelist_extend_down, Action::ExtendDown),
             (&edit.select_all, Action::SelectAll),
             (&edit.delete, Action::Delete),
+            (&edit.renumber_cues, Action::Renumber),
         ];
 
         // Not in the settings: the original left these to the browser's
@@ -280,6 +283,15 @@ mod tests {
             Some(Action::SelectAll)
         );
         assert_eq!(b.find(&press(ch("a"), Modifiers::empty())), None);
+    }
+
+    #[test]
+    fn mod_r_renumbers() {
+        let b = bindings();
+        assert_eq!(
+            b.find(&press(ch("r"), Modifiers::CTRL)),
+            Some(Action::Renumber)
+        );
     }
 
     #[test]
