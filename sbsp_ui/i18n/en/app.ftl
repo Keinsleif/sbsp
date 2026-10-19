@@ -192,7 +192,6 @@ notification-failed-to-load-license = Failed to load License
 notification-failed-to-save = Failed to save ShowModel
 notification-failed-to-start-server = Failed to start server
 notification-failed-to-stop-server = Failed to stop server
-notification-invalid-file-type = Dropped file type not supported.
 notification-model-loaded = Show model loaded.
 notification-model-saved = Show model saved.
 notification-operation-failed = Operation failed

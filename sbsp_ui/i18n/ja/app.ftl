@@ -192,7 +192,6 @@ notification-failed-to-load-license = ライセンスの読み込みに失敗し
 notification-failed-to-save = 保存に失敗しました
 notification-failed-to-start-server = サーバーの起動に失敗しました
 notification-failed-to-stop-server = サーバーの停止に失敗しました
-notification-invalid-file-type = ドロップされたファイルはサポートされていません
 notification-model-loaded = 正常にロードされました
 notification-model-saved = 正常に保存されました
 notification-operation-failed = 操作に失敗しました
