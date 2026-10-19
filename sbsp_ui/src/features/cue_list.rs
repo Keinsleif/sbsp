@@ -18,10 +18,12 @@
 use iced::widget::{
     Space, button, center, column, container, mouse_area, row, scrollable, stack, text,
 };
-use iced::{Alignment, Border, Color, Element, Length, Theme};
+use iced::{Alignment, Border, Color, Element, Length, Padding, Point, Theme, mouse};
 use iced_aw::ContextMenu as AwContextMenu;
+use std::collections::HashMap;
 
 use sbsp_backend::controller::state::PlaybackStatus;
+use sbsp_backend::manager::InsertPosition;
 use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
 use sbsp_frontend_settings::NameFormatSettings;
 
@@ -46,6 +48,11 @@ const INDENT_PER_LEVEL: f32 = 20.0;
 /// viewport height (see [`Viewport`]).
 const ROW_HEIGHT: f32 = 30.0;
 const HEADER_HEIGHT: f32 = 32.0;
+
+/// A drag scrolls the list when the pointer is this close to its top or
+/// bottom edge, by up to `AUTO_SCROLL_MAX` pixels per tick.
+const AUTO_SCROLL_EDGE: f32 = 48.0;
+const AUTO_SCROLL_MAX: f32 = 16.0;
 
 /// The scrollable's id, for scrolling it from outside.
 pub const LIST_ID: &str = "cue-list";
@@ -73,6 +80,17 @@ pub enum Message {
     /// the app only selects the row under the pointer.
     RightClicked,
     Context(ContextAction),
+    /// Pressed on a row's handle (edit mode): the selected cues, this one
+    /// too, are being dragged.
+    DragStart(Uuid),
+    /// The pointer, within the list, while dragging.
+    DragMoved(Point),
+    /// The pointer left the list: dropping now drops nowhere.
+    DragLeft,
+    /// The button was released: drop where the indicator is.
+    DragDropped,
+    /// While dragging: time to scroll if the pointer is at an edge.
+    DragTick,
 }
 
 /// What the context menu offers.
@@ -85,10 +103,21 @@ pub enum ContextAction {
     Delete,
 }
 
-/// The context menu (edit mode only; the other modes have none).
+/// What the list adds in edit mode: the drag handles, the context menu and
+/// the drop indicator (the other modes have none of them).
 #[derive(Debug, Clone, Copy)]
-pub struct ContextMenu {
+pub struct EditMode<'a> {
     pub can_paste: bool,
+    pub drag: Option<&'a Drag>,
+}
+
+/// A drag of cues in progress.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Drag {
+    /// What is being moved.
+    pub ids: Vec<Uuid>,
+    /// The pointer within the list, if it is over it.
+    pub pointer: Option<Point>,
 }
 
 /// The ids of the rows actually drawn, top to bottom: the flat list with
@@ -183,7 +212,14 @@ pub fn scroll_offset_for(
         return None;
     }
 
-    let index = visible_order(model, ui).iter().position(|row| *row == id)?;
+    let flat = flatten(
+        &model.cue_list.root_ids,
+        &model.cue_list.cues,
+        &ui.expanded_rows,
+    );
+    let index = render_rows(&flat)
+        .iter()
+        .position(|row| matches!(row, RenderRow::Entry(i) if flat[*i].cue_id == id))?;
     let top = index as f32 * ROW_HEIGHT;
     let bottom = top + ROW_HEIGHT;
 
@@ -200,6 +236,152 @@ pub fn select_all(model: &ShowModelState, ui: &mut UiState) {
     ui.selected_rows = visible_order(model, ui);
 }
 
+/// A row as drawn: a cue, or the "end" row closing an open group (and the
+/// list), which is where a drag can drop at the end.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RenderRow {
+    /// An index into the flat list.
+    Entry(usize),
+    End { parent: Option<Uuid>, level: usize },
+}
+
+/// The rows to draw, top to bottom (`CueList.vue`'s `buildRenderRows`).
+pub fn render_rows(flat: &[FlatCueEntry]) -> Vec<RenderRow> {
+    fn close_groups(rows: &mut Vec<RenderRow>, open: &mut Vec<(Uuid, usize)>, level: usize) {
+        while let Some(&(id, group_level)) = open.last() {
+            if group_level < level {
+                break;
+            }
+            open.pop();
+            rows.push(RenderRow::End {
+                parent: Some(id),
+                level: group_level + 1,
+            });
+        }
+    }
+
+    let mut rows = Vec::new();
+    // The expanded groups the rows so far are inside, with their levels.
+    let mut open: Vec<(Uuid, usize)> = Vec::new();
+
+    for (index, entry) in flat.iter().enumerate() {
+        if entry.is_hidden {
+            continue;
+        }
+        close_groups(&mut rows, &mut open, entry.level);
+        rows.push(RenderRow::Entry(index));
+        if entry.group.is_some_and(|group| group.is_expanded) {
+            open.push((entry.cue_id, entry.level));
+        }
+    }
+    close_groups(&mut rows, &mut open, 0);
+    rows.push(RenderRow::End {
+        parent: None,
+        level: 0,
+    });
+    rows
+}
+
+/// Whether `id` is one of `ids` or lies inside one of them (a group cannot
+/// be dropped into itself).
+fn is_within(cues: &HashMap<Uuid, Cue>, id: Uuid, ids: &[Uuid]) -> bool {
+    let mut current = Some(id);
+    // The depth bound only guards against a broken parent chain.
+    for _ in 0..=cues.len() {
+        let Some(id) = current else {
+            return false;
+        };
+        if ids.contains(&id) {
+            return true;
+        }
+        current = cues.get(&id).and_then(|cue| cue.parent_id);
+    }
+    false
+}
+
+/// The row a drop would land before (or inside, for an end row) and the
+/// position to send. `None` over nothing, or over the dragged cues.
+fn drop_target(
+    flat: &[FlatCueEntry],
+    rows: &[RenderRow],
+    cues: &HashMap<Uuid, Cue>,
+    viewport: Viewport,
+    drag: &Drag,
+) -> Option<(usize, InsertPosition)> {
+    let pointer = drag.pointer?;
+    let y = pointer.y + viewport.offset_y;
+    if y < 0.0 {
+        return None;
+    }
+    let index = (y / ROW_HEIGHT) as usize;
+
+    let (anchor, position) = match *rows.get(index)? {
+        RenderRow::Entry(i) => {
+            let id = flat.get(i)?.cue_id;
+            (Some(id), InsertPosition::Before { target: id })
+        }
+        RenderRow::End { parent, .. } => (
+            parent,
+            InsertPosition::Inside {
+                target: parent,
+                index: None,
+            },
+        ),
+    };
+    if anchor.is_some_and(|id| is_within(cues, id, &drag.ids)) {
+        return None;
+    }
+    Some((index, position))
+}
+
+/// Where dropping `drag` now would put the cues.
+pub fn drop_position(
+    model: &ShowModelState,
+    ui: &UiState,
+    viewport: Viewport,
+    drag: &Drag,
+) -> Option<InsertPosition> {
+    let flat = flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows);
+    let rows = render_rows(&flat);
+    drop_target(&flat, &rows, &model.cue_list.cues, viewport, drag).map(|(_, position)| position)
+}
+
+/// How far to scroll per tick for a pointer at `y` in a list `height`
+/// tall: nothing in the middle, faster the closer to an edge.
+fn auto_scroll_delta(y: f32, height: f32) -> f32 {
+    if height <= 2.0 * AUTO_SCROLL_EDGE {
+        return 0.0;
+    }
+    if y < AUTO_SCROLL_EDGE {
+        -AUTO_SCROLL_MAX * ((AUTO_SCROLL_EDGE - y) / AUTO_SCROLL_EDGE).min(1.0)
+    } else if y > height - AUTO_SCROLL_EDGE {
+        AUTO_SCROLL_MAX * ((y - (height - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE).min(1.0)
+    } else {
+        0.0
+    }
+}
+
+/// The offset to scroll to while dragging with the pointer near an edge,
+/// or `None` if it should stay where it is.
+pub fn drag_scroll_offset(
+    model: &ShowModelState,
+    ui: &UiState,
+    viewport: Viewport,
+    drag: &Drag,
+) -> Option<f32> {
+    let pointer = drag.pointer?;
+    let delta = auto_scroll_delta(pointer.y, viewport.height);
+    if delta == 0.0 {
+        return None;
+    }
+    let flat = flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows);
+    let content = render_rows(&flat).len() as f32 * ROW_HEIGHT;
+    let max = (content - viewport.height).max(0.0);
+    let offset = (viewport.offset_y + delta).clamp(0.0, max);
+    ((offset - viewport.offset_y).abs() > f32::EPSILON).then_some(offset)
+}
+
+const W_HANDLE: f32 = 20.0;
 const W_CURSOR: f32 = 28.0;
 const W_STATUS: f32 = 28.0;
 const W_TYPE: f32 = 28.0;
@@ -208,42 +390,64 @@ const W_TIME: f32 = 112.0;
 const W_REPEAT: f32 = 28.0;
 const W_CHAIN: f32 = 36.0;
 
+/// What every row is drawn from.
+#[derive(Clone, Copy)]
+struct Env<'a, 'b> {
+    model: &'a ShowModelState,
+    ui: &'b UiState,
+    playback: &'b PlaybackState,
+    assets: &'b AssetResults,
+    name_format: &'b NameFormatSettings,
+    edit: Option<EditMode<'b>>,
+}
+
 /// The column header plus the rows. Column widths are shared constants
 /// (cells below, header cells here), so the two line up without a table
-/// widget.
+/// widget. `edit` is `Some` in edit mode.
 pub fn view<'a>(
     model: &'a ShowModelState,
     ui: &'a UiState,
-    playback: &'a PlaybackState,
-    assets: &'a AssetResults,
+    playback: &PlaybackState,
+    assets: &AssetResults,
     name_format: &NameFormatSettings,
-    context_menu: Option<ContextMenu>,
+    viewport: Viewport,
+    edit: Option<EditMode<'_>>,
 ) -> Element<'a, Message> {
     let flat = flatten(
         &model.cue_list.root_ids,
         &model.cue_list.cues,
         &ui.expanded_rows,
     );
+    let layout = render_rows(&flat);
 
-    let rows: Vec<Element<'a, Message>> = flat
+    let drag = edit.and_then(|edit| edit.drag);
+    let target = drag
+        .and_then(|drag| drop_target(&flat, &layout, &model.cue_list.cues, viewport, drag))
+        .map(|(index, _)| index);
+
+    let env = Env {
+        model,
+        ui,
+        playback,
+        assets,
+        name_format,
+        edit,
+    };
+    let rows: Vec<Element<'a, Message>> = layout
         .iter()
-        .filter(|entry| !entry.is_hidden)
-        .filter_map(|entry| {
-            let cue = model.cue_list.cues.get(&entry.cue_id)?;
-            Some(row_view(
-                entry,
-                cue,
-                model,
-                ui,
-                playback,
-                assets,
-                name_format,
-                context_menu,
-            ))
+        .enumerate()
+        .filter_map(|(index, row)| match *row {
+            RenderRow::Entry(i) => {
+                let entry = &flat[i];
+                let cue = model.cue_list.cues.get(&entry.cue_id)?;
+                Some(row_view(entry, cue, &env, target == Some(index)))
+            }
+            RenderRow::End { level, .. } => Some(end_row_view(level, target == Some(index))),
         })
         .collect();
 
-    let body: Element<'a, Message> = if rows.is_empty() {
+    // Only the closing row of the root: no cues.
+    let body: Element<'a, Message> = if layout.len() <= 1 {
         container(text(fl!("cue-list-empty")))
             .width(Length::Fill)
             .height(Length::Fill)
@@ -251,7 +455,7 @@ pub fn view<'a>(
             .center_y(Length::Fill)
             .into()
     } else {
-        scrollable(column(rows).width(Length::Fill))
+        let list = scrollable(column(rows).width(Length::Fill))
             .id(LIST_ID)
             .on_scroll(|viewport| {
                 Message::Scrolled(Viewport {
@@ -259,8 +463,45 @@ pub fn view<'a>(
                     height: viewport.bounds().height,
                 })
             })
-            .height(Length::Fill)
-            .into()
+            .height(Length::Fill);
+
+        // The pointer is only followed while dragging: a message per mouse
+        // move would rebuild the whole list for nothing.
+        let mut area = mouse_area(list);
+        if drag.is_some() {
+            area = area
+                .on_move(Message::DragMoved)
+                .on_exit(Message::DragLeft)
+                .interaction(mouse::Interaction::Grabbing);
+        }
+
+        let ghost: Element<'a, Message> = match drag.and_then(|drag| Some((drag.ids.len(), drag.pointer?))) {
+            Some((count, pointer)) => container(
+                container(text(fl!("main-cue-list-moving-cue", n = (count as i64))).size(12))
+                    .padding([2, 10])
+                    .style(|theme: &Theme| {
+                        let palette = theme.extended_palette();
+                        container::Style {
+                            background: Some(palette.primary.base.color.into()),
+                            text_color: Some(palette.primary.base.text),
+                            border: Border {
+                                radius: 4.0.into(),
+                                ..Border::default()
+                            },
+                            ..Default::default()
+                        }
+                    }),
+            )
+            .padding(Padding {
+                top: pointer.y + 8.0,
+                left: pointer.x + 16.0,
+                right: 0.0,
+                bottom: 0.0,
+            })
+            .into(),
+            None => Space::new().into(),
+        };
+        stack![area, ghost].into()
     };
 
     column![header(ui), divider::horizontal(), body].into()
@@ -296,7 +537,7 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
     // Each line takes its pixel from the column before it, so the header's
     // columns stay over the rows' (the name column fills the rest).
     row![
-        Space::new().width(W_CURSOR + W_STATUS + W_TYPE - 1.0),
+        Space::new().width(W_HANDLE + W_CURSOR + W_STATUS + W_TYPE - 1.0),
         divider::vertical(),
         cell(text("#"), W_NUMBER - 1.0),
         divider::vertical(),
@@ -326,13 +567,17 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
 fn row_view<'a>(
     entry: &FlatCueEntry,
     cue: &'a Cue,
-    model: &'a ShowModelState,
-    ui: &UiState,
-    playback: &PlaybackState,
-    assets: &AssetResults,
-    name_format: &NameFormatSettings,
-    context_menu: Option<ContextMenu>,
+    env: &Env<'a, '_>,
+    is_drop: bool,
 ) -> Element<'a, Message> {
+    let Env {
+        model,
+        ui,
+        playback,
+        assets,
+        name_format,
+        edit,
+    } = *env;
     let id = entry.cue_id;
     let is_selected = ui.selected_rows.contains(&id);
     let is_cursor = ui.playback_cursor == Some(id);
@@ -420,7 +665,18 @@ fn row_view<'a>(
         None => Space::new().into(),
     };
 
+    // Edit mode: a handle to drag the row by.
+    let handle: Element<'a, Message> = if edit.is_some() {
+        mouse_area(container(icon(Icon::DragVertical, 18.0)).center_x(W_HANDLE))
+            .on_press(Message::DragStart(id))
+            .interaction(mouse::Interaction::Grab)
+            .into()
+    } else {
+        Space::new().width(W_HANDLE).into()
+    };
+
     let content = row![
+        handle,
         cursor,
         cell(status, W_STATUS),
         cell(icon(type_icon(&cue.params), 18.0), W_TYPE),
@@ -449,20 +705,73 @@ fn row_view<'a>(
     ])
     .on_press(Message::Select(id));
 
-    match context_menu {
-        Some(menu) => AwContextMenu::new(
-            area.on_enter(Message::Hover(id))
-                .on_exit(Message::HoverEnd(id)),
-            move || context_menu_view(menu),
-        )
-        .into(),
+    let row: Element<'a, Message> = match edit {
+        Some(edit) => {
+            let can_paste = edit.can_paste;
+            AwContextMenu::new(
+                area.on_enter(Message::Hover(id))
+                    .on_exit(Message::HoverEnd(id)),
+                move || context_menu_view(can_paste),
+            )
+            .into()
+        }
         None => area.into(),
-    }
+    };
+    drop_marker(row, is_drop)
+}
+
+/// The closing row of an open group or of the list: where a drop lands
+/// after the last row.
+fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
+    let label = if level > 0 {
+        fl!("cue-list-end")
+    } else {
+        fl!("cue-list-end-of-list")
+    };
+    // Under the name column of a row at the same level: its padding, the
+    // columns before it, the indent and the disclosure triangle.
+    let lead = 8.0
+        + W_HANDLE
+        + W_CURSOR
+        + W_STATUS
+        + W_TYPE
+        + W_NUMBER
+        + level as f32 * INDENT_PER_LEVEL
+        + 20.0
+        + 8.0;
+
+    let content = row![Space::new().width(lead), text(label).style(text::secondary)]
+        .align_y(Alignment::Center);
+    let row = column![
+        container(content)
+            .center_y(ROW_HEIGHT - 1.0)
+            .width(Length::Fill),
+        divider::horizontal(),
+    ];
+    drop_marker(row.into(), is_drop)
+}
+
+/// The line over a row's top edge where a drop would land. Always a
+/// layer, so a row's widgets keep their state when the line comes and goes.
+fn drop_marker<'a>(row: Element<'a, Message>, is_drop: bool) -> Element<'a, Message> {
+    let line: Element<'a, Message> = if is_drop {
+        container(Space::new())
+            .width(Length::Fill)
+            .height(2)
+            .style(|theme: &Theme| container::Style {
+                background: Some(theme.extended_palette().primary.base.color.into()),
+                ..Default::default()
+            })
+            .into()
+    } else {
+        Space::new().into()
+    };
+    stack![row, line].into()
 }
 
 /// The right-click menu. Items act on the selection, which the app has
 /// already moved to the clicked row if that was not part of it.
-fn context_menu_view<'a>(menu: ContextMenu) -> Element<'a, Message> {
+fn context_menu_view<'a>(can_paste: bool) -> Element<'a, Message> {
     let entry = |glyph: Icon, label: String, action: ContextAction, enabled: bool| {
         button(
             row![icon(glyph, 18.0), text(label)]
@@ -493,7 +802,7 @@ fn context_menu_view<'a>(menu: ContextMenu) -> Element<'a, Message> {
                 Icon::ContentPaste,
                 fl!("main-cue-list-context-menu-paste"),
                 ContextAction::Paste,
-                menu.can_paste,
+                can_paste,
             ),
             entry(
                 Icon::ContentDuplicate,
@@ -909,5 +1218,203 @@ mod tests {
     fn no_color_is_fully_transparent_and_others_are_opaque() {
         assert_eq!(cue_color(CueColor::None).a, 0.0);
         assert_eq!(cue_color(CueColor::Red).a, 1.0);
+    }
+
+    fn flat_of(model: &ShowModel, ui: &UiState) -> Vec<FlatCueEntry> {
+        flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows)
+    }
+
+    #[test]
+    fn a_collapsed_group_has_no_end_row_but_the_list_does() {
+        let (model, _a, _g, _c, _d) = sample();
+        let ui = UiState::new(true);
+        let flat = flat_of(&model, &ui);
+
+        assert_eq!(
+            render_rows(&flat),
+            vec![
+                RenderRow::Entry(0),
+                RenderRow::Entry(1),
+                RenderRow::End { parent: None, level: 0 },
+            ]
+        );
+    }
+
+    #[test]
+    fn an_open_group_ends_with_its_own_end_row() {
+        let (model, _a, g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let flat = flat_of(&model, &ui);
+
+        assert_eq!(
+            render_rows(&flat),
+            vec![
+                RenderRow::Entry(0),
+                RenderRow::Entry(1),
+                RenderRow::Entry(2),
+                RenderRow::Entry(3),
+                RenderRow::End { parent: Some(g), level: 1 },
+                RenderRow::End { parent: None, level: 0 },
+            ]
+        );
+    }
+
+    #[test]
+    fn an_end_row_closes_a_group_before_the_next_row_at_its_level() {
+        let (mut model, a, g, _c, _d) = sample();
+        let b = Uuid::new_v4();
+        model.cue_list.cues.insert(b, leaf(b, None));
+        model.cue_list.root_ids = vec![g, b, a];
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let flat = flat_of(&model, &ui);
+
+        // g, c, d, end of g, b, a, end of list
+        let rows = render_rows(&flat);
+        assert_eq!(rows.len(), 7);
+        assert_eq!(rows[3], RenderRow::End { parent: Some(g), level: 1 });
+        assert_eq!(rows[4], RenderRow::Entry(3));
+    }
+
+    #[test]
+    fn an_open_empty_group_still_has_an_end_row_to_drop_into() {
+        let (mut model, a, g, c, d) = sample();
+        model.cue_list.cues.insert(g, group(g, vec![]));
+        model.cue_list.cues.remove(&c);
+        model.cue_list.cues.remove(&d);
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let flat = flat_of(&model, &ui);
+
+        assert_eq!(
+            render_rows(&flat),
+            vec![
+                RenderRow::Entry(0),
+                RenderRow::Entry(1),
+                RenderRow::End { parent: Some(g), level: 1 },
+                RenderRow::End { parent: None, level: 0 },
+            ]
+        );
+        let _ = a;
+    }
+
+    fn pointer_at(row: f32, offset: f32) -> Drag {
+        Drag {
+            ids: Vec::new(),
+            pointer: Some(Point::new(50.0, row * ROW_HEIGHT + ROW_HEIGHT / 2.0 - offset)),
+        }
+    }
+
+    fn target(
+        model: &ShowModel,
+        ui: &UiState,
+        viewport: Viewport,
+        drag: &Drag,
+    ) -> Option<InsertPosition> {
+        drop_position(model, ui, viewport, drag)
+    }
+
+    #[test]
+    fn a_drop_lands_before_the_row_or_inside_at_an_end_row() {
+        let (model, a, g, c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let view = Viewport { offset_y: 0.0, height: 300.0 };
+        // Rows: a, g, c, d, end of g, end of list.
+
+        assert!(matches!(
+            target(&model, &ui, view, &pointer_at(0.0, 0.0)),
+            Some(InsertPosition::Before { target }) if target == a
+        ));
+        assert!(matches!(
+            target(&model, &ui, view, &pointer_at(2.0, 0.0)),
+            Some(InsertPosition::Before { target }) if target == c
+        ));
+        assert!(matches!(
+            target(&model, &ui, view, &pointer_at(4.0, 0.0)),
+            Some(InsertPosition::Inside { target: Some(t), index: None }) if t == g
+        ));
+        assert!(matches!(
+            target(&model, &ui, view, &pointer_at(5.0, 0.0)),
+            Some(InsertPosition::Inside { target: None, index: None })
+        ));
+        // Below the last row, or no pointer: nowhere.
+        assert!(target(&model, &ui, view, &pointer_at(6.0, 0.0)).is_none());
+        assert!(target(&model, &ui, view, &Drag { ids: vec![], pointer: None }).is_none());
+    }
+
+    #[test]
+    fn the_scroll_offset_moves_the_rows_under_the_pointer() {
+        let (model, _a, g, c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let view = Viewport { offset_y: 60.0, height: 60.0 };
+
+        // Two rows scrolled away: the pointer's first row is row 2.
+        assert!(matches!(
+            target(&model, &ui, view, &pointer_at(2.0, 60.0)),
+            Some(InsertPosition::Before { target }) if target == c
+        ));
+    }
+
+    #[test]
+    fn cues_cannot_be_dropped_onto_themselves_or_into_themselves() {
+        let (model, a, g, c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        let view = Viewport { offset_y: 0.0, height: 300.0 };
+        let dragging = |ids: Vec<Uuid>, row: f32| Drag {
+            ids,
+            pointer: pointer_at(row, 0.0).pointer,
+        };
+
+        // On the dragged cue itself.
+        assert!(target(&model, &ui, view, &dragging(vec![a], 0.0)).is_none());
+        // A group over its own child, and over its own end row.
+        assert!(target(&model, &ui, view, &dragging(vec![g], 2.0)).is_none());
+        assert!(target(&model, &ui, view, &dragging(vec![g], 4.0)).is_none());
+        // But over something else it can land, and the end of the list too.
+        assert!(target(&model, &ui, view, &dragging(vec![g], 0.0)).is_some());
+        assert!(target(&model, &ui, view, &dragging(vec![g], 5.0)).is_some());
+        // A child can leave its group for the end of the list.
+        assert!(target(&model, &ui, view, &dragging(vec![c], 5.0)).is_some());
+    }
+
+    #[test]
+    fn dragging_scrolls_faster_the_closer_to_the_edge() {
+        let height = 300.0;
+        assert_eq!(auto_scroll_delta(150.0, height), 0.0);
+        assert_eq!(auto_scroll_delta(AUTO_SCROLL_EDGE, height), 0.0);
+        assert_eq!(auto_scroll_delta(0.0, height), -AUTO_SCROLL_MAX);
+        assert_eq!(auto_scroll_delta(height, height), AUTO_SCROLL_MAX);
+        let slow = auto_scroll_delta(AUTO_SCROLL_EDGE - 12.0, height);
+        let fast = auto_scroll_delta(AUTO_SCROLL_EDGE - 36.0, height);
+        assert!(slow < 0.0 && fast < slow);
+        // A list too short to have a middle does not scroll by itself.
+        assert_eq!(auto_scroll_delta(10.0, 80.0), 0.0);
+    }
+
+    #[test]
+    fn drag_scrolling_stays_within_the_list() {
+        let (model, _a, g, _c, _d) = sample();
+        let mut ui = UiState::new(true);
+        ui.toggle_expand(g);
+        // 6 rows: 180px of content in a 100px viewport: at most 80 to scroll.
+        let at = |offset_y: f32, y: f32| {
+            drag_scroll_offset(
+                &model,
+                &ui,
+                Viewport { offset_y, height: 100.0 },
+                &Drag { ids: vec![], pointer: Some(Point::new(10.0, y)) },
+            )
+        };
+
+        assert_eq!(at(0.0, 50.0), None, "middle of the list");
+        assert_eq!(at(0.0, 0.0), None, "already at the top");
+        assert_eq!(at(10.0, 0.0), Some(0.0), "stops at the top");
+        assert_eq!(at(0.0, 100.0), Some(AUTO_SCROLL_MAX));
+        assert_eq!(at(80.0, 100.0), None, "already at the bottom");
+        assert_eq!(at(75.0, 100.0), Some(80.0), "stops at the bottom");
     }
 }

@@ -159,7 +159,6 @@ main-bottom-editor-audio-change-fade-out = フェードアウトを変更
 main-bottom-editor-time-levels-change-pan = Panを変更
 main-bottom-editor-time-levels-change-volume = 音量を変更
 main-bottom-editor-time-levels-envelope-visible = 音量変化を表示
-main-cue-list-moving-cue = { $0 }件のCueを移動
 main-foot-bar-processing-indicator = { $size } 個のファイルを処理中
 main-mobile-active = 実行中
 main-mobile-controls = 操作

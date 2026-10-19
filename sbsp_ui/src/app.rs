@@ -103,6 +103,8 @@ pub struct State {
     /// The cue list row under the pointer (edit mode), which a right
     /// click acts on.
     hovered_row: Option<Uuid>,
+    /// Cues being dragged to a new place in the list.
+    cue_drag: Option<cue_list::Drag>,
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
@@ -211,6 +213,7 @@ impl State {
             pending_remove: None,
             clipboard: Vec::new(),
             hovered_row: None,
+            cue_drag: None,
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
@@ -305,6 +308,8 @@ impl State {
             Message::CueList(cue_list::Message::Context(action)) => {
                 self.run_context_action(action)
             }
+            Message::CueList(cue_list::Message::DragDropped) => self.finish_drag(),
+            Message::CueList(cue_list::Message::DragTick) => self.scroll_while_dragging(),
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
             Message::AudioTargetPicked(id, file) => self.set_audio_target(id, file),
             Message::RemoveConfirmed => self.confirm_remove(),
@@ -343,7 +348,10 @@ impl State {
             }
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
-            Message::StatusBar(status_bar::Message::ModeSelected(mode)) => self.ui.set_mode(mode),
+            Message::StatusBar(status_bar::Message::ModeSelected(mode)) => {
+                self.cue_drag = None;
+                self.ui.set_mode(mode);
+            }
             Message::StatusBar(status_bar::Message::ToggleBottomTab) => {
                 self.ui.toggle_bottom_tab();
             }
@@ -460,8 +468,33 @@ impl State {
                     self.ui.set_selected(id, lock);
                 }
             }
-            // Needs to return a Task: see `update_inner`.
-            cue_list::Message::Context(_) => {}
+            cue_list::Message::DragStart(id) => {
+                if self.ui.mode == Mode::Edit {
+                    // Dragging a row outside the selection takes that row
+                    // alone; dragging one of them takes them all.
+                    if !self.ui.selected_rows.contains(&id) {
+                        self.ui.set_selected(id, lock);
+                    }
+                    self.cue_drag = Some(cue_list::Drag {
+                        ids: self.ui.selected_rows.clone(),
+                        pointer: None,
+                    });
+                }
+            }
+            cue_list::Message::DragMoved(point) => {
+                if let Some(drag) = &mut self.cue_drag {
+                    drag.pointer = Some(point);
+                }
+            }
+            cue_list::Message::DragLeft => {
+                if let Some(drag) = &mut self.cue_drag {
+                    drag.pointer = None;
+                }
+            }
+            // These need to return a Task: see `update_inner`.
+            cue_list::Message::Context(_)
+            | cue_list::Message::DragDropped
+            | cue_list::Message::DragTick => {}
             cue_list::Message::Select(id) => {
                 if self.modifiers.shift() {
                     // Anchor on the current selection; with none yet,
@@ -503,6 +536,12 @@ impl State {
     }
 
     fn handle_key(&mut self, press: hotkeys::KeyPress) -> Task<Message> {
+        // Escape drops a drag on the floor (and is not Stop All, which it
+        // is bound to).
+        if self.cue_drag.is_some() && press.names.iter().any(|name| name == "Escape") {
+            self.cue_drag = None;
+            return Task::none();
+        }
         // Behind the removal confirmation only its own keys work: GO on
         // Enter must not fire while the question is open.
         if self.pending_remove.is_some() {
@@ -1025,6 +1064,48 @@ impl State {
         })
     }
 
+    /// The mouse button went up: moves the dragged cues to where the
+    /// indicator is, if it is anywhere.
+    fn finish_drag(&mut self) -> Task<Message> {
+        let Some(drag) = self.cue_drag.take() else {
+            return Task::none();
+        };
+        if self.ui.mode != Mode::Edit {
+            return Task::none();
+        }
+        let Some(position) =
+            cue_list::drop_position(&self.model, &self.ui, self.cue_view, &drag)
+        else {
+            return Task::none();
+        };
+        let ids: Vec<Uuid> = drag
+            .ids
+            .into_iter()
+            .filter(|id| self.model.cue_list.cues.contains_key(id))
+            .collect();
+        if ids.is_empty() {
+            return Task::none();
+        }
+        self.send_edit(ModelEdit::MoveCues { ids, position })
+    }
+
+    /// A tick of a drag: scrolls the list if the pointer is at its edge.
+    fn scroll_while_dragging(&mut self) -> Task<Message> {
+        let Some(drag) = &self.cue_drag else {
+            return Task::none();
+        };
+        let Some(y) = cue_list::drag_scroll_offset(&self.model, &self.ui, self.cue_view, drag)
+        else {
+            return Task::none();
+        };
+        // Remembered right away, as for the arrow keys.
+        self.cue_view.offset_y = y;
+        iced::widget::operation::scroll_to(
+            cue_list::LIST_ID,
+            iced::widget::operation::AbsoluteOffset { x: 0.0, y },
+        )
+    }
+
     fn run_context_action(&mut self, action: cue_list::ContextAction) -> Task<Message> {
         use cue_list::ContextAction as C;
         match action {
@@ -1477,7 +1558,25 @@ impl State {
             Subscription::none()
         };
 
-        Subscription::batch([toasts, tick, clock, meter, backend_events, modifiers])
+        // While dragging cues: the release (wherever it happens) drops
+        // them, and a timer scrolls the list when the pointer is at its
+        // edge.
+        let dragging = if self.cue_drag.is_some() {
+            Subscription::batch([
+                iced::time::every(Duration::from_millis(16))
+                    .map(|_| Message::CueList(cue_list::Message::DragTick)),
+                event::listen_with(|event, _status, _window| match event {
+                    iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                        Some(Message::CueList(cue_list::Message::DragDropped))
+                    }
+                    _ => None,
+                }),
+            ])
+        } else {
+            Subscription::none()
+        };
+
+        Subscription::batch([toasts, tick, clock, meter, backend_events, modifiers, dragging])
     }
 
     fn menu_spec(&self) -> MenuSpec {
@@ -1634,8 +1733,10 @@ impl State {
                 &self.playback,
                 &self.assets,
                 &self.name_format,
-                (self.ui.mode == Mode::Edit).then_some(cue_list::ContextMenu {
+                self.cue_view,
+                (self.ui.mode == Mode::Edit).then(|| cue_list::EditMode {
                     can_paste: !self.clipboard.is_empty(),
+                    drag: self.cue_drag.as_ref(),
                 }),
             )
                 .map(Message::CueList),
@@ -2268,6 +2369,83 @@ mod tests {
         // A right click outside edit mode selects nothing.
         let _ = state.update(Message::CueList(cue_list::Message::RightClicked));
         assert!(state.ui.selected_rows.is_empty());
+    }
+
+    fn cue_list_message(message: cue_list::Message) -> Message {
+        Message::CueList(message)
+    }
+
+    #[test]
+    #[serial]
+    fn dragging_a_selected_row_takes_the_whole_selection() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+        state.ui.add_selected(ids[2], false);
+
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[2])));
+        let drag = state.cue_drag.as_ref().expect("a drag started");
+        assert_eq!(drag.ids, vec![ids[0], ids[2]]);
+        assert_eq!(drag.pointer, None);
+    }
+
+    #[test]
+    #[serial]
+    fn dragging_a_row_outside_the_selection_selects_only_that_row() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_selected(ids[0], false);
+
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[1])));
+        assert_eq!(state.ui.selected_rows, vec![ids[1]]);
+        assert_eq!(state.cue_drag.as_ref().map(|drag| drag.ids.clone()), Some(vec![ids[1]]));
+    }
+
+    #[test]
+    #[serial]
+    fn the_pointer_is_followed_while_dragging_and_forgotten_outside_the_list() {
+        let (mut state, ids) = editing_state();
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
+
+        let at = iced::Point::new(12.0, 34.0);
+        let _ = state.update(cue_list_message(cue_list::Message::DragMoved(at)));
+        assert_eq!(state.cue_drag.as_ref().and_then(|drag| drag.pointer), Some(at));
+        let _ = state.update(cue_list_message(cue_list::Message::DragLeft));
+        assert_eq!(state.cue_drag.as_ref().and_then(|drag| drag.pointer), None);
+    }
+
+    #[test]
+    #[serial]
+    fn escape_cancels_a_drag_instead_of_stopping_everything() {
+        let (mut state, ids) = editing_state();
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
+
+        let _ = state.update(press(
+            keyboard::Key::Named(keyboard::key::Named::Escape),
+            keyboard::Modifiers::empty(),
+        ));
+        assert!(state.cue_drag.is_none());
+    }
+
+    #[test]
+    #[serial]
+    fn a_drop_ends_the_drag_and_leaving_edit_mode_cancels_it() {
+        let (mut state, ids) = editing_state();
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
+        let _ = state.update(cue_list_message(cue_list::Message::DragDropped));
+        assert!(state.cue_drag.is_none());
+
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
+        let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::Run)));
+        assert!(state.cue_drag.is_none());
+    }
+
+    #[test]
+    #[serial]
+    fn only_edit_mode_starts_a_drag() {
+        let (mut state, ids) = editing_state();
+        state.ui.set_mode(Mode::Run);
+
+        let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
+        assert!(state.cue_drag.is_none());
     }
 
     fn ctrl_backspace() -> Message {
