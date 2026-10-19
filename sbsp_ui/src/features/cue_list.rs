@@ -39,8 +39,7 @@ use crate::theme::fonts;
 use crate::widgets::divider;
 use crate::widgets::icon::{Icon, Tone, icon, toned};
 use crate::widgets::progress;
-
-const INDENT_PER_LEVEL: f32 = 20.0;
+use crate::widgets::tree_guide::{self, Kind as GuideKind};
 
 /// Rows are a fixed height so the scroll position of any row is just
 /// `index * ROW_HEIGHT`: keeping a row in view then needs no layout
@@ -599,7 +598,7 @@ fn row_view<'a>(
         None => Space::new().into(),
     };
 
-    let indent = Space::new().width(entry.level as f32 * INDENT_PER_LEVEL);
+    let indent = tree_guide::view(entry.level, GuideKind::Item, ROW_HEIGHT - 1.0);
     let disclosure: Element<'a, Message> = match entry.group {
         Some(group) => button(icon(
             if group.is_expanded {
@@ -728,20 +727,19 @@ fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
     } else {
         fl!("cue-list-end-of-list")
     };
-    // Under the name column of a row at the same level: its padding, the
-    // columns before it, the indent and the disclosure triangle.
-    let lead = 8.0
-        + W_HANDLE
-        + W_CURSOR
-        + W_STATUS
-        + W_TYPE
-        + W_NUMBER
-        + level as f32 * INDENT_PER_LEVEL
-        + 20.0
-        + 8.0;
+    // Lined up with the name column of a row at the same level: after its
+    // padding and the columns before it come the guide, then the space of
+    // the disclosure triangle (and the gaps around it).
+    let lead = 8.0 + W_HANDLE + W_CURSOR + W_STATUS + W_TYPE + W_NUMBER;
+    let triangle = 20.0 + 8.0;
 
-    let content = row![Space::new().width(lead), text(label).style(text::secondary)]
-        .align_y(Alignment::Center);
+    let content = row![
+        Space::new().width(lead),
+        tree_guide::view(level, GuideKind::End, ROW_HEIGHT - 1.0),
+        Space::new().width(triangle),
+        text(label).style(text::secondary),
+    ]
+    .align_y(Alignment::Center);
     let row = column![
         container(content)
             .center_y(ROW_HEIGHT - 1.0)

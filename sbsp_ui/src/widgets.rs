@@ -10,4 +10,5 @@ pub mod menu_bar;
 pub mod progress;
 pub mod modal;
 pub mod toast;
+pub mod tree_guide;
 pub mod waveform_editor;
