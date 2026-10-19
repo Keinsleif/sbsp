@@ -24,7 +24,7 @@ use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{
-    cue_list, debug_gallery, editor, header, hotkeys, renumber, side_bar, status_bar, viewer,
+    cue_list, editor, header, hotkeys, renumber, side_bar, status_bar, viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -126,7 +126,6 @@ pub struct State {
     /// The one text field being edited, if any (shared by every field).
     fields: field::Drafts,
     editor: editor::Editor,
-    gallery: debug_gallery::Gallery,
     /// Set when the cue list or the cache was replaced, so the next
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
     assets_stale: bool,
@@ -147,7 +146,6 @@ pub enum Message {
     Viewer(viewer::Message),
     Field(field::Message),
     Editor(editor::Message),
-    Gallery(debug_gallery::Message),
     Renumber(renumber::Message),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
@@ -242,7 +240,6 @@ impl State {
             viewer: viewer::Viewer::default(),
             fields: field::Drafts::default(),
             editor: editor::Editor::default(),
-            gallery: debug_gallery::Gallery::default(),
             assets_stale: false,
             toasts: toast::Toasts::new(),
             #[cfg(feature = "host")]
@@ -319,7 +316,6 @@ impl State {
             Message::KeyPressed(press) => self.handle_key(press),
             Message::Field(message) => self.handle_field(message),
             Message::Editor(message) => self.handle_editor(message),
-            Message::Gallery(message) => self.handle_gallery(message),
             Message::Renumber(message) => self.handle_renumber(message),
             Message::CueList(cue_list::Message::Context(action)) => {
                 self.run_context_action(action)
@@ -393,7 +389,6 @@ impl State {
             | Message::Viewer(_)
             | Message::Field(_)
             | Message::Editor(_)
-            | Message::Gallery(_)
             | Message::Renumber(_)
             | Message::FileDropped(_)
             | Message::DropsSettled
@@ -728,7 +723,6 @@ impl State {
         let (outcome, task) = self.fields.update(message);
         let mut edit = Task::none();
         if let Some(outcome) = outcome {
-            self.gallery.apply(&outcome);
             self.renumber.apply(&outcome);
             // A step button press has no draft behind it: it applies to
             // the cue on screen.
@@ -889,24 +883,6 @@ impl State {
         };
         match crate::domain::cue_edit::set_audio_target(cue, file) {
             Some(edited) => self.send_edit(ModelEdit::UpdateCue(edited)),
-            None => Task::none(),
-        }
-    }
-
-    fn handle_gallery(&mut self, message: debug_gallery::Message) -> Task<Message> {
-        use debug_gallery::Message as G;
-
-        let field = match message {
-            G::Field(field) => Some(field),
-            G::Volume(message) => self.gallery.volume_message(message, Instant::now()),
-            G::Panning(message) => self.gallery.panning_message(message, Instant::now()),
-            G::Close => {
-                self.gallery.open = false;
-                None
-            }
-        };
-        match field {
-            Some(field) => self.handle_field(field),
             None => Task::none(),
         }
     }
@@ -1273,223 +1249,11 @@ impl State {
                 Task::none()
             }
             "file.quit" => iced::window::latest().and_then(iced::window::close),
-            #[cfg(feature = "host")]
-            "debug.add-test-cue" => self.add_test_cue(),
-            #[cfg(feature = "host")]
-            "debug.add-test-group" => self.add_test_group(),
-            #[cfg(feature = "host")]
-            "debug.add-test-audio-cue" => self.add_test_audio_cue(),
-            #[cfg(feature = "host")]
-            "debug.open-gallery" => {
-                self.gallery.open = true;
-                Task::none()
-            }
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
             }
         }
-    }
-
-    /// TEMPORARY debug aid (removed together with `add_test_cue`): appends
-    /// a playlist group holding two wait cues at the end of the root list,
-    /// so expand/collapse of the cue list can be exercised by hand.
-    #[cfg(feature = "host")]
-    fn add_test_group(&self) -> Task<Message> {
-        use sbsp_backend::manager::InsertPosition;
-        use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid, WaitCueParam,
-            group::{GroupCueParamBase, GroupMode},
-        };
-
-        let Some(backend) = &self.backend else {
-            return Task::none();
-        };
-        let handle = backend.handle();
-
-        let make = |name: &str, parent_id: Option<Uuid>, params: CueParam| Cue {
-            id: Uuid::new_v4(),
-            number: String::new(),
-            name: Some(name.to_string()),
-            notes: String::new(),
-            color: CueColor::default(),
-            pre_wait: 0.0,
-            chain: CueChain::default(),
-            treat_stop_as_completed: false,
-            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
-            parent_id,
-            params,
-        };
-
-        let group = make(
-            "Test Group",
-            None,
-            CueParam::Group {
-                base: GroupCueParamBase {
-                    mode: GroupMode::Playlist { repeat: false },
-                },
-                children: Vec::new(),
-            },
-        );
-        let group_id = group.id;
-        let child_a = make(
-            "Child A",
-            Some(group_id),
-            CueParam::Wait(WaitCueParam { duration: 1.0 }),
-        );
-        let child_b = make(
-            "Child B",
-            Some(group_id),
-            CueParam::Wait(WaitCueParam { duration: 2.0 }),
-        );
-
-        Task::perform(
-            async move {
-                let model = &handle.model_handle;
-                model
-                    .add_cue(
-                        group,
-                        InsertPosition::Inside {
-                            target: None,
-                            index: None,
-                        },
-                    )
-                    .await?;
-                for child in [child_a, child_b] {
-                    model
-                        .add_cue(
-                            child,
-                            InsertPosition::Inside {
-                                target: Some(group_id),
-                                index: None,
-                            },
-                        )
-                        .await?;
-                }
-                Ok::<(), anyhow::Error>(())
-            },
-            backend_result,
-        )
-    }
-
-    /// TEMPORARY debug aid, removed once Phase 6 has a real way to add
-    /// cues: appends a wait cue ("Wait 1s", "Wait 2s", ...) at the end of
-    /// the root list through the backend, so the cue list can be exercised
-    /// by hand before anything else creates cues. The result comes back
-    /// through `CueListUpdated`, exactly as a real add would.
-    #[cfg(feature = "host")]
-    fn add_test_cue(&self) -> Task<Message> {
-        use sbsp_backend::manager::InsertPosition;
-        use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid, WaitCueParam,
-        };
-
-        let Some(backend) = &self.backend else {
-            return Task::none();
-        };
-        let handle = backend.handle();
-
-        let cue = Cue {
-            id: Uuid::new_v4(),
-            number: String::new(),
-            name: None,
-            notes: String::new(),
-            color: CueColor::default(),
-            pre_wait: 0.0,
-            chain: CueChain::default(),
-            treat_stop_as_completed: false,
-            cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
-            parent_id: None,
-            params: CueParam::Wait(WaitCueParam {
-                duration: (self.model.cue_list.cues.len() + 1) as f64,
-            }),
-        };
-
-        Task::perform(
-            async move {
-                handle
-                    .model_handle
-                    .add_cue(
-                        cue,
-                        InsertPosition::Inside {
-                            target: None,
-                            index: None,
-                        },
-                    )
-                    .await
-            },
-            backend_result,
-        )
-        .then(Task::done)
-    }
-
-    /// Debug aid: asks for an audio file and adds a cue that plays it, so
-    /// the waveform viewer, durations and the sidebar can be exercised
-    /// before the real editor and file operations exist (Phase 6/7).
-    /// Removed together with the other Debug menu items.
-    #[cfg(feature = "host")]
-    fn add_test_audio_cue(&self) -> Task<Message> {
-        use sbsp_backend::manager::InsertPosition;
-        use sbsp_backend::model::cue::{
-            Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
-            audio::{AudioCueParam, Decibels, SoundType},
-        };
-
-        let Some(backend) = &self.backend else {
-            return Task::none();
-        };
-        let handle = backend.handle();
-
-        Task::perform(
-            async move {
-                let Some(file) = rfd::AsyncFileDialog::new()
-                    .set_title("Add Test Audio Cue")
-                    .add_filter("Audio", &["wav", "mp3", "flac", "ogg", "m4a", "aac"])
-                    .pick_file()
-                    .await
-                else {
-                    // Cancelled.
-                    return Ok(());
-                };
-
-                let cue = Cue {
-                    id: Uuid::new_v4(),
-                    number: String::new(),
-                    name: None,
-                    notes: String::new(),
-                    color: CueColor::default(),
-                    pre_wait: 0.0,
-                    chain: CueChain::default(),
-                    treat_stop_as_completed: false,
-                    cursor_advance_trigger_override: CueCursorAdvanceTriggerOverride::default(),
-                    parent_id: None,
-                    params: CueParam::Audio(AudioCueParam {
-                        target: file.path().to_path_buf(),
-                        start_time: None,
-                        fade_in_param: None,
-                        end_time: None,
-                        fade_out_param: None,
-                        volume: Decibels::default(),
-                        pan: 0.0,
-                        repeat: false,
-                        sound_type: SoundType::default(),
-                        envelope: Vec::new(),
-                    }),
-                };
-
-                handle
-                    .model_handle
-                    .add_cue(
-                        cue,
-                        InsertPosition::Inside {
-                            target: None,
-                            index: None,
-                        },
-                    )
-                    .await
-            },
-            backend_result,
-        )
     }
 
     /// Replaces the whole model (a load or a reset): selection starts
@@ -1788,16 +1552,6 @@ impl State {
                     MenuNode::item("view.toggle-language", self.lang.toggle().label()),
                 ],
             )
-            .menu_if(
-                cfg!(feature = "host"),
-                "Debug",
-                vec![
-                    MenuNode::item("debug.add-test-cue", "Add Test Cue"),
-                    MenuNode::item("debug.add-test-group", "Add Test Group"),
-                    MenuNode::item("debug.add-test-audio-cue", "Add Test Audio Cue..."),
-                    MenuNode::item("debug.open-gallery", "Input Gallery"),
-                ],
-            )
             .menu(
                 fl!("menu-help"),
                 vec![MenuNode::item("help.about", fl!("menu-help-about"))],
@@ -1961,16 +1715,6 @@ impl State {
             footer
         ]
         .into();
-
-        let content = if self.gallery.open {
-            modal::over(
-                content,
-                self.gallery.view(&self.fields).map(Message::Gallery),
-                Message::Gallery(debug_gallery::Message::Close),
-            )
-        } else {
-            content
-        };
 
         let content = match &self.pending_remove {
             Some(ids) => modal::over_blocking(content, remove_dialog(ids.len())),
@@ -2421,42 +2165,32 @@ mod tests {
 
     #[test]
     #[serial]
-    fn the_gallery_renders_only_when_open() {
-        let mut state = new_state();
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find("Input Gallery (debug)").is_err());
-        drop(ui);
-
-        state.gallery.open = true;
-        let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find("Input Gallery (debug)").is_ok());
-    }
-
-    #[test]
-    #[serial]
     fn a_field_edit_is_applied_when_submitted() {
         let mut state = new_state();
-        state.gallery.open = true;
-        let id = field::FieldId("gallery.number");
+        let id = field::FieldId("renumber.start");
 
         let _ = state.update(Message::Field(field::Message::Input(id, "99".to_string())));
-        assert_eq!(state.gallery.number, Some(5.0), "typing alone changes nothing");
+        assert_eq!(
+            state.renumber.request().map(|r| r.start),
+            Some(1),
+            "typing alone changes nothing"
+        );
 
         let _ = state.update(Message::Field(field::Message::Submit(id)));
-        assert_eq!(state.gallery.number, Some(10.0), "clamped to the field's max");
+        assert_eq!(state.renumber.request().map(|r| r.start), Some(99));
     }
 
     #[test]
     #[serial]
     fn escape_discards_a_field_edit() {
         let mut state = new_state();
-        let id = field::FieldId("gallery.number");
+        let id = field::FieldId("renumber.start");
 
         let _ = state.update(Message::Field(field::Message::Input(id, "9".to_string())));
         let _ = state.update(Message::Field(field::Message::Escape));
         let _ = state.update(Message::Field(field::Message::Submit(id)));
 
-        assert_eq!(state.gallery.number, Some(5.0));
+        assert_eq!(state.renumber.request().map(|r| r.start), Some(1));
     }
 
     fn editing_state() -> (State, [Uuid; 3]) {

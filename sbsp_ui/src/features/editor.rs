@@ -1413,6 +1413,6 @@ mod tests {
     #[test]
     fn only_its_own_fields_are_owned() {
         assert!(owns(NOTES));
-        assert!(!owns(FieldId("gallery.number")));
+        assert!(!owns(FieldId("renumber.start")));
     }
 }
