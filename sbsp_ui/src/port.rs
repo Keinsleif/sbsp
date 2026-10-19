@@ -59,6 +59,11 @@ pub enum ModelEdit {
         members: Vec<sbsp_backend::model::cue::Uuid>,
     },
     RemoveCues(Vec<sbsp_backend::model::cue::Uuid>),
+    /// Moves cues (keeping their order) to `position`.
+    MoveCues {
+        ids: Vec<sbsp_backend::model::cue::Uuid>,
+        position: sbsp_backend::manager::InsertPosition,
+    },
     /// Replaces the cue with the same id.
     UpdateCue(sbsp_backend::model::cue::Cue),
 }

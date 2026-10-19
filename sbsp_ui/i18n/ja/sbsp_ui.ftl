@@ -95,3 +95,6 @@ menu-edit-cut = 切り取り
 menu-edit-paste = 貼り付け
 menu-edit-duplicate = 複製
 main-cue-list-context-menu-duplicate = 複製
+main-cue-list-moving-cue = { $n }件のキューを移動
+cue-list-end = 終わり
+cue-list-end-of-list = リストの終わり

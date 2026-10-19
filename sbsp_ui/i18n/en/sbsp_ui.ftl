@@ -98,3 +98,9 @@ menu-edit-cut = Cut
 menu-edit-paste = Paste
 menu-edit-duplicate = Duplicate
 main-cue-list-context-menu-duplicate = Duplicate
+main-cue-list-moving-cue = { $n ->
+    [one] Move { $n } cue
+   *[other] Move { $n } cues
+}
+cue-list-end = end
+cue-list-end-of-list = end of list

@@ -159,10 +159,6 @@ main-bottom-editor-audio-change-fade-out = Change Fade Out
 main-bottom-editor-time-levels-change-pan = Change Pan
 main-bottom-editor-time-levels-change-volume = Change Volume
 main-bottom-editor-time-levels-envelope-visible = Show envelope
-main-cue-list-moving-cue = { $n ->
-    [one] Move { $n } cue
-   *[other] Move { $n } cues
-}
 main-foot-bar-processing-indicator = Processing { $size } files
 main-mobile-active = Active
 main-mobile-controls = Controls
