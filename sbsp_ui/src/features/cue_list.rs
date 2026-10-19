@@ -855,7 +855,14 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
         theme.extended_palette().primary.base.color.scale_alpha(0.5)
     });
 
-    let field = container(stack![bar, center(text(label).font(fonts::MONO))])
+    // The stack is sized explicitly: an empty bar (no progress) is
+    // zero-sized, and a stack takes its size from its first layer, which
+    // would leave the label no room.
+    let field = container(
+        stack![bar, center(text(label).font(fonts::MONO))]
+            .width(Length::Fill)
+            .height(Length::Fill),
+    )
         .width(Length::Fill)
         .height(ROW_HEIGHT * 0.75)
         .style(move |theme: &Theme| container::Style {

@@ -21,7 +21,7 @@ pub fn bar<'a, Message: 'a>(
     let filled = (ratio.clamp(0.0, 1.0) * RESOLUTION as f32).round() as u16;
 
     if filled == 0 {
-        return Space::new().into();
+        return Space::new().width(Length::Fill).height(Length::Fill).into();
     }
 
     let fill = container(Space::new())
