@@ -113,3 +113,4 @@ dialog-renumber-title = Renumber Cues
 general-run = Run
 menu-tools-renumber = Renumber selected cues
 menu-tools-title = Tools
+notification-invalid-file-type = Dropped file type not supported.

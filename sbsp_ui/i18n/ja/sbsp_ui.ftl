@@ -107,3 +107,4 @@ dialog-renumber-title = キュー番号の振り直し
 general-run = 実行
 menu-tools-renumber = キュー番号の振り直し
 menu-tools-title = ツール
+notification-invalid-file-type = ドロップされたファイルはサポートされていません

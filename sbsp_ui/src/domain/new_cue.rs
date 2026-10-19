@@ -27,6 +27,18 @@ pub const AUDIO_EXTENSIONS: &[&str] = &[
     "flac", "mp3",
 ];
 
+/// Whether `path` names a file of a kind an audio cue can play, going by
+/// its extension (any letter case).
+pub fn is_audio_file(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            AUDIO_EXTENSIONS
+                .iter()
+                .any(|known| known.eq_ignore_ascii_case(extension))
+        })
+}
+
 /// The kinds of cue the add buttons make.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CueKind {
@@ -130,6 +142,17 @@ pub fn audio_cues(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn audio_files_are_told_by_extension() {
+        use super::is_audio_file;
+        use std::path::Path;
+        assert!(is_audio_file(Path::new("/a/b/song.wav")));
+        assert!(is_audio_file(Path::new("SONG.MP3")));
+        assert!(!is_audio_file(Path::new("notes.txt")));
+        assert!(!is_audio_file(Path::new("wav")));
+        assert!(!is_audio_file(Path::new("/a/folder")));
+    }
+
     use super::*;
     use sbsp_backend::model::cue::WaitCueParam;
 

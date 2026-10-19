@@ -103,6 +103,8 @@ pub struct State {
     /// The renumber dialog's values and whether it is open.
     renumber: renumber::Dialog,
     renumber_open: bool,
+    /// Files dropped on the window, waiting for the rest of the batch.
+    dropped_files: Vec<std::path::PathBuf>,
     /// What copy and cut took; paste adds copies of these.
     clipboard: Vec<Cue>,
     /// The cue list row under the pointer (edit mode), which a right
@@ -159,6 +161,10 @@ pub enum Message {
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
+    /// A file was dropped on the window (one event per file).
+    FileDropped(std::path::PathBuf),
+    /// No more drops arrived for a moment: handle the batch.
+    DropsSettled,
     Menu(crate::menu::MenuId),
     Toast(toast::Message),
     Tick(Instant),
@@ -219,6 +225,7 @@ impl State {
             pending_remove: None,
             renumber: renumber::Dialog::default(),
             renumber_open: false,
+            dropped_files: Vec::new(),
             clipboard: Vec::new(),
             hovered_row: None,
             cue_drag: None,
@@ -322,6 +329,11 @@ impl State {
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
             Message::AudioTargetPicked(id, file) => self.set_audio_target(id, file),
             Message::RemoveConfirmed => self.confirm_remove(),
+            Message::FileDropped(path) => {
+                self.dropped_files.push(path);
+                Task::none()
+            }
+            Message::DropsSettled => self.add_dropped_files(),
             Message::Viewer(viewer::Message::Seek(id, seconds)) => {
                 // Same guard as the original: View mode does not seek.
                 if self.ui.mode == Mode::View {
@@ -383,6 +395,8 @@ impl State {
             | Message::Editor(_)
             | Message::Gallery(_)
             | Message::Renumber(_)
+            | Message::FileDropped(_)
+            | Message::DropsSettled
             | Message::AudioFilesPicked(_)
             | Message::AudioTargetPicked(..)
             | Message::RemoveConfirmed => {}
@@ -1057,6 +1071,23 @@ impl State {
         self.send_edit(ModelEdit::AddCues { cues, position })
     }
 
+    /// The batch of dropped files: audio files become cues after the
+    /// selection (the drop position is not known, so not at the row it
+    /// landed on); anything else is reported once. Edit mode only.
+    fn add_dropped_files(&mut self) -> Task<Message> {
+        let files = std::mem::take(&mut self.dropped_files);
+        if self.ui.mode != Mode::Edit || files.is_empty() {
+            return Task::none();
+        }
+        let (audio, other): (Vec<_>, Vec<_>) =
+            files.into_iter().partition(|file| new_cue::is_audio_file(file));
+        if !other.is_empty() {
+            self.toasts
+                .push(toast::Kind::Warning, fl!("notification-invalid-file-type"));
+        }
+        self.add_audio_cues(audio)
+    }
+
     /// Delete: asks before removing the selected cues. Edit mode only.
     fn request_remove(&mut self) {
         if self.ui.mode == Mode::Edit && !self.ui.selected_rows.is_empty() {
@@ -1638,6 +1669,9 @@ impl State {
                 iced::Event::Window(iced::window::Event::Focused) => {
                     Some(Message::WindowFocused(true))
                 }
+                iced::Event::Window(iced::window::Event::FileDropped(path)) => {
+                    Some(Message::FileDropped(path))
+                }
                 iced::Event::Window(iced::window::Event::Unfocused) => {
                     Some(Message::WindowFocused(false))
                 }
@@ -1677,7 +1711,24 @@ impl State {
             Subscription::none()
         };
 
-        Subscription::batch([toasts, tick, clock, meter, backend_events, modifiers, dragging])
+        // Files dropped together arrive as separate events; the first tick
+        // after the last of them closes the batch.
+        let drops = if self.dropped_files.is_empty() {
+            Subscription::none()
+        } else {
+            iced::time::every(Duration::from_millis(100)).map(|_| Message::DropsSettled)
+        };
+
+        Subscription::batch([
+            toasts,
+            tick,
+            clock,
+            meter,
+            backend_events,
+            modifiers,
+            dragging,
+            drops,
+        ])
     }
 
     fn menu_spec(&self) -> MenuSpec {
@@ -2637,6 +2688,30 @@ mod tests {
         let _ = state.update(ctrl_backspace());
         let _ = state.update(key(keyboard::key::Named::Enter));
         assert_eq!(state.pending_remove, None);
+    }
+
+    #[test]
+    #[serial]
+    fn dropped_files_wait_for_the_batch_then_become_audio_cues() {
+        let (mut state, _ids) = editing_state();
+
+        let _ = state.update(Message::FileDropped("a.wav".into()));
+        let _ = state.update(Message::FileDropped("b.txt".into()));
+        assert_eq!(state.dropped_files.len(), 2, "nothing happens until settled");
+
+        let _ = state.update(Message::DropsSettled);
+        assert!(state.dropped_files.is_empty());
+    }
+
+    #[test]
+    #[serial]
+    fn drops_are_ignored_outside_edit_mode() {
+        let (mut state, _ids) = editing_state();
+        state.ui.set_mode(Mode::Run);
+
+        let _ = state.update(Message::FileDropped("a.wav".into()));
+        let _ = state.update(Message::DropsSettled);
+        assert!(state.dropped_files.is_empty(), "the batch is discarded");
     }
 
     fn ctrl_r() -> Message {
