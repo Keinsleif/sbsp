@@ -67,6 +67,8 @@ iced = { version = "0.14", default-features = false, features = ["tokio"] }
 fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
+# The OS UI language, for a language setting left on "system".
+sys-locale = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Local::now() on wasm reads the browser's clock through wasm-bindgen.

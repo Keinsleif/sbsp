@@ -34,6 +34,18 @@ macro_rules! fl {
     }};
 }
 
+/// The operating system's UI language, if it says.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn system_language() -> Option<String> {
+    sys_locale::get_locale()
+}
+
+/// The browser's language (Phase 9).
+#[cfg(target_arch = "wasm32")]
+pub fn system_language() -> Option<String> {
+    None
+}
+
 /// Switch the active language. The fallback language is always kept.
 pub fn select(language: &LanguageIdentifier) {
     let fallback = LOADER.fallback_language().clone();
@@ -52,10 +64,8 @@ pub fn select(language: &LanguageIdentifier) {
 /// settings dialog's language picker, Phase 7) wants a closed set with a
 /// display label per entry, not an open-ended identifier.
 ///
-/// Not persisted anywhere yet -- switching is in-memory only for this
-/// patch, matching `ThemeMode` before it got a settings-backed home. A
-/// `GlobalHostSettings.appearance` field to store this in already exists;
-/// wiring it up is left for whichever patch first saves settings for real.
+/// Stored in the settings' `appearance.language` (see
+/// [`Language::from_setting`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Language {
     #[default]
@@ -68,6 +78,25 @@ impl Language {
         match self {
             Language::En => Language::Ja,
             Language::Ja => Language::En,
+        }
+    }
+
+    /// The language a stored setting names: `"ja"` (or `"ja-JP"`, ...) is
+    /// Japanese and any other value is English. With no setting the
+    /// system's language decides (`system`, e.g. `"ja-JP"`), English when
+    /// that is unknown too.
+    pub fn from_setting(setting: Option<&str>, system: Option<&str>) -> Self {
+        match setting.or(system) {
+            Some(tag) if tag.to_lowercase().starts_with("ja") => Language::Ja,
+            _ => Language::En,
+        }
+    }
+
+    /// What goes into the settings for this language.
+    pub fn setting(self) -> &'static str {
+        match self {
+            Language::En => "en",
+            Language::Ja => "ja",
         }
     }
 
@@ -87,6 +116,33 @@ impl Language {
         match self {
             Language::En => "English",
             Language::Ja => "日本語",
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_stored_setting_wins_over_the_system() {
+        assert_eq!(Language::from_setting(Some("ja"), Some("en-US")), Language::Ja);
+        assert_eq!(Language::from_setting(Some("en"), Some("ja-JP")), Language::En);
+        assert_eq!(Language::from_setting(Some("ja-JP"), None), Language::Ja);
+        assert_eq!(Language::from_setting(Some("fr"), Some("ja-JP")), Language::En);
+    }
+
+    #[test]
+    fn without_a_setting_the_system_decides() {
+        assert_eq!(Language::from_setting(None, Some("ja-JP")), Language::Ja);
+        assert_eq!(Language::from_setting(None, Some("en-GB")), Language::En);
+        assert_eq!(Language::from_setting(None, None), Language::En);
+    }
+
+    #[test]
+    fn what_is_stored_is_read_back() {
+        for language in [Language::En, Language::Ja] {
+            assert_eq!(Language::from_setting(Some(language.setting()), None), language);
         }
     }
 }
