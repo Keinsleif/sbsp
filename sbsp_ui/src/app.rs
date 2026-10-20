@@ -849,7 +849,13 @@ impl State {
         let Some(backend) = &self.backend else {
             return Task::none();
         };
-        Task::perform(crate::host::files::open(backend.handle()), backend_result)
+        let handle = backend.handle();
+        crate::host::files::dialog().then(move |dialog| {
+            Task::perform(
+                crate::host::files::open(handle.clone(), dialog),
+                backend_result,
+            )
+        })
     }
 
     /// Saves (or saves as); `after` is what waits for it.
@@ -858,10 +864,13 @@ impl State {
         let Some(backend) = &self.backend else {
             return Task::none();
         };
-        Task::perform(
-            crate::host::files::save(backend.handle(), ask_for_path),
-            move |result| Message::FileSaved(result.map_err(|e| e.to_string()), after),
-        )
+        let handle = backend.handle();
+        crate::host::files::dialog().then(move |dialog| {
+            Task::perform(
+                crate::host::files::save(handle.clone(), dialog, ask_for_path),
+                move |result| Message::FileSaved(result.map_err(|e| e.to_string()), after),
+            )
+        })
     }
 
     #[cfg(feature = "host")]
@@ -869,14 +878,18 @@ impl State {
         let Some(backend) = &self.backend else {
             return Task::none();
         };
-        Task::perform(crate::host::files::export(backend.handle()), |result| {
-            match result {
-                Ok(_) => Message::Nothing,
-                Err(error) => Message::BackendError(format!(
-                    "{}: {error}",
-                    fl!("notification-failed-to-export")
-                )),
-            }
+        let handle = backend.handle();
+        crate::host::files::dialog().then(move |dialog| {
+            Task::perform(
+                crate::host::files::export(handle.clone(), dialog),
+                |result| match result {
+                    Ok(_) => Message::Nothing,
+                    Err(error) => Message::BackendError(format!(
+                        "{}: {error}",
+                        fl!("notification-failed-to-export")
+                    )),
+                },
+            )
         })
     }
 
@@ -1004,17 +1017,20 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
         let title = fl!("main-bottom-editor-audio-target-file");
-        Task::perform(
-            async move {
-                rfd::AsyncFileDialog::new()
-                    .set_title(title)
-                    .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
-                    .pick_file()
-                    .await
-                    .map(|file| file.path().to_path_buf())
-            },
-            move |file| Message::AudioTargetPicked(id, file),
-        )
+        crate::host::files::dialog().then(move |dialog| {
+            let title = title.clone();
+            Task::perform(
+                async move {
+                    dialog
+                        .set_title(title)
+                        .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
+                        .pick_file()
+                        .await
+                        .map(|file| file.path().to_path_buf())
+                },
+                move |file| Message::AudioTargetPicked(id, file),
+            )
+        })
     }
 
     #[cfg(not(feature = "host"))]
@@ -1155,23 +1171,26 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_files(&self) -> Task<Message> {
         let title = fl!("menu-cue-audio");
-        Task::perform(
-            async move {
-                rfd::AsyncFileDialog::new()
-                    .set_title(title)
-                    .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
-                    .pick_files()
-                    .await
-                    .map(|files| {
-                        files
-                            .into_iter()
-                            .map(|f| f.path().to_path_buf())
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-            },
-            Message::AudioFilesPicked,
-        )
+        crate::host::files::dialog().then(move |dialog| {
+            let title = title.clone();
+            Task::perform(
+                async move {
+                    dialog
+                        .set_title(title)
+                        .add_filter("Audio", new_cue::AUDIO_EXTENSIONS)
+                        .pick_files()
+                        .await
+                        .map(|files| {
+                            files
+                                .into_iter()
+                                .map(|f| f.path().to_path_buf())
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default()
+                },
+                Message::AudioFilesPicked,
+            )
+        })
     }
 
     #[cfg(not(feature = "host"))]
