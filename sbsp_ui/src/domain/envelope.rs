@@ -201,11 +201,10 @@ pub fn remove(segments: &[Segment], index: usize) -> Vec<Segment> {
         if let Some(first) = result.first_mut() {
             first.start = 0.0;
         }
-    } else if index == result.len() {
-        if let Some(last) = result.last_mut() {
+    } else if index == result.len()
+        && let Some(last) = result.last_mut() {
             last.end = 1.0;
         }
-    }
     result
 }
 
@@ -332,7 +331,7 @@ mod tests {
     #[test]
     fn envelopes_are_the_same_despite_f32_rounding() {
         let a = [seg(0.0, 1.0, -3.123_456_789)];
-        let b = [seg(0.0, 1.0, f64::from(-3.123_456_789_f32))];
+        let b = [seg(0.0, 1.0, f64::from(-3.123_456_7_f32))];
         assert_ne!(a, b);
         assert!(same(&a, &b));
         assert!(!same(&a, &[seg(0.0, 1.0, -4.0)]));
