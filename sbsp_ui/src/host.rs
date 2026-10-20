@@ -5,6 +5,7 @@
 pub mod native_menu;
 
 pub mod backend;
+pub mod files;
 pub mod paths;
 
 pub fn run() -> iced::Result {

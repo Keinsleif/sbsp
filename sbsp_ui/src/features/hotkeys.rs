@@ -9,10 +9,6 @@
 //! action is allowed right now (view mode, nothing selected, ...) and what
 //! it does is the app's business, as in the original where each
 //! `useHotkey` callback carried its own guards.
-//!
-//! File bindings are not included yet: their actions
-//! (open/save dialogs) arrive with Phase 7, and a
-//! binding with nothing behind it would just swallow the key.
 
 use iced::keyboard::{Key, Modifiers, key::Named};
 use sbsp_frontend_settings::hotkey::HotkeySettings;
@@ -48,6 +44,11 @@ pub enum Action {
     Duplicate,
     /// Open the renumber dialog for the selected cues (edit mode).
     Renumber,
+    /// File menu commands (host only).
+    Open,
+    Save,
+    SaveAs,
+    Export,
 }
 
 impl Action {
@@ -131,8 +132,9 @@ impl Bindings {
     pub fn from_settings(settings: &HotkeySettings, is_mac: bool) -> Self {
         let playback = &settings.playback;
         let edit = &settings.edit;
+        let file = &settings.file;
 
-        let table: [(&Option<String>, Action); 17] = [
+        let table: [(&Option<String>, Action); 21] = [
             (&playback.execute, Action::Execute),
             (&playback.load, Action::Load),
             (&playback.pause_and_resume, Action::PauseAndResume),
@@ -150,6 +152,10 @@ impl Bindings {
             (&edit.select_all, Action::SelectAll),
             (&edit.delete, Action::Delete),
             (&edit.renumber_cues, Action::Renumber),
+            (&file.open, Action::Open),
+            (&file.save, Action::Save),
+            (&file.save_as, Action::SaveAs),
+            (&file.export_to_folder, Action::Export),
         ];
 
         // Not in the settings: the original left these to the browser's
@@ -283,6 +289,23 @@ mod tests {
             Some(Action::SelectAll)
         );
         assert_eq!(b.find(&press(ch("a"), Modifiers::empty())), None);
+    }
+
+    #[test]
+    fn the_file_commands_follow_the_settings() {
+        let b = bindings();
+        for (key, shift, action) in [
+            ("o", false, Action::Open),
+            ("s", false, Action::Save),
+            ("s", true, Action::SaveAs),
+        ] {
+            let mods = if shift {
+                Modifiers::CTRL | Modifiers::SHIFT
+            } else {
+                Modifiers::CTRL
+            };
+            assert_eq!(b.find(&press(ch(key), mods)), Some(action), "{key}");
+        }
     }
 
     #[test]

@@ -69,6 +69,15 @@ impl Toasts {
         Self::default()
     }
 
+    /// How many toasts are showing.
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
     /// Queues a new toast with the default lifetime.
     pub fn push(&mut self, kind: Kind, message: impl Into<String>) {
         self.push_for(kind, message, DEFAULT_LIFETIME);

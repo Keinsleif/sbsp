@@ -24,7 +24,7 @@ use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{
-    cue_list, editor, header, hotkeys, renumber, side_bar, status_bar, viewer,
+    cue_list, editor, file_ops, header, hotkeys, renumber, side_bar, status_bar, viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -64,10 +64,16 @@ const METER_MAX_DT: f32 = 0.1;
 
 pub fn run(target: &'static str) -> iced::Result {
     iced::application(move || State::new(target), State::update, State::view)
-        .title(|_: &State| fl!("app-title"))
+        .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
         .theme(|state: &State| crate::theme::resolve(state.theme_mode))
         .subscription(State::subscription)
-        .window_size((1280.0, 720.0))
+        // Closing the window goes through `Message::CloseRequested`, which
+        // may ask about unsaved changes first.
+        .window(iced::window::Settings {
+            size: iced::Size::new(1280.0, 720.0),
+            exit_on_close_request: false,
+            ..Default::default()
+        })
         // `settings` replaces the whole `Settings`, so it comes before the
         // builder calls that fill in its fonts.
         .settings(iced::Settings {
@@ -98,6 +104,9 @@ pub struct State {
     /// Templates for new cues; the defaults until Phase 7 loads the
     /// settings.
     templates: TemplateSettings,
+    /// A question about replacing or closing the show, waiting for an
+    /// answer.
+    confirm: Option<file_ops::Confirm>,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
     /// The renumber dialog's values and whether it is open.
@@ -153,6 +162,13 @@ pub enum Message {
     AudioTargetPicked(Uuid, Option<std::path::PathBuf>),
     RemoveConfirmed,
     RemoveCancelled,
+    File(file_ops::Command),
+    Confirm(file_ops::Answer),
+    /// The window's close button (or the Quit menu item).
+    CloseRequested,
+    /// A save finished: whether it happened (`false`: the dialog was
+    /// cancelled), then what was waiting for it.
+    FileSaved(Result<bool, String>, Option<file_ops::After>),
     #[cfg(feature = "host")]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
@@ -179,6 +195,22 @@ pub enum Message {
 /// Turns the outcome of a fire-and-forget backend call into a `Message`
 /// (`Task::perform` needs one value either way).
 #[cfg(feature = "host")]
+/// What to tell the user about a failed backend operation. The ones the
+/// user did not ask for directly (audio fallback, custom) have no message
+/// here.
+fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> {
+    use sbsp_backend::event::BackendError as E;
+    let (title, detail) = match error {
+        E::SaveToFile { message, .. } => (fl!("notification-failed-to-save"), message),
+        E::LoadFromFile { message, .. } => (fl!("notification-failed-to-load"), message),
+        E::ExportToFolder { message, .. } => (fl!("notification-failed-to-export"), message),
+        E::CueExecute { message, .. } => (fl!("notification-failed-to-execute-cue"), message),
+        E::CueEdit { message } => (fl!("notification-failed-to-edit-cue"), message),
+        E::AudioOutputFallback { .. } | E::Custom { .. } => return None,
+    };
+    Some(format!("{title}: {detail}"))
+}
+
 fn backend_result(result: anyhow::Result<()>) -> Message {
     match result {
         Ok(()) => Message::Nothing,
@@ -220,6 +252,7 @@ impl State {
                 hotkeys::is_mac(),
             ),
             templates: TemplateSettings::default(),
+            confirm: None,
             pending_remove: None,
             renumber: renumber::Dialog::default(),
             renumber_open: false,
@@ -325,6 +358,10 @@ impl State {
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
             Message::AudioTargetPicked(id, file) => self.set_audio_target(id, file),
             Message::RemoveConfirmed => self.confirm_remove(),
+            Message::File(command) => self.file_command(command),
+            Message::Confirm(answer) => self.answer_confirm(answer),
+            Message::CloseRequested => self.request_close(),
+            Message::FileSaved(result, after) => self.file_saved(result, after),
             Message::FileDropped(path) => {
                 self.dropped_files.push(path);
                 Task::none()
@@ -392,6 +429,10 @@ impl State {
             | Message::Renumber(_)
             | Message::FileDropped(_)
             | Message::DropsSettled
+            | Message::File(_)
+            | Message::Confirm(_)
+            | Message::CloseRequested
+            | Message::FileSaved(..)
             | Message::AudioFilesPicked(_)
             | Message::AudioTargetPicked(..)
             | Message::RemoveConfirmed => {}
@@ -561,6 +602,17 @@ impl State {
             self.cue_drag = None;
             return Task::none();
         }
+        // The same for the question about replacing or closing the show.
+        if self.confirm.is_some() {
+            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            return if is("Enter") {
+                self.answer_confirm(file_ops::Answer::Yes)
+            } else if is("Escape") {
+                self.answer_confirm(file_ops::Answer::Cancel)
+            } else {
+                Task::none()
+            };
+        }
         // Behind the removal confirmation only its own keys work: GO on
         // Enter must not fire while the question is open.
         if self.pending_remove.is_some() {
@@ -645,6 +697,10 @@ impl State {
                 self.open_renumber();
                 return Task::none();
             }
+            A::Open => return self.file_command(file_ops::Command::Open),
+            A::Save => return self.file_command(file_ops::Command::Save),
+            A::SaveAs => return self.file_command(file_ops::Command::SaveAs),
+            A::Export => return self.file_command(file_ops::Command::Export),
             _ => {}
         }
 
@@ -697,7 +753,11 @@ impl State {
             | A::Cut
             | A::Paste
             | A::Duplicate
-            | A::Renumber => Vec::new(),
+            | A::Renumber
+            | A::Open
+            | A::Save
+            | A::SaveAs
+            | A::Export => Vec::new(),
         };
 
         self.send(controls)
@@ -748,6 +808,96 @@ impl State {
         };
 
         Task::batch([task.map(Message::Field), edit, run])
+    }
+
+    /// Whether the show has changes that were not saved.
+    #[cfg(feature = "host")]
+    fn is_modified(&self) -> bool {
+        self.backend
+            .as_ref()
+            .is_some_and(|backend| backend.handle().model_handle.is_modified())
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn is_modified(&self) -> bool {
+        false
+    }
+
+    /// Does what the user asked once every question is answered.
+    fn perform(&mut self, after: file_ops::After) -> Task<Message> {
+        match after {
+            file_ops::After::Quit => iced::exit(),
+            file_ops::After::New => self.reset_show(),
+            file_ops::After::Open => self.open_show(),
+        }
+    }
+
+    #[cfg(feature = "host")]
+    fn reset_show(&self) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        let handle = backend.handle();
+        Task::perform(
+            async move { handle.model_handle.reset().await },
+            backend_result,
+        )
+    }
+
+    #[cfg(feature = "host")]
+    fn open_show(&self) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        Task::perform(crate::host::files::open(backend.handle()), backend_result)
+    }
+
+    /// Saves (or saves as); `after` is what waits for it.
+    #[cfg(feature = "host")]
+    fn save(&self, ask_for_path: bool, after: Option<file_ops::After>) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        Task::perform(
+            crate::host::files::save(backend.handle(), ask_for_path),
+            move |result| Message::FileSaved(result.map_err(|e| e.to_string()), after),
+        )
+    }
+
+    #[cfg(feature = "host")]
+    fn export(&self) -> Task<Message> {
+        let Some(backend) = &self.backend else {
+            return Task::none();
+        };
+        Task::perform(crate::host::files::export(backend.handle()), |result| {
+            match result {
+                Ok(_) => Message::Nothing,
+                Err(error) => Message::BackendError(format!(
+                    "{}: {error}",
+                    fl!("notification-failed-to-export")
+                )),
+            }
+        })
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn reset_show(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn open_show(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn save(&self, _ask_for_path: bool, _after: Option<file_ops::After>) -> Task<Message> {
+        Task::none()
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn export(&self) -> Task<Message> {
+        Task::none()
     }
 
     fn handle_renumber(&mut self, message: renumber::Message) -> Task<Message> {
@@ -1064,6 +1214,88 @@ impl State {
         self.add_audio_cues(audio)
     }
 
+    /// A file menu entry or hotkey.
+    fn file_command(&mut self, command: file_ops::Command) -> Task<Message> {
+        use file_ops::{After, Command as C};
+        match command {
+            C::New => self.begin(After::New),
+            C::Open => self.begin(After::Open),
+            C::Save => self.save(false, None),
+            C::SaveAs => self.save(true, None),
+            C::Export => self.export(),
+        }
+    }
+
+    /// The window's close button and the Quit menu item.
+    fn request_close(&mut self) -> Task<Message> {
+        // A question is already waiting; closing again changes nothing.
+        if self.confirm.is_some() {
+            return Task::none();
+        }
+        self.begin(file_ops::After::Quit)
+    }
+
+    /// Starts something that replaces or ends the show: asks what needs
+    /// asking first, then does it.
+    fn begin(&mut self, after: file_ops::After) -> Task<Message> {
+        use file_ops::{Confirm, Step};
+        match file_ops::first_step(
+            after,
+            !self.playback.active_cues.is_empty(),
+            self.is_modified(),
+        ) {
+            Step::AskStop => {
+                self.confirm = Some(Confirm::StopActive(after));
+                Task::none()
+            }
+            Step::AskSave => {
+                self.confirm = Some(Confirm::SaveChanges(after));
+                Task::none()
+            }
+            Step::Go => self.perform(after),
+        }
+    }
+
+    fn answer_confirm(&mut self, answer: file_ops::Answer) -> Task<Message> {
+        use file_ops::{Answer, Confirm, Step};
+        let Some(confirm) = self.confirm.take() else {
+            return Task::none();
+        };
+        match (confirm, answer) {
+            (_, Answer::Cancel) | (Confirm::StopActive(_), Answer::No) => Task::none(),
+            (Confirm::StopActive(after), Answer::Yes) => {
+                match file_ops::after_stop_confirmed(self.is_modified()) {
+                    Step::Go => self.perform(after),
+                    _ => {
+                        self.confirm = Some(Confirm::SaveChanges(after));
+                        Task::none()
+                    }
+                }
+            }
+            (Confirm::SaveChanges(after), Answer::Yes) => self.save(false, Some(after)),
+            (Confirm::SaveChanges(after), Answer::No) => self.perform(after),
+        }
+    }
+
+    fn file_saved(
+        &mut self,
+        result: Result<bool, String>,
+        after: Option<file_ops::After>,
+    ) -> Task<Message> {
+        match result {
+            Ok(true) => after.map_or_else(Task::none, |after| self.perform(after)),
+            Ok(false) => Task::none(),
+            Err(error) => {
+                log::error!("save failed: {error}");
+                self.toasts.push(
+                    toast::Kind::Danger,
+                    format!("{}: {error}", fl!("notification-failed-to-save")),
+                );
+                Task::none()
+            }
+        }
+    }
+
     /// Delete: asks before removing the selected cues. Edit mode only.
     fn request_remove(&mut self) {
         if self.ui.mode == Mode::Edit && !self.ui.selected_rows.is_empty() {
@@ -1248,7 +1480,12 @@ impl State {
                     .push(toast::Kind::Info, fl!("menu-help-about-message"));
                 Task::none()
             }
-            "file.quit" => iced::window::latest().and_then(iced::window::close),
+            "file.new" => self.file_command(file_ops::Command::New),
+            "file.open" => self.file_command(file_ops::Command::Open),
+            "file.save" => self.file_command(file_ops::Command::Save),
+            "file.save-as" => self.file_command(file_ops::Command::SaveAs),
+            "file.export" => self.file_command(file_ops::Command::Export),
+            "file.quit" => self.request_close(),
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
@@ -1361,6 +1598,9 @@ impl State {
             },
             BackendEvent::OperationFailed { error } => {
                 log::warn!("backend operation failed: {error:?}");
+                if let Some(message) = failure_message(&error) {
+                    self.toasts.push(toast::Kind::Danger, message);
+                }
             }
             other => log::debug!("unhandled backend event: {other:?}"),
         }
@@ -1483,7 +1723,10 @@ impl State {
             iced::time::every(Duration::from_millis(100)).map(|_| Message::DropsSettled)
         };
 
+        let close = iced::window::close_requests().map(|_| Message::CloseRequested);
+
         Subscription::batch([
+            close,
             toasts,
             tick,
             clock,
@@ -1499,11 +1742,23 @@ impl State {
         let editing = self.ui.mode == Mode::Edit;
         let add = |id, label: String| MenuNode::item(id, label).enabled(editing);
         let has_selection = !self.ui.selected_rows.is_empty();
+        // Opening and saving shows is the host's job; a remote or the web
+        // build has no show of its own.
+        let host_only =
+            |id, label: String| MenuNode::item(id, label).enabled(cfg!(feature = "host"));
 
         MenuSpec::new()
             .menu(
                 fl!("menu-file"),
-                vec![MenuNode::item("file.quit", fl!("menu-file-quit"))],
+                vec![
+                    host_only("file.new", fl!("menu-file-new")),
+                    host_only("file.open", fl!("menu-file-open")),
+                    host_only("file.save", fl!("menu-file-save")),
+                    host_only("file.save-as", fl!("menu-file-save-as")),
+                    host_only("file.export", fl!("menu-file-export-to-folder")),
+                    MenuNode::separator(),
+                    MenuNode::item("file.quit", fl!("menu-file-quit")),
+                ],
             )
             .menu(
                 fl!("menu-edit-title"),
@@ -1718,6 +1973,14 @@ impl State {
 
         let content = match &self.pending_remove {
             Some(ids) => modal::over_blocking(content, remove_dialog(ids.len())),
+            None => content,
+        };
+
+        let content = match self.confirm {
+            Some(confirm) => modal::over_blocking(
+                content,
+                file_ops::view(confirm).map(Message::Confirm),
+            ),
             None => content,
         };
 
@@ -2446,6 +2709,85 @@ mod tests {
         let _ = state.update(Message::FileDropped("a.wav".into()));
         let _ = state.update(Message::DropsSettled);
         assert!(state.dropped_files.is_empty(), "the batch is discarded");
+    }
+
+    #[test]
+    #[serial]
+    fn a_waiting_question_takes_enter_and_escape_and_nothing_else() {
+        let mut state = new_state();
+        let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+        state.confirm = Some(file_ops::Confirm::StopActive(file_ops::After::New));
+        let _ = state.update(key(keyboard::key::Named::ArrowDown));
+        assert!(state.confirm.is_some(), "other keys do nothing");
+
+        let _ = state.update(key(keyboard::key::Named::Escape));
+        assert_eq!(state.confirm, None);
+
+        state.confirm = Some(file_ops::Confirm::StopActive(file_ops::After::New));
+        let _ = state.update(key(keyboard::key::Named::Enter));
+        assert_eq!(state.confirm, None, "yes: nothing else to ask without changes");
+    }
+
+    #[test]
+    #[serial]
+    fn the_dialog_buttons_answer_the_question() {
+        let mut state = new_state();
+        state.confirm = Some(file_ops::Confirm::SaveChanges(file_ops::After::Open));
+
+        let mut ui = iced_test::simulator(state.view());
+        assert!(ui.find(fl!("dialog-save-confirm-content").as_str()).is_ok());
+        ui.click(fl!("dialog-save-confirm-cancel").as_str())
+            .expect("the dialog has a cancel button");
+        for message in ui.into_messages() {
+            let _ = state.update(message);
+        }
+        assert_eq!(state.confirm, None);
+    }
+
+    #[test]
+    #[serial]
+    fn close_requests_wait_while_a_question_is_open() {
+        let mut state = new_state();
+        state.confirm = Some(file_ops::Confirm::SaveChanges(file_ops::After::Quit));
+
+        let _ = state.update(Message::CloseRequested);
+        assert_eq!(
+            state.confirm,
+            Some(file_ops::Confirm::SaveChanges(file_ops::After::Quit)),
+            "neither answered nor replaced"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn a_failed_save_is_reported_and_continues_nothing() {
+        let mut state = new_state();
+        let _ = state.update(Message::FileSaved(
+            Err("disk full".to_owned()),
+            Some(file_ops::After::Quit),
+        ));
+        assert_eq!(state.toasts.len(), 1);
+    }
+
+    #[test]
+    #[serial]
+    fn backend_failures_get_their_own_titles() {
+        use sbsp_backend::event::BackendError as E;
+        let save = failure_message(&E::SaveToFile {
+            path: "a.sbsp".into(),
+            message: "denied".to_owned(),
+        })
+        .unwrap();
+        assert!(save.starts_with(&fl!("notification-failed-to-save")));
+        assert!(save.ends_with("denied"));
+        assert_eq!(
+            failure_message(&E::AudioOutputFallback {
+                device: true,
+                config: false
+            }),
+            None
+        );
     }
 
     fn ctrl_r() -> Message {
