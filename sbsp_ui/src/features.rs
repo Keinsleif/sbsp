@@ -7,6 +7,7 @@
 
 pub mod cue_list;
 pub mod editor;
+pub mod file_ops;
 pub mod header;
 pub mod hotkeys;
 pub mod renumber;
