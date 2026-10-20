@@ -7,6 +7,7 @@
 use std::time::Duration;
 
 use anyhow::anyhow;
+use iced::Task;
 use rfd::AsyncFileDialog;
 use sbsp_backend::BackendHandle;
 
@@ -16,13 +17,23 @@ use sbsp_backend::BackendHandle;
 const SAVE_TIMEOUT: Duration = Duration::from_secs(10);
 const SAVE_POLL: Duration = Duration::from_millis(20);
 
+/// A new file dialog that belongs to the main window: while it is open the
+/// window cannot be used (what the platforms do for a dialog with an
+/// owner). Every dialog starts from this, then adds its own title, filters
+/// and so on.
+pub fn dialog() -> Task<AsyncFileDialog> {
+    iced::window::latest().and_then(|id| {
+        iced::window::run(id, |window| AsyncFileDialog::new().set_parent(&window))
+    })
+}
+
 fn show_filter(dialog: AsyncFileDialog) -> AsyncFileDialog {
     dialog.add_filter("Show Model", &["sbsp"])
 }
 
 /// Asks for a show file and loads it. Cancelling does nothing.
-pub async fn open(handle: BackendHandle) -> anyhow::Result<()> {
-    let Some(file) = show_filter(AsyncFileDialog::new()).pick_file().await else {
+pub async fn open(handle: BackendHandle, dialog: AsyncFileDialog) -> anyhow::Result<()> {
+    let Some(file) = show_filter(dialog).pick_file().await else {
         return Ok(());
     };
     handle
@@ -34,14 +45,18 @@ pub async fn open(handle: BackendHandle) -> anyhow::Result<()> {
 /// Saves the show: over its file when it has one (and `ask_for_path` is
 /// off), else to a file chosen now. `Ok(false)`: the dialog was cancelled.
 /// Returns once the file is written.
-pub async fn save(handle: BackendHandle, ask_for_path: bool) -> anyhow::Result<bool> {
+pub async fn save(
+    handle: BackendHandle,
+    dialog: AsyncFileDialog,
+    ask_for_path: bool,
+) -> anyhow::Result<bool> {
     let model = &handle.model_handle;
     let current = model.get_current_file_path().await;
 
     match (&current, ask_for_path) {
         (Some(_), false) => model.save().await?,
         _ => {
-            let mut dialog = show_filter(AsyncFileDialog::new());
+            let mut dialog = show_filter(dialog);
             if let Some(path) = &current {
                 if let Some(directory) = path.parent() {
                     dialog = dialog.set_directory(directory);
@@ -68,9 +83,8 @@ pub async fn save(handle: BackendHandle, ask_for_path: bool) -> anyhow::Result<b
 
 /// Asks for a folder and exports the show with its assets there.
 /// `Ok(false)`: cancelled.
-pub async fn export(handle: BackendHandle) -> anyhow::Result<bool> {
+pub async fn export(handle: BackendHandle, mut dialog: AsyncFileDialog) -> anyhow::Result<bool> {
     let model = &handle.model_handle;
-    let mut dialog = AsyncFileDialog::new();
     if let Some(directory) = model
         .get_current_file_path()
         .await
