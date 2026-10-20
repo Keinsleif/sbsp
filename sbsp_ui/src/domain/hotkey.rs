@@ -98,14 +98,75 @@ impl Hotkey {
         Some(Self { mods, key: key? })
     }
 
+    /// How a menu shows this binding: `Ctrl+Shift+S`, or `⇧⌘S` on a Mac.
+    pub fn display(&self, is_mac: bool) -> String {
+        let key = display_key(&self.key);
+        let Mods {
+            ctrl,
+            shift,
+            alt,
+            logo,
+        } = self.mods;
+
+        if is_mac {
+            let mut text = String::new();
+            for (on, symbol) in [(ctrl, '⌃'), (alt, '⌥'), (shift, '⇧'), (logo, '⌘')] {
+                if on {
+                    text.push(symbol);
+                }
+            }
+            text + &key
+        } else {
+            let mut parts = Vec::new();
+            for (on, name) in [(ctrl, "Ctrl"), (alt, "Alt"), (shift, "Shift"), (logo, "Win")] {
+                if on {
+                    parts.push(name.to_owned());
+                }
+            }
+            parts.push(key);
+            parts.join("+")
+        }
+    }
+
     pub fn matches(&self, key: &str, mods: Mods) -> bool {
         self.mods == mods && self.key == key.to_lowercase()
+    }
+}
+
+/// A key name (lowercased, as [`Hotkey`] keeps it) the way a menu shows it.
+fn display_key(key: &str) -> String {
+    match key {
+        "arrowup" => "↑".to_owned(),
+        "arrowdown" => "↓".to_owned(),
+        "arrowleft" => "←".to_owned(),
+        "arrowright" => "→".to_owned(),
+        "escape" => "Esc".to_owned(),
+        other => {
+            let mut chars = other.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().chain(chars).collect(),
+                None => String::new(),
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bindings_display_the_way_menus_show_them() {
+        let save_as = Hotkey::parse("$mod+Shift+S", false).unwrap();
+        assert_eq!(save_as.display(false), "Ctrl+Shift+S");
+        assert_eq!(Hotkey::parse("$mod+Shift+S", true).unwrap().display(true), "⇧⌘S");
+        assert_eq!(Hotkey::parse("Escape", false).unwrap().display(false), "Esc");
+        assert_eq!(
+            Hotkey::parse("$mod+Backspace", false).unwrap().display(false),
+            "Ctrl+Backspace"
+        );
+        assert_eq!(Hotkey::parse("Shift+ArrowUp", false).unwrap().display(false), "Shift+↑");
+    }
 
     #[test]
     fn empty_is_empty() {

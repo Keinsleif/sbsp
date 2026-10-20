@@ -954,3 +954,57 @@ fn a_name_the_user_gave_is_what_the_list_shows() {
     let mut ui = iced_test::simulator(state.view());
     assert!(ui.find("Opening").is_ok());
 }
+#[test]
+#[serial]
+fn loaded_settings_reach_the_ui() {
+    use sbsp_frontend_settings::DarkMode;
+
+    let mut state = new_state();
+    let mut loaded = Preferences::default();
+    loaded.general.lock_cursor_to_selection = !state.lock_cursor_to_selection;
+    loaded.general.seek_amount = 7.5;
+    loaded.appearance.dark_mode = DarkMode::Light;
+    loaded.appearance.language = Some("ja".to_owned());
+    loaded.appearance.hide_controls = !state.hide_controls;
+    loaded.hotkey.file.open = Some("$mod+Shift+O".to_owned());
+    loaded.name_format.audio = "custom".to_owned();
+
+    state.apply_preferences(&loaded);
+
+    assert_eq!(state.lock_cursor_to_selection, loaded.general.lock_cursor_to_selection);
+    assert_eq!(state.seek_amount, 7.5);
+    assert_eq!(state.theme_mode, ThemeMode::Light);
+    assert_eq!(state.lang, Language::Ja);
+    assert_eq!(state.hide_controls, loaded.appearance.hide_controls);
+    assert_eq!(state.name_format.audio, "custom");
+    assert_eq!(
+        state
+            .hotkeys
+            .shortcut(hotkeys::Action::Open, hotkeys::is_mac())
+            .as_deref(),
+        Some(if hotkeys::is_mac() { "⇧⌘O" } else { "Ctrl+Shift+O" })
+    );
+    // The language took effect, not only the field.
+    assert_eq!(fl!("menu-file-quit"), "終了");
+
+    // Back to what the other tests expect.
+    state.apply_preferences(&Preferences::default());
+    crate::i18n::select(&Language::En.langid());
+}
+
+#[test]
+#[serial]
+fn menus_show_the_bindings() {
+    let state = new_state();
+    let spec = state.menu_spec();
+    let (_, file) = &spec.menus[0];
+    let shortcut_of = |wanted: &str| {
+        file.iter().find_map(|node| match node {
+            MenuNode::Item { id, shortcut, .. } if id.0 == wanted => Some(shortcut.clone()),
+            _ => None,
+        })
+    };
+    let save = if hotkeys::is_mac() { "⌘S" } else { "Ctrl+S" };
+    assert_eq!(shortcut_of("file.save"), Some(Some(save.to_owned())));
+    assert_eq!(shortcut_of("file.export"), Some(None), "unbound by default");
+}

@@ -31,6 +31,7 @@ use crate::features::{
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
+use crate::state::preferences::{self, Preferences};
 use crate::state::{
     assets::AssetResults,
     level_meter::LevelMeterState,
@@ -49,6 +50,8 @@ use crate::port::{FullState, PortEvent};
 
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 use sbsp_frontend_settings::{NameFormatSettings, TemplateSettings};
+#[cfg(feature = "host")]
+use sbsp_frontend_settings::GlobalHostSettings;
 
 use crate::fl;
 
@@ -107,6 +110,9 @@ pub struct State {
     /// Templates for new cues; the defaults until Phase 7 loads the
     /// settings.
     templates: TemplateSettings,
+    /// The settings as loaded (and as last saved).
+    #[cfg(feature = "host")]
+    host_settings: GlobalHostSettings,
     /// A question about replacing or closing the show, waiting for an
     /// answer.
     confirm: Option<file_ops::Confirm>,
@@ -188,7 +194,7 @@ pub enum Message {
     /// Result of a fire-and-forget backend call that succeeded.
     Nothing,
     #[cfg(feature = "host")]
-    BackendStarted(HostPort, FullState),
+    BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
     #[cfg(feature = "host")]
     PortEvent(PortEvent),
     #[cfg(feature = "host")]
@@ -228,7 +234,9 @@ impl State {
 
         #[cfg(feature = "host")]
         let boot_task = Task::perform(HostPort::start(), |result| match result {
-            Ok((backend, state)) => Message::BackendStarted(backend, state),
+            Ok((backend, state, settings)) => {
+                Message::BackendStarted(backend, state, Box::new(settings))
+            }
             Err(e) => Message::BackendError(e.to_string()),
         });
         #[cfg(not(feature = "host"))]
@@ -256,6 +264,8 @@ impl State {
                 hotkeys::is_mac(),
             ),
             templates: TemplateSettings::default(),
+            #[cfg(feature = "host")]
+            host_settings: GlobalHostSettings::default(),
             confirm: None,
             pending_remove: None,
             renumber: renumber::Dialog::default(),
@@ -380,6 +390,11 @@ impl State {
                 }
             }
             #[cfg(feature = "host")]
+            message @ (Message::ToggleTheme | Message::ToggleLanguage) => {
+                self.apply(message);
+                self.save_appearance()
+            }
+            #[cfg(feature = "host")]
             message @ (Message::BackendStarted(..) | Message::PortEvent(_)) => {
                 self.apply(message);
                 self.request_assets()
@@ -389,6 +404,45 @@ impl State {
                 Task::none()
             }
         }
+    }
+
+    /// Takes in loaded (or edited) settings: everything the UI reads from
+    /// them without asking the settings again.
+    #[cfg_attr(not(any(feature = "host", test)), allow(dead_code))]
+    fn apply_preferences(&mut self, preferences: &Preferences) {
+        self.name_format = preferences.name_format.clone();
+        self.lock_cursor_to_selection = preferences.general.lock_cursor_to_selection;
+        self.seek_amount = preferences.general.seek_amount;
+        self.hotkeys = hotkeys::Bindings::from_settings(&preferences.hotkey, hotkeys::is_mac());
+        self.hide_controls = preferences.appearance.hide_controls;
+        self.templates = preferences.template.clone();
+        self.theme_mode = preferences::theme_mode(preferences.appearance.dark_mode);
+        self.lang = Language::from_setting(
+            preferences.appearance.language.as_deref(),
+            crate::i18n::system_language().as_deref(),
+        );
+        crate::i18n::select(&self.lang.langid());
+    }
+
+    /// The View menu's theme and language switches are kept in the
+    /// settings.
+    #[cfg(feature = "host")]
+    fn save_appearance(&mut self) -> Task<Message> {
+        let appearance = &mut self.host_settings.appearance;
+        appearance.dark_mode = preferences::dark_mode(self.theme_mode);
+        appearance.language = Some(self.lang.setting().to_owned());
+        match &self.backend {
+            Some(backend) => Task::perform(
+                backend.save_settings(self.host_settings.clone()),
+                backend_result,
+            ),
+            None => Task::none(),
+        }
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn save_appearance(&mut self) -> Task<Message> {
+        Task::none()
     }
 
     fn apply(&mut self, message: Message) {
@@ -449,7 +503,9 @@ impl State {
                 let _ = self.playback.calculate_position(true, now);
             }
             #[cfg(feature = "host")]
-            Message::BackendStarted(backend, state) => {
+            Message::BackendStarted(backend, state, settings) => {
+                self.apply_preferences(&Preferences::from(&*settings));
+                self.host_settings = *settings;
                 log::info!(
                     "backend started, {} active cue(s) at connect",
                     state.show_state.active_cues.len()
@@ -1767,18 +1823,32 @@ impl State {
         let has_selection = !self.ui.selected_rows.is_empty();
         // Opening and saving shows is the host's job; a remote or the web
         // build has no show of its own.
-        let host_only =
-            |id, label: String| MenuNode::item(id, label).enabled(cfg!(feature = "host"));
+        let is_mac = hotkeys::is_mac();
+        let shortcut = |action| self.hotkeys.shortcut(action, is_mac);
+        let host_only = |id, label: String, action| {
+            MenuNode::item(id, label)
+                .enabled(cfg!(feature = "host"))
+                .with_shortcut_opt(shortcut(action))
+        };
 
         MenuSpec::new()
             .menu(
                 fl!("menu-file"),
                 vec![
-                    host_only("file.new", fl!("menu-file-new")),
-                    host_only("file.open", fl!("menu-file-open")),
-                    host_only("file.save", fl!("menu-file-save")),
-                    host_only("file.save-as", fl!("menu-file-save-as")),
-                    host_only("file.export", fl!("menu-file-export-to-folder")),
+                    MenuNode::item("file.new", fl!("menu-file-new"))
+                        .enabled(cfg!(feature = "host")),
+                    host_only("file.open", fl!("menu-file-open"), hotkeys::Action::Open),
+                    host_only("file.save", fl!("menu-file-save"), hotkeys::Action::Save),
+                    host_only(
+                        "file.save-as",
+                        fl!("menu-file-save-as"),
+                        hotkeys::Action::SaveAs,
+                    ),
+                    host_only(
+                        "file.export",
+                        fl!("menu-file-export-to-folder"),
+                        hotkeys::Action::Export,
+                    ),
                     MenuNode::separator(),
                     MenuNode::item("file.quit", fl!("menu-file-quit")),
                 ],
@@ -1786,15 +1856,23 @@ impl State {
             .menu(
                 fl!("menu-edit-title"),
                 vec![
-                    MenuNode::item("edit.copy", fl!("menu-edit-copy")).enabled(has_selection),
-                    MenuNode::item("edit.cut", fl!("menu-edit-cut")).enabled(has_selection),
+                    MenuNode::item("edit.copy", fl!("menu-edit-copy"))
+                        .enabled(has_selection)
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Copy)),
+                    MenuNode::item("edit.cut", fl!("menu-edit-cut"))
+                        .enabled(has_selection)
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Cut)),
                     MenuNode::item("edit.paste", fl!("menu-edit-paste"))
-                        .enabled(editing && !self.clipboard.is_empty()),
+                        .enabled(editing && !self.clipboard.is_empty())
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Paste)),
                     MenuNode::item("edit.duplicate", fl!("menu-edit-duplicate"))
-                        .enabled(editing && has_selection),
+                        .enabled(editing && has_selection)
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Duplicate)),
                     MenuNode::separator(),
-                    MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues")),
-                    add("edit.delete", fl!("menu-edit-delete-cue")),
+                    MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues"))
+                        .with_shortcut_opt(shortcut(hotkeys::Action::SelectAll)),
+                    add("edit.delete", fl!("menu-edit-delete-cue"))
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Delete)),
                 ],
             )
             .menu(
@@ -1815,7 +1893,8 @@ impl State {
                 fl!("menu-tools-title"),
                 vec![
                     MenuNode::item("tools.renumber", fl!("menu-tools-renumber"))
-                        .enabled(editing && has_selection),
+                        .enabled(editing && has_selection)
+                        .with_shortcut_opt(shortcut(hotkeys::Action::Renumber)),
                 ],
             )
             .menu(

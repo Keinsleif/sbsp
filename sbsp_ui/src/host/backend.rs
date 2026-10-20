@@ -37,12 +37,10 @@ use crate::port::{Control, FullState, ModelEdit, PortEvent};
 pub struct HostPort {
     handle: BackendHandle,
     event_tx: broadcast::Sender<PortEvent>,
-    // Keeping the sender alive keeps the watch channel open. Settings are
-    // never pushed through it yet (Phase 7, once there's a settings
-    // dialog), but a dropped sender would mark the channel closed under
-    // the backend, which some internal loops may treat as a shutdown
-    // signal.
-    _settings_tx: watch::Sender<BackendSettings>,
+    // The backend's view of the settings (audio hardware and the like).
+    // Keeping the sender alive also keeps the channel open: a dropped one
+    // would look like a shutdown to the backend's loops.
+    settings_tx: Arc<watch::Sender<BackendSettings>>,
     settings: Arc<SettingsManager<GlobalHostSettings>>,
 }
 
@@ -51,7 +49,7 @@ impl HostPort {
     /// defaults, logging why), starts the backend with them, and fetches
     /// the full show state -- everything the app needs before it can show
     /// its first real frame, in one `Task::perform`-able call.
-    pub async fn start() -> anyhow::Result<(Self, FullState)> {
+    pub async fn start() -> anyhow::Result<(Self, FullState, GlobalHostSettings)> {
         let settings = Arc::new(SettingsManager::<GlobalHostSettings>::new(
             super::paths::config_path(),
         ));
@@ -75,11 +73,26 @@ impl HostPort {
         let port = Self {
             handle,
             event_tx,
-            _settings_tx: settings_tx,
+            settings_tx: Arc::new(settings_tx),
             settings,
         };
 
-        Ok((port, full_state))
+        Ok((port, full_state, host_settings))
+    }
+
+    /// Makes `new` the settings in force: keeps them, writes them to the
+    /// settings file and hands the backend its part.
+    pub fn save_settings(
+        &self,
+        new: GlobalHostSettings,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let settings = self.settings.clone();
+        let tx = self.settings_tx.clone();
+        async move {
+            settings.set(new.clone()).await;
+            tx.send_replace(BackendSettings::from(&new));
+            settings.save().await
+        }
     }
 
     pub async fn get_full_state(&self) -> anyhow::Result<FullState> {

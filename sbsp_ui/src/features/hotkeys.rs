@@ -186,6 +186,14 @@ impl Bindings {
         )
     }
 
+    /// How a menu shows the first binding of `action`, if it has one.
+    pub fn shortcut(&self, action: Action, is_mac: bool) -> Option<String> {
+        self.0
+            .iter()
+            .find(|(_, bound)| *bound == action)
+            .map(|(hotkey, _)| hotkey.display(is_mac))
+    }
+
     pub fn find(&self, press: &KeyPress) -> Option<Action> {
         self.0
             .iter()
@@ -306,6 +314,14 @@ mod tests {
             };
             assert_eq!(b.find(&press(ch(key), mods)), Some(action), "{key}");
         }
+    }
+
+    #[test]
+    fn menus_can_show_a_binding() {
+        let b = bindings();
+        assert_eq!(b.shortcut(Action::Save, false).as_deref(), Some("Ctrl+S"));
+        assert_eq!(b.shortcut(Action::Copy, true).as_deref(), Some("⌘C"));
+        assert_eq!(b.shortcut(Action::Export, false), None, "unbound by default");
     }
 
     #[test]

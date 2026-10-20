@@ -64,6 +64,14 @@ impl MenuNode {
         self
     }
 
+    /// [`MenuNode::with_shortcut`] for something that may not be bound.
+    pub fn with_shortcut_opt(self, shortcut: Option<String>) -> Self {
+        match shortcut {
+            Some(shortcut) => self.with_shortcut(shortcut),
+            None => self,
+        }
+    }
+
     pub fn enabled(mut self, enabled: bool) -> Self {
         if let Self::Item { enabled: e, .. } = &mut self {
             *e = enabled;
