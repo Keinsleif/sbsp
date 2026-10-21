@@ -6,6 +6,7 @@
 //! Used on every target except the macOS host/remote build, which uses a
 //! native global menu instead (see `crate::host::native_menu`).
 
+use iced::advanced::text::{self as advanced_text, Paragraph as _};
 use iced::widget::{button, container, mouse_area, row, text};
 use iced::{Alignment, Border, Element, Length, Theme, mouse};
 use iced_aw::menu::{Item, Menu, MenuBar};
@@ -94,18 +95,58 @@ fn menu_width(nodes: &[MenuNode]) -> f32 {
                 ..
             } => {
                 let mark = if checked.is_some() { 2.0 } else { 0.0 };
-                estimated_width(label, text_size)
+                text_width(label, text_size)
                     + mark * text_size
                     + shortcut
                         .as_deref()
-                        .map_or(0.0, |s| estimated_width(s, SHORTCUT_SIZE))
+                        .map_or(0.0, |s| text_width(s, SHORTCUT_SIZE))
             }
-            MenuNode::Submenu { label, .. } => estimated_width(label, text_size) + SHORTCUT_SIZE,
+            MenuNode::Submenu { label, .. } => text_width(label, text_size) + SHORTCUT_SIZE,
             MenuNode::Separator => 0.0,
         })
         .fold(0.0_f32, f32::max);
 
     (widest + ENTRY_EXTRA).max(MIN_MENU_WIDTH)
+}
+
+/// How wide `text` is at `size` in the UI font. Measured with the text
+/// engine (so it follows the font actually in use), remembered per string
+/// since the menu is rebuilt with every view. Falls back to a rough
+/// estimate when nothing can be measured (no fonts, as in headless tests).
+fn text_width(text: &str, size: f32) -> f32 {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+
+    thread_local! {
+        static MEASURED: RefCell<HashMap<(String, u32), f32>> = RefCell::new(HashMap::new());
+    }
+
+    let key = (text.to_owned(), size.to_bits());
+    if let Some(width) = MEASURED.with(|cache| cache.borrow().get(&key).copied()) {
+        return width;
+    }
+
+    let paragraph = <iced::Renderer as advanced_text::Renderer>::Paragraph::with_text(
+        advanced_text::Text {
+            content: text,
+            bounds: iced::Size::INFINITE,
+            size: iced::Pixels(size),
+            line_height: advanced_text::LineHeight::default(),
+            font: crate::theme::fonts::UI,
+            align_x: advanced_text::Alignment::Default,
+            align_y: iced::alignment::Vertical::Top,
+            shaping: advanced_text::Shaping::Advanced,
+            wrapping: advanced_text::Wrapping::None,
+        },
+    );
+    let measured = paragraph.min_bounds().width;
+    let width = if measured > 0.0 {
+        measured
+    } else {
+        estimated_width(text, size)
+    };
+    MEASURED.with(|cache| cache.borrow_mut().insert(key, width));
+    width
 }
 
 /// A rough width of `text` at `size`: full-width (CJK) characters take a
@@ -189,8 +230,12 @@ fn entry_button<'a, Message: Clone + 'a>(
     };
 
     let content = row![
-        text(format!("{prefix}{label}")).width(Length::Fill),
-        text(shortcut.unwrap_or_default()).size(12),
+        text(format!("{prefix}{label}"))
+            .width(Length::Fill)
+            .wrapping(text::Wrapping::None),
+        text(shortcut.unwrap_or_default())
+            .size(SHORTCUT_SIZE)
+            .wrapping(text::Wrapping::None),
     ]
     .spacing(12)
     .align_y(Alignment::Center);
@@ -208,7 +253,10 @@ fn entry_button<'a, Message: Clone + 'a>(
 }
 
 fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
-    let content = row![text(label).width(Length::Fill), text("›").size(12),]
+    let content = row![
+        text(label).width(Length::Fill).wrapping(text::Wrapping::None),
+        text("›").size(SHORTCUT_SIZE),
+    ]
         .spacing(12)
         .align_y(Alignment::Center);
 
@@ -266,8 +314,8 @@ mod tests {
         // Wide enough for the label and the shortcut next to each other.
         assert!(
             menu_width(&long)
-                > estimated_width("Renumber selected cues", crate::theme::fonts::TEXT_SIZE)
-                    + estimated_width("Ctrl+R", SHORTCUT_SIZE)
+                > text_width("Renumber selected cues", crate::theme::fonts::TEXT_SIZE)
+                    + text_width("Ctrl+R", SHORTCUT_SIZE)
         );
     }
 
