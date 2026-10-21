@@ -95,6 +95,30 @@ impl HostPort {
         }
     }
 
+    /// Reads settings from `path`, makes them the settings in force and
+    /// keeps them. The settings file is replaced.
+    pub fn import_settings(
+        &self,
+        path: std::path::PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<GlobalHostSettings>> + Send + 'static {
+        let settings = self.settings.clone();
+        let tx = self.settings_tx.clone();
+        async move {
+            let imported = settings.import_from_file(&path).await?;
+            tx.send_replace(BackendSettings::from(&imported));
+            Ok(imported)
+        }
+    }
+
+    /// Writes the settings in force to `path`.
+    pub fn export_settings(
+        &self,
+        path: std::path::PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let settings = self.settings.clone();
+        async move { settings.export_to_file(&path).await }
+    }
+
     pub async fn get_full_state(&self) -> anyhow::Result<FullState> {
         self.handle.get_full_state().await
     }

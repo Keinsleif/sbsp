@@ -170,3 +170,6 @@ dialog-settings-tab-remote = リモート操作
 dialog-settings-tab-template = テンプレート
 general-done = 完了
 notification-failed-to-apply-settings = 設定の適用に失敗しました
+dialog-save-export-settings-filter = グローバル設定ファイル
+menu-edit-export-settings = グローバル設定をエクスポート
+menu-edit-import-settings = グローバル設定をインポート

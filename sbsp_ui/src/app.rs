@@ -205,6 +205,9 @@ pub enum Message {
     PortEvent(PortEvent),
     #[cfg(feature = "host")]
     BackendError(String),
+    /// The settings read from a file the user chose (`None`: cancelled).
+    #[cfg(feature = "host")]
+    SettingsImported(Result<Option<Box<GlobalHostSettings>>, String>),
 }
 
 /// What to tell the user about a failed backend operation. The ones the
@@ -542,6 +545,21 @@ impl State {
             #[cfg(feature = "host")]
             Message::PortEvent(event) => self.handle_port_event(event),
             #[cfg(feature = "host")]
+            #[cfg(feature = "host")]
+            Message::SettingsImported(result) => match result {
+                Ok(Some(settings)) => {
+                    self.apply_preferences(&Preferences::from(&*settings));
+                    self.host_settings = *settings;
+                }
+                Ok(None) => {}
+                Err(message) => {
+                    log::error!("settings import failed: {message}");
+                    self.toasts.push(
+                        toast::Kind::Danger,
+                        format!("{}: {message}", fl!("notification-failed-to-apply-settings")),
+                    );
+                }
+            },
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
@@ -997,6 +1015,56 @@ impl State {
 
     #[cfg(not(feature = "host"))]
     fn export(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    /// Edit > Import global settings: replaces the settings with a file's.
+    #[cfg(feature = "host")]
+    fn import_settings(&self) -> Task<Message> {
+        let Some(backend) = self.backend.clone() else {
+            return Task::none();
+        };
+        crate::host::files::dialog().then(move |dialog| {
+            let backend = backend.clone();
+            Task::perform(
+                async move {
+                    let Some(path) = crate::host::files::pick_settings(dialog).await else {
+                        return Ok(None);
+                    };
+                    backend.import_settings(path).await.map(|s| Some(Box::new(s)))
+                },
+                |result| Message::SettingsImported(result.map_err(|e| e.to_string())),
+            )
+        })
+    }
+
+    /// Edit > Export global settings: writes the settings to a file.
+    #[cfg(feature = "host")]
+    fn export_settings(&self) -> Task<Message> {
+        let Some(backend) = self.backend.clone() else {
+            return Task::none();
+        };
+        crate::host::files::dialog().then(move |dialog| {
+            let backend = backend.clone();
+            Task::perform(
+                async move {
+                    let Some(path) = crate::host::files::settings_destination(dialog).await else {
+                        return Ok(());
+                    };
+                    backend.export_settings(path).await
+                },
+                backend_result,
+            )
+        })
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn import_settings(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn export_settings(&self) -> Task<Message> {
         Task::none()
     }
 
@@ -1677,6 +1745,8 @@ impl State {
             "file.save-as" => self.file_command(file_ops::Command::SaveAs),
             "file.export" => self.file_command(file_ops::Command::Export),
             "file.quit" => self.request_close(),
+            "edit.import-settings" => self.import_settings(),
+            "edit.export-settings" => self.export_settings(),
             other => {
                 log::warn!("unhandled menu id: {other}");
                 Task::none()
@@ -1980,6 +2050,11 @@ impl State {
                     MenuNode::item("edit.duplicate", fl!("menu-edit-duplicate"))
                         .enabled(editing && has_selection)
                         .with_shortcut_opt(shortcut(hotkeys::Action::Duplicate)),
+                    MenuNode::separator(),
+                    MenuNode::item("edit.import-settings", fl!("menu-edit-import-settings"))
+                        .enabled(cfg!(feature = "host")),
+                    MenuNode::item("edit.export-settings", fl!("menu-edit-export-settings"))
+                        .enabled(cfg!(feature = "host")),
                     MenuNode::separator(),
                     MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues"))
                         .with_shortcut_opt(shortcut(hotkeys::Action::SelectAll)),

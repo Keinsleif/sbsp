@@ -31,6 +31,25 @@ fn show_filter(dialog: AsyncFileDialog) -> AsyncFileDialog {
     dialog.add_filter("Show Model", &["sbsp"])
 }
 
+fn settings_filter(dialog: AsyncFileDialog) -> AsyncFileDialog {
+    dialog.add_filter(crate::fl!("dialog-save-export-settings-filter"), &["json"])
+}
+
+/// Asks for a settings file to read. `None`: cancelled.
+pub async fn pick_settings(dialog: AsyncFileDialog) -> Option<std::path::PathBuf> {
+    let file = settings_filter(dialog).pick_file().await?;
+    Some(file.path().to_path_buf())
+}
+
+/// Asks where to write the settings. `None`: cancelled.
+pub async fn settings_destination(dialog: AsyncFileDialog) -> Option<std::path::PathBuf> {
+    let file = settings_filter(dialog)
+        .set_file_name("sbsp-settings.json")
+        .save_file()
+        .await?;
+    Some(file.path().to_path_buf())
+}
+
 /// Asks for a show file and loads it. Cancelling does nothing.
 pub async fn open(handle: BackendHandle, dialog: AsyncFileDialog) -> anyhow::Result<()> {
     let Some(file) = show_filter(dialog).pick_file().await else {
