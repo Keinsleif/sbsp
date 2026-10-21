@@ -222,6 +222,10 @@ mod tests {
         Bindings::from_settings(&HotkeySettings::default(), false)
     }
 
+    fn bindings_mac() -> Bindings {
+        Bindings::from_settings(&HotkeySettings::default(), true)
+    }
+
     fn press(key: Key, modifiers: Modifiers) -> KeyPress {
         KeyPress::new(&key, &key, modifiers, false).unwrap()
     }
@@ -319,8 +323,9 @@ mod tests {
     #[test]
     fn menus_can_show_a_binding() {
         let b = bindings();
+        let b_mac = bindings_mac();
         assert_eq!(b.shortcut(Action::Save, false).as_deref(), Some("Ctrl+S"));
-        assert_eq!(b.shortcut(Action::Copy, true).as_deref(), Some("⌘C"));
+        assert_eq!(b_mac.shortcut(Action::Copy, true).as_deref(), Some("⌘C"));
         assert_eq!(b.shortcut(Action::Export, false), None, "unbound by default");
     }
 
