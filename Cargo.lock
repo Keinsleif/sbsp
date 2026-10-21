@@ -3284,9 +3284,11 @@ dependencies = [
  "log",
  "parking_lot",
  "rust-embed",
+ "sys-locale",
  "thiserror 1.0.69",
  "unic-langid",
  "walkdir",
+ "web-sys",
 ]
 
 [[package]]
