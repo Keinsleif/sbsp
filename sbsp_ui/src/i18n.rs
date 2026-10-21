@@ -34,16 +34,14 @@ macro_rules! fl {
     }};
 }
 
-/// The operating system's UI language, if it says.
-#[cfg(not(target_arch = "wasm32"))]
+/// The language the system (the OS on desktop, the browser on the web)
+/// asks for first, if it says.
 pub fn system_language() -> Option<String> {
-    sys_locale::get_locale()
-}
-
-/// The browser's language (Phase 9).
-#[cfg(target_arch = "wasm32")]
-pub fn system_language() -> Option<String> {
-    None
+    #[cfg(not(target_arch = "wasm32"))]
+    let requested = i18n_embed::DesktopLanguageRequester::requested_languages();
+    #[cfg(target_arch = "wasm32")]
+    let requested = i18n_embed::WebLanguageRequester::requested_languages();
+    requested.first().map(ToString::to_string)
 }
 
 /// Switch the active language. The fallback language is always kept.
