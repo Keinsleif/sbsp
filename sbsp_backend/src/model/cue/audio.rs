@@ -29,14 +29,12 @@ impl Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl From<f32> for Decibels {
     fn from(value: f32) -> Self {
         Self(value)
     }
 }
 
-#[cfg(feature = "backend")]
 impl From<Decibels> for f32 {
     fn from(value: Decibels) -> Self {
         value.0
