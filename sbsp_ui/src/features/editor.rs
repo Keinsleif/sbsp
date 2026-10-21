@@ -47,7 +47,7 @@ mod type_tabs;
 use parts::{Choice, check, choice_name, picker};
 
 /// The original's `h-62`.
-pub const HEIGHT: f32 = 256.0;
+pub const HEIGHT: f32 = 240.0;
 
 const NUMBER: FieldId = FieldId("editor.number");
 const NAME: FieldId = FieldId("editor.name");
