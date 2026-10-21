@@ -438,5 +438,5 @@ pub(super) fn levels<'a>(
     .align_y(Alignment::Center)
     .height(FADERS_HEIGHT);
 
-    body(column![top, faders].spacing(12).padding(4))
+    body(column![top, faders].spacing(8).padding(4))
 }
