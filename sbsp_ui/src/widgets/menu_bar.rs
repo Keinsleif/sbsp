@@ -14,7 +14,13 @@ use iced_aw::style::menu_bar::Style;
 
 use crate::menu::{MenuId, MenuNode, MenuSpec};
 
-const SUBMENU_WIDTH: f32 = 220.0;
+/// The narrowest a dropdown gets, however short its entries are.
+const MIN_MENU_WIDTH: f32 = 160.0;
+/// Space around an entry's text: the button's padding on both sides, the
+/// gap between the label and the shortcut, and some room for the estimate
+/// being rough.
+const ENTRY_EXTRA: f32 = 2.0 * 10.0 + 12.0 + 16.0;
+const SHORTCUT_SIZE: f32 = 12.0;
 
 /// Builds the menu bar widget. `on_select` maps a clicked item's [`MenuId`]
 /// to the application's `Message` type.
@@ -72,6 +78,56 @@ fn native_style(theme: &Theme, _status: Status) -> Style {
     }
 }
 
+/// How wide the dropdown for `nodes` should be: the widest entry, so that
+/// no label wraps onto a second line. Text is not measured (the menu is
+/// built before any layout), so each character is given a width by kind,
+/// a little generous.
+fn menu_width(nodes: &[MenuNode]) -> f32 {
+    let text_size = crate::theme::fonts::TEXT_SIZE;
+    let widest = nodes
+        .iter()
+        .map(|node| match node {
+            MenuNode::Item {
+                label,
+                shortcut,
+                checked,
+                ..
+            } => {
+                let mark = if checked.is_some() { 2.0 } else { 0.0 };
+                estimated_width(label, text_size)
+                    + mark * text_size
+                    + shortcut
+                        .as_deref()
+                        .map_or(0.0, |s| estimated_width(s, SHORTCUT_SIZE))
+            }
+            MenuNode::Submenu { label, .. } => estimated_width(label, text_size) + SHORTCUT_SIZE,
+            MenuNode::Separator => 0.0,
+        })
+        .fold(0.0_f32, f32::max);
+
+    (widest + ENTRY_EXTRA).max(MIN_MENU_WIDTH)
+}
+
+/// A rough width of `text` at `size`: full-width (CJK) characters take a
+/// whole em, anything else about half of one.
+fn estimated_width(text: &str, size: f32) -> f32 {
+    text.chars()
+        .map(|c| if is_wide(c) { 1.0 } else { 0.55 })
+        .sum::<f32>()
+        * size
+}
+
+fn is_wide(c: char) -> bool {
+    matches!(c,
+        '\u{1100}'..='\u{115F}'
+        | '\u{2E80}'..='\u{A4CF}'
+        | '\u{AC00}'..='\u{D7A3}'
+        | '\u{F900}'..='\u{FAFF}'
+        | '\u{FE30}'..='\u{FE6F}'
+        | '\u{FF00}'..='\u{FF60}'
+        | '\u{FFE0}'..='\u{FFE6}')
+}
+
 fn build_menu<'a, Message, F>(
     nodes: &[MenuNode],
     on_select: F,
@@ -109,7 +165,7 @@ where
         .collect::<Vec<_>>();
 
     Menu::new(items)
-        .width(SUBMENU_WIDTH)
+        .width(menu_width(nodes))
         .spacing(0.0)
 }
 
@@ -187,4 +243,38 @@ fn separator<'a, Message: Clone + 'a>() -> Element<'a, Message> {
             })
             .into(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn japanese_text_is_wider_than_the_same_number_of_latin_letters() {
+        assert!(estimated_width("キュー番号", 14.0) > estimated_width("Cues!", 14.0));
+    }
+
+    #[test]
+    fn a_menu_is_as_wide_as_its_longest_entry() {
+        let short = [MenuNode::item("a", "Copy")];
+        let long = [
+            MenuNode::item("a", "Copy"),
+            MenuNode::item("b", "Renumber selected cues").with_shortcut("Ctrl+R"),
+        ];
+        assert_eq!(menu_width(&short), MIN_MENU_WIDTH);
+        assert!(menu_width(&long) > menu_width(&short));
+        // Wide enough for the label and the shortcut next to each other.
+        assert!(
+            menu_width(&long)
+                > estimated_width("Renumber selected cues", crate::theme::fonts::TEXT_SIZE)
+                    + estimated_width("Ctrl+R", SHORTCUT_SIZE)
+        );
+    }
+
+    #[test]
+    fn a_checkmark_and_a_submenu_arrow_take_room_too() {
+        let plain = [MenuNode::item("a", "Some fairly long entry label here")];
+        let checked = [MenuNode::item("a", "Some fairly long entry label here").checked(true)];
+        assert!(menu_width(&checked) > menu_width(&plain));
+    }
 }
