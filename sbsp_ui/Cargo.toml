@@ -68,9 +68,11 @@ fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
 # The OS UI language, for a language setting left on "system".
-sys-locale = "0.3"
+i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser's language, for a language setting left on "system".
+i18n-embed = { version = "0.16", features = ["fluent-system", "web-sys-requester"] }
 # Local::now() on wasm reads the browser's clock through wasm-bindgen.
 chrono = { version = "0.4", default-features = false, features = ["clock", "wasmbind"] }
 
