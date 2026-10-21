@@ -176,3 +176,6 @@ dialog-settings-tab-remote = Remote
 dialog-settings-tab-template = Template
 general-done = Done
 notification-failed-to-apply-settings = Failed to apply settings
+dialog-save-export-settings-filter = GlobalSettings File
+menu-edit-export-settings = Export global settings
+menu-edit-import-settings = Import global settings

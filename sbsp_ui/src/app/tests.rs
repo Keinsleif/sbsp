@@ -1093,3 +1093,18 @@ fn the_settings_dialog_shows_every_tab() {
         let _ = iced_test::simulator(state.view());
     }
 }
+
+#[test]
+#[serial]
+fn the_edit_menu_has_the_settings_import_and_export() {
+    let state = new_state();
+    let spec = state.menu_spec();
+    let (_, edit) = &spec.menus[1];
+    for wanted in ["edit.import-settings", "edit.export-settings"] {
+        assert!(
+            edit.iter()
+                .any(|node| matches!(node, MenuNode::Item { id, .. } if id.0 == wanted)),
+            "{wanted} is in the Edit menu"
+        );
+    }
+}
