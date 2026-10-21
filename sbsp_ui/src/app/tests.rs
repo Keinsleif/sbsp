@@ -1008,3 +1008,88 @@ fn menus_show_the_bindings() {
     assert_eq!(shortcut_of("file.save"), Some(Some(save.to_owned())));
     assert_eq!(shortcut_of("file.export"), Some(None), "unbound by default");
 }
+
+#[test]
+#[serial]
+fn the_cog_opens_the_settings_dialog_with_the_current_values() {
+    let mut state = new_state();
+    state.model.name = "Evening".to_owned();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+
+    let dialog = state.settings_dialog.as_ref().expect("the dialog opens");
+    assert_eq!(dialog.show_name, "Evening");
+    assert_eq!(dialog.preferences.general, state.preferences.general);
+}
+
+#[test]
+#[serial]
+fn the_settings_dialog_closes_on_escape_and_cancel_without_applying() {
+    let mut state = new_state();
+    let before = state.lock_cursor_to_selection;
+    let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(!before)));
+    let _ = state.update(key(keyboard::key::Named::ArrowDown));
+    assert!(state.settings_dialog.is_some(), "other keys do nothing");
+    let _ = state.update(key(keyboard::key::Named::Escape));
+    assert!(state.settings_dialog.is_none());
+    assert_eq!(state.lock_cursor_to_selection, before);
+
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Cancel));
+    assert!(state.settings_dialog.is_none());
+    assert_eq!(state.lock_cursor_to_selection, before);
+}
+
+#[test]
+#[serial]
+fn done_applies_the_edited_settings() {
+    let mut state = new_state();
+    let before = state.lock_cursor_to_selection;
+
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(!before)));
+    let _ = state.update(Message::Settings(settings_dialog::Message::DarkMode(
+        sbsp_frontend_settings::DarkMode::Dark,
+    )));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Done));
+
+    assert!(state.settings_dialog.is_none());
+    assert_eq!(state.lock_cursor_to_selection, !before);
+    assert_eq!(state.theme_mode, ThemeMode::Dark);
+    assert_eq!(state.preferences.general.lock_cursor_to_selection, !before);
+}
+
+#[test]
+#[serial]
+fn done_takes_the_field_being_edited() {
+    let mut state = new_state();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(
+        settings_dialog::Tab::GlobalGeneral,
+    )));
+    let id = field::FieldId("settings.seek-amount");
+    let _ = state.update(Message::Field(field::Message::Input(id, "7".to_owned())));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Done));
+
+    assert_eq!(state.seek_amount, 7.0);
+}
+
+#[test]
+#[serial]
+fn the_settings_dialog_shows_every_tab() {
+    let mut state = new_state();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    for tab in [
+        settings_dialog::Tab::Preset,
+        settings_dialog::Tab::ShowGeneral,
+        settings_dialog::Tab::AudioLogic,
+        settings_dialog::Tab::GlobalGeneral,
+        settings_dialog::Tab::Appearance,
+        settings_dialog::Tab::NameFormat,
+    ] {
+        let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(tab)));
+        let _ = iced_test::simulator(state.view());
+    }
+}

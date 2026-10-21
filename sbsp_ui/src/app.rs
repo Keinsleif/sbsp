@@ -27,7 +27,8 @@ use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{
-    cue_list, editor, file_ops, header, hotkeys, renumber, side_bar, status_bar, viewer,
+    cue_list, editor, file_ops, header, hotkeys, renumber, settings_dialog, side_bar, status_bar,
+    viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -118,6 +119,10 @@ pub struct State {
     confirm: Option<file_ops::Confirm>,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
+    /// The settings as last applied, which the settings dialog starts from.
+    preferences: Preferences,
+    /// The settings dialog, while it is open.
+    settings_dialog: Option<settings_dialog::SettingsDialog>,
     /// The renumber dialog's values and whether it is open.
     renumber: renumber::Dialog,
     renumber_open: bool,
@@ -165,6 +170,7 @@ pub enum Message {
     Field(field::Message),
     Editor(editor::Message),
     Renumber(renumber::Message),
+    Settings(settings_dialog::Message),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
     /// The file chosen for an audio cue's target (`None`: cancelled).
@@ -268,6 +274,8 @@ impl State {
             host_settings: GlobalHostSettings::default(),
             confirm: None,
             pending_remove: None,
+            preferences: Preferences::default(),
+            settings_dialog: None,
             renumber: renumber::Dialog::default(),
             renumber_open: false,
             dropped_files: Vec::new(),
@@ -364,6 +372,7 @@ impl State {
             Message::Field(message) => self.handle_field(message),
             Message::Editor(message) => self.handle_editor(message),
             Message::Renumber(message) => self.handle_renumber(message),
+            Message::Settings(message) => self.handle_settings(message),
             Message::CueList(cue_list::Message::Context(action)) => {
                 self.run_context_action(action)
             }
@@ -410,6 +419,7 @@ impl State {
     /// them without asking the settings again.
     #[cfg_attr(not(any(feature = "host", test)), allow(dead_code))]
     fn apply_preferences(&mut self, preferences: &Preferences) {
+        self.preferences = preferences.clone();
         self.name_format = preferences.name_format.clone();
         self.lock_cursor_to_selection = preferences.general.lock_cursor_to_selection;
         self.seek_amount = preferences.general.seek_amount;
@@ -467,6 +477,7 @@ impl State {
             Message::StatusBar(status_bar::Message::ToggleBottomTab) => {
                 self.ui.toggle_bottom_tab();
             }
+            Message::StatusBar(status_bar::Message::OpenSettings) => self.open_settings(),
             Message::StatusBar(status_bar::Message::ToggleSidebar) => {
                 self.ui.toggle_right_sidebar();
                 self.last_meter_tick = None;
@@ -485,6 +496,7 @@ impl State {
             | Message::Field(_)
             | Message::Editor(_)
             | Message::Renumber(_)
+            | Message::Settings(_)
             | Message::FileDropped(_)
             | Message::DropsSettled
             | Message::File(_)
@@ -686,6 +698,14 @@ impl State {
                 Task::none()
             };
         }
+        // The settings dialog takes Escape (cancel); other keys do not get
+        // through to the cue list behind it.
+        if self.settings_dialog.is_some() {
+            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+                self.settings_dialog = None;
+            }
+            return Task::none();
+        }
         // Likewise the renumber dialog: Enter runs it, Escape closes it.
         if self.renumber_open {
             let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
@@ -840,10 +860,17 @@ impl State {
             self.renumber_open = false;
         }
 
+        if self.settings_dialog.is_some() && message == field::Message::Escape {
+            self.settings_dialog = None;
+        }
+
         let (outcome, task) = self.fields.update(message);
         let mut edit = Task::none();
         if let Some(outcome) = outcome {
             self.renumber.apply(&outcome);
+            if let Some(dialog) = &mut self.settings_dialog {
+                dialog.apply(&outcome);
+            }
             // A step button press has no draft behind it: it applies to
             // the cue on screen.
             let cue_id = match outcome {
@@ -982,6 +1009,91 @@ impl State {
                 Task::none()
             }
         }
+    }
+
+    fn handle_settings(&mut self, message: settings_dialog::Message) -> Task<Message> {
+        match message {
+            settings_dialog::Message::Field(message) => self.handle_field(message),
+            settings_dialog::Message::Cancel => {
+                self.settings_dialog = None;
+                Task::none()
+            }
+            settings_dialog::Message::Done => self.finish_settings(),
+            other => {
+                if let Some(dialog) = &mut self.settings_dialog {
+                    dialog.update(&other);
+                }
+                Task::none()
+            }
+        }
+    }
+
+    /// The settings as they are right now: the View menu's switches may
+    /// have changed the theme and the language since they were applied.
+    fn current_preferences(&self) -> Preferences {
+        let mut preferences = self.preferences.clone();
+        preferences.appearance.dark_mode = preferences::dark_mode(self.theme_mode);
+        preferences.appearance.language = Some(self.lang.setting().to_owned());
+        preferences
+    }
+
+    fn open_settings(&mut self) {
+        self.settings_dialog = Some(settings_dialog::SettingsDialog::new(
+            &self.model.name,
+            &self.model.settings,
+            &self.current_preferences(),
+        ));
+    }
+
+    /// The dialog's Done: applies the edited settings, saves the global
+    /// ones and hands the show's own to the backend, each only when it
+    /// changed.
+    fn finish_settings(&mut self) -> Task<Message> {
+        // The field being edited counts: the button's press may arrive
+        // before the field notices it lost the focus.
+        if let (Some(outcome), Some(dialog)) = (self.fields.flush(), &mut self.settings_dialog) {
+            dialog.apply(&outcome);
+        }
+        let Some(dialog) = self.settings_dialog.take() else {
+            return Task::none();
+        };
+
+        let mut tasks = Vec::new();
+        if dialog.preferences != self.current_preferences() {
+            self.apply_preferences(&dialog.preferences);
+            tasks.push(self.save_preferences());
+        }
+        if dialog.show != self.model.settings {
+            tasks.push(self.send_edit(ModelEdit::UpdateShowSettings(dialog.show)));
+        }
+        if dialog.show_name != self.model.name {
+            tasks.push(self.send_edit(ModelEdit::RenameShow(dialog.show_name)));
+        }
+        Task::batch(tasks)
+    }
+
+    /// Keeps the applied preferences in the settings file.
+    #[cfg(feature = "host")]
+    fn save_preferences(&mut self) -> Task<Message> {
+        let p = self.preferences.clone();
+        let settings = &mut self.host_settings;
+        settings.general = p.general;
+        settings.appearance = p.appearance;
+        settings.hotkey = p.hotkey;
+        settings.template = p.template;
+        settings.name_format = p.name_format;
+        match &self.backend {
+            Some(backend) => Task::perform(
+                backend.save_settings(self.host_settings.clone()),
+                backend_result,
+            ),
+            None => Task::none(),
+        }
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn save_preferences(&mut self) -> Task<Message> {
+        Task::none()
     }
 
     /// Opens the renumber dialog for the selected cues. Edit mode only.
@@ -2093,6 +2205,14 @@ impl State {
             )
         } else {
             content
+        };
+
+        let content = match &self.settings_dialog {
+            Some(dialog) => modal::over_blocking(
+                content,
+                settings_dialog::view(dialog, &self.fields).map(Message::Settings),
+            ),
+            None => content,
         };
 
         self.toasts.overlay(content, Message::Toast)

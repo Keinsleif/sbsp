@@ -22,6 +22,7 @@ pub enum Message {
     ModeSelected(Mode),
     ToggleSidebar,
     ToggleBottomTab,
+    OpenSettings,
 }
 
 /// A mode with its translated label, which is what `pick_list` shows.
@@ -86,7 +87,9 @@ pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
     let bottom_toggle = toggle(Icon::DockBottom, ui.is_bottom_tab_open, Message::ToggleBottomTab);
     let sidebar_toggle = toggle(Icon::DockRight, ui.is_right_sidebar_open, Message::ToggleSidebar);
 
-    row![picker, count, bottom_toggle, sidebar_toggle]
+    let settings = toggle(Icon::Cog, false, Message::OpenSettings);
+
+    row![picker, count, settings, bottom_toggle, sidebar_toggle]
         .align_y(Alignment::Center)
         .padding(6)
         .into()
