@@ -75,4 +75,8 @@ pub enum ModelEdit {
     },
     /// Replaces the cue with the same id.
     UpdateCue(sbsp_backend::model::cue::Cue),
+    /// Replaces the show's own settings.
+    UpdateShowSettings(sbsp_backend::model::settings::ShowSettings),
+    /// Renames the show.
+    RenameShow(String),
 }

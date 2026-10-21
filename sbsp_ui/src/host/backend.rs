@@ -204,6 +204,8 @@ impl HostPort {
                         .await
                 }
                 ModelEdit::UpdateCue(cue) => model.update_cue(cue).await,
+                ModelEdit::UpdateShowSettings(settings) => model.update_settings(settings).await,
+                ModelEdit::RenameShow(name) => model.update_model_name(name).await,
             }
         }
     }
