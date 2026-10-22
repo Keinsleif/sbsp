@@ -453,11 +453,6 @@ impl State {
         }
     }
 
-    #[cfg(not(feature = "host"))]
-    fn save_appearance(&mut self) -> Task<Message> {
-        Task::none()
-    }
-
     fn apply(&mut self, message: Message) {
         match message {
             Message::ToggleTheme => {
@@ -560,6 +555,7 @@ impl State {
                     );
                 }
             },
+            #[cfg(feature = "host")]
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
