@@ -133,6 +133,32 @@ impl Hotkey {
     }
 }
 
+/// The stored form of a key press, as the original's hotkey input wrote
+/// it: `Control+` (Ctrl on a Mac), `$mod+` (Cmd on a Mac, Ctrl elsewhere),
+/// `Meta+` (the Windows key elsewhere), `Alt+`, `Shift+`, then the key,
+/// upper-cased when it is a single character.
+pub fn format_binding(mods: Mods, key: &str, is_mac: bool) -> String {
+    let mut text = String::new();
+    if mods.ctrl {
+        text.push_str(if is_mac { "Control+" } else { "$mod+" });
+    }
+    if mods.logo {
+        text.push_str(if is_mac { "$mod+" } else { "Meta+" });
+    }
+    if mods.alt {
+        text.push_str("Alt+");
+    }
+    if mods.shift {
+        text.push_str("Shift+");
+    }
+    if key.chars().count() == 1 {
+        text.push_str(&key.to_uppercase());
+    } else {
+        text.push_str(key);
+    }
+    text
+}
+
 /// A key name (lowercased, as [`Hotkey`] keeps it) the way a menu shows it.
 fn display_key(key: &str) -> String {
     match key {
@@ -248,5 +274,38 @@ mod tests {
         assert!(Hotkey::parse("", false).is_none());
         assert!(Hotkey::parse("Shift", false).is_none());
         assert!(Hotkey::parse("A+B", false).is_none());
+    }
+
+    #[test]
+    fn a_key_press_is_stored_as_the_original_did() {
+        let mods = Mods {
+            ctrl: true,
+            shift: true,
+            ..Mods::default()
+        };
+        assert_eq!(format_binding(mods, "s", false), "$mod+Shift+S");
+        assert_eq!(format_binding(mods, "s", true), "Control+Shift+S");
+        let logo = Mods {
+            logo: true,
+            alt: true,
+            ..Mods::default()
+        };
+        assert_eq!(format_binding(logo, "ArrowUp", false), "Meta+Alt+ArrowUp");
+        assert_eq!(format_binding(logo, "[", true), "$mod+Alt+[");
+        assert_eq!(format_binding(Mods::default(), "Space", false), "Space");
+    }
+
+    #[test]
+    fn a_stored_press_parses_back_to_the_same_binding() {
+        let mods = Mods {
+            ctrl: true,
+            shift: true,
+            ..Mods::default()
+        };
+        for is_mac in [false, true] {
+            let stored = format_binding(mods, "q", is_mac);
+            let parsed = Hotkey::parse(&stored, is_mac).unwrap();
+            assert!(parsed.matches("q", mods));
+        }
     }
 }

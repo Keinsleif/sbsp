@@ -718,7 +718,18 @@ impl State {
         }
         // The settings dialog takes Escape (cancel); other keys do not get
         // through to the cue list behind it.
-        if self.settings_dialog.is_some() {
+        if let Some(dialog) = &mut self.settings_dialog {
+            // An input waiting for a key takes any press, Escape included.
+            if dialog.capturing.is_some() {
+                if let (false, Some(name)) = (press.repeat, press.names.first()) {
+                    dialog.capture(crate::domain::hotkey::format_binding(
+                        press.mods,
+                        name,
+                        hotkeys::is_mac(),
+                    ));
+                }
+                return Task::none();
+            }
             if press.names.iter().any(|n| n == "Escape") && !press.repeat {
                 self.settings_dialog = None;
             }
