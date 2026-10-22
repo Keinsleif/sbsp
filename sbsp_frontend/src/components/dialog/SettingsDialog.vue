@@ -160,7 +160,11 @@ const recallMusicBeePreset = () => {
     pauseAll: '[',
     resumeAll: ']',
     stop: 'Backspace',
+    fadeOut: null,
+    hardStop: null,
     stopAll: 'Escape',
+    fadeAllOut: null,
+    hardStopAll: null,
     seekForward: null,
     seekBackward: null,
   };
@@ -177,7 +181,11 @@ const recallQLabPreset = () => {
     pauseAll: '[',
     resumeAll: ']',
     stop: 'S',
+    fadeOut: null,
+    hardStop: null,
     stopAll: 'Escape',
+    fadeAllOut: null,
+    hardStopAll: null,
     seekForward: null,
     seekBackward: null,
   };
@@ -456,6 +464,23 @@ const recallQLabPreset = () => {
                   :label="t('dialog.settings.global.hotkey.playback.pauseAndResume')"
                 />
                 <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.stop"
+                  :hotkey-set="hotkeySet"
+                  :label="t('dialog.settings.global.hotkey.playback.stop')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.fadeOut"
+                  :hotkey-set="hotkeySet"
+                  :label="t('dialog.settings.global.hotkey.playback.fadeOut')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.hardStop"
+                  :hotkey-set="hotkeySet"
+                  :label="t('dialog.settings.global.hotkey.playback.hardStop')"
+                />
+              </div>
+              <div class="flex flex-col gap-4">
+                <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.pauseAll"
                   :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.pauseAll')"
@@ -465,17 +490,20 @@ const recallQLabPreset = () => {
                   :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.resumeAll')"
                 />
-              </div>
-              <div class="flex flex-col gap-4">
-                <hotkey-input
-                  v-model="editingSettings.global.hotkey.playback.stop"
-                  :hotkey-set="hotkeySet"
-                  :label="t('dialog.settings.global.hotkey.playback.stop')"
-                />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.stopAll"
                   :hotkey-set="hotkeySet"
                   :label="t('dialog.settings.global.hotkey.playback.stopAll')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.fadeAllOut"
+                  :hotkey-set="hotkeySet"
+                  :label="t('dialog.settings.global.hotkey.playback.fadeAllOut')"
+                />
+                <hotkey-input
+                  v-model="editingSettings.global.hotkey.playback.hardStopAll"
+                  :hotkey-set="hotkeySet"
+                  :label="t('dialog.settings.global.hotkey.playback.hardStopAll')"
                 />
                 <hotkey-input
                   v-model="editingSettings.global.hotkey.playback.seekForward"

@@ -336,6 +336,12 @@ export function useWebsocketApi(): IBackendAdapter {
     sendStop: async function (cueId: string): Promise<void> {
       this.sendCommand({ type: 'control', command: 'stop', params: cueId });
     },
+    sendSoftStop: async function (cueId: string): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'softStop', params: cueId });
+    },
+    sendHardStop: async function (cueId: string): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'hardStop', params: cueId });
+    },
     sendPauseAll: async function (): Promise<void> {
       this.sendCommand({ type: 'control', command: 'pauseAll' });
     },
@@ -344,6 +350,12 @@ export function useWebsocketApi(): IBackendAdapter {
     },
     sendStopAll: async function (): Promise<void> {
       this.sendCommand({ type: 'control', command: 'stopAll' });
+    },
+    sendSoftStopAll: async function (): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'softStopAll' });
+    },
+    sendHardStopAll: async function (): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'hardStopAll' });
     },
     sendSeekTo: async function (cueId: string, position: number): Promise<void> {
       this.sendCommand({ type: 'control', command: 'seekTo', params: [cueId, position] });

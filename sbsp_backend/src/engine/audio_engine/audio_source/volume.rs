@@ -54,21 +54,24 @@ impl Volume {
 
     #[inline]
     pub fn update(&mut self, dt: f64) -> bool {
-        if let Some(info) = self.fade_info.as_mut() {
-            if info.elapsed >= info.fade_param.duration {
-                self.volume = info.to;
-                return true;
-            }
+        let info = match self.fade_info.as_mut() {
+            Some(i) => i,
+            None => return false,
+        };
 
+        if info.elapsed >= info.fade_param.duration {
+            self.volume = info.to;
+            self.fade_info = None;
+            true
+        } else {
             let progress =
                 info.fade_param
                     .easing
                     .get_factor(info.elapsed / info.fade_param.duration) as f32;
 
             self.volume = info.from + (info.to - info.from) * progress;
-
             info.elapsed += dt;
+            false
         }
-        false
     }
 }
