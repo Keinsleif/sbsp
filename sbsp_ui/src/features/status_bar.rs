@@ -89,7 +89,7 @@ pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
 
     let settings = toggle(Icon::Cog, false, Message::OpenSettings);
 
-    row![picker, count, settings, bottom_toggle, sidebar_toggle]
+    row![picker, count, bottom_toggle, sidebar_toggle, settings]
         .align_y(Alignment::Center)
         .padding(6)
         .into()
