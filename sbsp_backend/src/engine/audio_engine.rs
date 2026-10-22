@@ -14,7 +14,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source, cpal::{BufferSize, DeviceId, SampleFormat, StreamConfig, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, Device, DeviceTrait, Source, SupportedStreamConfig, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -720,7 +720,10 @@ fn get_builder(
         if wants_custom {
             match select_config(&device, settings) {
                 Some(config) => {
-                    builder = builder.with_config(&config).with_sample_format(SampleFormat::F32);
+                    builder = builder.with_supported_config(&config);
+                    if let Some(bs) = settings.buffer_size {
+                        builder = builder.with_buffer_size(BufferSize::Fixed(bs))
+                    }
                 }
                 None => fallback_info.config = true,
             }
@@ -733,15 +736,15 @@ fn get_builder(
 fn select_config(
     device: &Device,
     settings: &BackendAudioSettings,
-) -> Option<StreamConfig> {
+) -> Option<SupportedStreamConfig> {
     let default = device.default_output_config().ok();
     let default_ch = default.map(|c| c.channels());
     let default_sr = default.map(|c| c.sample_rate());
+    let default_fmt = default.as_ref().map(|c| c.sample_format());
 
     device
         .supported_output_configs()
         .ok()?
-        .filter(|c| c.sample_format() == SampleFormat::F32)
         .filter(|c| settings.channel_count.is_none_or(|ch| c.channels() == ch))
         .filter(|c| {
             settings.buffer_size.is_none_or(|bs| {
@@ -758,19 +761,42 @@ fn select_config(
             c.try_with_sample_rate(rate)
         })
         .min_by_key(|c| {
+            let is_not_default = match default_fmt {
+                Some(df) => (c.sample_format() != df) as u8,
+                None => 0,
+            };
+            let fmt_prec = format_priority(c.sample_format());
+            
             let ch = if settings.channel_count.is_none() {
                 default_ch.map_or(0, |d| (c.channels() as i32 - d as i32).abs())
             } else { 0 };
             let sr = if settings.sample_rate.is_none() {
                 default_sr.map_or(0, |d| (c.sample_rate() as i64 - d as i64).abs())
             } else { 0 };
-            (ch, sr)
+            (is_not_default, fmt_prec, ch, sr)
         })
-        .map(|c| {
-            let mut cfg = c.config();
-            if let Some(bs) = settings.buffer_size {
-                cfg.buffer_size = BufferSize::Fixed(bs);
-            }
-            cfg
-        })
+}
+
+fn format_priority(format: SampleFormat) -> u8 {
+    match format {
+        SampleFormat::F32 => 0,
+        SampleFormat::F64 => 1,
+
+        SampleFormat::I32 => 2,
+        SampleFormat::I24 => 3,
+        SampleFormat::I16 => 4,
+        SampleFormat::I64 => 5,
+        SampleFormat::I8  => 6,
+
+        SampleFormat::U32 => 7,
+        SampleFormat::U24 => 8,
+        SampleFormat::U16 => 9,
+        SampleFormat::U8  => 10,
+        SampleFormat::U64 => 11,
+
+        SampleFormat::DsdU32 => 20,
+        SampleFormat::DsdU16 => 21,
+        SampleFormat::DsdU8  => 22,
+        _ => 99,
+    }
 }
