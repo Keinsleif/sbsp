@@ -29,8 +29,12 @@ import type { Permissions } from '../types/Permissions';
 import type { InsertPosition } from '../types/InsertPosition';
 import { v4 } from 'uuid';
 import { AUDIO_EXTENSIONS } from '.';
+import type { ControllerCommand } from '@/types/ControllerCommand';
 
 const { t } = i18n.global;
+
+const sendControllerCommand = async (command: ControllerCommand) =>
+  await invoke<void>('send_controller_command', { command: command });
 
 export function useTauriApi(): IBackendAdapter {
   const tauriApi: IBackendAdapter = {
@@ -188,40 +192,58 @@ export function useTauriApi(): IBackendAdapter {
       return invoke('process_asset', { path: path });
     },
     sendExecute: function (cueId: string): Promise<void> {
-      return invoke('execute', { cueId: cueId });
+      return sendControllerCommand({ command: 'execute', params: cueId });
     },
     sendLoad: function (cueId: string): Promise<void> {
-      return invoke('load', { cueId: cueId });
+      return sendControllerCommand({ command: 'load', params: cueId });
     },
     sendPause: function (cueId: string): Promise<void> {
-      return invoke('pause', { cueId: cueId });
+      return sendControllerCommand({ command: 'pause', params: cueId });
     },
     sendResume: function (cueId: string): Promise<void> {
-      return invoke('resume', { cueId: cueId });
+      return sendControllerCommand({ command: 'resume', params: cueId });
     },
     sendStop: function (cueId: string): Promise<void> {
-      return invoke('stop', { cueId: cueId });
+      return sendControllerCommand({ command: 'stop', params: cueId });
+    },
+    sendSoftStop: function (cueId: string): Promise<void> {
+      return sendControllerCommand({ command: 'softStop', params: cueId });
+    },
+    sendHardStop: function (cueId: string): Promise<void> {
+      return sendControllerCommand({ command: 'hardStop', params: cueId });
     },
     sendPauseAll: function (): Promise<void> {
-      return invoke('pause_all');
+      return sendControllerCommand({ command: 'pauseAll' });
     },
     sendResumeAll: function (): Promise<void> {
-      return invoke('resume_all');
+      return sendControllerCommand({ command: 'resumeAll' });
     },
     sendStopAll: function (): Promise<void> {
-      return invoke('stop_all');
+      return sendControllerCommand({ command: 'stopAll' });
+    },
+    sendSoftStopAll: function (): Promise<void> {
+      return sendControllerCommand({ command: 'softStopAll' });
+    },
+    sendHardStopAll: function (): Promise<void> {
+      return sendControllerCommand({ command: 'hardStopAll' });
     },
     sendSeekTo: function (cueId: string, position: number): Promise<void> {
-      return invoke('seek_to', { cueId: cueId, position: position });
+      return sendControllerCommand({ command: 'seekTo', params: [cueId, position] });
     },
     sendSeekBy: function (cueId: string, amount: number): Promise<void> {
-      return invoke('seek_by', { cueId: cueId, amount: amount });
+      return sendControllerCommand({ command: 'seekBy', params: [cueId, amount] });
     },
     sendToggleRepeat: function (cueId: string): Promise<void> {
-      return invoke('toggle_repeat', { cueId: cueId });
+      return sendControllerCommand({
+        command: 'performAction',
+        params: [cueId, { type: 'audio', action: 'toggleRepeat' }],
+      });
     },
     sendSetVolume: function (cueId: string, volume: number): Promise<void> {
-      return invoke('set_volume', { cueId: cueId, volume: volume });
+      return sendControllerCommand({
+        command: 'performAction',
+        params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
+      });
     },
 
     isModified: function (): Promise<boolean> {

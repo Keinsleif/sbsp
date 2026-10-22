@@ -98,7 +98,11 @@
             "stop": "Stop",
             "stopAll": "Stop All",
             "title": "Playback",
-            "execute": "Execute"
+            "execute": "Execute",
+            "fadeOut": "Fade Out",
+            "hardStop": "Hard Stop",
+            "fadeAllOut": "Fade All Out",
+            "hardStopAll": "Hard Stop All"
           },
           "file": {
             "title": "File",

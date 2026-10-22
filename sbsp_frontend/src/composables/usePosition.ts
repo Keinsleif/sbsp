@@ -30,7 +30,11 @@ const loop = (timestamp: DOMHighResTimeStamp) => {
   rafId = requestAnimationFrame(loop);
 };
 
-export const usePosition = (domTickFn: PositionCallback, enabled: MaybeRef<boolean> = true, onDeactivate?: () => void) => {
+export const usePosition = (
+  domTickFn: PositionCallback,
+  enabled: MaybeRef<boolean> = true,
+  onDeactivate?: () => void,
+) => {
   if (showState == null) {
     showState = useShowState();
   }

@@ -98,7 +98,11 @@
             "stop": "停止",
             "stopAll": "すべて停止",
             "title": "再生",
-            "execute": "実行"
+            "execute": "実行",
+            "fadeAllOut": "すべてフェードアウト",
+            "fadeOut": "フェードアウト",
+            "hardStop": "強制停止",
+            "hardStopAll": "すべて強制停止"
           },
           "file": {
             "title": "ファイル操作",
