@@ -88,15 +88,15 @@ const recursiveCueCheck = (
         isChainOverrided: chain != null,
       });
       for (const entry of recursiveCueCheck(
-          cue.params.children,
-          cues,
-          expandedRows,
-          level + 1,
-          !isExpanded || isHidden,
-          cue,
-        )) {
-          cuelist.push(entry);
-        }
+        cue.params.children,
+        cues,
+        expandedRows,
+        level + 1,
+        !isExpanded || isHidden,
+        cue,
+      )) {
+        cuelist.push(entry);
+      }
     } else {
       cuelist.push({
         cue: cue,

@@ -33,7 +33,8 @@ import type { ControllerCommand } from '@/types/ControllerCommand';
 
 const { t } = i18n.global;
 
-const sendControllerCommand = async (command: ControllerCommand) => await invoke<void>('send_controller_command', { command: command });
+const sendControllerCommand = async (command: ControllerCommand) =>
+  await invoke<void>('send_controller_command', { command: command });
 
 export function useTauriApi(): IBackendAdapter {
   const tauriApi: IBackendAdapter = {
@@ -233,10 +234,16 @@ export function useTauriApi(): IBackendAdapter {
       return sendControllerCommand({ command: 'seekBy', params: [cueId, amount] });
     },
     sendToggleRepeat: function (cueId: string): Promise<void> {
-      return sendControllerCommand({ command: 'performAction', params: [cueId, {type: 'audio', action: 'toggleRepeat'}] });
+      return sendControllerCommand({
+        command: 'performAction',
+        params: [cueId, { type: 'audio', action: 'toggleRepeat' }],
+      });
     },
     sendSetVolume: function (cueId: string, volume: number): Promise<void> {
-      return sendControllerCommand({ command: 'performAction', params: [cueId, {type: 'audio', action: 'setVolume', params: volume}] });
+      return sendControllerCommand({
+        command: 'performAction',
+        params: [cueId, { type: 'audio', action: 'setVolume', params: volume }],
+      });
     },
 
     isModified: function (): Promise<boolean> {
