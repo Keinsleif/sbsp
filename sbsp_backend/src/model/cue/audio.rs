@@ -24,8 +24,27 @@ impl Decibels {
 
     #[cfg(feature = "backend")]
     #[inline]
+    pub fn is_silent(self) -> bool { self.0 <= Self::MUTE.0 }
+
+    #[cfg(feature = "backend")]
+    #[inline]
+    pub fn stack(self, rhs: Self) -> Self {
+        let sum = self.0 + rhs.0;
+        if self.is_silent() || rhs.is_silent() || sum <= Self::MUTE.0 {
+            Self::MUTE
+        } else {
+            Self(sum)
+        }
+    }
+
+    #[cfg(feature = "backend")]
+    #[inline]
     pub fn as_amplitude(&self) -> f32 {
-        10.0f32.powf(self.0 / 20.0)
+        if self.is_silent() {
+            0.0
+        } else {
+            10.0f32.powf(self.0 / 20.0)
+        }
     }
 }
 
@@ -159,4 +178,25 @@ pub enum SoundType {
     Static,
     #[default]
     Streaming,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::model::cue::audio::Decibels;
+
+    #[test]
+    fn decibels_stack() {
+        assert_eq!(Decibels::MUTE.stack(Decibels(6.0)), Decibels::MUTE);
+
+        assert_eq!(Decibels(-40.0).stack(Decibels(-40.0)), Decibels::MUTE);
+
+        assert_eq!(Decibels(-30.0).stack(Decibels(-20.0)), Decibels(-50.0));
+    }
+
+    #[test]
+    fn as_amplitude_clamp() {
+        assert_eq!(Decibels::MUTE.as_amplitude(), 0.0);
+
+        assert_ne!(Decibels(-59.9).as_amplitude(), 0.0);
+    }
 }
