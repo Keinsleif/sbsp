@@ -149,6 +149,8 @@ pub struct State {
     /// The one text field being edited, if any (shared by every field).
     fields: field::Drafts,
     editor: editor::Editor,
+    /// The editor under the template list of the settings dialog.
+    template_editor: editor::Editor,
     /// Set when the cue list or the cache was replaced, so the next
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
     assets_stale: bool,
@@ -298,6 +300,7 @@ impl State {
             viewer: viewer::Viewer::default(),
             fields: field::Drafts::default(),
             editor: editor::Editor::default(),
+            template_editor: editor::Editor::default(),
             assets_stale: false,
             toasts: toast::Toasts::new(),
             #[cfg(feature = "host")]
@@ -332,6 +335,10 @@ impl State {
             .and_then(|id| self.model.cue_list.cues.get(&id));
         self.editor.file = self.file_info(cue);
         self.editor.sync(cue, &self.fields);
+        self.template_editor.sync(
+            self.settings_dialog.as_ref().and_then(|d| d.template_cue()),
+            &self.fields,
+        );
     }
 
     /// What the analysis of the audio cue's file says.
@@ -893,23 +900,26 @@ impl State {
         let mut edit = Task::none();
         if let Some(outcome) = outcome {
             self.renumber.apply(&outcome);
-            if let Some(dialog) = &mut self.settings_dialog {
-                dialog.apply(&outcome);
-            }
-            // A step button press has no draft behind it: it applies to
-            // the cue on screen.
-            let cue_id = match outcome {
-                field::Outcome::Step(..) => self.ui.selected,
-                field::Outcome::Commit(_) => self.editor.draft_cue,
-            };
-            let cue = cue_id.and_then(|id| self.model.cue_list.cues.get(&id));
-            if let Some((before, edited)) = cue
-                .and_then(|cue| self.editor.apply(&outcome, cue).map(|edited| (cue, edited)))
-            {
-                edit = self.send_cue_edit(before, edited);
+            if self.settings_dialog.is_some() {
+                // The editor fields then belong to the template, not to
+                // the cue selected behind the dialog.
+                self.apply_settings_outcome(&outcome);
+            } else {
+                // A step button press has no draft behind it: it applies
+                // to the cue on screen.
+                let cue_id = match outcome {
+                    field::Outcome::Step(..) => self.ui.selected,
+                    field::Outcome::Commit(_) => self.editor.draft_cue,
+                };
+                let cue = cue_id.and_then(|id| self.model.cue_list.cues.get(&id));
+                if let Some((before, edited)) = cue
+                    .and_then(|cue| self.editor.apply(&outcome, cue).map(|edited| (cue, edited)))
+                {
+                    edit = self.send_cue_edit(before, edited);
+                }
             }
         }
-        if begins_editor_edit {
+        if begins_editor_edit && self.settings_dialog.is_none() {
             self.editor.draft_cue = self.ui.selected;
         }
 
@@ -1094,13 +1104,61 @@ impl State {
                 Task::none()
             }
             settings_dialog::Message::Done => self.finish_settings(),
+            settings_dialog::Message::Editor(message) => self.handle_template_editor(message.0),
             other => {
+                // An edit still in progress belongs to what is on screen
+                // now, not to what the click is about to show.
+                if matches!(
+                    other,
+                    settings_dialog::Message::SelectTab(_)
+                        | settings_dialog::Message::SelectTemplate(_)
+                ) {
+                    if let Some(outcome) = self.fields.flush() {
+                        self.apply_settings_outcome(&outcome);
+                    }
+                }
                 if let Some(dialog) = &mut self.settings_dialog {
                     dialog.update(&other);
                 }
                 Task::none()
             }
         }
+    }
+
+    /// A finished edit of one of the dialog's fields: the dialog's own, or
+    /// an editor field of the template being edited.
+    fn apply_settings_outcome(&mut self, outcome: &field::Outcome) {
+        let Some(dialog) = &mut self.settings_dialog else {
+            return;
+        };
+        dialog.apply(outcome);
+        let edited = dialog
+            .template_cue()
+            .and_then(|cue| self.template_editor.apply(outcome, cue));
+        if let Some(edited) = edited {
+            dialog.set_template_cue(edited);
+        }
+    }
+
+    /// A message of the editor under the template list.
+    fn handle_template_editor(&mut self, message: editor::Message) -> Task<Message> {
+        let Some(dialog) = &mut self.settings_dialog else {
+            return Task::none();
+        };
+        let update = self
+            .template_editor
+            .update(message, dialog.template_cue(), None, Instant::now());
+        match update {
+            editor::Update::Field(message) => return self.handle_field(message),
+            editor::Update::Edit(edited) => dialog.set_template_cue(*edited),
+            // Playing, seeking and analysed files mean nothing to a
+            // template.
+            editor::Update::None
+            | editor::Update::PickAudio(_)
+            | editor::Update::Seek(..)
+            | editor::Update::MatchVolume(_) => {}
+        }
+        Task::none()
     }
 
     /// The settings as they are right now: the View menu's switches may
@@ -1113,6 +1171,7 @@ impl State {
     }
 
     fn open_settings(&mut self) {
+        self.template_editor = editor::Editor::default();
         self.settings_dialog = Some(settings_dialog::SettingsDialog::new(
             &self.model.name,
             &self.model.settings,
@@ -1126,8 +1185,8 @@ impl State {
     fn finish_settings(&mut self) -> Task<Message> {
         // The field being edited counts: the button's press may arrive
         // before the field notices it lost the focus.
-        if let (Some(outcome), Some(dialog)) = (self.fields.flush(), &mut self.settings_dialog) {
-            dialog.apply(&outcome);
+        if let Some(outcome) = self.fields.flush() {
+            self.apply_settings_outcome(&outcome);
         }
         let Some(dialog) = self.settings_dialog.take() else {
             return Task::none();
@@ -2290,10 +2349,22 @@ impl State {
         };
 
         let content = match &self.settings_dialog {
-            Some(dialog) => modal::over_blocking(
-                content,
-                settings_dialog::view(dialog, &self.fields).map(Message::Settings),
-            ),
+            Some(dialog) => {
+                let flat = crate::domain::flat_list::flatten(
+                    &self.model.cue_list.root_ids,
+                    &self.model.cue_list.cues,
+                    &self.ui.expanded_rows,
+                );
+                let editing = settings_dialog::Editing {
+                    editor: &self.template_editor,
+                    model: &self.model,
+                    flat: &flat,
+                };
+                modal::over_blocking(
+                    content,
+                    settings_dialog::view(dialog, &self.fields, editing).map(Message::Settings),
+                )
+            }
             None => content,
         };
 

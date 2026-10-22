@@ -47,16 +47,6 @@ dialog-settings-global-audio-hardware-save-warning =
     実行中の音声を停止して設定を適用しますか？
     この操作により、再生中のすべてのオーディオが停止します。
 dialog-settings-global-audio-hardware-warning = 設定を変更するとオーディオエンジンが再起動され、再生中のすべての音声キューが停止します。
-dialog-settings-global-template-audio = 音声キュー
-dialog-settings-global-template-built-from-cue-param = ** キューのパラメータから自動作成 **
-dialog-settings-global-template-fade = フェードキュー
-dialog-settings-global-template-group = グループキュー
-dialog-settings-global-template-load = 読み込みキュー
-dialog-settings-global-template-pause = 一時停止キュー
-dialog-settings-global-template-start = 開始キュー
-dialog-settings-global-template-stop = 停止キュー
-dialog-settings-global-template-type = 種類
-dialog-settings-global-template-wait = 待機キュー
 dialog-settings-show-remote-lock-cursor-to-selection = 再生カーソルを選択範囲にロック (リモート側)
 dialog-update-checking = 確認中...
 dialog-update-current-version = 現在のバージョン
