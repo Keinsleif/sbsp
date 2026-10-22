@@ -35,7 +35,13 @@ const faderPosition = computed({
   },
 });
 
+const onPointerDown = () => {
+  sliderChanging.value = true;
+  window.addEventListener('pointerup', onPointerUp);
+};
+
 const onPointerUp = debounce(() => {
+  window.removeEventListener('pointerup', onPointerUp);
   if (sliderChanging.value) {
     sliderChanging.value = false;
     if (!props.disabled) {
@@ -88,8 +94,7 @@ const tickLabels = computed(() => {
       }
     "
     @keydown.stop
-    @pointerdown="sliderChanging = true"
-    @pointerup="onPointerUp"
+    @pointerdown="onPointerDown"
   >
     <template #input>
       <volume-input

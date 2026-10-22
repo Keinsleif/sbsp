@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
 import NumberInput from './NumberInput.vue';
+import { debounce } from '@/utils.ts';
 
 const props = defineProps<{
   label?: string;
@@ -31,6 +32,21 @@ const tickLabels = [
   { value: 0, label: 'C' },
   { value: 64, label: 'R' },
 ];
+
+const onPointerDown = () => {
+  sliderChanging.value = true;
+  window.addEventListener('pointerup', onPointerUp);
+};
+
+const onPointerUp = debounce(() => {
+  window.removeEventListener('pointerup', onPointerUp);
+  if (sliderChanging.value) {
+    sliderChanging.value = false;
+    if (!props.disabled) {
+      emit('update');
+    }
+  }
+}, 300);
 </script>
 
 <template>
@@ -49,15 +65,7 @@ const tickLabels = [
         emit('update');
       }
     "
-    @pointerdown="sliderChanging = true"
-    @pointerup="
-      if (sliderChanging) {
-        sliderChanging = false;
-        if (!props.disabled) {
-          emit('update');
-        }
-      }
-    "
+    @pointerdown="onPointerDown"
     @keydown.stop
   >
     <template #input>
