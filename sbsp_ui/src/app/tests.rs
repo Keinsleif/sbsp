@@ -1108,3 +1108,31 @@ fn the_edit_menu_has_the_settings_import_and_export() {
         );
     }
 }
+
+#[test]
+#[serial]
+fn a_waiting_hotkey_input_takes_the_next_press_including_escape() {
+    use settings_dialog::Slot;
+
+    let mut state = new_state();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(
+        settings_dialog::Tab::Hotkey,
+    )));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Capture(Slot::Load)));
+
+    let _ = state.update(press(
+        keyboard::Key::Named(keyboard::key::Named::Escape),
+        keyboard::Modifiers::empty(),
+    ));
+    let dialog = state.settings_dialog.as_ref().expect("Escape was taken as the binding");
+    assert_eq!(dialog.preferences.hotkey.playback.load.as_deref(), Some("Escape"));
+    assert_eq!(dialog.capturing, None);
+
+    // Not waiting any more: Escape closes the dialog again.
+    let _ = state.update(press(
+        keyboard::Key::Named(keyboard::key::Named::Escape),
+        keyboard::Modifiers::empty(),
+    ));
+    assert!(state.settings_dialog.is_none());
+}

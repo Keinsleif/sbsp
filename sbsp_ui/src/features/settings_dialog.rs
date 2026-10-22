@@ -6,9 +6,13 @@
 //! The dialog edits a copy of the settings (the show's and the global
 //! ones); Done hands the copy back to the app, Cancel throws it away.
 //! Tabs arrive one at a time: this has the presets, the show's own
-//! settings, the global general and appearance settings and the name
-//! formats. Hotkeys, templates and the audio hardware come with their own
+//! settings, the global general and appearance settings, the hotkeys and
+//! the name formats. Templates and the audio hardware come with their own
 //! steps.
+
+mod hotkey_tab;
+
+pub use hotkey_tab::Slot;
 
 use std::fmt;
 
@@ -80,6 +84,7 @@ pub enum Tab {
     AudioLogic,
     GlobalGeneral,
     Appearance,
+    Hotkey,
     NameFormat,
 }
 
@@ -102,6 +107,9 @@ pub enum Message {
     Language(Option<String>),
     DarkMode(DarkMode),
     HideControls(bool),
+    /// A hotkey input was pressed: it waits for a key (or stops waiting).
+    Capture(hotkey_tab::Slot),
+    ClearHotkey(hotkey_tab::Slot),
     Cancel,
     Done,
 }
@@ -113,6 +121,8 @@ pub struct SettingsDialog {
     pub show_name: String,
     pub show: ShowSettings,
     pub preferences: Preferences,
+    /// The hotkey input waiting for a key press.
+    pub capturing: Option<hotkey_tab::Slot>,
 }
 
 impl SettingsDialog {
@@ -122,6 +132,15 @@ impl SettingsDialog {
             show_name: show_name.to_owned(),
             show: show.clone(),
             preferences: preferences.clone(),
+            capturing: None,
+        }
+    }
+
+    /// The binding the next key press was turned into, for the input that
+    /// is waiting for one.
+    pub fn capture(&mut self, binding: String) {
+        if let Some(slot) = self.capturing.take() {
+            slot.set(&mut self.preferences.hotkey, Some(binding));
         }
     }
 
@@ -180,7 +199,17 @@ impl SettingsDialog {
     /// `Cancel` and `Done` are the owner's business.
     pub fn update(&mut self, message: &Message) {
         match message {
-            Message::SelectTab(tab) => self.tab = *tab,
+            Message::SelectTab(tab) => {
+                self.tab = *tab;
+                self.capturing = None;
+            }
+            Message::Capture(slot) => {
+                self.capturing = (self.capturing != Some(*slot)).then_some(*slot);
+            }
+            Message::ClearHotkey(slot) => {
+                slot.set(&mut self.preferences.hotkey, None);
+                self.capturing = None;
+            }
             Message::Preset(preset) => self.recall(*preset),
             Message::CursorAdvance(trigger) => self.show.general.cursor_advance_trigger = *trigger,
             Message::MonoOutput(on) => self.show.audio.mono_output = *on,
@@ -289,6 +318,7 @@ fn tab_label(tab: Tab) -> String {
         Tab::ShowGeneral | Tab::GlobalGeneral => fl!("dialog-settings-tab-general"),
         Tab::AudioLogic => fl!("dialog-settings-tab-audio-logic"),
         Tab::Appearance => fl!("dialog-settings-tab-appearance"),
+        Tab::Hotkey => fl!("dialog-settings-tab-hotkey"),
         Tab::NameFormat => fl!("dialog-settings-tab-name-format"),
     }
 }
@@ -319,6 +349,7 @@ pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message
         heading(fl!("dialog-settings-tab-category-global")),
         tab_button(Tab::GlobalGeneral),
         tab_button(Tab::Appearance),
+        tab_button(Tab::Hotkey),
         tab_button(Tab::NameFormat),
     ]
     .spacing(2)
@@ -330,6 +361,7 @@ pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message
         Tab::AudioLogic => audio_logic_page(dialog, drafts),
         Tab::GlobalGeneral => global_general_page(dialog, drafts),
         Tab::Appearance => appearance_page(dialog),
+        Tab::Hotkey => hotkey_tab::view(&dialog.preferences.hotkey, dialog.capturing),
         Tab::NameFormat => name_format_page(dialog, drafts),
     };
 
@@ -730,5 +762,45 @@ mod tests {
         d.apply(&commit(FieldId("editor.number"), "7"));
         assert_eq!(d, dialog());
         assert!(owns(SHOW_NAME) && !owns(FieldId("editor.number")));
+    }
+
+    #[test]
+    fn a_hotkey_input_takes_the_next_press_once() {
+        use hotkey_tab::Slot;
+
+        let mut d = dialog();
+        d.update(&Message::SelectTab(Tab::Hotkey));
+        d.update(&Message::Capture(Slot::Load));
+        assert_eq!(d.capturing, Some(Slot::Load));
+
+        d.capture("$mod+K".to_owned());
+        assert_eq!(d.preferences.hotkey.playback.load.as_deref(), Some("$mod+K"));
+        assert_eq!(d.capturing, None);
+
+        d.capture("X".to_owned());
+        assert_eq!(d.preferences.hotkey.playback.load.as_deref(), Some("$mod+K"), "not waiting");
+    }
+
+    #[test]
+    fn pressing_an_input_twice_stops_waiting() {
+        use hotkey_tab::Slot;
+
+        let mut d = dialog();
+        d.update(&Message::Capture(Slot::Stop));
+        d.update(&Message::Capture(Slot::Stop));
+        assert_eq!(d.capturing, None);
+
+        d.update(&Message::Capture(Slot::Stop));
+        d.update(&Message::SelectTab(Tab::Appearance));
+        assert_eq!(d.capturing, None, "leaving the tab stops it too");
+    }
+
+    #[test]
+    fn the_cross_unbinds() {
+        use hotkey_tab::Slot;
+
+        let mut d = dialog();
+        d.update(&Message::ClearHotkey(Slot::StopAll));
+        assert_eq!(d.preferences.hotkey.playback.stop_all, None);
     }
 }
