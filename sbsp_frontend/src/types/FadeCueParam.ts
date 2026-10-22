@@ -2,4 +2,4 @@
 import type { Decibels } from "./Decibels";
 import type { FadeParam } from "./FadeParam";
 
-export type FadeCueParam = { target: string, volume: Decibels, fadeParam: FadeParam, };
+export type FadeCueParam = { target: string, volume: Decibels, fadeParam: FadeParam, stopTargetOnComplete: boolean, };

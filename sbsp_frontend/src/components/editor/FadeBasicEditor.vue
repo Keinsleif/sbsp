@@ -9,9 +9,11 @@ import type { Cue } from '../../types/Cue';
 import type { FadeParam } from '../../types/FadeParam';
 import CueSelect from '../input/CueSelect.vue';
 import VolumeFader from '../input/VolumeFader.vue';
+import CheckboxWrapper from '../wrapper/CheckboxWrapper.vue';
 import { NIL } from 'uuid';
 import { useI18n } from 'vue-i18n';
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
+import Divider from 'primevue/divider';
 
 const { t } = useI18n();
 const breakpoints = useBreakpoints(breakpointsTailwind, { strategy: 'max-width' });
@@ -44,6 +46,13 @@ const fadeParam = ref(
     : ({ duration: 3.0, easing: { type: 'inOutPow', intensity: 2 } } as FadeParam),
 );
 
+const stopTargetOnComplete = ref(
+  selectedCue.value != null &&
+    selectedCue.value.params.type === 'fade'
+    ? selectedCue.value.params.stopTargetOnComplete
+    : false,
+);
+
 watch(selectedCue, () => {
   if (selectedCue.value == null || selectedCue.value.params.type !== 'fade') {
     return;
@@ -52,6 +61,7 @@ watch(selectedCue, () => {
   target.value = selectedCue.value.params.target;
   volume.value = selectedCue.value.params.volume;
   fadeParam.value = selectedCue.value.params.fadeParam;
+  stopTargetOnComplete.value = selectedCue.value.params.stopTargetOnComplete;
 });
 
 const saveEditorValue = () => {
@@ -64,6 +74,7 @@ const saveEditorValue = () => {
   selectedCue.value.params.target = target.value;
   selectedCue.value.params.volume = volume.value;
   selectedCue.value.params.fadeParam = fadeParam.value;
+  selectedCue.value.params.stopTargetOnComplete = stopTargetOnComplete.value;
   emit('update');
 };
 
@@ -89,14 +100,24 @@ const isActive = computed(() => {
       :thumb-amount="smAndDown ? (xs ? 'baseOnly' : 'decreased') : 'full'"
       @update="saveEditorValue"
     />
-    <fade-param-input
-      v-model="fadeParam"
-      class="self-start"
-      :label="t('main.bottomEditor.fade.fadeParameter')"
-      condition="both"
-      disable-toggle
-      :disabled="isActive"
-      @update="saveEditorValue"
-    />
+    <div class="flex flex-row">
+      <fade-param-input
+        v-model="fadeParam"
+        class="self-start"
+        :label="t('main.bottomEditor.fade.fadeParameter')"
+        condition="both"
+        disable-toggle
+        :disabled="isActive"
+        @update="saveEditorValue"
+      />
+      <divider layout="vertical" />
+      <checkbox-wrapper
+        v-show="selectedCue != null"
+        v-model="stopTargetOnComplete"
+        :label="'Stop target on Complete'"
+        :disabled="isActive"
+        @update:model-value="saveEditorValue"
+      />
+    </div>
   </div>
 </template>

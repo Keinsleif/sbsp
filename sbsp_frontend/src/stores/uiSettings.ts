@@ -123,6 +123,7 @@ export const DEFAULT_SETTINGS: GlobalHostSettings | GlobalRemoteSettings = {
             intensity: 2,
           },
         },
+        stopTargetOnComplete: false,
       },
     },
     start: {
