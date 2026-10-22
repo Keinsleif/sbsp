@@ -6,7 +6,14 @@ use sbsp_backend::controller::ControllerCommand;
 use crate::AppState;
 
 #[tauri::command]
-pub async fn send_controller_command(state: tauri::State<'_, AppState>, command: ControllerCommand) -> Result<(), String> {
+pub async fn send_controller_command(
+    state: tauri::State<'_, AppState>,
+    command: ControllerCommand,
+) -> Result<(), String> {
     let handle = state.get_handle();
-    handle.controller_handle.send_command(command).await.map_err(|e| e.to_string())
+    handle
+        .controller_handle
+        .send_command(command)
+        .await
+        .map_err(|e| e.to_string())
 }

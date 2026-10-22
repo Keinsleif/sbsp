@@ -275,13 +275,13 @@ impl CueController {
             ControllerCommand::SoftStopAll => {
                 let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
                 for cue_id in &root_ids {
-                    self.executor_tx.send(ExecutorCommand::Stop(*cue_id, StopMode::Soft)).await?;
+                    self.executor_tx
+                        .send(ExecutorCommand::Stop(*cue_id, StopMode::Soft))
+                        .await?;
                 }
                 Ok(())
             }
-            ControllerCommand::HardStopAll => {
-                self.hard_stop_all().await
-            }
+            ControllerCommand::HardStopAll => self.hard_stop_all().await,
         }
     }
 

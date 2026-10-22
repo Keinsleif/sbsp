@@ -49,12 +49,16 @@ impl CueControllerHandle {
     }
 
     pub async fn soft_stop(&self, uuid: Uuid) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::SoftStop(uuid)).await?;
+        self.command_tx
+            .send(ControllerCommand::SoftStop(uuid))
+            .await?;
         Ok(())
     }
 
     pub async fn hard_stop(&self, uuid: Uuid) -> anyhow::Result<()> {
-        self.command_tx.send(ControllerCommand::HardStop(uuid)).await?;
+        self.command_tx
+            .send(ControllerCommand::HardStop(uuid))
+            .await?;
         Ok(())
     }
 
