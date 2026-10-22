@@ -745,6 +745,7 @@ fn select_config(
     device
         .supported_output_configs()
         .ok()?
+        .filter(|c| format_priority(c.sample_format()) < 99)
         .filter(|c| settings.channel_count.is_none_or(|ch| c.channels() == ch))
         .filter(|c| {
             settings.buffer_size.is_none_or(|bs| {
@@ -794,9 +795,6 @@ fn format_priority(format: SampleFormat) -> u8 {
         SampleFormat::U8  => 10,
         SampleFormat::U64 => 11,
 
-        SampleFormat::DsdU32 => 20,
-        SampleFormat::DsdU16 => 21,
-        SampleFormat::DsdU8  => 22,
         _ => 99,
     }
 }
