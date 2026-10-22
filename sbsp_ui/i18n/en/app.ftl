@@ -47,16 +47,6 @@ dialog-settings-global-audio-hardware-save-warning =
     Stop playback and apply settings?
     All active audio cues will be terminated.
 dialog-settings-global-audio-hardware-warning = Applying changes will restart the engine and kill all audio cues.
-dialog-settings-global-template-audio = Audio Cue
-dialog-settings-global-template-built-from-cue-param = ** built from cue param **
-dialog-settings-global-template-fade = Fade Cue
-dialog-settings-global-template-group = Group Cue
-dialog-settings-global-template-load = Load Cue
-dialog-settings-global-template-pause = Pause Cue
-dialog-settings-global-template-start = Start Cue
-dialog-settings-global-template-stop = Stop Cue
-dialog-settings-global-template-type = Type
-dialog-settings-global-template-wait = Wait Cue
 dialog-settings-show-remote-lock-cursor-to-selection = Lock Cursor to Selection (on Remote side)
 dialog-update-checking = Checking...
 dialog-update-current-version = Current Version

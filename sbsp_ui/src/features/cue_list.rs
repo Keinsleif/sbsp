@@ -921,7 +921,7 @@ fn row_style(
     }
 }
 
-fn type_icon(param: &CueParam) -> Icon {
+pub(crate) fn type_icon(param: &CueParam) -> Icon {
     match param {
         CueParam::Audio(_) => Icon::VolumeHigh,
         CueParam::Wait(_) => Icon::TimerSandEmpty,
@@ -934,7 +934,7 @@ fn type_icon(param: &CueParam) -> Icon {
     }
 }
 
-fn chain_icon(chain: &CueChain) -> Option<Icon> {
+pub(crate) fn chain_icon(chain: &CueChain) -> Option<Icon> {
     match chain {
         CueChain::DoNotChain => None,
         CueChain::AfterStart { .. } => Some(Icon::ArrowExpandDown),

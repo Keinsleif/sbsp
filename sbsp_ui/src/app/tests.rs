@@ -1087,6 +1087,8 @@ fn the_settings_dialog_shows_every_tab() {
         settings_dialog::Tab::AudioLogic,
         settings_dialog::Tab::GlobalGeneral,
         settings_dialog::Tab::Appearance,
+        settings_dialog::Tab::Hotkey,
+        settings_dialog::Tab::Template,
         settings_dialog::Tab::NameFormat,
     ] {
         let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(tab)));
@@ -1135,4 +1137,48 @@ fn a_waiting_hotkey_input_takes_the_next_press_including_escape() {
         keyboard::Modifiers::empty(),
     ));
     assert!(state.settings_dialog.is_none());
+}
+
+#[test]
+#[serial]
+fn the_template_editor_edits_the_template_not_the_selected_cue() {
+    let (mut state, ids) = editing_state();
+    state.ui.set_selected(ids[0], false);
+    let number_before = state.model.cue_list.cues[&ids[0]].number.clone();
+
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(
+        settings_dialog::Tab::Template,
+    )));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTemplate(
+        settings_dialog::TemplateKind::Wait,
+    )));
+    let _ = iced_test::simulator(state.view());
+
+    let id = field::FieldId("editor.number");
+    let _ = state.update(Message::Field(field::Message::Input(id, "W9".to_owned())));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Done));
+
+    assert_eq!(state.preferences.template.wait.number, "W9");
+    assert_eq!(state.templates.wait.number, "W9", "new cues start from it");
+    assert_eq!(state.model.cue_list.cues[&ids[0]].number, number_before);
+}
+
+#[test]
+#[serial]
+fn choosing_another_template_settles_the_edit_in_progress() {
+    let mut state = new_state();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTemplate(
+        settings_dialog::TemplateKind::Audio,
+    )));
+    let id = field::FieldId("editor.number");
+    let _ = state.update(Message::Field(field::Message::Input(id, "A1".to_owned())));
+    let _ = state.update(Message::Settings(settings_dialog::Message::SelectTemplate(
+        settings_dialog::TemplateKind::Fade,
+    )));
+
+    let dialog = state.settings_dialog.as_ref().unwrap();
+    assert_eq!(dialog.preferences.template.audio.number, "A1");
+    assert_ne!(dialog.preferences.template.fade.number, "A1");
 }

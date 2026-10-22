@@ -7,12 +7,14 @@
 //! ones); Done hands the copy back to the app, Cancel throws it away.
 //! Tabs arrive one at a time: this has the presets, the show's own
 //! settings, the global general and appearance settings, the hotkeys and
-//! the name formats. Templates and the audio hardware come with their own
-//! steps.
+//! the templates and the name formats. The audio hardware comes with its
+//! own step.
 
 mod hotkey_tab;
+mod template_tab;
 
 pub use hotkey_tab::Slot;
+pub use template_tab::{Editing, Kind as TemplateKind};
 
 use std::fmt;
 
@@ -85,6 +87,7 @@ pub enum Tab {
     GlobalGeneral,
     Appearance,
     Hotkey,
+    Template,
     NameFormat,
 }
 
@@ -93,6 +96,17 @@ pub enum Tab {
 pub enum Preset {
     MusicBee,
     QLab,
+}
+
+/// A message of the editor under the template list. (`editor::Message`
+/// has no `Debug`.)
+#[derive(Clone)]
+pub struct EditorMessage(pub crate::features::editor::Message);
+
+impl fmt::Debug for EditorMessage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("EditorMessage(..)")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -110,6 +124,8 @@ pub enum Message {
     /// A hotkey input was pressed: it waits for a key (or stops waiting).
     Capture(hotkey_tab::Slot),
     ClearHotkey(hotkey_tab::Slot),
+    SelectTemplate(TemplateKind),
+    Editor(EditorMessage),
     Cancel,
     Done,
 }
@@ -123,6 +139,8 @@ pub struct SettingsDialog {
     pub preferences: Preferences,
     /// The hotkey input waiting for a key press.
     pub capturing: Option<hotkey_tab::Slot>,
+    /// The template shown in the editor.
+    pub template: Option<TemplateKind>,
 }
 
 impl SettingsDialog {
@@ -133,6 +151,20 @@ impl SettingsDialog {
             show: show.clone(),
             preferences: preferences.clone(),
             capturing: None,
+            template: None,
+        }
+    }
+
+    /// The template being edited.
+    pub fn template_cue(&self) -> Option<&sbsp_backend::model::cue::Cue> {
+        self.template
+            .map(|kind| kind.get(&self.preferences.template))
+    }
+
+    /// Replaces the template being edited.
+    pub fn set_template_cue(&mut self, cue: sbsp_backend::model::cue::Cue) {
+        if let Some(kind) = self.template {
+            kind.set(&mut self.preferences.template, cue);
         }
     }
 
@@ -206,6 +238,7 @@ impl SettingsDialog {
             Message::Capture(slot) => {
                 self.capturing = (self.capturing != Some(*slot)).then_some(*slot);
             }
+            Message::SelectTemplate(kind) => self.template = Some(*kind),
             Message::ClearHotkey(slot) => {
                 slot.set(&mut self.preferences.hotkey, None);
                 self.capturing = None;
@@ -218,7 +251,7 @@ impl SettingsDialog {
             Message::Language(language) => self.preferences.appearance.language = language.clone(),
             Message::DarkMode(mode) => self.preferences.appearance.dark_mode = *mode,
             Message::HideControls(on) => self.preferences.appearance.hide_controls = *on,
-            Message::Field(_) | Message::Cancel | Message::Done => {}
+            Message::Field(_) | Message::Editor(_) | Message::Cancel | Message::Done => {}
         }
     }
 
@@ -319,11 +352,16 @@ fn tab_label(tab: Tab) -> String {
         Tab::AudioLogic => fl!("dialog-settings-tab-audio-logic"),
         Tab::Appearance => fl!("dialog-settings-tab-appearance"),
         Tab::Hotkey => fl!("dialog-settings-tab-hotkey"),
+        Tab::Template => fl!("dialog-settings-tab-template"),
         Tab::NameFormat => fl!("dialog-settings-tab-name-format"),
     }
 }
 
-pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message> {
+pub fn view<'a>(
+    dialog: &'a SettingsDialog,
+    drafts: &'a Drafts,
+    editing: Editing<'a, '_>,
+) -> Element<'a, Message> {
     let tab_button = |tab: Tab| {
         button(text(tab_label(tab)).width(Length::Fill))
             .width(Length::Fill)
@@ -350,6 +388,7 @@ pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message
         tab_button(Tab::GlobalGeneral),
         tab_button(Tab::Appearance),
         tab_button(Tab::Hotkey),
+        tab_button(Tab::Template),
         tab_button(Tab::NameFormat),
     ]
     .spacing(2)
@@ -362,6 +401,13 @@ pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message
         Tab::GlobalGeneral => global_general_page(dialog, drafts),
         Tab::Appearance => appearance_page(dialog),
         Tab::Hotkey => hotkey_tab::view(&dialog.preferences.hotkey, dialog.capturing),
+        Tab::Template => template_tab::view(
+            &dialog.preferences.template,
+            dialog.template,
+            &dialog.preferences.name_format,
+            drafts,
+            editing,
+        ),
         Tab::NameFormat => name_format_page(dialog, drafts),
     };
 
@@ -388,8 +434,8 @@ pub fn view<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a, Message
         buttons,
     ]
     .spacing(12))
-    .width(760)
-    .height(460)
+    .width(960)
+    .height(640)
     .into()
 }
 
