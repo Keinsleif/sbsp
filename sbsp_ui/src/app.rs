@@ -49,8 +49,9 @@ use crate::port::{Control, ModelEdit};
 #[cfg(feature = "host")]
 use crate::port::{FullState, PortEvent};
 
+use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
-use sbsp_frontend_settings::{NameFormatSettings, TemplateSettings};
+use sbsp_frontend_settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
 #[cfg(feature = "host")]
 use sbsp_frontend_settings::GlobalHostSettings;
 
@@ -121,6 +122,11 @@ pub struct State {
     pending_remove: Option<Vec<Uuid>>,
     /// The settings as last applied, which the settings dialog starts from.
     preferences: Preferences,
+    /// What the audio hardware tab lists, once the system has said.
+    hardware: Option<Result<SupportedHardware, String>>,
+    /// Done was pressed with audio hardware changes while audio cues play;
+    /// the question about stopping them is open.
+    audio_warning: bool,
     /// The settings dialog, while it is open.
     settings_dialog: Option<settings_dialog::SettingsDialog>,
     /// The renumber dialog's values and whether it is open.
@@ -173,6 +179,11 @@ pub enum Message {
     Editor(editor::Message),
     Renumber(renumber::Message),
     Settings(settings_dialog::Message),
+    /// The answer to the audio hardware question.
+    AudioWarning(bool),
+    /// The devices the system offers.
+    #[cfg(feature = "host")]
+    HardwareLoaded(Result<Box<SupportedHardware>, String>),
     /// The files chosen in the add-audio-cue picker (empty: cancelled).
     AudioFilesPicked(Vec<std::path::PathBuf>),
     /// The file chosen for an audio cue's target (`None`: cancelled).
@@ -212,9 +223,8 @@ pub enum Message {
     SettingsImported(Result<Option<Box<GlobalHostSettings>>, String>),
 }
 
-/// What to tell the user about a failed backend operation. The ones the
-/// user did not ask for directly (audio fallback, custom) have no message
-/// here.
+/// What to tell the user about a failed backend operation. A custom error
+/// has no message here.
 #[cfg(any(test, feature = "host"))]
 fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> {
     use sbsp_backend::event::BackendError as E;
@@ -224,7 +234,25 @@ fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> 
         E::ExportToFolder { message, .. } => (fl!("notification-failed-to-export"), message),
         E::CueExecute { message, .. } => (fl!("notification-failed-to-execute-cue"), message),
         E::CueEdit { message } => (fl!("notification-failed-to-edit-cue"), message),
-        E::AudioOutputFallback { .. } | E::Custom { .. } => return None,
+        E::AudioOutputFallback { device, config } => {
+            let (summary, detail) = match (device, config) {
+                (true, true) => (
+                    fl!("notification-audio-output-fallback-both-summary"),
+                    fl!("notification-audio-output-fallback-both-detail"),
+                ),
+                (true, false) => (
+                    fl!("notification-audio-output-fallback-device-summary"),
+                    fl!("notification-audio-output-fallback-device-detail"),
+                ),
+                (false, true) => (
+                    fl!("notification-audio-output-fallback-config-summary"),
+                    fl!("notification-audio-output-fallback-config-detail"),
+                ),
+                (false, false) => return None,
+            };
+            return Some(format!("{summary}: {detail}"));
+        }
+        E::Custom { .. } => return None,
     };
     Some(format!("{title}: {detail}"))
 }
@@ -281,6 +309,8 @@ impl State {
             pending_remove: None,
             preferences: Preferences::default(),
             settings_dialog: None,
+            hardware: None,
+            audio_warning: false,
             renumber: renumber::Dialog::default(),
             renumber_open: false,
             dropped_files: Vec::new(),
@@ -383,6 +413,15 @@ impl State {
             Message::Editor(message) => self.handle_editor(message),
             Message::Renumber(message) => self.handle_renumber(message),
             Message::Settings(message) => self.handle_settings(message),
+            Message::StatusBar(status_bar::Message::OpenSettings) => self.open_settings(),
+            Message::AudioWarning(true) => {
+                self.audio_warning = false;
+                self.finish_settings(true)
+            }
+            Message::AudioWarning(false) => {
+                self.audio_warning = false;
+                Task::none()
+            }
             Message::CueList(cue_list::Message::Context(action)) => {
                 self.run_context_action(action)
             }
@@ -482,7 +521,9 @@ impl State {
             Message::StatusBar(status_bar::Message::ToggleBottomTab) => {
                 self.ui.toggle_bottom_tab();
             }
-            Message::StatusBar(status_bar::Message::OpenSettings) => self.open_settings(),
+            Message::StatusBar(status_bar::Message::OpenSettings) | Message::AudioWarning(_) => {}
+            #[cfg(feature = "host")]
+            Message::HardwareLoaded(result) => self.hardware = Some(result.map(|boxed| *boxed)),
             Message::StatusBar(status_bar::Message::ToggleSidebar) => {
                 self.ui.toggle_right_sidebar();
                 self.last_meter_tick = None;
@@ -714,6 +755,19 @@ impl State {
                 self.confirm_remove()
             } else if is("Escape") {
                 self.pending_remove = None;
+                Task::none()
+            } else {
+                Task::none()
+            };
+        }
+        // The question about stopping audio for a hardware change.
+        if self.audio_warning {
+            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            return if is("Enter") {
+                self.audio_warning = false;
+                self.finish_settings(true)
+            } else if is("Escape") {
+                self.audio_warning = false;
                 Task::none()
             } else {
                 Task::none()
@@ -1103,7 +1157,7 @@ impl State {
                 self.settings_dialog = None;
                 Task::none()
             }
-            settings_dialog::Message::Done => self.finish_settings(),
+            settings_dialog::Message::Done => self.finish_settings(false),
             settings_dialog::Message::Editor(message) => self.handle_template_editor(message.0),
             other => {
                 // An edit still in progress belongs to what is on screen
@@ -1170,32 +1224,87 @@ impl State {
         preferences
     }
 
-    fn open_settings(&mut self) {
+    fn open_settings(&mut self) -> Task<Message> {
         self.template_editor = editor::Editor::default();
-        self.settings_dialog = Some(settings_dialog::SettingsDialog::new(
+        self.hardware = None;
+        let dialog = settings_dialog::SettingsDialog::new(
             &self.model.name,
             &self.model.settings,
             &self.current_preferences(),
-        ));
+        );
+        self.settings_dialog = Some(match self.audio_settings() {
+            Some(audio) => dialog.with_audio(audio),
+            None => dialog,
+        });
+        self.load_hardware()
+    }
+
+    /// The audio hardware settings as saved (the host has them).
+    #[cfg(feature = "host")]
+    fn audio_settings(&self) -> Option<AudioHardwareSettings> {
+        Some(self.host_settings.audio.clone())
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn audio_settings(&self) -> Option<AudioHardwareSettings> {
+        None
+    }
+
+    #[cfg(feature = "host")]
+    fn load_hardware(&self) -> Task<Message> {
+        Task::perform(crate::host::backend::hardware(), |result| {
+            Message::HardwareLoaded(result.map(Box::new).map_err(|e| e.to_string()))
+        })
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn load_hardware(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    /// Whether an audio cue is playing, which a change of the output
+    /// hardware would cut off.
+    fn has_active_audio_cue(&self) -> bool {
+        self.playback.active_cues.keys().any(|id| {
+            self.model
+                .cue_list
+                .cues
+                .get(id)
+                .is_some_and(|cue| matches!(cue.params, CueParam::Audio(_)))
+        })
     }
 
     /// The dialog's Done: applies the edited settings, saves the global
     /// ones and hands the show's own to the backend, each only when it
     /// changed.
-    fn finish_settings(&mut self) -> Task<Message> {
+    ///
+    /// Changing the audio hardware while audio cues play asks first
+    /// (`confirmed`: it has been answered).
+    fn finish_settings(&mut self, confirmed: bool) -> Task<Message> {
         // The field being edited counts: the button's press may arrive
         // before the field notices it lost the focus.
         if let Some(outcome) = self.fields.flush() {
             self.apply_settings_outcome(&outcome);
+        }
+        let audio_changed = self
+            .settings_dialog
+            .as_ref()
+            .is_some_and(|dialog| dialog.audio != self.audio_settings());
+        if audio_changed && !confirmed && self.has_active_audio_cue() {
+            self.audio_warning = true;
+            return Task::none();
         }
         let Some(dialog) = self.settings_dialog.take() else {
             return Task::none();
         };
 
         let mut tasks = Vec::new();
-        if dialog.preferences != self.current_preferences() {
+        let preferences_changed = dialog.preferences != self.current_preferences();
+        if preferences_changed {
             self.apply_preferences(&dialog.preferences);
-            tasks.push(self.save_preferences());
+        }
+        if preferences_changed || audio_changed {
+            tasks.push(self.save_preferences(dialog.audio));
         }
         if dialog.show != self.model.settings {
             tasks.push(self.send_edit(ModelEdit::UpdateShowSettings(dialog.show)));
@@ -1208,7 +1317,7 @@ impl State {
 
     /// Keeps the applied preferences in the settings file.
     #[cfg(feature = "host")]
-    fn save_preferences(&mut self) -> Task<Message> {
+    fn save_preferences(&mut self, audio: Option<AudioHardwareSettings>) -> Task<Message> {
         let p = self.preferences.clone();
         let settings = &mut self.host_settings;
         settings.general = p.general;
@@ -1216,6 +1325,9 @@ impl State {
         settings.hotkey = p.hotkey;
         settings.template = p.template;
         settings.name_format = p.name_format;
+        if let Some(audio) = audio {
+            settings.audio = audio;
+        }
         match &self.backend {
             Some(backend) => Task::perform(
                 backend.save_settings(self.host_settings.clone()),
@@ -1226,7 +1338,7 @@ impl State {
     }
 
     #[cfg(not(feature = "host"))]
-    fn save_preferences(&mut self) -> Task<Message> {
+    fn save_preferences(&mut self, _audio: Option<AudioHardwareSettings>) -> Task<Message> {
         Task::none()
     }
 
@@ -2359,6 +2471,7 @@ impl State {
                     editor: &self.template_editor,
                     model: &self.model,
                     flat: &flat,
+                    hardware: self.hardware.as_ref(),
                 };
                 modal::over_blocking(
                     content,
@@ -2368,8 +2481,35 @@ impl State {
             None => content,
         };
 
+        let content = if self.audio_warning {
+            modal::over_blocking(content, audio_warning_dialog())
+        } else {
+            content
+        };
+
         self.toasts.overlay(content, Message::Toast)
     }
+}
+
+/// "Stop playback and apply settings?" with Cancel / Confirm.
+fn audio_warning_dialog<'a>() -> Element<'a, Message> {
+    use iced::widget::{button, text};
+
+    column![
+        text(fl!("dialog-message-confirmation")).size(18),
+        text(fl!("dialog-settings-global-audio-hardware-save-warning")),
+        row![
+            button(text(fl!("general-cancel")))
+                .style(button::secondary)
+                .on_press(Message::AudioWarning(false)),
+            button(text(fl!("general-confirm")))
+                .style(button::danger)
+                .on_press(Message::AudioWarning(true)),
+        ]
+        .spacing(8),
+    ]
+    .spacing(12)
+    .into()
 }
 
 /// "Are you sure you want to remove?" with Cancel / Confirm.

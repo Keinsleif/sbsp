@@ -217,3 +217,21 @@ dialog-settings-global-template-start = Start Cue
 dialog-settings-global-template-stop = Stop Cue
 dialog-settings-global-template-type = Type
 dialog-settings-global-template-wait = Wait Cue
+dialog-settings-global-audio-hardware-buffer-size = Buffer Size
+dialog-settings-global-audio-hardware-channel-count = Output channels
+dialog-settings-global-audio-hardware-config-fallback-title = The specified device configuration is unavailable.
+dialog-settings-global-audio-hardware-device = Device
+dialog-settings-global-audio-hardware-device-config = Device configuration
+dialog-settings-global-audio-hardware-device-id-fallback-title = The specified audio device is unavailable.
+dialog-settings-global-audio-hardware-sample-rate = Sample Rate
+dialog-settings-global-audio-hardware-save-warning =
+    Stop playback and apply settings?
+    All active audio cues will be terminated.
+dialog-settings-global-audio-hardware-warning = Applying changes will restart the engine and kill all audio cues.
+general-default = Default
+notification-audio-output-fallback-both-detail = The specified audio device and configuration are unavailable. Reverted to default settings.
+notification-audio-output-fallback-both-summary = Failed to apply Audio Settings
+notification-audio-output-fallback-config-detail = The specified device configuration is unavailable. Reverted to default configuration.
+notification-audio-output-fallback-config-summary = Failed to apply device configuration
+notification-audio-output-fallback-device-detail = The specified audio device is unavailable. Reverted to the default device.
+notification-audio-output-fallback-device-summary = Failed to apply Audio Device

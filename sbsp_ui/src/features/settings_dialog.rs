@@ -10,6 +10,7 @@
 //! the templates and the name formats. The audio hardware comes with its
 //! own step.
 
+mod hardware_tab;
 mod hotkey_tab;
 mod template_tab;
 
@@ -23,7 +24,7 @@ use iced::widget::{
 };
 use iced::{Alignment, Element, Length, Theme};
 use sbsp_backend::model::settings::{CursorAdvanceTrigger, ShowSettings};
-use sbsp_frontend_settings::DarkMode;
+use sbsp_frontend_settings::{AudioHardwareSettings, DarkMode};
 
 use crate::domain::field::{Commit, NumberSpec, commit_number, step_number};
 use crate::fl;
@@ -86,6 +87,7 @@ pub enum Tab {
     AudioLogic,
     GlobalGeneral,
     Appearance,
+    AudioHardware,
     Hotkey,
     Template,
     NameFormat,
@@ -125,6 +127,10 @@ pub enum Message {
     Capture(hotkey_tab::Slot),
     ClearHotkey(hotkey_tab::Slot),
     SelectTemplate(TemplateKind),
+    Device(Option<String>),
+    ChannelCount(Option<u16>),
+    SampleRate(Option<u32>),
+    BufferSize(Option<u32>),
     Editor(EditorMessage),
     Cancel,
     Done,
@@ -141,6 +147,8 @@ pub struct SettingsDialog {
     pub capturing: Option<hotkey_tab::Slot>,
     /// The template shown in the editor.
     pub template: Option<TemplateKind>,
+    /// The audio hardware settings (the host has them, a remote does not).
+    pub audio: Option<AudioHardwareSettings>,
 }
 
 impl SettingsDialog {
@@ -152,7 +160,14 @@ impl SettingsDialog {
             preferences: preferences.clone(),
             capturing: None,
             template: None,
+            audio: None,
         }
+    }
+
+    /// Adds the audio hardware settings (and so their tab).
+    pub fn with_audio(mut self, audio: AudioHardwareSettings) -> Self {
+        self.audio = Some(audio);
+        self
     }
 
     /// The template being edited.
@@ -239,6 +254,10 @@ impl SettingsDialog {
                 self.capturing = (self.capturing != Some(*slot)).then_some(*slot);
             }
             Message::SelectTemplate(kind) => self.template = Some(*kind),
+            Message::Device(id) => self.audio_mut(|audio| audio.device_id = id.clone()),
+            Message::ChannelCount(count) => self.audio_mut(|audio| audio.channel_count = *count),
+            Message::SampleRate(rate) => self.audio_mut(|audio| audio.sample_rate = *rate),
+            Message::BufferSize(size) => self.audio_mut(|audio| audio.buffer_size = *size),
             Message::ClearHotkey(slot) => {
                 slot.set(&mut self.preferences.hotkey, None);
                 self.capturing = None;
@@ -279,6 +298,12 @@ impl SettingsDialog {
         self.preferences.hotkey.audio_action = AudioActionHotkey {
             toggle_repeat: key("R"),
         };
+    }
+
+    fn audio_mut(&mut self, change: impl FnOnce(&mut AudioHardwareSettings)) {
+        if let Some(audio) = &mut self.audio {
+            change(audio);
+        }
     }
 
     fn name_format(&mut self, id: FieldId) -> Option<&mut String> {
@@ -351,6 +376,7 @@ fn tab_label(tab: Tab) -> String {
         Tab::ShowGeneral | Tab::GlobalGeneral => fl!("dialog-settings-tab-general"),
         Tab::AudioLogic => fl!("dialog-settings-tab-audio-logic"),
         Tab::Appearance => fl!("dialog-settings-tab-appearance"),
+        Tab::AudioHardware => fl!("dialog-settings-tab-audio-hardware"),
         Tab::Hotkey => fl!("dialog-settings-tab-hotkey"),
         Tab::Template => fl!("dialog-settings-tab-template"),
         Tab::NameFormat => fl!("dialog-settings-tab-name-format"),
@@ -379,6 +405,12 @@ pub fn view<'a>(
             .width(Length::Fill)
     };
 
+    let hardware_button: Element<'a, Message> = if dialog.audio.is_some() {
+        tab_button(Tab::AudioHardware).into()
+    } else {
+        Space::new().into()
+    };
+
     let tabs = column![
         tab_button(Tab::Preset),
         heading(fl!("dialog-settings-tab-category-in-this-show-model")),
@@ -387,6 +419,7 @@ pub fn view<'a>(
         heading(fl!("dialog-settings-tab-category-global")),
         tab_button(Tab::GlobalGeneral),
         tab_button(Tab::Appearance),
+        hardware_button,
         tab_button(Tab::Hotkey),
         tab_button(Tab::Template),
         tab_button(Tab::NameFormat),
@@ -400,6 +433,10 @@ pub fn view<'a>(
         Tab::AudioLogic => audio_logic_page(dialog, drafts),
         Tab::GlobalGeneral => global_general_page(dialog, drafts),
         Tab::Appearance => appearance_page(dialog),
+        Tab::AudioHardware => match &dialog.audio {
+            Some(audio) => hardware_tab::view(editing.hardware, audio),
+            None => Space::new().into(),
+        },
         Tab::Hotkey => hotkey_tab::view(&dialog.preferences.hotkey, dialog.capturing),
         Tab::Template => template_tab::view(
             &dialog.preferences.template,
