@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
 import NumberInput from './NumberInput.vue';
 import { debounce } from '@/utils.ts';
@@ -38,8 +38,12 @@ const onPointerDown = () => {
   window.addEventListener('pointerup', onPointerUp);
 };
 
-const onPointerUp = debounce(() => {
+const onPointerUp = () => {
   window.removeEventListener('pointerup', onPointerUp);
+  onPointerUpSave();
+};
+
+const onPointerUpSave = debounce(() => {
   if (sliderChanging.value) {
     sliderChanging.value = false;
     if (!props.disabled) {
@@ -47,6 +51,10 @@ const onPointerUp = debounce(() => {
     }
   }
 }, 300);
+
+onUnmounted(() => {
+  window.removeEventListener('pointerup', onPointerUp);
+});
 </script>
 
 <template>
@@ -62,6 +70,7 @@ const onPointerUp = debounce(() => {
     @dblclick="
       if (!props.disabled) {
         faderPosition = 0;
+        onPointerUpSave.clear();
         emit('update');
       }
     "
