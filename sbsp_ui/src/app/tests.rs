@@ -1278,3 +1278,58 @@ fn the_server_panel_closes_on_escape_and_swallows_other_keys() {
     let _ = state.update(Message::ServerPanel(server_panel::Message::Close));
     assert!(state.server_panel.is_none());
 }
+
+#[test]
+#[serial]
+fn the_credits_open_from_the_help_menu_and_close_on_escape() {
+    let mut state = new_state();
+    let _ = state.update(Message::Menu(crate::menu::MenuId("help.credits")));
+    assert!(state.credits.is_some());
+    let _ = iced_test::simulator(state.view());
+
+    let _ = state.update(Message::Credits(credits::Message::Toggle(0)));
+    assert_eq!(state.credits.as_ref().unwrap().open(), Some(0));
+    let _ = iced_test::simulator(state.view());
+
+    let _ = state.update(press(
+        keyboard::Key::Named(keyboard::key::Named::ArrowDown),
+        keyboard::Modifiers::empty(),
+    ));
+    assert!(state.credits.is_some(), "other keys do nothing");
+    let _ = state.update(press(
+        keyboard::Key::Named(keyboard::key::Named::Escape),
+        keyboard::Modifiers::empty(),
+    ));
+    assert!(state.credits.is_none());
+
+    let _ = state.update(Message::Menu(crate::menu::MenuId("help.credits")));
+    let _ = state.update(Message::Credits(credits::Message::Close));
+    assert!(state.credits.is_none());
+}
+
+#[test]
+#[serial]
+fn the_license_dialog_shows_the_edition_and_closes_in_two_steps() {
+    let mut state = new_state();
+    state.license_dialog = Some(license_dialog::Dialog::new(Some(license_dialog::Info {
+        pro: true,
+        owner: "Someone".to_owned(),
+        issue_time: 1_700_000_000,
+        id: "00000000-0000-0000-0000-000000000000".to_owned(),
+    })));
+    let _ = iced_test::simulator(state.view());
+
+    state.license_dialog.as_mut().unwrap().activated = true;
+    let _ = iced_test::simulator(state.view());
+
+    let escape = || {
+        press(
+            keyboard::Key::Named(keyboard::key::Named::Escape),
+            keyboard::Modifiers::empty(),
+        )
+    };
+    let _ = state.update(escape());
+    assert!(!state.license_dialog.as_ref().unwrap().activated, "the notice goes first");
+    let _ = state.update(escape());
+    assert!(state.license_dialog.is_none());
+}

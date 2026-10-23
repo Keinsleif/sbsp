@@ -5,10 +5,12 @@
 //! each owns its own view logic and `Message` type, nested into the app's
 //! via `.map()`, the same pattern used for `widgets::toast`.
 
+pub mod credits;
 pub mod cue_list;
 pub mod editor;
 pub mod file_ops;
 pub mod header;
+pub mod license_dialog;
 pub mod hotkeys;
 pub mod renumber;
 pub mod server_panel;

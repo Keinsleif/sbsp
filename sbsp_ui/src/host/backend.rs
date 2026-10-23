@@ -31,6 +31,7 @@ use sbsp_backend::api::{ApiServerOptions, server::start_apiserver};
 use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
+use sbsp_license::{LicenseManager, data::LicenseInformation};
 use tokio::sync::{broadcast, watch};
 
 use crate::port::{Control, FullState, ModelEdit, PortEvent};
@@ -46,6 +47,7 @@ pub struct HostPort {
     settings: Arc<SettingsManager<GlobalHostSettings>>,
     state_rx: watch::Receiver<ShowState>,
     server: Arc<tokio::sync::Mutex<Server>>,
+    license: Arc<LicenseManager>,
 }
 
 /// The API server's options, and the way to stop it while it runs.
@@ -71,6 +73,22 @@ impl Default for Server {
 /// take a moment, so it runs off the UI thread.
 pub async fn hardware() -> anyhow::Result<sbsp_backend::helper::SupportedHardware> {
     tokio::task::spawn_blocking(sbsp_backend::helper::get_supported_hardware).await?
+}
+
+/// The key licenses are signed with (the same as the Tauri build's).
+const PUBLIC_KEY_PEM: &str = "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAdlqW6bS6NMn2cdf2b4Ot1DNyjoytP2uFqoH+WlG+NeI=
+-----END PUBLIC KEY-----";
+
+/// A license manager with the license file saved earlier, if there is one.
+fn license_manager() -> LicenseManager {
+    let manager = LicenseManager::new_from_pem(PUBLIC_KEY_PEM);
+    if let Some(path) = super::paths::license_path().filter(|path| path.exists())
+        && let Err(e) = manager.activate_by_file(path)
+    {
+        log::warn!("saved license not usable: {e}");
+    }
+    manager
 }
 
 impl HostPort {
@@ -106,6 +124,7 @@ impl HostPort {
             settings,
             state_rx,
             server: Arc::new(tokio::sync::Mutex::new(Server::default())),
+            license: Arc::new(license_manager()),
         };
 
         Ok((port, full_state, host_settings))
@@ -123,6 +142,35 @@ impl HostPort {
             settings.set(new.clone()).await;
             tx.send_replace(BackendSettings::from(&new));
             settings.save().await
+        }
+    }
+
+    pub fn license_info(&self) -> Option<LicenseInformation> {
+        self.license.get_license_info()
+    }
+
+    pub fn is_pro(&self) -> bool {
+        self.license.is_pro()
+    }
+
+    /// Checks the license file, and keeps a copy of it next to the
+    /// settings so it is found at the next start.
+    pub fn activate_license(
+        &self,
+        path: std::path::PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let license = self.license.clone();
+        async move {
+            license.activate_by_file(path.clone())?;
+            if let Some(saved) = super::paths::license_path() {
+                if let Some(directory) = saved.parent() {
+                    tokio::fs::create_dir_all(directory).await?;
+                }
+                if saved != path {
+                    tokio::fs::copy(&path, &saved).await?;
+                }
+            }
+            Ok(())
         }
     }
 
