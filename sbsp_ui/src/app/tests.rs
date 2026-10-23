@@ -1227,3 +1227,54 @@ fn changing_the_hardware_while_audio_plays_asks_first() {
     assert!(!state.audio_warning);
     let _ = iced_test::simulator(state.view());
 }
+
+fn server_options() -> sbsp_backend::api::ApiServerOptions {
+    sbsp_backend::api::ApiServerOptions {
+        port: 5800,
+        discoverry: None,
+        auth_map: vec![sbsp_backend::api::PermissionInfo {
+            password: "pw".to_owned(),
+            permission: sbsp_backend::api::Permissions::READ,
+        }],
+    }
+}
+
+#[test]
+#[serial]
+fn the_server_panel_edits_its_options_and_shows_the_connect_information() {
+    let mut state = new_state();
+    state.server_panel = Some(server_panel::Panel::new(&server_options(), false));
+    let _ = iced_test::simulator(state.view());
+
+    let _ = state.update(Message::ServerPanel(server_panel::Message::Add));
+    assert_eq!(state.server_panel.as_ref().unwrap().rows().len(), 2);
+
+    let _ = state.update(Message::ServerPanel(server_panel::Message::ShowInfo(0)));
+    assert!(state.server_panel.as_ref().unwrap().info.is_some());
+    let _ = iced_test::simulator(state.view());
+    let _ = state.update(Message::ServerPanel(server_panel::Message::CloseInfo));
+    assert!(state.server_panel.as_ref().unwrap().info.is_none());
+}
+
+#[test]
+#[serial]
+fn the_server_panel_closes_on_escape_and_swallows_other_keys() {
+    let mut state = new_state();
+    let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+    state.server_panel = Some(server_panel::Panel::new(&server_options(), false));
+    let _ = state.update(key(keyboard::key::Named::ArrowDown));
+    assert!(state.server_panel.is_some());
+
+    // The connect information goes first, then the panel.
+    let _ = state.update(Message::ServerPanel(server_panel::Message::ShowInfo(0)));
+    let _ = state.update(key(keyboard::key::Named::Escape));
+    assert!(state.server_panel.is_some());
+    assert!(state.server_panel.as_ref().unwrap().info.is_none());
+    let _ = state.update(key(keyboard::key::Named::Escape));
+    assert!(state.server_panel.is_none());
+
+    state.server_panel = Some(server_panel::Panel::new(&server_options(), false));
+    let _ = state.update(Message::ServerPanel(server_panel::Message::Close));
+    assert!(state.server_panel.is_none());
+}

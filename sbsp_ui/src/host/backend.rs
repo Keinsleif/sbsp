@@ -27,6 +27,8 @@
 
 use std::sync::Arc;
 
+use sbsp_backend::api::{ApiServerOptions, server::start_apiserver};
+use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{broadcast, watch};
@@ -42,6 +44,27 @@ pub struct HostPort {
     // would look like a shutdown to the backend's loops.
     settings_tx: Arc<watch::Sender<BackendSettings>>,
     settings: Arc<SettingsManager<GlobalHostSettings>>,
+    state_rx: watch::Receiver<ShowState>,
+    server: Arc<tokio::sync::Mutex<Server>>,
+}
+
+/// The API server's options, and the way to stop it while it runs.
+struct Server {
+    options: ApiServerOptions,
+    shutdown: Option<broadcast::Sender<()>>,
+}
+
+impl Default for Server {
+    fn default() -> Self {
+        Self {
+            options: ApiServerOptions {
+                port: 5800,
+                discoverry: None,
+                auth_map: vec![],
+            },
+            shutdown: None,
+        }
+    }
 }
 
 /// The output devices and what they support. Asking the audio host can
@@ -73,7 +96,7 @@ impl HostPort {
 
         let (settings_tx, settings_rx) = watch::channel(BackendSettings::from(&host_settings));
 
-        let (handle, _state_rx, event_tx) = start_backend(settings_rx, true)?;
+        let (handle, state_rx, event_tx) = start_backend(settings_rx, true)?;
         let full_state = handle.get_full_state().await?;
 
         let port = Self {
@@ -81,6 +104,8 @@ impl HostPort {
             event_tx,
             settings_tx: Arc::new(settings_tx),
             settings,
+            state_rx,
+            server: Arc::new(tokio::sync::Mutex::new(Server::default())),
         };
 
         Ok((port, full_state, host_settings))
@@ -98,6 +123,47 @@ impl HostPort {
             settings.set(new.clone()).await;
             tx.send_replace(BackendSettings::from(&new));
             settings.save().await
+        }
+    }
+
+    /// The server's options and whether it runs.
+    pub fn server_status(
+        &self,
+    ) -> impl std::future::Future<Output = (ApiServerOptions, bool)> + Send + 'static {
+        let server = self.server.clone();
+        async move {
+            let server = server.lock().await;
+            (server.options.clone(), server.shutdown.is_some())
+        }
+    }
+
+    /// Starts the server with these options (kept for next time).
+    pub fn start_server(
+        &self,
+        options: ApiServerOptions,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let server = self.server.clone();
+        let handle = self.handle.clone();
+        let state_rx = self.state_rx.clone();
+        let event_tx = self.event_tx.clone();
+        async move {
+            let mut server = server.lock().await;
+            server.options = options.clone();
+            if server.shutdown.is_some() {
+                return Ok(());
+            }
+            let shutdown = start_apiserver(handle, state_rx, event_tx, options).await?;
+            server.shutdown = Some(shutdown);
+            Ok(())
+        }
+    }
+
+    pub fn stop_server(&self) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let server = self.server.clone();
+        async move {
+            if let Some(shutdown) = server.lock().await.shutdown.take() {
+                let _ = shutdown.send(());
+            }
         }
     }
 

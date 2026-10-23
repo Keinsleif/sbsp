@@ -27,8 +27,8 @@ use crate::domain::new_cue::{self, CueKind};
 #[cfg(feature = "host")]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{
-    cue_list, editor, file_ops, header, hotkeys, renumber, settings_dialog, side_bar, status_bar,
-    viewer,
+    cue_list, editor, file_ops, header, hotkeys, renumber, server_panel, settings_dialog, side_bar,
+    status_bar, viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -127,6 +127,8 @@ pub struct State {
     /// Done was pressed with audio hardware changes while audio cues play;
     /// the question about stopping them is open.
     audio_warning: bool,
+    /// The server panel, while it is open.
+    server_panel: Option<server_panel::Panel>,
     /// The settings dialog, while it is open.
     settings_dialog: Option<settings_dialog::SettingsDialog>,
     /// The renumber dialog's values and whether it is open.
@@ -179,6 +181,13 @@ pub enum Message {
     Editor(editor::Message),
     Renumber(renumber::Message),
     Settings(settings_dialog::Message),
+    ServerPanel(server_panel::Message),
+    /// The server's options and whether it runs, as the panel opens.
+    #[cfg(feature = "host")]
+    ServerOpened(Box<sbsp_backend::api::ApiServerOptions>, bool),
+    /// The server started (`true`) or stopped (`false`), or could not.
+    #[cfg(feature = "host")]
+    ServerToggled(Result<bool, String>),
     /// The answer to the audio hardware question.
     AudioWarning(bool),
     /// The devices the system offers.
@@ -308,6 +317,7 @@ impl State {
             confirm: None,
             pending_remove: None,
             preferences: Preferences::default(),
+            server_panel: None,
             settings_dialog: None,
             hardware: None,
             audio_warning: false,
@@ -414,6 +424,8 @@ impl State {
             Message::Renumber(message) => self.handle_renumber(message),
             Message::Settings(message) => self.handle_settings(message),
             Message::StatusBar(status_bar::Message::OpenSettings) => self.open_settings(),
+            Message::StatusBar(status_bar::Message::OpenServerPanel) => self.open_server_panel(),
+            Message::ServerPanel(message) => self.handle_server_panel(message),
             Message::AudioWarning(true) => {
                 self.audio_warning = false;
                 self.finish_settings(true)
@@ -521,7 +533,29 @@ impl State {
             Message::StatusBar(status_bar::Message::ToggleBottomTab) => {
                 self.ui.toggle_bottom_tab();
             }
-            Message::StatusBar(status_bar::Message::OpenSettings) | Message::AudioWarning(_) => {}
+            Message::StatusBar(status_bar::Message::OpenSettings)
+            | Message::StatusBar(status_bar::Message::OpenServerPanel)
+            | Message::ServerPanel(_)
+            | Message::AudioWarning(_) => {}
+            #[cfg(feature = "host")]
+            Message::ServerOpened(options, running) => {
+                self.server_panel = Some(server_panel::Panel::new(&options, running));
+            }
+            #[cfg(feature = "host")]
+            Message::ServerToggled(result) => match result {
+                Ok(running) => {
+                    if let Some(panel) = &mut self.server_panel {
+                        panel.running = running;
+                    }
+                }
+                Err(message) => {
+                    log::error!("server: {message}");
+                    self.toasts.push(
+                        toast::Kind::Danger,
+                        format!("{}: {message}", fl!("notification-failed-to-start-server")),
+                    );
+                }
+            },
             #[cfg(feature = "host")]
             Message::HardwareLoaded(result) => self.hardware = Some(result.map(|boxed| *boxed)),
             Message::StatusBar(status_bar::Message::ToggleSidebar) => {
@@ -759,6 +793,18 @@ impl State {
             } else {
                 Task::none()
             };
+        }
+        // The server panel: Escape closes the connect information, then
+        // the panel; nothing reaches the cue list behind it.
+        if let Some(panel) = &mut self.server_panel {
+            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+                if panel.info.is_some() {
+                    panel.info = None;
+                } else {
+                    self.server_panel = None;
+                }
+            }
+            return Task::none();
         }
         // The question about stopping audio for a hardware change.
         if self.audio_warning {
@@ -1086,6 +1132,89 @@ impl State {
 
     #[cfg(not(feature = "host"))]
     fn export(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    /// The footer's server button: opens the panel once the backend has
+    /// said what the server is doing.
+    #[cfg(feature = "host")]
+    fn open_server_panel(&self) -> Task<Message> {
+        match &self.backend {
+            Some(backend) => Task::perform(backend.server_status(), |(options, running)| {
+                Message::ServerOpened(Box::new(options), running)
+            }),
+            None => Task::none(),
+        }
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn open_server_panel(&self) -> Task<Message> {
+        Task::none()
+    }
+
+    fn handle_server_panel(&mut self, message: server_panel::Message) -> Task<Message> {
+        use server_panel::Message as M;
+
+        let Some(panel) = &mut self.server_panel else {
+            return Task::none();
+        };
+        match message {
+            M::Close => {
+                self.server_panel = None;
+                Task::none()
+            }
+            M::Toggle => self.toggle_server(),
+            M::ShowInfo(index) => {
+                panel.show_info(index, server_hostname());
+                Task::none()
+            }
+            M::Copy(text) => {
+                panel.update(&M::Copy(text.clone()));
+                iced::clipboard::write(text)
+            }
+            other => {
+                panel.update(&other);
+                Task::none()
+            }
+        }
+    }
+
+    /// The panel's Start / Stop button.
+    #[cfg(feature = "host")]
+    fn toggle_server(&mut self) -> Task<Message> {
+        let (Some(panel), Some(backend)) = (&self.server_panel, self.backend.clone()) else {
+            return Task::none();
+        };
+        if panel.running {
+            return Task::perform(
+                async move {
+                    backend.stop_server().await;
+                    Ok(false)
+                },
+                Message::ServerToggled,
+            );
+        }
+        let Some(options) = panel.options() else {
+            self.toasts.push(
+                toast::Kind::Danger,
+                format!("{}: port", fl!("notification-failed-to-start-server")),
+            );
+            return Task::none();
+        };
+        Task::perform(
+            async move {
+                backend
+                    .start_server(options)
+                    .await
+                    .map(|()| true)
+                    .map_err(|e| e.to_string())
+            },
+            Message::ServerToggled,
+        )
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn toggle_server(&mut self) -> Task<Message> {
         Task::none()
     }
 
@@ -2424,7 +2553,11 @@ impl State {
         };
 
         let footer = container(
-            status_bar::view(&self.ui, self.model.cue_list.cues.len()).map(Message::StatusBar),
+            status_bar::view(
+                &self.ui,
+                self.model.cue_list.cues.len(),
+                cfg!(feature = "host"),
+            ).map(Message::StatusBar),
         )
         .width(Length::Fill);
 
@@ -2481,6 +2614,14 @@ impl State {
             None => content,
         };
 
+        let content = match &self.server_panel {
+            Some(panel) => modal::over_blocking(
+                content,
+                server_panel::view(panel).map(Message::ServerPanel),
+            ),
+            None => content,
+        };
+
         let content = if self.audio_warning {
             modal::over_blocking(content, audio_warning_dialog())
         } else {
@@ -2489,6 +2630,18 @@ impl State {
 
         self.toasts.overlay(content, Message::Toast)
     }
+}
+
+/// This computer's name as the network knows it, for the address clients
+/// connect to.
+#[cfg(feature = "host")]
+fn server_hostname() -> Option<String> {
+    sbsp_backend::api::server::get_mdns_hostname().ok()
+}
+
+#[cfg(not(feature = "host"))]
+fn server_hostname() -> Option<String> {
+    None
 }
 
 /// "Stop playback and apply settings?" with Cancel / Confirm.
