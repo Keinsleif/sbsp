@@ -11,6 +11,7 @@ pub mod file_ops;
 pub mod header;
 pub mod hotkeys;
 pub mod renumber;
+pub mod server_panel;
 pub mod settings_dialog;
 pub mod side_bar;
 pub mod viewer;

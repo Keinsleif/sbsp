@@ -23,6 +23,7 @@ pub enum Message {
     ToggleSidebar,
     ToggleBottomTab,
     OpenSettings,
+    OpenServerPanel,
 }
 
 /// A mode with its translated label, which is what `pick_list` shows.
@@ -54,7 +55,8 @@ fn mode_label(mode: Mode) -> String {
     }
 }
 
-pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
+/// `has_server`: this build can run the API server (the host).
+pub fn view<'a>(ui: &UiState, cue_count: usize, has_server: bool) -> Element<'a, Message> {
     let options: Vec<ModeOption> = ui
         .available_modes()
         .into_iter()
@@ -89,8 +91,9 @@ pub fn view<'a>(ui: &UiState, cue_count: usize) -> Element<'a, Message> {
 
     let settings = toggle(Icon::Cog, false, Message::OpenSettings);
 
-    row![picker, count, bottom_toggle, sidebar_toggle, settings]
-        .align_y(Alignment::Center)
-        .padding(6)
-        .into()
+    let mut bar = row![picker, count, bottom_toggle, sidebar_toggle].align_y(Alignment::Center);
+    if has_server {
+        bar = bar.push(toggle(Icon::Server, false, Message::OpenServerPanel));
+    }
+    bar.push(settings).padding(6).into()
 }
