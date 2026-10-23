@@ -211,3 +211,21 @@ dialog-settings-global-template-start = 開始キュー
 dialog-settings-global-template-stop = 停止キュー
 dialog-settings-global-template-type = 種類
 dialog-settings-global-template-wait = 待機キュー
+dialog-settings-global-audio-hardware-buffer-size = バッファサイズ
+dialog-settings-global-audio-hardware-channel-count = 出力チャンネル数
+dialog-settings-global-audio-hardware-config-fallback-title = 指定された設定が利用できませんでした
+dialog-settings-global-audio-hardware-device = 出力デバイス
+dialog-settings-global-audio-hardware-device-config = デバイス設定
+dialog-settings-global-audio-hardware-device-id-fallback-title = 指定されたデバイスが利用できませんでした
+dialog-settings-global-audio-hardware-sample-rate = サンプリングレート
+dialog-settings-global-audio-hardware-save-warning =
+    実行中の音声を停止して設定を適用しますか？
+    この操作により、再生中のすべてのオーディオが停止します。
+dialog-settings-global-audio-hardware-warning = 設定を変更するとオーディオエンジンが再起動され、再生中のすべての音声キューが停止します。
+general-default = 既定
+notification-audio-output-fallback-both-detail = 指定されたオーディオ設定の適用に失敗しました。デフォルト設定を適用します。
+notification-audio-output-fallback-both-summary = オーディオ設定の適用に失敗しました
+notification-audio-output-fallback-config-detail = 指定されたデバイス設定の適用に失敗しました。デフォルト設定を適用します。
+notification-audio-output-fallback-config-summary = デバイス設定の適用に失敗しました
+notification-audio-output-fallback-device-detail = 指定された音声デバイスの適用に失敗しました。デフォルトデバイスを使用します。
+notification-audio-output-fallback-device-summary = 音声デバイスの適用に失敗しました

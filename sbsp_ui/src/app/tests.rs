@@ -758,13 +758,24 @@ fn backend_failures_get_their_own_titles() {
     .unwrap();
     assert!(save.starts_with(&fl!("notification-failed-to-save")));
     assert!(save.ends_with("denied"));
-    assert_eq!(
-        failure_message(&E::AudioOutputFallback {
-            device: true,
-            config: false
-        }),
-        None
+    let fallback = |device, config| failure_message(&E::AudioOutputFallback { device, config });
+    assert!(
+        fallback(true, false)
+            .unwrap()
+            .starts_with(&fl!("notification-audio-output-fallback-device-summary"))
     );
+    assert!(
+        fallback(false, true)
+            .unwrap()
+            .starts_with(&fl!("notification-audio-output-fallback-config-summary"))
+    );
+    assert!(
+        fallback(true, true)
+            .unwrap()
+            .starts_with(&fl!("notification-audio-output-fallback-both-summary"))
+    );
+    assert_eq!(fallback(false, false), None);
+    assert_eq!(failure_message(&E::Custom { id: 1, message: "x".to_owned() }), None);
 }
 
 fn ctrl_r() -> Message {
@@ -1181,4 +1192,38 @@ fn choosing_another_template_settles_the_edit_in_progress() {
     let dialog = state.settings_dialog.as_ref().unwrap();
     assert_eq!(dialog.preferences.template.audio.number, "A1");
     assert_ne!(dialog.preferences.template.fade.number, "A1");
+}
+
+#[test]
+#[serial]
+fn the_hardware_tab_exists_only_where_the_settings_have_audio() {
+    // Tests run without the host feature: no audio hardware settings.
+    let mut state = new_state();
+    let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+    assert!(state.settings_dialog.as_ref().unwrap().audio.is_none());
+    let _ = state.update(Message::Settings(settings_dialog::Message::Device(Some("x".to_owned()))));
+    assert!(state.settings_dialog.as_ref().unwrap().audio.is_none(), "nothing to change");
+}
+
+#[test]
+#[serial]
+fn changing_the_hardware_while_audio_plays_asks_first() {
+    let (mut state, _ids) = populated_state();
+    // Active cues are only known from the backend's state; here only the
+    // question and its answers are exercised.
+    state.settings_dialog = Some(
+        settings_dialog::SettingsDialog::new("Show", &state.model.settings, &state.preferences)
+            .with_audio(AudioHardwareSettings::default()),
+    );
+    let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
+
+    state.audio_warning = true;
+    let _ = state.update(key(keyboard::key::Named::Escape));
+    assert!(!state.audio_warning);
+    assert!(state.settings_dialog.is_some(), "the dialog stays open");
+
+    state.audio_warning = true;
+    let _ = state.update(Message::AudioWarning(false));
+    assert!(!state.audio_warning);
+    let _ = iced_test::simulator(state.view());
 }

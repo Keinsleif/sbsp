@@ -44,6 +44,12 @@ pub struct HostPort {
     settings: Arc<SettingsManager<GlobalHostSettings>>,
 }
 
+/// The output devices and what they support. Asking the audio host can
+/// take a moment, so it runs off the UI thread.
+pub async fn hardware() -> anyhow::Result<sbsp_backend::helper::SupportedHardware> {
+    tokio::task::spawn_blocking(sbsp_backend::helper::get_supported_hardware).await?
+}
+
 impl HostPort {
     /// Starts the backend in-process: loads settings (or falls back to
     /// defaults, logging why), starts the backend with them, and fetches

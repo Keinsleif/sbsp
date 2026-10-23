@@ -10,6 +10,7 @@
 
 use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
+use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, group::GroupMode};
 use sbsp_frontend_settings::TemplateSettings;
 
@@ -89,11 +90,15 @@ impl Kind {
     }
 }
 
-/// What the editor under the list needs besides the templates.
+/// What the editor under the template list and the hardware tab need
+/// besides the settings.
 pub struct Editing<'a, 'f> {
     pub editor: &'a Editor,
     pub model: &'a ShowModelState,
     pub flat: &'f [FlatCueEntry],
+    /// What the audio hardware tab lists (host only; `None` while it is
+    /// being asked for).
+    pub hardware: Option<&'a Result<SupportedHardware, String>>,
 }
 
 const W_TYPE: f32 = 150.0;
