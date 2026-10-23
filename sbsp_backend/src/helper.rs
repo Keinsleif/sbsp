@@ -21,7 +21,7 @@ const COMMON_SAMPLE_RATES: &[u32] = &[
 ];
 
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SupportedHardware {
     pub default: String,
@@ -29,7 +29,7 @@ pub struct SupportedHardware {
 }
 
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeviceInformation {
     pub name: String,
@@ -39,7 +39,7 @@ pub struct DeviceInformation {
 }
 
 #[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FrameConfig {
     pub channel_count: u16,
