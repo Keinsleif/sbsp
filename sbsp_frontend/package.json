@@ -33,7 +33,7 @@
     "@tauri-apps/plugin-window-state": "^2.5.0",
     "@vueuse/core": "^14.4.0",
     "jssha": "^3.3.2",
-    "markdown-it": "^14.3.2",
+    "markdown-it": "^14.3.3",
     "markdown-it-link-attributes": "^4.0.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
