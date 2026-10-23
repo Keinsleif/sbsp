@@ -1,17 +1,4 @@
 dialog-file-select-title = ファイルを選択
-dialog-license-activate-license = ライセンスを有効化
-dialog-license-edition = エディション
-dialog-license-issued-date = 発行日時
-dialog-license-owner = 所有者
-dialog-license-success-message =
-    ライセンスファイルは正常にアプリケーションにインポートされました。
-    元のライセンスファイルは削除するか安全な場所に保管してください。
-
-    ※ライセンスファイルはストアページから再度ダウンロードできます。
-dialog-license-success-title = ライセンスの有効化に成功しました
-dialog-license-title = ライセンス
-dialog-message-license-pro-title = ライセンスエラー
-dialog-message-license-server-panel = サーバーパネルを利用するには Pro ライセンスが必要です。
 dialog-settings-show-remote-lock-cursor-to-selection = 再生カーソルを選択範囲にロック (リモート側)
 dialog-update-checking = 確認中...
 dialog-update-current-version = 現在のバージョン
@@ -35,8 +22,6 @@ main-mobile-controls = 操作
 main-mobile-list = リスト
 menu-file-disconnect = サーバーから切断
 menu-help-check-update = アップデートを確認
-menu-help-credits = クレジット
-menu-help-license = ライセンス
 menu-help-show-log-files = ログファイルを表示
 menu-help-title = ヘルプ
 notification-asset-result = ファイル処理エラー

@@ -1,17 +1,4 @@
 dialog-file-select-title = Select Files
-dialog-license-activate-license = Activate License
-dialog-license-edition = Edition
-dialog-license-issued-date = Issued Date
-dialog-license-owner = Owner
-dialog-license-success-message =
-    The license file has been successfully imported into the application.
-    Please delete the original license file or store it in a safe place.
-
-    * You can re-download the license file from the store page.
-dialog-license-success-title = License Activation success!
-dialog-license-title = License
-dialog-message-license-pro-title = License Error
-dialog-message-license-server-panel = Pro License is required to use Server Panel.
 dialog-settings-show-remote-lock-cursor-to-selection = Lock Cursor to Selection (on Remote side)
 dialog-update-checking = Checking...
 dialog-update-current-version = Current Version
@@ -35,8 +22,6 @@ main-mobile-controls = Controls
 main-mobile-list = List
 menu-file-disconnect = Disconnect
 menu-help-check-update = Check for updates
-menu-help-credits = Credits
-menu-help-license = License
 menu-help-show-log-files = Show Log Files
 menu-help-title = Help
 notification-asset-result = Asset Processing Error

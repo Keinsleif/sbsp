@@ -256,3 +256,20 @@ dialog-server-title = サーバー管理
 general-close = 閉じる
 notification-failed-to-start-server = サーバーの起動に失敗しました
 notification-failed-to-stop-server = サーバーの停止に失敗しました
+dialog-license-activate-license = ライセンスを有効化
+dialog-license-edition = エディション
+dialog-license-issued-date = 発行日時
+dialog-license-owner = 所有者
+dialog-license-success-message =
+    ライセンスファイルは正常にアプリケーションにインポートされました。
+    元のライセンスファイルは削除するか安全な場所に保管してください。
+
+    ※ライセンスファイルはストアページから再度ダウンロードできます。
+dialog-license-success-title = ライセンスの有効化に成功しました
+dialog-license-title = ライセンス
+dialog-message-license-pro-title = ライセンスエラー
+dialog-message-license-server-panel = サーバーパネルを利用するには Pro ライセンスが必要です。
+menu-help-credits = クレジット
+menu-help-license = ライセンス
+dialog-credits-version = バージョン
+dialog-credits-third-party = 使用しているライブラリ・素材のライセンス

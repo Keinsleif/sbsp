@@ -262,3 +262,20 @@ dialog-server-title = Server Management
 general-close = Close
 notification-failed-to-start-server = Failed to start server
 notification-failed-to-stop-server = Failed to stop server
+dialog-license-activate-license = Activate License
+dialog-license-edition = Edition
+dialog-license-issued-date = Issued Date
+dialog-license-owner = Owner
+dialog-license-success-message =
+    The license file has been successfully imported into the application.
+    Please delete the original license file or store it in a safe place.
+
+    * You can re-download the license file from the store page.
+dialog-license-success-title = License Activation success!
+dialog-license-title = License
+dialog-message-license-pro-title = License Error
+dialog-message-license-server-panel = Pro License is required to use Server Panel.
+menu-help-credits = Credits
+menu-help-license = License
+dialog-credits-version = Version
+dialog-credits-third-party = Licenses of the libraries and resources used

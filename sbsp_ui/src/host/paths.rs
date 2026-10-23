@@ -20,3 +20,8 @@ const IDENTIFIER: &str = "com.keinsleif.sbsp";
 pub fn config_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join(IDENTIFIER).join("config.json"))
 }
+
+/// The license file next to the settings (where the Tauri build kept it).
+pub fn license_path() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join(IDENTIFIER).join("license.json"))
+}
