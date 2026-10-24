@@ -201,21 +201,17 @@ async fn websocket_handler(
 fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     if let Some(xff) = headers.get("x-forwarded-for")
         && let Ok(xff_str) = xff.to_str()
-        && let Some(real_ip) = xff_str.split(',').next()
+        && let Some(last) = xff_str.rsplit(',').next()
+        && let Ok(ip) = last.trim().parse::<std::net::IpAddr>()
     {
-        let trimmed = real_ip.trim();
-        if !trimmed.is_empty() {
-            return Some(trimmed.to_string());
-        }
+        return Some(ip.to_string());
     }
 
     if let Some(x_real_ip) = headers.get("x-real-ip")
         && let Ok(ip_str) = x_real_ip.to_str()
+        && let Ok(ip) = ip_str.trim().parse::<std::net::IpAddr>()
     {
-        let trimmed = ip_str.trim();
-        if !trimmed.is_empty() {
-            return Some(trimmed.to_string());
-        }
+        return Some(ip.to_string());
     }
 
     None
