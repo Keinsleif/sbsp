@@ -27,7 +27,7 @@
 
 use std::sync::Arc;
 
-use sbsp_backend::api::{ApiServerOptions, server::start_apiserver};
+use sbsp_backend::api::{ApiServerOptions, server::start_apiserver_with};
 use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
@@ -200,7 +200,14 @@ impl HostPort {
             if server.shutdown.is_some() {
                 return Ok(());
             }
-            let shutdown = start_apiserver(handle, state_rx, event_tx, options).await?;
+            let shutdown = start_apiserver_with(
+                handle,
+                state_rx,
+                event_tx,
+                options,
+                super::web_assets::extend,
+            )
+            .await?;
             server.shutdown = Some(shutdown);
             Ok(())
         }
