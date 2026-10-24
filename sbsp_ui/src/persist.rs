@@ -32,6 +32,10 @@ pub struct WindowRect {
     /// (Wayland).
     pub x: Option<f32>,
     pub y: Option<f32>,
+    /// The size and position above are from before the window was
+    /// maximized, so that un-maximizing returns to them.
+    #[serde(default)]
+    pub maximized: bool,
 }
 
 impl WindowRect {
@@ -189,7 +193,7 @@ mod tests {
         ui.side_bar_tab = SideBarTab::Meter;
         ui.is_right_sidebar_open = false;
         ui.duration_display_mode = DisplayMode::Remain;
-        let window = WindowRect { width: 1000.0, height: 600.0, x: Some(10.0), y: None };
+        let window = WindowRect { width: 1000.0, height: 600.0, x: Some(10.0), y: None, maximized: true };
 
         let saved = Saved::parse(&Saved::capture(&ui, Some(window)).to_json());
 
@@ -223,7 +227,7 @@ mod tests {
 
     #[test]
     fn implausible_windows_are_not_restored() {
-        let rect = |width, height, x, y| WindowRect { width, height, x, y };
+        let rect = |width, height, x, y| WindowRect { width, height, x, y, maximized: false };
         assert!(rect(1280.0, 720.0, None, None).is_usable());
         assert!(!rect(100.0, 720.0, None, None).is_usable());
         assert!(!rect(1280.0, 100_000.0, None, None).is_usable());
