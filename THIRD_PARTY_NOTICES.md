@@ -6,7 +6,7 @@
 
 - Used by
 
-    - [num_threads 0.1.7]( https://github.com/jhpratt/num_threads )
+    - [num_threads 0.1.8]( https://github.com/jhpratt/num_threads )
 
 ```text
 
@@ -434,7 +434,7 @@
 
 - Used by
 
-    - [deranged 0.5.8]( https://github.com/jhpratt/deranged )
+    - [deranged 0.5.9]( https://github.com/jhpratt/deranged )
 
 ```text
 
@@ -1643,7 +1643,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [zerocopy 0.8.62]( https://github.com/google/zerocopy )
+    - [zerocopy 0.8.63]( https://github.com/google/zerocopy )
 
 ```text
                                  Apache License
@@ -2717,7 +2717,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [swift-rs 1.0.8]( https://github.com/Brendonovich/swift-rs )
+    - [swift-rs 1.0.9]( https://github.com/Brendonovich/swift-rs )
 
 ```text
                                  Apache License
@@ -3363,7 +3363,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [crc32fast 1.5.2]( https://github.com/srijs/rust-crc32fast )
+    - [crc32fast 1.5.3]( https://github.com/srijs/rust-crc32fast )
     - [env_filter 0.1.4]( https://github.com/rust-cli/env_logger )
     - [foreign-types-macros 0.2.4]( https://github.com/sfackler/foreign-types )
     - [foreign-types-shared 0.3.1]( https://github.com/sfackler/foreign-types )
@@ -6812,7 +6812,7 @@ limitations under the License.
     - [curve25519-dalek-derive 0.1.1]( https://github.com/dalek-cryptography/curve25519-dalek )
     - [derive_arbitrary 1.5.0]( https://github.com/rust-fuzz/arbitrary )
     - [displaydoc 0.2.7]( https://github.com/yaahc/displaydoc )
-    - [equivalent 1.0.2]( https://github.com/indexmap-rs/equivalent )
+    - [equivalent 1.0.3]( https://github.com/indexmap-rs/equivalent )
     - [errno 0.3.14]( https://github.com/lambda-fairy/rust-errno )
     - [event-listener-strategy 0.5.4]( https://github.com/smol-rs/event-listener-strategy )
     - [event-listener 5.4.2]( https://github.com/smol-rs/event-listener )
@@ -6855,7 +6855,6 @@ limitations under the License.
     - [parking_lot_core 0.9.12]( https://github.com/Amanieu/parking_lot )
     - [percent-encoding 2.3.2]( https://github.com/servo/rust-url/ )
     - [piper 0.2.5]( https://github.com/smol-rs/piper )
-    - [png 0.17.16]( https://github.com/image-rs/image-png )
     - [png 0.18.1]( https://github.com/image-rs/image-png )
     - [polling 3.11.0]( https://github.com/smol-rs/polling )
     - [primal-check 0.3.4]( https://github.com/huonw/primal )
@@ -6865,8 +6864,8 @@ limitations under the License.
     - [ring 0.17.14]( https://github.com/briansmith/ring )
     - [rtrb 0.3.5]( https://github.com/mgeier/rtrb )
     - [rustix 1.1.5]( https://github.com/bytecodealliance/rustix )
-    - [rustls-native-certs 0.8.4]( https://github.com/rustls/rustls-native-certs )
-    - [rustls 0.23.45]( https://github.com/rustls/rustls )
+    - [rustls-native-certs 0.8.5]( https://github.com/rustls/rustls-native-certs )
+    - [rustls 0.23.46]( https://github.com/rustls/rustls )
     - [scopeguard 1.2.0]( https://github.com/bluss/scopeguard )
     - [security-framework-sys 2.17.0]( https://github.com/kornelski/rust-security-framework )
     - [security-framework 3.7.0]( https://github.com/kornelski/rust-security-framework )
@@ -6875,7 +6874,7 @@ limitations under the License.
     - [servo_arc 0.4.3]( https://github.com/servo/stylo )
     - [signal-hook-registry 1.4.8]( https://github.com/vorner/signal-hook )
     - [simd_cesu8 1.2.0]( https://github.com/seancroach/simd_cesu8 )
-    - [smallvec 1.16.2]( https://github.com/servo/rust-smallvec )
+    - [smallvec 1.16.4]( https://github.com/servo/rust-smallvec )
     - [socket2 0.6.5]( https://github.com/rust-lang/socket2 )
     - [stable_deref_trait 1.2.1]( https://github.com/storyyeller/stable_deref_trait )
     - [string_cache 0.9.0]( https://github.com/servo/string-cache )
@@ -6892,7 +6891,7 @@ limitations under the License.
     - [unicase 2.10.0]( https://github.com/seanmonstar/unicase )
     - [unicode-segmentation 1.13.3]( https://github.com/unicode-rs/unicode-segmentation )
     - [url 2.5.8]( https://github.com/servo/rust-url )
-    - [uuid 1.27.0]( https://github.com/uuid-rs/uuid )
+    - [uuid 1.29.0]( https://github.com/uuid-rs/uuid )
     - [wasi 0.11.1+wasi-snapshot-preview1]( https://github.com/bytecodealliance/wasi )
     - [wasip2 1.0.4+wasi-0.2.12]( https://github.com/bytecodealliance/wasi-rs )
     - [wasm-bindgen-futures 0.4.79]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures )
@@ -6904,7 +6903,7 @@ limitations under the License.
     - [web_atoms 0.2.6]( https://github.com/servo/html5ever )
     - [window-vibrancy 0.8.1]( https://github.com/tauri-apps/tauri-plugin-vibrancy )
     - [wit-bindgen 0.57.1]( https://github.com/bytecodealliance/wit-bindgen )
-    - [wry 0.57.0]( https://github.com/tauri-apps/wry )
+    - [wry 0.57.1]( https://github.com/tauri-apps/wry )
     - [xattr 1.6.1]( https://github.com/Stebalien/xattr )
 
 ```text
@@ -7350,7 +7349,7 @@ limitations under the License.
     - [sha1 0.10.7]( https://github.com/RustCrypto/hashes )
     - [sha1 0.11.0]( https://github.com/RustCrypto/hashes )
     - [sha2 0.10.9]( https://github.com/RustCrypto/hashes )
-    - [sha2 0.11.0]( https://github.com/RustCrypto/hashes )
+    - [sha2 0.11.1]( https://github.com/RustCrypto/hashes )
     - [signature 3.0.0]( https://github.com/RustCrypto/traits )
     - [spki 0.8.1]( https://github.com/RustCrypto/formats )
 
@@ -9636,7 +9635,7 @@ Apache License
 - Used by
 
     - [dpi 0.1.2]( https://github.com/rust-windowing/winit )
-    - [tao 0.37.1]( https://github.com/tauri-apps/tao )
+    - [tao 0.37.2]( https://github.com/tauri-apps/tao )
 
 ```text
 Apache License
@@ -10797,7 +10796,7 @@ limitations under the License.
     - [jni-macros 0.22.4]( https://github.com/jni-rs/jni-rs )
     - [jni-sys-macros 0.4.1]( https://github.com/jni-rs/jni-sys )
     - [jni 0.22.4]( https://github.com/jni-rs/jni-rs )
-    - [libc 0.2.190]( https://github.com/rust-lang/libc )
+    - [libc 0.2.191]( https://github.com/rust-lang/libc )
     - [mach2 0.6.0]( https://github.com/JohnTitor/mach2 )
     - [miniz_oxide 0.8.9]( https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide )
     - [miniz_oxide 0.9.1]( https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide )
@@ -10845,25 +10844,25 @@ limitations under the License.
     - [serde_core 1.0.229]( https://github.com/serde-rs/serde )
     - [serde_derive 1.0.229]( https://github.com/serde-rs/serde )
     - [serde_derive_internals 0.29.1]( https://github.com/serde-rs/serde )
-    - [serde_json 1.0.151]( https://github.com/serde-rs/json )
+    - [serde_json 1.0.154]( https://github.com/serde-rs/json )
     - [serde_repr 0.1.21]( https://github.com/dtolnay/serde-repr )
     - [simdutf8 0.1.5]( https://github.com/rusticstuff/simdutf8 )
     - [syn 2.0.119]( https://github.com/dtolnay/syn )
-    - [syn 3.0.6]( https://github.com/dtolnay/syn )
+    - [syn 3.0.9]( https://github.com/dtolnay/syn )
     - [sync_wrapper 1.0.2]( https://github.com/Actyx/sync_wrapper )
-    - [tauri-codegen 2.7.1]( https://github.com/tauri-apps/tauri )
-    - [tauri-macros 2.7.1]( https://github.com/tauri-apps/tauri )
-    - [tauri-plugin-dialog 2.8.1]( https://github.com/tauri-apps/plugins-workspace )
-    - [tauri-plugin-fs 2.6.0]( https://github.com/tauri-apps/plugins-workspace )
-    - [tauri-plugin-log 2.10.0]( https://github.com/tauri-apps/plugins-workspace )
-    - [tauri-plugin-opener 2.7.0]( https://github.com/tauri-apps/plugins-workspace )
+    - [tauri-codegen 2.7.4]( https://github.com/tauri-apps/tauri )
+    - [tauri-macros 2.7.4]( https://github.com/tauri-apps/tauri )
+    - [tauri-plugin-dialog 2.8.3]( https://github.com/tauri-apps/plugins-workspace )
+    - [tauri-plugin-fs 2.7.1]( https://github.com/tauri-apps/plugins-workspace )
+    - [tauri-plugin-log 2.10.1]( https://github.com/tauri-apps/plugins-workspace )
+    - [tauri-plugin-opener 2.7.2]( https://github.com/tauri-apps/plugins-workspace )
     - [tauri-plugin-os 2.4.0]( https://github.com/tauri-apps/plugins-workspace )
-    - [tauri-plugin-updater 2.13.2]( https://github.com/tauri-apps/plugins-workspace )
+    - [tauri-plugin-updater 2.14.0]( https://github.com/tauri-apps/plugins-workspace )
     - [tauri-plugin-window-state 2.5.0]( https://github.com/tauri-apps/plugins-workspace )
-    - [tauri-runtime-wry 2.12.1]( https://github.com/tauri-apps/tauri )
-    - [tauri-runtime 2.12.1]( https://github.com/tauri-apps/tauri )
-    - [tauri-utils 2.10.1]( https://github.com/tauri-apps/tauri )
-    - [tauri 2.12.2]( https://github.com/tauri-apps/tauri )
+    - [tauri-runtime-wry 2.12.3]( https://github.com/tauri-apps/tauri )
+    - [tauri-runtime 2.12.2]( https://github.com/tauri-apps/tauri )
+    - [tauri-utils 2.10.2]( https://github.com/tauri-apps/tauri )
+    - [tauri 2.12.5]( https://github.com/tauri-apps/tauri )
     - [thiserror-impl 1.0.69]( https://github.com/dtolnay/thiserror )
     - [thiserror-impl 2.0.21]( https://github.com/dtolnay/thiserror )
     - [thiserror 1.0.69]( https://github.com/dtolnay/thiserror )
@@ -10872,7 +10871,7 @@ limitations under the License.
     - [time-macros 0.2.32]( https://github.com/time-rs/time )
     - [time 0.3.55]( https://github.com/time-rs/time )
     - [typeid 1.0.3]( https://github.com/dtolnay/typeid )
-    - [unicode-ident 1.0.26]( https://github.com/dtolnay/unicode-ident )
+    - [unicode-ident 1.0.27]( https://github.com/dtolnay/unicode-ident )
     - [wasm-streams 0.5.0]( https://github.com/MattiasBuelens/wasm-streams/ )
     - [winapi-i686-pc-windows-gnu 0.4.0]( https://github.com/retep998/winapi-rs )
     - [winapi-x86_64-pc-windows-gnu 0.4.0]( https://github.com/retep998/winapi-rs )
@@ -12193,7 +12192,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - Used by
 
-    - [webpki-root-certs 1.0.9]( https://github.com/rustls/webpki-roots )
+    - [webpki-root-certs 1.0.11]( https://github.com/rustls/webpki-roots )
 
 ```text
 # Community Data License Agreement - Permissive - Version 2.0
@@ -12266,11 +12265,11 @@ insights.
 
 - Used by
 
-    - [sbsp_app 2.7.1]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_backend 1.7.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_app 2.8.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.8.0]( https://github.com/Keinsleif/sbsp )
     - [sbsp_frontend_settings 0.2.1]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.2]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote_app 2.7.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote_app 2.8.0]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
@@ -12984,7 +12983,7 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 - Used by
 
-    - [rustls-webpki 0.103.15]( https://github.com/rustls/webpki )
+    - [rustls-webpki 0.103.16]( https://github.com/rustls/webpki )
 
 ```text
 Except as otherwise noted, this project is licensed under the following
@@ -13257,7 +13256,7 @@ THE SOFTWARE.
 
 - Used by
 
-    - [plist 1.10.1]( https://github.com/ebarnard/rust-plist/ )
+    - [plist 1.10.3]( https://github.com/ebarnard/rust-plist/ )
 
 ```text
 Copyright (c) 2015 Edward Barnard
@@ -13324,7 +13323,7 @@ DEALINGS IN THE SOFTWARE.
 
 - Used by
 
-    - [schannel 0.1.29]( https://github.com/steffengy/schannel-rs )
+    - [schannel 0.1.30]( https://github.com/steffengy/schannel-rs )
 
 ```text
 Copyright (c) 2015 steffengy
@@ -13931,9 +13930,9 @@ THE SOFTWARE.
 
     - [zbus 5.19.0]( https://github.com/z-galaxy/zbus/ )
     - [zbus_macros 5.19.0]( https://github.com/z-galaxy/zbus/ )
-    - [zbus_names 4.3.4]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant 5.15.0]( https://github.com/z-galaxy/zbus/ )
-    - [zvariant_derive 5.15.0]( https://github.com/z-galaxy/zbus/ )
+    - [zbus_names 4.3.5]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant 5.15.1]( https://github.com/z-galaxy/zbus/ )
+    - [zvariant_derive 5.15.1]( https://github.com/z-galaxy/zbus/ )
 
 ```text
 Copyright (c) 2024 Zeeshan Ali Khan &amp; zbus contributors
@@ -14242,7 +14241,7 @@ SOFTWARE.
 
 - Used by
 
-    - [ico 0.5.0]( https://github.com/mdsteele/rust-ico )
+    - [ico 0.6.0]( https://github.com/mdsteele/rust-ico )
 
 ```text
 MIT License
@@ -14513,7 +14512,7 @@ SOFTWARE.
 
 - Used by
 
-    - [rfd 0.16.0]( https://github.com/PolyMeilex/rfd )
+    - [rfd 0.16.1]( https://github.com/PolyMeilex/rfd )
 
 ```text
 MIT License
@@ -14722,7 +14721,7 @@ SOFTWARE.
     - [dlopen2 0.8.2]( https://github.com/OpenByteDev/dlopen2 )
     - [dlopen2_derive 0.4.3]( https://github.com/OpenByteDev/dlopen2 )
     - [dpi 0.1.2]( https://github.com/rust-windowing/winit )
-    - [minisign-verify 0.2.5]( https://github.com/jedisct1/rust-minisign-verify )
+    - [minisign-verify 0.3.0]( https://github.com/jedisct1/rust-minisign-verify )
     - [objc2-encode 4.1.0]( https://github.com/madsmtm/objc2 )
     - [objc2-foundation 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2 0.6.5]( https://github.com/madsmtm/objc2 )
@@ -14761,7 +14760,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 - Used by
 
     - [tokio-util 0.7.20]( https://github.com/tokio-rs/tokio )
-    - [tokio 1.53.2]( https://github.com/tokio-rs/tokio )
+    - [tokio 1.54.1]( https://github.com/tokio-rs/tokio )
 
 ```text
 MIT License
@@ -15260,7 +15259,7 @@ SOFTWARE.
 
 - Used by
 
-    - [combine 4.6.8]( https://github.com/Marwes/combine )
+    - [combine 4.6.9]( https://github.com/Marwes/combine )
 
 ```text
 The MIT License (MIT)
@@ -15498,7 +15497,7 @@ SOFTWARE.
 
 - Used by
 
-    - [open 5.4.4]( https://github.com/Byron/open-rs )
+    - [open 5.4.5]( https://github.com/Byron/open-rs )
 
 ```text
 The MIT License (MIT)
@@ -16775,7 +16774,7 @@ Exhibit B - &quot;Incompatible With Secondary Licenses&quot; Notice
 
 - Used by
 
-    - [unicode-ident 1.0.26]( https://github.com/dtolnay/unicode-ident )
+    - [unicode-ident 1.0.27]( https://github.com/dtolnay/unicode-ident )
 
 ```text
 UNICODE LICENSE V3
@@ -16826,24 +16825,24 @@ authorization of the copyright holder.
 
 - Used by
 
-    - [icu_collections 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_locale_core 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_normalizer 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_normalizer_data 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_properties 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_properties_data 2.3.0]( https://github.com/unicode-org/icu4x )
-    - [icu_provider 2.3.1]( https://github.com/unicode-org/icu4x )
+    - [icu_collections 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_locale_core 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_normalizer 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_normalizer_data 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_properties 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_properties_data 2.4.0]( https://github.com/unicode-org/icu4x )
+    - [icu_provider 2.4.0]( https://github.com/unicode-org/icu4x )
     - [litemap 0.8.3]( https://github.com/unicode-org/icu4x )
     - [potential_utf 0.1.6]( https://github.com/unicode-org/icu4x )
-    - [tinystr 0.8.4]( https://github.com/unicode-org/icu4x )
+    - [tinystr 0.8.5]( https://github.com/unicode-org/icu4x )
     - [writeable 0.6.4]( https://github.com/unicode-org/icu4x )
     - [yoke-derive 0.8.4]( https://github.com/unicode-org/icu4x )
-    - [yoke 0.8.3]( https://github.com/unicode-org/icu4x )
+    - [yoke 0.8.4]( https://github.com/unicode-org/icu4x )
     - [zerofrom-derive 0.1.8]( https://github.com/unicode-org/icu4x )
     - [zerofrom 0.1.8]( https://github.com/unicode-org/icu4x )
     - [zerotrie 0.2.5]( https://github.com/unicode-org/icu4x )
-    - [zerovec-derive 0.11.6]( https://github.com/unicode-org/icu4x )
-    - [zerovec 0.11.8]( https://github.com/unicode-org/icu4x )
+    - [zerovec-derive 0.11.7]( https://github.com/unicode-org/icu4x )
+    - [zerovec 0.11.9]( https://github.com/unicode-org/icu4x )
 
 ```text
 UNICODE LICENSE V3
@@ -17071,7 +17070,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [@intlify/core-base@11.4.13](https://github.com/intlify/vue-i18n)
+### [@intlify/core-base@11.4.16](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -17098,7 +17097,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [@intlify/devtools-types@11.4.13](https://github.com/intlify/vue-i18n)
+### [@intlify/devtools-types@11.4.16](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -17125,7 +17124,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [@intlify/message-compiler@11.4.13](https://github.com/intlify/vue-i18n)
+### [@intlify/message-compiler@11.4.16](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -17152,7 +17151,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [@intlify/shared@11.4.13](https://github.com/intlify/vue-i18n)
+### [@intlify/shared@11.4.16](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -17427,7 +17426,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-### [@tauri-apps/api@2.12.1](https://github.com/tauri-apps/tauri)
+### [@tauri-apps/api@2.12.4](https://github.com/tauri-apps/tauri)
 license: Apache-2.0 OR MIT
 
 ```text
@@ -17454,7 +17453,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 ```
 
-### [@tauri-apps/plugin-dialog@2.8.1](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-dialog@2.8.3](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -17480,7 +17479,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@tauri-apps/plugin-log@2.10.0](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-log@2.10.1](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -17506,7 +17505,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@tauri-apps/plugin-opener@2.7.0](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-opener@2.7.2](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -17558,7 +17557,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@tauri-apps/plugin-updater@2.13.2](https://github.com/tauri-apps/plugins-workspace)
+### [@tauri-apps/plugin-updater@2.14.0](https://github.com/tauri-apps/plugins-workspace)
 license: MIT OR Apache-2.0
 
 ```text
@@ -17610,7 +17609,7 @@ PackageDownloadLocation: git+ssh://github.com/tauri-apps/tauri.git
 Creator: Person: Daniel Thompson-Yvetot
 ```
 
-### [@types/node@24.19.1](https://github.com/DefinitelyTyped/DefinitelyTyped)
+### [@types/node@24.19.2](https://github.com/DefinitelyTyped/DefinitelyTyped)
 license: MIT
 
 ```text
@@ -17778,7 +17777,7 @@ SOFTWARE.
 
 ```
 
-### [@vue/compiler-core@3.5.43](https://github.com/vuejs/core)
+### [@vue/compiler-core@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -17806,7 +17805,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/compiler-dom@3.5.43](https://github.com/vuejs/core)
+### [@vue/compiler-dom@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -17834,7 +17833,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/compiler-sfc@3.5.43](https://github.com/vuejs/core)
+### [@vue/compiler-sfc@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -17862,7 +17861,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/compiler-ssr@3.5.43](https://github.com/vuejs/core)
+### [@vue/compiler-ssr@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -17981,7 +17980,7 @@ SOFTWARE.
 
 ```
 
-### [@vue/reactivity@3.5.43](https://github.com/vuejs/core)
+### [@vue/reactivity@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -18009,7 +18008,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/runtime-core@3.5.43](https://github.com/vuejs/core)
+### [@vue/runtime-core@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -18037,7 +18036,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/runtime-dom@3.5.43](https://github.com/vuejs/core)
+### [@vue/runtime-dom@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -18065,7 +18064,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/server-renderer@3.5.43](https://github.com/vuejs/core)
+### [@vue/server-renderer@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -18093,7 +18092,7 @@ THE SOFTWARE.
 
 ```
 
-### [@vue/shared@3.5.43](https://github.com/vuejs/core)
+### [@vue/shared@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
@@ -19515,7 +19514,7 @@ SOFTWARE.
 
 ```
 
-### [markdown-it@14.3.2](https://github.com/markdown-it/markdown-it)
+### [markdown-it@14.3.3](https://github.com/markdown-it/markdown-it)
 license: MIT
 
 ```text
@@ -19855,7 +19854,7 @@ SOFTWARE.
 
 ```
 
-### [postcss@8.5.29](https://github.com/postcss/postcss)
+### [postcss@8.5.31](https://github.com/postcss/postcss)
 license: MIT
 
 ```text
@@ -20959,7 +20958,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [uuid@14.0.2](https://github.com/uuidjs/uuid)
+### [uuid@14.0.3](https://github.com/uuidjs/uuid)
 license: MIT
 
 ```text
@@ -20975,7 +20974,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ```
 
-### [vue-i18n@11.4.13](https://github.com/intlify/vue-i18n)
+### [vue-i18n@11.4.16](https://github.com/intlify/vue-i18n)
 license: MIT
 
 ```text
@@ -21002,7 +21001,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ```
 
-### [vue@3.5.43](https://github.com/vuejs/core)
+### [vue@3.5.44](https://github.com/vuejs/core)
 license: MIT
 
 ```text
