@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
 import NumberInput from './NumberInput.vue';
+import { debounce } from '@/utils.ts';
 
 const props = defineProps<{
   label?: string;
@@ -15,7 +16,12 @@ const props = defineProps<{
 const panning = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+type DragInfo = {
+  pointerId: number,
+  lastValue: number,
+};
+
+let dragInfo: DragInfo | null = null;
 
 const faderPosition = computed({
   get() {
@@ -31,6 +37,44 @@ const tickLabels = [
   { value: 0, label: 'C' },
   { value: 64, label: 'R' },
 ];
+
+const onPointerDown = (e: PointerEvent) => {
+  if (dragInfo !== null) return;
+
+  dragInfo = {
+    pointerId: e.pointerId,
+    lastValue: faderPosition.value,
+  };
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerCancel);
+};
+
+const onPointerUp = (e: PointerEvent) => {
+  if (dragInfo?.pointerId !== e.pointerId) return;
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+  dragInfo = null;
+  flushFader();
+};
+
+const onPointerCancel = (e: PointerEvent) => {
+  if (e.pointerId !== dragInfo?.pointerId) return;
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+  faderPosition.value = dragInfo.lastValue;
+  dragInfo = null;
+}
+
+const flushFader = debounce(() => {
+  if (!props.disabled) {
+    emit('update');
+  }
+}, 300);
+
+onUnmounted(() => {
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+});
 </script>
 
 <template>
@@ -46,18 +90,11 @@ const tickLabels = [
     @dblclick="
       if (!props.disabled) {
         faderPosition = 0;
+        flushFader.clear();
         emit('update');
       }
     "
-    @pointerdown="sliderChanging = true"
-    @pointerup="
-      if (sliderChanging) {
-        sliderChanging = false;
-        if (!props.disabled) {
-          emit('update');
-        }
-      }
-    "
+    @pointerdown="onPointerDown"
     @keydown.stop
   >
     <template #input>

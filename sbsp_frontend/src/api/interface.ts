@@ -49,9 +49,13 @@ export interface IBackendAdapter {
   sendPause(cueId: string): Promise<void>;
   sendResume(cueId: string): Promise<void>;
   sendStop(cueId: string): Promise<void>;
+  sendSoftStop(cueId: string): Promise<void>;
+  sendHardStop(cueId: string): Promise<void>;
   sendPauseAll(): Promise<void>;
   sendResumeAll(): Promise<void>;
   sendStopAll(): Promise<void>;
+  sendSoftStopAll(): Promise<void>;
+  sendHardStopAll(): Promise<void>;
   sendSeekTo(cueId: string, position: number): Promise<void>;
   sendSeekBy(cueId: string, amount: number): Promise<void>;
   sendToggleRepeat(cueId: string): Promise<void>;

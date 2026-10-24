@@ -14,11 +14,7 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, DeviceTrait, Source,
-    cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
-    mixer::Mixer,
-    source::Zero,
-    stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, Device, DeviceTrait, Source, SupportedStreamConfig, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -116,7 +112,7 @@ impl AudioEngine {
     ) -> Result<Self> {
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
+        let (builder, fallback_info) = get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
             && let Err(e) =
                 event_tx.try_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
@@ -168,7 +164,7 @@ impl AudioEngine {
         let shared_level = SharedLevel::default();
         let backend_settings = backend_settings_rx.borrow().audio.clone();
         let is_mono = Arc::new(AtomicBool::new(show_settings.mono_output));
-        let (builder, fallback_info) = Self::get_builder(&backend_settings)?;
+        let (builder, fallback_info) = get_builder(&backend_settings)?;
         if fallback_info.is_fallbacked()
             && let Err(e) =
                 event_tx.try_send(EngineEvent::Audio(AudioEngineEvent::AudioOutputFallback {
@@ -220,7 +216,7 @@ impl AudioEngine {
         log::debug!("Rebuilding Audio Output...");
         self.output = None;
         let is_mono = self.is_mono.clone();
-        let (builder, fallback_info) = Self::get_builder(backend)?;
+        let (builder, fallback_info) = get_builder(backend)?;
         if fallback_info.is_fallbacked()
             && let Err(e) = self
                 .event_tx
@@ -262,86 +258,6 @@ impl AudioEngine {
         Ok(())
     }
 
-    fn get_builder(
-        settings: &BackendAudioSettings,
-    ) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
-        let mut fallback_info = OutputFallbackInfo {
-            device: false,
-            config: false,
-        };
-        let device_result = if let Some(device_id) = &settings.device_id
-            && let Ok(id) = DeviceId::from_str(device_id)
-            && let Ok(host) = rodio::cpal::host_from_id(id.host())
-            && let Some(device) = host.device_by_id(&id)
-            && device.supports_output()
-        {
-            Ok(device)
-        } else {
-            let host = rodio::cpal::default_host();
-            if settings.device_id.is_some() {
-                fallback_info.device = true;
-            }
-            host.default_output_device()
-                .ok_or(anyhow::anyhow!("No default device found."))
-        };
-
-        if let Ok(device) = device_result {
-            let mut matched_config = None;
-
-            let default_sample_rate = device.default_output_config().ok().map(|c| c.sample_rate());
-
-            let target_sample_rate = settings.sample_rate.or(default_sample_rate);
-
-            if let Ok(configs) = device.supported_output_configs() {
-                for config in configs {
-                    if config.sample_format() != SampleFormat::F32 {
-                        continue;
-                    }
-                    if let Some(channels) = settings.channel_count
-                        && config.channels() != channels
-                    {
-                        continue;
-                    }
-                    if let Some(buffer_size) = settings.buffer_size {
-                        match config.buffer_size() {
-                            SupportedBufferSize::Range { min, max }
-                                if (buffer_size < *min || buffer_size > *max) =>
-                            {
-                                continue;
-                            }
-                            SupportedBufferSize::Range { .. } => {}
-                            SupportedBufferSize::Unknown => continue,
-                        }
-                    }
-
-                    if let Some(sample_rate) = target_sample_rate
-                        && let Some(config) = config.try_with_sample_rate(sample_rate)
-                    {
-                        matched_config = Some(config.config());
-                        break;
-                    }
-                }
-            }
-            let mut builder = DeviceSinkBuilder::from_device(device)?;
-            if let Some(mut config) = matched_config {
-                if let Some(buffer_size) = settings.buffer_size {
-                    config.buffer_size = BufferSize::Fixed(buffer_size);
-                }
-
-                builder = builder
-                    .with_config(&config)
-                    .with_sample_format(SampleFormat::F32);
-            } else if settings.channel_count.is_some()
-                || settings.sample_rate.is_some()
-                || settings.buffer_size.is_some()
-            {
-                fallback_info.config = true;
-            }
-            return Ok((builder, fallback_info));
-        }
-        Err(anyhow::anyhow!("Failed to create DeviceSinkBuilder."))
-    }
-
     pub async fn run(mut self) {
         let mut poll_timer = time::interval(Duration::from_millis(50));
         poll_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -373,7 +289,7 @@ impl AudioEngine {
                         AudioCommand::HardStop { id } => self.handle_stop(id, true).await,
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
-                        AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
+                        AudioCommand::FadeVolume { id, volume, fade_param, stop_on_complete } => self.handle_fade_volume(id, volume, fade_param, stop_on_complete).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.show_settings.mono_output {
@@ -443,6 +359,26 @@ impl AudioEngine {
                         });
                     }
                     self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
+
+                    let keys: Vec<_> = self.loaded_sounds.keys().cloned().collect();
+                    for id in keys {
+                        let Some(loaded_sound) = self.loaded_sounds.get(&id) else {
+                            continue;
+                        };
+                        let event = match loaded_sound.state() {
+                            AudioPlaybackState::Stopped => {
+                                AudioEngineEvent::Stopped { instance_id: id }
+                            }
+                            AudioPlaybackState::Completed => {
+                                AudioEngineEvent::Completed { instance_id: id }
+                            }
+                            _ => continue,
+                        };
+                        if self.event_tx.send(EngineEvent::Audio(event)).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
+                        }
+                    }
+                    self.loaded_sounds.retain(|_, value| !matches!(value.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
                 },
                 else => break
             }
@@ -686,12 +622,15 @@ impl AudioEngine {
         id: Uuid,
         volume: Decibels,
         param: FadeParam,
+        stop_on_complete: bool,
     ) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_fade(volume, param);
+            playing_sound
+                .handle
+                .set_fade(volume, param, stop_on_complete);
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.set_fade(volume, param);
+            loaded_handle.set_fade(volume, param, stop_on_complete);
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,
@@ -769,5 +708,116 @@ impl AudioEngine {
             }
         }
         Ok(())
+    }
+}
+
+fn get_builder(
+    settings: &BackendAudioSettings,
+) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
+    let mut fallback_info = OutputFallbackInfo {
+        device: false,
+        config: false,
+    };
+    let device_result = if let Some(device_id) = &settings.device_id
+        && let Ok(id) = DeviceId::from_str(device_id)
+        && let Ok(host) = rodio::cpal::host_from_id(id.host())
+        && let Some(device) = host.device_by_id(&id)
+        && device.supports_output()
+    {
+        Ok(device)
+    } else {
+        let host = rodio::cpal::default_host();
+        if settings.device_id.is_some() {
+            fallback_info.device = true;
+        }
+        host.default_output_device()
+            .ok_or(anyhow::anyhow!("No default device found."))
+    };
+
+    if let Ok(device) = device_result {
+        let wants_custom = settings.channel_count.is_some()
+            || settings.sample_rate.is_some()
+            || settings.buffer_size.is_some();
+
+        let mut builder = DeviceSinkBuilder::from_device(device.clone())?;
+        if wants_custom {
+            match select_config(&device, settings) {
+                Some(config) => {
+                    builder = builder.with_supported_config(&config);
+                    if let Some(bs) = settings.buffer_size {
+                        builder = builder.with_buffer_size(BufferSize::Fixed(bs))
+                    }
+                }
+                None => fallback_info.config = true,
+            }
+        }
+        return Ok((builder, fallback_info));
+    }
+    Err(anyhow::anyhow!("Failed to create DeviceSinkBuilder."))
+}
+
+fn select_config(
+    device: &Device,
+    settings: &BackendAudioSettings,
+) -> Option<SupportedStreamConfig> {
+    let default = device.default_output_config().ok();
+    let default_ch = default.map(|c| c.channels());
+    let default_sr = default.map(|c| c.sample_rate());
+    let default_fmt = default.as_ref().map(|c| c.sample_format());
+
+    device
+        .supported_output_configs()
+        .ok()?
+        .filter(|c| format_priority(c.sample_format()) < 99)
+        .filter(|c| settings.channel_count.is_none_or(|ch| c.channels() == ch))
+        .filter(|c| {
+            settings.buffer_size.is_none_or(|bs| {
+                matches!(c.buffer_size(),
+                    SupportedBufferSize::Range { min, max } if bs >= *min && bs <= *max)
+            })
+        })
+        .filter_map(|c| {
+            let rate = match (settings.sample_rate, default_sr) {
+                (Some(r), _) => r,
+                (None, Some(d)) => d.clamp(c.min_sample_rate(), c.max_sample_rate()),
+                (None, None) => c.max_sample_rate(),
+            };
+            c.try_with_sample_rate(rate)
+        })
+        .min_by_key(|c| {
+            let is_not_default = match default_fmt {
+                Some(df) => (c.sample_format() != df) as u8,
+                None => 0,
+            };
+            let fmt_prec = format_priority(c.sample_format());
+            
+            let ch = if settings.channel_count.is_none() {
+                default_ch.map_or(0, |d| (c.channels() as i32 - d as i32).abs())
+            } else { 0 };
+            let sr = if settings.sample_rate.is_none() {
+                default_sr.map_or(0, |d| (c.sample_rate() as i64 - d as i64).abs())
+            } else { 0 };
+            (is_not_default, fmt_prec, ch, sr)
+        })
+}
+
+fn format_priority(format: SampleFormat) -> u8 {
+    match format {
+        SampleFormat::F32 => 0,
+        SampleFormat::F64 => 1,
+
+        SampleFormat::I32 => 2,
+        SampleFormat::I24 => 3,
+        SampleFormat::I16 => 4,
+        SampleFormat::I64 => 5,
+        SampleFormat::I8  => 6,
+
+        SampleFormat::U32 => 7,
+        SampleFormat::U24 => 8,
+        SampleFormat::U16 => 9,
+        SampleFormat::U8  => 10,
+        SampleFormat::U64 => 11,
+
+        _ => 99,
     }
 }

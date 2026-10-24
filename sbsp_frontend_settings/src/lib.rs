@@ -173,6 +173,7 @@ impl Default for TemplateSettings {
                     duration: 3.0,
                     easing: Easing::InOutPow(2.0),
                 },
+                stop_target_on_complete: false,
             })),
             start: template_with_params(CueParam::Start(StartCueParam {
                 target: Uuid::nil(),

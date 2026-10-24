@@ -48,6 +48,20 @@ impl CueControllerHandle {
         Ok(())
     }
 
+    pub async fn soft_stop(&self, uuid: Uuid) -> anyhow::Result<()> {
+        self.command_tx
+            .send(ControllerCommand::SoftStop(uuid))
+            .await?;
+        Ok(())
+    }
+
+    pub async fn hard_stop(&self, uuid: Uuid) -> anyhow::Result<()> {
+        self.command_tx
+            .send(ControllerCommand::HardStop(uuid))
+            .await?;
+        Ok(())
+    }
+
     pub async fn seek_to(&self, uuid: Uuid, position: f64) -> anyhow::Result<()> {
         self.command_tx
             .send(ControllerCommand::SeekTo(uuid, position))
@@ -74,6 +88,16 @@ impl CueControllerHandle {
 
     pub async fn stop_all(&self) -> anyhow::Result<()> {
         self.command_tx.send(ControllerCommand::StopAll).await?;
+        Ok(())
+    }
+
+    pub async fn soft_stop_all(&self) -> anyhow::Result<()> {
+        self.command_tx.send(ControllerCommand::SoftStopAll).await?;
+        Ok(())
+    }
+
+    pub async fn hard_stop_all(&self) -> anyhow::Result<()> {
+        self.command_tx.send(ControllerCommand::HardStopAll).await?;
         Ok(())
     }
 
