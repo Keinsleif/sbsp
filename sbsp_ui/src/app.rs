@@ -1194,6 +1194,33 @@ impl State {
         Task::none()
     }
 
+    /// Whether there is a log folder to show (not on the web, and not when
+    /// the log file could not be opened).
+    fn can_show_log_files(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            crate::logging::dir().is_some()
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            false
+        }
+    }
+
+    /// Opens the log folder in the OS file manager.
+    fn show_log_files(&self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(dir) = crate::logging::dir() {
+            // Launching the file manager can block for a moment, so it
+            // stays off the UI thread.
+            std::thread::spawn(move || {
+                if let Err(error) = opener::open(&dir) {
+                    log::error!("failed to open {}: {error}", dir.display());
+                }
+            });
+        }
+    }
+
     /// What the license says right now (the host has a license).
     #[cfg(feature = "host")]
     fn license_info(&self) -> Option<license_dialog::Info> {
@@ -2196,6 +2223,10 @@ impl State {
                 }
                 Task::none()
             }
+            "help.show-log-files" => {
+                self.show_log_files();
+                Task::none()
+            }
             "help.about" => {
                 self.toasts
                     .push(toast::Kind::Info, fl!("menu-help-about-message"));
@@ -2564,6 +2595,8 @@ impl State {
                     MenuNode::item("help.credits", fl!("menu-help-credits")),
                     MenuNode::item("help.license", fl!("menu-help-license"))
                         .enabled(cfg!(feature = "host")),
+                    MenuNode::item("help.show-log-files", fl!("menu-help-show-log-files"))
+                        .enabled(self.can_show_log_files()),
                     MenuNode::separator(),
                     MenuNode::item("help.about", fl!("menu-help-about")),
                 ],

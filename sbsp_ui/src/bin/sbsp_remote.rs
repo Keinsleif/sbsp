@@ -2,6 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 fn main() -> iced::Result {
-    sbsp_ui::logging::init();
+    sbsp_ui::logging::init("com.keinsleif.sbsp.remote", "sbsp_remote");
     sbsp_ui::remote::run()
 }

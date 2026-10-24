@@ -271,5 +271,6 @@ dialog-message-license-pro-title = ライセンスエラー
 dialog-message-license-server-panel = サーバーパネルを利用するには Pro ライセンスが必要です。
 menu-help-credits = クレジット
 menu-help-license = ライセンス
+menu-help-show-log-files = ログファイルを表示
 dialog-credits-version = バージョン
 dialog-credits-third-party = 使用しているライブラリ・素材のライセンス
