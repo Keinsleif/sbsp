@@ -6757,6 +6757,8 @@ dependencies = [
  "sbsp_backend",
  "sbsp_frontend_settings",
  "sbsp_license",
+ "serde",
+ "serde_json",
  "serial_test",
  "tokio",
  "unic-langid",
