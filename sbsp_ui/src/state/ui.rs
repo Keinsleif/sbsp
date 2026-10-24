@@ -27,14 +27,16 @@ use std::collections::HashSet;
 use sbsp_backend::api::Permissions;
 use sbsp_backend::model::cue::{Cue, Uuid};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Mode {
     Edit,
     Run,
     View,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum DisplayMode {
     Elapsed,
     Remain,
@@ -49,7 +51,8 @@ impl DisplayMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum SideBarTab {
     ActiveCues,
     Meter,

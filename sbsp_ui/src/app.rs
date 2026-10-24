@@ -40,6 +40,7 @@ use crate::state::{
     playback::PlaybackState,
     ui::{Mode, SideBarTab, UiState},
 };
+use crate::persist::{Saved, WindowRect};
 use crate::theme::ThemeMode;
 use crate::widgets::{divider, field, menu_bar, modal, toast};
 
@@ -71,14 +72,32 @@ const METER_TICK: Duration = Duration::from_millis(33);
 const METER_MAX_DT: f32 = 0.1;
 
 pub fn run(target: &'static str) -> iced::Result {
-    iced::application(move || State::new(target), State::update, State::view)
+    let saved = crate::persist::load(target);
+    // The window opens where and how big it was last time, if that still
+    // makes sense.
+    let rect = saved.window.filter(WindowRect::is_usable);
+    let size = rect.map_or(iced::Size::new(1280.0, 720.0), |rect| {
+        iced::Size::new(rect.width, rect.height)
+    });
+    let position = rect
+        .and_then(|rect| rect.position())
+        .map_or(iced::window::Position::Default, |(x, y)| {
+            iced::window::Position::Specific(iced::Point::new(x, y))
+        });
+
+    iced::application(
+        move || State::new(target, saved.clone()),
+        State::update,
+        State::view,
+    )
         .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
         .theme(|state: &State| crate::theme::resolve(state.theme_mode))
         .subscription(State::subscription)
         // Closing the window goes through `Message::CloseRequested`, which
         // may ask about unsaved changes first.
         .window(iced::window::Settings {
-            size: iced::Size::new(1280.0, 720.0),
+            size,
+            position,
             exit_on_close_request: false,
             ..Default::default()
         })
@@ -150,6 +169,12 @@ pub struct State {
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
+    /// Which app this is ("host", "remote" or "web"); picks where the
+    /// remembered UI state is kept.
+    target: &'static str,
+    /// Where the window is and how big, as the OS last reported it.
+    window_size: Option<iced::Size>,
+    window_position: Option<iced::Point>,
     hide_controls: bool,
     model: ShowModelState,
     ui: UiState,
@@ -221,6 +246,8 @@ pub enum Message {
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
+    WindowMoved(iced::Point),
+    WindowResized(iced::Size),
     /// A file was dropped on the window (one event per file).
     FileDropped(std::path::PathBuf),
     /// No more drops arrived for a moment: handle the batch.
@@ -286,7 +313,7 @@ fn backend_result(result: anyhow::Result<()>) -> Message {
 }
 
 impl State {
-    fn new(target: &'static str) -> (Self, Task<Message>) {
+    fn new(target: &'static str, saved: Saved) -> (Self, Task<Message>) {
         log::info!("starting sbsp_ui ({target})");
 
         #[cfg(feature = "host")]
@@ -341,9 +368,22 @@ impl State {
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
+            target,
+            window_size: saved
+                .window
+                .filter(WindowRect::is_usable)
+                .map(|rect| iced::Size::new(rect.width, rect.height)),
+            window_position: saved
+                .window
+                .and_then(|rect| rect.position())
+                .map(|(x, y)| iced::Point::new(x, y)),
             hide_controls: sbsp_frontend_settings::AppearanceSettings::default().hide_controls,
             model: ShowModelState::default(),
-            ui: UiState::new(is_host),
+            ui: {
+                let mut ui = UiState::new(is_host);
+                saved.apply(&mut ui);
+                ui
+            },
             playback: PlaybackState::new(),
             assets: AssetResults::new(),
             meter: LevelMeterState::default(),
@@ -632,6 +672,8 @@ impl State {
             Message::RemoveCancelled => self.pending_remove = None,
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => self.window_focused = focused,
+            Message::WindowMoved(position) => self.window_position = Some(position),
+            Message::WindowResized(size) => self.window_size = Some(size),
             Message::Toast(message) => self.toasts.update(message),
             Message::Nothing => {}
             Message::Tick(now) => {
@@ -1107,7 +1149,10 @@ impl State {
     /// Does what the user asked once every question is answered.
     fn perform(&mut self, after: file_ops::After) -> Task<Message> {
         match after {
-            file_ops::After::Quit => iced::exit(),
+            file_ops::After::Quit => {
+                self.save_session();
+                iced::exit()
+            }
             file_ops::After::New => self.reset_show(),
             file_ops::After::Open => self.open_show(),
         }
@@ -1192,6 +1237,18 @@ impl State {
     #[cfg(not(feature = "host"))]
     fn export(&self) -> Task<Message> {
         Task::none()
+    }
+
+    /// Writes down what the next run starts from: the window and the UI
+    /// choices. Called when the app quits.
+    fn save_session(&self) {
+        let window = self.window_size.map(|size| WindowRect {
+            width: size.width,
+            height: size.height,
+            x: self.window_position.map(|position| position.x),
+            y: self.window_position.map(|position| position.y),
+        });
+        crate::persist::save(self.target, &Saved::capture(&self.ui, window));
     }
 
     /// Whether there is a log folder to show (not on the web, and not when
@@ -2432,6 +2489,12 @@ impl State {
                 }
                 iced::Event::Window(iced::window::Event::Unfocused) => {
                     Some(Message::WindowFocused(false))
+                }
+                iced::Event::Window(iced::window::Event::Moved(position)) => {
+                    Some(Message::WindowMoved(position))
+                }
+                iced::Event::Window(iced::window::Event::Resized(size)) => {
+                    Some(Message::WindowResized(size))
                 }
                 iced::Event::Keyboard(keyboard::Event::KeyPressed {
                     key,

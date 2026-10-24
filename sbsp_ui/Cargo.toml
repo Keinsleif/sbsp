@@ -34,6 +34,8 @@ required-features = ["web"]
 sbsp_backend = { path = "../sbsp_backend", default-features = false, features = ["protocol"] }
 sbsp_frontend_settings = { path = "../sbsp_frontend_settings", default-features = false }
 anyhow = { version = "1.0" }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 
 iced = { version = "0.14", features = ["canvas", "image", "svg", "markdown", "qr_code", "advanced"] }
 iced_aw = { version = "0.14", default-features = false, features = ["context_menu", "menu", "spinner"] }
