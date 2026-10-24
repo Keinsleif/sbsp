@@ -71,6 +71,9 @@ pub struct BackendHandle {
     pub level_meter: Option<SharedLevel>,
     request_state_sync_tx: mpsc::Sender<()>,
     request_full_state_tx: mpsc::Sender<oneshot::Sender<FullShowState>>,
+    /// A remote's way to ask the host for its output level (which then
+    /// arrives in `level_meter`). The host's own handle has none.
+    level_stream_tx: Option<mpsc::Sender<bool>>,
 }
 
 #[cfg(feature = "backend")]
@@ -78,6 +81,17 @@ impl BackendHandle {
     pub async fn request_state_sync(&self) {
         if let Err(e) = self.request_state_sync_tx.send(()).await {
             log::error!("Error when sending request state sync e={};", e);
+        }
+    }
+
+    /// Starts or stops the host sending its output level to this remote
+    /// handle, to be read from `level_meter`. Does nothing on the host's own
+    /// handle, whose `level_meter` is the engine's.
+    pub async fn stream_level(&self, enabled: bool) {
+        if let Some(tx) = &self.level_stream_tx
+            && tx.send(enabled).await.is_err()
+        {
+            log::debug!("Level stream request dropped: the connection is closed.");
         }
     }
 
@@ -170,6 +184,7 @@ pub fn start_backend(
             level_meter,
             request_state_sync_tx,
             request_full_state_tx,
+            level_stream_tx: None,
         },
         state_rx,
         event_tx,

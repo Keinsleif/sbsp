@@ -172,6 +172,16 @@ impl Link {
         async move { handle.request_state_sync().await }
     }
 
+    /// Asks the host to send its output level (a remote's; the host reads
+    /// its own engine, so for it this does nothing).
+    pub fn stream_level(
+        &self,
+        enabled: bool,
+    ) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let handle = self.handle.clone();
+        async move { handle.stream_level(enabled).await }
+    }
+
     /// The engine's current peak level per channel, if there is an audio
     /// output to measure. Cheap (two atomic loads), so the UI can poll it
     /// every frame.

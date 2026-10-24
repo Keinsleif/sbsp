@@ -1603,9 +1603,12 @@ impl State {
         self.ui.set_permission(port.permission());
         self.assets_stale = true;
         let closed = port.closed();
+        // The host sends its output level only to a connection that asks.
+        let stream_level = port.stream_level(true);
         self.backend = Some(Port::Remote(port));
         Task::batch([
             Task::perform(closed, |()| Message::RemoteClosed),
+            Task::perform(stream_level, |()| Message::Nothing),
             self.request_assets(),
         ])
     }

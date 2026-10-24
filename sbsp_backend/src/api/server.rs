@@ -46,6 +46,13 @@ const SMOOTH_FACTOR: f64 = 0.2;
 const MAX_ATTEMPTS: u32 = 5;
 const WINDOW_DURATION: Duration = Duration::from_secs(60);
 
+/// How often a client that asked for the output level is sent it (at most;
+/// it is not sent while the output is silent).
+const LEVEL_INTERVAL: Duration = Duration::from_millis(50);
+/// Peaks at or below this are silence (the same threshold the host's own
+/// meter uses).
+const LEVEL_SILENCE: f32 = 0.001;
+
 #[derive(Clone)]
 struct ApiState {
     backend_handle: BackendHandle,
@@ -334,6 +341,15 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
 
     let mut shutdown_rx = state.shutdown_tx.subscribe();
 
+    // The output level goes out on its own timer, not through the event
+    // broadcast: it must not be able to crowd real events out of the
+    // channel, and a tick that comes while the connection is busy is
+    // skipped, not queued, so a slow client never builds up a backlog.
+    let mut level_timer = interval(LEVEL_INTERVAL);
+    level_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    let mut level_enabled = false;
+    let mut level_silent = false;
+
     loop {
         tokio::select! {
             result = event_rx.recv() => {
@@ -353,6 +369,22 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                     Err(_) => {
                         log::warn!("Event serving receiver Lagged.");
                     },
+                }
+            }
+            _ = level_timer.tick(), if level_enabled => {
+                if let Some((left, right)) = state.backend_handle.level_meter.as_ref().map(|level| level.get()) {
+                    let silent = left <= LEVEL_SILENCE && right <= LEVEL_SILENCE;
+                    // Silence is sent once, so the client's meter settles,
+                    // and then not at all until sound returns.
+                    if !(silent && level_silent) {
+                        level_silent = silent;
+                        let (left, right) = if silent { (0.0, 0.0) } else { (left, right) };
+                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Level { left, right })
+                            && socket.send(Message::Text(payload.into())).await.is_err() {
+                            log::info!("WebSocket client disconnected (send error).");
+                            break;
+                        }
+                    }
                 }
             }
             _ = ping_timer.tick() => {
@@ -471,6 +503,21 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                             log::info!("WebSocket client disconnected (send error).");
                                             break;
                                         }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
+                                    }
+                                }
+                                WsCommand::SubscribeLevel { enabled } => {
+                                    if permission.contains(Permissions::READ) {
+                                        level_enabled = enabled;
+                                        // The first frame after subscribing
+                                        // is sent whatever the level is.
+                                        level_silent = false;
                                     } else {
                                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
                                         && let Err(e) = socket.send(Message::Text(payload.into())).await {

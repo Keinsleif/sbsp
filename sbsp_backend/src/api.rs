@@ -118,6 +118,9 @@ pub enum WsFeedback {
     Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
     FullShowState(Box<FullShowState>),
+    /// The peak output level of the host's audio engine, per channel. Sent
+    /// only while the client has asked for it (`WsCommand::SubscribeLevel`).
+    Level { left: f32, right: f32 },
     Error(WsError),
 }
 
@@ -132,6 +135,31 @@ pub enum WsCommand {
     RequestAssetList,
     RequestFullShowState,
     RequestSyncState,
+    /// Starts (or stops) the host sending `WsFeedback::Level`. Clients that
+    /// never ask are never sent one.
+    SubscribeLevel { enabled: bool },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_level_messages_have_a_stable_wire_form() {
+        let level = serde_json::to_value(WsFeedback::Level {
+            left: 0.5,
+            right: 0.25,
+        })
+        .unwrap();
+        assert_eq!(
+            level,
+            serde_json::json!({ "type": "level", "data": { "left": 0.5, "right": 0.25 } })
+        );
+
+        let command: WsCommand =
+            serde_json::from_str(r#"{"type":"subscribeLevel","enabled":true}"#).unwrap();
+        assert!(matches!(command, WsCommand::SubscribeLevel { enabled: true }));
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
