@@ -198,7 +198,7 @@ export function useWebsocketApi(): IBackendAdapter {
               case 'permissionDenied':
                 error = {
                   type: 'custom',
-                  id: 2,
+                  id: 3,
                   message: 'Permission Denied.',
                 };
                 break;
@@ -207,6 +207,13 @@ export function useWebsocketApi(): IBackendAdapter {
                   type: 'custom',
                   id: 1,
                   message: 'Authentication Failed.',
+                };
+                break;
+              case 'authenticationRateLimitExceeded':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Authentication rate limit exceeded.',
                 };
                 break;
             }
