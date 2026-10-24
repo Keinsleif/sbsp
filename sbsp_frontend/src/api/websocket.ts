@@ -150,8 +150,44 @@ export function useWebsocketApi(): IBackendAdapter {
             );
             break;
           case 'error':
+            let error: BackendError = {
+              type: 'custom',
+              id: 0,
+              message: 'Unknown error occured.',
+            };
+            switch (msg.data.type) {
+              case 'permissionDenied':
+                error = {
+                  type: 'custom',
+                  id: 3,
+                  message: 'Permission Denied.',
+                };
+                break;
+              case 'authenticationFailed':
+                error = {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Authentication Failed.',
+                };
+                break;
+              case 'authenticationRateLimitExceeded':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Authentication rate limit exceeded.',
+                };
+                break;
+            }
+            Object.values(websocketApiState.backendEventListeners).forEach((cb) =>
+              cb({
+                type: 'operationFailed',
+                param: {
+                  error: error,
+                },
+              }),
+            );
             break;
-        }
+          }
       };
       const mainEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
