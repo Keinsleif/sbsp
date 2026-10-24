@@ -24,8 +24,13 @@ const props = withDefaults(
 const volume = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
+type DragInfo = {
+  pointerId: number,
+  lastValue: number,
+};
+
 let sliderChanging = false;
-let pointerId: number | null = null;
+let dragInfo: DragInfo | null = null;
 
 const faderPosition = computed({
   get() {
@@ -38,16 +43,29 @@ const faderPosition = computed({
 
 const onPointerDown = (e: PointerEvent) => {
   sliderChanging = true;
-  pointerId = e.pointerId;
+  dragInfo = {
+    pointerId: e.pointerId,
+    lastValue: faderPosition.value,
+  };
   window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerCancel);
 };
 
 const onPointerUp = (e: PointerEvent) => {
-  if (e.pointerId !== pointerId) return;
+  if (e.pointerId !== dragInfo?.pointerId) return;
   window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
   flushFader();
-  pointerId = null;
+  dragInfo = null;
 };
+
+const onPointerCancel = (e: PointerEvent) => {
+  if (e.pointerId !== dragInfo?.pointerId) return;
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+  faderPosition.value = dragInfo.lastValue;
+  dragInfo = null;
+}
 
 const flushFader = debounce(() => {
   if (sliderChanging) {
@@ -85,6 +103,7 @@ const tickLabels = computed(() => {
 
 onUnmounted(() => {
   window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
 });
 </script>
 
