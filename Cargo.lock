@@ -6768,6 +6768,7 @@ name = "sbsp_ui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "chrono",
  "dark-light",
  "dirs 5.0.1",
