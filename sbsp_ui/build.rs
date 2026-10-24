@@ -7,6 +7,16 @@
 //! `cargo check` works without building the web target first.
 
 fn main() {
+    // `backend` is on when the app has a backend to talk to: the host's own,
+    // or a remote's connection to one. Most of the app's backend handling is
+    // the same for both, and is gated on this instead of on `host`.
+    println!("cargo:rustc-check-cfg=cfg(backend)");
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
+        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
+    {
+        println!("cargo:rustc-cfg=backend");
+    }
+
     let _ = std::fs::create_dir_all("web_dist");
     println!("cargo:rerun-if-changed=web_dist");
 }

@@ -29,17 +29,16 @@ use std::sync::Arc;
 
 use sbsp_backend::api::{ApiServerOptions, server::start_apiserver_with};
 use sbsp_backend::controller::state::ShowState;
-use sbsp_backend::{BackendHandle, BackendSettings, start_backend};
+use sbsp_backend::{BackendSettings, start_backend};
 use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
 use sbsp_license::{LicenseManager, data::LicenseInformation};
 use tokio::sync::{broadcast, watch};
 
-use crate::port::{Control, FullState, ModelEdit, PortEvent};
+use crate::port::{FullState, Link};
 
 #[derive(Clone)]
 pub struct HostPort {
-    handle: BackendHandle,
-    event_tx: broadcast::Sender<PortEvent>,
+    link: Link,
     // The backend's view of the settings (audio hardware and the like).
     // Keeping the sender alive also keeps the channel open: a dropped one
     // would look like a shutdown to the backend's loops.
@@ -91,6 +90,14 @@ fn license_manager() -> LicenseManager {
     manager
 }
 
+impl std::ops::Deref for HostPort {
+    type Target = Link;
+
+    fn deref(&self) -> &Link {
+        &self.link
+    }
+}
+
 impl HostPort {
     /// Starts the backend in-process: loads settings (or falls back to
     /// defaults, logging why), starts the backend with them, and fetches
@@ -118,8 +125,7 @@ impl HostPort {
         let full_state = handle.get_full_state().await?;
 
         let port = Self {
-            handle,
-            event_tx,
+            link: Link::new(handle, event_tx, 0),
             settings_tx: Arc::new(settings_tx),
             settings,
             state_rx,
@@ -191,9 +197,9 @@ impl HostPort {
         options: ApiServerOptions,
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
         let server = self.server.clone();
-        let handle = self.handle.clone();
+        let handle = self.link.handle();
         let state_rx = self.state_rx.clone();
-        let event_tx = self.event_tx.clone();
+        let event_tx = self.link.event_tx();
         async move {
             let mut server = server.lock().await;
             server.options = options.clone();
@@ -246,180 +252,7 @@ impl HostPort {
         async move { settings.export_to_file(&path).await }
     }
 
-    pub async fn get_full_state(&self) -> anyhow::Result<FullState> {
-        self.handle.get_full_state().await
-    }
-
-    /// A cloned handle for issuing calls from a detached `Task`, since
-    /// `HostPort` itself usually lives behind `&self`/`&mut self` on `App`.
-    pub fn handle(&self) -> BackendHandle {
-        self.handle.clone()
-    }
-
-    /// Sends playback commands in order. Stops at the first failure, since
-    /// a failed send means the controller is gone and the rest would fail
-    /// the same way.
-    ///
-    /// The returned future owns what it needs (a cloned handle), so it can
-    /// be handed straight to `Task::perform` without borrowing `self`.
-    pub fn send(
-        &self,
-        controls: Vec<Control>,
-    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        use sbsp_backend::action::{AudioAction, CueAction};
-
-        let controller = self.handle.controller_handle.clone();
-        async move {
-            for control in controls {
-                match control {
-                    Control::Execute(id) => controller.execute(id).await?,
-                    Control::Load(id) => controller.load(id).await?,
-                    Control::Pause(id) => controller.pause(id).await?,
-                    Control::Resume(id) => controller.resume(id).await?,
-                    Control::Stop(id) => controller.stop(id).await?,
-                    Control::SeekBy(id, amount) => controller.seek_by(id, amount).await?,
-                    Control::SeekTo(id, position) => controller.seek_to(id, position).await?,
-                    Control::ToggleRepeat(id) => {
-                        controller
-                            .perform_action(id, CueAction::Audio(AudioAction::ToggleRepeat))
-                            .await?
-                    }
-                    Control::SetVolume(id, volume) => {
-                        controller
-                            .perform_action(
-                                id,
-                                CueAction::Audio(AudioAction::SetVolume(
-                                    sbsp_backend::model::cue::audio::Decibels::from(volume as f32),
-                                )),
-                            )
-                            .await?
-                    }
-                    Control::PauseAll => controller.pause_all().await?,
-                    Control::ResumeAll => controller.resume_all().await?,
-                    Control::StopAll => controller.stop_all().await?,
-                }
-            }
-            Ok(())
-        }
-    }
-
-    /// Applies a model edit. The result comes back as `CueListUpdated`
-    /// (and `CueRemoved`), like any other change; this only reports
-    /// whether the backend took the command.
-    pub fn edit(
-        &self,
-        edit: ModelEdit,
-    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        let handle = self.handle.clone();
-        async move {
-            let model = &handle.model_handle;
-            match edit {
-                ModelEdit::AddCues { mut cues, position } => match cues.len() {
-                    0 => Ok(()),
-                    1 => model.add_cue(cues.remove(0), position).await,
-                    _ => model.add_cues(cues, position).await,
-                },
-                ModelEdit::AddGroup {
-                    group,
-                    position,
-                    members,
-                } => {
-                    let group_id = group.id;
-                    model.add_cue(group, position).await?;
-                    if members.is_empty() {
-                        return Ok(());
-                    }
-                    model
-                        .move_cues(
-                            members.into_iter().collect(),
-                            sbsp_backend::manager::InsertPosition::Inside {
-                                target: Some(group_id),
-                                index: Some(0),
-                            },
-                        )
-                        .await
-                }
-                ModelEdit::RemoveCues(ids) => model.remove_cues(ids.into_iter().collect()).await,
-                ModelEdit::MoveCues { ids, position } => {
-                    model.move_cues(ids.into_iter().collect(), position).await
-                }
-                ModelEdit::RenumberCues {
-                    ids,
-                    start_from,
-                    increment,
-                    prefix,
-                    suffix,
-                } => {
-                    model
-                        .renumber_cues(ids, start_from, increment, prefix, suffix)
-                        .await
-                }
-                ModelEdit::UpdateCue(cue) => model.update_cue(cue).await,
-                ModelEdit::UpdateShowSettings(settings) => model.update_settings(settings).await,
-                ModelEdit::RenameShow(name) => model.update_model_name(name).await,
-            }
-        }
-    }
-
-    /// Asks the asset processor to analyze `path` (metadata, waveform,
-    /// peak). The answer comes back later as `AssetMetadata`/`AssetResult`
-    /// events, so this only reports whether the request was queued.
-    pub fn request_asset(
-        &self,
-        path: std::path::PathBuf,
-    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        let processor = self.handle.asset_processor_handle.clone();
-        async move { processor.request_file_asset_data(path).await }
-    }
-
-    /// The engine's current peak level per channel, if there is an audio
-    /// output to measure. Cheap (two atomic loads), so the UI can poll it
-    /// every frame.
-    pub fn level(&self) -> Option<(f32, f32)> {
-        self.handle.level_meter.as_ref().map(|level| level.get())
-    }
-
     pub fn settings(&self) -> Arc<SettingsManager<GlobalHostSettings>> {
         self.settings.clone()
-    }
-
-    /// A `Subscription` streaming every backend event. Safe to return
-    /// (recomputed) from `subscription()` on every call: `Source`'s `Hash`
-    /// impl is a constant, so iced treats every call as the same logical
-    /// subscription and only spawns the listener once.
-    pub fn events(&self) -> iced::Subscription<PortEvent> {
-        struct Source(broadcast::Sender<PortEvent>);
-
-        // Deliberately hashes a constant rather than the sender itself:
-        // this is a singleton (one backend per app run), so identity here
-        // only needs to say "the same logical subscription as last time",
-        // not distinguish between instances.
-        impl std::hash::Hash for Source {
-            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-                "sbsp-backend-events".hash(state);
-            }
-        }
-
-        iced::Subscription::run_with(Source(self.event_tx.clone()), |Source(event_tx)| {
-            let mut event_rx = event_tx.subscribe();
-
-            iced::stream::channel(64, async move |mut output| {
-                use iced::futures::SinkExt;
-
-                loop {
-                    match event_rx.recv().await {
-                        Ok(event) => {
-                            if output.send(event).await.is_err() {
-                                break;
-                            }
-                        }
-                        Err(broadcast::error::RecvError::Closed) => break,
-                        Err(broadcast::error::RecvError::Lagged(skipped)) => {
-                            log::warn!("Backend event subscriber lagged, skipped {skipped} events");
-                        }
-                    }
-                }
-            })
-        })
     }
 }

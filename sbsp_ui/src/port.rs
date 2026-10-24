@@ -17,10 +17,62 @@
 //! `PortEvent`/`FullState` should become real enums/structs defined here,
 //! with `From`/`TryFrom` conversions on each platform, rather than a
 //! shared alias. Not needed yet, so not done yet.
-#[cfg(any(feature = "host", feature = "remote"))]
+#[cfg(backend)]
+mod link;
+
+#[cfg(backend)]
+pub use link::Link;
+#[cfg(backend)]
 pub use sbsp_backend::FullShowState as FullState;
-#[cfg(any(feature = "host", feature = "remote"))]
+#[cfg(backend)]
 pub use sbsp_backend::event::BackendEvent as PortEvent;
+
+/// The backend the app talks to: the host's own, or the one a remote is
+/// connected to. Everything the two share is on [`Link`], which this
+/// derefs to; what only one has is reached through `host()` / `remote()`.
+#[cfg(backend)]
+#[derive(Clone)]
+pub enum Port {
+    #[cfg(feature = "host")]
+    Host(crate::host::backend::HostPort),
+    #[cfg(feature = "remote")]
+    Remote(crate::remote::backend::RemotePort),
+}
+
+#[cfg(backend)]
+impl std::ops::Deref for Port {
+    type Target = Link;
+
+    fn deref(&self) -> &Link {
+        match self {
+            #[cfg(feature = "host")]
+            Port::Host(port) => port,
+            #[cfg(feature = "remote")]
+            Port::Remote(port) => port,
+        }
+    }
+}
+
+#[cfg(backend)]
+impl Port {
+    #[cfg(feature = "host")]
+    pub fn host(&self) -> Option<&crate::host::backend::HostPort> {
+        match self {
+            Port::Host(port) => Some(port),
+            #[cfg(feature = "remote")]
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "remote")]
+    pub fn remote(&self) -> Option<&crate::remote::backend::RemotePort> {
+        match self {
+            Port::Remote(port) => Some(port),
+            #[cfg(feature = "host")]
+            _ => None,
+        }
+    }
+}
 
 /// A playback command from the UI to whichever backend it talks to. Kept
 /// as data (not a call on `HostPort`) so a remote/web port can later
