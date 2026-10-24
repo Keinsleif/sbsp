@@ -68,6 +68,7 @@ impl AppState {
                 port: 5800,
                 discoverry: None,
                 auth_map: vec![],
+                trust_ip_headers: false,
             }),
             shutdown_tx: Mutex::new(None),
             level_meter_tx,
