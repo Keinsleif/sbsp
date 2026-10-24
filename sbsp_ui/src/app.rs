@@ -1564,11 +1564,10 @@ impl State {
                     other,
                     settings_dialog::Message::SelectTab(_)
                         | settings_dialog::Message::SelectTemplate(_)
-                ) {
-                    if let Some(outcome) = self.fields.flush() {
+                )
+                    && let Some(outcome) = self.fields.flush() {
                         self.apply_settings_outcome(&outcome);
                     }
-                }
                 if let Some(dialog) = &mut self.settings_dialog {
                     dialog.update(&other);
                 }
