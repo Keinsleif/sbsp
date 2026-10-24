@@ -24,7 +24,7 @@ use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 
 use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
-#[cfg(feature = "host")]
+#[cfg(backend)]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{
     credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, renumber, server_panel,
@@ -48,7 +48,9 @@ use crate::widgets::{divider, field, menu_bar, modal, toast};
 use crate::host::backend::HostPort;
 use crate::port::{Control, ModelEdit};
 #[cfg(feature = "host")]
-use crate::port::{FullState, PortEvent};
+use crate::port::FullState;
+#[cfg(backend)]
+use crate::port::{Port, PortEvent};
 
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
@@ -196,8 +198,10 @@ pub struct State {
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
     assets_stale: bool,
     toasts: toast::Toasts,
-    #[cfg(feature = "host")]
-    backend: Option<HostPort>,
+    /// What the app talks to: the host's own backend, or the one a remote
+    /// is connected to.
+    #[cfg(backend)]
+    backend: Option<Port>,
 }
 
 #[derive(Clone)]
@@ -244,7 +248,7 @@ pub enum Message {
     /// A save finished: whether it happened (`false`: the dialog was
     /// cancelled), then what was waiting for it.
     FileSaved(Result<bool, String>, Option<file_ops::After>),
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
     Header(header::Message),
@@ -272,9 +276,9 @@ pub enum Message {
     Nothing,
     #[cfg(feature = "host")]
     BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     PortEvent(PortEvent),
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     BackendError(String),
     /// The settings read from a file the user chose (`None`: cancelled).
     #[cfg(feature = "host")]
@@ -283,7 +287,7 @@ pub enum Message {
 
 /// What to tell the user about a failed backend operation. A custom error
 /// has no message here.
-#[cfg(any(test, feature = "host"))]
+#[cfg(any(test, backend))]
 fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> {
     use sbsp_backend::event::BackendError as E;
     let (title, detail) = match error {
@@ -317,7 +321,7 @@ fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> 
 
 /// Turns the outcome of a fire-and-forget backend call into a `Message`
 /// (`Task::perform` needs one value either way).
-#[cfg(feature = "host")]
+#[cfg(backend)]
 fn backend_result(result: anyhow::Result<()>) -> Message {
     match result {
         Ok(()) => Message::Nothing,
@@ -408,7 +412,7 @@ impl State {
             template_editor: editor::Editor::default(),
             assets_stale: false,
             toasts: toast::Toasts::new(),
-            #[cfg(feature = "host")]
+            #[cfg(backend)]
             backend: None,
         };
 
@@ -556,7 +560,12 @@ impl State {
                 self.save_appearance()
             }
             #[cfg(feature = "host")]
-            message @ (Message::BackendStarted(..) | Message::PortEvent(_)) => {
+            message @ Message::BackendStarted(..) => {
+                self.apply(message);
+                self.request_assets()
+            }
+            #[cfg(backend)]
+            message @ Message::PortEvent(_) => {
                 self.apply(message);
                 self.request_assets()
             }
@@ -593,7 +602,7 @@ impl State {
         let appearance = &mut self.host_settings.appearance;
         appearance.dark_mode = preferences::dark_mode(self.theme_mode);
         appearance.language = Some(self.lang.setting().to_owned());
-        match &self.backend {
+        match self.backend.as_ref().and_then(Port::host) {
             Some(backend) => Task::perform(
                 backend.save_settings(self.host_settings.clone()),
                 backend_result,
@@ -735,17 +744,16 @@ impl State {
                 );
                 self.ui
                     .set_permission(sbsp_backend::api::Permissions::all());
-                self.backend = Some(backend);
+                self.backend = Some(Port::Host(backend));
                 self.assets_stale = true;
             }
-            #[cfg(feature = "host")]
+            #[cfg(backend)]
             Message::AssetRequestFailed(path, message) => {
                 log::warn!("asset request for {} failed: {message}", path.display());
                 self.assets.add_error(path);
             }
-            #[cfg(feature = "host")]
+            #[cfg(backend)]
             Message::PortEvent(event) => self.handle_port_event(event),
-            #[cfg(feature = "host")]
             #[cfg(feature = "host")]
             Message::SettingsImported(result) => match result {
                 Ok(Some(settings)) => {
@@ -761,7 +769,7 @@ impl State {
                     );
                 }
             },
-            #[cfg(feature = "host")]
+            #[cfg(backend)]
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
@@ -779,8 +787,8 @@ impl State {
             .min(METER_MAX_DT);
         self.last_meter_tick = Some(now);
 
-        #[cfg(feature = "host")]
-        if let Some((left, right)) = self.backend.as_ref().and_then(HostPort::level) {
+        #[cfg(backend)]
+        if let Some((left, right)) = self.backend.as_ref().and_then(|backend| backend.level()) {
             // The Tauri host only forwards non-silent frames; same here.
             if left > 0.001 || right > 0.001 {
                 self.meter.push(left, right);
@@ -1173,14 +1181,14 @@ impl State {
     }
 
     /// Whether the show has changes that were not saved.
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn is_modified(&self) -> bool {
         self.backend
             .as_ref()
             .is_some_and(|backend| backend.handle().model_handle.is_modified())
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(not(backend))]
     fn is_modified(&self) -> bool {
         false
     }
@@ -1199,7 +1207,7 @@ impl State {
 
     #[cfg(feature = "host")]
     fn reset_show(&self) -> Task<Message> {
-        let Some(backend) = &self.backend else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host) else {
             return Task::none();
         };
         let handle = backend.handle();
@@ -1211,7 +1219,7 @@ impl State {
 
     #[cfg(feature = "host")]
     fn open_show(&self) -> Task<Message> {
-        let Some(backend) = &self.backend else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host) else {
             return Task::none();
         };
         let handle = backend.handle();
@@ -1226,7 +1234,7 @@ impl State {
     /// Saves (or saves as); `after` is what waits for it.
     #[cfg(feature = "host")]
     fn save(&self, ask_for_path: bool, after: Option<file_ops::After>) -> Task<Message> {
-        let Some(backend) = &self.backend else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host) else {
             return Task::none();
         };
         let handle = backend.handle();
@@ -1240,7 +1248,7 @@ impl State {
 
     #[cfg(feature = "host")]
     fn export(&self) -> Task<Message> {
-        let Some(backend) = &self.backend else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host) else {
             return Task::none();
         };
         let handle = backend.handle();
@@ -1323,7 +1331,7 @@ impl State {
     fn license_info(&self) -> Option<license_dialog::Info> {
         use sbsp_license::data::LicenseEdition;
 
-        let info = self.backend.as_ref()?.license_info()?;
+        let info = self.backend.as_ref().and_then(Port::host)?.license_info()?;
         Some(license_dialog::Info {
             pro: info.edition == LicenseEdition::Pro,
             owner: info.owner,
@@ -1366,7 +1374,7 @@ impl State {
     /// Asks for a license file and activates it.
     #[cfg(feature = "host")]
     fn activate_license(&self) -> Task<Message> {
-        let Some(backend) = self.backend.clone() else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
         crate::host::files::dialog().then(move |dialog| {
@@ -1396,7 +1404,7 @@ impl State {
     /// said what the server is doing.
     #[cfg(feature = "host")]
     fn open_server_panel(&mut self) -> Task<Message> {
-        match &self.backend {
+        match self.backend.as_ref().and_then(Port::host) {
             // As in the original, the server panel needs a Pro license.
             Some(backend) if !backend.is_pro() => {
                 self.toasts.push(
@@ -1451,7 +1459,7 @@ impl State {
     /// The panel's Start / Stop button.
     #[cfg(feature = "host")]
     fn toggle_server(&mut self) -> Task<Message> {
-        let (Some(panel), Some(backend)) = (&self.server_panel, self.backend.clone()) else {
+        let (Some(panel), Some(backend)) = (&self.server_panel, self.backend.as_ref().and_then(Port::host).cloned()) else {
             return Task::none();
         };
         if panel.running {
@@ -1490,7 +1498,7 @@ impl State {
     /// Edit > Import global settings: replaces the settings with a file's.
     #[cfg(feature = "host")]
     fn import_settings(&self) -> Task<Message> {
-        let Some(backend) = self.backend.clone() else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
         crate::host::files::dialog().then(move |dialog| {
@@ -1510,7 +1518,7 @@ impl State {
     /// Edit > Export global settings: writes the settings to a file.
     #[cfg(feature = "host")]
     fn export_settings(&self) -> Task<Message> {
-        let Some(backend) = self.backend.clone() else {
+        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
         crate::host::files::dialog().then(move |dialog| {
@@ -1725,7 +1733,7 @@ impl State {
         if let Some(audio) = audio {
             settings.audio = audio;
         }
-        match &self.backend {
+        match self.backend.as_ref().and_then(Port::host) {
             Some(backend) => Task::perform(
                 backend.save_settings(self.host_settings.clone()),
                 backend_result,
@@ -1873,7 +1881,7 @@ impl State {
     /// the duration). The original did this lazily as rows rendered; the
     /// processor already bounds its own concurrency, so asking up front is
     /// fine and keeps `view()` free of side effects.
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn request_assets(&mut self) -> Task<Message> {
         use sbsp_backend::model::cue::CueParam;
 
@@ -1908,7 +1916,7 @@ impl State {
         }))
     }
 
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn send(&self, controls: Vec<Control>) -> Task<Message> {
         let Some(backend) = &self.backend else {
             return Task::none();
@@ -1920,8 +1928,8 @@ impl State {
         Task::perform(backend.send(controls), backend_result)
     }
 
-    /// Remote/web have no backend connection yet (Phase 8/9).
-    #[cfg(not(feature = "host"))]
+    /// Web has no backend connection yet (Phase 9).
+    #[cfg(not(backend))]
     fn send(&self, controls: Vec<Control>) -> Task<Message> {
         if !controls.is_empty() {
             log::warn!("no backend to send {controls:?} to");
@@ -1929,7 +1937,7 @@ impl State {
         Task::none()
     }
 
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
         let Some(backend) = &self.backend else {
             return Task::none();
@@ -1937,8 +1945,8 @@ impl State {
         Task::perform(backend.edit(edit), backend_result)
     }
 
-    /// Remote/web have no backend connection yet (Phase 8/9).
-    #[cfg(not(feature = "host"))]
+    /// Web has no backend connection yet (Phase 9).
+    #[cfg(not(backend))]
     fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
         log::warn!("no backend to send {edit:?} to");
         Task::none()
@@ -2346,7 +2354,7 @@ impl State {
     /// Replaces the whole model (a load or a reset): selection starts
     /// over, cached asset results are dropped, and the playback cursor
     /// goes to the first cue (a load) or nowhere (a reset).
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn replace_model(&mut self, model: ShowModelState, cursor_to_first: bool) {
         self.model = model;
         self.assets.clear();
@@ -2366,7 +2374,7 @@ impl State {
     /// toasts, and a trigger/completion of the cue under the playback
     /// cursor may advance the cursor, per the cue's override or else the
     /// show-wide `cursor_advance_trigger`.
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn on_cue_status(&mut self, param: &sbsp_backend::event::CueStatusEventParam) {
         use sbsp_backend::event::CueStatusEventParam as E;
 
@@ -2402,7 +2410,7 @@ impl State {
         }
     }
 
-    #[cfg(feature = "host")]
+    #[cfg(backend)]
     fn handle_port_event(&mut self, event: PortEvent) {
         use sbsp_backend::event::BackendEvent;
 
@@ -2465,13 +2473,13 @@ impl State {
             iced::time::every(POSITION_TICK).map(Message::Tick)
         };
 
-        #[cfg(feature = "host")]
+        #[cfg(backend)]
         let backend_events = self
             .backend
             .as_ref()
             .map(|backend| backend.events().map(Message::PortEvent))
             .unwrap_or(Subscription::none());
-        #[cfg(not(feature = "host"))]
+        #[cfg(not(backend))]
         let backend_events = Subscription::none();
 
         // Once a second is enough for the header clock to never show a
