@@ -270,7 +270,7 @@ dialog-license-success-message =
     The license file has been successfully imported into the application.
     Please delete the original license file or store it in a safe place.
 
-    * You can re-download the license file from the store page.
+    {"*"} You can re-download the license file from the store page.
 dialog-license-success-title = License Activation success!
 dialog-license-title = License
 dialog-message-license-pro-title = License Error
