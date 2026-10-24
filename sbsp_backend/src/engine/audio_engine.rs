@@ -443,6 +443,26 @@ impl AudioEngine {
                         });
                     }
                     self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
+
+                    let keys: Vec<_> = self.loaded_sounds.keys().cloned().collect();
+                    for id in keys {
+                        let Some(loaded_sound) = self.loaded_sounds.get(&id) else {
+                            continue;
+                        };
+                        let event = match loaded_sound.state() {
+                            AudioPlaybackState::Stopped => {
+                                AudioEngineEvent::Stopped { instance_id: id }
+                            }
+                            AudioPlaybackState::Completed => {
+                                AudioEngineEvent::Completed { instance_id: id }
+                            }
+                            _ => continue,
+                        };
+                        if self.event_tx.send(EngineEvent::Audio(event)).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
+                        }
+                    }
+                    self.loaded_sounds.retain(|_, value| !matches!(value.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
                 },
                 else => break
             }
