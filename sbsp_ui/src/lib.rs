@@ -11,6 +11,7 @@ pub mod domain;
 pub mod features;
 pub mod i18n;
 pub mod menu;
+pub mod persist;
 pub mod port;
 pub mod state;
 pub mod theme;

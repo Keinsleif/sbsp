@@ -17,8 +17,11 @@ use super::*;
 /// it with here regardless. Run with no features (`cargo test -p
 /// sbsp_ui`, no `--features`), so this never attempts the `host`-only
 /// backend boot in the first place.
+///
+/// The target is "test", which has no storage folder, so quitting in a
+/// test never writes the developer's real UI state file.
 fn new_state() -> State {
-    State::new("host").0
+    State::new("test", crate::persist::Saved::default()).0
 }
 
 #[test]
@@ -1332,4 +1335,25 @@ fn the_license_dialog_shows_the_edition_and_closes_in_two_steps() {
     assert!(!state.license_dialog.as_ref().unwrap().activated, "the notice goes first");
     let _ = state.update(escape());
     assert!(state.license_dialog.is_none());
+}
+
+#[test]
+fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
+    use crate::persist::{Saved, WindowRect};
+
+    let saved = Saved {
+        window: Some(WindowRect { width: 1000.0, height: 600.0, x: Some(40.0), y: Some(30.0) }),
+        mode: Some(Mode::Run),
+        is_bottom_tab_open: Some(false),
+        ..Saved::default()
+    };
+    let (mut state, _) = State::new("test", saved);
+    assert_eq!(state.ui.mode, Mode::Run);
+    assert!(!state.ui.is_bottom_tab_open);
+    assert!(state.ui.is_right_sidebar_open);
+
+    let _ = state.update(Message::WindowMoved(iced::Point::new(5.0, 6.0)));
+    let _ = state.update(Message::WindowResized(iced::Size::new(900.0, 500.0)));
+    assert_eq!(state.window_position, Some(iced::Point::new(5.0, 6.0)));
+    assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
 }
