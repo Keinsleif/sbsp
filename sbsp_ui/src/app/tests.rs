@@ -1418,9 +1418,11 @@ mod remote {
     #[test]
     #[serial]
     fn without_a_connection_the_connect_screen_is_all_there_is() {
-        let state = new_state();
+        let state = State::new("remote", crate::persist::Saved::default()).0;
         assert!(state.backend.is_none());
+        assert!(state.needs_connection());
         assert!(state.ui.available_modes().is_empty());
         let _ = state.view();
+        assert!(!new_state().needs_connection(), "the tests' own state shows the main screen");
     }
 }

@@ -2949,7 +2949,7 @@ impl State {
 
         // A remote without a connection has only the connect screen.
         #[cfg(feature = "remote")]
-        if self.backend.is_none() {
+        if self.needs_connection() {
             return self.connect_view(header.into());
         }
 
@@ -3170,6 +3170,14 @@ impl State {
             None => content,
         };
         self.toasts.overlay(content, Message::Toast)
+    }
+
+    /// Whether this is a remote that has no host to work with yet. (Not
+    /// any build with the `remote` feature: the tests of the main screen
+    /// run in one, with `target` "test".)
+    #[cfg(feature = "remote")]
+    fn needs_connection(&self) -> bool {
+        self.target == "remote" && self.backend.is_none()
     }
 
     #[cfg(feature = "remote")]
