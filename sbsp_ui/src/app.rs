@@ -98,6 +98,7 @@ pub fn run(target: &'static str) -> iced::Result {
         .window(iced::window::Settings {
             size,
             position,
+            maximized: rect.is_some_and(|rect| rect.maximized),
             exit_on_close_request: false,
             ..Default::default()
         })
@@ -175,6 +176,9 @@ pub struct State {
     /// Where the window is and how big, as the OS last reported it.
     window_size: Option<iced::Size>,
     window_position: Option<iced::Point>,
+    /// Whether the window is maximized (the size and position above are
+    /// from before that).
+    window_maximized: bool,
     hide_controls: bool,
     model: ShowModelState,
     ui: UiState,
@@ -246,8 +250,17 @@ pub enum Message {
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
-    WindowMoved(iced::Point),
-    WindowResized(iced::Size),
+    /// The OS moved or resized the window. Whether the window is maximized
+    /// is asked before the new geometry is remembered (see `WindowSettled`).
+    WindowMoved(iced::window::Id, iced::Point),
+    WindowResized(iced::window::Id, iced::Size),
+    /// The answer: the geometry to remember, unless the window is maximized
+    /// (then the size and place from before it was maximized stay).
+    WindowSettled {
+        size: Option<iced::Size>,
+        position: Option<iced::Point>,
+        maximized: bool,
+    },
     /// A file was dropped on the window (one event per file).
     FileDropped(std::path::PathBuf),
     /// No more drops arrived for a moment: handle the batch.
@@ -377,6 +390,7 @@ impl State {
                 .window
                 .and_then(|rect| rect.position())
                 .map(|(x, y)| iced::Point::new(x, y)),
+            window_maximized: saved.window.is_some_and(|rect| rect.maximized),
             hide_controls: sbsp_frontend_settings::AppearanceSettings::default().hide_controls,
             model: ShowModelState::default(),
             ui: {
@@ -508,6 +522,20 @@ impl State {
             Message::File(command) => self.file_command(command),
             Message::Confirm(answer) => self.answer_confirm(answer),
             Message::CloseRequested => self.request_close(),
+            Message::WindowMoved(id, position) => {
+                iced::window::is_maximized(id).map(move |maximized| Message::WindowSettled {
+                    size: None,
+                    position: Some(position),
+                    maximized,
+                })
+            }
+            Message::WindowResized(id, size) => {
+                iced::window::is_maximized(id).map(move |maximized| Message::WindowSettled {
+                    size: Some(size),
+                    position: None,
+                    maximized,
+                })
+            }
             Message::FileSaved(result, after) => self.file_saved(result, after),
             Message::FileDropped(path) => {
                 self.dropped_files.push(path);
@@ -672,8 +700,19 @@ impl State {
             Message::RemoveCancelled => self.pending_remove = None,
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => self.window_focused = focused,
-            Message::WindowMoved(position) => self.window_position = Some(position),
-            Message::WindowResized(size) => self.window_size = Some(size),
+            Message::WindowSettled {
+                size,
+                position,
+                maximized,
+            } => {
+                self.window_maximized = maximized;
+                if !maximized {
+                    self.window_size = size.or(self.window_size);
+                    self.window_position = position.or(self.window_position);
+                }
+            }
+            // Handled in `update_inner`, which can ask the window.
+            Message::WindowMoved(..) | Message::WindowResized(..) => {}
             Message::Toast(message) => self.toasts.update(message),
             Message::Nothing => {}
             Message::Tick(now) => {
@@ -1247,6 +1286,7 @@ impl State {
             height: size.height,
             x: self.window_position.map(|position| position.x),
             y: self.window_position.map(|position| position.y),
+            maximized: self.window_maximized,
         });
         crate::persist::save(self.target, &Saved::capture(&self.ui, window));
     }
@@ -2444,7 +2484,7 @@ impl State {
         // the cue list) and key presses (hotkeys). Events a focused widget
         // already consumed are skipped, which is also what keeps typing
         // into a text field from firing playback hotkeys.
-        let modifiers = event::listen_with(|event, status, _window| {
+        let modifiers = event::listen_with(|event, status, window| {
             // What a text field being edited needs to know, whether or not
             // a widget consumed the event: a press or Tab may have taken
             // the focus away from it, and Escape that a focused field
@@ -2491,10 +2531,10 @@ impl State {
                     Some(Message::WindowFocused(false))
                 }
                 iced::Event::Window(iced::window::Event::Moved(position)) => {
-                    Some(Message::WindowMoved(position))
+                    Some(Message::WindowMoved(window, position))
                 }
                 iced::Event::Window(iced::window::Event::Resized(size)) => {
-                    Some(Message::WindowResized(size))
+                    Some(Message::WindowResized(window, size))
                 }
                 iced::Event::Keyboard(keyboard::Event::KeyPressed {
                     key,

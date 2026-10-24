@@ -1342,7 +1342,7 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     use crate::persist::{Saved, WindowRect};
 
     let saved = Saved {
-        window: Some(WindowRect { width: 1000.0, height: 600.0, x: Some(40.0), y: Some(30.0) }),
+        window: Some(WindowRect { width: 1000.0, height: 600.0, x: Some(40.0), y: Some(30.0), maximized: true }),
         mode: Some(Mode::Run),
         is_bottom_tab_open: Some(false),
         ..Saved::default()
@@ -1352,8 +1352,21 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     assert!(!state.ui.is_bottom_tab_open);
     assert!(state.ui.is_right_sidebar_open);
 
-    let _ = state.update(Message::WindowMoved(iced::Point::new(5.0, 6.0)));
-    let _ = state.update(Message::WindowResized(iced::Size::new(900.0, 500.0)));
+    assert!(state.window_maximized);
+
+    let settle = |state: &mut State, size, position, maximized| {
+        let _ = state.update(Message::WindowSettled { size, position, maximized });
+    };
+    settle(&mut state, Some(iced::Size::new(900.0, 500.0)), Some(iced::Point::new(5.0, 6.0)), false);
     assert_eq!(state.window_position, Some(iced::Point::new(5.0, 6.0)));
     assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
+    assert!(!state.window_maximized);
+
+    // Maximizing reports the screen-sized window; the size from before
+    // stays, so un-maximizing (and the next start) return to it.
+    settle(&mut state, Some(iced::Size::new(1920.0, 1080.0)), None, true);
+    settle(&mut state, None, Some(iced::Point::new(0.0, 0.0)), true);
+    assert_eq!(state.window_position, Some(iced::Point::new(5.0, 6.0)));
+    assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
+    assert!(state.window_maximized);
 }
