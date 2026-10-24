@@ -2,7 +2,8 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The file dialogs and backend calls behind New / Open / Save / Save As /
-//! Export. Ported from the file commands of `sbsp_app`.
+//! Export (ported from the file commands of `sbsp_app`), and the dialogs for
+//! settings files, which the remote uses too.
 
 use std::time::Duration;
 

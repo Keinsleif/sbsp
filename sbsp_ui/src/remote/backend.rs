@@ -10,7 +10,13 @@
 //! events) is on the shared [`Link`]; this adds what only a connection has:
 //! the permissions the host granted, the address, and the way to end it.
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::path::PathBuf;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
+
+use sbsp_frontend_settings::{GlobalRemoteSettings, manager::SettingsManager};
 
 use sbsp_backend::api::{
     Permissions,
@@ -98,6 +104,66 @@ impl RemotePort {
             file_list.request_file_list().await?;
             Ok(())
         }
+    }
+}
+
+/// Matches the Tauri remote's `identifier`, so the settings it saved are
+/// found by this one.
+const IDENTIFIER: &str = "com.keinsleif.sbsp.remote";
+
+/// `dirs::config_dir()/<identifier>/config.json`.
+fn config_path() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join(IDENTIFIER).join("config.json"))
+}
+
+/// The remote's own settings file. These belong to this computer, not to
+/// a connection, so they are there before (and between) connections.
+#[derive(Clone)]
+pub struct RemoteSettings(Arc<SettingsManager<GlobalRemoteSettings>>);
+
+impl RemoteSettings {
+    /// Loads the settings, or falls back to the defaults (logging why: it
+    /// is expected on a first run).
+    pub async fn load() -> (Self, GlobalRemoteSettings) {
+        let manager = Arc::new(SettingsManager::<GlobalRemoteSettings>::new(config_path()));
+        let settings = match manager.load().await {
+            Ok(loaded) => loaded,
+            Err(e) => {
+                log::info!("using default settings ({e})");
+                GlobalRemoteSettings::default()
+            }
+        };
+        (Self(manager), settings)
+    }
+
+    /// Makes `new` the settings in force and writes them to the file.
+    pub fn save(
+        &self,
+        new: GlobalRemoteSettings,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let manager = self.0.clone();
+        async move {
+            manager.set(new).await;
+            manager.save().await
+        }
+    }
+
+    /// Reads settings from `path` and makes them the settings in force.
+    pub fn import(
+        &self,
+        path: PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<GlobalRemoteSettings>> + Send + 'static
+    {
+        let manager = self.0.clone();
+        async move { manager.import_from_file(&path).await }
+    }
+
+    pub fn export(
+        &self,
+        path: PathBuf,
+    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
+        let manager = self.0.clone();
+        async move { manager.export_to_file(&path).await }
     }
 }
 

@@ -54,13 +54,15 @@ use crate::port::FullState;
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
 #[cfg(feature = "remote")]
-use crate::remote::backend::RemotePort;
+use crate::remote::backend::{RemotePort, RemoteSettings};
 
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 use sbsp_frontend_settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
 #[cfg(feature = "host")]
 use sbsp_frontend_settings::GlobalHostSettings;
+#[cfg(feature = "remote")]
+use sbsp_frontend_settings::GlobalRemoteSettings;
 
 use crate::fl;
 
@@ -76,6 +78,11 @@ const METER_TICK: Duration = Duration::from_millis(33);
 /// Longest step the meter decay takes at once, so a stalled frame (window
 /// dragged, machine asleep) does not drop the bars in a single jump.
 const METER_MAX_DT: f32 = 0.1;
+
+/// How often the backend is asked where the playing cues are (the original
+/// asked every 5 seconds too).
+#[cfg(backend)]
+const SYNC_INTERVAL: Duration = Duration::from_secs(5);
 
 pub fn run(target: &'static str) -> iced::Result {
     let saved = crate::persist::load(target);
@@ -207,6 +214,11 @@ pub struct State {
     /// is connected to.
     #[cfg(backend)]
     backend: Option<Port>,
+    /// The remote's own settings and where they are kept (loaded at start).
+    #[cfg(feature = "remote")]
+    remote_settings: GlobalRemoteSettings,
+    #[cfg(feature = "remote")]
+    remote_store: Option<RemoteSettings>,
     /// The remote's connect screen (shown while there is no connection).
     #[cfg(feature = "remote")]
     connect: connect::Screen,
@@ -289,6 +301,10 @@ pub enum Message {
     BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
     /// The connect screen.
     #[cfg(feature = "remote")]
+    RemoteSettingsLoaded(RemoteSettings, Box<GlobalRemoteSettings>),
+    #[cfg(feature = "remote")]
+    RemoteSettingsImported(Result<Option<Box<GlobalRemoteSettings>>, String>),
+    #[cfg(feature = "remote")]
     Connect(connect::Message),
     /// The hosts found on the network.
     #[cfg(feature = "remote")]
@@ -300,6 +316,9 @@ pub enum Message {
     /// The connection ended.
     #[cfg(feature = "remote")]
     RemoteClosed,
+    /// Time to ask the backend where the playing cues are.
+    #[cfg(backend)]
+    SyncTick,
     #[cfg(backend)]
     PortEvent(PortEvent),
     #[cfg(backend)]
@@ -364,7 +383,11 @@ impl State {
             }
             Err(e) => Message::BackendError(e.to_string()),
         });
-        #[cfg(not(feature = "host"))]
+        #[cfg(all(feature = "remote", not(feature = "host")))]
+        let boot_task = Task::perform(RemoteSettings::load(), |(store, settings)| {
+            Message::RemoteSettingsLoaded(store, Box::new(settings))
+        });
+        #[cfg(not(any(feature = "host", feature = "remote")))]
         let boot_task = Task::none();
 
         let is_host = cfg!(feature = "host");
@@ -439,6 +462,10 @@ impl State {
             toasts: toast::Toasts::new(),
             #[cfg(backend)]
             backend: None,
+            #[cfg(feature = "remote")]
+            remote_settings: GlobalRemoteSettings::default(),
+            #[cfg(feature = "remote")]
+            remote_store: None,
             #[cfg(feature = "remote")]
             connect: connect::Screen::default(),
             #[cfg(feature = "remote")]
@@ -612,6 +639,23 @@ impl State {
                 self.apply(message);
                 self.save_appearance()
             }
+            #[cfg(all(feature = "remote", not(feature = "host")))]
+            message @ (Message::ToggleTheme | Message::ToggleLanguage) => {
+                self.apply(message);
+                self.save_remote_appearance()
+            }
+            #[cfg(feature = "remote")]
+            Message::RemoteSettingsLoaded(store, settings) => {
+                self.apply_preferences(&Preferences::from(&*settings));
+                self.remote_settings = *settings;
+                self.remote_store = Some(store);
+                Task::none()
+            }
+            #[cfg(backend)]
+            Message::SyncTick => match &self.backend {
+                Some(backend) => Task::perform(backend.request_state_sync(), |()| Message::Nothing),
+                None => Task::none(),
+            },
             #[cfg(feature = "host")]
             message @ Message::BackendStarted(..) => {
                 self.apply(message);
@@ -660,6 +704,18 @@ impl State {
                 backend.save_settings(self.host_settings.clone()),
                 backend_result,
             ),
+            None => Task::none(),
+        }
+    }
+
+    /// The remote's View menu choices go into its own settings file.
+    #[cfg(feature = "remote")]
+    fn save_remote_appearance(&mut self) -> Task<Message> {
+        let appearance = &mut self.remote_settings.appearance;
+        appearance.dark_mode = preferences::dark_mode(self.theme_mode);
+        appearance.language = Some(self.lang.setting().to_owned());
+        match &self.remote_store {
+            Some(store) => Task::perform(store.save(self.remote_settings.clone()), backend_result),
             None => Task::none(),
         }
     }
@@ -781,7 +837,10 @@ impl State {
             | Message::Discovered(_)
             | Message::RemoteConnected(..)
             | Message::RemoteFailed(_)
-            | Message::RemoteClosed => {}
+            | Message::RemoteClosed
+            | Message::RemoteSettingsLoaded(..) => {}
+            #[cfg(backend)]
+            Message::SyncTick => {}
             Message::Toast(message) => self.toasts.update(message),
             Message::Nothing => {}
             Message::Tick(now) => {
@@ -819,6 +878,21 @@ impl State {
                 Ok(Some(settings)) => {
                     self.apply_preferences(&Preferences::from(&*settings));
                     self.host_settings = *settings;
+                }
+                Ok(None) => {}
+                Err(message) => {
+                    log::error!("settings import failed: {message}");
+                    self.toasts.push(
+                        toast::Kind::Danger,
+                        format!("{}: {message}", fl!("notification-failed-to-apply-settings")),
+                    );
+                }
+            },
+            #[cfg(feature = "remote")]
+            Message::RemoteSettingsImported(result) => match result {
+                Ok(Some(settings)) => {
+                    self.apply_preferences(&Preferences::from(&*settings));
+                    self.remote_settings = *settings;
                 }
                 Ok(None) => {}
                 Err(message) => {
@@ -1291,9 +1365,9 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             Task::perform(
-                crate::host::files::open(handle.clone(), dialog),
+                crate::files::open(handle.clone(), dialog),
                 backend_result,
             )
         })
@@ -1306,9 +1380,9 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             Task::perform(
-                crate::host::files::save(handle.clone(), dialog, ask_for_path),
+                crate::files::save(handle.clone(), dialog, ask_for_path),
                 move |result| Message::FileSaved(result.map_err(|e| e.to_string()), after),
             )
         })
@@ -1320,9 +1394,9 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             Task::perform(
-                crate::host::files::export(handle.clone(), dialog),
+                crate::files::export(handle.clone(), dialog),
                 |result| match result {
                     Ok(_) => Message::Nothing,
                     Err(error) => Message::BackendError(format!(
@@ -1535,11 +1609,11 @@ impl State {
         let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             let backend = backend.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::host::files::pick_license(dialog).await else {
+                    let Some(path) = crate::files::pick_license(dialog).await else {
                         return Ok(false);
                     };
                     backend
@@ -1659,11 +1733,11 @@ impl State {
         let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             let backend = backend.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::host::files::pick_settings(dialog).await else {
+                    let Some(path) = crate::files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
                     backend.import_settings(path).await.map(|s| Some(Box::new(s)))
@@ -1679,11 +1753,11 @@ impl State {
         let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             let backend = backend.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::host::files::settings_destination(dialog).await else {
+                    let Some(path) = crate::files::settings_destination(dialog).await else {
                         return Ok(());
                     };
                     backend.export_settings(path).await
@@ -1693,12 +1767,50 @@ impl State {
         })
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(all(feature = "remote", not(feature = "host")))]
+    fn import_settings(&self) -> Task<Message> {
+        let Some(store) = self.remote_store.clone() else {
+            return Task::none();
+        };
+        crate::files::dialog().then(move |dialog| {
+            let store = store.clone();
+            Task::perform(
+                async move {
+                    let Some(path) = crate::files::pick_settings(dialog).await else {
+                        return Ok(None);
+                    };
+                    store.import(path).await.map(|s| Some(Box::new(s)))
+                },
+                |result| Message::RemoteSettingsImported(result.map_err(|e| e.to_string())),
+            )
+        })
+    }
+
+    #[cfg(all(feature = "remote", not(feature = "host")))]
+    fn export_settings(&self) -> Task<Message> {
+        let Some(store) = self.remote_store.clone() else {
+            return Task::none();
+        };
+        crate::files::dialog().then(move |dialog| {
+            let store = store.clone();
+            Task::perform(
+                async move {
+                    let Some(path) = crate::files::settings_destination(dialog).await else {
+                        return Ok(());
+                    };
+                    store.export(path).await
+                },
+                backend_result,
+            )
+        })
+    }
+
+    #[cfg(not(any(feature = "host", feature = "remote")))]
     fn import_settings(&self) -> Task<Message> {
         Task::none()
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(not(any(feature = "host", feature = "remote")))]
     fn export_settings(&self) -> Task<Message> {
         Task::none()
     }
@@ -1900,7 +2012,22 @@ impl State {
         }
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(all(feature = "remote", not(feature = "host")))]
+    fn save_preferences(&mut self, _audio: Option<AudioHardwareSettings>) -> Task<Message> {
+        let p = self.preferences.clone();
+        let settings = &mut self.remote_settings;
+        settings.general = p.general;
+        settings.appearance = p.appearance;
+        settings.hotkey = p.hotkey;
+        settings.template = p.template;
+        settings.name_format = p.name_format;
+        match &self.remote_store {
+            Some(store) => Task::perform(store.save(self.remote_settings.clone()), backend_result),
+            None => Task::none(),
+        }
+    }
+
+    #[cfg(not(any(feature = "host", feature = "remote")))]
     fn save_preferences(&mut self, _audio: Option<AudioHardwareSettings>) -> Task<Message> {
         Task::none()
     }
@@ -1998,7 +2125,7 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
         let title = fl!("main-bottom-editor-audio-target-file");
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             let title = title.clone();
             Task::perform(
                 async move {
@@ -2152,7 +2279,7 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_files(&self) -> Task<Message> {
         let title = fl!("menu-cue-audio");
-        crate::host::files::dialog().then(move |dialog| {
+        crate::files::dialog().then(move |dialog| {
             let title = title.clone();
             Task::perform(
                 async move {
@@ -2653,6 +2780,18 @@ impl State {
         #[cfg(not(feature = "remote"))]
         let discovery = Subscription::none();
 
+        // The positions of playing cues are worked out between the
+        // backend's reports; asking for one every few seconds keeps them
+        // from drifting (and, for a remote, from the connection's delay).
+        #[cfg(backend)]
+        let sync = if self.backend.is_some() {
+            iced::time::every(SYNC_INTERVAL).map(|_| Message::SyncTick)
+        } else {
+            Subscription::none()
+        };
+        #[cfg(not(backend))]
+        let sync = Subscription::none();
+
         // Once a second is enough for the header clock to never show a
         // stale second for long; the half-second period keeps it from
         // beating against the second boundary.
@@ -2764,6 +2903,7 @@ impl State {
             close,
             toasts,
             discovery,
+            sync,
             tick,
             clock,
             meter,
@@ -2835,9 +2975,9 @@ impl State {
                         .with_shortcut_opt(shortcut(hotkeys::Action::Duplicate)),
                     MenuNode::separator(),
                     MenuNode::item("edit.import-settings", fl!("menu-edit-import-settings"))
-                        .enabled(cfg!(feature = "host")),
+                        .enabled(cfg!(any(feature = "host", feature = "remote"))),
                     MenuNode::item("edit.export-settings", fl!("menu-edit-export-settings"))
-                        .enabled(cfg!(feature = "host")),
+                        .enabled(cfg!(any(feature = "host", feature = "remote"))),
                     MenuNode::separator(),
                     MenuNode::item("edit.select-all", fl!("menu-edit-select-all-cues"))
                         .with_shortcut_opt(shortcut(hotkeys::Action::SelectAll)),

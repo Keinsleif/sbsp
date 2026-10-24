@@ -160,6 +160,13 @@ impl Link {
         async move { processor.request_file_asset_data(path).await }
     }
 
+    /// Asks for a `SyncState` event (where every playing cue is now), which
+    /// corrects the positions the UI works out in between.
+    pub fn request_state_sync(&self) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let handle = self.handle.clone();
+        async move { handle.request_state_sync().await }
+    }
+
     /// The engine's current peak level per channel, if there is an audio
     /// output to measure. Cheap (two atomic loads), so the UI can poll it
     /// every frame.

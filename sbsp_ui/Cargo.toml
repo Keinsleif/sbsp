@@ -12,7 +12,7 @@ publish.workspace = true
 [features]
 default = []
 host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum"]
-remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager", "dep:rfd"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
 [[bin]]
@@ -52,7 +52,7 @@ unic-langid = { version = "0.9", features = ["macros"] }
 log = { workspace = true }
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"], optional = true }
-# Native file dialogs (host only). Already in the lockfile via the Tauri
+# Native file dialogs (host and remote). Already in the lockfile via the Tauri
 # dialog plugin; Phase 7 uses it for the real file operations.
 rfd = { version = "0.16", optional = true }
 # The web build is served from the host's API server (host only); the same
