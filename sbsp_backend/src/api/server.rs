@@ -349,6 +349,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
     level_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
     let mut level_enabled = false;
     let mut level_silent = false;
+    let mut level_sent = false;
 
     loop {
         tokio::select! {
@@ -378,6 +379,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                     // and then not at all until sound returns.
                     if !(silent && level_silent) {
                         level_silent = silent;
+                        if !std::mem::replace(&mut level_sent, true) {
+                            log::info!("Sending the output level to a client.");
+                        }
                         let (left, right) = if silent { (0.0, 0.0) } else { (left, right) };
                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Level { left, right })
                             && socket.send(Message::Text(payload.into())).await.is_err() {
@@ -515,6 +519,11 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                 WsCommand::SubscribeLevel { enabled } => {
                                     if permission.contains(Permissions::READ) {
                                         level_enabled = enabled;
+                                        level_sent = false;
+                                        log::info!("Output level stream {} for a client.", if enabled { "on" } else { "off" });
+                                        if enabled && state.backend_handle.level_meter.is_none() {
+                                            log::warn!("The output level was requested, but this backend has no level meter.");
+                                        }
                                         // The first frame after subscribing
                                         // is sent whatever the level is.
                                         level_silent = false;

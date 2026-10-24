@@ -64,6 +64,7 @@ pub async fn create_remote_backend(
     let level = SharedLevel::default();
     let level_clone = level.clone();
     let (level_stream_tx, mut level_stream_rx) = mpsc::channel::<bool>(4);
+    let mut level_seen = false;
 
     let model_clone = model.clone();
     let project_status_clone = project_status.clone();
@@ -290,7 +291,12 @@ pub async fn create_remote_backend(
                                             },
                                         }
                                     }
-                                    WsFeedback::Level { left, right } => level_clone.set(left, right),
+                                    WsFeedback::Level { left, right } => {
+                                        if !std::mem::replace(&mut level_seen, true) {
+                                            log::info!("Receiving the host's output level.");
+                                        }
+                                        level_clone.set(left, right);
+                                    }
                                     WsFeedback::Hello { .. } => {},
                                     WsFeedback::Authenticated { .. } => {},
                                 }
@@ -353,6 +359,7 @@ pub async fn create_remote_backend(
                     }
                 }
                 Some(enabled) = level_stream_rx.recv() => {
+                    log::info!("Asking the host to {} its output level.", if enabled { "send" } else { "stop sending" });
                     if let Ok(payload) = serde_json::to_string(&WsCommand::SubscribeLevel { enabled })
                     && websocket.send(Message::Text(payload.into())).await.is_err() {
                         log::info!("WebSocket client disconnected (send error).");
