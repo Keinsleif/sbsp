@@ -42,6 +42,8 @@ const faderPosition = computed({
 });
 
 const onPointerDown = (e: PointerEvent) => {
+  if (dragInfo !== null) return;
+
   sliderChanging = true;
   dragInfo = {
     pointerId: e.pointerId,
