@@ -30,6 +30,11 @@ impl Link {
         }
     }
 
+    /// Which connection this is (see `new`).
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
     pub fn event_tx(&self) -> broadcast::Sender<PortEvent> {
         self.event_tx.clone()
     }

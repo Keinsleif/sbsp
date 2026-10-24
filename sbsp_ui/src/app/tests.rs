@@ -1425,4 +1425,31 @@ mod remote {
         let _ = state.view();
         assert!(!new_state().needs_connection(), "the tests' own state shows the main screen");
     }
+
+    #[test]
+    #[serial]
+    fn the_host_s_files_are_chosen_from_a_dialog_that_closes_when_done() {
+        use crate::features::file_list;
+        use sbsp_backend::api::FileList;
+
+        let mut state = new_state();
+        // No connection: nothing to ask the host, so no dialog.
+        let _ = state.update(Message::OpenFilePicker(file_list::Purpose::Add));
+        assert!(state.file_picker.is_none());
+
+        state.file_picker = Some(file_list::Dialog::new(file_list::Purpose::Add));
+        let _ = state.update(Message::FileListReceived(vec![FileList::File {
+            name: "a.mp3".to_owned(),
+            path: std::path::PathBuf::from("/m/a.mp3"),
+            extension: "mp3".to_owned(),
+        }]));
+        let _ = state.update(Message::FilePicker(file_list::Message::Pick(
+            std::path::PathBuf::from("/m/a.mp3"),
+        )));
+        assert_eq!(state.file_picker.as_ref().unwrap().selected().len(), 1);
+        let _ = state.view();
+
+        let _ = state.update(Message::FilePicker(file_list::Message::Cancel));
+        assert!(state.file_picker.is_none());
+    }
 }

@@ -1,4 +1,3 @@
-dialog-file-select-title = Select Files
 dialog-settings-show-remote-lock-cursor-to-selection = Lock Cursor to Selection (on Remote side)
 dialog-update-checking = Checking...
 dialog-update-current-version = Current Version
@@ -8,7 +7,6 @@ dialog-update-no-updates = No updates available.
 dialog-update-title = Check for updates
 dialog-update-updates-available = New updates available.
 general-for-expert-warning = Change this only if you know what you're doing.
-general-open = Open
 general-save = Save
 general-warning = Warning
 main-bottom-editor-audio-change-fade-in = Change Fade In

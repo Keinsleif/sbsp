@@ -1,4 +1,3 @@
-dialog-file-select-title = ファイルを選択
 dialog-settings-show-remote-lock-cursor-to-selection = 再生カーソルを選択範囲にロック (リモート側)
 dialog-update-checking = 確認中...
 dialog-update-current-version = 現在のバージョン
@@ -8,7 +7,6 @@ dialog-update-no-updates = 現在のバージョンは最新版です。
 dialog-update-title = アップデートを確認
 dialog-update-updates-available = 更新が利用可能です。
 general-for-expert-warning = 何をしているのか理解している場合のみ、これを変更してください。
-general-open = 開く
 general-save = 保存
 general-warning = 警告
 main-bottom-editor-audio-change-fade-in = フェードインを変更

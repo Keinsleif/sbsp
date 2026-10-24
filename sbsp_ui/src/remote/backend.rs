@@ -19,7 +19,7 @@ use std::sync::{
 use sbsp_frontend_settings::{GlobalRemoteSettings, manager::SettingsManager};
 
 use sbsp_backend::api::{
-    Permissions,
+    FileList, Permissions,
     client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
 };
 use tokio::sync::mpsc;
@@ -104,6 +104,37 @@ impl RemotePort {
             file_list.request_file_list().await?;
             Ok(())
         }
+    }
+}
+
+impl RemotePort {
+    /// The lists of files the host sends after `request_file_list`, as they
+    /// arrive. Keyed on the connection, like the events.
+    pub fn file_lists(&self) -> iced::Subscription<Vec<FileList>> {
+        struct Source(FileListHandle, u64);
+
+        impl std::hash::Hash for Source {
+            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                "sbsp-file-lists".hash(state);
+                self.1.hash(state);
+            }
+        }
+
+        iced::Subscription::run_with(
+            Source(self.file_list.clone(), self.link.id()),
+            |Source(handle, _)| {
+                let mut handle = handle.clone();
+                iced::stream::channel(8, async move |mut output| {
+                    use iced::futures::SinkExt;
+
+                    while let Ok(list) = handle.recv_file_list().await {
+                        if output.send(list).await.is_err() {
+                            break;
+                        }
+                    }
+                })
+            },
+        )
     }
 }
 

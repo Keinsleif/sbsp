@@ -283,3 +283,7 @@ view-connect-remote-port = ポート
 menu-file-disconnect = 切断
 notification-connection-error = 接続エラー
 notification-connection-lost = サーバーとの接続が切れました。
+dialog-file-select-loading = ファイルリストを取得しています...
+dialog-file-select-empty = ホストに選べる音声ファイルがありません。
+dialog-file-select-title = ファイルを選択
+general-open = 開く

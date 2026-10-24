@@ -27,7 +27,7 @@ use crate::domain::new_cue::{self, CueKind};
 #[cfg(backend)]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
 #[cfg(feature = "remote")]
-use crate::features::connect;
+use crate::features::{connect, file_list};
 use crate::features::{
     credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, renumber, server_panel,
     settings_dialog, side_bar, status_bar, viewer,
@@ -219,6 +219,9 @@ pub struct State {
     remote_settings: GlobalRemoteSettings,
     #[cfg(feature = "remote")]
     remote_store: Option<RemoteSettings>,
+    /// The host's audio files to choose from (the remote has none of its own).
+    #[cfg(feature = "remote")]
+    file_picker: Option<file_list::Dialog>,
     /// The remote's connect screen (shown while there is no connection).
     #[cfg(feature = "remote")]
     connect: connect::Screen,
@@ -304,6 +307,14 @@ pub enum Message {
     RemoteSettingsLoaded(RemoteSettings, Box<GlobalRemoteSettings>),
     #[cfg(feature = "remote")]
     RemoteSettingsImported(Result<Option<Box<GlobalRemoteSettings>>, String>),
+    /// Show the host's files to choose from.
+    #[cfg(feature = "remote")]
+    OpenFilePicker(file_list::Purpose),
+    #[cfg(feature = "remote")]
+    FilePicker(file_list::Message),
+    /// The host sent its list of files.
+    #[cfg(feature = "remote")]
+    FileListReceived(Vec<sbsp_backend::api::FileList>),
     #[cfg(feature = "remote")]
     Connect(connect::Message),
     /// The hosts found on the network.
@@ -467,6 +478,8 @@ impl State {
             #[cfg(feature = "remote")]
             remote_store: None,
             #[cfg(feature = "remote")]
+            file_picker: None,
+            #[cfg(feature = "remote")]
             connect: connect::Screen::default(),
             #[cfg(feature = "remote")]
             disconnecting: false,
@@ -565,6 +578,17 @@ impl State {
             Message::License(message) => self.handle_license(message),
             #[cfg(feature = "remote")]
             Message::Connect(message) => self.handle_connect(message),
+            #[cfg(feature = "remote")]
+            Message::OpenFilePicker(purpose) => self.open_file_picker(purpose),
+            #[cfg(feature = "remote")]
+            Message::FilePicker(message) => self.handle_file_picker(message),
+            #[cfg(feature = "remote")]
+            Message::FileListReceived(list) => {
+                if let Some(picker) = &mut self.file_picker {
+                    picker.set_list(list);
+                }
+                Task::none()
+            }
             #[cfg(feature = "remote")]
             Message::Discovered(services) => {
                 self.connect.services = services;
@@ -838,6 +862,9 @@ impl State {
             | Message::RemoteConnected(..)
             | Message::RemoteFailed(_)
             | Message::RemoteClosed
+            | Message::OpenFilePicker(_)
+            | Message::FilePicker(_)
+            | Message::FileListReceived(_)
             | Message::RemoteSettingsLoaded(..) => {}
             #[cfg(backend)]
             Message::SyncTick => {}
@@ -1034,6 +1061,14 @@ impl State {
         // is bound to).
         if self.cue_drag.is_some() && press.names.iter().any(|name| name == "Escape") {
             self.cue_drag = None;
+            return Task::none();
+        }
+        // The host's file list: Escape closes it.
+        #[cfg(feature = "remote")]
+        if self.file_picker.is_some() {
+            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+                return self.handle_file_picker(file_list::Message::Cancel);
+            }
             return Task::none();
         }
         // The password question of the connect screen: Escape cancels it.
@@ -1500,6 +1535,37 @@ impl State {
         None
     }
 
+    /// Shows the host's files and asks the host for the list.
+    #[cfg(feature = "remote")]
+    fn open_file_picker(&mut self, purpose: file_list::Purpose) -> Task<Message> {
+        let Some(port) = self.backend.as_ref().and_then(Port::remote) else {
+            return Task::none();
+        };
+        self.file_picker = Some(file_list::Dialog::new(purpose));
+        Task::perform(port.request_file_list(), backend_result)
+    }
+
+    #[cfg(feature = "remote")]
+    fn handle_file_picker(&mut self, message: file_list::Message) -> Task<Message> {
+        use file_list::{Outcome, Purpose};
+
+        let Some(picker) = &mut self.file_picker else {
+            return Task::none();
+        };
+        let purpose = picker.purpose;
+        let Some(outcome) = picker.update(message) else {
+            return Task::none();
+        };
+        self.file_picker = None;
+        match (outcome, purpose) {
+            (Outcome::Cancelled, _) => Task::none(),
+            (Outcome::Files(files), Purpose::Add) => self.add_audio_cues(files),
+            (Outcome::Files(files), Purpose::Target(id)) => {
+                self.set_audio_target(id, files.into_iter().next())
+            }
+        }
+    }
+
     /// A message from the connect screen; once the password is given, the
     /// connection is made.
     #[cfg(feature = "remote")]
@@ -1549,6 +1615,7 @@ impl State {
     #[cfg(feature = "remote")]
     fn remote_closed(&mut self) {
         self.backend = None;
+        self.file_picker = None;
         self.model = ShowModelState::default();
         self.playback = PlaybackState::new();
         self.assets.clear();
@@ -2141,7 +2208,12 @@ impl State {
         })
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(all(feature = "remote", not(feature = "host")))]
+    fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
+        Task::done(Message::OpenFilePicker(file_list::Purpose::Target(id)))
+    }
+
+    #[cfg(not(any(feature = "host", feature = "remote")))]
     fn pick_audio_target(&self, _id: Uuid) -> Task<Message> {
         log::warn!("no file picker in this build");
         Task::none()
@@ -2301,7 +2373,12 @@ impl State {
         })
     }
 
-    #[cfg(not(feature = "host"))]
+    #[cfg(all(feature = "remote", not(feature = "host")))]
+    fn pick_audio_files(&self) -> Task<Message> {
+        Task::done(Message::OpenFilePicker(file_list::Purpose::Add))
+    }
+
+    #[cfg(not(any(feature = "host", feature = "remote")))]
     fn pick_audio_files(&self) -> Task<Message> {
         log::warn!("no file picker in this build");
         Task::none()
@@ -2329,7 +2406,12 @@ impl State {
     /// landed on); anything else is reported once. Edit mode only.
     fn add_dropped_files(&mut self) -> Task<Message> {
         let files = std::mem::take(&mut self.dropped_files);
-        if self.ui.mode != Mode::Edit || files.is_empty() {
+        // A remote's files are on the wrong computer: the host cannot play
+        // them, and the cue would name a path that is only here.
+        if cfg!(all(feature = "remote", not(feature = "host")))
+            || self.ui.mode != Mode::Edit
+            || files.is_empty()
+        {
             return Task::none();
         }
         let (audio, other): (Vec<_>, Vec<_>) =
@@ -2780,6 +2862,15 @@ impl State {
         #[cfg(not(feature = "remote"))]
         let discovery = Subscription::none();
 
+        // The host's list of files, while it is being chosen from.
+        #[cfg(feature = "remote")]
+        let file_lists = match (&self.file_picker, self.backend.as_ref().and_then(Port::remote)) {
+            (Some(_), Some(port)) => port.file_lists().map(Message::FileListReceived),
+            _ => Subscription::none(),
+        };
+        #[cfg(not(feature = "remote"))]
+        let file_lists = Subscription::none();
+
         // The positions of playing cues are worked out between the
         // backend's reports; asking for one every few seconds keeps them
         // from drifting (and, for a remote, from the connection's delay).
@@ -2903,6 +2994,7 @@ impl State {
             close,
             toasts,
             discovery,
+            file_lists,
             sync,
             tick,
             clock,
@@ -3264,6 +3356,15 @@ impl State {
             Some(panel) => modal::over_blocking(
                 content,
                 server_panel::view(panel).map(Message::ServerPanel),
+            ),
+            None => content,
+        };
+
+        #[cfg(feature = "remote")]
+        let content = match &self.file_picker {
+            Some(picker) => modal::over_blocking(
+                content,
+                file_list::view(picker).map(Message::FilePicker),
             ),
             None => content,
         };

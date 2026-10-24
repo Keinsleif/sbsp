@@ -289,3 +289,7 @@ view-connect-remote-port = Port
 menu-file-disconnect = Disconnect
 notification-connection-error = Connection Error
 notification-connection-lost = Disconnected from the server.
+dialog-file-select-loading = Loading the file list...
+dialog-file-select-empty = The host has no audio files to offer.
+dialog-file-select-title = Select Files
+general-open = Open
