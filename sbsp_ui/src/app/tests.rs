@@ -1200,10 +1200,17 @@ fn choosing_another_template_settles_the_edit_in_progress() {
 #[test]
 #[serial]
 fn the_hardware_tab_exists_only_where_the_settings_have_audio() {
-    // Tests run without the host feature: no audio hardware settings.
+    // Only the host has audio hardware settings, so the tab is there with
+    // the `host` feature and not without it.
     let mut state = new_state();
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
-    assert!(state.settings_dialog.as_ref().unwrap().audio.is_none());
+    assert_eq!(
+        state.settings_dialog.as_ref().unwrap().audio.is_some(),
+        cfg!(feature = "host")
+    );
+    if cfg!(feature = "host") {
+        return;
+    }
     let _ = state.update(Message::Settings(settings_dialog::Message::Device(Some("x".to_owned()))));
     assert!(state.settings_dialog.as_ref().unwrap().audio.is_none(), "nothing to change");
 }
