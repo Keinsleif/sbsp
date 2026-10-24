@@ -1377,3 +1377,50 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
     assert!(state.window_maximized);
 }
+
+#[cfg(feature = "remote")]
+mod remote {
+    use super::*;
+    use crate::features::connect;
+
+    #[test]
+    #[serial]
+    fn connecting_asks_for_the_password_and_a_failure_lets_it_be_tried_again() {
+        let mut state = new_state();
+        let _ = state.update(Message::Connect(connect::Message::Host("host.local".to_owned())));
+        let _ = state.update(Message::Connect(connect::Message::ConnectTyped));
+        assert!(state.connect.prompt.is_some());
+        assert!(!state.connect.connecting);
+
+        // Submitting starts the connection (the task is not run here).
+        let _ = state.update(Message::Connect(connect::Message::Submit));
+        assert!(state.connect.connecting);
+        assert!(state.connect.prompt.is_none());
+
+        let _ = state.update(Message::RemoteFailed("refused".to_owned()));
+        assert!(!state.connect.connecting);
+        assert_eq!(state.toasts.len(), 1);
+    }
+
+    #[test]
+    #[serial]
+    fn a_lost_connection_is_news_but_a_disconnect_is_not() {
+        let mut state = new_state();
+        let _ = state.update(Message::RemoteClosed);
+        assert_eq!(state.toasts.len(), 1);
+
+        state.disconnecting = true;
+        let _ = state.update(Message::RemoteClosed);
+        assert_eq!(state.toasts.len(), 1, "no second notice");
+        assert!(!state.disconnecting);
+    }
+
+    #[test]
+    #[serial]
+    fn without_a_connection_the_connect_screen_is_all_there_is() {
+        let state = new_state();
+        assert!(state.backend.is_none());
+        assert!(state.ui.available_modes().is_empty());
+        let _ = state.view();
+    }
+}

@@ -26,6 +26,8 @@ use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
 #[cfg(backend)]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
+#[cfg(feature = "remote")]
+use crate::features::connect;
 use crate::features::{
     credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, renumber, server_panel,
     settings_dialog, side_bar, status_bar, viewer,
@@ -47,10 +49,12 @@ use crate::widgets::{divider, field, menu_bar, modal, toast};
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
 use crate::port::{Control, ModelEdit};
-#[cfg(feature = "host")]
+#[cfg(backend)]
 use crate::port::FullState;
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
+#[cfg(feature = "remote")]
+use crate::remote::backend::RemotePort;
 
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
@@ -203,6 +207,12 @@ pub struct State {
     /// is connected to.
     #[cfg(backend)]
     backend: Option<Port>,
+    /// The remote's connect screen (shown while there is no connection).
+    #[cfg(feature = "remote")]
+    connect: connect::Screen,
+    /// The connection is being closed by the user, so its end is not news.
+    #[cfg(feature = "remote")]
+    disconnecting: bool,
 }
 
 #[derive(Clone)]
@@ -277,6 +287,19 @@ pub enum Message {
     Nothing,
     #[cfg(feature = "host")]
     BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
+    /// The connect screen.
+    #[cfg(feature = "remote")]
+    Connect(connect::Message),
+    /// The hosts found on the network.
+    #[cfg(feature = "remote")]
+    Discovered(Vec<sbsp_backend::api::client::ServiceEntry>),
+    #[cfg(feature = "remote")]
+    RemoteConnected(RemotePort, Box<FullState>),
+    #[cfg(feature = "remote")]
+    RemoteFailed(String),
+    /// The connection ended.
+    #[cfg(feature = "remote")]
+    RemoteClosed,
     #[cfg(backend)]
     PortEvent(PortEvent),
     #[cfg(backend)]
@@ -416,6 +439,10 @@ impl State {
             toasts: toast::Toasts::new(),
             #[cfg(backend)]
             backend: None,
+            #[cfg(feature = "remote")]
+            connect: connect::Screen::default(),
+            #[cfg(feature = "remote")]
+            disconnecting: false,
         };
 
         (state, boot_task)
@@ -509,6 +536,30 @@ impl State {
                 Task::none()
             }
             Message::License(message) => self.handle_license(message),
+            #[cfg(feature = "remote")]
+            Message::Connect(message) => self.handle_connect(message),
+            #[cfg(feature = "remote")]
+            Message::Discovered(services) => {
+                self.connect.services = services;
+                Task::none()
+            }
+            #[cfg(feature = "remote")]
+            Message::RemoteConnected(port, state) => self.remote_connected(port, *state),
+            #[cfg(feature = "remote")]
+            Message::RemoteFailed(message) => {
+                self.connect.connecting = false;
+                log::error!("connection failed: {message}");
+                self.toasts.push(
+                    toast::Kind::Danger,
+                    format!("{}: {message}", fl!("notification-connection-error")),
+                );
+                Task::none()
+            }
+            #[cfg(feature = "remote")]
+            Message::RemoteClosed => {
+                self.remote_closed();
+                Task::none()
+            }
             Message::AudioWarning(true) => {
                 self.audio_warning = false;
                 self.finish_settings(true)
@@ -902,6 +953,14 @@ impl State {
         // is bound to).
         if self.cue_drag.is_some() && press.names.iter().any(|name| name == "Escape") {
             self.cue_drag = None;
+            return Task::none();
+        }
+        // The password question of the connect screen: Escape cancels it.
+        #[cfg(feature = "remote")]
+        if self.connect.prompt.is_some() {
+            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+                return self.handle_connect(connect::Message::Cancel);
+            }
             return Task::none();
         }
         // The same for the question about replacing or closing the show.
@@ -1301,6 +1360,19 @@ impl State {
         crate::persist::save(self.target, &Saved::capture(&self.ui, window));
     }
 
+    /// Whether a backend is there to work with (a remote that has
+    /// connected; the host once it has started).
+    fn is_connected(&self) -> bool {
+        #[cfg(backend)]
+        {
+            self.backend.is_some()
+        }
+        #[cfg(not(backend))]
+        {
+            false
+        }
+    }
+
     /// Whether there is a log folder to show (not on the web, and not when
     /// the log file could not be opened).
     fn can_show_log_files(&self) -> bool {
@@ -1345,6 +1417,83 @@ impl State {
     #[cfg(not(feature = "host"))]
     fn license_info(&self) -> Option<license_dialog::Info> {
         None
+    }
+
+    /// A message from the connect screen; once the password is given, the
+    /// connection is made.
+    #[cfg(feature = "remote")]
+    fn handle_connect(&mut self, message: connect::Message) -> Task<Message> {
+        let Some(request) = self.connect.update(message) else {
+            return Task::none();
+        };
+        Task::perform(
+            RemotePort::connect(request.address, request.password),
+            |result| match result {
+                Ok((port, state)) => Message::RemoteConnected(port, Box::new(state)),
+                Err(e) => Message::RemoteFailed(e.to_string()),
+            },
+        )
+    }
+
+    /// Takes in the host's state, like the host does for its own backend,
+    /// with the permissions the host granted.
+    #[cfg(feature = "remote")]
+    fn remote_connected(&mut self, port: RemotePort, state: FullState) -> Task<Message> {
+        log::info!(
+            "connected to {}, {} active cue(s)",
+            port.address(),
+            state.show_state.active_cues.len()
+        );
+        self.connect.connecting = false;
+        self.disconnecting = false;
+        self.playback.update(&state.show_state, Instant::now());
+        self.model = state.show_model;
+        self.ui.set_playback_cursor(
+            self.model.cue_list.root_ids.first().copied(),
+            self.lock_cursor_to_selection,
+            &self.model.cue_list.cues,
+        );
+        self.ui.set_permission(port.permission());
+        self.assets_stale = true;
+        let closed = port.closed();
+        self.backend = Some(Port::Remote(port));
+        Task::batch([
+            Task::perform(closed, |()| Message::RemoteClosed),
+            self.request_assets(),
+        ])
+    }
+
+    /// The connection ended: back to the connect screen with nothing of
+    /// the host's left.
+    #[cfg(feature = "remote")]
+    fn remote_closed(&mut self) {
+        self.backend = None;
+        self.model = ShowModelState::default();
+        self.playback = PlaybackState::new();
+        self.assets.clear();
+        self.ui.reset_selected();
+        self.ui.expanded_rows.clear();
+        self.ui.playback_cursor = None;
+        self.ui.set_permission(sbsp_backend::api::Permissions::empty());
+        self.clipboard.clear();
+        self.cue_drag = None;
+        self.pending_remove = None;
+        if !std::mem::take(&mut self.disconnecting) {
+            self.toasts
+                .push(toast::Kind::Warning, fl!("notification-connection-lost"));
+        }
+    }
+
+    /// The File menu's Disconnect.
+    #[cfg(feature = "remote")]
+    fn disconnect(&mut self) -> Task<Message> {
+        match self.backend.as_ref().and_then(Port::remote) {
+            Some(port) => {
+                self.disconnecting = true;
+                Task::perform(port.disconnect(), |()| Message::Nothing)
+            }
+            None => Task::none(),
+        }
     }
 
     fn handle_license(&mut self, message: license_dialog::Message) -> Task<Message> {
@@ -2344,6 +2493,8 @@ impl State {
             "file.save-as" => self.file_command(file_ops::Command::SaveAs),
             "file.export" => self.file_command(file_ops::Command::Export),
             "file.quit" => self.request_close(),
+            #[cfg(feature = "remote")]
+            "file.disconnect" => self.disconnect(),
             "edit.import-settings" => self.import_settings(),
             "edit.export-settings" => self.export_settings(),
             other => {
@@ -2484,6 +2635,17 @@ impl State {
         #[cfg(not(backend))]
         let backend_events = Subscription::none();
 
+        // The hosts on the network, while there is no connection to choose
+        // from them for.
+        #[cfg(feature = "remote")]
+        let discovery = if self.backend.is_none() {
+            crate::remote::backend::discovery().map(Message::Discovered)
+        } else {
+            Subscription::none()
+        };
+        #[cfg(not(feature = "remote"))]
+        let discovery = Subscription::none();
+
         // Once a second is enough for the header clock to never show a
         // stale second for long; the half-second period keeps it from
         // beating against the second boundary.
@@ -2594,6 +2756,7 @@ impl State {
         Subscription::batch([
             close,
             toasts,
+            discovery,
             tick,
             clock,
             meter,
@@ -2618,10 +2781,7 @@ impl State {
                 .with_shortcut_opt(shortcut(action))
         };
 
-        MenuSpec::new()
-            .menu(
-                fl!("menu-file"),
-                vec![
+        let mut file_menu = vec![
                     MenuNode::item("file.new", fl!("menu-file-new"))
                         .enabled(cfg!(feature = "host")),
                     host_only("file.open", fl!("menu-file-open"), hotkeys::Action::Open),
@@ -2638,8 +2798,19 @@ impl State {
                     ),
                     MenuNode::separator(),
                     MenuNode::item("file.quit", fl!("menu-file-quit")),
-                ],
-            )
+        ];
+        // A remote can end its connection.
+        if cfg!(feature = "remote") {
+            let quit = file_menu.len() - 1;
+            file_menu.insert(
+                quit,
+                MenuNode::item("file.disconnect", fl!("menu-file-disconnect"))
+                    .enabled(self.is_connected()),
+            );
+        }
+
+        MenuSpec::new()
+            .menu(fl!("menu-file"), file_menu)
             .menu(
                 fl!("menu-edit-title"),
                 vec![
@@ -2768,6 +2939,12 @@ impl State {
         let header = container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
             .width(Length::Fill)
             .padding(4);
+
+        // A remote without a connection has only the connect screen.
+        #[cfg(feature = "remote")]
+        if self.backend.is_none() {
+            return self.connect_view(header.into());
+        }
 
         let cursor_cue = self
             .ui
@@ -2951,6 +3128,46 @@ impl State {
         };
 
         self.toasts.overlay(content, Message::Toast)
+    }
+}
+
+impl State {
+    /// The remote's screen before (and between) connections: the menu, the
+    /// list of hosts, and the questions about the connection on top.
+    #[cfg(feature = "remote")]
+    fn connect_view<'a>(&'a self, header: Element<'a, Message>) -> Element<'a, Message> {
+        let content: Element<'a, Message> = column![
+            header,
+            divider::horizontal(),
+            connect::view(&self.connect).map(Message::Connect),
+        ]
+        .into();
+
+        let content = match &self.prompt_for_connect() {
+            Some(prompt) => modal::over_blocking(
+                content,
+                connect::prompt_view(prompt).map(Message::Connect),
+            ),
+            None => content,
+        };
+        let content = if self.connect.connecting {
+            modal::over_blocking(content, connect::connecting_view())
+        } else {
+            content
+        };
+        let content = match &self.credits {
+            Some(dialog) => modal::over_blocking(
+                content,
+                credits::view(dialog).map(Message::Credits),
+            ),
+            None => content,
+        };
+        self.toasts.overlay(content, Message::Toast)
+    }
+
+    #[cfg(feature = "remote")]
+    fn prompt_for_connect(&self) -> Option<&connect::Prompt> {
+        self.connect.prompt.as_ref()
     }
 }
 
