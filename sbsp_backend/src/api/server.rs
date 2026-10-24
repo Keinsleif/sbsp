@@ -128,7 +128,7 @@ where
     }
     // let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(
-        axum::serve(listener, app)
+        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
             .with_graceful_shutdown(async move {
                 let _ = shutdown_rx.recv().await;
             })
