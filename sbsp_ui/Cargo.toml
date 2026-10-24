@@ -90,3 +90,4 @@ iced_test = "0.14"
 # language is currently loaded) races any other such test running
 # concurrently on a different thread.
 serial_test = "3"
+indexmap = { version = "2", features = ["serde"] }
