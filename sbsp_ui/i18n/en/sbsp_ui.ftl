@@ -277,5 +277,6 @@ dialog-message-license-pro-title = License Error
 dialog-message-license-server-panel = Pro License is required to use Server Panel.
 menu-help-credits = Credits
 menu-help-license = License
+menu-help-show-log-files = Show Log Files
 dialog-credits-version = Version
 dialog-credits-third-party = Licenses of the libraries and resources used

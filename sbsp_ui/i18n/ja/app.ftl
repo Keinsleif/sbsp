@@ -22,7 +22,6 @@ main-mobile-controls = 操作
 main-mobile-list = リスト
 menu-file-disconnect = サーバーから切断
 menu-help-check-update = アップデートを確認
-menu-help-show-log-files = ログファイルを表示
 menu-help-title = ヘルプ
 notification-asset-result = ファイル処理エラー
 notification-authentication-failed = 認証に失敗しました

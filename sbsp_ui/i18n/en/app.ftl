@@ -22,7 +22,6 @@ main-mobile-controls = Controls
 main-mobile-list = List
 menu-file-disconnect = Disconnect
 menu-help-check-update = Check for updates
-menu-help-show-log-files = Show Log Files
 menu-help-title = Help
 notification-asset-result = Asset Processing Error
 notification-authentication-failed = Authentication failed.

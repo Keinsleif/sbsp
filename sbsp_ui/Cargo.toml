@@ -69,6 +69,8 @@ iced = { version = "0.14", default-features = false, features = ["tokio"] }
 fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
+# Opens the log folder in the file manager ("Show Log Files").
+opener = "0.8"
 # The OS UI language, for a language setting left on "system".
 i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester"] }
 
