@@ -232,6 +232,7 @@ fn make_fade_cue(
     target: Uuid,
     volume: Decibels,
     fade_param: FadeParam,
+    stop_target_on_complete: bool,
 ) -> Cue {
     Cue {
         id,
@@ -248,6 +249,7 @@ fn make_fade_cue(
             target,
             volume,
             fade_param,
+            stop_target_on_complete,
         }),
     }
 }
@@ -2061,7 +2063,14 @@ async fn fade_cue_sends_fade_volume_to_active_audio_target() {
 
     let cues = vec![
         make_audio_cue(target_id, None, path),
-        make_fade_cue(fade_id, None, target_id, Decibels::from(-6.0), fade_param),
+        make_fade_cue(
+            fade_id,
+            None,
+            target_id,
+            Decibels::from(-6.0),
+            fade_param,
+            false,
+        ),
     ];
 
     let (_manager, exec_tx, mut audio_rx, mut wait_rx, engine_event_tx, mut playback_event_rx) =
@@ -2104,7 +2113,7 @@ async fn fade_cue_sends_fade_volume_to_active_audio_target() {
 
     assert!(matches!(
         audio_rx.recv().await.unwrap(),
-        AudioCommand::FadeVolume { id, volume, fade_param: fp }
+        AudioCommand::FadeVolume { id, volume, fade_param: fp, stop_on_complete: false }
             if id == target_id && volume == Decibels::from(-6.0) && fp == fade_param
     ));
 
@@ -2159,7 +2168,14 @@ async fn fade_cue_targeting_group_fades_all_descendant_audio_children() {
         make_concurrency_group_cue(group_id, None, vec![child_a, child_b]),
         make_audio_cue(child_a, Some(group_id), path_a),
         make_audio_cue(child_b, Some(group_id), path_b),
-        make_fade_cue(fade_id, None, group_id, Decibels::from(-12.0), fade_param),
+        make_fade_cue(
+            fade_id,
+            None,
+            group_id,
+            Decibels::from(-12.0),
+            fade_param,
+            false,
+        ),
     ];
 
     let (_manager, exec_tx, mut audio_rx, _wait_rx, _engine_event_tx, mut playback_event_rx) =

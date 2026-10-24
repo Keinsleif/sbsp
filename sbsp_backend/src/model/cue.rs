@@ -254,6 +254,8 @@ pub struct FadeCueParam {
     pub target: Uuid,
     pub volume: Decibels,
     pub fade_param: FadeParam,
+    #[serde(default)]
+    pub stop_target_on_complete: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
