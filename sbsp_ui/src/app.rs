@@ -775,6 +775,13 @@ impl State {
             }
             // Handled in `update_inner`, which can ask the window.
             Message::WindowMoved(..) | Message::WindowResized(..) => {}
+            // Handled in `update_inner`, which can start the connection.
+            #[cfg(feature = "remote")]
+            Message::Connect(_)
+            | Message::Discovered(_)
+            | Message::RemoteConnected(..)
+            | Message::RemoteFailed(_)
+            | Message::RemoteClosed => {}
             Message::Toast(message) => self.toasts.update(message),
             Message::Nothing => {}
             Message::Tick(now) => {
