@@ -98,6 +98,7 @@ pub struct ApiServerOptions {
     pub port: u16,
     pub discoverry: Option<String>,
     pub auth_map: Vec<PermissionInfo>,
+    pub trust_ip_headers: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -138,5 +139,6 @@ pub enum WsCommand {
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsError {
     AuthenticationFailed,
+    AuthenticationRateLimitExceeded,
     PermissionDenied,
 }

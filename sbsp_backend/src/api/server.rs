@@ -45,6 +45,7 @@ struct ApiState {
     secret_map: Vec<(Option<String>, Permissions)>,
     salt: String,
     rate_limit: Arc<Mutex<HashMap<String, AttemptInfo>>>,
+    trust_ip_headers: bool,
 }
 
 #[derive(Clone)]
@@ -90,6 +91,7 @@ where
         secret_map,
         salt,
         rate_limit: Arc::new(Mutex::new(HashMap::new())),
+        trust_ip_headers: options.trust_ip_headers,
     };
 
     let mut app = Router::new()
@@ -170,7 +172,11 @@ async fn websocket_handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(state): State<ApiState>,
 ) -> impl IntoResponse {
-    let client_ip = extract_client_ip(&headers).unwrap_or_else(|| addr.ip().to_string());
+    let client_ip = if state.trust_ip_headers {
+        extract_client_ip(&headers).unwrap_or_else(|| addr.ip().to_string())
+    } else {
+        addr.ip().to_string()
+    };
 
     ws.on_upgrade(move |socket| handle_socket(socket, state, client_ip))
 }
@@ -231,11 +237,21 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                             window_start: now,
                         });
 
-                        info.count += 1;
-                        if info.count > MAX_ATTEMPTS {
-                            log::warn!("Rate limit exceeded for IP: {}", ip);
+                        if info.count + 1 > MAX_ATTEMPTS {
+                            if let Ok(payload) =
+                                serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
+                                && let Err(e) = socket.send(Message::Text(payload.into())).await
+                            {
+                                log::error!("Error on responding error. e={}", e);
+                                return;
+                            }
+                            if let Err(e) = socket.send(Message::Close(None)).await {
+                                log::error!("Error on closing socket. e={}", e);
+                                return;
+                            }
                             return;
                         }
+                        info.count += 1;
                     }
                     for (secret, perm) in &state.secret_map {
                         match (secret, &response) {
@@ -275,9 +291,8 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
         }
     }
 
-    {
-        let mut limits = state.rate_limit.lock().await;
-        limits.remove(&ip);
+    if let Some(entry) = state.rate_limit.lock().await.get_mut(&ip) {
+        entry.count -= 1;
     }
 
     if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
@@ -478,11 +493,16 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                             window_start: now,
                                         });
 
-                                        info.count += 1;
-                                        if info.count > MAX_ATTEMPTS {
-                                            log::warn!("Rate limit exceeded for IP: {}", ip);
-                                            return;
+                                        if info.count + 1 > MAX_ATTEMPTS {
+                                            if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
+                                            && socket.send(Message::Text(payload.into())).await.is_err()
+                                            {
+                                                log::info!("WebSocket client disconnected (send error).");
+                                                return;
+                                            }
+                                            continue;
                                         }
+                                        info.count += 1;
                                     }
                                     let mut reauth = false;
                                     for (secret, perm) in &state.secret_map {
@@ -503,9 +523,8 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                         }
                                     }
                                     if reauth {
-                                        {
-                                            let mut limits = state.rate_limit.lock().await;
-                                            limits.remove(&ip);
+                                        if let Some(entry) = state.rate_limit.lock().await.get_mut(&ip) {
+                                            entry.count -= 1;
                                         }
                                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
                                         && socket.send(Message::Text(payload.into())).await.is_err()

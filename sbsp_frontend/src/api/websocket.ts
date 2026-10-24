@@ -149,6 +149,8 @@ export function useWebsocketApi(): IBackendAdapter {
               cb(true, msg.data.perm),
             );
             break;
+          case 'error':
+            break;
         }
       };
       const mainEventListener = (e: MessageEvent<string>) => {

@@ -237,6 +237,14 @@ useBackendEvent((event) => {
               toast.add({
                 severity: 'error',
                 summary: t('notification.operationFailed'),
+                detail: t('notification.authenticationRateLimitExceeded'),
+                life: 3000,
+              });
+              break;
+            case 3:
+              toast.add({
+                severity: 'error',
+                summary: t('notification.operationFailed'),
                 detail: t('notification.permissionDenied'),
                 life: 3000,
               });

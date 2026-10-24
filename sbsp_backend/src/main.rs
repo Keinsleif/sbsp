@@ -119,6 +119,7 @@ async fn main() -> Result<(), anyhow::Error> {
             port: args.port,
             discoverry: args.discovery,
             auth_map: args.auth,
+            trust_ip_headers: false,
         },
     )
     .await?;
