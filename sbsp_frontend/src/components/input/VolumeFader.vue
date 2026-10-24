@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, ref } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import VolumeInput from './VolumeInput.vue';
 import { debounce, decibelsToFader, faderToDecibels } from '../../utils';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
@@ -24,7 +24,12 @@ const props = withDefaults(
 const volume = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+type DragInfo = {
+  pointerId: number,
+  lastValue: number,
+};
+
+let dragInfo: DragInfo | null = null;
 
 const faderPosition = computed({
   get() {
@@ -35,12 +40,36 @@ const faderPosition = computed({
   },
 });
 
-const onPointerUp = debounce(() => {
-  if (sliderChanging.value) {
-    sliderChanging.value = false;
-    if (!props.disabled) {
-      emit('update');
-    }
+const onPointerDown = (e: PointerEvent) => {
+  if (dragInfo !== null) return;
+
+  dragInfo = {
+    pointerId: e.pointerId,
+    lastValue: faderPosition.value,
+  };
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerCancel);
+};
+
+const onPointerUp = (e: PointerEvent) => {
+  if (e.pointerId !== dragInfo?.pointerId) return;
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+  dragInfo = null;
+  flushFader();
+};
+
+const onPointerCancel = (e: PointerEvent) => {
+  if (e.pointerId !== dragInfo?.pointerId) return;
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+  faderPosition.value = dragInfo.lastValue;
+  dragInfo = null;
+}
+
+const flushFader = debounce(() => {
+  if (!props.disabled) {
+    emit('update');
   }
 }, 300);
 
@@ -68,6 +97,11 @@ const tickLabels = computed(() => {
     ];
   }
 });
+
+onUnmounted(() => {
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerCancel);
+});
 </script>
 
 <template>
@@ -83,13 +117,12 @@ const tickLabels = computed(() => {
     @dblclick="
       if (!props.disabled) {
         faderPosition = 0;
-        onPointerUp.clear();
+        flushFader.clear();
         emit('update');
       }
     "
     @keydown.stop
-    @pointerdown="sliderChanging = true"
-    @pointerup="onPointerUp"
+    @pointerdown="onPointerDown"
   >
     <template #input>
       <volume-input

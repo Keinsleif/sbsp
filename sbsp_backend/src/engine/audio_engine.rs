@@ -289,7 +289,7 @@ impl AudioEngine {
                         AudioCommand::HardStop { id } => self.handle_stop(id, true).await,
                         AudioCommand::SeekTo { id, position } => self.handle_seek_to(id, position).await,
                         AudioCommand::SeekBy { id, amount } => self.handle_seek_by(id, amount).await,
-                        AudioCommand::FadeVolume { id, volume, fade_param } => self.handle_fade_volume(id, volume, fade_param).await,
+                        AudioCommand::FadeVolume { id, volume, fade_param, stop_on_complete } => self.handle_fade_volume(id, volume, fade_param, stop_on_complete).await,
                         AudioCommand::PerformAction { id, action } => self.handle_action(id, action).await,
                         AudioCommand::Reconfigure(settings) => {
                             if settings.mono_output != self.show_settings.mono_output {
@@ -359,6 +359,26 @@ impl AudioEngine {
                         });
                     }
                     self.playing_sounds.retain(|_, value| !matches!(value.handle.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
+
+                    let keys: Vec<_> = self.loaded_sounds.keys().cloned().collect();
+                    for id in keys {
+                        let Some(loaded_sound) = self.loaded_sounds.get(&id) else {
+                            continue;
+                        };
+                        let event = match loaded_sound.state() {
+                            AudioPlaybackState::Stopped => {
+                                AudioEngineEvent::Stopped { instance_id: id }
+                            }
+                            AudioPlaybackState::Completed => {
+                                AudioEngineEvent::Completed { instance_id: id }
+                            }
+                            _ => continue,
+                        };
+                        if self.event_tx.send(EngineEvent::Audio(event)).await.is_err() {
+                            log::warn!("AudioEngineEvent bus dropped.");
+                        }
+                    }
+                    self.loaded_sounds.retain(|_, value| !matches!(value.state(), AudioPlaybackState::Stopped | AudioPlaybackState::Completed));
                 },
                 else => break
             }
@@ -602,12 +622,15 @@ impl AudioEngine {
         id: Uuid,
         volume: Decibels,
         param: FadeParam,
+        stop_on_complete: bool,
     ) -> Result<()> {
         if let Some(playing_sound) = self.playing_sounds.get_mut(&id) {
-            playing_sound.handle.set_fade(volume, param);
+            playing_sound
+                .handle
+                .set_fade(volume, param, stop_on_complete);
             Ok(())
         } else if let Some(loaded_handle) = self.loaded_sounds.get_mut(&id) {
-            loaded_handle.set_fade(volume, param);
+            loaded_handle.set_fade(volume, param, stop_on_complete);
             self.event_tx
                 .send(EngineEvent::Audio(AudioEngineEvent::Loaded {
                     instance_id: id,

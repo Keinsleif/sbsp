@@ -737,6 +737,7 @@ impl Executor {
                                     id: params.target,
                                     volume: params.volume,
                                     fade_param: params.fade_param,
+                                    stop_on_complete: params.stop_target_on_complete,
                                 })
                                 .await
                                 .is_err()
@@ -764,6 +765,8 @@ impl Executor {
                                                     id: child.id,
                                                     volume: params.volume,
                                                     fade_param: params.fade_param,
+                                                    stop_on_complete: params
+                                                        .stop_target_on_complete,
                                                 })
                                                 .await
                                         {

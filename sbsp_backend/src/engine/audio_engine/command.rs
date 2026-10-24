@@ -47,6 +47,7 @@ pub enum AudioCommand {
         id: Uuid,
         volume: Decibels,
         fade_param: FadeParam,
+        stop_on_complete: bool,
     },
     PerformAction {
         id: Uuid,

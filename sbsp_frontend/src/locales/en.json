@@ -273,7 +273,8 @@
       "fade": {
         "fadeParameter": "Fade Parameter",
         "targetVolume": "Target Volume",
-        "title": "Fade"
+        "title": "Fade",
+        "stopOnComplete": "Stop target when the fade completes"
       },
       "group": {
         "mode": {
