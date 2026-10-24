@@ -187,7 +187,7 @@ export function useWebsocketApi(): IBackendAdapter {
               }),
             );
             break;
-          }
+        }
       };
       const mainEventListener = (e: MessageEvent<string>) => {
         const msg = JSON.parse(e.data) as WsFeedback;
