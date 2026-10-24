@@ -587,8 +587,16 @@ fn row_view<'a>(
     } else {
         Space::new().into()
     };
-    let cursor = button(container(cursor_mark).center_x(Length::Fill))
+    // The whole cell is the button, so a row without the cursor can be
+    // clicked too: an empty mark has no height of its own, and a button
+    // that fits it would have none either.
+    let cursor = button(
+        container(cursor_mark)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill),
+    )
         .width(W_CURSOR)
+        .height(ROW_HEIGHT - 1.0)
         .padding(0)
         .style(button::text)
         .on_press(Message::SetCursor(id));
