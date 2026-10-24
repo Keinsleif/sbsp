@@ -227,7 +227,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                 if let Ok(command) = serde_json::from_str::<WsCommand>(&text)
                     && let WsCommand::Authenticate { response } = command
                 {
-                    {
+                    let rate_exceeded = {
                         let mut limits = state.rate_limit.lock().await;
                         let now = Instant::now();
                         limits.retain(|_, info| now.duration_since(info.window_start) <= WINDOW_DURATION);
@@ -238,20 +238,25 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                         });
 
                         if info.count + 1 > MAX_ATTEMPTS {
-                            if let Ok(payload) =
-                                serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
-                                && let Err(e) = socket.send(Message::Text(payload.into())).await
-                            {
-                                log::error!("Error on responding error. e={}", e);
-                                return;
-                            }
-                            if let Err(e) = socket.send(Message::Close(None)).await {
-                                log::error!("Error on closing socket. e={}", e);
-                                return;
-                            }
+                            true
+                        } else {
+                            info.count += 1;
+                            false
+                        }
+                    };
+                    if rate_exceeded {
+                        if let Ok(payload) =
+                            serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
+                            && let Err(e) = socket.send(Message::Text(payload.into())).await
+                        {
+                            log::error!("Error on responding error. e={}", e);
                             return;
                         }
-                        info.count += 1;
+                        if let Err(e) = socket.send(Message::Close(None)).await {
+                            log::error!("Error on closing socket. e={}", e);
+                            return;
+                        }
+                        return;
                     }
                     for (secret, perm) in &state.secret_map {
                         match (secret, &response) {
@@ -292,7 +297,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
     }
 
     if let Some(entry) = state.rate_limit.lock().await.get_mut(&ip) {
-        entry.count -= 1;
+        entry.count = entry.count.saturating_sub(1);
     }
 
     if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
@@ -483,7 +488,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                     }
                                 },
                                 WsCommand::Authenticate { response } => {
-                                    {
+                                    let rate_exceeded = {
                                         let mut limits = state.rate_limit.lock().await;
                                         let now = Instant::now();
                                         limits.retain(|_, info| now.duration_since(info.window_start) <= WINDOW_DURATION);
@@ -494,15 +499,20 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                         });
 
                                         if info.count + 1 > MAX_ATTEMPTS {
-                                            if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
-                                            && socket.send(Message::Text(payload.into())).await.is_err()
-                                            {
-                                                log::info!("WebSocket client disconnected (send error).");
-                                                return;
-                                            }
-                                            continue;
+                                            true
+                                        } else {
+                                            info.count += 1;
+                                            false
                                         }
-                                        info.count += 1;
+                                    };
+                                    if rate_exceeded {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
+                                        && socket.send(Message::Text(payload.into())).await.is_err()
+                                        {
+                                            log::info!("WebSocket client disconnected (send error).");
+                                            return;
+                                        }
+                                        continue;
                                     }
                                     let mut reauth = false;
                                     for (secret, perm) in &state.secret_map {
@@ -524,7 +534,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                     }
                                     if reauth {
                                         if let Some(entry) = state.rate_limit.lock().await.get_mut(&ip) {
-                                            entry.count -= 1;
+                                            entry.count = entry.count.saturating_sub(1);
                                         }
                                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Authenticated { perm: permission })
                                         && socket.send(Message::Text(payload.into())).await.is_err()
