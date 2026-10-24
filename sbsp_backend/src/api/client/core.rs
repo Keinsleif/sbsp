@@ -259,10 +259,21 @@ pub async fn create_remote_backend(
                                                     break;
                                                 }
                                             },
-                                            WsError::PermissionDenied => {
+                                            WsError::AuthenticationRateLimitExceeded => {
                                                 if event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
                                                         id: 2,
+                                                        message: "Authentication rate limit exceeded".to_string(),
+                                                    }
+                                                }).is_err() {
+                                                    log::error!("Failed to send BackendEvent to channel.");
+                                                    break;
+                                                }
+                                            },
+                                            WsError::PermissionDenied => {
+                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                    error: BackendError::Custom {
+                                                        id: 3,
                                                         message: "Permission denied.".to_string(),
                                                     }
                                                 }).is_err() {

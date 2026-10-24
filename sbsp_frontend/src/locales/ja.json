@@ -450,7 +450,8 @@
     },
     "failedToApplySettings": "設定の適用に失敗しました",
     "failedToCheckUpdate": "更新の確認に失敗しました",
-    "failedToExecuteCue": "キューの実行に失敗しました"
+    "failedToExecuteCue": "キューの実行に失敗しました",
+    "authenticationRateLimitExceeded": "認証レート制限を超過しました"
   },
   "view": {
     "connect": {

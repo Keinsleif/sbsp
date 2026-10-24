@@ -450,7 +450,8 @@
     },
     "failedToApplySettings": "Failed to apply settings",
     "failedToCheckUpdate": "Failed to check update",
-    "failedToExecuteCue": "Failed to execute Cue"
+    "failedToExecuteCue": "Failed to execute Cue",
+    "authenticationRateLimitExceeded": "Authentication rate limit exceeded."
   },
   "view": {
     "connect": {
