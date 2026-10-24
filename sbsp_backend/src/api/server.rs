@@ -139,10 +139,23 @@ where
         )
         .unwrap()
         .enable_addr_auto();
+        let fullname = sv_info.get_fullname().to_string();
         mdns.register(sv_info).unwrap();
 
         tokio::spawn(async move {
             let _ = shutdown_rx_clone.recv().await;
+            // Say goodbye first, so browsers drop this server now instead
+            // of when its record expires.
+            match mdns.unregister(&fullname) {
+                Ok(status) => {
+                    let _ = tokio::time::timeout(
+                        std::time::Duration::from_secs(1),
+                        status.recv_async(),
+                    )
+                    .await;
+                }
+                Err(e) => log::warn!("Failed to unregister the mdns service: {e}"),
+            }
             let mut result = mdns.shutdown();
             while let Err(mdns_sd::Error::Again) = result {
                 result = mdns.shutdown();

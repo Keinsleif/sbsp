@@ -215,6 +215,12 @@ pub fn discovery() -> iced::Subscription<Vec<ServiceEntry>> {
                     return;
                 }
             };
+            // The list as it is now, including empty: a fresh look must
+            // replace whatever an earlier one left on screen.
+            let first = services.borrow_and_update().clone();
+            if output.send(first).await.is_err() {
+                return;
+            }
             while services.changed().await.is_ok() {
                 let list = services.borrow_and_update().clone();
                 if output.send(list).await.is_err() {
