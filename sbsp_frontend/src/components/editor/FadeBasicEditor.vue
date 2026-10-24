@@ -114,7 +114,7 @@ const isActive = computed(() => {
       <checkbox-wrapper
         v-show="selectedCue != null"
         v-model="stopTargetOnComplete"
-        :label="'Stop target on Complete'"
+        :label="t('main.bottomEditor.fade.stopOnComplete')"
         :disabled="isActive"
         @update:model-value="saveEditorValue"
       />
