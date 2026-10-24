@@ -196,6 +196,7 @@ pub struct State {
     template_editor: editor::Editor,
     /// Set when the cue list or the cache was replaced, so the next
     /// `request_assets` pass looks for audio files nobody has analyzed yet.
+    #[cfg(backend)]
     assets_stale: bool,
     toasts: toast::Toasts,
     /// What the app talks to: the host's own backend, or the one a remote
@@ -410,6 +411,7 @@ impl State {
             fields: field::Drafts::default(),
             editor: editor::Editor::default(),
             template_editor: editor::Editor::default(),
+            #[cfg(backend)]
             assets_stale: false,
             toasts: toast::Toasts::new(),
             #[cfg(backend)]
