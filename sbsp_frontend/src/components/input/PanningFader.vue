@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
 import NumberInput from './NumberInput.vue';
 import { debounce } from '@/utils.ts';
@@ -16,7 +16,8 @@ const props = defineProps<{
 const panning = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+let sliderChanging = false;
+let pointerId: number | null = null;
 
 const faderPosition = computed({
   get() {
@@ -33,19 +34,22 @@ const tickLabels = [
   { value: 64, label: 'R' },
 ];
 
-const onPointerDown = () => {
-  sliderChanging.value = true;
+const onPointerDown = (e: PointerEvent) => {
+  sliderChanging = true;
+  pointerId = e.pointerId;
   window.addEventListener('pointerup', onPointerUp);
 };
 
-const onPointerUp = () => {
+const onPointerUp = (e: PointerEvent) => {
+  if (pointerId !== e.pointerId) return;
   window.removeEventListener('pointerup', onPointerUp);
-  onPointerUpSave();
+  flushFader();
+  pointerId = null;
 };
 
-const onPointerUpSave = debounce(() => {
-  if (sliderChanging.value) {
-    sliderChanging.value = false;
+const flushFader = debounce(() => {
+  if (sliderChanging) {
+    sliderChanging = false;
     if (!props.disabled) {
       emit('update');
     }
@@ -70,7 +74,7 @@ onUnmounted(() => {
     @dblclick="
       if (!props.disabled) {
         faderPosition = 0;
-        onPointerUpSave.clear();
+        flushFader.clear();
         emit('update');
       }
     "

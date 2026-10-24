@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import VolumeInput from './VolumeInput.vue';
 import { debounce, decibelsToFader, faderToDecibels } from '../../utils';
 import SliderWrapper from '../wrapper/SliderWrapper.vue';
@@ -24,7 +24,8 @@ const props = withDefaults(
 const volume = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
-const sliderChanging = ref(false);
+let sliderChanging = false;
+let pointerId: number | null = null;
 
 const faderPosition = computed({
   get() {
@@ -35,19 +36,22 @@ const faderPosition = computed({
   },
 });
 
-const onPointerDown = () => {
-  sliderChanging.value = true;
+const onPointerDown = (e: PointerEvent) => {
+  sliderChanging = true;
+  pointerId = e.pointerId;
   window.addEventListener('pointerup', onPointerUp);
 };
 
-const onPointerUp = () => {
+const onPointerUp = (e: PointerEvent) => {
+  if (e.pointerId !== pointerId) return;
   window.removeEventListener('pointerup', onPointerUp);
   flushFader();
+  pointerId = null;
 };
 
 const flushFader = debounce(() => {
-  if (sliderChanging.value) {
-    sliderChanging.value = false;
+  if (sliderChanging) {
+    sliderChanging = false;
     if (!props.disabled) {
       emit('update');
     }
