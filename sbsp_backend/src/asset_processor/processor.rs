@@ -4,18 +4,25 @@
 use symphonia::{core::codecs::CODEC_TYPE_NULL, default::register_enabled_codecs};
 
 use std::{
-    path::PathBuf,
     collections::{HashMap, HashSet},
+    path::PathBuf,
+    sync::{
+        Arc, LazyLock,
+        atomic::{AtomicBool, Ordering},
+    },
     time::SystemTime,
-    sync::{atomic::{AtomicBool, Ordering}, Arc, LazyLock},
 };
 
 use ebur128::EbuR128;
-use symphonia_adapter_libopus::OpusDecoder;
 use symphonia::core::{
-    audio::SampleBuffer, codecs::{DecoderOptions, CodecRegistry}, formats::FormatOptions, io::MediaSourceStream,
-    meta::MetadataOptions, probe::Hint,
+    audio::SampleBuffer,
+    codecs::{CodecRegistry, DecoderOptions},
+    formats::FormatOptions,
+    io::MediaSourceStream,
+    meta::MetadataOptions,
+    probe::Hint,
 };
+use symphonia_adapter_libopus::OpusDecoder;
 use tokio::{
     sync::{RwLock, Semaphore, broadcast, mpsc},
     task::JoinSet,

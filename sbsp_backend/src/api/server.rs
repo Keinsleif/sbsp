@@ -2,18 +2,28 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 use std::{
-    collections::{HashMap, HashSet}, net::SocketAddr, path::{Path, PathBuf}, sync::Arc, time::{Duration, Instant},
+    collections::{HashMap, HashSet},
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, Instant},
 };
 
 use axum::{
-    Router, extract::{
-        ConnectInfo, State, WebSocketUpgrade, ws::{Message, WebSocket},
-    }, http::HeaderMap, response::IntoResponse, routing::get,
+    Router,
+    extract::{
+        ConnectInfo, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
+    http::HeaderMap,
+    response::IntoResponse,
+    routing::get,
 };
 use gethostname::gethostname;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use tokio::{
-    sync::{Mutex, broadcast, watch}, time::{MissedTickBehavior, interval},
+    sync::{Mutex, broadcast, watch},
+    time::{MissedTickBehavior, interval},
 };
 
 use super::{WsCommand, WsFeedback};
@@ -73,16 +83,20 @@ where
     let salt = generate_salt();
 
     let secret_map = {
-        options.auth_map.into_iter().map(|pi| {
-            if !pi.password.is_empty() {
-                let secret = generate_secret(&pi.password, &salt);
-                (Some(secret), pi.permission)
-            } else {
-                (None, pi.permission)
-            }
-        }).collect()
+        options
+            .auth_map
+            .into_iter()
+            .map(|pi| {
+                if !pi.password.is_empty() {
+                    let secret = generate_secret(&pi.password, &salt);
+                    (Some(secret), pi.permission)
+                } else {
+                    (None, pi.permission)
+                }
+            })
+            .collect()
     };
-    
+
     let state = ApiState {
         backend_handle,
         state_rx,
@@ -130,11 +144,14 @@ where
     }
     // let shutdown_tx_clone = shutdown_tx.clone();
     tokio::spawn(
-        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(async move {
-                let _ = shutdown_rx.recv().await;
-            })
-            .into_future(),
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(async move {
+            let _ = shutdown_rx.recv().await;
+        })
+        .into_future(),
     );
     Ok(shutdown_tx)
 }
@@ -184,20 +201,22 @@ async fn websocket_handler(
 fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     if let Some(xff) = headers.get("x-forwarded-for")
         && let Ok(xff_str) = xff.to_str()
-            && let Some(real_ip) = xff_str.split(',').next() {
-                let trimmed = real_ip.trim();
-                if !trimmed.is_empty() {
-                    return Some(trimmed.to_string());
-                }
-            }
+        && let Some(real_ip) = xff_str.split(',').next()
+    {
+        let trimmed = real_ip.trim();
+        if !trimmed.is_empty() {
+            return Some(trimmed.to_string());
+        }
+    }
 
     if let Some(x_real_ip) = headers.get("x-real-ip")
-        && let Ok(ip_str) = x_real_ip.to_str() {
-            let trimmed = ip_str.trim();
-            if !trimmed.is_empty() {
-                return Some(trimmed.to_string());
-            }
+        && let Ok(ip_str) = x_real_ip.to_str()
+    {
+        let trimmed = ip_str.trim();
+        if !trimmed.is_empty() {
+            return Some(trimmed.to_string());
         }
+    }
 
     None
 }
@@ -230,7 +249,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                     let rate_exceeded = {
                         let mut limits = state.rate_limit.lock().await;
                         let now = Instant::now();
-                        limits.retain(|_, info| now.duration_since(info.window_start) <= WINDOW_DURATION);
+                        limits.retain(|_, info| {
+                            now.duration_since(info.window_start) <= WINDOW_DURATION
+                        });
 
                         let info = limits.entry(ip.clone()).or_insert(AttemptInfo {
                             count: 0,
@@ -245,9 +266,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                         }
                     };
                     if rate_exceeded {
-                        if let Ok(payload) =
-                            serde_json::to_string(&WsFeedback::Error(WsError::AuthenticationRateLimitExceeded))
-                            && let Err(e) = socket.send(Message::Text(payload.into())).await
+                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(
+                            WsError::AuthenticationRateLimitExceeded,
+                        )) && let Err(e) = socket.send(Message::Text(payload.into())).await
                         {
                             log::error!("Error on responding error. e={}", e);
                             return;
@@ -270,7 +291,7 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                 permission = *perm;
                                 break 'auth;
                             }
-                            _ => {},
+                            _ => {}
                         }
                     }
                     if let Ok(payload) =
