@@ -50,6 +50,7 @@ let server_options: ApiServerOptions = {
       permission: 0b0001,
     },
   ],
+  trustIpHeaders: false,
 };
 
 let unlisten: (() => void) | null = null;

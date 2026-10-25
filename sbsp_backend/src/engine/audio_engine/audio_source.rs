@@ -44,9 +44,13 @@ enum AudioSourceControlCommand {
         position: f64,
         result: oneshot::Sender<Result<(), anyhow::Error>>,
     },
-    SetVolume {
-        volume: Decibels,
+    SetLevel {
+        level: Decibels,
+    },
+    SetFade {
+        level: Decibels,
         fade_param: FadeParam,
+        stop_on_complete: bool,
     },
 }
 
@@ -55,7 +59,6 @@ pub struct AudioSourceHandle {
     control: Producer<AudioSourceControlCommand>,
     pub duration: f64,
     volume: Decibels,
-    fade_volume: Decibels,
 }
 
 impl AudioSourceHandle {
@@ -161,27 +164,22 @@ impl AudioSourceHandle {
 
     pub fn set_volume(&mut self, volume: Decibels) {
         self.volume = volume;
-
         if self
             .control
-            .push(AudioSourceControlCommand::SetVolume {
-                volume: self.volume + self.fade_volume,
-                fade_param: DEFAULT_FADE_PARAM,
-            })
+            .push(AudioSourceControlCommand::SetLevel { level: volume })
             .is_err()
         {
             log::error!("Failed to send set_volume command to audio thread");
         }
     }
 
-    pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam) {
-        self.fade_volume = volume;
-
+    pub fn set_fade(&mut self, volume: Decibels, fade_param: FadeParam, stop_on_complete: bool) {
         if self
             .control
-            .push(AudioSourceControlCommand::SetVolume {
-                volume: self.volume + self.fade_volume,
+            .push(AudioSourceControlCommand::SetFade {
+                level: volume,
                 fade_param,
+                stop_on_complete,
             })
             .is_err()
         {
@@ -329,8 +327,10 @@ where
     update_interval: usize,
     current_span_channels: ChannelCount,
     current_span_sample_rate: SampleRate,
-    control_volume: Volume,
-    volume: Volume,
+    transport_gain: Volume,
+    level: Volume,
+    fade: Volume,
+    stop_on_fade_complete: bool,
     envelope: Envelope,
     output_buffer: Box<[Sample]>,
 }
@@ -392,8 +392,10 @@ where
                 frames_counted: update_interval,
                 playing_frames_counted: 0,
                 update_interval,
-                control_volume,
-                volume: Volume::new(volume_db),
+                transport_gain: control_volume,
+                level: Volume::new(volume_db),
+                fade: Volume::new(Decibels::IDENTITY),
+                stop_on_fade_complete: false,
                 envelope: Envelope::new(envelope, duration),
             },
             AudioSourceHandle {
@@ -401,7 +403,6 @@ where
                 control: control_pr,
                 duration,
                 volume: volume_db,
-                fade_volume: Decibels::IDENTITY,
             },
         )
     }
@@ -449,14 +450,14 @@ where
                                 AudioPlaybackState::Playing | AudioPlaybackState::Resuming
                             ) {
                                 state = AudioPlaybackState::Pausing;
-                                self.control_volume
+                                self.transport_gain
                                     .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                             }
                         }
                         AudioSourceControlCommand::Resume => {
                             if matches!(state, AudioPlaybackState::Paused) {
                                 state = AudioPlaybackState::Resuming;
-                                self.control_volume
+                                self.transport_gain
                                     .set_volume(Decibels::IDENTITY, DEFAULT_FADE_PARAM);
                             }
                         }
@@ -465,7 +466,7 @@ where
                             | AudioPlaybackState::Pausing
                             | AudioPlaybackState::Resuming => {
                                 state = AudioPlaybackState::SoftStopping;
-                                self.control_volume
+                                self.transport_gain
                                     .set_volume(Decibels::MUTE, self.fadeout_param);
                             }
                             AudioPlaybackState::Loaded | AudioPlaybackState::Paused => {
@@ -479,7 +480,7 @@ where
                             | AudioPlaybackState::Resuming
                             | AudioPlaybackState::SoftStopping => {
                                 state = AudioPlaybackState::HardStopping;
-                                self.control_volume
+                                self.transport_gain
                                     .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
                             }
                             AudioPlaybackState::Paused | AudioPlaybackState::Loaded => {
@@ -493,8 +494,16 @@ where
                                 Err(err) => Err(anyhow::anyhow!("Invalid position. {}", err)),
                             });
                         }
-                        AudioSourceControlCommand::SetVolume { volume, fade_param } => {
-                            self.volume.set_volume(volume, fade_param);
+                        AudioSourceControlCommand::SetLevel { level } => {
+                            self.level.set_volume(level, DEFAULT_FADE_PARAM);
+                        }
+                        AudioSourceControlCommand::SetFade {
+                            level,
+                            fade_param,
+                            stop_on_complete,
+                        } => {
+                            self.stop_on_fade_complete = stop_on_complete;
+                            self.fade.set_volume(level, fade_param);
                         }
                     }
 
@@ -504,7 +513,7 @@ where
             }
 
             let dt = 1.0 / self.current_span_sample_rate.get() as f64;
-            if self.control_volume.update(dt) {
+            if self.transport_gain.update(dt) {
                 match state {
                     AudioPlaybackState::Pausing => {
                         state = AudioPlaybackState::Paused;
@@ -520,16 +529,38 @@ where
                 // State publish
                 self.shared.store_state(state);
             }
-            self.volume.update(dt);
+            self.level.update(dt);
+            if self.fade.update(dt) && self.stop_on_fade_complete {
+                self.stop_on_fade_complete = false;
+                match state {
+                    AudioPlaybackState::Playing
+                    | AudioPlaybackState::Pausing
+                    | AudioPlaybackState::Resuming
+                    | AudioPlaybackState::SoftStopping => {
+                        state = AudioPlaybackState::HardStopping;
+                        self.transport_gain
+                            .set_volume(Decibels::MUTE, DEFAULT_FADE_PARAM);
+                    }
+                    AudioPlaybackState::Paused | AudioPlaybackState::Loaded => {
+                        state = AudioPlaybackState::Stopped;
+                    }
+                    _ => {}
+                }
+                self.shared.store_state(state);
+            }
 
             if state.is_advancing() {
-                let factor = (self.control_volume.volume
-                    + self.volume.volume
-                    + self.envelope.update(
-                        self.offset_position
-                            + self.playing_frames_counted as f64
-                                / self.current_span_sample_rate.get() as f64,
-                    )).as_amplitude();
+                let factor = (self.transport_gain.level
+                    .stack(self.level.level)
+                    .stack(self.fade.level)
+                    .stack(
+                        self.envelope.update(
+                            self.offset_position
+                                + self.playing_frames_counted as f64
+                                    / self.current_span_sample_rate.get() as f64,
+                        )
+                    )
+                ).as_amplitude();
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];

@@ -188,20 +188,28 @@ impl CueController {
                 Ok(())
             }
             ControllerCommand::Stop(cue_id) => {
-                if self.model_handle.is_cue_exists(&cue_id).await {
-                    if let Some(active_cue) = state.active_cues.get(&cue_id) {
-                        let stop_mode = if active_cue.status == PlaybackStatus::Stopping {
-                            StopMode::Hard
-                        } else {
-                            StopMode::Soft
-                        };
-                        self.executor_tx
-                            .send(ExecutorCommand::Stop(cue_id, stop_mode))
-                            .await?;
-                    }
-                } else {
-                    anyhow::bail!("Stop: cue not found. cue_id={}", cue_id);
+                if let Some(active_cue) = state.active_cues.get(&cue_id) {
+                    let stop_mode = if active_cue.status == PlaybackStatus::Stopping {
+                        StopMode::Hard
+                    } else {
+                        StopMode::Soft
+                    };
+                    self.executor_tx
+                        .send(ExecutorCommand::Stop(cue_id, stop_mode))
+                        .await?;
                 }
+                Ok(())
+            }
+            ControllerCommand::SoftStop(cue_id) => {
+                self.executor_tx
+                    .send(ExecutorCommand::Stop(cue_id, StopMode::Soft))
+                    .await?;
+                Ok(())
+            }
+            ControllerCommand::HardStop(cue_id) => {
+                self.executor_tx
+                    .send(ExecutorCommand::Stop(cue_id, StopMode::Hard))
+                    .await?;
                 Ok(())
             }
             ControllerCommand::PerformAction(cue_id, cue_action) => {
@@ -218,39 +226,62 @@ impl CueController {
                 }
                 Ok(())
             }
-            ControllerCommand::PauseAll
-            | ControllerCommand::ResumeAll
-            | ControllerCommand::StopAll => {
+            ControllerCommand::PauseAll => {
                 let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
                 for cue_id in &root_ids {
                     if let Some(active_cue) = state.active_cues.get(cue_id) {
-                        let executor_command = match command {
-                            ControllerCommand::PauseAll => match active_cue.status {
-                                PlaybackStatus::PreWaiting | PlaybackStatus::Playing => {
-                                    ExecutorCommand::Pause(*cue_id)
-                                }
-                                _ => continue,
-                            },
-                            ControllerCommand::ResumeAll => match active_cue.status {
-                                PlaybackStatus::PreWaitPaused | PlaybackStatus::Paused => {
-                                    ExecutorCommand::Resume(*cue_id)
-                                }
-                                _ => continue,
-                            },
-                            ControllerCommand::StopAll => {
-                                if active_cue.status == PlaybackStatus::Stopping {
-                                    ExecutorCommand::Stop(*cue_id, StopMode::Hard)
-                                } else {
-                                    ExecutorCommand::Stop(*cue_id, StopMode::Soft)
-                                }
+                        let executor_command = match active_cue.status {
+                            PlaybackStatus::PreWaiting | PlaybackStatus::Playing => {
+                                ExecutorCommand::Pause(*cue_id)
                             }
-                            _ => unreachable!(),
+                            _ => continue,
                         };
                         self.executor_tx.send(executor_command).await?;
                     }
                 }
                 Ok(())
             }
+            ControllerCommand::ResumeAll => {
+                let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
+                for cue_id in &root_ids {
+                    if let Some(active_cue) = state.active_cues.get(cue_id) {
+                        let executor_command = match active_cue.status {
+                            PlaybackStatus::PreWaitPaused | PlaybackStatus::Paused => {
+                                ExecutorCommand::Resume(*cue_id)
+                            }
+                            _ => continue,
+                        };
+                        self.executor_tx.send(executor_command).await?;
+                    }
+                }
+                Ok(())
+            }
+            ControllerCommand::StopAll => {
+                let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
+                for cue_id in &root_ids {
+                    if let Some(active_cue) = state.active_cues.get(cue_id) {
+                        let executor_command = {
+                            if active_cue.status == PlaybackStatus::Stopping {
+                                ExecutorCommand::Stop(*cue_id, StopMode::Hard)
+                            } else {
+                                ExecutorCommand::Stop(*cue_id, StopMode::Soft)
+                            }
+                        };
+                        self.executor_tx.send(executor_command).await?;
+                    }
+                }
+                Ok(())
+            }
+            ControllerCommand::SoftStopAll => {
+                let root_ids = self.model_handle.read().await.cue_list.root_ids.clone();
+                for cue_id in &root_ids {
+                    self.executor_tx
+                        .send(ExecutorCommand::Stop(*cue_id, StopMode::Soft))
+                        .await?;
+                }
+                Ok(())
+            }
+            ControllerCommand::HardStopAll => self.hard_stop_all().await,
         }
     }
 

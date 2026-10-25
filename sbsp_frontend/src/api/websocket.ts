@@ -149,6 +149,44 @@ export function useWebsocketApi(): IBackendAdapter {
               cb(true, msg.data.perm),
             );
             break;
+          case 'error':
+            let error: BackendError = {
+              type: 'custom',
+              id: 0,
+              message: 'Unknown error occured.',
+            };
+            switch (msg.data.type) {
+              case 'permissionDenied':
+                error = {
+                  type: 'custom',
+                  id: 3,
+                  message: 'Permission Denied.',
+                };
+                break;
+              case 'authenticationFailed':
+                error = {
+                  type: 'custom',
+                  id: 1,
+                  message: 'Authentication Failed.',
+                };
+                break;
+              case 'authenticationRateLimitExceeded':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Authentication rate limit exceeded.',
+                };
+                break;
+            }
+            Object.values(websocketApiState.backendEventListeners).forEach((cb) =>
+              cb({
+                type: 'operationFailed',
+                param: {
+                  error: error,
+                },
+              }),
+            );
+            break;
         }
       };
       const mainEventListener = (e: MessageEvent<string>) => {
@@ -196,7 +234,7 @@ export function useWebsocketApi(): IBackendAdapter {
               case 'permissionDenied':
                 error = {
                   type: 'custom',
-                  id: 2,
+                  id: 3,
                   message: 'Permission Denied.',
                 };
                 break;
@@ -205,6 +243,13 @@ export function useWebsocketApi(): IBackendAdapter {
                   type: 'custom',
                   id: 1,
                   message: 'Authentication Failed.',
+                };
+                break;
+              case 'authenticationRateLimitExceeded':
+                error = {
+                  type: 'custom',
+                  id: 2,
+                  message: 'Authentication rate limit exceeded.',
                 };
                 break;
             }
@@ -336,6 +381,12 @@ export function useWebsocketApi(): IBackendAdapter {
     sendStop: async function (cueId: string): Promise<void> {
       this.sendCommand({ type: 'control', command: 'stop', params: cueId });
     },
+    sendSoftStop: async function (cueId: string): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'softStop', params: cueId });
+    },
+    sendHardStop: async function (cueId: string): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'hardStop', params: cueId });
+    },
     sendPauseAll: async function (): Promise<void> {
       this.sendCommand({ type: 'control', command: 'pauseAll' });
     },
@@ -344,6 +395,12 @@ export function useWebsocketApi(): IBackendAdapter {
     },
     sendStopAll: async function (): Promise<void> {
       this.sendCommand({ type: 'control', command: 'stopAll' });
+    },
+    sendSoftStopAll: async function (): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'softStopAll' });
+    },
+    sendHardStopAll: async function (): Promise<void> {
+      this.sendCommand({ type: 'control', command: 'hardStopAll' });
     },
     sendSeekTo: async function (cueId: string, position: number): Promise<void> {
       this.sendCommand({ type: 'control', command: 'seekTo', params: [cueId, position] });

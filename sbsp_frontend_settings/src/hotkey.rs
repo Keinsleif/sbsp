@@ -74,7 +74,15 @@ pub struct PlaybackHotkey {
     pub pause_all: Option<String>,
     pub resume_all: Option<String>,
     pub stop: Option<String>,
+    #[serde(default)]
+    pub fade_out: Option<String>,
+    #[serde(default)]
+    pub hard_stop: Option<String>,
     pub stop_all: Option<String>,
+    #[serde(default)]
+    pub fade_all_out: Option<String>,
+    #[serde(default)]
+    pub hard_stop_all: Option<String>,
     pub seek_forward: Option<String>,
     pub seek_backward: Option<String>,
 }
@@ -88,7 +96,11 @@ impl Default for PlaybackHotkey {
             pause_all: Some("[".to_string()),
             resume_all: Some("]".to_string()),
             stop: Some("Backspace".to_string()),
+            fade_out: None,
+            hard_stop: None,
             stop_all: Some("Escape".to_string()),
+            fade_all_out: None,
+            hard_stop_all: None,
             seek_forward: Some("ArrowRight".to_string()),
             seek_backward: Some("ArrowLeft".to_string()),
         }

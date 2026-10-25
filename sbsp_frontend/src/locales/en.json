@@ -98,7 +98,11 @@
             "stop": "Stop",
             "stopAll": "Stop All",
             "title": "Playback",
-            "execute": "Execute"
+            "execute": "Execute",
+            "fadeOut": "Fade Out",
+            "hardStop": "Hard Stop",
+            "fadeAllOut": "Fade All Out",
+            "hardStopAll": "Hard Stop All"
           },
           "file": {
             "title": "File",
@@ -269,7 +273,8 @@
       "fade": {
         "fadeParameter": "Fade Parameter",
         "targetVolume": "Target Volume",
-        "title": "Fade"
+        "title": "Fade",
+        "stopOnComplete": "Stop target when the fade completes"
       },
       "group": {
         "mode": {
@@ -445,7 +450,8 @@
     },
     "failedToApplySettings": "Failed to apply settings",
     "failedToCheckUpdate": "Failed to check update",
-    "failedToExecuteCue": "Failed to execute Cue"
+    "failedToExecuteCue": "Failed to execute Cue",
+    "authenticationRateLimitExceeded": "Authentication rate limit exceeded."
   },
   "view": {
     "connect": {

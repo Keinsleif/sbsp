@@ -237,6 +237,14 @@ useBackendEvent((event) => {
               toast.add({
                 severity: 'error',
                 summary: t('notification.operationFailed'),
+                detail: t('notification.authenticationRateLimitExceeded'),
+                life: 3000,
+              });
+              break;
+            case 3:
+              toast.add({
+                severity: 'error',
+                summary: t('notification.operationFailed'),
                 detail: t('notification.permissionDenied'),
                 life: 3000,
               });
@@ -435,11 +443,55 @@ useHotkey(
 );
 
 useHotkey(
+  () => uiSettings.settings.hotkey.playback.fadeOut,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (const cueId of uiState.selectedRows) {
+        api.sendSoftStop(cueId);
+      }
+    }
+  },
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.hardStop,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      for (const cueId of uiState.selectedRows) {
+        api.sendHardStop(cueId);
+      }
+    }
+  },
+);
+
+useHotkey(
   () => uiSettings.settings.hotkey.playback.stopAll,
   (e) => {
     e.preventDefault();
     if (uiState.mode !== 'view') {
       api.sendStopAll();
+    }
+  },
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.fadeAllOut,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendSoftStopAll();
+    }
+  },
+);
+
+useHotkey(
+  () => uiSettings.settings.hotkey.playback.hardStopAll,
+  (e) => {
+    e.preventDefault();
+    if (uiState.mode !== 'view') {
+      api.sendHardStopAll();
     }
   },
 );
