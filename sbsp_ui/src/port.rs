@@ -37,7 +37,7 @@ pub use sbsp_backend::event::BackendEvent as PortEvent;
 pub enum Port {
     #[cfg(feature = "host")]
     Host(crate::host::backend::HostPort),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     Remote(crate::remote::backend::RemotePort),
 }
 
@@ -49,7 +49,7 @@ impl std::ops::Deref for Port {
         match self {
             #[cfg(feature = "host")]
             Port::Host(port) => port,
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Port::Remote(port) => port,
         }
     }
@@ -61,12 +61,12 @@ impl Port {
     pub fn host(&self) -> Option<&crate::host::backend::HostPort> {
         match self {
             Port::Host(port) => Some(port),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             _ => None,
         }
     }
 
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     pub fn remote(&self) -> Option<&crate::remote::backend::RemotePort> {
         match self {
             Port::Remote(port) => Some(port),

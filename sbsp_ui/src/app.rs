@@ -17,7 +17,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::time::{Duration, Instant};
+use iced::time::{Duration, Instant};
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
@@ -26,7 +26,7 @@ use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
 #[cfg(backend)]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
-#[cfg(feature = "remote")]
+#[cfg(client)]
 use crate::features::{connect, file_list};
 use crate::features::{
     credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, renumber, server_panel,
@@ -53,7 +53,7 @@ use crate::port::{Control, ModelEdit};
 use crate::port::FullState;
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
-#[cfg(feature = "remote")]
+#[cfg(client)]
 use crate::remote::backend::{RemotePort, RemoteSettings};
 
 use sbsp_backend::helper::SupportedHardware;
@@ -61,7 +61,7 @@ use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 use sbsp_frontend_settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
 #[cfg(feature = "host")]
 use sbsp_frontend_settings::GlobalHostSettings;
-#[cfg(feature = "remote")]
+#[cfg(client)]
 use sbsp_frontend_settings::GlobalRemoteSettings;
 
 use crate::fl;
@@ -215,18 +215,18 @@ pub struct State {
     #[cfg(backend)]
     backend: Option<Port>,
     /// The remote's own settings and where they are kept (loaded at start).
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     remote_settings: GlobalRemoteSettings,
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     remote_store: Option<RemoteSettings>,
     /// The host's audio files to choose from (the remote has none of its own).
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     file_picker: Option<file_list::Dialog>,
     /// The remote's connect screen (shown while there is no connection).
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     connect: connect::Screen,
     /// The connection is being closed by the user, so its end is not news.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     disconnecting: bool,
 }
 
@@ -303,29 +303,29 @@ pub enum Message {
     #[cfg(feature = "host")]
     BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
     /// The connect screen.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     RemoteSettingsLoaded(RemoteSettings, Box<GlobalRemoteSettings>),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     RemoteSettingsImported(Result<Option<Box<GlobalRemoteSettings>>, String>),
     /// Show the host's files to choose from.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     OpenFilePicker(file_list::Purpose),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     FilePicker(file_list::Message),
     /// The host sent its list of files.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     FileListReceived(Vec<sbsp_backend::api::FileList>),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     Connect(connect::Message),
     /// The hosts found on the network.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     Discovered(Vec<sbsp_backend::api::client::ServiceEntry>),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     RemoteConnected(RemotePort, Box<FullState>),
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     RemoteFailed(String),
     /// The connection ended.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     RemoteClosed,
     /// Time to ask the backend where the playing cues are.
     #[cfg(backend)]
@@ -394,11 +394,11 @@ impl State {
             }
             Err(e) => Message::BackendError(e.to_string()),
         });
-        #[cfg(all(feature = "remote", not(feature = "host")))]
+        #[cfg(all(client, not(feature = "host")))]
         let boot_task = Task::perform(RemoteSettings::load(), |(store, settings)| {
             Message::RemoteSettingsLoaded(store, Box::new(settings))
         });
-        #[cfg(not(any(feature = "host", feature = "remote")))]
+        #[cfg(not(any(feature = "host", client)))]
         let boot_task = Task::none();
 
         let is_host = cfg!(feature = "host");
@@ -473,15 +473,15 @@ impl State {
             toasts: toast::Toasts::new(),
             #[cfg(backend)]
             backend: None,
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             remote_settings: GlobalRemoteSettings::default(),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             remote_store: None,
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             file_picker: None,
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             connect: connect::Screen::default(),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             disconnecting: false,
         };
 
@@ -576,27 +576,27 @@ impl State {
                 Task::none()
             }
             Message::License(message) => self.handle_license(message),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::Connect(message) => self.handle_connect(message),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::OpenFilePicker(purpose) => self.open_file_picker(purpose),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::FilePicker(message) => self.handle_file_picker(message),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::FileListReceived(list) => {
                 if let Some(picker) = &mut self.file_picker {
                     picker.set_list(list);
                 }
                 Task::none()
             }
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::Discovered(services) => {
                 self.connect.services = services;
                 Task::none()
             }
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::RemoteConnected(port, state) => self.remote_connected(port, *state),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::RemoteFailed(message) => {
                 self.connect.connecting = false;
                 log::error!("connection failed: {message}");
@@ -606,7 +606,7 @@ impl State {
                 );
                 Task::none()
             }
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::RemoteClosed => {
                 self.remote_closed();
                 Task::none()
@@ -663,12 +663,12 @@ impl State {
                 self.apply(message);
                 self.save_appearance()
             }
-            #[cfg(all(feature = "remote", not(feature = "host")))]
+            #[cfg(all(client, not(feature = "host")))]
             message @ (Message::ToggleTheme | Message::ToggleLanguage) => {
                 self.apply(message);
                 self.save_remote_appearance()
             }
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::RemoteSettingsLoaded(store, settings) => {
                 self.apply_preferences(&Preferences::from(&*settings));
                 self.remote_settings = *settings;
@@ -733,7 +733,7 @@ impl State {
     }
 
     /// The remote's View menu choices go into its own settings file.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn save_remote_appearance(&mut self) -> Task<Message> {
         let appearance = &mut self.remote_settings.appearance;
         appearance.dark_mode = preferences::dark_mode(self.theme_mode);
@@ -856,7 +856,7 @@ impl State {
             // Handled in `update_inner`, which can ask the window.
             Message::WindowMoved(..) | Message::WindowResized(..) => {}
             // Handled in `update_inner`, which can start the connection.
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::Connect(_)
             | Message::Discovered(_)
             | Message::RemoteConnected(..)
@@ -915,7 +915,7 @@ impl State {
                     );
                 }
             },
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             Message::RemoteSettingsImported(result) => match result {
                 Ok(Some(settings)) => {
                     self.apply_preferences(&Preferences::from(&*settings));
@@ -1064,7 +1064,7 @@ impl State {
             return Task::none();
         }
         // The host's file list: Escape closes it.
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         if self.file_picker.is_some() {
             if press.names.iter().any(|n| n == "Escape") && !press.repeat {
                 return self.handle_file_picker(file_list::Message::Cancel);
@@ -1072,7 +1072,7 @@ impl State {
             return Task::none();
         }
         // The password question of the connect screen: Escape cancels it.
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         if self.connect.prompt.is_some() {
             if press.names.iter().any(|n| n == "Escape") && !press.repeat {
                 return self.handle_connect(connect::Message::Cancel);
@@ -1362,7 +1362,7 @@ impl State {
     fn is_modified(&self) -> bool {
         self.backend
             .as_ref()
-            .is_some_and(|backend| backend.handle().model_handle.is_modified())
+            .is_some_and(|backend| backend.is_modified())
     }
 
     #[cfg(not(backend))]
@@ -1536,7 +1536,7 @@ impl State {
     }
 
     /// Shows the host's files and asks the host for the list.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn open_file_picker(&mut self, purpose: file_list::Purpose) -> Task<Message> {
         let Some(port) = self.backend.as_ref().and_then(Port::remote) else {
             return Task::none();
@@ -1545,7 +1545,7 @@ impl State {
         Task::perform(port.request_file_list(), backend_result)
     }
 
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn handle_file_picker(&mut self, message: file_list::Message) -> Task<Message> {
         use file_list::{Outcome, Purpose};
 
@@ -1568,7 +1568,7 @@ impl State {
 
     /// A message from the connect screen; once the password is given, the
     /// connection is made.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn handle_connect(&mut self, message: connect::Message) -> Task<Message> {
         let Some(request) = self.connect.update(message) else {
             return Task::none();
@@ -1584,7 +1584,7 @@ impl State {
 
     /// Takes in the host's state, like the host does for its own backend,
     /// with the permissions the host granted.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn remote_connected(&mut self, port: RemotePort, state: FullState) -> Task<Message> {
         log::info!(
             "connected to {}, {} active cue(s)",
@@ -1615,7 +1615,7 @@ impl State {
 
     /// The connection ended: back to the connect screen with nothing of
     /// the host's left.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn remote_closed(&mut self) {
         self.backend = None;
         self.file_picker = None;
@@ -1636,7 +1636,7 @@ impl State {
     }
 
     /// The File menu's Disconnect.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn disconnect(&mut self) -> Task<Message> {
         match self.backend.as_ref().and_then(Port::remote) {
             Some(port) => {
@@ -2082,7 +2082,7 @@ impl State {
         }
     }
 
-    #[cfg(all(feature = "remote", not(feature = "host")))]
+    #[cfg(all(client, not(feature = "host")))]
     fn save_preferences(&mut self, _audio: Option<AudioHardwareSettings>) -> Task<Message> {
         let p = self.preferences.clone();
         let settings = &mut self.remote_settings;
@@ -2097,7 +2097,7 @@ impl State {
         }
     }
 
-    #[cfg(not(any(feature = "host", feature = "remote")))]
+    #[cfg(not(any(feature = "host", client)))]
     fn save_preferences(&mut self, _audio: Option<AudioHardwareSettings>) -> Task<Message> {
         Task::none()
     }
@@ -2211,12 +2211,12 @@ impl State {
         })
     }
 
-    #[cfg(all(feature = "remote", not(feature = "host")))]
+    #[cfg(all(client, not(feature = "host")))]
     fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
         Task::done(Message::OpenFilePicker(file_list::Purpose::Target(id)))
     }
 
-    #[cfg(not(any(feature = "host", feature = "remote")))]
+    #[cfg(not(any(feature = "host", client)))]
     fn pick_audio_target(&self, _id: Uuid) -> Task<Message> {
         log::warn!("no file picker in this build");
         Task::none()
@@ -2376,12 +2376,12 @@ impl State {
         })
     }
 
-    #[cfg(all(feature = "remote", not(feature = "host")))]
+    #[cfg(all(client, not(feature = "host")))]
     fn pick_audio_files(&self) -> Task<Message> {
         Task::done(Message::OpenFilePicker(file_list::Purpose::Add))
     }
 
-    #[cfg(not(any(feature = "host", feature = "remote")))]
+    #[cfg(not(any(feature = "host", client)))]
     fn pick_audio_files(&self) -> Task<Message> {
         log::warn!("no file picker in this build");
         Task::none()
@@ -2411,7 +2411,7 @@ impl State {
         let files = std::mem::take(&mut self.dropped_files);
         // A remote's files are on the wrong computer: the host cannot play
         // them, and the cue would name a path that is only here.
-        if cfg!(all(feature = "remote", not(feature = "host")))
+        if cfg!(all(client, not(feature = "host")))
             || self.ui.mode != Mode::Edit
             || files.is_empty()
         {
@@ -2712,7 +2712,7 @@ impl State {
             "file.save-as" => self.file_command(file_ops::Command::SaveAs),
             "file.export" => self.file_command(file_ops::Command::Export),
             "file.quit" => self.request_close(),
-            #[cfg(feature = "remote")]
+            #[cfg(client)]
             "file.disconnect" => self.disconnect(),
             "edit.import-settings" => self.import_settings(),
             "edit.export-settings" => self.export_settings(),
@@ -2856,22 +2856,22 @@ impl State {
 
         // The hosts on the network, while there is no connection to choose
         // from them for.
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         let discovery = if self.backend.is_none() {
             crate::remote::backend::discovery().map(Message::Discovered)
         } else {
             Subscription::none()
         };
-        #[cfg(not(feature = "remote"))]
+        #[cfg(not(client))]
         let discovery = Subscription::none();
 
         // The host's list of files, while it is being chosen from.
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         let file_lists = match (&self.file_picker, self.backend.as_ref().and_then(Port::remote)) {
             (Some(_), Some(port)) => port.file_lists().map(Message::FileListReceived),
             _ => Subscription::none(),
         };
-        #[cfg(not(feature = "remote"))]
+        #[cfg(not(client))]
         let file_lists = Subscription::none();
 
         // The positions of playing cues are worked out between the
@@ -3042,7 +3042,7 @@ impl State {
                     MenuNode::item("file.quit", fl!("menu-file-quit")),
         ];
         // A remote can end its connection.
-        if cfg!(feature = "remote") {
+        if cfg!(client) {
             let quit = file_menu.len() - 1;
             file_menu.insert(
                 quit,
@@ -3183,7 +3183,7 @@ impl State {
             .padding(4);
 
         // A remote without a connection has only the connect screen.
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         if self.needs_connection() {
             return self.connect_view(header.into());
         }
@@ -3363,7 +3363,7 @@ impl State {
             None => content,
         };
 
-        #[cfg(feature = "remote")]
+        #[cfg(client)]
         let content = match &self.file_picker {
             Some(picker) => modal::over_blocking(
                 content,
@@ -3385,7 +3385,7 @@ impl State {
 impl State {
     /// The remote's screen before (and between) connections: the menu, the
     /// list of hosts, and the questions about the connection on top.
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn connect_view<'a>(&'a self, header: Element<'a, Message>) -> Element<'a, Message> {
         let content: Element<'a, Message> = column![
             header,
@@ -3419,12 +3419,12 @@ impl State {
     /// Whether this is a remote that has no host to work with yet. (Not
     /// any build with the `remote` feature: the tests of the main screen
     /// run in one, with `target` "test".)
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn needs_connection(&self) -> bool {
-        self.target == "remote" && self.backend.is_none()
+        matches!(self.target, "remote" | "web") && self.backend.is_none()
     }
 
-    #[cfg(feature = "remote")]
+    #[cfg(client)]
     fn prompt_for_connect(&self) -> Option<&connect::Prompt> {
         self.connect.prompt.as_ref()
     }

@@ -17,7 +17,7 @@
 
 use std::cell::RefCell;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use iced::time::{Duration, Instant};
 
 use iced::mouse;
 use iced::widget::canvas::{self, Cache, Canvas, LineDash, Path, Stroke};

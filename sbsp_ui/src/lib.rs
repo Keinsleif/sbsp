@@ -8,7 +8,7 @@ compile_error!("feature `web` cannot be combined with `host` or `remote`");
 
 pub mod app;
 pub mod domain;
-#[cfg(backend)]
+#[cfg(any(feature = "host", feature = "remote"))]
 pub mod files;
 pub mod features;
 pub mod i18n;
@@ -24,7 +24,7 @@ pub mod logging;
 
 #[cfg(feature = "host")]
 pub mod host;
-#[cfg(feature = "remote")]
+#[cfg(client)]
 pub mod remote;
 #[cfg(feature = "web")]
 pub mod web;

@@ -16,7 +16,7 @@
 //! of its text goes into the same drafts so it ends the same way.
 
 use std::path::PathBuf;
-use std::time::Instant;
+use iced::time::Instant;
 
 use iced::widget::{Space, button, center, column, container, row, text, text_editor};
 use iced::{Alignment, Element, Length, Theme};

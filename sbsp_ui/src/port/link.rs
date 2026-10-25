@@ -154,6 +154,11 @@ impl Link {
         }
     }
 
+    /// Whether the show has changes that were not saved.
+    pub fn is_modified(&self) -> bool {
+        self.handle.model_handle.is_modified()
+    }
+
     /// Asks the asset processor to analyze `path` (metadata, waveform,
     /// peak). The answer comes back later as `AssetMetadata`/`AssetResult`
     /// events, so this only reports whether the request was queued.

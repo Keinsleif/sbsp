@@ -4,17 +4,11 @@
 //! Ported from `stores/showState.ts`.
 //!
 //! `sbsp_backend::controller::state` (`ActiveCue`/`PlaybackStatus`/
-//! `ShowState`/`StateParam`) has no feature gate, so it's available on
-//! every target. The event types that feed `handle_sync_event`/
-//! `handle_cue_state_event` (`SyncData`/`CueStatusEventParam`, from
-//! `sbsp_backend::event`) are gated behind the `backend` feature (host and
-//! remote both have it via `server`/`client`; web does not), so those two
-//! methods are `#[cfg(any(feature = "host", feature = "remote"))]`
-//! (`sbsp_ui`'s own features, not `sbsp_backend`'s -- `#[cfg(feature =
-//! "backend")]` here would check this crate's features, which has no such
-//! feature, so it would just always be compiled out). `update`/`calculate_position`/
-//! `get_position` only need the always-available types and stay
-//! unconditional.
+//! `ShowState`/`StateParam`) is available on every target. The two methods
+//! that take the backend's events (`handle_sync_event`,
+//! `handle_cue_state_event`) exist where there is a backend connection to
+//! get them from (`#[cfg(backend)]`, see `build.rs`); `update`/
+//! `calculate_position`/`get_position` stay unconditional.
 //!
 //! One deliberate change from the original: every method that needs "now"
 //! (`performance.now()` in the original) takes it as an explicit `Instant`
@@ -24,9 +18,9 @@
 //! `Instant::now()`.
 
 use std::collections::HashMap;
-use std::time::Instant;
+use iced::time::Instant;
 
-#[cfg(any(feature = "host", feature = "remote"))]
+#[cfg(backend)]
 use sbsp_backend::event::{CueStatusEventParam, SyncData};
 use sbsp_backend::{
     controller::state::{ActiveCue, PlaybackStatus, ShowState, StateParam},
@@ -57,7 +51,7 @@ impl PlaybackState {
     /// `synced_data` (the original's own "status may be broken!" warning
     /// path -- a cue appearing in the sync without existing synced data --
     /// is preserved as a `log::warn!`).
-    #[cfg(any(feature = "host", feature = "remote"))]
+    #[cfg(backend)]
     pub fn handle_sync_event(&mut self, data: &SyncData, now: Instant) {
         for cue in &data.cues {
             self.latency = data.latency;
@@ -108,7 +102,7 @@ impl PlaybackState {
     /// Applies one incremental cue-status event. See `CueStatusEventParam`
     /// for the full set; each arm mirrors the original's `switch` case of
     /// the same name.
-    #[cfg(any(feature = "host", feature = "remote"))]
+    #[cfg(backend)]
     pub fn handle_cue_state_event(&mut self, data: &CueStatusEventParam, now: Instant) {
         use CueStatusEventParam as E;
 

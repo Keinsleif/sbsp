@@ -3,6 +3,7 @@
 
 pub mod backend;
 
+#[cfg(feature = "remote")]
 pub fn run() -> iced::Result {
     crate::app::run("remote")
 }

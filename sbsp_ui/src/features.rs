@@ -5,13 +5,13 @@
 //! each owns its own view logic and `Message` type, nested into the app's
 //! via `.map()`, the same pattern used for `widgets::toast`.
 
-#[cfg(feature = "remote")]
+#[cfg(client)]
 pub mod connect;
 pub mod credits;
 pub mod cue_list;
 pub mod editor;
 pub mod file_ops;
-#[cfg(feature = "remote")]
+#[cfg(client)]
 pub mod file_list;
 pub mod header;
 pub mod license_dialog;

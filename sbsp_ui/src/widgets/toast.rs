@@ -28,7 +28,7 @@
 //! toasts.subscription().map(Message::Toast)
 //! ```
 
-use std::time::{Duration, Instant};
+use iced::time::{Duration, Instant};
 
 use iced::widget::{button, column, container, row, stack, text};
 use iced::{Alignment, Element, Length, Subscription, Theme};
