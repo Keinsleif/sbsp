@@ -3,7 +3,7 @@
 
 #[cfg(feature = "protocol")]
 pub mod auth;
-#[cfg(any(feature = "client", feature = "type_export"))]
+#[cfg(any(feature = "protocol", feature = "client", feature = "type_export"))]
 pub mod client;
 mod file_list;
 #[cfg(feature = "server")]

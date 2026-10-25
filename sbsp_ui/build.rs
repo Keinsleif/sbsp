@@ -11,16 +11,23 @@ fn main() {
     // or a remote's connection to one. Most of the app's backend handling is
     // the same for both, and is gated on this instead of on `host`.
     println!("cargo:rustc-check-cfg=cfg(backend)");
+    // The browser build connects to a host like the remote does; only on
+    // wasm32, so `--features web` still builds and tests on the desktop
+    // (without a connection) as before.
+    let web_connection = std::env::var_os("CARGO_FEATURE_WEB").is_some()
+        && std::env::var("CARGO_CFG_TARGET_ARCH").is_ok_and(|arch| arch == "wasm32");
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
+        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
+        || web_connection
+    {
+        println!("cargo:rustc-cfg=backend");
+    }
+
     // `client` is on when the app connects to a host over the network (the
     // remote; the browser build joins it with its own connection).
     println!("cargo:rustc-check-cfg=cfg(client)");
-    if std::env::var_os("CARGO_FEATURE_REMOTE").is_some() {
+    if std::env::var_os("CARGO_FEATURE_REMOTE").is_some() || web_connection {
         println!("cargo:rustc-cfg=client");
-    }
-    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
-        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
-    {
-        println!("cargo:rustc-cfg=backend");
     }
 
     let _ = std::fs::create_dir_all("web_dist");

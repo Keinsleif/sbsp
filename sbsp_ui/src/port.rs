@@ -19,8 +19,11 @@
 //! shared alias. Not needed yet, so not done yet.
 #[cfg(feature = "web")]
 pub mod wire;
-#[cfg(backend)]
+#[cfg(any(feature = "host", feature = "remote"))]
 mod link;
+#[cfg(all(feature = "web", target_arch = "wasm32"))]
+#[path = "port/web_link.rs"]
+pub(crate) mod link;
 
 #[cfg(backend)]
 pub use link::Link;

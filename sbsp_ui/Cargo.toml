@@ -80,6 +80,12 @@ opener = "0.8"
 i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser's WebSocket (the web build's connection to a host), its timers
+# and the page's own address.
+gloo-net = { version = "0.6", default-features = false, features = ["websocket"] }
+gloo-timers = { version = "0.3", features = ["futures"] }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Window", "Location"] }
 # The browser's language, for a language setting left on "system".
 i18n-embed = { version = "0.16", features = ["fluent-system", "web-sys-requester"] }
 # Local::now() on wasm reads the browser's clock through wasm-bindgen.
