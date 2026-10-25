@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## frontend_settings-0.3.0 - 2026-10-25
+#### Features
+- stop after fade complete for Fade cue (#228) - (dce4cfa) - *Keinsleif*
+- add soft&hard stop command and hotkey (#226) - (671cc21) - *Keinsleif*
+
+- - -
+
 ## frontend_settings-0.2.1 - 2026-09-23
 #### Bug Fixes
 - (**backend**) file write TOCTOU (#198) - (4b020b9) - *Keinsleif*

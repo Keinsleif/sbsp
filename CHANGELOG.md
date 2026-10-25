@@ -2,6 +2,25 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.9.0](https://github.com/Keinsleif/sbsp/compare/46e0f561f717d98a8dbb10fd0b7e2481548196d7..2.9.0) - 2026-10-25
+### Package updates
+- [backend-1.9.0](sbsp_backend) bumped to [backend-1.9.0](https://github.com/Keinsleif/sbsp/compare/backend-1.8.0..backend-1.9.0)
+- [frontend_settings-0.3.0](sbsp_frontend_settings) bumped to [frontend_settings-0.3.0](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.2.1..frontend_settings-0.3.0)
+- [app-2.9.0](sbsp_app) bumped to [app-2.9.0](https://github.com/Keinsleif/sbsp/compare/app-2.8.0..app-2.9.0)
+- [frontend-2.9.0](sbsp_frontend) bumped to [frontend-2.9.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.8.0..frontend-2.9.0)
+- [remote_app-2.9.0](sbsp_remote_app) bumped to [remote_app-2.9.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.8.0..remote_app-2.9.0)
+### Global changes
+#### Documentation
+- gsc tags and tips (#221) - ([d37d48b](https://github.com/Keinsleif/sbsp/commit/d37d48b5713d0816fe2b40587d6ecaf95c958ba1)) - [@Keinsleif](https://github.com/Keinsleif)
+#### Build system
+- (**deps**) bump markdown-it from 14.3.2 to 14.3.3 (#225) - ([a49fbad](https://github.com/Keinsleif/sbsp/commit/a49fbadc2eb76044938e095c2f26fa5a402c79c9)) - dependabot[bot], [@Keinsleif](https://github.com/Keinsleif), dependabot[bot]
+- (**deps**) bump shell-quote from 1.10.0 to 1.12.0 - ([46e0f56](https://github.com/Keinsleif/sbsp/commit/46e0f561f717d98a8dbb10fd0b7e2481548196d7)) - dependabot[bot]
+#### Miscellaneous Chores
+- update deps (#231) - ([a3ee8be](https://github.com/Keinsleif/sbsp/commit/a3ee8be5d5ab618eee77c48d3bcfa909e419300b)) - [@Keinsleif](https://github.com/Keinsleif)
+- update deps (#222) - ([d84521f](https://github.com/Keinsleif/sbsp/commit/d84521f58a3b03a14619f8c77719ff9972d8040b)) - [@Keinsleif](https://github.com/Keinsleif)
+
+- - -
+
 ## [2.8.0](https://github.com/Keinsleif/sbsp/compare/eb550c97954e21f028c32df89521a87176e6b4f5..2.8.0) - 2026-10-08
 ### Package updates
 - [frontend-2.8.0](sbsp_frontend) bumped to [frontend-2.8.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.7.1..frontend-2.8.0)

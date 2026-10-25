@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## backend-1.9.0 - 2026-10-25
+#### Features
+- (**backend**) auth retry limit by ip (#230) - (982df94) - *Keinsleif*
+- stop after fade complete for Fade cue (#228) - (dce4cfa) - *Keinsleif*
+- add soft&hard stop command and hotkey (#226) - (671cc21) - *Keinsleif*
+#### Bug Fixes
+- (**backend**) server xff header ip extraction order (#233) - (cbe8514) - *Keinsleif*
+- (**backend**) device config selection logic (#227) - (528c363) - *Keinsleif*
+
+- - -
+
 ## backend-1.8.0 - 2026-10-08
 #### Features
 - (**backend**) opus codec support (#219) - (99f1568) - *Keinsleif*
