@@ -17,6 +17,8 @@
 //! `PortEvent`/`FullState` should become real enums/structs defined here,
 //! with `From`/`TryFrom` conversions on each platform, rather than a
 //! shared alias. Not needed yet, so not done yet.
+#[cfg(feature = "web")]
+pub mod wire;
 #[cfg(backend)]
 mod link;
 

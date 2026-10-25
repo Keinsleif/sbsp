@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-#[cfg(any(feature = "server", feature = "client"))]
-mod auth;
+#[cfg(feature = "protocol")]
+pub mod auth;
 #[cfg(any(feature = "client", feature = "type_export"))]
 pub mod client;
 mod file_list;

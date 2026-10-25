@@ -30,7 +30,7 @@ backend = [
     "dep:rmp-serde",
     "dep:windows-sys",
 ]
-protocol = ["dep:bitflags"]
+protocol = ["dep:bitflags", "dep:sha2", "dep:base64"]
 server = [
     "backend",
     "protocol",
