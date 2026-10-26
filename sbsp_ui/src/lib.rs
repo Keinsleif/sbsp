@@ -13,6 +13,7 @@ pub mod files;
 pub mod features;
 pub mod i18n;
 pub mod menu;
+pub mod time;
 pub mod persist;
 pub mod port;
 pub mod state;

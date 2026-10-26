@@ -17,7 +17,7 @@
 #[cfg(test)]
 mod tests;
 
-use iced::time::{Duration, Instant};
+use crate::time::{Duration, Instant};
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};

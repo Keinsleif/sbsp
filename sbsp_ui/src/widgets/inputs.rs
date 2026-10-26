@@ -13,7 +13,7 @@
 //! updates its local value) and `Released` at the end (the owner sends the
 //! change to the backend once, as the original did on pointer-up).
 
-use iced::time::{Duration, Instant};
+use crate::time::{Duration, Instant};
 
 use iced::widget::{Space, button, canvas, column, row, slider, text};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Theme, mouse};

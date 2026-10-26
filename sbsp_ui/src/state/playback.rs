@@ -18,7 +18,7 @@
 //! `Instant::now()`.
 
 use std::collections::HashMap;
-use iced::time::Instant;
+use crate::time::Instant;
 
 #[cfg(backend)]
 use sbsp_backend::event::{CueStatusEventParam, SyncData};

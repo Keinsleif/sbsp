@@ -85,6 +85,9 @@ i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester
 gloo-net = { version = "0.6", default-features = false, features = ["websocket", "http"] }
 gloo-timers = { version = "0.3", features = ["futures"] }
 wasm-bindgen-futures = "0.4"
+# The clock iced's own timers use on wasm (see src/time.rs); already pulled
+# in by iced.
+wasmtimer = "0.4"
 web-sys = { version = "0.3", features = ["Window", "Location", "Storage"] }
 # The browser's language, for a language setting left on "system".
 i18n-embed = { version = "0.16", features = ["fluent-system", "web-sys-requester"] }
