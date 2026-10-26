@@ -173,11 +173,17 @@ mod storage {
 mod storage {
     use super::Saved;
 
-    pub fn load(_target: &str) -> Saved {
-        Saved::default()
+    fn key(target: &str) -> String {
+        format!("sbsp.{target}.ui_state")
     }
 
-    pub fn save(_target: &str, _saved: &Saved) {}
+    pub fn load(target: &str) -> Saved {
+        crate::browser::get(&key(target)).map_or_else(Saved::default, |json| Saved::parse(&json))
+    }
+
+    pub fn save(target: &str, saved: &Saved) {
+        crate::browser::set(&key(target), &saved.to_json());
+    }
 }
 
 pub use storage::{load, save};

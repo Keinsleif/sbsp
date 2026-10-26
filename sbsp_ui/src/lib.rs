@@ -28,3 +28,5 @@ pub mod host;
 pub mod remote;
 #[cfg(feature = "web")]
 pub mod web;
+#[cfg(target_arch = "wasm32")]
+mod browser;

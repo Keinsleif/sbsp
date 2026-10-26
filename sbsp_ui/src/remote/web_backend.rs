@@ -308,20 +308,34 @@ fn feed(
     }
 }
 
-/// The settings of this browser. Kept for the session only for now.
+/// The settings of this browser, kept in its `localStorage`.
 #[derive(Clone)]
 pub struct RemoteSettings;
 
+const SETTINGS_KEY: &str = "sbsp.web.settings";
+
 impl RemoteSettings {
+    /// The saved settings, or the defaults (nothing saved, or not readable).
     pub async fn load() -> (Self, GlobalRemoteSettings) {
-        (Self, GlobalRemoteSettings::default())
+        let settings = crate::browser::get(SETTINGS_KEY)
+            .and_then(|json| {
+                serde_json::from_str(&json)
+                    .map_err(|e| log::warn!("ignoring the saved settings: {e}"))
+                    .ok()
+            })
+            .unwrap_or_default();
+        (Self, settings)
     }
 
     pub fn save(
         &self,
-        _new: GlobalRemoteSettings,
+        new: GlobalRemoteSettings,
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        async { Ok(()) }
+        let json = serde_json::to_string(&new).map_err(anyhow::Error::from);
+        async move {
+            crate::browser::set(SETTINGS_KEY, &json?);
+            Ok(())
+        }
     }
 }
 

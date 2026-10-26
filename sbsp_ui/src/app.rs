@@ -228,6 +228,10 @@ pub struct State {
     /// The connection is being closed by the user, so its end is not news.
     #[cfg(client)]
     disconnecting: bool,
+    /// A connection to make as soon as the settings are in (the web page's
+    /// address asked for one).
+    #[cfg(client)]
+    autoconnect: Option<connect::Request>,
 }
 
 #[derive(Clone)]
@@ -373,6 +377,18 @@ fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> 
     Some(format!("{title}: {detail}"))
 }
 
+/// The connect screen to start with, and the connection to make at once.
+/// Only the browser's page address can ask for one.
+#[cfg(all(client, target_arch = "wasm32"))]
+fn startup_connection() -> (connect::Screen, Option<connect::Request>) {
+    crate::web::startup_connection()
+}
+
+#[cfg(all(client, not(target_arch = "wasm32")))]
+fn startup_connection() -> (connect::Screen, Option<connect::Request>) {
+    (connect::Screen::default(), None)
+}
+
 /// Turns the outcome of a fire-and-forget backend call into a `Message`
 /// (`Task::perform` needs one value either way).
 #[cfg(backend)]
@@ -409,6 +425,9 @@ impl State {
         // ever diverge this still does the right thing instead of silently
         // booting in the wrong language.
         crate::i18n::select(&lang.langid());
+
+        #[cfg(client)]
+        let (connect, autoconnect) = startup_connection();
 
         let state = Self {
             theme_mode: ThemeMode::default(),
@@ -480,9 +499,11 @@ impl State {
             #[cfg(client)]
             file_picker: None,
             #[cfg(client)]
-            connect: connect::Screen::default(),
+            connect,
             #[cfg(client)]
             disconnecting: false,
+            #[cfg(client)]
+            autoconnect,
         };
 
         (state, boot_task)
@@ -673,13 +694,24 @@ impl State {
                 self.apply_preferences(&Preferences::from(&*settings));
                 self.remote_settings = *settings;
                 self.remote_store = Some(store);
-                Task::none()
+                match self.autoconnect.take() {
+                    Some(request) => self.connect_to(request),
+                    None => Task::none(),
+                }
             }
             #[cfg(backend)]
-            Message::SyncTick => match &self.backend {
-                Some(backend) => Task::perform(backend.request_state_sync(), |()| Message::Nothing),
-                None => Task::none(),
-            },
+            Message::SyncTick => {
+                // A browser tab is closed without a word, so what the next
+                // visit starts from is written down as it goes.
+                #[cfg(target_arch = "wasm32")]
+                self.save_session();
+                match &self.backend {
+                    Some(backend) => {
+                        Task::perform(backend.request_state_sync(), |()| Message::Nothing)
+                    }
+                    None => Task::none(),
+                }
+            }
             #[cfg(feature = "host")]
             message @ Message::BackendStarted(..) => {
                 self.apply(message);
@@ -1573,6 +1605,13 @@ impl State {
         let Some(request) = self.connect.update(message) else {
             return Task::none();
         };
+        self.connect_to(request)
+    }
+
+    /// Starts connecting.
+    #[cfg(client)]
+    fn connect_to(&mut self, request: connect::Request) -> Task<Message> {
+        self.connect.connecting = true;
         Task::perform(
             RemotePort::connect(request.address, request.password),
             |result| match result {
