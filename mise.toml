@@ -9,8 +9,9 @@ rust = "stable"
 cocogitto = "7"
 cmake = "4"
 "cargo:trunk" = { version = "0.21", depends = ["rust"] }
+"python" = "3.15"
+"uv" = "latest"
 "pipx:fonttools" = "4"
-uv = "latest"
 
 [tasks.generate_notices]
 run = [
