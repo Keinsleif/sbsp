@@ -17,8 +17,8 @@ const panning = defineModel<number>({ default: 0 });
 const emit = defineEmits(['update']);
 
 type DragInfo = {
-  pointerId: number,
-  lastValue: number,
+  pointerId: number;
+  lastValue: number;
 };
 
 let dragInfo: DragInfo | null = null;
@@ -63,7 +63,7 @@ const onPointerCancel = (e: PointerEvent) => {
   window.removeEventListener('pointercancel', onPointerCancel);
   faderPosition.value = dragInfo.lastValue;
   dragInfo = null;
-}
+};
 
 const flushFader = debounce(() => {
   if (!props.disabled) {

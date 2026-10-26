@@ -34,9 +34,10 @@ export function useOsFileDrop(options: UseOsFileDropOptions) {
   };
   const drop = (e: DragEvent) => {
     e.preventDefault();
-    const files = Array.from(e.dataTransfer?.files ?? []).map(
-      (file): DroppedFile => ({ kind: 'file', file }),
-    );
+    const files = Array.from(e.dataTransfer?.files ?? []).map((file): DroppedFile => ({
+      kind: 'file',
+      file,
+    }));
     if (files.length > 0) options.onDrop(files, e.clientX, e.clientY);
     options.onLeave?.();
   };
