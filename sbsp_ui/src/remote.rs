@@ -7,7 +7,9 @@ pub mod backend;
 #[cfg(not(feature = "remote"))]
 mod web_backend;
 #[cfg(not(feature = "remote"))]
-pub use web_backend as backend;
+pub mod backend {
+    pub use super::web_backend::*;
+}
 
 #[cfg(feature = "remote")]
 pub fn run() -> iced::Result {
