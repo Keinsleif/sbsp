@@ -217,7 +217,7 @@ async fn with_timeout<T>(
 enum Wake {
     Frame(Option<Result<Message, gloo_net::websocket::WebSocketError>>),
     Command(Option<String>),
-    Disconnect(Option<()>),
+    Disconnect,
 }
 
 /// Runs for as long as the connection does: writes what the UI queued,
@@ -238,7 +238,7 @@ async fn pump(
             read.next().map(Wake::Frame),
             future::select(
                 commands.next().map(Wake::Command),
-                disconnect.next().map(Wake::Disconnect),
+                disconnect.next().map(|_| Wake::Disconnect),
             ),
         )
         .await
@@ -267,7 +267,7 @@ async fn pump(
             }
             // Every handle to the connection is gone.
             Wake::Command(None) => break,
-            Wake::Disconnect(_) => {
+            Wake::Disconnect => {
                 let _ = write.close().await;
                 break;
             }
