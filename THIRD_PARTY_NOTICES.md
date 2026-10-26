@@ -6848,7 +6848,7 @@ limitations under the License.
     - [num-integer 0.1.47]( https://github.com/rust-num/num-integer )
     - [num-traits 0.2.19]( https://github.com/rust-num/num-traits )
     - [once_cell 1.21.4]( https://github.com/matklad/once_cell )
-    - [openssl-probe 0.2.1]( https://github.com/rustls/openssl-probe )
+    - [openssl-probe 0.2.2]( https://github.com/rustls/openssl-probe )
     - [ordered-stream 0.2.0]( https://github.com/danieldg/ordered-stream )
     - [parking 2.2.1]( https://github.com/smol-rs/parking )
     - [parking_lot 0.12.5]( https://github.com/Amanieu/parking_lot )
@@ -6862,7 +6862,7 @@ limitations under the License.
     - [regex-syntax 0.8.11]( https://github.com/rust-lang/regex )
     - [regex 1.13.1]( https://github.com/rust-lang/regex )
     - [ring 0.17.14]( https://github.com/briansmith/ring )
-    - [rtrb 0.3.5]( https://github.com/mgeier/rtrb )
+    - [rtrb 0.3.6]( https://github.com/mgeier/rtrb )
     - [rustix 1.1.5]( https://github.com/bytecodealliance/rustix )
     - [rustls-native-certs 0.8.5]( https://github.com/rustls/rustls-native-certs )
     - [rustls 0.23.46]( https://github.com/rustls/rustls )
@@ -7340,7 +7340,7 @@ limitations under the License.
     - [cpufeatures 0.3.1]( https://github.com/RustCrypto/utils )
     - [crypto-common 0.1.7]( https://github.com/RustCrypto/traits )
     - [crypto-common 0.2.2]( https://github.com/RustCrypto/traits )
-    - [der 0.8.2]( https://github.com/RustCrypto/formats )
+    - [der 0.8.3]( https://github.com/RustCrypto/formats )
     - [digest 0.10.7]( https://github.com/RustCrypto/traits )
     - [digest 0.11.3]( https://github.com/RustCrypto/traits )
     - [hybrid-array 0.4.15]( https://github.com/RustCrypto/hybrid-array )
@@ -10787,7 +10787,7 @@ limitations under the License.
     - [dtoa 1.0.11]( https://github.com/dtolnay/dtoa )
     - [dunce 1.0.5]( https://gitlab.com/kornelski/dunce )
     - [dyn-clone 1.0.20]( https://github.com/dtolnay/dyn-clone )
-    - [erased-serde 0.4.10]( https://github.com/dtolnay/erased-serde )
+    - [erased-serde 0.4.11]( https://github.com/dtolnay/erased-serde )
     - [fdeflate 0.3.7]( https://github.com/image-rs/fdeflate )
     - [fiat-crypto 0.3.0]( https://github.com/mit-plv/fiat-crypto )
     - [field-offset 0.3.6]( https://github.com/Diggsey/rust-field-offset )
@@ -11928,7 +11928,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - Used by
 
     - [alloc-no-stdlib 3.0.0]( https://github.com/dropbox/rust-alloc-no-stdlib )
-    - [brotli 9.0.0]( https://github.com/dropbox/rust-brotli )
+    - [brotli 9.1.0]( https://github.com/dropbox/rust-brotli )
 
 ```text
 Copyright (c) 2016 Dropbox, Inc.
@@ -12265,11 +12265,11 @@ insights.
 
 - Used by
 
-    - [sbsp_app 2.8.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_backend 1.8.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_frontend_settings 0.2.1]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_app 2.9.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_backend 1.9.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_frontend_settings 0.3.0]( https://github.com/Keinsleif/sbsp )
     - [sbsp_license 0.1.2]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_remote_app 2.8.0]( https://github.com/Keinsleif/sbsp )
+    - [sbsp_remote_app 2.9.0]( https://github.com/Keinsleif/sbsp )
 
 ```text
 Elastic License 2.0
@@ -13112,7 +13112,7 @@ fn is_meta_character(c: char) -&gt; bool {
 
 - Used by
 
-    - [brotli 9.0.0]( https://github.com/dropbox/rust-brotli )
+    - [brotli 9.1.0]( https://github.com/dropbox/rust-brotli )
 
 ```text
 Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors.
@@ -13143,7 +13143,7 @@ THE SOFTWARE.
 
 - Used by
 
-    - [ebur128 0.1.10]( https://github.com/sdroege/ebur128 )
+    - [ebur128 0.1.11]( https://github.com/sdroege/ebur128 )
 
 ```text
 Copyright (c) 2011 Jan Kokemüller
@@ -14717,7 +14717,7 @@ SOFTWARE.
 - Used by
 
     - [block2 0.6.2]( https://github.com/madsmtm/objc2 )
-    - [brotli-decompressor 6.0.1]( https://github.com/dropbox/rust-brotli-decompressor )
+    - [brotli-decompressor 6.2.0]( https://github.com/dropbox/rust-brotli-decompressor )
     - [dlopen2 0.8.2]( https://github.com/OpenByteDev/dlopen2 )
     - [dlopen2_derive 0.4.3]( https://github.com/OpenByteDev/dlopen2 )
     - [dpi 0.1.2]( https://github.com/rust-windowing/winit )
