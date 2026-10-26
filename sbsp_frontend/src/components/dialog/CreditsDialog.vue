@@ -3,7 +3,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 import markdownit from 'markdown-it';
-import mila from 'markdown-it-link-attributes';
 import { onMounted, ref } from 'vue';
 import { useApi } from '../../api';
 import Dialog from 'primevue/dialog';
@@ -16,12 +15,18 @@ const md = markdownit({
   html: true,
 });
 
-md.use(mila, {
-  attrs: {
-    target: '_blank',
-    rel: 'noopener',
-  },
-});
+const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+  return self.renderToken(tokens, idx, options);
+};
+
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  // Add a new `target` attribute, or replace the value of the existing one.
+  tokens[idx]?.attrSet('target', '_blank')
+  tokens[idx]?.attrSet('rel', 'noopener');
+
+  // Pass the token to the default renderer.
+  return defaultRender(tokens, idx, options, env, self);
+};
 
 onMounted(() => {
   api
