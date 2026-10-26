@@ -15,6 +15,7 @@ pub mod file_ops;
 pub mod file_list;
 pub mod header;
 pub mod license_dialog;
+pub mod mobile;
 pub mod hotkeys;
 pub mod renumber;
 pub mod server_panel;

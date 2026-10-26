@@ -29,7 +29,7 @@ use crate::domain::cursor::{CueEvent, CursorMove, advance};
 #[cfg(client)]
 use crate::features::{connect, file_list};
 use crate::features::{
-    credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, renumber, server_panel,
+    credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, mobile, renumber, server_panel,
     settings_dialog, side_bar, status_bar, viewer,
 };
 use crate::i18n::Language;
@@ -228,6 +228,9 @@ pub struct State {
     /// The remote's connect screen (shown while there is no connection).
     #[cfg(client)]
     connect: connect::Screen,
+    /// The phone layout: the screen shown, and the seek bar while dragged.
+    mobile_tab: mobile::Tab,
+    mobile_seek: Option<f64>,
     /// The connection is being closed by the user, so its end is not news.
     #[cfg(client)]
     disconnecting: bool,
@@ -248,6 +251,8 @@ pub enum Message {
     ModifiersChanged(keyboard::Modifiers),
     KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
+    /// The phone layout's own controls.
+    Mobile(mobile::Message),
     StatusBar(status_bar::Message),
     SideBar(side_bar::Message),
     Viewer(viewer::Message),
@@ -507,6 +512,8 @@ impl State {
             template_editor: editor::Editor::default(),
             #[cfg(backend)]
             assets_stale: false,
+            mobile_tab: mobile::Tab::default(),
+            mobile_seek: None,
             toasts: toast::Toasts::new(),
             #[cfg(backend)]
             backend: None,
@@ -597,6 +604,7 @@ impl State {
         match message {
             Message::Menu(id) => self.handle_menu(id),
             Message::Header(message) => self.handle_header(message),
+            Message::Mobile(message) => self.handle_mobile(message),
             Message::KeyPressed(press) => self.handle_key(press),
             Message::Field(message) => self.handle_field(message),
             Message::Editor(message) => self.handle_editor(message),
@@ -897,7 +905,7 @@ impl State {
             }
             Message::MeterTick(now) => self.tick_meter(now),
             // Handled in update(): they need to return a Task.
-            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_)
+            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) | Message::Mobile(_)
             | Message::Viewer(_)
             | Message::Field(_)
             | Message::Editor(_)
@@ -3259,25 +3267,15 @@ impl State {
         .map(Message::Editor)
     }
 
-    fn view(&self) -> Element<'_, Message> {
-        #[cfg(target_arch = "wasm32")]
-        if !self.fonts_ready {
-            return container(iced::widget::Space::new())
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into();
-        }
-
-        let header = container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
+    fn menu_header(&self) -> Element<'_, Message> {
+        container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
             .width(Length::Fill)
-            .padding(4);
+            .padding(4)
+            .into()
+    }
 
-        // A remote without a connection has only the connect screen.
-        #[cfg(client)]
-        if self.needs_connection() {
-            return self.connect_view(header.into());
-        }
-
+    /// The main screen of the desktop (and of a browser wide enough for it).
+    fn desktop_view(&self) -> Element<'_, Message> {
         let cursor_cue = self
             .ui
             .playback_cursor
@@ -3376,15 +3374,163 @@ impl State {
         )
         .width(Length::Fill);
 
-        let content: Element<'_, Message> = column![
-            header,
+        column![
+            self.menu_header(),
             transport,
             divider::horizontal(),
             body,
             divider::horizontal(),
             footer
         ]
-        .into();
+        .into()
+    }
+
+    /// The main screen of a phone.
+    fn mobile_view(&self) -> Element<'_, Message> {
+        let can_control = self.ui.permission.contains(sbsp_backend::api::Permissions::CONTROL);
+        let tab = mobile::effective_tab(self.mobile_tab, can_control);
+        let body: Element<'_, Message> = match tab {
+            mobile::Tab::List => cue_list::view(
+                &self.model,
+                &self.ui,
+                &self.playback,
+                &self.assets,
+                &self.name_format,
+                self.cue_view,
+                None,
+            )
+            .map(Message::CueList),
+            mobile::Tab::Controls => mobile::controls(self.mobile_controls()).map(Message::Mobile),
+            mobile::Tab::Active => side_bar::active_cues(
+                &self.model,
+                &self.ui,
+                &self.playback,
+                &self.name_format,
+            )
+            .map(Message::SideBar),
+        };
+        mobile::frame(self.clock, tab, can_control, body, |tab| {
+            Message::Mobile(mobile::Message::Tab(tab))
+        })
+    }
+
+    /// What the controls screen shows: the cue under the playback cursor.
+    fn mobile_controls(&self) -> mobile::Controls {
+        use sbsp_backend::controller::state::StateParam;
+
+        let cue = self
+            .ui
+            .playback_cursor
+            .and_then(|id| self.model.cue_list.cues.get(&id));
+        let active = self
+            .ui
+            .playback_cursor
+            .and_then(|id| self.playback.active_cues.get(&id));
+        mobile::Controls {
+            title: cue
+                .map(|cue| {
+                    let name = crate::domain::cue::display_name(
+                        cue,
+                        &self.model.cue_list.cues,
+                        &self.name_format,
+                    );
+                    header::cue_title(cue, name)
+                })
+                .unwrap_or_default(),
+            duration: cue.and_then(|cue| cue_list::asset_duration(cue, &self.assets)),
+            status: active.map(|active| active.status),
+            playing: active.map(|active| mobile::Playing {
+                position: active.position,
+                duration: active.duration,
+                repeating: matches!(active.params, StateParam::Audio(audio) if audio.repeating),
+            }),
+            dragging: self.mobile_seek,
+        }
+    }
+
+    fn handle_mobile(&mut self, message: mobile::Message) -> Task<Message> {
+        let cursor = self.ui.playback_cursor;
+        let running = cursor.is_some_and(|id| self.playback.active_cues.contains_key(&id));
+
+        match message {
+            mobile::Message::Tab(tab) => {
+                self.mobile_tab = tab;
+                Task::none()
+            }
+            mobile::Message::Transport(message) => self.handle_header(message),
+            mobile::Message::Skip(direction) => {
+                let target = mobile::skip(
+                    direction,
+                    cursor,
+                    &self.model.cue_list.root_ids,
+                    &self.model.cue_list.cues,
+                );
+                if let Some(id) = target {
+                    self.ui.set_playback_cursor(
+                        Some(id),
+                        self.lock_cursor_to_selection,
+                        &self.model.cue_list.cues,
+                    );
+                }
+                Task::none()
+            }
+            mobile::Message::Rewind | mobile::Message::FastForward => match cursor {
+                Some(id) if running => {
+                    let amount = if message == mobile::Message::Rewind {
+                        -self.seek_amount
+                    } else {
+                        self.seek_amount
+                    };
+                    self.send(vec![Control::SeekBy(id, amount)])
+                }
+                _ => Task::none(),
+            },
+            mobile::Message::ToggleRepeat => match cursor {
+                Some(id) if running => self.send(vec![Control::ToggleRepeat(id)]),
+                _ => Task::none(),
+            },
+            mobile::Message::Seek(position) => {
+                self.mobile_seek = Some(position);
+                Task::none()
+            }
+            mobile::Message::SeekReleased => match (self.mobile_seek.take(), cursor) {
+                (Some(position), Some(id)) if running => {
+                    self.send(vec![Control::SeekTo(id, position)])
+                }
+                _ => Task::none(),
+            },
+        }
+    }
+
+    fn view(&self) -> Element<'_, Message> {
+        #[cfg(target_arch = "wasm32")]
+        if !self.fonts_ready {
+            return container(iced::widget::Space::new())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
+        }
+
+        // A remote without a connection has only the connect screen.
+        #[cfg(client)]
+        if self.needs_connection() {
+            return self.connect_view(self.menu_header());
+        }
+
+        // A phone gets its own layout (the web build; the desktop keeps the
+        // one it has however narrow the window is).
+        let content: Element<'_, Message> = if cfg!(target_arch = "wasm32") {
+            iced::widget::responsive(move |size| {
+                if size.width < mobile::MAX_WIDTH {
+                    self.mobile_view()
+                } else {
+                    self.desktop_view()
+                }
+            })
+            .into()
+        } else {
+            self.desktop_view()
+        };
 
         let content = match &self.pending_remove {
             Some(ids) => modal::over_blocking(content, remove_dialog(ids.len())),

@@ -348,6 +348,58 @@ fn shell_skeleton_renders_the_footer_count() {
 
 #[test]
 #[serial]
+fn the_phone_layout_has_its_screens_and_the_controls_only_with_the_permission() {
+    use sbsp_backend::api::Permissions;
+
+    let mut state = new_state();
+    // With every permission all three screens are offered.
+    state
+        .ui
+        .set_permission(Permissions::READ | Permissions::CONTROL | Permissions::EDIT);
+    let mut ui = iced_test::simulator(state.mobile_view());
+    assert!(ui.find(fl!("main-mobile-list").as_str()).is_ok());
+    assert!(ui.find(fl!("main-mobile-controls").as_str()).is_ok());
+    assert!(ui.find(fl!("main-mobile-active").as_str()).is_ok());
+    drop(ui);
+
+    let _ = state.update(Message::Mobile(mobile::Message::Tab(
+        mobile::Tab::Controls,
+    )));
+    assert_eq!(state.mobile_tab, mobile::Tab::Controls);
+    let _ = state.mobile_view();
+
+    // Without the permission the controls are gone, and so is the choice.
+    state.ui.set_permission(Permissions::READ);
+    let mut ui = iced_test::simulator(state.mobile_view());
+    assert!(ui.find(fl!("main-mobile-controls").as_str()).is_err());
+    assert!(ui.find(fl!("main-mobile-list").as_str()).is_ok());
+}
+
+#[test]
+#[serial]
+fn the_skip_buttons_move_the_playback_cursor() {
+    let mut state = new_state();
+    let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+    for id in [a, b] {
+        let mut cue = TemplateSettings::default().wait;
+        cue.id = id;
+        state.model.cue_list.cues.insert(id, cue);
+    }
+    state.model.cue_list.root_ids = vec![a, b];
+    state.ui.playback_cursor = Some(a);
+
+    let _ = state.update(Message::Mobile(mobile::Message::Skip(
+        mobile::Skip::Next,
+    )));
+    assert_eq!(state.ui.playback_cursor, Some(b));
+    let _ = state.update(Message::Mobile(mobile::Message::Skip(
+        mobile::Skip::Previous,
+    )));
+    assert_eq!(state.ui.playback_cursor, Some(a));
+}
+
+#[test]
+#[serial]
 fn sidebar_renders_its_tabs_and_can_be_toggled() {
     let mut state = new_state();
 

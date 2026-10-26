@@ -97,7 +97,7 @@ pub fn ordered_active_cues<'a>(
     active
 }
 
-fn active_cues<'a>(
+pub fn active_cues<'a>(
     model: &'a ShowModelState,
     ui: &UiState,
     playback: &'a PlaybackState,
