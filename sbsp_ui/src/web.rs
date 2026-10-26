@@ -53,6 +53,27 @@ fn percent_decode(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
+/// The fonts of the page: cut-down copies of the UI fonts that the host
+/// serves next to the page (`scripts/subset_fonts.py`).
+#[cfg(target_arch = "wasm32")]
+pub async fn fetch_fonts() -> Result<std::sync::Arc<(Vec<u8>, Vec<u8>)>, String> {
+    let ui = fetch("fonts/ui.ttf").await?;
+    let mono = fetch("fonts/mono.ttf").await?;
+    Ok(std::sync::Arc::new((ui, mono)))
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn fetch(url: &str) -> Result<Vec<u8>, String> {
+    let response = gloo_net::http::Request::get(url)
+        .send()
+        .await
+        .map_err(|e| format!("{url}: {e}"))?;
+    if !response.ok() {
+        return Err(format!("{url}: HTTP {}", response.status()));
+    }
+    response.binary().await.map_err(|e| format!("{url}: {e}"))
+}
+
 /// The connect screen to start with, and the connection to make at once
 /// (when the page's address asks for one).
 #[cfg(all(client, target_arch = "wasm32"))]

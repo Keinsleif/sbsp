@@ -98,7 +98,7 @@ pub fn run(target: &'static str) -> iced::Result {
             iced::window::Position::Specific(iced::Point::new(x, y))
         });
 
-    iced::application(
+    let app = iced::application(
         move || State::new(target, saved.clone()),
         State::update,
         State::view,
@@ -121,10 +121,13 @@ pub fn run(target: &'static str) -> iced::Result {
             default_text_size: iced::Pixels(crate::theme::fonts::TEXT_SIZE),
             ..Default::default()
         })
+        ;
+    // The browser fetches its fonts (see `State::new`).
+    #[cfg(not(target_arch = "wasm32"))]
+    let app = app
         .font(crate::theme::fonts::UI_REGULAR)
-        .font(crate::theme::fonts::MONO_REGULAR)
-        .default_font(crate::theme::fonts::UI)
-        .run()
+        .font(crate::theme::fonts::MONO_REGULAR);
+    app.default_font(crate::theme::fonts::UI).run()
 }
 
 pub struct State {
@@ -228,6 +231,10 @@ pub struct State {
     /// The connection is being closed by the user, so its end is not news.
     #[cfg(client)]
     disconnecting: bool,
+    /// The browser has no fonts until they are fetched; nothing is drawn
+    /// (it would be boxes) before then.
+    #[cfg(target_arch = "wasm32")]
+    fonts_ready: bool,
     /// A connection to make as soon as the settings are in (the web page's
     /// address asked for one).
     #[cfg(client)]
@@ -281,6 +288,11 @@ pub enum Message {
     #[cfg(backend)]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
+    /// The browser's fonts arrived (or did not).
+    #[cfg(target_arch = "wasm32")]
+    FontsFetched(Result<std::sync::Arc<(Vec<u8>, Vec<u8>)>, String>),
+    #[cfg(target_arch = "wasm32")]
+    FontsLoaded(Result<(), String>),
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
@@ -417,6 +429,12 @@ impl State {
         #[cfg(not(any(feature = "host", client)))]
         let boot_task = Task::none();
 
+        #[cfg(target_arch = "wasm32")]
+        let boot_task = Task::batch([
+            boot_task,
+            Task::perform(crate::web::fetch_fonts(), Message::FontsFetched),
+        ]);
+
         let is_host = cfg!(feature = "host");
         let lang = Language::default();
         // Redundant with LOADER's own lazy initialization today (it loads
@@ -504,6 +522,8 @@ impl State {
             disconnecting: false,
             #[cfg(client)]
             autoconnect,
+            #[cfg(target_arch = "wasm32")]
+            fonts_ready: false,
         };
 
         (state, boot_task)
@@ -597,6 +617,27 @@ impl State {
                 Task::none()
             }
             Message::License(message) => self.handle_license(message),
+            #[cfg(target_arch = "wasm32")]
+            Message::FontsFetched(Ok(fonts)) => {
+                let mono = fonts.1.clone();
+                iced::font::load(fonts.0.clone())
+                    .then(move |first| match first {
+                        Ok(()) => iced::font::load(mono.clone()),
+                        Err(error) => Task::done(Err(error)),
+                    })
+                    .map(|result| Message::FontsLoaded(result.map_err(|e| format!("{e:?}"))))
+            }
+            #[cfg(target_arch = "wasm32")]
+            Message::FontsFetched(Err(error)) => Task::done(Message::FontsLoaded(Err(error))),
+            #[cfg(target_arch = "wasm32")]
+            Message::FontsLoaded(result) => {
+                if let Err(error) = result {
+                    log::error!("could not load the fonts: {error}");
+                    self.toasts.push(toast::Kind::Danger, format!("fonts: {error}"));
+                }
+                self.fonts_ready = true;
+                Task::none()
+            }
             #[cfg(client)]
             Message::Connect(message) => self.handle_connect(message),
             #[cfg(client)]
@@ -901,6 +942,8 @@ impl State {
             #[cfg(backend)]
             Message::SyncTick => {}
             Message::Toast(message) => self.toasts.update(message),
+            #[cfg(target_arch = "wasm32")]
+            Message::FontsFetched(_) | Message::FontsLoaded(_) => {}
             Message::Nothing => {}
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
@@ -3217,6 +3260,14 @@ impl State {
     }
 
     fn view(&self) -> Element<'_, Message> {
+        #[cfg(target_arch = "wasm32")]
+        if !self.fonts_ready {
+            return container(iced::widget::Space::new())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into();
+        }
+
         let header = container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
             .width(Length::Fill)
             .padding(4);

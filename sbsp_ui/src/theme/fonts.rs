@@ -7,9 +7,14 @@
 //! googlefonts/morisawa-biz-ud-gothic); their license text goes with the
 //! files (`assets/fonts/OFL.txt`) and into the credits.
 //!
-//! They are embedded so the look and the column widths do not depend on
+//! On the desktop they are embedded so the look and the column widths do not depend on
 //! what the OS has installed. iced's `Font::MONOSPACE` means "whatever
 //! monospace font the OS has", which is why [`MONO`] is used instead.
+//!
+//! The browser build does not embed them (4.6 MB each would double the
+//! wasm): it fetches cut-down copies from the host that serves the page
+//! (`scripts/subset_fonts.py`, `web::fetch_fonts`) and registers them with
+//! the same family names.
 //!
 //! The font files are not in the repository's source patches: put
 //! `BIZUDPGothic-Regular.ttf` and `BIZUDGothic-Regular.ttf` into
@@ -29,10 +34,12 @@ pub const TEXT_SIZE: f32 = 14.0;
 pub const UI: Font = Font::with_name("BIZ UDPGothic");
 pub const MONO: Font = Font::with_name("BIZ UDGothic");
 
+#[cfg(not(target_arch = "wasm32"))]
 pub const UI_REGULAR: &[u8] = include_bytes!("../../assets/fonts/BIZUDPGothic-Regular.ttf");
+#[cfg(not(target_arch = "wasm32"))]
 pub const MONO_REGULAR: &[u8] = include_bytes!("../../assets/fonts/BIZUDGothic-Regular.ttf");
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::*;
 

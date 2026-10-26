@@ -8,6 +8,8 @@ rust = "stable"
 "cargo:cargo-packager" = { version = "0.11", depends = ["rust"] }
 cocogitto = "7"
 cmake = "4"
+"cargo:trunk" = { version = "0.21", depends = ["rust"] }
+"pipx:fonttools" = "4"
 
 [tasks.generate_notices]
 run = [
@@ -16,6 +18,18 @@ run = [
 'cd ./scripts && node notice_json2md.js',
 'rm ./scripts/tmp.json',
 ]
+
+# The browser build, then the host (which embeds it).
+[tasks.build_web]
+dir = "sbsp_ui"
+# Size over speed for the wasm: cargo's own override of the release profile,
+# which affects only this build.
+env = { CARGO_PROFILE_RELEASE_OPT_LEVEL = "z" }
+run = 'trunk build --release'
+
+[tasks.build_host]
+depends = ["build_web"]
+run = 'cargo build --profile release --no-default-features --features host --bin sbsp_host'
 
 [settings]
 cargo.binstall_quickinstall = true

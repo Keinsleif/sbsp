@@ -1,0 +1,12 @@
+# The browser build: `trunk build --release` from here (see the mise task
+# `build_web`). The fonts are cut down first (scripts/subset_fonts.py) and
+# copied next to the page; the host embeds the result (web_dist/).
+[build]
+target = "web/index.html"
+dist = "web_dist"
+public_url = "/"
+
+[[hooks]]
+stage = "pre_build"
+command = "python3"
+command_arguments = ["../scripts/subset_fonts.py"]
