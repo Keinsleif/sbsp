@@ -15,13 +15,15 @@ const md = markdownit({
   html: true,
 });
 
-const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
-  return self.renderToken(tokens, idx, options);
-};
+const defaultRender =
+  md.renderer.rules.link_open ||
+  function (tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+  };
 
 md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
   // Add a new `target` attribute, or replace the value of the existing one.
-  tokens[idx]?.attrSet('target', '_blank')
+  tokens[idx]?.attrSet('target', '_blank');
   tokens[idx]?.attrSet('rel', 'noopener');
 
   // Pass the token to the default renderer.

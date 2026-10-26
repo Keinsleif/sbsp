@@ -47,8 +47,7 @@ const fadeParam = ref(
 );
 
 const stopTargetOnComplete = ref(
-  selectedCue.value != null &&
-    selectedCue.value.params.type === 'fade'
+  selectedCue.value != null && selectedCue.value.params.type === 'fade'
     ? selectedCue.value.params.stopTargetOnComplete
     : false,
 );
