@@ -10,6 +10,7 @@ cocogitto = "7"
 cmake = "4"
 "cargo:trunk" = { version = "0.21", depends = ["rust"] }
 "pipx:fonttools" = "4"
+uv = "latest"
 
 [tasks.generate_notices]
 run = [
