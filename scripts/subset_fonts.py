@@ -48,17 +48,25 @@ def subset(source, target, chars):
     OUT.mkdir(parents=True, exist_ok=True)
     text = OUT / (target + ".txt")
     text.write_text("".join(chars), encoding="utf-8")
+    made = OUT / (target + ".new")
     command = [
         "pyftsubset",
         str(FONTS / source),
         f"--text-file={text}",
         "--layout-features=",
         "--no-hinting",
-        f"--output-file={OUT / target}",
+        f"--output-file={made}",
     ]
     subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     text.unlink()
-    print(f"{target}: {(OUT / target).stat().st_size:,} bytes")
+    # Replaced only when it differs: the file watcher of `trunk serve` takes
+    # every write for a change and builds again, which runs this again.
+    final = OUT / target
+    if final.exists() and final.read_bytes() == made.read_bytes():
+        made.unlink()
+    else:
+        made.replace(final)
+    print(f"{target}: {final.stat().st_size:,} bytes")
 
 
 def covered(path):

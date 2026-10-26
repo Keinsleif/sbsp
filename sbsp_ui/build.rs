@@ -31,5 +31,11 @@ fn main() {
     }
 
     let _ = std::fs::create_dir_all("web_dist");
-    println!("cargo:rerun-if-changed=web_dist");
+    // Only the host embeds `web_dist/`. Watching it for the browser build
+    // would rerun this on every trunk output, and with it the build.
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some() {
+        println!("cargo:rerun-if-changed=web_dist");
+    } else {
+        println!("cargo:rerun-if-changed=build.rs");
+    }
 }

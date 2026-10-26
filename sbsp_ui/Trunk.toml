@@ -6,6 +6,10 @@ target = "web/index.html"
 dist = "web_dist"
 public_url = "/"
 
+# What the build itself writes must not start another build.
+[watch]
+ignore = ["web/fonts", "web_dist"]
+
 [[hooks]]
 stage = "pre_build"
 command = "python3"
