@@ -6832,6 +6832,7 @@ dependencies = [
  "tokio",
  "unic-langid",
  "wasm-bindgen-futures",
+ "wasmtimer",
  "web-sys",
 ]
 
