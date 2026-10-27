@@ -289,16 +289,25 @@ impl CueController {
         let state = self.state_tx.borrow().clone();
 
         if self.model_handle.is_cue_exists(&cue_id).await {
-            if let Some(active_cue) = state.active_cues.get(&cue_id)
-                && active_cue.status != PlaybackStatus::Loaded
-            {
-                log::warn!("GO: cue already executed.");
-                self.event_tx.send(BackendEvent::OperationFailed {
-                    error: BackendError::CueExecute {
-                        cue_id,
-                        message: "Cue already executed".into(),
-                    },
-                })?;
+            if let Some(active_cue) = state.active_cues.get(&cue_id) {
+                match active_cue.status {
+                    PlaybackStatus::Paused |
+                    PlaybackStatus::PreWaitPaused |
+                    PlaybackStatus::Loaded => {
+                        self.executor_tx
+                            .send(ExecutorCommand::Execute(cue_id))
+                            .await?;
+                    }
+                    _ => {
+                        log::warn!("GO: cue already executed.");
+                        self.event_tx.send(BackendEvent::OperationFailed {
+                            error: BackendError::CueExecute {
+                                cue_id,
+                                message: "Cue already executed".into(),
+                            },
+                        })?;
+                    }
+                }
             } else {
                 self.executor_tx
                     .send(ExecutorCommand::Execute(cue_id))
