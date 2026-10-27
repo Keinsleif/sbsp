@@ -319,6 +319,7 @@ impl<Message> canvas::Program<Message> for MeterProgram<'_> {
                 // `Horizontal` or as `text::Alignment`.
                 align_x: iced::alignment::Horizontal::Center.into(),
                 align_y: iced::alignment::Vertical::Center,
+                font: crate::theme::fonts::UI,
                 ..canvas::Text::default()
             });
         }

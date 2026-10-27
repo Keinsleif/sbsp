@@ -372,6 +372,7 @@ impl<Message> canvas::Program<Message> for Ticks {
                 size: 10.0.into(),
                 align_x: iced::alignment::Horizontal::Center.into(),
                 align_y: iced::alignment::Vertical::Top,
+                font: crate::theme::fonts::UI,
                 ..canvas::Text::default()
             });
         }

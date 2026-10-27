@@ -239,6 +239,7 @@ pub fn draw_tooltip(frame: &mut canvas::Frame, theme: &Theme, cursor: Point, dur
         size: 12.0.into(),
         align_x: iced::alignment::Horizontal::Center.into(),
         align_y: iced::alignment::Vertical::Center,
+        font: crate::theme::fonts::UI,
         ..canvas::Text::default()
     });
 }
