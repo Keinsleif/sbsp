@@ -12,6 +12,7 @@ cmake = "4"
 "python" = "3.15"
 "uv" = "latest"
 "pipx:fonttools" = "4"
+mold = { version = "latest", os = ["linux"]}
 
 [tasks.generate_notices]
 run = [
