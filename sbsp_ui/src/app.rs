@@ -394,6 +394,10 @@ fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> 
     Some(format!("{title}: {detail}"))
 }
 
+/// Where the browser keeps the cue clipboard.
+#[cfg(target_arch = "wasm32")]
+const CLIPBOARD_KEY: &str = "sbsp.web.clipboard";
+
 /// The connect screen to start with, and the connection to make at once.
 /// Only the browser's page address can ask for one.
 #[cfg(all(client, target_arch = "wasm32"))]
@@ -452,7 +456,7 @@ impl State {
         #[cfg(client)]
         let (connect, autoconnect) = startup_connection();
 
-        let state = Self {
+        let mut state = Self {
             theme_mode: ThemeMode::default(),
             lang,
             name_format: NameFormatSettings::default(),
@@ -533,6 +537,7 @@ impl State {
             fonts_ready: false,
         };
 
+        state.refresh_clipboard();
         (state, boot_task)
     }
 
@@ -753,7 +758,10 @@ impl State {
                 // A browser tab is closed without a word, so what the next
                 // visit starts from is written down as it goes.
                 #[cfg(target_arch = "wasm32")]
-                self.save_session();
+                {
+                    self.save_session();
+                    self.refresh_clipboard();
+                }
                 match &self.backend {
                     Some(backend) => {
                         Task::perform(backend.request_state_sync(), |()| Message::Nothing)
@@ -1717,6 +1725,7 @@ impl State {
         self.ui.playback_cursor = None;
         self.ui.set_permission(sbsp_backend::api::Permissions::empty());
         self.clipboard.clear();
+        self.store_clipboard();
         self.cue_drag = None;
         self.pending_remove = None;
         if !std::mem::take(&mut self.disconnecting) {
@@ -2642,6 +2651,30 @@ impl State {
         );
         if !cues.is_empty() {
             self.clipboard = cues;
+            self.store_clipboard();
+        }
+    }
+
+    /// The browser keeps the clipboard in its storage as well, so that it
+    /// survives a reload and is the same in every tab of the page (the
+    /// system clipboard is out of reach of a page served over plain HTTP).
+    fn store_clipboard(&self) {
+        #[cfg(target_arch = "wasm32")]
+        match serde_json::to_string(&self.clipboard) {
+            Ok(json) => crate::browser::set(CLIPBOARD_KEY, &json),
+            Err(error) => log::warn!("could not keep the clipboard: {error}"),
+        }
+    }
+
+    /// Takes the stored clipboard (see `store_clipboard`) in place of this
+    /// tab's, which another tab may have replaced.
+    fn refresh_clipboard(&mut self) {
+        #[cfg(target_arch = "wasm32")]
+        if let Some(json) = crate::browser::get(CLIPBOARD_KEY) {
+            match serde_json::from_str::<Vec<Cue>>(&json) {
+                Ok(cues) => self.clipboard = cues,
+                Err(error) => log::warn!("ignoring the stored clipboard: {error}"),
+            }
         }
     }
 
@@ -2668,6 +2701,7 @@ impl State {
     /// Paste: copies of the clipboard's cues after the selected one (at the
     /// end of the list with none). Edit mode only.
     fn paste_clipboard(&mut self) -> Task<Message> {
+        self.refresh_clipboard();
         if self.ui.mode != Mode::Edit || self.clipboard.is_empty() {
             return Task::none();
         }
