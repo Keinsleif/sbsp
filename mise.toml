@@ -12,7 +12,6 @@ cmake = "4"
 "uv" = "latest"
 dotnet = "8"
 "dotnet:vpk" = "latest"
-mold = { version = "latest", os = ["linux"] }
 
 [bootstrap.packages]
 "apt:squashfs-tools" = "latest"
