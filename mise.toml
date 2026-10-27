@@ -4,7 +4,6 @@ node = "24"
 pnpm = "12"
 cocogitto = "7"
 cmake = "4"
-"cargo:tauri-cli" = "2"
 "cargo:cargo-about" = "0.9"
 "cargo:cargo-edit" = "0.13"
 "cargo:trunk" = "0.21"
@@ -30,12 +29,7 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1"
 "pacman:pkgconf" = "latest"
 
 [tasks.generate_notices]
-run = [
-'cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md',
-'cd ./sbsp_frontend && pnpm exec license-checker-rseidelsohn --excludePackages sbsp_frontend --direct false --production --json --out ../scripts/tmp.json',
-'cd ./scripts && node notice_json2md.js',
-'rm ./scripts/tmp.json',
-]
+run = 'cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md'
 
 # The browser build, then the host (which embeds it).
 [tasks.build_web]
