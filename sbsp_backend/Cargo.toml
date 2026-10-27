@@ -53,7 +53,6 @@ client = [
     "dep:serde_json",
 ]
 cli = ["dep:env_logger", "dep:clap", "dep:termtree"]
-type_export = ["dep:ts-rs"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
@@ -88,8 +87,6 @@ axum = { version = "0.8", default-features = false, features = ["tokio", "http1"
 
 tokio-tungstenite = { version = "*", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["sink"], optional = true }
-
-ts-rs = { workspace = true, features = ["uuid-impl", "indexmap-impl"], optional = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", optional = true, features = [

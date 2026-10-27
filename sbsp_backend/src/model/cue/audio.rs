@@ -8,8 +8,6 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[cfg_attr(feature = "type_export", ts(as = "f32"))]
 pub struct Decibels(f32);
 
 impl Default for Decibels {
@@ -91,7 +89,6 @@ impl Mul<f32> for Decibels {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueParam {
     pub target: PathBuf,
@@ -108,7 +105,6 @@ pub struct AudioCueParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FadeParam {
     pub duration: f64,
@@ -125,7 +121,6 @@ impl Default for FadeParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct EnvelopeSegment {
     pub start: f64,
@@ -134,7 +129,6 @@ pub struct EnvelopeSegment {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     content = "intensity",
@@ -170,7 +164,6 @@ impl Easing {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,

@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::model::cue::audio::Decibels;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -17,7 +16,6 @@ pub enum CueAction {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "action",
     content = "params",

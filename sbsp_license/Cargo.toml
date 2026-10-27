@@ -24,10 +24,7 @@ serde_json = { workspace = true, optional = true }
 
 clap = { workspace = true, optional = true }
 
-ts-rs = { workspace = true, features = ["uuid-impl"], optional = true }
-
 [features]
 default = ["manager"]
 manager = ["dep:anyhow", "dep:ed25519-dalek", "dep:base64", "dep:serde_json"]
-type_export = ["dep:ts-rs"]
 clap = ["dep:clap"]

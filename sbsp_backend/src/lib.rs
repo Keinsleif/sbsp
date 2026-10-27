@@ -21,9 +21,6 @@ use crate::{
 };
 use crate::{controller::state::ShowState, manager::project::ProjectStatus, model::ShowModel};
 
-#[cfg(feature = "type_export")]
-pub use ts_rs;
-
 pub mod action;
 pub mod asset_processor;
 pub mod controller;
@@ -36,11 +33,10 @@ pub mod helper;
 pub mod manager;
 pub mod model;
 
-#[cfg(any(feature = "protocol", feature = "type_export"))]
+#[cfg(feature = "protocol")]
 pub mod api;
 
 #[derive(Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FullShowState {
     pub project_status: ProjectStatus,

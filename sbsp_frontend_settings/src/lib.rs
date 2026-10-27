@@ -20,7 +20,6 @@ use sbsp_backend::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalHostSettings {
     pub general: GeneralSettings,
@@ -47,7 +46,6 @@ impl From<&GlobalHostSettings> for BackendSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GlobalRemoteSettings {
     pub general: GeneralSettings,
@@ -73,7 +71,6 @@ impl Default for GlobalRemoteSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct GeneralSettings {
     pub lock_cursor_to_selection: bool,
@@ -92,7 +89,6 @@ impl Default for GeneralSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct AudioHardwareSettings {
     pub device_id: Option<String>,
@@ -102,7 +98,6 @@ pub struct AudioHardwareSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppearanceSettings {
     pub language: Option<String>,
@@ -111,7 +106,6 @@ pub struct AppearanceSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum DarkMode {
     #[default]
@@ -121,7 +115,6 @@ pub enum DarkMode {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct TemplateSettings {
     pub audio: Cue,
@@ -199,7 +192,6 @@ impl Default for TemplateSettings {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", default)]
 pub struct NameFormatSettings {
     pub audio: String,

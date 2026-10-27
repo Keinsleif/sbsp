@@ -9,7 +9,6 @@ use uuid::Uuid;
 use crate::model::{cue::Cue, settings::ShowSettings};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -36,7 +35,6 @@ impl InsertPosition {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "command",
     content = "params",

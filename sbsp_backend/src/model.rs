@@ -9,7 +9,6 @@ pub mod cue;
 pub mod settings;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowModel {
     pub name: String,

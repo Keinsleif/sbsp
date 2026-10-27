@@ -12,7 +12,6 @@ publish.workspace = true
 [features]
 default = ["manager"]
 manager = ["dep:anyhow", "dep:log", "dep:tokio", "dep:serde_json", "dep:tempfile"]
-type_export = ["dep:ts-rs", "sbsp_backend/type_export"]
 
 [dependencies]
 sbsp_backend = { path = "../sbsp_backend", default-features = false }
@@ -23,5 +22,3 @@ log = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync", "fs", "rt"], optional = true }
 tempfile = { workspace = true, optional = true }
-
-ts-rs = { workspace = true, optional = true }

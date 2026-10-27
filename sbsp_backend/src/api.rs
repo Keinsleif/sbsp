@@ -3,7 +3,7 @@
 
 #[cfg(feature = "protocol")]
 pub mod auth;
-#[cfg(any(feature = "protocol", feature = "client", feature = "type_export"))]
+#[cfg(any(feature = "protocol", feature = "client"))]
 pub mod client;
 mod file_list;
 #[cfg(feature = "server")]
@@ -23,7 +23,6 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 pub struct Permissions(u8);
 
 #[cfg(feature = "protocol")]
@@ -66,7 +65,6 @@ impl FromStr for Permissions {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionInfo {
     pub password: String,
@@ -92,7 +90,6 @@ impl FromStr for PermissionInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ApiServerOptions {
     pub port: u16,
@@ -102,7 +99,6 @@ pub struct ApiServerOptions {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AuthInfo {
     pub challenge: String,
@@ -110,7 +106,6 @@ pub struct AuthInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum WsFeedback {
     Hello { auth: AuthInfo },
@@ -125,7 +120,6 @@ pub enum WsFeedback {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsCommand {
     Authenticate { response: Option<String> },
@@ -163,7 +157,6 @@ mod tests {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsError {
     AuthenticationFailed,

@@ -19,16 +19,12 @@ const FRAME_SIZES: &[u32] = &[32, 64, 128, 256, 512, 1024, 2048, 4096];
 const COMMON_SAMPLE_RATES: &[u32] = &[
     8000, 11025, 16000, 22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000,
 ];
-
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SupportedHardware {
     pub default: String,
     pub devices: IndexMap<String, DeviceInformation>,
 }
-
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeviceInformation {
@@ -37,8 +33,6 @@ pub struct DeviceInformation {
     pub default_channel_count: u16,
     pub default_sample_rate: u32,
 }
-
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FrameConfig {
