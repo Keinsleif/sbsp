@@ -430,8 +430,9 @@ impl Executor {
             }
             ExecutorCommand::Execute(cue_id) => {
                 if let Some(active_instance) = self.active_instances.get(&cue_id)
+                    && active_instance.is_triggered
                 {
-                    if active_instance.is_paused {
+                    if active_cue.is_paused {
                         self.resume_cue(cue_id).await?;
                     } else {
                         log::warn!("Cue already executed. cue_id={}", cue_id);
