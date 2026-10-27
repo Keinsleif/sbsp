@@ -46,8 +46,35 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # The browser build, once; the host of every OS embeds it (sbsp_ui/web_dist).
+  web:
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENV: ci
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: cargo-bins/cargo-binstall@main
+
+      # Rust with the wasm target, trunk, and Python with uv for the fonts.
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: rust cargo:trunk python uv
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: mise run build_web
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web_dist
+          path: sbsp_ui/web_dist
+          if-no-files-found: error
+
   build:
-    needs: [prepare]
+    needs: [prepare, web]
     permissions:
       contents: write
     strategy:
@@ -71,13 +98,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: cargo-bins/cargo-binstall@main
+      - uses: actions/download-artifact@v4
+        with:
+          name: web_dist
+          path: sbsp_ui/web_dist
 
-      # The tools of the build (mise.toml): Rust with the wasm target, trunk,
-      # Python and uv for the font script, .NET and vpk for the packages.
+      # Rust, Python for the scripts, .NET and vpk for the packages.
       - uses: jdx/mise-action@v4
         with:
-          install_args: rust cargo:trunk python uv dotnet dotnet:vpk
+          install_args: rust python dotnet dotnet:vpk
 
       - name: install system packages (Linux)
         if: runner.os == 'Linux'
@@ -85,7 +114,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # `pack_*` builds the web app and the binary first (macOS: universal).
+      # `pack_*` builds the binary first (macOS: universal), with the web app
+      # from above (mise.ci.toml: the host does not build it).
       - name: pack
         run: |
           SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/host" mise run pack_host
