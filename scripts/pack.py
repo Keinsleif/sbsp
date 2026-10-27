@@ -9,8 +9,8 @@ Build the binary first (`mise run build_host` / `build_remote`). The package
 lands in target/releases/<app>/.
 
 Environment:
-  SBSP_BIN_DIR   where the release binary is (default target/release; CI
-                 points it at the universal binary on macOS)
+  SBSP_BIN_DIR   where the release binary is (default target/release, and
+                 target/universal on macOS: see scripts/build.py)
   SBSP_FEED_URL  the published feed of this app: when set, the previous
                  release is downloaded first so that delta packages are made
 
@@ -88,7 +88,8 @@ def main() -> None:
     stage.mkdir(parents=True)
     out.mkdir(parents=True, exist_ok=True)
 
-    bin_dir = Path(os.environ.get("SBSP_BIN_DIR", ROOT / "target" / "release"))
+    default_dir = "universal" if sys.platform == "darwin" else "release"
+    bin_dir = Path(os.environ.get("SBSP_BIN_DIR", ROOT / "target" / default_dir))
     shutil.copy2(bin_dir / exe, stage / exe)
     shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", stage)
 

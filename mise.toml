@@ -1,5 +1,5 @@
 [tools]
-rust = "stable"
+rust = { version = "stable", targets = "wasm32-unknown-unknown" }
 node = "24"
 pnpm = "12"
 cocogitto = "7"
@@ -14,9 +14,17 @@ dotnet = "8"
 "dotnet:vpk" = "latest"
 
 [bootstrap.packages]
+# squashfs-tools: vpk makes the AppImage with it. The ALSA headers and
+# pkg-config: the audio output (alsa-sys).
 "apt:squashfs-tools" = "latest"
+"apt:libasound2-dev" = "latest"
+"apt:pkg-config" = "latest"
 "dnf:squashfs-tools" = "latest"
+"dnf:alsa-lib-devel" = "latest"
+"dnf:pkgconf-pkg-config" = "latest"
 "pacman:squashfs-tools" = "latest"
+"pacman:alsa-lib" = "latest"
+"pacman:pkgconf" = "latest"
 
 [tasks.generate_notices]
 run = [
@@ -36,13 +44,14 @@ run = 'trunk build --release'
 
 [tasks.build_host]
 depends = ["build_web"]
-run = 'cargo build -p sbsp_ui --profile release --no-default-features --features host --bin sbsp_host'
+run = 'python scripts/build.py host'
 
 [tasks.build_remote]
-run = 'cargo build -p sbsp_ui --profile release --no-default-features --features remote --bin sbsp_remote'
+run = 'python scripts/build.py remote'
 
-# Packages. `vpk` (Velopack's CLI, `dotnet tool install -g vpk`, needs the
-# .NET 8 SDK) makes the installers and the update feed; see scripts/pack.py.
+# Packages: `vpk` (Velopack's CLI) makes the installers and the update feed;
+# see scripts/pack.py. On Linux, `mise bootstrap packages apply` installs
+# what the build needs first.
 [tasks.pack_host]
 depends = ["build_host"]
 run = 'python scripts/pack.py host'

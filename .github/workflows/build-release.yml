@@ -46,39 +46,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # The browser build; the host embeds it (sbsp_ui/web_dist).
-  web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
-
-      - uses: cargo-bins/cargo-binstall@main
-
-      - run: cargo binstall trunk@0.21 --no-confirm
-      - run: pip install fonttools brotli
-
-      - name: build the web app
-        working-directory: sbsp_ui
-        run: trunk build --release
-        env:
-          CARGO_PROFILE_RELEASE_OPT_LEVEL: z
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web_dist
-          path: sbsp_ui/web_dist
-          if-no-files-found: error
-
   build:
-    needs: [prepare, web]
+    needs: [prepare]
     permissions:
       contents: write
     strategy:
@@ -90,6 +59,7 @@ jobs:
       run:
         shell: bash
     env:
+      MISE_ENV: ci
       # Signing is on when these are set (scripts/pack.py); unset, nothing is signed.
       SBSP_WIN_SIGN_PARAMS: ${{ secrets.SBSP_WIN_SIGN_PARAMS }}
       SBSP_WIN_SIGN_TEMPLATE: ${{ secrets.SBSP_WIN_SIGN_TEMPLATE }}
@@ -101,54 +71,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: web_dist
-          path: sbsp_ui/web_dist
+      - uses: cargo-bins/cargo-binstall@main
 
-      - uses: dtolnay/rust-toolchain@stable
+      # The tools of the build (mise.toml): Rust with the wasm target, trunk,
+      # Python and uv for the font script, .NET and vpk for the packages.
+      - uses: jdx/mise-action@v4
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          install_args: rust cargo:trunk python uv dotnet dotnet:vpk
+
+      - name: install system packages (Linux)
+        if: runner.os == 'Linux'
+        run: mise bootstrap packages apply --yes
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: install dependencies (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libasound2-dev libgtk-3-dev libxdo-dev
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - run: dotnet tool install -g vpk
-
-      - name: build (Windows, Linux)
-        if: matrix.platform != 'macos-latest'
-        run: |
-          cargo build --release --no-default-features --features host --bin sbsp_host
-          cargo build --release --no-default-features --features remote --bin sbsp_remote
-
-      - name: build (macOS, universal)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mkdir -p target/universal
-          for app in host remote; do
-            for triple in aarch64-apple-darwin x86_64-apple-darwin; do
-              cargo build --release --target $triple --no-default-features --features $app --bin sbsp_$app
-            done
-            lipo -create -output target/universal/sbsp_$app \
-              target/aarch64-apple-darwin/release/sbsp_$app \
-              target/x86_64-apple-darwin/release/sbsp_$app
-          done
-          echo "SBSP_BIN_DIR=target/universal" >> "$GITHUB_ENV"
-
+      # `pack_*` builds the web app and the binary first (macOS: universal).
       - name: pack
         run: |
-          for app in host remote; do
-            SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/$app" python scripts/pack.py $app
-          done
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/host" mise run pack_host
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/remote" mise run pack_remote
 
       # The feed's index files have the same names in the two apps, so they
       # go up with the name of the app in front. The rest is named after the
