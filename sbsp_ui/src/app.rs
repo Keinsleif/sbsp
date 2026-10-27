@@ -55,6 +55,8 @@ use crate::port::FullState;
 use crate::port::{Port, PortEvent};
 #[cfg(client)]
 use crate::remote::backend::{RemotePort, RemoteSettings};
+#[cfg(installer)]
+use crate::features::update_dialog::Stage;
 
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
@@ -1063,7 +1065,9 @@ impl State {
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
-            }
+            },
+            #[cfg(installer)]
+            Message::UpdateChecked(_, _) | Message::UpdateProgress(_) | Message::UpdateApplied(_) => {}
         }
     }
 
