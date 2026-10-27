@@ -9,7 +9,5 @@ fn main() -> iced::Result {
     // before anything else, and it exits for them.
     velopack::VelopackApp::build().run();
     sbsp_ui::logging::init("com.keinsleif.sbsp.remote", "sbsp_remote");
-    // After a Velopack install, the Tauri version it replaces is removed.
-    sbsp_ui::migrate::remove_tauri_install("SBS Player Remote");
     sbsp_ui::remote::run()
 }
