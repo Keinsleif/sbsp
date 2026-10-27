@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=SBS Player Remote
-Comment=Remote controller of SBS Player
-Exec=sbsp-remote
-Icon=com.keinsleif.sbsp
-Terminal=false
-Categories=AudioVideo;Audio;Player;

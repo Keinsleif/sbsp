@@ -8,7 +8,6 @@ rust = "stable"
 "cargo:cargo-packager" = { version = "0.11", depends = ["rust"] }
 cocogitto = "7"
 cmake = "4"
-"cargo:cargo-deb" = { version = "3", depends = ["rust"] }
 "cargo:trunk" = { version = "0.21", depends = ["rust"] }
 "python" = "3.15"
 "uv" = "latest"
@@ -47,14 +46,6 @@ run = 'bash scripts/pack.sh host'
 [tasks.pack_remote]
 depends = ["build_remote"]
 run = 'bash scripts/pack.sh remote'
-
-[tasks.deb_host]
-depends = ["build_host"]
-run = 'cargo deb -p sbsp_ui --no-build'
-
-[tasks.deb_remote]
-depends = ["build_remote"]
-run = 'cargo deb -p sbsp_ui --no-build --variant remote'
 
 [settings]
 cargo.binstall_quickinstall = true

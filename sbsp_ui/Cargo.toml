@@ -15,35 +15,6 @@ host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_setting
 remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
-# `cargo deb -p sbsp_ui --no-build` after building the host; `--variant
-# remote` for the remote. The binaries are built with one feature each, so
-# the two packages cannot come out of one build.
-[package.metadata.deb]
-name = "sbsp"
-maintainer = "Keinsleif"
-copyright = "2025, Keinsleif"
-license-file = ["../LICENSE.md", "0"]
-extended-description = "Sound cue player for stage and show control."
-section = "sound"
-priority = "optional"
-depends = "$auto"
-assets = [
-    ["target/release/sbsp_host", "usr/bin/sbsp", "755"],
-    ["../packaging/linux/sbsp.desktop", "usr/share/applications/com.keinsleif.sbsp.desktop", "644"],
-    ["assets/icons/128x128.png", "usr/share/icons/hicolor/128x128/apps/com.keinsleif.sbsp.png", "644"],
-    ["../THIRD_PARTY_NOTICES.md", "usr/share/doc/sbsp/THIRD_PARTY_NOTICES.md", "644"],
-]
-
-[package.metadata.deb.variants.remote]
-name = "sbsp-remote"
-extended-description = "Remote controller of SBS Player."
-assets = [
-    ["target/release/sbsp_remote", "usr/bin/sbsp-remote", "755"],
-    ["../packaging/linux/sbsp-remote.desktop", "usr/share/applications/com.keinsleif.sbsp.remote.desktop", "644"],
-    ["assets/icons/128x128.png", "usr/share/icons/hicolor/128x128/apps/com.keinsleif.sbsp.png", "644"],
-    ["../THIRD_PARTY_NOTICES.md", "usr/share/doc/sbsp-remote/THIRD_PARTY_NOTICES.md", "644"],
-]
-
 [[bin]]
 name = "sbsp_host"
 path = "src/bin/sbsp_host.rs"

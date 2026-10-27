@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=SBS Player
-Comment=Sound cue player
-Exec=sbsp
-Icon=com.keinsleif.sbsp
-Terminal=false
-Categories=AudioVideo;Audio;Player;
