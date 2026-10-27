@@ -127,7 +127,7 @@ jobs:
       - name: attach to the release
         run: |
           for app in host remote; do
-            for file in target/releases/$app/*; do
+            for file in target/dist/$app/*; do
               [ -f "$file" ] || continue
               name=$(basename "$file")
               case "$name" in

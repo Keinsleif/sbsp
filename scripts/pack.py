@@ -6,7 +6,7 @@
     python scripts/pack.py host|remote [extra vpk arguments]
 
 Build the binary first (`mise run build_host` / `build_remote`). The package
-lands in target/releases/<app>/.
+lands in target/dist/<app>/.
 
 Environment:
   SBSP_BIN_DIR   where the release binary is (default target/release, and
@@ -83,7 +83,7 @@ def main() -> None:
     }.get(sys.platform, "128x128.png")
 
     stage = ROOT / "target" / "pack" / app
-    out = ROOT / "target" / "releases" / app
+    out = ROOT / "target" / "dist" / app
     shutil.rmtree(stage, ignore_errors=True)
     stage.mkdir(parents=True)
     out.mkdir(parents=True, exist_ok=True)

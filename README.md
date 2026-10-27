@@ -57,7 +57,7 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
     mise run pack_remote
     ```
 
-    `target/releases/` に出力されます。
+    `target/dist/` に出力されます。
 
 > [!NOTE]
 > Web 版だけを開発するときは `mise run dev_web` でブラウザ向けの開発サーバーが起動します。
