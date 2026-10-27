@@ -4,3 +4,7 @@ sccache = "0.18"
 
 [env]
 # RUSTC_WRAPPER="sccache"
+
+[tasks.dev_web]
+dir = "sbsp_ui"
+run = 'trunk serve'
