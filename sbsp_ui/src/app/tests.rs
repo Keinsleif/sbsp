@@ -1298,6 +1298,7 @@ fn server_options() -> sbsp_backend::api::ApiServerOptions {
             password: "pw".to_owned(),
             permission: sbsp_backend::api::Permissions::READ,
         }],
+        trust_ip_headers: false,
     }
 }
 

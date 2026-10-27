@@ -291,7 +291,11 @@ impl SettingsDialog {
             pause_all: key("["),
             resume_all: key("]"),
             stop: key(stop),
+            fade_out: None,
+            hard_stop: None,
             stop_all: key("Escape"),
+            fade_all_out: None,
+            hard_stop_all: None,
             seek_forward: None,
             seek_backward: None,
         };

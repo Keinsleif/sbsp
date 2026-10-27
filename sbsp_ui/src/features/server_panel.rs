@@ -108,6 +108,7 @@ impl Panel {
                     permission: row.permission,
                 })
                 .collect(),
+            trust_ip_headers: false,
         })
     }
 
@@ -426,6 +427,7 @@ mod tests {
                 password: "secret".to_owned(),
                 permission: Permissions::READ | Permissions::CONTROL,
             }],
+            trust_ip_headers: false,
         }
     }
 

@@ -62,6 +62,7 @@ impl Default for Server {
                 port: 5800,
                 discoverry: None,
                 auth_map: vec![],
+                trust_ip_headers: false,
             },
             shutdown: None,
         }

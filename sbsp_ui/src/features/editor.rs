@@ -1063,6 +1063,7 @@ mod tests {
                 duration: 3.0,
                 easing: Easing::InOutPow(2.0),
             },
+            stop_target_on_complete: false,
         });
         cue
     }

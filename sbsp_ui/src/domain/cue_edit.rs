@@ -742,6 +742,7 @@ mod tests {
             target: Uuid::from_u128(5),
             volume: Decibels::default(),
             fade_param: DEFAULT_FADE,
+            stop_target_on_complete: false,
         });
         cue
     }
