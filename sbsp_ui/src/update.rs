@@ -48,7 +48,7 @@ pub async fn check(target: &'static str) -> Result<Option<Found>, String> {
     tokio::task::spawn_blocking(move || {
         let manager = manager(target)?;
         match manager.check_for_updates().map_err(|e| e.to_string())? {
-            UpdateCheck::UpdateAvailable(info) => Ok(Some(Found(Arc::new(info)))),
+            UpdateCheck::UpdateAvailable(info) => Ok(Some(Found(Arc::from(info)))),
             _ => Ok(None),
         }
     })
@@ -90,7 +90,8 @@ pub fn download(target: &'static str, found: Found) -> impl Stream<Item = Progre
         }
         let last = match job.await {
             Ok(Ok(())) => Progress::Done,
-            Ok(Err(error)) | Err(error) => Progress::Failed(error.to_string()),
+            Ok(Err(error)) => Progress::Failed(error.to_string()),
+            Err(error) => Progress::Failed(error.to_string()),
         };
         let _ = output.send(last).await;
     })
