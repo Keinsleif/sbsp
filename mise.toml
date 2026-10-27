@@ -13,6 +13,9 @@ cmake = "4"
 dotnet = "8"
 "dotnet:vpk" = "latest"
 
+[env]
+DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1"
+
 [bootstrap.packages]
 # squashfs-tools: vpk makes the AppImage with it. The ALSA headers and
 # pkg-config: the audio output (alsa-sys).
@@ -44,21 +47,21 @@ run = 'trunk build --release'
 
 [tasks.build_host]
 depends = ["build_web"]
-run = 'python scripts/build.py host'
+run = 'uv run --script scripts/build.py host'
 
 [tasks.build_remote]
-run = 'python scripts/build.py remote'
+run = 'uv run --script scripts/build.py remote'
 
 # Packages: `vpk` (Velopack's CLI) makes the installers and the update feed;
 # see scripts/pack.py. On Linux, `mise bootstrap packages apply` installs
 # what the build needs first.
 [tasks.pack_host]
 depends = ["build_host"]
-run = 'python scripts/pack.py host'
+run = 'uv run --script scripts/pack.py host'
 
 [tasks.pack_remote]
 depends = ["build_remote"]
-run = 'python scripts/pack.py remote'
+run = 'uv run --script scripts/pack.py remote'
 
 [settings]
 cargo.binstall_quickinstall = true
