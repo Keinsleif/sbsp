@@ -291,14 +291,11 @@ impl CueController {
         if self.model_handle.is_cue_exists(&cue_id).await {
             if let Some(active_cue) = state.active_cues.get(&cue_id) {
                 match active_cue.status {
+                    PlaybackStatus::Paused |
+                    PlaybackStatus::PreWaitPaused |
                     PlaybackStatus::Loaded => {
                         self.executor_tx
                             .send(ExecutorCommand::Execute(cue_id))
-                            .await?;
-                    }
-                    PlaybackStatus::Paused => {
-                        self.executor_tx
-                            .send(ExecutorCommand::Resume(cue_id))
                             .await?;
                     }
                     _ => {
