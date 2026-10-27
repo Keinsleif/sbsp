@@ -38,14 +38,14 @@ run = 'cargo build --profile release --no-default-features --features host --bin
 run = 'cargo build --profile release --no-default-features --features remote --bin sbsp_remote'
 
 # Packages. `vpk` (Velopack's CLI, `dotnet tool install -g vpk`, needs the
-# .NET 8 SDK) makes the installers and the update feed; see scripts/pack.sh.
+# .NET 8 SDK) makes the installers and the update feed; see scripts/pack.py.
 [tasks.pack_host]
 depends = ["build_host"]
-run = 'bash scripts/pack.sh host'
+run = 'python scripts/pack.py host'
 
 [tasks.pack_remote]
 depends = ["build_remote"]
-run = 'bash scripts/pack.sh remote'
+run = 'python scripts/pack.py remote'
 
 [settings]
 cargo.binstall_quickinstall = true
