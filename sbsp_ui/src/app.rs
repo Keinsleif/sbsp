@@ -30,7 +30,7 @@ use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::features::{connect, file_list};
 use crate::features::{
     credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, mobile, renumber, server_panel,
-    settings_dialog, side_bar, status_bar, viewer,
+    settings_dialog, side_bar, status_bar, update_dialog, viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -167,6 +167,10 @@ pub struct State {
     credits: Option<credits::Dialog>,
     /// The license dialog, while it is open.
     license_dialog: Option<license_dialog::Dialog>,
+    update_dialog: Option<update_dialog::Dialog>,
+    /// The update that was found, to download.
+    #[cfg(installer)]
+    update_found: Option<crate::update::Found>,
     /// The server panel, while it is open.
     server_panel: Option<server_panel::Panel>,
     /// The settings dialog, while it is open.
@@ -263,6 +267,16 @@ pub enum Message {
     ServerPanel(server_panel::Message),
     Credits(credits::Message),
     License(license_dialog::Message),
+    Update(update_dialog::Message),
+    /// The feed was asked for a newer version (`true`: at startup, with no
+    /// dialog open).
+    #[cfg(installer)]
+    UpdateChecked(bool, Result<Option<crate::update::Found>, String>),
+    #[cfg(installer)]
+    UpdateProgress(crate::update::Progress),
+    /// Installing failed (on success the app has restarted).
+    #[cfg(installer)]
+    UpdateApplied(String),
     /// A license file was chosen and checked (`false`: none chosen).
     #[cfg(feature = "host")]
     LicenseActivated(Result<bool, String>),
@@ -444,6 +458,14 @@ impl State {
             Task::perform(crate::web::fetch_fonts(), Message::FontsFetched),
         ]);
 
+        #[cfg(installer)]
+        let boot_task = Task::batch([
+            boot_task,
+            Task::perform(crate::update::check(target), |result| {
+                Message::UpdateChecked(true, result)
+            }),
+        ]);
+
         let is_host = cfg!(feature = "host");
         let lang = Language::default();
         // Redundant with LOADER's own lazy initialization today (it loads
@@ -476,6 +498,9 @@ impl State {
             preferences: Preferences::default(),
             credits: None,
             license_dialog: None,
+            update_dialog: None,
+            #[cfg(installer)]
+            update_found: None,
             server_panel: None,
             settings_dialog: None,
             hardware: None,
@@ -630,6 +655,18 @@ impl State {
                 Task::none()
             }
             Message::License(message) => self.handle_license(message),
+            Message::Update(message) => self.handle_update(message),
+            #[cfg(installer)]
+            Message::UpdateChecked(silent, result) => self.update_checked(silent, result),
+            #[cfg(installer)]
+            Message::UpdateProgress(progress) => self.update_progress(progress),
+            #[cfg(installer)]
+            Message::UpdateApplied(error) => {
+                if let Some(dialog) = &mut self.update_dialog {
+                    dialog.stage = update_dialog::Stage::Failed(error);
+                }
+                Task::none()
+            }
             #[cfg(target_arch = "wasm32")]
             Message::FontsFetched(Ok(fonts)) => {
                 let mono = fonts.1.clone();
@@ -860,6 +897,7 @@ impl State {
             | Message::ServerPanel(_)
             | Message::Credits(_)
             | Message::License(_)
+            | Message::Update(_)
             | Message::AudioWarning(_) => {}
             #[cfg(feature = "host")]
             Message::LicenseActivated(result) => match result {
@@ -1196,9 +1234,13 @@ impl State {
         }
         // Credits and license: Escape closes them; nothing reaches the cue
         // list behind them.
-        if self.credits.is_some() || self.license_dialog.is_some() {
+        if self.credits.is_some() || self.license_dialog.is_some() || self.update_dialog.is_some() {
             if press.names.iter().any(|n| n == "Escape") && !press.repeat {
-                if self.credits.is_some() {
+                if let Some(dialog) = &self.update_dialog {
+                    if !dialog.busy() {
+                        self.update_dialog = None;
+                    }
+                } else if self.credits.is_some() {
                     self.credits = None;
                 } else if let Some(dialog) = &mut self.license_dialog {
                     if dialog.activated {
@@ -1744,6 +1786,123 @@ impl State {
             }
             None => Task::none(),
         }
+    }
+
+    fn handle_update(&mut self, message: update_dialog::Message) -> Task<Message> {
+        use update_dialog::Message as M;
+
+        match message {
+            M::Close => {
+                if self.update_dialog.as_ref().is_some_and(|d| !d.busy()) {
+                    self.update_dialog = None;
+                }
+                Task::none()
+            }
+            M::Check => self.start_update_check(),
+            M::Install => {
+                #[cfg(installer)]
+                if let Some(found) = self.update_found.clone() {
+                    if let Some(dialog) = &mut self.update_dialog {
+                        dialog.stage = Stage::Downloading(0);
+                    }
+                    return Task::run(
+                        crate::update::download(self.target, found),
+                        Message::UpdateProgress,
+                    );
+                }
+                Task::none()
+            }
+        }
+    }
+
+    /// Opens the update dialog and asks the feed.
+    fn start_update_check(&mut self) -> Task<Message> {
+        use update_dialog::Stage;
+
+        #[cfg(installer)]
+        {
+            if !crate::update::installed(self.target) {
+                self.update_dialog = Some(update_dialog::Dialog::new(Stage::Unavailable));
+                return Task::none();
+            }
+            self.update_found = None;
+            self.update_dialog = Some(update_dialog::Dialog::new(Stage::Checking));
+            Task::perform(crate::update::check(self.target), |result| {
+                Message::UpdateChecked(false, result)
+            })
+        }
+        #[cfg(not(installer))]
+        {
+            self.update_dialog = Some(update_dialog::Dialog::new(Stage::Unavailable));
+            Task::none()
+        }
+    }
+
+    #[cfg(installer)]
+    fn update_checked(
+        &mut self,
+        silent: bool,
+        result: Result<Option<crate::update::Found>, String>,
+    ) -> Task<Message> {
+        use update_dialog::Stage;
+
+        if silent {
+            match result {
+                Ok(Some(found)) => {
+                    log::info!("update {} is available", found.version());
+                    self.update_found = Some(found);
+                    self.toasts
+                        .push(toast::Kind::Info, fl!("toast-update-available"));
+                }
+                Ok(None) => {}
+                // Not installed, or no network: not worth bothering about.
+                Err(error) => log::info!("update check skipped: {error}"),
+            }
+            return Task::none();
+        }
+        let Some(dialog) = &mut self.update_dialog else {
+            return Task::none();
+        };
+        dialog.stage = match result {
+            Ok(Some(found)) => {
+                let version = found.version();
+                self.update_found = Some(found);
+                Stage::Available(version)
+            }
+            Ok(None) => Stage::UpToDate,
+            Err(error) => {
+                log::error!("update check failed: {error}");
+                Stage::Failed(error)
+            }
+        };
+        Task::none()
+    }
+
+    #[cfg(installer)]
+    fn update_progress(&mut self, progress: crate::update::Progress) -> Task<Message> {
+        use crate::update::Progress;
+        use update_dialog::Stage;
+
+        let Some(dialog) = &mut self.update_dialog else {
+            return Task::none();
+        };
+        match progress {
+            Progress::Percent(percent) => dialog.stage = Stage::Downloading(percent),
+            Progress::Failed(error) => {
+                log::error!("update download failed: {error}");
+                dialog.stage = Stage::Failed(error);
+            }
+            Progress::Done => {
+                dialog.stage = Stage::Restarting;
+                if let Some(found) = self.update_found.clone() {
+                    return Task::perform(
+                        crate::update::apply(self.target, found),
+                        Message::UpdateApplied,
+                    );
+                }
+            }
+        }
+        Task::none()
     }
 
     fn handle_license(&mut self, message: license_dialog::Message) -> Task<Message> {
@@ -2821,6 +2980,7 @@ impl State {
                 }
                 Task::none()
             }
+            "help.check-update" => self.start_update_check(),
             "help.show-log-files" => {
                 self.show_log_files();
                 Task::none()
@@ -3244,6 +3404,8 @@ impl State {
                     MenuNode::item("help.credits", fl!("menu-help-credits")),
                     MenuNode::item("help.license", fl!("menu-help-license"))
                         .enabled(cfg!(feature = "host")),
+                    MenuNode::item("help.check-update", fl!("menu-help-check-update"))
+                        .enabled(cfg!(installer)),
                     MenuNode::item("help.show-log-files", fl!("menu-help-show-log-files"))
                         .enabled(self.can_show_log_files()),
                     MenuNode::separator(),
@@ -3625,6 +3787,14 @@ impl State {
             None => content,
         };
 
+        let content = match &self.update_dialog {
+            Some(dialog) => modal::over_blocking(
+                content,
+                update_dialog::view(dialog).map(Message::Update),
+            ),
+            None => content,
+        };
+
         let content = match &self.server_panel {
             Some(panel) => modal::over_blocking(
                 content,
@@ -3680,6 +3850,13 @@ impl State {
             Some(dialog) => modal::over_blocking(
                 content,
                 credits::view(dialog).map(Message::Credits),
+            ),
+            None => content,
+        };
+        let content = match &self.update_dialog {
+            Some(dialog) => modal::over_blocking(
+                content,
+                update_dialog::view(dialog).map(Message::Update),
             ),
             None => content,
         };

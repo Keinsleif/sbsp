@@ -290,3 +290,17 @@ dialog-file-select-loading = ファイルリストを取得しています...
 dialog-file-select-empty = ホストに選べる音声ファイルがありません。
 dialog-file-select-title = ファイルを選択
 general-open = 開く
+
+dialog-update-title = アップデートの確認
+dialog-update-current = 現在のバージョン
+dialog-update-latest = 最新バージョン
+dialog-update-checking = アップデートを確認しています...
+dialog-update-up-to-date = 最新のバージョンです。
+dialog-update-install = ダウンロードしてインストール
+dialog-update-downloading = アップデートをダウンロードしています...
+dialog-update-restarting = アップデートを完了するため再起動します...
+dialog-update-failed = アップデートに失敗しました。
+dialog-update-retry = 再試行
+dialog-update-unavailable = このコピーはインストーラーでインストールされていないため、自動更新できません。パッケージマネージャーで更新するか、最新のリリースをインストールしてください。
+menu-help-check-update = アップデートを確認
+toast-update-available = 新しいバージョンがあります。ヘルプ > アップデートを確認 から更新できます。

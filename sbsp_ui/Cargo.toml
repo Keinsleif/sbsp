@@ -11,8 +11,8 @@ publish.workspace = true
 
 [features]
 default = []
-host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum"]
-remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager", "dep:rfd"]
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
 [[bin]]
@@ -55,6 +55,9 @@ tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"]
 # Native file dialogs (host and remote). Already in the lockfile via the Tauri
 # dialog plugin; Phase 7 uses it for the real file operations.
 rfd = { version = "0.16", optional = true }
+# Installation and updates (Velopack). Only the installed app can update; a
+# build run from the source tree reports that it is not installed.
+velopack = { version = "1", optional = true }
 # The web build is served from the host's API server (host only); the same
 # axum as the backend's, which turns on the features it needs.
 axum = { version = "0.8", default-features = false, optional = true }

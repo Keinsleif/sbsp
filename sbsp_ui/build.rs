@@ -30,6 +30,15 @@ fn main() {
         println!("cargo:rustc-cfg=client");
     }
 
+    // `installer` is on for the desktop apps, the ones that are installed
+    // by a package and update themselves (Velopack).
+    println!("cargo:rustc-check-cfg=cfg(installer)");
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
+        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
+    {
+        println!("cargo:rustc-cfg=installer");
+    }
+
     let _ = std::fs::create_dir_all("web_dist");
     // Only the host embeds `web_dist/`. Watching it for the browser build
     // would rerun this on every trunk output, and with it the build.

@@ -14,6 +14,8 @@ pub mod features;
 pub mod i18n;
 pub mod menu;
 pub mod time;
+#[cfg(installer)]
+pub mod update;
 pub mod persist;
 pub mod port;
 pub mod state;

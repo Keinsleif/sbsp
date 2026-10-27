@@ -296,3 +296,17 @@ dialog-file-select-loading = Loading the file list...
 dialog-file-select-empty = The host has no audio files to offer.
 dialog-file-select-title = Select Files
 general-open = Open
+
+dialog-update-title = Check for Updates
+dialog-update-current = Current version
+dialog-update-latest = Latest version
+dialog-update-checking = Checking for updates...
+dialog-update-up-to-date = You are using the latest version.
+dialog-update-install = Download and Install
+dialog-update-downloading = Downloading the update...
+dialog-update-restarting = Restarting to finish the update...
+dialog-update-failed = Failed to update.
+dialog-update-retry = Retry
+dialog-update-unavailable = This copy was not installed by the installer, so it cannot update itself. Update it with the package manager or install the latest release.
+menu-help-check-update = Check for Updates
+toast-update-available = A new version is available. See Help > Check for Updates.
