@@ -6,7 +6,22 @@
 //! compile when the folder is missing, so make sure it exists: that way
 //! `cargo check` works without building the web target first.
 
+/// Puts the icon into the Windows executables.
+#[cfg(windows)]
+fn embed_icon() {
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
+        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
+    {
+        let mut resource = winresource::WindowsResource::new();
+        resource.set_icon("assets/icons/icon.ico");
+        resource.compile().expect("failed to embed the icon");
+    }
+}
+
 fn main() {
+    #[cfg(windows)]
+    embed_icon();
+
     // `backend` is on when the app has a backend to talk to: the host's own,
     // or a remote's connection to one. Most of the app's backend handling is
     // the same for both, and is gated on this instead of on `host`.
