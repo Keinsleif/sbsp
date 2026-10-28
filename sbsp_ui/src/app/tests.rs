@@ -830,7 +830,11 @@ fn backend_failures_get_their_own_titles() {
             .starts_with(&fl!("notification-audio-output-fallback-both-summary"))
     );
     assert_eq!(fallback(false, false), None);
-    assert_eq!(failure_message(&E::Custom { id: 1, message: "x".to_owned() }), None);
+    let custom = |id| failure_message(&E::Custom { id, message: "x".to_owned() }).unwrap();
+    assert!(custom(1).ends_with(&fl!("notification-authentication-failed")));
+    assert!(custom(2).ends_with(&fl!("notification-authentication-rate-limit-exceeded")));
+    assert!(custom(3).ends_with(&fl!("notification-permission-denied")));
+    assert!(custom(9).ends_with('x'));
 }
 
 fn ctrl_r() -> Message {

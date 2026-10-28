@@ -24,7 +24,7 @@ use sbsp_frontend_settings::TemplateSettings;
 /// File extensions the audio file picker offers (the original's list).
 pub const AUDIO_EXTENSIONS: &[&str] = &[
     "aiff", "aif", "caf", "mp4", "m4a", "mkv", "mka", "webm", "ogg", "oga", "wav", "aac", "alac",
-    "flac", "mp3",
+    "flac", "mp3", "opus",
 ];
 
 /// Whether `path` names a file of a kind an audio cue can play, going by

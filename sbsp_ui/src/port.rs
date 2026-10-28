@@ -89,6 +89,10 @@ pub enum Control {
     Pause(sbsp_backend::model::cue::Uuid),
     Resume(sbsp_backend::model::cue::Uuid),
     Stop(sbsp_backend::model::cue::Uuid),
+    /// Stop with the fade-out of the cue's own settings.
+    SoftStop(sbsp_backend::model::cue::Uuid),
+    /// Stop at once.
+    HardStop(sbsp_backend::model::cue::Uuid),
     SeekBy(sbsp_backend::model::cue::Uuid, f64),
     SeekTo(sbsp_backend::model::cue::Uuid, f64),
     ToggleRepeat(sbsp_backend::model::cue::Uuid),
@@ -97,6 +101,8 @@ pub enum Control {
     PauseAll,
     ResumeAll,
     StopAll,
+    SoftStopAll,
+    HardStopAll,
 }
 
 /// An edit of the show model: the data counterpart of `Control` for the

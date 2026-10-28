@@ -147,6 +147,8 @@ pub enum Message {
     FadeEnabled(FadeSlot, bool),
     FadeKind(FadeSlot, CurveKind),
     FadeTarget(Uuid),
+    /// Stop the target of a fade cue when the fade completes.
+    FadeStopOnComplete(bool),
     /// The volume fader of an audio or fade cue.
     Volume(FaderMessage),
     Pan(FaderMessage),
@@ -405,6 +407,7 @@ impl Editor {
                         .and_then(|param| cue_edit::fade_with_kind(param, kind))
                         .and_then(|param| cue_edit::set_fade_param(cue, slot, Some(param))),
                     Message::FadeTarget(target) => cue_edit::set_fade_target(cue, target),
+                    Message::FadeStopOnComplete(stop) => cue_edit::set_fade_stop_on_complete(cue, stop),
                     Message::PlaybackTarget(target) => cue_edit::set_playback_target(cue, target),
                     Message::StopHard(hard) => cue_edit::set_stop_hard(cue, hard),
                     Message::GroupMode(kind) => cue_edit::set_group_mode_kind(cue, kind),

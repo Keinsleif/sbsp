@@ -40,6 +40,8 @@ pub fn controls(controls: Vec<Control>) -> Vec<WsCommand> {
                 Control::Pause(id) => ControllerCommand::Pause(id),
                 Control::Resume(id) => ControllerCommand::Resume(id),
                 Control::Stop(id) => ControllerCommand::Stop(id),
+                Control::SoftStop(id) => ControllerCommand::SoftStop(id),
+                Control::HardStop(id) => ControllerCommand::HardStop(id),
                 Control::SeekBy(id, amount) => ControllerCommand::SeekBy(id, amount),
                 Control::SeekTo(id, position) => ControllerCommand::SeekTo(id, position),
                 Control::ToggleRepeat(id) => {
@@ -52,6 +54,8 @@ pub fn controls(controls: Vec<Control>) -> Vec<WsCommand> {
                 Control::PauseAll => ControllerCommand::PauseAll,
                 Control::ResumeAll => ControllerCommand::ResumeAll,
                 Control::StopAll => ControllerCommand::StopAll,
+                Control::SoftStopAll => ControllerCommand::SoftStopAll,
+                Control::HardStopAll => ControllerCommand::HardStopAll,
             })
         })
         .collect()

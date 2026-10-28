@@ -376,11 +376,11 @@ pub enum Message {
     SettingsImported(Result<Option<Box<GlobalHostSettings>>, String>),
 }
 
-/// What to tell the user about a failed backend operation. A custom error
-/// has no message here.
+/// What to tell the user about a failed backend operation.
 #[cfg(any(test, backend))]
 fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> {
     use sbsp_backend::event::BackendError as E;
+    let custom;
     let (title, detail) = match error {
         E::SaveToFile { message, .. } => (fl!("notification-failed-to-save"), message),
         E::LoadFromFile { message, .. } => (fl!("notification-failed-to-load"), message),
@@ -405,7 +405,17 @@ fn failure_message(error: &sbsp_backend::event::BackendError) -> Option<String> 
             };
             return Some(format!("{summary}: {detail}"));
         }
-        E::Custom { .. } => return None,
+        // The errors the API server reports (see `WsError`): the ids are the
+        // ones `sbsp_backend`'s client uses.
+        E::Custom { id, message } => {
+            custom = match id {
+                1 => fl!("notification-authentication-failed"),
+                2 => fl!("notification-authentication-rate-limit-exceeded"),
+                3 => fl!("notification-permission-denied"),
+                _ => message.clone(),
+            };
+            (fl!("notification-operation-failed"), &custom)
+        }
     };
     Some(format!("{title}: {detail}"))
 }
@@ -1399,6 +1409,8 @@ impl State {
                 .collect(),
             A::Load => selected_rows().map(Control::Load).collect(),
             A::Stop => selected_rows().map(Control::Stop).collect(),
+            A::FadeOut => selected_rows().map(Control::SoftStop).collect(),
+            A::HardStop => selected_rows().map(Control::HardStop).collect(),
             A::ToggleRepeat => selected_rows().map(Control::ToggleRepeat).collect(),
             A::PauseAndResume => match selected_active {
                 Some((id, S::PreWaiting | S::Playing)) => vec![Control::Pause(id)],
@@ -1408,6 +1420,8 @@ impl State {
             A::PauseAll => vec![Control::PauseAll],
             A::ResumeAll => vec![Control::ResumeAll],
             A::StopAll => vec![Control::StopAll],
+            A::FadeAllOut => vec![Control::SoftStopAll],
+            A::HardStopAll => vec![Control::HardStopAll],
             A::SeekForward => selected_active
                 .map(|(id, _)| Control::SeekBy(id, self.seek_amount))
                 .into_iter()

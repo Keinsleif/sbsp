@@ -301,7 +301,10 @@ fn feed(
         }
         Ok(WsFeedback::Level { left, right }) => level.set(left, right),
         Ok(WsFeedback::Error(WsError::AuthenticationFailed)) => failed(1, "Authentication Failed"),
-        Ok(WsFeedback::Error(WsError::PermissionDenied)) => failed(2, "Permission denied."),
+        Ok(WsFeedback::Error(WsError::AuthenticationRateLimitExceeded)) => {
+            failed(2, "Authentication rate limit exceeded.")
+        }
+        Ok(WsFeedback::Error(WsError::PermissionDenied)) => failed(3, "Permission denied."),
         // The snapshot is only asked for at connect time.
         Ok(_) => {}
         Err(e) => log::error!("Invalid message received: {e}"),

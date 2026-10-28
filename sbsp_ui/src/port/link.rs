@@ -70,6 +70,8 @@ impl Link {
                     Control::Pause(id) => controller.pause(id).await?,
                     Control::Resume(id) => controller.resume(id).await?,
                     Control::Stop(id) => controller.stop(id).await?,
+                    Control::SoftStop(id) => controller.soft_stop(id).await?,
+                    Control::HardStop(id) => controller.hard_stop(id).await?,
                     Control::SeekBy(id, amount) => controller.seek_by(id, amount).await?,
                     Control::SeekTo(id, position) => controller.seek_to(id, position).await?,
                     Control::ToggleRepeat(id) => {
@@ -90,6 +92,8 @@ impl Link {
                     Control::PauseAll => controller.pause_all().await?,
                     Control::ResumeAll => controller.resume_all().await?,
                     Control::StopAll => controller.stop_all().await?,
+                    Control::SoftStopAll => controller.soft_stop_all().await?,
+                    Control::HardStopAll => controller.hard_stop_all().await?,
                 }
             }
             Ok(())

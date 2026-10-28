@@ -473,6 +473,18 @@ pub fn set_fade_target(cue: &Cue, target: Uuid) -> Option<Cue> {
     })
 }
 
+/// "Stop the target when the fade completes".
+pub fn set_fade_stop_on_complete(cue: &Cue, stop: bool) -> Option<Cue> {
+    if !matches!(cue.params, CueParam::Fade(_)) {
+        return None;
+    }
+    edited(cue, |cue| {
+        if let CueParam::Fade(fade) = &mut cue.params {
+            fade.stop_target_on_complete = stop;
+        }
+    })
+}
+
 pub fn set_fade_volume(cue: &Cue, decibels: f64) -> Option<Cue> {
     if !matches!(cue.params, CueParam::Fade(_)) {
         return None;
@@ -736,6 +748,14 @@ mod tests {
         cue
     }
 
+    #[test]
+    fn a_fade_can_stop_its_target_when_it_completes() {
+        let cue = fade_cue();
+        let stopping = set_fade_stop_on_complete(&cue, true).unwrap();
+        assert!(matches!(&stopping.params, CueParam::Fade(f) if f.stop_target_on_complete));
+        assert!(set_fade_stop_on_complete(&wait(1.0), true).is_none());
+    }
+
     fn fade_cue() -> Cue {
         let mut cue = wait(1.0);
         cue.params = CueParam::Fade(sbsp_backend::model::cue::FadeCueParam {
@@ -961,6 +981,7 @@ mod tests {
         let retargeted = set_playback_target(&cue, Uuid::from_u128(6)).unwrap();
         assert_eq!(playback_target(&retargeted), Some(Uuid::from_u128(6)));
 
+        assert!(set_fade_stop_on_complete(&cue, true).is_none());
         let hard = set_stop_hard(&cue, true).unwrap();
         assert!(matches!(&hard.params, CueParam::Stop(s) if s.hard));
 

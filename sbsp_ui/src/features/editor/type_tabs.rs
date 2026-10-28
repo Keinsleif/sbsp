@@ -151,6 +151,11 @@ pub(super) fn fade<'a>(
             container(target).max_width(600.0),
             volume,
             container(param).align_x(Horizontal::Left),
+            check(
+                fl!("main-bottom-editor-fade-stop-on-complete"),
+                fade.stop_target_on_complete,
+                enabled.then_some(Message::FadeStopOnComplete(!fade.stop_target_on_complete)),
+            ),
         ]
         .spacing(4)
         .padding(4),

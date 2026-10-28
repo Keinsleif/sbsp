@@ -23,7 +23,12 @@ pub enum Action {
     PauseAll,
     ResumeAll,
     Stop,
+    /// Stop with the fade-out of the cue's own settings.
+    FadeOut,
+    HardStop,
     StopAll,
+    FadeAllOut,
+    HardStopAll,
     SeekForward,
     SeekBackward,
     ToggleRepeat,
@@ -134,14 +139,18 @@ impl Bindings {
         let edit = &settings.edit;
         let file = &settings.file;
 
-        let table: [(&Option<String>, Action); 21] = [
+        let table: [(&Option<String>, Action); 25] = [
             (&playback.execute, Action::Execute),
             (&playback.load, Action::Load),
             (&playback.pause_and_resume, Action::PauseAndResume),
             (&playback.pause_all, Action::PauseAll),
             (&playback.resume_all, Action::ResumeAll),
             (&playback.stop, Action::Stop),
+            (&playback.fade_out, Action::FadeOut),
+            (&playback.hard_stop, Action::HardStop),
             (&playback.stop_all, Action::StopAll),
+            (&playback.fade_all_out, Action::FadeAllOut),
+            (&playback.hard_stop_all, Action::HardStopAll),
             (&playback.seek_forward, Action::SeekForward),
             (&playback.seek_backward, Action::SeekBackward),
             (&settings.audio_action.toggle_repeat, Action::ToggleRepeat),
@@ -236,6 +245,24 @@ mod tests {
 
     fn ch(c: &str) -> Key {
         Key::Character(c.into())
+    }
+
+    #[test]
+    fn the_fade_out_and_hard_stop_keys_work_once_they_are_set() {
+        let none = Modifiers::empty();
+        // Not bound by default.
+        assert_eq!(bindings().find(&press(named(Named::F1), none)), None);
+
+        let mut settings = HotkeySettings::default();
+        settings.playback.fade_out = Some("F1".to_owned());
+        settings.playback.hard_stop = Some("F2".to_owned());
+        settings.playback.fade_all_out = Some("F3".to_owned());
+        settings.playback.hard_stop_all = Some("F4".to_owned());
+        let b = Bindings::from_settings(&settings, false);
+        assert_eq!(b.find(&press(named(Named::F1), none)), Some(Action::FadeOut));
+        assert_eq!(b.find(&press(named(Named::F2), none)), Some(Action::HardStop));
+        assert_eq!(b.find(&press(named(Named::F3), none)), Some(Action::FadeAllOut));
+        assert_eq!(b.find(&press(named(Named::F4), none)), Some(Action::HardStopAll));
     }
 
     #[test]
