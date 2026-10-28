@@ -151,7 +151,7 @@ mod tests {
     use serde_json::{Value, json};
 
     fn a_cue() -> sbsp_backend::model::cue::Cue {
-        sbsp_frontend_settings::TemplateSettings::default().wait
+        crate::settings::TemplateSettings::default().wait
     }
 
     fn value(command: &WsCommand) -> Value {

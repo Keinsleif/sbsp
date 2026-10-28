@@ -23,7 +23,6 @@ jobs:
           scopes: |
             ui
             backend
-            frontend_settings
             license
             docs
             deps

@@ -13,8 +13,8 @@ pub mod palette;
 /// The user-facing theme preference, as stored in settings.
 ///
 /// This is intentionally a plain enum rather than `Option<iced::Theme>` so
-/// it can be serialized directly into `sbsp_frontend_settings` without a
-/// dependency on iced from that crate.
+/// it can be serialized directly into `crate::settings` without making the
+/// settings types depend on iced.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
     Light,

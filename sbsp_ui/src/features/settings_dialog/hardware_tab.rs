@@ -12,7 +12,7 @@
 use iced::widget::{Space, column, container, row, text, tooltip};
 use iced::{Alignment, Element, Length};
 use sbsp_backend::helper::{DeviceInformation, SupportedHardware};
-use sbsp_frontend_settings::AudioHardwareSettings;
+use crate::settings::AudioHardwareSettings;
 
 use super::{Choice, Message, choice, picker};
 use crate::fl;

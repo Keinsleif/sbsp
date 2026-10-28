@@ -11,7 +11,7 @@ use iced::widget::{button, column, container, pick_list, row, text};
 use iced::{Alignment, Element, Length, Theme};
 
 use sbsp_backend::model::cue::{Cue, Uuid, audio::FadeParam};
-use sbsp_frontend_settings::NameFormatSettings;
+use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::display_name;
 use crate::domain::cue_edit::{FADE_POWER, FadeSlot};

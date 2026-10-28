@@ -11,7 +11,7 @@
 //! `useHotkey` callback carried its own guards.
 
 use iced::keyboard::{Key, Modifiers, key::Named};
-use sbsp_frontend_settings::hotkey::HotkeySettings;
+use crate::settings::hotkey::HotkeySettings;
 
 use crate::domain::hotkey::{Hotkey, Mods};
 

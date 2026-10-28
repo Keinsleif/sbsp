@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 use sbsp_backend::manager::InsertPosition;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
-use sbsp_frontend_settings::TemplateSettings;
+use crate::settings::TemplateSettings;
 
 /// File extensions the audio file picker offers (the original's list).
 pub const AUDIO_EXTENSIONS: &[&str] = &[

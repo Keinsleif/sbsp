@@ -24,7 +24,7 @@ use iced::widget::{
 };
 use iced::{Alignment, Element, Length, Theme};
 use sbsp_backend::model::settings::{CursorAdvanceTrigger, ShowSettings};
-use sbsp_frontend_settings::{AudioHardwareSettings, DarkMode};
+use crate::settings::{AudioHardwareSettings, DarkMode};
 
 use crate::domain::field::{Commit, NumberSpec, commit_number, step_number};
 use crate::fl;
@@ -277,7 +277,7 @@ impl SettingsDialog {
     /// The hotkeys of another cue player's layout. Only the playback keys
     /// and the repeat toggle change, as in the original.
     fn recall(&mut self, preset: Preset) {
-        use sbsp_frontend_settings::hotkey::{AudioActionHotkey, PlaybackHotkey};
+        use crate::settings::hotkey::{AudioActionHotkey, PlaybackHotkey};
 
         let key = |name: &str| Some(name.to_owned());
         let (execute, pause_and_resume, stop) = match preset {

@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::manager::InsertPosition;
 use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
-use sbsp_frontend_settings::NameFormatSettings;
+use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::{display_name, get_duration};
 use crate::domain::time::format_seconds;

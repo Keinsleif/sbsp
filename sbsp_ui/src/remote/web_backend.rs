@@ -27,7 +27,7 @@ use sbsp_backend::{
     api::{FileList, Permissions, WsCommand, WsError, WsFeedback, client::ServiceEntry},
     event::{BackendError, BackendEvent},
 };
-use sbsp_frontend_settings::GlobalRemoteSettings;
+use crate::settings::GlobalRemoteSettings;
 
 use crate::port::link::{Handoff, Levels, subscribe};
 use crate::port::{FullState, Link, PortEvent, wire};

@@ -16,7 +16,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
-use sbsp_frontend_settings::{GlobalRemoteSettings, manager::SettingsManager};
+use crate::settings::{GlobalRemoteSettings, manager::SettingsManager};
 
 use sbsp_backend::api::{
     FileList, Permissions,

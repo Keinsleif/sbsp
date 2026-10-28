@@ -10,7 +10,7 @@
 
 use iced::widget::{Space, button, column, container, row, text, tooltip};
 use iced::{Alignment, Element, Length};
-use sbsp_frontend_settings::hotkey::HotkeySettings;
+use crate::settings::hotkey::HotkeySettings;
 
 use super::Message;
 use crate::domain::hotkey::{Hotkey, normalize_hotkey};

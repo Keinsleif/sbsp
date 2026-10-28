@@ -5637,19 +5637,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sbsp_frontend_settings"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "log",
- "sbsp_backend",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
-]
-
-[[package]]
 name = "sbsp_license"
 version = "0.1.2"
 dependencies = [
@@ -5688,11 +5675,11 @@ dependencies = [
  "rfd",
  "rust-embed",
  "sbsp_backend",
- "sbsp_frontend_settings",
  "sbsp_license",
  "serde",
  "serde_json",
  "serial_test",
+ "tempfile",
  "tokio",
  "unic-langid",
  "velopack",

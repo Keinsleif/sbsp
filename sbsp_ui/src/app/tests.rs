@@ -1027,7 +1027,7 @@ fn a_name_the_user_gave_is_what_the_list_shows() {
 #[test]
 #[serial]
 fn loaded_settings_reach_the_ui() {
-    use sbsp_frontend_settings::DarkMode;
+    use crate::settings::DarkMode;
 
     let mut state = new_state();
     let mut loaded = Preferences::default();
@@ -1121,7 +1121,7 @@ fn done_applies_the_edited_settings() {
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
     let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(!before)));
     let _ = state.update(Message::Settings(settings_dialog::Message::DarkMode(
-        sbsp_frontend_settings::DarkMode::Dark,
+        crate::settings::DarkMode::Dark,
     )));
     let _ = state.update(Message::Settings(settings_dialog::Message::Done));
 

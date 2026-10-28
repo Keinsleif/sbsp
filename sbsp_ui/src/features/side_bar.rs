@@ -14,7 +14,7 @@ use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Size, 
 
 use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus, StateParam};
 use sbsp_backend::model::cue::Uuid;
-use sbsp_frontend_settings::NameFormatSettings;
+use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::build_cue_name;
 use crate::domain::flat_list::flatten;

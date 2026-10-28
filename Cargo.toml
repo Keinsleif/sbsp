@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "sbsp_backend",
     "sbsp_license",
-    "sbsp_frontend_settings",
     "sbsp_ui",
 ]
 

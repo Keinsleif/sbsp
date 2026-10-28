@@ -11,8 +11,8 @@ publish.workspace = true
 
 [features]
 default = []
-host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "sbsp_frontend_settings/manager", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
-remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "sbsp_frontend_settings/manager", "dep:rfd", "dep:velopack"]
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:tempfile", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:tempfile", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
 [[bin]]
@@ -32,7 +32,6 @@ required-features = ["web"]
 
 [dependencies]
 sbsp_backend = { path = "../sbsp_backend", default-features = false, features = ["protocol"] }
-sbsp_frontend_settings = { path = "../sbsp_frontend_settings", default-features = false }
 anyhow = { version = "1.0" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -50,6 +49,8 @@ i18n-embed-fl = "0.10"
 rust-embed = "8"
 unic-langid = { version = "0.9", features = ["macros"] }
 log = { workspace = true }
+# Atomic writes of the settings files (host and remote).
+tempfile = { workspace = true, optional = true }
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"], optional = true }
 # Native file dialogs (host and remote). Already in the lockfile via the Tauri

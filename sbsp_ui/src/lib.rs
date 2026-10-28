@@ -18,6 +18,7 @@ pub mod time;
 pub mod update;
 pub mod persist;
 pub mod port;
+pub mod settings;
 pub mod state;
 pub mod theme;
 pub mod widgets;

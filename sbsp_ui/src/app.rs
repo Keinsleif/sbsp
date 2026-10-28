@@ -60,11 +60,11 @@ use crate::features::update_dialog::Stage;
 
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
-use sbsp_frontend_settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
+use crate::settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
 #[cfg(feature = "host")]
-use sbsp_frontend_settings::GlobalHostSettings;
+use crate::settings::GlobalHostSettings;
 #[cfg(client)]
-use sbsp_frontend_settings::GlobalRemoteSettings;
+use crate::settings::GlobalRemoteSettings;
 
 use crate::fl;
 
@@ -494,12 +494,12 @@ impl State {
             theme_mode: ThemeMode::default(),
             lang,
             name_format: NameFormatSettings::default(),
-            lock_cursor_to_selection: sbsp_frontend_settings::GeneralSettings::default()
+            lock_cursor_to_selection: crate::settings::GeneralSettings::default()
                 .lock_cursor_to_selection,
             cue_view: cue_list::Viewport::default(),
-            seek_amount: sbsp_frontend_settings::GeneralSettings::default().seek_amount,
+            seek_amount: crate::settings::GeneralSettings::default().seek_amount,
             hotkeys: hotkeys::Bindings::from_settings(
-                &sbsp_frontend_settings::hotkey::HotkeySettings::default(),
+                &crate::settings::hotkey::HotkeySettings::default(),
                 hotkeys::is_mac(),
             ),
             templates: TemplateSettings::default(),
@@ -536,7 +536,7 @@ impl State {
                 .and_then(|rect| rect.position())
                 .map(|(x, y)| iced::Point::new(x, y)),
             window_maximized: saved.window.is_some_and(|rect| rect.maximized),
-            hide_controls: sbsp_frontend_settings::AppearanceSettings::default().hide_controls,
+            hide_controls: crate::settings::AppearanceSettings::default().hide_controls,
             model: ShowModelState::default(),
             ui: {
                 let mut ui = UiState::new(is_host);

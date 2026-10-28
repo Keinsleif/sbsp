@@ -5,8 +5,8 @@
 //! what the app does with it. The host's settings also hold the audio
 //! hardware; the remote's do not.
 
-use sbsp_frontend_settings::hotkey::HotkeySettings;
-use sbsp_frontend_settings::{
+use crate::settings::hotkey::HotkeySettings;
+use crate::settings::{
     AppearanceSettings, DarkMode, GeneralSettings, GlobalHostSettings, GlobalRemoteSettings,
     NameFormatSettings, TemplateSettings,
 };

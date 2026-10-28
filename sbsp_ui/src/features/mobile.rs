@@ -339,7 +339,7 @@ fn key<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbsp_frontend_settings::TemplateSettings;
+    use crate::settings::TemplateSettings;
 
     fn wait(id: Uuid) -> Cue {
         let mut cue = TemplateSettings::default().wait;

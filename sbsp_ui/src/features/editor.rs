@@ -25,7 +25,7 @@ use sbsp_backend::model::cue::{
     Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
 };
 use sbsp_backend::model::settings::CursorAdvanceTrigger;
-use sbsp_frontend_settings::NameFormatSettings;
+use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::display_name;
 use crate::domain::cue_edit::{self, ChainKind, FadeSlot, GroupModeKind};

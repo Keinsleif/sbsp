@@ -12,7 +12,7 @@ use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, group::GroupMode};
-use sbsp_frontend_settings::TemplateSettings;
+use crate::settings::TemplateSettings;
 
 use super::{EditorMessage, Message};
 use crate::domain::flat_list::FlatCueEntry;
@@ -174,7 +174,7 @@ fn line<'a>(kind: Kind, cue: &Cue, selected: bool) -> Element<'a, Message> {
 pub fn view<'a>(
     templates: &'a TemplateSettings,
     selected: Option<Kind>,
-    name_format: &'a sbsp_frontend_settings::NameFormatSettings,
+    name_format: &'a crate::settings::NameFormatSettings,
     drafts: &'a Drafts,
     editing: Editing<'a, '_>,
 ) -> Element<'a, Message> {

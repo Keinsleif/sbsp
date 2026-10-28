@@ -30,7 +30,7 @@ use std::sync::Arc;
 use sbsp_backend::api::{ApiServerOptions, server::start_apiserver_with};
 use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendSettings, start_backend};
-use sbsp_frontend_settings::{GlobalHostSettings, manager::SettingsManager};
+use crate::settings::{GlobalHostSettings, manager::SettingsManager};
 use sbsp_license::{LicenseManager, data::LicenseInformation};
 use tokio::sync::{broadcast, watch};
 

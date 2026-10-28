@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub mod hotkey;
-#[cfg(feature = "manager")]
+#[cfg(any(feature = "host", feature = "remote"))]
 pub mod manager;
 
 use serde::{Deserialize, Serialize};
