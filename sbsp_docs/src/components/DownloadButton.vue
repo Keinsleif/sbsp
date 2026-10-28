@@ -15,40 +15,31 @@ const detectOS = () => {
   return ''
 }
 
+// The assets of the latest release of the host app. The remote app's packages
+// are named `com.keinsleif.sbsp.remote-...` and are left out.
+const findAsset = (assets, pattern) =>
+  assets.find((asset) => asset.name.startsWith('com.keinsleif.sbsp-') && pattern.test(asset.name))?.browser_download_url ?? null;
+
 const linkData = computed(() => {
-  if (latestData.value == null) {
-    return {
-      win: null,
-      mac: null,
-      linux_appimage: null,
-      linux_deb: null,
-      linux_rpm: null,
-    };
-  }
-
-  const baseMacUrl = latestData.value.platforms["darwin-aarch64"]?.url ?? null;
-  const dmgUrl = baseMacUrl != null ? baseMacUrl.replace(/[^/]+$/, `SBS.Player_${version.value}_universal.dmg`) : null;
-
+  const assets = latestData.value?.assets ?? [];
   return {
-    win: latestData.value.platforms['windows-x86_64']?.url ?? null,
-    mac: dmgUrl,
-    linux_appimage: latestData.value.platforms['linux-x86_64-appimage']?.url ?? null,
-    linux_deb: latestData.value.platforms['linux-x86_64-deb']?.url ?? null,
-    linux_rpm: latestData.value.platforms['linux-x86_64-rpm']?.url ?? null,
-  }
+    win: findAsset(assets, /Setup\.exe$/i),
+    mac: findAsset(assets, /\.pkg$/i),
+    linux_appimage: findAsset(assets, /\.AppImage$/i),
+  };
 })
 
 onMounted(async () => {
   userOS.value = detectOS();
   try {
-    const response = await fetch(`https://keinsleif.github.io/sbsp/update/latest-main.json`)
+    const response = await fetch('https://api.github.com/repos/Keinsleif/sbsp/releases/latest')
     if (!response.ok) throw new Error('Network response was not ok')
-    
+
     const data = await response.json()
-    
-    if (data != null) {
+
+    if (data != null && Array.isArray(data.assets)) {
       latestData.value = data;
-      version.value = data.version
+      version.value = String(data.tag_name ?? '').replace(/^ui-/, '')
     } else {
       throw new Error('Asset not found')
     }
@@ -115,18 +106,6 @@ onMounted(async () => {
             Linux
           </span>
           <div style="display: flex; flex-direction: column; gap: 1em; padding: 1em;">
-            <VPButton :href="linkData.linux_deb ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
-              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
-              Debian/Ubuntu
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
-              </span>
-            </VPButton>
-            <VPButton :href="linkData.linux_rpm ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
-              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
-              Red Hat/Fedora
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
-              </span>
-            </VPButton>
             <VPButton :href="linkData.linux_appimage ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
               <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
               AppImage
