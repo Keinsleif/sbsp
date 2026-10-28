@@ -1,0 +1,68 @@
+{% import "macros" as macros %}
+{#- core_scopes のコミットは本文から外し、末尾の "Core changes" 節にまとめる。
+    リリース内に core_scopes 以外のコミットが無い場合 (backend 単体の changelog など) は
+    分けずにそのまま出力する。 -#}
+{% set core_scopes = ["backend", "license", "frontend_settings"] -%}
+
+{#- 1st pass: 件数を数える -#}
+{% set_global main_count = 0 -%}
+{% set_global core_count = 0 -%}
+{% for commit in commits -%}
+{% set_global is_core = false -%}
+{% if commit.scope -%}{% if commit.scope in core_scopes -%}{% set_global is_core = true -%}{% endif -%}{% endif -%}
+{% if is_core -%}{% set_global core_count = core_count + 1 -%}{% else -%}{% set_global main_count = main_count + 1 -%}{% endif -%}
+{% endfor -%}
+{% set_global split = false -%}
+{% if main_count > 0 -%}{% if core_count > 0 -%}{% set_global split = true -%}{% endif -%}{% endif -%}
+
+{% if version.tag and from.tag -%}
+    ## [{{ version.tag }}]({{repository_url ~ "/compare/" ~ from.tag ~ ".." ~ version.tag}}) - {{ date | date(format="%Y-%m-%d") }}
+{% elif version.tag and from.id -%}
+    ## [{{ version.tag }}]({{repository_url ~ "/compare/" ~ from.id ~ ".." ~ version.tag}}) - {{ date | date(format="%Y-%m-%d") }}
+{% else -%}
+    {% set from = from.id -%}
+    {% set to = version.id -%}
+
+    {% set from_shorthand = from.id | truncate(length=7, end="") -%}
+    {% set to_shorthand = version.id | truncate(length=7, end="") -%}
+
+    ## Unreleased ([{{ from_shorthand ~ ".." ~ to_shorthand }}]({{repository_url ~ "/compare/" ~ from_shorthand ~ ".." ~ to_shorthand}}))
+{% endif -%}
+
+{#- 2nd pass: 通常の変更 (split のときは core_scopes を除く) -#}
+{% for value in commits | group_by_type -%}
+{% set_global shown = 0 -%}
+{% for commit in value.1 -%}
+{% set_global is_core = false -%}
+{% if split -%}{% if commit.scope -%}{% if commit.scope in core_scopes -%}{% set_global is_core = true -%}{% endif -%}{% endif -%}{% endif -%}
+{% if not is_core -%}
+{% if shown == 0 %}
+
+#### {{ value.0 | upper_first }}
+{% endif -%}
+{% set_global shown = shown + 1 -%}
+{{ macros::remote(commit=commit) }}
+{% endif -%}
+{% endfor -%}
+{% endfor -%}
+
+{#- 3rd pass: core の変更 -#}
+{% if split %}
+
+### Core changes
+{% for value in commits | group_by_type -%}
+{% set_global shown = 0 -%}
+{% for commit in value.1 -%}
+{% set_global is_core = false -%}
+{% if commit.scope -%}{% if commit.scope in core_scopes -%}{% set_global is_core = true -%}{% endif -%}{% endif -%}
+{% if is_core -%}
+{% if shown == 0 %}
+
+#### {{ value.0 | upper_first }}
+{% endif -%}
+{% set_global shown = shown + 1 -%}
+{{ macros::remote(commit=commit) }}
+{% endif -%}
+{% endfor -%}
+{% endfor -%}
+{% endif -%}

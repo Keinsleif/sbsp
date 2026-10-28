@@ -21,10 +21,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           scopes: |
-            app
-            remote_app
+            ui
             backend
-            frontend
+            frontend_settings
             license
             docs
             deps
