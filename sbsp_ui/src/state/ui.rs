@@ -35,6 +35,17 @@ pub enum Mode {
     View,
 }
 
+/// When the machine is kept from sleeping (see `crate::power`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum KeepAwakeMode {
+    Never,
+    /// While the window has the focus (what the Tauri build did).
+    #[default]
+    WhileFocused,
+    Always,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DisplayMode {
@@ -70,6 +81,7 @@ pub struct UiState {
     pub expanded_rows: HashSet<Uuid>,
     pub pre_wait_display_mode: DisplayMode,
     pub duration_display_mode: DisplayMode,
+    pub keep_awake: KeepAwakeMode,
 }
 
 impl UiState {
@@ -95,6 +107,7 @@ impl UiState {
             expanded_rows: HashSet::new(),
             pre_wait_display_mode: DisplayMode::Elapsed,
             duration_display_mode: DisplayMode::Elapsed,
+            keep_awake: KeepAwakeMode::default(),
         }
     }
 

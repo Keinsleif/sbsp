@@ -4,7 +4,8 @@
 //! What the app remembers between runs: the window's place and size, and
 //! the UI choices the Tauri build kept with `pinia-plugin-persistedstate`
 //! (mode, the pre-wait / duration display modes, the sidebar tab and the
-//! open/closed state of the sidebar and bottom viewer).
+//! open/closed state of the sidebar and bottom viewer) and when to keep the
+//! machine awake.
 //!
 //! The file is `ui_state.json` next to the settings (`config_dir()/<identifier>`).
 //! Everything is optional, so a missing field, a missing file and a file
@@ -14,7 +15,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::state::ui::{DisplayMode, Mode, SideBarTab, UiState};
+use crate::state::ui::{DisplayMode, KeepAwakeMode, Mode, SideBarTab, UiState};
 
 /// The smallest window a saved size may restore.
 const MIN_WIDTH: f32 = 480.0;
@@ -64,6 +65,7 @@ pub struct Saved {
     pub side_bar_tab: Option<SideBarTab>,
     pub is_right_sidebar_open: Option<bool>,
     pub is_bottom_tab_open: Option<bool>,
+    pub keep_awake: Option<KeepAwakeMode>,
 }
 
 impl Saved {
@@ -76,6 +78,7 @@ impl Saved {
             side_bar_tab: Some(ui.side_bar_tab),
             is_right_sidebar_open: Some(ui.is_right_sidebar_open),
             is_bottom_tab_open: Some(ui.is_bottom_tab_open),
+            keep_awake: Some(ui.keep_awake),
         }
     }
 
@@ -100,6 +103,9 @@ impl Saved {
         }
         if let Some(value) = self.is_bottom_tab_open {
             ui.is_bottom_tab_open = value;
+        }
+        if let Some(value) = self.keep_awake {
+            ui.keep_awake = value;
         }
     }
 
@@ -199,6 +205,7 @@ mod tests {
         ui.side_bar_tab = SideBarTab::Meter;
         ui.is_right_sidebar_open = false;
         ui.duration_display_mode = DisplayMode::Remain;
+        ui.keep_awake = KeepAwakeMode::Always;
         let window = WindowRect { width: 1000.0, height: 600.0, x: Some(10.0), y: None, maximized: true };
 
         let saved = Saved::parse(&Saved::capture(&ui, Some(window)).to_json());
@@ -210,6 +217,7 @@ mod tests {
         assert!(!restored.is_right_sidebar_open);
         assert!(restored.is_bottom_tab_open);
         assert_eq!(restored.duration_display_mode, DisplayMode::Remain);
+        assert_eq!(restored.keep_awake, KeepAwakeMode::Always);
         assert_eq!(saved.window, Some(window));
     }
 

@@ -11,8 +11,8 @@ publish.workspace = true
 
 [features]
 default = []
-host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:tempfile", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
-remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:tempfile", "dep:rfd", "dep:velopack"]
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:tempfile", "dep:keepawake", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:tempfile", "dep:keepawake", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
 [[bin]]
@@ -51,6 +51,8 @@ unic-langid = { version = "0.9", features = ["macros"] }
 log = { workspace = true }
 # Atomic writes of the settings files (host and remote).
 tempfile = { workspace = true, optional = true }
+# Keeps the machine awake while a show is run (host and remote).
+keepawake = { version = "0.4", optional = true }
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"], optional = true }
 # Native file dialogs (host and remote). Already in the lockfile via the Tauri

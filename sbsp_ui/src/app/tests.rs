@@ -250,6 +250,15 @@ fn window_focus_events_are_tracked() {
 }
 
 #[test]
+fn the_keep_awake_mode_defaults_to_the_focus_and_can_be_chosen() {
+    let mut state = new_state();
+    assert_eq!(state.ui.keep_awake, KeepAwakeMode::WhileFocused);
+
+    let _ = state.update(Message::SetKeepAwake(KeepAwakeMode::Always));
+    assert_eq!(state.ui.keep_awake, KeepAwakeMode::Always);
+}
+
+#[test]
 #[serial]
 fn selecting_a_mode_switches_it_when_allowed() {
     let mut state = new_state();

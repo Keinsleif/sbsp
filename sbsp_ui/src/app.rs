@@ -40,7 +40,7 @@ use crate::state::{
     level_meter::LevelMeterState,
     model::ShowModelState,
     playback::PlaybackState,
-    ui::{Mode, SideBarTab, UiState},
+    ui::{KeepAwakeMode, Mode, SideBarTab, UiState},
 };
 use crate::persist::{Saved, WindowRect};
 use crate::theme::ThemeMode;
@@ -192,6 +192,9 @@ pub struct State {
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
+    /// The request that keeps the machine awake, held while
+    /// `ui.keep_awake` and the window focus ask for it.
+    power: crate::power::KeepAwake,
     /// Which app this is ("host", "remote" or "web"); picks where the
     /// remembered UI state is kept.
     target: &'static str,
@@ -317,6 +320,7 @@ pub enum Message {
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
+    SetKeepAwake(KeepAwakeMode),
     /// The OS moved or resized the window. Whether the window is maximized
     /// is asked before the new geometry is remembered (see `WindowSettled`).
     WindowMoved(iced::window::Id, iced::Point),
@@ -526,6 +530,7 @@ impl State {
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
+            power: crate::power::KeepAwake::default(),
             target,
             window_size: saved
                 .window
@@ -574,6 +579,7 @@ impl State {
             fonts_ready: false,
         };
 
+        state.sync_power();
         state.refresh_clipboard();
         (state, boot_task)
     }
@@ -594,6 +600,13 @@ impl State {
             self.sync_editor();
         }
         task
+    }
+
+    /// Starts or ends the "do not sleep" request to match the chosen mode
+    /// and the window focus.
+    fn sync_power(&mut self) {
+        self.power
+            .set(crate::power::wanted(self.ui.keep_awake, self.window_focused));
     }
 
     fn sync_editor(&mut self) {
@@ -980,7 +993,14 @@ impl State {
             | Message::RemoveConfirmed => {}
             Message::RemoveCancelled => self.pending_remove = None,
             Message::ClockTick => self.clock = header::local_clock(),
-            Message::WindowFocused(focused) => self.window_focused = focused,
+            Message::WindowFocused(focused) => {
+                self.window_focused = focused;
+                self.sync_power();
+            }
+            Message::SetKeepAwake(mode) => {
+                self.ui.keep_awake = mode;
+                self.sync_power();
+            }
             Message::WindowSettled {
                 size,
                 position,
@@ -2988,6 +3008,11 @@ impl State {
             "tools.renumber" => self.run_action(hotkeys::Action::Renumber),
             "view.toggle-theme" => self.update(Message::ToggleTheme),
             "view.toggle-language" => self.update(Message::ToggleLanguage),
+            "view.keep-awake.never" => self.update(Message::SetKeepAwake(KeepAwakeMode::Never)),
+            "view.keep-awake.focused" => {
+                self.update(Message::SetKeepAwake(KeepAwakeMode::WhileFocused))
+            }
+            "view.keep-awake.always" => self.update(Message::SetKeepAwake(KeepAwakeMode::Always)),
             "help.credits" => {
                 self.credits = Some(credits::Dialog::default());
                 Task::none()
@@ -3414,6 +3439,23 @@ impl State {
                     // as a target even to someone who can't read whatever
                     // is presently selected, and vice versa.
                     MenuNode::item("view.toggle-language", self.lang.toggle().label()),
+                    MenuNode::separator(),
+                    MenuNode::submenu(
+                        fl!("menu-view-keep-awake"),
+                        [
+                            ("view.keep-awake.never", fl!("menu-view-keep-awake-never"), KeepAwakeMode::Never),
+                            ("view.keep-awake.focused", fl!("menu-view-keep-awake-focused"), KeepAwakeMode::WhileFocused),
+                            ("view.keep-awake.always", fl!("menu-view-keep-awake-always"), KeepAwakeMode::Always),
+                        ]
+                        .into_iter()
+                        .map(|(id, label, mode)| {
+                            MenuNode::item(id, label)
+                                .checked(self.ui.keep_awake == mode)
+                                // The web build cannot hold the request.
+                                .enabled(cfg!(any(feature = "host", feature = "remote")))
+                        })
+                        .collect(),
+                    ),
                 ],
             )
             .menu(
