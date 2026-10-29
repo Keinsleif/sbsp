@@ -3006,13 +3006,11 @@ impl State {
             "edit.duplicate" => self.run_action(hotkeys::Action::Duplicate),
             "edit.select-all" => self.run_action(hotkeys::Action::SelectAll),
             "tools.renumber" => self.run_action(hotkeys::Action::Renumber),
-            "view.toggle-theme" => self.update(Message::ToggleTheme),
-            "view.toggle-language" => self.update(Message::ToggleLanguage),
-            "view.keep-awake.never" => self.update(Message::SetKeepAwake(KeepAwakeMode::Never)),
-            "view.keep-awake.focused" => {
+            "tools.keep-awake.never" => self.update(Message::SetKeepAwake(KeepAwakeMode::Never)),
+            "tools.keep-awake.focused" => {
                 self.update(Message::SetKeepAwake(KeepAwakeMode::WhileFocused))
             }
-            "view.keep-awake.always" => self.update(Message::SetKeepAwake(KeepAwakeMode::Always)),
+            "tools.keep-awake.always" => self.update(Message::SetKeepAwake(KeepAwakeMode::Always)),
             "help.credits" => {
                 self.credits = Some(credits::Dialog::default());
                 Task::none()
@@ -3427,25 +3425,12 @@ impl State {
                     MenuNode::item("tools.renumber", fl!("menu-tools-renumber"))
                         .enabled(editing && has_selection)
                         .with_shortcut_opt(shortcut(hotkeys::Action::Renumber)),
-                ],
-            )
-            .menu(
-                fl!("menu-view"),
-                vec![
-                    MenuNode::item("view.toggle-theme", fl!("menu-view-toggle-theme")),
-                    // Shows the language it would switch *to*, in that
-                    // language's own name (not fl!()'d through the
-                    // currently active one): "English" should stay legible
-                    // as a target even to someone who can't read whatever
-                    // is presently selected, and vice versa.
-                    MenuNode::item("view.toggle-language", self.lang.toggle().label()),
-                    MenuNode::separator(),
                     MenuNode::submenu(
-                        fl!("menu-view-keep-awake"),
+                        fl!("menu-tools-keep-awake"),
                         [
-                            ("view.keep-awake.never", fl!("menu-view-keep-awake-never"), KeepAwakeMode::Never),
-                            ("view.keep-awake.focused", fl!("menu-view-keep-awake-focused"), KeepAwakeMode::WhileFocused),
-                            ("view.keep-awake.always", fl!("menu-view-keep-awake-always"), KeepAwakeMode::Always),
+                            ("tools.keep-awake.never", fl!("menu-tools-keep-awake-never"), KeepAwakeMode::Never),
+                            ("tools.keep-awake.focused", fl!("menu-tools-keep-awake-focused"), KeepAwakeMode::WhileFocused),
+                            ("tools.keep-awake.always", fl!("menu-tools-keep-awake-always"), KeepAwakeMode::Always),
                         ]
                         .into_iter()
                         .map(|(id, label, mode)| {
@@ -3595,10 +3580,9 @@ impl State {
             };
             let bottom = container(bottom)
                 .width(Length::Fill)
-                .height(height + 2.0)
-                .padding(1)
-                .style(container::bordered_box);
-            column![main, bottom].into()
+                .height(height)
+                .padding(1);
+            column![main, divider::horizontal(), bottom].into()
         } else {
             main.into()
         };

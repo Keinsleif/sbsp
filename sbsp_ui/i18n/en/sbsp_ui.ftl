@@ -1,12 +1,10 @@
 app-title = SBS Player
 menu-file = File
 menu-file-quit = Quit
-menu-view = View
-menu-view-toggle-theme = Toggle Theme
-menu-view-keep-awake = Prevent Sleep
-menu-view-keep-awake-never = Never
-menu-view-keep-awake-focused = While Focused
-menu-view-keep-awake-always = Always
+menu-tools-keep-awake = Prevent Sleep
+menu-tools-keep-awake-never = Never
+menu-tools-keep-awake-focused = While Focused
+menu-tools-keep-awake-always = Always
 menu-help = Help
 menu-help-about = About
 menu-help-about-message = SBS Player (iced UI, in development).

@@ -1,12 +1,10 @@
 app-title = SBS Player
 menu-file = ファイル
 menu-file-quit = 終了
-menu-view = 表示
-menu-view-toggle-theme = テーマ切り替え
-menu-view-keep-awake = スリープを防止
-menu-view-keep-awake-never = しない
-menu-view-keep-awake-focused = フォーカス時
-menu-view-keep-awake-always = 常時
+menu-tools-keep-awake = スリープを防止
+menu-tools-keep-awake-never = しない
+menu-tools-keep-awake-focused = フォーカス時
+menu-tools-keep-awake-always = 常時
 menu-help = ヘルプ
 menu-help-about = バージョン情報
 menu-help-about-message = SBS Player（iced UI、開発中）

@@ -40,8 +40,8 @@ iced = { version = "0.14", features = ["canvas", "image", "svg", "markdown", "qr
 iced_aw = { version = "0.14", default-features = false, features = ["context_menu", "menu", "spinner"] }
 iced_futures = "0.14"
 dark-light = "2"
-# Wall clock in the header. Already in the workspace's lockfile (pulled in
-# transitively); `clock` is what provides `Local::now()`.
+
+# Wall clock in the header. `clock` is what provides `Local::now()`.
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 i18n-embed = { version = "0.16", features = ["fluent-system"] }
@@ -52,68 +52,38 @@ log = { workspace = true }
 # Atomic writes of the settings files (host and remote).
 tempfile = { workspace = true, optional = true }
 # Keeps the machine awake while a show is run (host and remote).
-keepawake = { version = "0.4", optional = true }
+keepawake = { version = "0.6", optional = true }
 
 tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"], optional = true }
-# Native file dialogs (host and remote). Already in the lockfile via the Tauri
-# dialog plugin; Phase 7 uses it for the real file operations.
 rfd = { version = "0.16", optional = true }
-# Installation and updates (Velopack). Only the installed app can update; a
-# build run from the source tree reports that it is not installed.
 velopack = { version = "1", optional = true }
-# The web build is served from the host's API server (host only); the same
-# axum as the backend's, which turns on the features it needs.
 axum = { version = "0.8", default-features = false, optional = true }
-# License verification and the license types (host only).
 sbsp_license = { path = "../sbsp_license", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-# Only pulled in when the `host` feature enables it (macOS global menu bar).
-# See src/host/native_menu.rs and the migration plan, section 5.1.
 muda = { version = "0.17", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 iced = { version = "0.14", default-features = false, features = ["tokio"] }
-# stderr logging for the host/remote binaries (see src/logging.rs). Not
-# useful on wasm32 -- stdio isn't connected to the browser console there,
-# and Phase 9's web target will want its own console_log-based setup.
 fern = "0.7"
 humantime = { workspace = true }
 dirs = "5"
-# Opens the log folder in the file manager ("Show Log Files").
 opener = "0.8"
-# The OS UI language, for a language setting left on "system".
 i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-# The browser's WebSocket (the web build's connection to a host), its timers
-# and the page's own address.
 gloo-net = { version = "0.6", default-features = false, features = ["websocket", "http"] }
 gloo-timers = { version = "0.3", features = ["futures"] }
 wasm-bindgen-futures = "0.4"
-# The clock iced's own timers use on wasm (see src/time.rs); already pulled
-# in by iced.
 wasmtimer = "0.4"
 web-sys = { version = "0.3", features = ["Window", "Location", "Storage"] }
-# The browser's language, for a language setting left on "system".
 i18n-embed = { version = "0.16", features = ["fluent-system", "web-sys-requester"] }
-# Local::now() on wasm reads the browser's clock through wasm-bindgen.
 chrono = { version = "0.4", default-features = false, features = ["clock", "wasmbind"] }
 
 [dev-dependencies]
-# Headless UI testing (see migration plan, section 8/"iced_test による
-# テスト基盤"). Only used by #[cfg(test)] code, so a plain dev-dependency
-# rather than target-gated like the items above.
 iced_test = "0.14"
-# Forces every #[serial]-tagged test below to run one at a time rather
-# than cargo test's default parallel-by-thread execution. Needed because
-# i18n::LOADER is one process-wide static shared by every test in this
-# binary: a test that calls i18n::select (or otherwise depends on which
-# language is currently loaded) races any other such test running
-# concurrently on a different thread.
 serial_test = "3"
 indexmap = { version = "2", features = ["serde"] }
 
-# The icon of the Windows executable (shortcuts and the taskbar use it).
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
