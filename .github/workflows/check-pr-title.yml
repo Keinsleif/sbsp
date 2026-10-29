@@ -23,6 +23,5 @@ jobs:
           scopes: |
             ui
             backend
-            license
             docs
             deps

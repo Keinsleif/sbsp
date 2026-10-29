@@ -14,7 +14,6 @@ pub mod file_ops;
 #[cfg(client)]
 pub mod file_list;
 pub mod header;
-pub mod license_dialog;
 pub mod update_dialog;
 pub mod mobile;
 pub mod hotkeys;

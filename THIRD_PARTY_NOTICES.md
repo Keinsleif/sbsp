@@ -12267,7 +12267,6 @@ insights.
 
     - [sbsp_app 2.9.0]( https://github.com/Keinsleif/sbsp )
     - [sbsp_backend 1.9.0]( https://github.com/Keinsleif/sbsp )
-    - [sbsp_license 0.1.2]( https://github.com/Keinsleif/sbsp )
     - [sbsp_remote_app 2.9.0]( https://github.com/Keinsleif/sbsp )
 
 ```text

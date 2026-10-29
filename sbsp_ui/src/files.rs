@@ -51,12 +51,6 @@ pub async fn settings_destination(dialog: AsyncFileDialog) -> Option<std::path::
     Some(file.path().to_path_buf())
 }
 
-/// Asks for a license file. `None`: cancelled.
-pub async fn pick_license(dialog: AsyncFileDialog) -> Option<std::path::PathBuf> {
-    let file = dialog.add_filter("License File", &["json"]).pick_file().await?;
-    Some(file.path().to_path_buf())
-}
-
 /// Asks for a show file and loads it. Cancelling does nothing.
 pub async fn open(handle: BackendHandle, dialog: AsyncFileDialog) -> anyhow::Result<()> {
     let Some(file) = show_filter(dialog).pick_file().await else {

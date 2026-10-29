@@ -2,7 +2,7 @@
 {#- core_scopes のコミットは本文から外し、末尾の "Core changes" 節にまとめる。
     リリース内に core_scopes 以外のコミットが無い場合 (backend 単体の changelog など) は
     分けずにそのまま出力する。 -#}
-{% set core_scopes = ["backend", "license"] -%}
+{% set core_scopes = ["backend"] -%}
 
 {#- 1st pass: 件数を数える -#}
 {% set_global main_count = 0 -%}

@@ -11,7 +11,7 @@ publish.workspace = true
 
 [features]
 default = []
-host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:tempfile", "dep:keepawake", "dep:muda", "dep:rfd", "dep:sbsp_license", "dep:axum", "dep:velopack"]
+host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:tempfile", "dep:keepawake", "dep:muda", "dep:rfd", "dep:axum", "dep:velopack"]
 remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:tempfile", "dep:keepawake", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
@@ -58,7 +58,6 @@ tokio = { workspace = true, features = ["rt-multi-thread", "sync", "time", "fs"]
 rfd = { version = "0.16", optional = true }
 velopack = { version = "1", optional = true }
 axum = { version = "0.8", default-features = false, optional = true }
-sbsp_license = { path = "../sbsp_license", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 muda = { version = "0.17", optional = true }

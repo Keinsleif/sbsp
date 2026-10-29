@@ -29,7 +29,7 @@ use crate::domain::cursor::{CueEvent, CursorMove, advance};
 #[cfg(client)]
 use crate::features::{connect, file_list};
 use crate::features::{
-    credits, cue_list, editor, file_ops, header, hotkeys, license_dialog, mobile, renumber, server_panel,
+    credits, cue_list, editor, file_ops, header, hotkeys, mobile, renumber, server_panel,
     settings_dialog, side_bar, status_bar, update_dialog, viewer,
 };
 use crate::i18n::Language;
@@ -167,8 +167,6 @@ pub struct State {
     audio_warning: bool,
     /// The credits, while they are open.
     credits: Option<credits::Dialog>,
-    /// The license dialog, while it is open.
-    license_dialog: Option<license_dialog::Dialog>,
     update_dialog: Option<update_dialog::Dialog>,
     /// The update that was found, to download.
     #[cfg(installer)]
@@ -271,7 +269,6 @@ pub enum Message {
     Settings(settings_dialog::Message),
     ServerPanel(server_panel::Message),
     Credits(credits::Message),
-    License(license_dialog::Message),
     Update(update_dialog::Message),
     /// The feed was asked for a newer version (`true`: at startup, with no
     /// dialog open).
@@ -282,9 +279,6 @@ pub enum Message {
     /// Installing failed (on success the app has restarted).
     #[cfg(installer)]
     UpdateApplied(String),
-    /// A license file was chosen and checked (`false`: none chosen).
-    #[cfg(feature = "host")]
-    LicenseActivated(Result<bool, String>),
     /// The server's options and whether it runs, as the panel opens.
     #[cfg(feature = "host")]
     ServerOpened(Box<sbsp_backend::api::ApiServerOptions>, bool),
@@ -513,7 +507,6 @@ impl State {
             pending_remove: None,
             preferences: Preferences::default(),
             credits: None,
-            license_dialog: None,
             update_dialog: None,
             #[cfg(installer)]
             update_found: None,
@@ -679,7 +672,6 @@ impl State {
                 }
                 Task::none()
             }
-            Message::License(message) => self.handle_license(message),
             Message::Update(message) => self.handle_update(message),
             #[cfg(installer)]
             Message::UpdateChecked(silent, result) => self.update_checked(silent, result),
@@ -921,27 +913,8 @@ impl State {
             | Message::StatusBar(status_bar::Message::OpenServerPanel)
             | Message::ServerPanel(_)
             | Message::Credits(_)
-            | Message::License(_)
             | Message::Update(_)
             | Message::AudioWarning(_) => {}
-            #[cfg(feature = "host")]
-            Message::LicenseActivated(result) => match result {
-                Ok(true) => {
-                    let info = self.license_info();
-                    if let Some(dialog) = &mut self.license_dialog {
-                        dialog.info = info;
-                        dialog.activated = true;
-                    }
-                }
-                Ok(false) => {}
-                Err(message) => {
-                    log::error!("license: {message}");
-                    self.toasts.push(
-                        toast::Kind::Danger,
-                        format!("{}: {message}", fl!("dialog-message-license-pro-title")),
-                    );
-                }
-            },
             #[cfg(feature = "host")]
             Message::ServerOpened(options, running) => {
                 self.server_panel = Some(server_panel::Panel::new(&options, running));
@@ -1266,9 +1239,9 @@ impl State {
                 Task::none()
             };
         }
-        // Credits and license: Escape closes them; nothing reaches the cue
-        // list behind them.
-        if self.credits.is_some() || self.license_dialog.is_some() || self.update_dialog.is_some() {
+        // Credits and the update dialog: Escape closes them; nothing reaches
+        // the cue list behind them.
+        if self.credits.is_some() || self.update_dialog.is_some() {
             if press.names.iter().any(|n| n == "Escape") && !press.repeat {
                 if let Some(dialog) = &self.update_dialog {
                     if !dialog.busy() {
@@ -1276,12 +1249,6 @@ impl State {
                     }
                 } else if self.credits.is_some() {
                     self.credits = None;
-                } else if let Some(dialog) = &mut self.license_dialog {
-                    if dialog.activated {
-                        dialog.activated = false;
-                    } else {
-                        self.license_dialog = None;
-                    }
                 }
             }
             return Task::none();
@@ -1687,25 +1654,6 @@ impl State {
         }
     }
 
-    /// What the license says right now (the host has a license).
-    #[cfg(feature = "host")]
-    fn license_info(&self) -> Option<license_dialog::Info> {
-        use sbsp_license::data::LicenseEdition;
-
-        let info = self.backend.as_ref().and_then(Port::host)?.license_info()?;
-        Some(license_dialog::Info {
-            pro: info.edition == LicenseEdition::Pro,
-            owner: info.owner,
-            issue_time: info.issue_time,
-            id: info.id.to_string(),
-        })
-    }
-
-    #[cfg(not(feature = "host"))]
-    fn license_info(&self) -> Option<license_dialog::Info> {
-        None
-    }
-
     /// Shows the host's files and asks the host for the list.
     #[cfg(client)]
     fn open_file_picker(&mut self, purpose: file_list::Purpose) -> Task<Message> {
@@ -1943,78 +1891,11 @@ impl State {
         Task::none()
     }
 
-    fn handle_license(&mut self, message: license_dialog::Message) -> Task<Message> {
-        use license_dialog::Message as M;
-
-        match message {
-            M::Close => {
-                self.license_dialog = None;
-                Task::none()
-            }
-            M::CloseNotice => {
-                if let Some(dialog) = &mut self.license_dialog {
-                    dialog.activated = false;
-                }
-                Task::none()
-            }
-            M::Reload => {
-                let info = self.license_info();
-                if let Some(dialog) = &mut self.license_dialog {
-                    dialog.info = info;
-                }
-                Task::none()
-            }
-            M::Copy(text) => iced::clipboard::write(text),
-            M::Activate => self.activate_license(),
-        }
-    }
-
-    /// Asks for a license file and activates it.
-    #[cfg(feature = "host")]
-    fn activate_license(&self) -> Task<Message> {
-        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
-            return Task::none();
-        };
-        crate::files::dialog().then(move |dialog| {
-            let backend = backend.clone();
-            Task::perform(
-                async move {
-                    let Some(path) = crate::files::pick_license(dialog).await else {
-                        return Ok(false);
-                    };
-                    backend
-                        .activate_license(path)
-                        .await
-                        .map(|()| true)
-                        .map_err(|e| e.to_string())
-                },
-                Message::LicenseActivated,
-            )
-        })
-    }
-
-    #[cfg(not(feature = "host"))]
-    fn activate_license(&self) -> Task<Message> {
-        Task::none()
-    }
-
     /// The footer's server button: opens the panel once the backend has
     /// said what the server is doing.
     #[cfg(feature = "host")]
     fn open_server_panel(&mut self) -> Task<Message> {
         match self.backend.as_ref().and_then(Port::host) {
-            // As in the original, the server panel needs a Pro license.
-            Some(backend) if !backend.is_pro() => {
-                self.toasts.push(
-                    toast::Kind::Info,
-                    format!(
-                        "{}: {}",
-                        fl!("dialog-message-license-pro-title"),
-                        fl!("dialog-message-license-server-panel")
-                    ),
-                );
-                Task::none()
-            }
             Some(backend) => Task::perform(backend.server_status(), |(options, running)| {
                 Message::ServerOpened(Box::new(options), running)
             }),
@@ -3017,12 +2898,6 @@ impl State {
                 self.credits = Some(credits::Dialog::default());
                 Task::none()
             }
-            "help.license" => {
-                if cfg!(feature = "host") {
-                    self.license_dialog = Some(license_dialog::Dialog::new(self.license_info()));
-                }
-                Task::none()
-            }
             "help.check-update" => self.start_update_check(),
             "help.show-log-files" => {
                 self.show_log_files();
@@ -3449,8 +3324,6 @@ impl State {
                 fl!("menu-help"),
                 vec![
                     MenuNode::item("help.credits", fl!("menu-help-credits")),
-                    MenuNode::item("help.license", fl!("menu-help-license"))
-                        .enabled(cfg!(feature = "host")),
                     MenuNode::item("help.check-update", fl!("menu-help-check-update"))
                         .enabled(cfg!(installer)),
                     MenuNode::item("help.show-log-files", fl!("menu-help-show-log-files"))
@@ -3821,14 +3694,6 @@ impl State {
             Some(dialog) => modal::over_blocking(
                 content,
                 credits::view(dialog).map(Message::Credits),
-            ),
-            None => content,
-        };
-
-        let content = match &self.license_dialog {
-            Some(dialog) => modal::over_blocking(
-                content,
-                license_dialog::view(dialog).map(Message::License),
             ),
             None => content,
         };

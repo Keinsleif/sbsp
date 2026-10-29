@@ -1384,33 +1384,6 @@ fn the_credits_open_from_the_help_menu_and_close_on_escape() {
 }
 
 #[test]
-#[serial]
-fn the_license_dialog_shows_the_edition_and_closes_in_two_steps() {
-    let mut state = new_state();
-    state.license_dialog = Some(license_dialog::Dialog::new(Some(license_dialog::Info {
-        pro: true,
-        owner: "Someone".to_owned(),
-        issue_time: 1_700_000_000,
-        id: "00000000-0000-0000-0000-000000000000".to_owned(),
-    })));
-    let _ = iced_test::simulator(state.view());
-
-    state.license_dialog.as_mut().unwrap().activated = true;
-    let _ = iced_test::simulator(state.view());
-
-    let escape = || {
-        press(
-            keyboard::Key::Named(keyboard::key::Named::Escape),
-            keyboard::Modifiers::empty(),
-        )
-    };
-    let _ = state.update(escape());
-    assert!(!state.license_dialog.as_ref().unwrap().activated, "the notice goes first");
-    let _ = state.update(escape());
-    assert!(state.license_dialog.is_none());
-}
-
-#[test]
 fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     use crate::persist::{Saved, WindowRect};
 

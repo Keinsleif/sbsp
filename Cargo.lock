@@ -5738,19 +5738,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sbsp_license"
-version = "0.1.2"
-dependencies = [
- "anyhow",
- "base64 0.23.1",
- "clap",
- "ed25519-dalek",
- "serde",
- "serde_json",
- "uuid",
-]
-
-[[package]]
 name = "sbsp_ui"
 version = "3.0.0"
 dependencies = [
@@ -5777,7 +5764,6 @@ dependencies = [
  "rfd",
  "rust-embed",
  "sbsp_backend",
- "sbsp_license",
  "serde",
  "serde_json",
  "serial_test",

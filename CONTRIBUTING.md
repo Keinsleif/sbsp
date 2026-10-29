@@ -75,14 +75,13 @@
 `<scope>`は指定されないか、以下のうちの一つから選択されます。
 
 * backend: sbsp_backendクレートに関する変更
-* license: sbsp_licenseクレートに関する変更
 * ui: sbsp_uiクレート（ホスト・リモート・Web）に関する変更
 * docs: sbsp_docsに関する変更
 * deps: 依存関係の更新
 
 ##### backend などの変更と ui の変更
 
-`sbsp_backend`・`sbsp_license` の変更は `sbsp_ui` のバージョンにも反映されます（backend の `feat` は ui の minor 更新になります）。変更履歴では、これらの scope のコミットは「Core changes」節に分けて表示されます。
+`sbsp_backend` の変更は `sbsp_ui` のバージョンにも反映されます（backend の `feat` は ui の minor 更新になります）。変更履歴では、これらの scope のコミットは「Core changes」節に分けて表示されます。
 
 * 変更は crate ごとにコミットを分け、それぞれの scope（`backend` と `ui` など）を付けてください。
 * 分けられない場合は、利用者から見える側（通常は `ui`、または scope なし）を付け、backend 側の内容は本文に記述してください。
