@@ -1,0 +1,10 @@
+{
+    "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json",
+    "MD0007": {
+        "indent": 4
+    },
+    "MD025": {
+        "front_matter_title": ""
+    },
+    "MD033": false
+}
