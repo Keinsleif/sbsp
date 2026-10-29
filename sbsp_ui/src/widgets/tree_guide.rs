@@ -4,18 +4,18 @@
 //! The thin lines at the left of a cue list row that show how deep in
 //! groups it sits: a vertical line for each enclosing group, and at the
 //! innermost one a short branch out to the row (a corner at the closing
-//! "end" row). Ported from `TreeIndentGuide.vue`.
+//! "end" row).
 
 use iced::widget::{Space, canvas};
 use iced::{Element, Length, Point, Rectangle, Renderer, Size, Theme, mouse};
 
 /// How far each level indents.
-pub const LEVEL_WIDTH: f32 = 16.0;
+pub const LEVEL_WIDTH: f32 = 26.0;
 
 /// Where the line of the innermost level sits within its column.
-const LINE_X: f32 = 8.0;
+const LINE_X: f32 = 10.0;
 /// How far the branch reaches towards the row.
-const BRANCH: f32 = 8.0;
+const BRANCH: f32 = 16.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
@@ -32,7 +32,7 @@ pub fn view<'a, Message: 'a>(level: usize, kind: Kind, height: f32) -> Element<'
         return Space::new().into();
     }
     canvas(Guide { level, kind })
-        .width(Length::Fixed(level as f32 * LEVEL_WIDTH))
+        .width(Length::Fixed(LINE_X + (level - 1) as f32 * LEVEL_WIDTH + BRANCH))
         .height(Length::Fixed(height))
         .into()
 }

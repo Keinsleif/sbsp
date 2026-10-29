@@ -26,7 +26,7 @@ use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{SideBarTab, UiState};
 use crate::widgets::icon::{Icon, Tone, icon, toned};
-use crate::widgets::progress;
+use crate::widgets::{divider, progress};
 
 /// The original's `w-65`.
 pub const WIDTH: f32 = 260.0;
@@ -66,7 +66,7 @@ pub fn view<'a>(
         SideBarTab::Meter => level_meter(meter),
     };
 
-    column![tabs, body]
+    column![tabs, divider::horizontal(), body]
         .width(WIDTH)
         .height(Length::Fill)
         .into()

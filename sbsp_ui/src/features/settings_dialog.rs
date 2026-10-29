@@ -31,6 +31,7 @@ use crate::fl;
 use crate::state::preferences::Preferences;
 use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field};
 use crate::widgets::inputs::{NumberInput, labeled, number_input};
+use crate::widgets::divider;
 
 const SHOW_NAME: FieldId = FieldId("settings.show-name");
 const ASSETS_DIRECTORY: FieldId = FieldId("settings.assets-directory");
@@ -466,6 +467,7 @@ pub fn view<'a>(
     container(column![
         row![
             tabs,
+            divider::vertical(),
             scrollable(container(page).padding([0, 16]).width(Length::Fill))
                 .width(Length::Fill)
                 .height(Length::Fill),
@@ -607,7 +609,7 @@ fn global_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<
         checkbox(general.copy_assets_when_add)
             .label(fl!("dialog-settings-global-general-copy-assets-when-add"))
             .on_toggle(Message::CopyAssets),
-        number_input(
+        container(number_input(
             NumberInput {
                 id: SEEK_AMOUNT,
                 label: Some(fl!("dialog-settings-global-general-seek-amount").as_str()),
@@ -620,10 +622,9 @@ fn global_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<
             },
             drafts,
         )
-        .map(Message::Field),
+        .map(Message::Field)).max_width(320),
     ]
     .spacing(16)
-    .max_width(320)
     .into()
 }
 

@@ -2,12 +2,11 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The bottom editor: in edit mode it takes the viewer's place and edits
-//! the selected cue. Ported from `BottomEditor.vue`, `BasicEditor.vue` and
-//! `TriggerEditor.vue`.
+//! the selected cue.
 //!
 //! This part has the tabs every cue has (Basics, Trigger). The tabs of
 //! the individual cue types (audio, time & levels, fade, playback, group)
-//! follow in the next patch.
+//! followed in [`type_tabs`] module
 //!
 //! Every edit sends the whole edited cue (`ModelEdit::UpdateCue`), as the
 //! original does. Text fields go through the shared [`Drafts`]: what is
@@ -39,15 +38,14 @@ use crate::state::model::ShowModelState;
 use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field, text_field_with_placeholder};
 use crate::features::viewer::TimeRange;
 use crate::widgets::inputs::{DoubleRelease, FaderMessage, labeled, time_input};
-use crate::widgets::waveform_editor;
+use crate::widgets::{divider, waveform_editor};
 
 mod parts;
 mod type_tabs;
 
 use parts::{Choice, check, choice_name, picker};
 
-/// The original's `h-62`.
-pub const HEIGHT: f32 = 240.0;
+pub const HEIGHT: f32 = 242.0;
 
 const NUMBER: FieldId = FieldId("editor.number");
 const NAME: FieldId = FieldId("editor.name");
@@ -702,7 +700,7 @@ pub fn view<'a>(
         Tab::Group => type_tabs::group(&ctx, cue),
     };
 
-    column![tabs, container(body).padding(8).width(Length::Fill).height(Length::Fill)]
+    column![tabs, divider::horizontal(), container(body).padding(8).width(Length::Fill).height(Length::Fill)]
         .height(HEIGHT)
         .into()
 }

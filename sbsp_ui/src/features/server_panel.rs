@@ -410,7 +410,7 @@ pub fn view<'a>(panel: &'a Panel) -> Element<'a, Message> {
             Space::new().width(Length::Fill),
             start,
         ],
-    ]
+    ].width(Length::Shrink)
     .spacing(14)
     .into()
 }

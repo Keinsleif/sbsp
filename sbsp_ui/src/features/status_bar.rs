@@ -86,14 +86,20 @@ pub fn view<'a>(ui: &UiState, cue_count: usize, has_server: bool) -> Element<'a,
         .style(button::text)
         .on_press(message)
     };
+    let btn = |glyph: Icon, message: Message| {
+        button(icon::icon(glyph, 20.0))
+        .padding(4)
+        .style(button::text)
+        .on_press(message)
+    };
     let bottom_toggle = toggle(Icon::DockBottom, ui.is_bottom_tab_open, Message::ToggleBottomTab);
     let sidebar_toggle = toggle(Icon::DockRight, ui.is_right_sidebar_open, Message::ToggleSidebar);
 
-    let settings = toggle(Icon::Cog, false, Message::OpenSettings);
+    let settings = btn(Icon::Cog, Message::OpenSettings);
 
     let mut bar = row![picker, count, bottom_toggle, sidebar_toggle].align_y(Alignment::Center);
     if has_server {
-        bar = bar.push(toggle(Icon::Server, false, Message::OpenServerPanel));
+        bar = bar.push(btn(Icon::Server, Message::OpenServerPanel));
     }
     bar.push(settings).padding(6).into()
 }

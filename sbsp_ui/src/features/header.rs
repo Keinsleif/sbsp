@@ -3,7 +3,6 @@
 
 //! The top panel under the menu: a wall clock, the stop/play/pause
 //! buttons for the playback-cursor cue, and that cue's title and notes.
-//! Ported from `AppHeader.vue`.
 //!
 //! Layout is the original's: a fixed-height panel in two columns. Left,
 //! the clock (stretching to fill) over the transport buttons; right, the
@@ -120,11 +119,11 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
     let clock = container(
         row![
             text(format!("{:02}:{:02}.", v.clock.hour, v.clock.minute))
-                .size(48)
+                .size(54)
                 .line_height(1.0)
                 .font(crate::theme::fonts::MONO),
             text(format!("{:02}", v.clock.second))
-                .size(32)
+                .size(40)
                 .line_height(1.0)
                 .font(crate::theme::fonts::MONO),
         ]

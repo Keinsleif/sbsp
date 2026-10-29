@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The cue list (Phase 4): a read-only tree view with selection and
-//! group expand/collapse. Replaces the Vue frontend's `CueList.vue` /
-//! `CueListRow.vue` for display and click-selection only -- keyboard
-//! movement, hotkeys, drag-and-drop reordering, the context menu and
-//! inline editing are separate, later pieces of Phase 4/6.
+//! The cue list: a read-only tree view with selection and
+//! group expand/collapse.
 //!
 //! This module owns no state of its own: selection and expansion live in
 //! [`UiState`] (they have to, other screens read them too), the cues in
@@ -15,6 +12,7 @@
 //! of replace/extend/toggle/range a click means depends on the keyboard
 //! modifiers, which this widget cannot see).
 
+use iced::theme::palette::Pair;
 use iced::widget::{
     Space, button, center, column, container, mouse_area, row, scrollable, stack, text,
 };
@@ -244,7 +242,7 @@ pub enum RenderRow {
     End { parent: Option<Uuid>, level: usize },
 }
 
-/// The rows to draw, top to bottom (`CueList.vue`'s `buildRenderRows`).
+/// The rows to draw, top to bottom
 pub fn render_rows(flat: &[FlatCueEntry]) -> Vec<RenderRow> {
     fn close_groups(rows: &mut Vec<RenderRow>, open: &mut Vec<(Uuid, usize)>, level: usize) {
         while let Some(&(id, group_level)) = open.last() {
@@ -581,6 +579,7 @@ fn row_view<'a>(
     let is_selected = ui.selected_rows.contains(&id);
     let is_cursor = ui.playback_cursor == Some(id);
     let active = playback.active_cues.get(&id);
+    let color = cue.color;
 
     let cursor_mark: Element<'a, Message> = if is_cursor {
         icon(Icon::ArrowRightBold, 18.0).into()
@@ -674,7 +673,7 @@ fn row_view<'a>(
 
     // Edit mode: a handle to drag the row by.
     let handle: Element<'a, Message> = if edit.is_some() {
-        mouse_area(container(icon(Icon::DragVertical, 18.0)).center_x(W_HANDLE))
+        mouse_area(container(icon(Icon::DragVertical, 18.0)).center_y(Length::Fill).center_x(W_HANDLE).style(move |_| handle_style(color)))
             .on_press(Message::DragStart(id))
             .interaction(mouse::Interaction::Grab)
             .into()
@@ -689,7 +688,6 @@ fn row_view<'a>(
         cell(icon(type_icon(&cue.params), 18.0), W_TYPE),
         cell(text(cue.number.clone()), W_NUMBER),
         row![indent, disclosure, name]
-            .spacing(4)
             .align_y(Alignment::Center)
             .width(Length::Fill),
         time_cell(pre_wait.0, pre_wait.1, in_pre_wait),
@@ -699,12 +697,10 @@ fn row_view<'a>(
     ]
     .align_y(Alignment::Center);
 
-    let color = cue.color;
     // The line under the row is part of its height, so a row stays
     // `ROW_HEIGHT` tall (the scroll position is computed from that).
     let area = mouse_area(column![
         container(content)
-            .padding([0, 8])
             .center_y(ROW_HEIGHT - 1.0)
             .width(Length::Fill)
             .style(move |theme: &Theme| row_style(theme, is_selected, is_cursor, color)),
@@ -738,8 +734,8 @@ fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
     // Lined up with the name column of a row at the same level: after its
     // padding and the columns before it come the guide, then the space of
     // the disclosure triangle (and the gaps around it).
-    let lead = 8.0 + W_HANDLE + W_CURSOR + W_STATUS + W_TYPE + W_NUMBER;
-    let triangle = 20.0 + 8.0;
+    let lead = W_HANDLE + W_CURSOR + W_STATUS + W_TYPE + W_NUMBER;
+    let triangle = 20.0;
 
     let content = row![
         Space::new().width(lead),
@@ -893,6 +889,12 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
         .into()
 }
 
+fn handle_style(color: CueColor) -> container::Style {
+    let color_pair = cue_color(color);
+
+    container::Style { text_color: color_pair.map(|c| c.text), background: color_pair.map(|c| c.color.into()), ..Default::default() }
+}
+
 fn row_style(
     theme: &Theme,
     is_selected: bool,
@@ -903,16 +905,14 @@ fn row_style(
 
     // Selection wins over the cue's own color tint, as in the original.
     let background = if is_selected {
-        Some(palette.primary.weak.color.into())
-    } else if color != CueColor::None {
-        Some(cue_color(color).scale_alpha(0.2).into())
+        Some(palette.primary.weak.color.scale_alpha(0.3).into())
     } else {
-        None
+        cue_color(color).map(|c| c.color.scale_alpha(0.2).into())
     };
 
     container::Style {
         background,
-        text_color: is_selected.then_some(palette.primary.weak.text),
+        text_color: None,
         // The playback cursor (the cue that fires next) is a separate
         // concept from the selection (what the user is editing), so it
         // gets its own marker rather than reusing the selection fill.
@@ -953,18 +953,28 @@ pub(crate) fn chain_icon(chain: &CueChain) -> Option<Icon> {
 /// A first-draft palette (Radix-ish hues), not a reproduction of the
 /// PrimeVue-era colors -- same status as `theme::palette`: replace once
 /// there is a visual pass on real screens.
-fn cue_color(color: CueColor) -> Color {
-    match color {
-        CueColor::None => Color::TRANSPARENT,
-        CueColor::Red => Color::from_rgb8(0xE5, 0x48, 0x4D),
-        CueColor::Purple => Color::from_rgb8(0x8E, 0x4E, 0xC6),
-        CueColor::Blue => Color::from_rgb8(0x3E, 0x63, 0xDD),
-        CueColor::Cyan => Color::from_rgb8(0x05, 0xA2, 0xC2),
-        CueColor::Green => Color::from_rgb8(0x30, 0xA4, 0x6C),
-        CueColor::Yellow => Color::from_rgb8(0xF5, 0xD9, 0x0A),
-        CueColor::Orange => Color::from_rgb8(0xF7, 0x6B, 0x15),
-        CueColor::Grey => Color::from_rgb8(0x8B, 0x8D, 0x98),
-    }
+fn cue_color(color: CueColor) -> Option<Pair> {
+    let bg = match color {
+        CueColor::None => None,
+        CueColor::Red => Some(Color::from_rgb8(0xE5, 0x48, 0x4D)),
+        CueColor::Purple => Some(Color::from_rgb8(0x8E, 0x4E, 0xC6)),
+        CueColor::Blue => Some(Color::from_rgb8(0x3E, 0x63, 0xDD)),
+        CueColor::Cyan => Some(Color::from_rgb8(0x05, 0xA2, 0xC2)),
+        CueColor::Green => Some(Color::from_rgb8(0x30, 0xA4, 0x6C)),
+        CueColor::Yellow => Some(Color::from_rgb8(0xF5, 0xD9, 0x0A)),
+        CueColor::Orange => Some(Color::from_rgb8(0xF7, 0x6B, 0x15)),
+        CueColor::Grey => Some(Color::from_rgb8(0x8B, 0x8D, 0x98)),
+    };
+
+    bg.map(|bg| {
+        let text = if bg.relative_contrast(Color::WHITE) >= bg.relative_contrast(Color::BLACK) {
+            Color::WHITE
+        } else {
+            Color::BLACK
+        };
+    
+        Pair::new(bg, text)
+    })
 }
 
 /// The marker for a playback status, as in the original's status column;
@@ -1229,8 +1239,8 @@ mod tests {
 
     #[test]
     fn no_color_is_fully_transparent_and_others_are_opaque() {
-        assert_eq!(cue_color(CueColor::None).a, 0.0);
-        assert_eq!(cue_color(CueColor::Red).a, 1.0);
+        assert!(cue_color(CueColor::None).is_none());
+        assert!(cue_color(CueColor::Red).is_some());
     }
 
     fn flat_of(model: &ShowModel, ui: &UiState) -> Vec<FlatCueEntry> {
