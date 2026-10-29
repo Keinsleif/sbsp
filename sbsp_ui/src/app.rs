@@ -2747,9 +2747,11 @@ impl State {
     /// asking first, then does it.
     fn begin(&mut self, after: file_ops::After) -> Task<Message> {
         use file_ops::{Confirm, Step};
+        // Closing a remote only disconnects it; the host's cues go on. So
+        // only the host asks about active cues when quitting.
+        let asks_about_cues = after != file_ops::After::Quit || cfg!(feature = "host");
         match file_ops::first_step(
-            after,
-            !self.playback.active_cues.is_empty(),
+            asks_about_cues && !self.playback.active_cues.is_empty(),
             self.is_modified(),
         ) {
             Step::AskStop => {

@@ -22,6 +22,7 @@ main-duration = 長さ
 main-side-bar-active-cues = 実行中のキュー
 main-side-bar-meter-title = メーター
 dialog-message-confirmation = 確認
+dialog-quit-while-active-content = アクティブなキューがあります。終了しますか?
 dialog-message-remove-cue = キューを削除してもよろしいですか？
 general-cancel = キャンセル
 general-confirm = 確認

@@ -56,11 +56,10 @@ pub enum Step {
     Go,
 }
 
-/// The first thing to do about `after`. Replacing the show stops whatever
-/// is playing, which is asked about first; closing the app does not ask
-/// that (as in the original).
-pub fn first_step(after: After, has_active_cues: bool, modified: bool) -> Step {
-    if has_active_cues && after != After::Quit {
+/// The first thing to do about `after`. Replacing the show or closing the
+/// app stops whatever is active, which is asked about first.
+pub fn first_step(has_active_cues: bool, modified: bool) -> Step {
+    if has_active_cues {
         Step::AskStop
     } else {
         after_stop_confirmed(modified)
@@ -93,6 +92,7 @@ pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
     .spacing(8);
 
     let message = match confirm {
+        Confirm::StopActive(After::Quit) => fl!("dialog-quit-while-active-content"),
         Confirm::StopActive(_) => fl!("menu-file-warning-before-load-and-reset"),
         Confirm::SaveChanges(_) => fl!("dialog-save-confirm-content"),
     };
@@ -111,26 +111,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn replacing_the_show_asks_about_active_cues_first() {
-        for after in [After::New, After::Open] {
-            assert_eq!(first_step(after, true, true), Step::AskStop);
-            assert_eq!(first_step(after, true, false), Step::AskStop);
-        }
+    fn active_cues_are_asked_about_first() {
+        assert_eq!(first_step(true, true), Step::AskStop);
+        assert_eq!(first_step(true, false), Step::AskStop);
     }
 
     #[test]
     fn then_about_unsaved_changes() {
-        for after in [After::New, After::Open, After::Quit] {
-            assert_eq!(first_step(after, false, true), Step::AskSave);
-            assert_eq!(first_step(after, false, false), Step::Go);
-        }
+        assert_eq!(first_step(false, true), Step::AskSave);
+        assert_eq!(first_step(false, false), Step::Go);
         assert_eq!(after_stop_confirmed(true), Step::AskSave);
         assert_eq!(after_stop_confirmed(false), Step::Go);
-    }
-
-    #[test]
-    fn quitting_does_not_ask_about_active_cues() {
-        assert_eq!(first_step(After::Quit, true, false), Step::Go);
-        assert_eq!(first_step(After::Quit, true, true), Step::AskSave);
     }
 }

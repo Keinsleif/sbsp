@@ -25,6 +25,7 @@ main-duration = Duration
 main-side-bar-active-cues = Active Cues
 main-side-bar-meter-title = Meter
 dialog-message-confirmation = Confirmation
+dialog-quit-while-active-content = Cues are active. Do you want to quit?
 dialog-message-remove-cue = Are you sure you want to remove?
 general-cancel = Cancel
 general-confirm = Confirm
