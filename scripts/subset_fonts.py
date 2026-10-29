@@ -5,7 +5,7 @@
 # ]
 # ///
 
-# SPDX-License-Identifier: Elastic-2.0
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 """Makes the web build's fonts: the UI fonts cut down to what a browser needs.
 

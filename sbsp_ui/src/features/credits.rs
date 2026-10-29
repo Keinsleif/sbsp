@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Elastic-2.0
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The credits dialog: the app itself, the icons and fonts it ships, and
@@ -201,7 +201,7 @@ pub fn view<'a>(dialog: &Dialog) -> Element<'a, Message> {
         column![
             text("SBS Player").size(20),
             text(format!(
-                "{} {} - Elastic License 2.0",
+                "{} {} - GNU General Public License v3.0 or later",
                 fl!("dialog-credits-version"),
                 env!("CARGO_PKG_VERSION")
             ))

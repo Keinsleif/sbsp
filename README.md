@@ -61,3 +61,18 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 
 > [!NOTE]
 > Web 版だけを開発するときは `mise run dev_web` でブラウザ向けの開発サーバーが起動します。
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+### Freedom to use, study, share and improve
+
+This software respects your freedom. You can:
+
+- Use it for any purpose
+- Study how it works and adapt it to your needs
+- Share copies with others
+- Improve the software and share your improvements with others
+
+All derivative works must also be licensed under GPL v3.0.
