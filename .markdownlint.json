@@ -1,8 +1,12 @@
 {
     "$schema": "https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json",
-    "MD0007": {
+    "MD007": {
         "indent": 4
     },
+    "MD010": {
+        "ignore_code_languages": ["text"]
+    },
+    "MD013": false,
     "MD025": {
         "front_matter_title": ""
     },

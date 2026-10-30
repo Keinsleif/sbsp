@@ -1,147 +1,215 @@
 # Changelog
+
+<!-- markdownlint-disable MD024 -->
+
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+
 ## [2.9.0](https://github.com/Keinsleif/sbsp/compare/46e0f561f717d98a8dbb10fd0b7e2481548196d7..2.9.0) - 2026-10-25
+
 ### Package updates
+
 - [backend-1.9.0](sbsp_backend) bumped to [backend-1.9.0](https://github.com/Keinsleif/sbsp/compare/backend-1.8.0..backend-1.9.0)
 - [frontend_settings-0.3.0](sbsp_frontend_settings) bumped to [frontend_settings-0.3.0](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.2.1..frontend_settings-0.3.0)
 - [app-2.9.0](sbsp_app) bumped to [app-2.9.0](https://github.com/Keinsleif/sbsp/compare/app-2.8.0..app-2.9.0)
 - [frontend-2.9.0](sbsp_frontend) bumped to [frontend-2.9.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.8.0..frontend-2.9.0)
 - [remote_app-2.9.0](sbsp_remote_app) bumped to [remote_app-2.9.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.8.0..remote_app-2.9.0)
+
 ### Global changes
+
 #### Documentation
+
 - gsc tags and tips (#221) - ([d37d48b](https://github.com/Keinsleif/sbsp/commit/d37d48b5713d0816fe2b40587d6ecaf95c958ba1)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Build system
+
 - (**deps**) bump markdown-it from 14.3.2 to 14.3.3 (#225) - ([a49fbad](https://github.com/Keinsleif/sbsp/commit/a49fbadc2eb76044938e095c2f26fa5a402c79c9)) - dependabot[bot], [@Keinsleif](https://github.com/Keinsleif), dependabot[bot]
 - (**deps**) bump shell-quote from 1.10.0 to 1.12.0 - ([46e0f56](https://github.com/Keinsleif/sbsp/commit/46e0f561f717d98a8dbb10fd0b7e2481548196d7)) - dependabot[bot]
+
 #### Miscellaneous Chores
+
 - update deps (#231) - ([a3ee8be](https://github.com/Keinsleif/sbsp/commit/a3ee8be5d5ab618eee77c48d3bcfa909e419300b)) - [@Keinsleif](https://github.com/Keinsleif)
 - update deps (#222) - ([d84521f](https://github.com/Keinsleif/sbsp/commit/d84521f58a3b03a14619f8c77719ff9972d8040b)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.8.0](https://github.com/Keinsleif/sbsp/compare/eb550c97954e21f028c32df89521a87176e6b4f5..2.8.0) - 2026-10-08
+
 ### Package updates
+
 - [frontend-2.8.0](sbsp_frontend) bumped to [frontend-2.8.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.7.1..frontend-2.8.0)
 - [remote_app-2.8.0](sbsp_remote_app) bumped to [remote_app-2.8.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.7.1..remote_app-2.8.0)
 - [app-2.8.0](sbsp_app) bumped to [app-2.8.0](https://github.com/Keinsleif/sbsp/compare/app-2.7.1..app-2.8.0)
 - [docs-1.3.0](sbsp_docs) bumped to [docs-1.3.0](https://github.com/Keinsleif/sbsp/compare/docs-1.2.0..docs-1.3.0)
 - [backend-1.8.0](sbsp_backend) bumped to [backend-1.8.0](https://github.com/Keinsleif/sbsp/compare/backend-1.7.1..backend-1.8.0)
+
 ### Global changes
+
 #### Features
+
 - (**backend**) opus codec support (#219) - ([99f1568](https://github.com/Keinsleif/sbsp/commit/99f1568c7d3f52e9f3ab9dbb1a12df81c015b884)) - [@Keinsleif](https://github.com/Keinsleif)
 - (**backend**) cache persistenance (#215) - ([2147745](https://github.com/Keinsleif/sbsp/commit/2147745e3e59bf82df8ee5b75eae327ab2eea881)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Performance Improvements
+
 - (**backend**) audio source iterator (#211) - ([eb550c9](https://github.com/Keinsleif/sbsp/commit/eb550c97954e21f028c32df89521a87176e6b4f5)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.7.1](https://github.com/Keinsleif/sbsp/compare/656ab13d38b07f739e0cae578e32b6d23361fdf1..2.7.1) - 2026-09-23
+
 ### Package updates
+
 - [remote_app-2.7.1](sbsp_remote_app) bumped to [remote_app-2.7.1](https://github.com/Keinsleif/sbsp/compare/remote_app-2.7.0..remote_app-2.7.1)
 - [app-2.7.1](sbsp_app) bumped to [app-2.7.1](https://github.com/Keinsleif/sbsp/compare/app-2.7.0..app-2.7.1)
 - [backend-1.7.1](sbsp_backend) bumped to [backend-1.7.1](https://github.com/Keinsleif/sbsp/compare/backend-1.7.0..backend-1.7.1)
 - [license-0.1.2](sbsp_license) bumped to [license-0.1.2](https://github.com/Keinsleif/sbsp/compare/license-0.1.1..license-0.1.2)
 - [frontend_settings-0.2.1](sbsp_frontend_settings) bumped to [frontend_settings-0.2.1](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.2.0..frontend_settings-0.2.1)
 - [frontend-2.7.1](sbsp_frontend) bumped to [frontend-2.7.1](https://github.com/Keinsleif/sbsp/compare/frontend-2.7.0..frontend-2.7.1)
+
 ### Global changes
+
 #### Bug Fixes
+
 - (**backend**) file write TOCTOU (#198) - ([4b020b9](https://github.com/Keinsleif/sbsp/commit/4b020b938b83eb9a5c936c4b489f06a39b6ea044)) - [@Keinsleif](https://github.com/Keinsleif)
 - (**backend**) rodio version to latest stable commit to update cpal (#196) - ([656ab13](https://github.com/Keinsleif/sbsp/commit/656ab13d38b07f739e0cae578e32b6d23361fdf1)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Miscellaneous Chores
+
 - update deps (#210) - ([cc882c8](https://github.com/Keinsleif/sbsp/commit/cc882c84adcda69af3642ca9019a361a3e0ac77a)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.7.0](https://github.com/Keinsleif/sbsp/compare/35c28ec707d9f7c0d0583c4ddc5ceef4922eb7b9..2.7.0) - 2026-09-03
+
 ### Package updates
+
 - [frontend-2.7.0](sbsp_frontend) bumped to [frontend-2.7.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.6.0..frontend-2.7.0)
 - [remote_app-2.7.0](sbsp_remote_app) bumped to [remote_app-2.7.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.6.0..remote_app-2.7.0)
 - [app-2.7.0](sbsp_app) bumped to [app-2.7.0](https://github.com/Keinsleif/sbsp/compare/app-2.6.0..app-2.7.0)
 - [backend-1.7.0](sbsp_backend) bumped to [backend-1.7.0](https://github.com/Keinsleif/sbsp/compare/backend-1.6.0..backend-1.7.0)
 - [frontend_settings-0.2.0](sbsp_frontend_settings) bumped to [frontend_settings-0.2.0](https://github.com/Keinsleif/sbsp/compare/frontend_settings-0.1.0..frontend_settings-0.2.0)
+
 ### Global changes
+
 #### Features
+
 - (**backend**) server binary improvement (#175) - ([5fe176e](https://github.com/Keinsleif/sbsp/commit/5fe176eb1f7adda2d8eef2c71c388391ef2dc926)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Miscellaneous Chores
+
 - update deps (#177) - ([417977b](https://github.com/Keinsleif/sbsp/commit/417977b3f32092ebedefeb8bb2883b66d76494f7)) - [@Keinsleif](https://github.com/Keinsleif)
 - update deps (#173) - ([35c28ec](https://github.com/Keinsleif/sbsp/commit/35c28ec707d9f7c0d0583c4ddc5ceef4922eb7b9)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.6.0](https://github.com/Keinsleif/sbsp/compare/26d5a46bcbf5494a565cd89ccbb2cf0ed1495018..2.6.0) - 2026-08-04
+
 ### Package updates
+
 - [backend-1.6.0](sbsp_backend) bumped to [backend-1.6.0](https://github.com/Keinsleif/sbsp/compare/backend-1.5.5..backend-1.6.0)
 - [app-2.6.0](sbsp_app) bumped to [app-2.6.0](https://github.com/Keinsleif/sbsp/compare/app-2.5.4..app-2.6.0)
 - [frontend_settings](sbsp_frontend_settings) bumped to [frontend_settings-0.1.0](https://github.com/Keinsleif/sbsp/compare/f52cfe2e3321a1f1a560489f812425f1d096a4b8..frontend_settings-0.1.0)
 - [frontend-2.6.0](sbsp_frontend) bumped to [frontend-2.6.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.3..frontend-2.6.0)
 - [remote_app-2.6.0](sbsp_remote_app) bumped to [remote_app-2.6.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.4..remote_app-2.6.0)
+
 ### Global changes
+
 #### Refactoring
+
 - decrease deps (#166) - ([1589283](https://github.com/Keinsleif/sbsp/commit/158928386c6ffe939d4d680e6c4560df7d0cc5b9)) - [@Keinsleif](https://github.com/Keinsleif)
 - crate separation & dependency management (#162) - ([26d5a46](https://github.com/Keinsleif/sbsp/commit/26d5a46bcbf5494a565cd89ccbb2cf0ed1495018)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.5.4](https://github.com/Keinsleif/sbsp/compare/c6d2a0c6dc10cd80de09cb5bf10755c92c1cc75a..2.5.4) - 2026-07-19
+
 ### Package updates
+
 - [frontend-2.5.3](sbsp_frontend) bumped to [frontend-2.5.3](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.2..frontend-2.5.3)
 - [remote_app-2.5.4](sbsp_remote_app) bumped to [remote_app-2.5.4](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.3..remote_app-2.5.4)
 - [app-2.5.4](sbsp_app) bumped to [app-2.5.4](https://github.com/Keinsleif/sbsp/compare/app-2.5.3..app-2.5.4)
+
 ### Global changes
+
 #### Documentation
+
 - add OGP for web page (#153) - ([4a8c662](https://github.com/Keinsleif/sbsp/commit/4a8c66241bd8d95b07c708ac1c7ec4231d3d9c77)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Continuous Integration
+
 - improve ci checks (#152) - ([c6d2a0c](https://github.com/Keinsleif/sbsp/commit/c6d2a0c6dc10cd80de09cb5bf10755c92c1cc75a)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.5.3](https://github.com/Keinsleif/sbsp/compare/52372b2042e4d6620b700e1697b1ddf4e8d7292f..2.5.3) - 2026-07-19
+
 ### Package updates
+
 - [app-2.5.3](sbsp_app) bumped to [app-2.5.3](https://github.com/Keinsleif/sbsp/compare/app-2.5.2..app-2.5.3)
 - [docs-1.2.0](sbsp_docs) bumped to [docs-1.2.0](https://github.com/Keinsleif/sbsp/compare/docs-1.1.0..docs-1.2.0)
 - [remote_app-2.5.3](sbsp_remote_app) bumped to [remote_app-2.5.3](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.2..remote_app-2.5.3)
 - [backend-1.5.5](sbsp_backend) bumped to [backend-1.5.5](https://github.com/Keinsleif/sbsp/compare/backend-1.5.4..backend-1.5.5)
 - [frontend-2.5.2](sbsp_frontend) bumped to [frontend-2.5.2](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.1..frontend-2.5.2)
+
 ### Global changes
+
 #### Build system
+
 - update deps (#141) - ([52372b2](https://github.com/Keinsleif/sbsp/commit/52372b2042e4d6620b700e1697b1ddf4e8d7292f)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Continuous Integration
+
 - use `--frozen-lockfile` for pnpm install (#143) - ([3e3a01f](https://github.com/Keinsleif/sbsp/commit/3e3a01fd23ddc50ce46e6395e2b0f3f09446ecae)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -
 
 ## [2.5.2](https://github.com/Keinsleif/sbsp/compare/2.5.1..2.5.2) - 1970-01-01
+
 ### Package updates
+
 - [remote_app-2.5.2](sbsp_remote_app) bumped to [remote_app-2.5.2](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.1..remote_app-2.5.2)
 - [app-2.5.2](sbsp_app) bumped to [app-2.5.2](https://github.com/Keinsleif/sbsp/compare/app-2.5.1..app-2.5.2)
+
 ### Global changes
 
 - - -
 
 ## [2.5.1](https://github.com/Keinsleif/sbsp/compare/2.5.0..2.5.1) - 1970-01-01
+
 ### Package updates
+
 - [app-2.5.1](sbsp_app) bumped to [app-2.5.1](https://github.com/Keinsleif/sbsp/compare/app-2.5.0..app-2.5.1)
 - [remote_app-2.5.1](sbsp_remote_app) bumped to [remote_app-2.5.1](https://github.com/Keinsleif/sbsp/compare/remote_app-2.5.0..remote_app-2.5.1)
 - [frontend-2.5.1](sbsp_frontend) bumped to [frontend-2.5.1](https://github.com/Keinsleif/sbsp/compare/frontend-2.5.0..frontend-2.5.1)
+
 ### Global changes
 
 - - -
 
 ## [2.5.0](https://github.com/Keinsleif/sbsp/compare/efd4124666acbeabb0b8a6db91a3aa96fca9a205..2.5.0) - 2026-07-06
+
 ### Package updates
+
 - [docs-1.1.0](sbsp_docs) bumped to [docs-1.1.0](https://github.com/Keinsleif/sbsp/compare/docs-1.0.1..docs-1.1.0)
 - [backend-1.5.4](sbsp_backend) bumped to [backend-1.5.4](https://github.com/Keinsleif/sbsp/compare/backend-1.5.3..backend-1.5.4)
 - [frontend-2.5.0](sbsp_frontend) bumped to [frontend-2.5.0](https://github.com/Keinsleif/sbsp/compare/frontend-2.4.5..frontend-2.5.0)
 - [remote_app-2.5.0](sbsp_remote_app) bumped to [remote_app-2.5.0](https://github.com/Keinsleif/sbsp/compare/remote_app-2.4.5..remote_app-2.5.0)
 - [app-2.5.0](sbsp_app) bumped to [app-2.5.0](https://github.com/Keinsleif/sbsp/compare/app-2.4.5..app-2.5.0)
+
 ### Global changes
+
 #### Features
+
 - (**frontend**) primevue framework migration (#119) - ([45a38ac](https://github.com/Keinsleif/sbsp/commit/45a38ac2fffb6371b1c7092b4beecb584fb48c3b)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Build system
+
 - update deps (#125) - ([f6cbc3e](https://github.com/Keinsleif/sbsp/commit/f6cbc3e72fa2665603ae0f7c65ca3208b7bc1d03)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Continuous Integration
+
 - fix tests & workflow configs (#124) - ([9da1d81](https://github.com/Keinsleif/sbsp/commit/9da1d81f6f860cea38ad18323c5f73200d670dcd)) - [@Keinsleif](https://github.com/Keinsleif)
 - improve mise config & build config (#123) - ([a1e99d1](https://github.com/Keinsleif/sbsp/commit/a1e99d109bea5bd740cd01642aed385d8d3efed0)) - [@Keinsleif](https://github.com/Keinsleif)
 - manual deploy & build - ([efd4124](https://github.com/Keinsleif/sbsp/commit/efd4124666acbeabb0b8a6db91a3aa96fca9a205)) - [@Keinsleif](https://github.com/Keinsleif)
@@ -149,18 +217,27 @@ All notable changes to this project will be documented in this file. See [conven
 - - -
 
 ## [2.4.5](https://github.com/Keinsleif/sbsp/compare/31000ea5cba437ba2155df09ab7763e7a67dc06c..2.4.5) - 2026-06-22
+
 ### Package updates
+
 - [app-2.4.5](sbsp_app) bumped to [app-2.4.5](https://github.com/Keinsleif/sbsp/compare/app-2.4.4..app-2.4.5)
 - [remote_app-2.4.5](sbsp_remote_app) bumped to [remote_app-2.4.5](https://github.com/Keinsleif/sbsp/compare/remote_app-2.4.4..remote_app-2.4.5)
 - [frontend-2.4.5](sbsp_frontend) bumped to [frontend-2.4.5](https://github.com/Keinsleif/sbsp/compare/frontend-2.4.4..frontend-2.4.5)
 - [backend-1.5.3](sbsp_backend) bumped to [backend-1.5.3](https://github.com/Keinsleif/sbsp/compare/backend-1.5.2..backend-1.5.3)
+
 ### Global changes
+
 #### Tests
+
 - (**backend**) fix broken tests & add next cue resolution test (#112) - ([2accb28](https://github.com/Keinsleif/sbsp/commit/2accb28cf710038387782c81111b183ec50d087a)) - 近藤 和人
+
 #### Continuous Integration
+
 - fix workflow - ([5dc7fb9](https://github.com/Keinsleif/sbsp/commit/5dc7fb9ec21ff803e88e3af53835d1cfae01fe63)) - [@Keinsleif](https://github.com/Keinsleif)
 - add include option to add depend package path for app, remote_app (#106) - ([abc28bf](https://github.com/Keinsleif/sbsp/commit/abc28bf352711c3569e7325f65ef3294b7c83e0a)) - [@Keinsleif](https://github.com/Keinsleif)
+
 #### Miscellaneous Chores
+
 - conventional commits (#102) - ([31000ea](https://github.com/Keinsleif/sbsp/commit/31000ea5cba437ba2155df09ab7763e7a67dc06c)) - [@Keinsleif](https://github.com/Keinsleif)
 
 - - -

@@ -39,8 +39,8 @@
 
 * バージョン更新時に作成されます。
 * マージ後、GitHub Actionsにより [cocogitto](https://docs.cocogitto.io/) が自動で呼び出され、以下の処理が実行されます。
-    * バージョンの自動バンプ（繰り上げ）
-    * 変更履歴（`CHANGELOG.md`）の自動生成
+* バージョンの自動バンプ（繰り上げ）
+* 変更履歴（`CHANGELOG.md`）の自動生成
 
 ### Conventional Commits 形式について
 

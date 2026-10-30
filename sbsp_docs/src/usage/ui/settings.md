@@ -56,6 +56,7 @@
 
 ## グローバル設定
 
+<!-- markdownlint-disable-next-line MD024 -->
 ### 全般
 
 ![グローバル全般設定画面](global_general_settings.png)
