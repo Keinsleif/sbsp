@@ -34,6 +34,7 @@ use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{DisplayMode, UiState};
 use crate::theme::fonts;
+use crate::theme::palette::get_text_color;
 use crate::widgets::divider;
 use crate::widgets::icon::{Icon, Tone, icon, toned};
 use crate::widgets::progress;
@@ -1005,11 +1006,7 @@ fn cue_color(color: CueColor) -> Option<Pair> {
     };
 
     bg.map(|bg| {
-        let text = if bg.relative_contrast(Color::WHITE) >= bg.relative_contrast(Color::BLACK) {
-            Color::WHITE
-        } else {
-            Color::BLACK
-        };
+        let text = get_text_color(bg);
     
         Pair::new(bg, text)
     })

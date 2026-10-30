@@ -37,3 +37,11 @@ pub const LIGHT: Palette = Palette {
     warning: color!(0xB57200),
     danger: color!(0xC9312A),
 };
+
+pub fn get_text_color(bg: Color) -> Color {
+    if bg.relative_contrast(Color::WHITE) >= bg.relative_contrast(Color::BLACK) {
+        Color::WHITE
+    } else {
+        Color::BLACK
+    }
+}

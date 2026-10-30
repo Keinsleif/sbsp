@@ -24,7 +24,7 @@ use sbsp_backend::model::cue::Cue;
 use crate::domain::new_cue::CueKind;
 use crate::port::Control;
 use crate::widgets::blink::{Lit, Strength};
-use crate::widgets::icon::{Icon, colored};
+use crate::widgets::icon::{Icon, glyph};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
@@ -109,7 +109,7 @@ pub fn cue_title(cue: &Cue, name: String) -> String {
         .into_iter()
         .filter(|part| !part.is_empty())
         .collect::<Vec<_>>()
-        .join("・")
+        .join(" ・ ")
 }
 
 pub struct View<'a> {
@@ -260,23 +260,13 @@ enum Highlight {
 use Highlight::{Danger, Success, Warning};
 
 fn transport_button<'a>(
-    glyph: Icon,
+    icon: Icon,
     strength: impl Into<Strength>,
     highlight: Highlight,
     on_press: Option<Message>,
 ) -> Element<'a, Message> {
     let strength = strength.into();
-    let glyph = colored(glyph, 22.0, move |theme| {
-        let palette = theme.extended_palette();
-        if !strength.shows_accent() {
-            return palette.background.base.text;
-        }
-        match highlight {
-            Highlight::Danger => palette.danger.base.text,
-            Highlight::Success => palette.success.base.text,
-            Highlight::Warning => palette.warning.base.text,
-        }
-    });
+    let glyph = glyph(icon, 22.0);
 
     button(container(glyph).center_x(Length::Fill))
         .width(44)

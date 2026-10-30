@@ -8,8 +8,8 @@
 //! confirmation dialogs. Doing the work (file dialogs, the backend calls)
 //! is the host's job, see `host::files`.
 
-use iced::widget::{button, column, row, text};
-use iced::Element;
+use iced::widget::{Space, button, column, row, text};
+use iced::{Element, Length};
 
 use crate::fl;
 
@@ -83,6 +83,7 @@ pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
             button(text(fl!("dialog-save-confirm-cancel")))
                 .style(button::secondary)
                 .on_press(Answer::Cancel),
+            Space::new().width(Length::Fill),
             button(text(fl!("dialog-save-confirm-dont-save")))
                 .style(button::danger)
                 .on_press(Answer::No),
@@ -102,7 +103,8 @@ pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
         text(message).width(320),
         buttons,
     ]
-    .spacing(12)
+    .spacing(24)
+    .width(Length::Shrink)
     .into()
 }
 

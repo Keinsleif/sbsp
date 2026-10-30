@@ -185,12 +185,15 @@ pub fn colored<'a>(
     size: f32,
     color: impl Fn(&Theme) -> Color + 'a,
 ) -> Svg<'a> {
+    glyph(icon, size).style(move |theme: &Theme, _status| svg::Style {
+        color: Some(color(theme)),
+    })
+}
+
+pub fn glyph<'a>(icon: Icon, size: f32) -> Svg<'a> {
     svg(svg::Handle::from_memory(icon.svg()))
         .width(size)
         .height(size)
-        .style(move |theme: &Theme, _status| svg::Style {
-            color: Some(color(theme)),
-        })
 }
 
 #[cfg(test)]
