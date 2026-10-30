@@ -156,7 +156,13 @@ fn line<'a>(kind: Kind, cue: &Cue, selected: bool) -> Element<'a, Message> {
             Length::Fixed(W_TYPE),
         ),
         cell(text(cue.number.clone()).size(13), Length::Fixed(W_NUMBER)),
-        cell(text(name).size(13), Length::Fill),
+        // One line, whatever the name: what does not fit is cut off.
+        cell(
+            container(text(name).size(13).wrapping(text::Wrapping::None))
+                .width(Length::Fill)
+                .clip(true),
+            Length::Fill,
+        ),
         cell(text(format_seconds(Some(cue.pre_wait))).size(13), Length::Fixed(W_TIME)),
         cell(text(format_seconds(duration)).size(13), Length::Fixed(W_TIME)),
         cell(mark(repeats(cue).then_some(Icon::Repeat)), Length::Fixed(W_MARK)),

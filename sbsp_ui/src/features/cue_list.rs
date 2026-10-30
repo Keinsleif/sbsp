@@ -647,7 +647,13 @@ fn row_view<'a>(
             .into(),
         None => Space::new().width(20).into(),
     };
-    let name = text(display_name(cue, &model.cue_list.cues, name_format)).width(Length::Fill);
+    // One line, whatever the name: what does not fit is cut off.
+    let name = container(
+        text(display_name(cue, &model.cue_list.cues, name_format))
+            .wrapping(text::Wrapping::None),
+    )
+    .width(Length::Fill)
+    .clip(true);
 
     // While a cue is in its pre-wait the pre-wait cell is the live one and
     // the duration cell stays static; from playback on it flips, as in the
