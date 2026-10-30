@@ -17,6 +17,7 @@
 #[cfg(test)]
 mod tests;
 
+use crate::features::cue_list::CueListEnv;
 use crate::time::{Duration, Instant};
 
 use iced::widget::{column, container, row};
@@ -116,7 +117,7 @@ pub fn run(target: &'static str) -> iced::Result {
             maximized: rect.is_some_and(|rect| rect.maximized),
             // Narrower than this the layout stops being usable even with the
             // lists scrolling sideways.
-            min_size: Some(iced::Size::new(480.0, 320.0)),
+            min_size: Some(iced::Size::new(660.0, 350.0)),
             exit_on_close_request: false,
             ..Default::default()
         })
@@ -3435,16 +3436,18 @@ impl State {
 
         let main = container(
             cue_list::view(
-                &self.model,
-                &self.ui,
-                &self.playback,
-                &self.assets,
-                &self.name_format,
+                CueListEnv::new(
+                    &self.model,
+                    &self.ui,
+                    &self.playback,
+                    &self.assets,
+                    &self.name_format,
+                    (self.ui.mode == Mode::Edit).then_some(cue_list::EditMode {
+                        can_paste: !self.clipboard.is_empty(),
+                        drag: self.cue_drag.as_ref(),
+                    }),
+                ),
                 self.cue_view,
-                (self.ui.mode == Mode::Edit).then_some(cue_list::EditMode {
-                    can_paste: !self.clipboard.is_empty(),
-                    drag: self.cue_drag.as_ref(),
-                }),
                 cue_list::MIN_WIDTH,
             )
                 .map(Message::CueList),
@@ -3521,13 +3524,15 @@ impl State {
         let tab = mobile::effective_tab(self.mobile_tab, can_control);
         let body: Element<'_, Message> = match tab {
             mobile::Tab::List => cue_list::view(
-                &self.model,
-                &self.ui,
-                &self.playback,
-                &self.assets,
-                &self.name_format,
+                CueListEnv::new(
+                    &self.model,
+                    &self.ui,
+                    &self.playback,
+                    &self.assets,
+                    &self.name_format,
+                    None,
+                ),
                 self.cue_view,
-                None,
                 0.0,
             )
             .map(Message::CueList),

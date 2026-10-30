@@ -389,13 +389,33 @@ const W_CHAIN: f32 = 36.0;
 
 /// What every row is drawn from.
 #[derive(Clone, Copy)]
-struct Env<'a, 'b> {
+pub struct CueListEnv<'a> {
     model: &'a ShowModelState,
-    ui: &'b UiState,
-    playback: &'b PlaybackState,
-    assets: &'b AssetResults,
-    name_format: &'b NameFormatSettings,
-    edit: Option<EditMode<'b>>,
+    ui: &'a UiState,
+    playback: &'a PlaybackState,
+    assets: &'a AssetResults,
+    name_format: &'a NameFormatSettings,
+    edit: Option<EditMode<'a>>,
+}
+
+impl<'a> CueListEnv<'a> {
+    pub fn new(
+        model: &'a ShowModelState,
+        ui: &'a UiState,
+        playback: &'a PlaybackState,
+        assets: &'a AssetResults,
+        name_format: &'a NameFormatSettings,
+        edit: Option<EditMode<'a>>,
+    ) -> Self {
+        Self {
+            model,
+            ui,
+            playback,
+            assets,
+            name_format,
+            edit,
+        }
+    }
 }
 
 /// The narrowest the list is laid out at; below it, it scrolls sideways.
@@ -406,35 +426,22 @@ pub const MIN_WIDTH: f32 = 640.0;
 /// widget. `edit` is `Some` in edit mode. `min_width` is the narrowest the
 /// list is laid out at (`0.0`: it always fits the room it has).
 pub fn view<'a>(
-    model: &'a ShowModelState,
-    ui: &'a UiState,
-    playback: &'a PlaybackState,
-    assets: &'a AssetResults,
-    name_format: &'a NameFormatSettings,
+    env: CueListEnv<'a>,
     viewport: Viewport,
-    edit: Option<EditMode<'a>>,
     min_width: f32,
 ) -> Element<'a, Message> {
     let flat = flatten(
-        &model.cue_list.root_ids,
-        &model.cue_list.cues,
-        &ui.expanded_rows,
+        &env.model.cue_list.root_ids,
+        &env.model.cue_list.cues,
+        &env.ui.expanded_rows,
     );
     let layout = render_rows(&flat);
 
-    let drag = edit.and_then(|edit| edit.drag);
+    let drag = env.edit.and_then(|edit| edit.drag);
     let target = drag
-        .and_then(|drag| drop_target(&flat, &layout, &model.cue_list.cues, viewport, drag))
+        .and_then(|drag| drop_target(&flat, &layout, &env.model.cue_list.cues, viewport, drag))
         .map(|(index, _)| index);
 
-    let env = Env {
-        model,
-        ui,
-        playback,
-        assets,
-        name_format,
-        edit,
-    };
     // The rows are built again whenever the room changes, from what they
     // borrow: elements cannot be kept and handed out twice.
     crate::widgets::min_width::min_width(min_width, move |width| {
@@ -446,13 +453,13 @@ pub fn view<'a>(
 /// The header and the rows at `width`.
 fn list_view<'a>(
     width: f32,
-    env: Env<'a, 'a>,
+    env: CueListEnv<'a>,
     flat: &[FlatCueEntry],
     layout: &[RenderRow],
     target: Option<usize>,
     drag: Option<&'a Drag>,
 ) -> Element<'a, Message> {
-    let Env { model, ui, .. } = env;
+    let CueListEnv { model, ui, .. } = env;
     let rows: Vec<Element<'a, Message>> = layout
         .iter()
         .enumerate()
@@ -589,10 +596,10 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
 fn row_view<'a>(
     entry: &FlatCueEntry,
     cue: &'a Cue,
-    env: &Env<'a, '_>,
+    env: &CueListEnv<'a>,
     is_drop: bool,
 ) -> Element<'a, Message> {
-    let Env {
+    let CueListEnv {
         model,
         ui,
         playback,
