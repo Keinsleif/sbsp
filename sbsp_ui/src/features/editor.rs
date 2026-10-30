@@ -665,16 +665,38 @@ pub struct FileInfo {
 
 /// `flat` is the cue list in display order (hidden rows included), for
 /// the list of cues a chain can continue with.
+/// The narrowest the editor is laid out at; below it, it scrolls sideways.
+pub const MIN_WIDTH: f32 = 640.0;
+
 pub fn view<'a>(
     editor: &'a Editor,
     ctx: Context<'a>,
-    flat: &[FlatCueEntry],
+    flat: Vec<FlatCueEntry>,
 ) -> Element<'a, Message> {
-    let Some(cue) = ctx.cue else {
+    if ctx.cue.is_none() {
         return center(text(fl!("main-bottom-editor-no-selection")).size(24))
             .width(Length::Fill)
             .height(HEIGHT)
             .into();
+    }
+
+    // Built again whenever the room changes, from what it borrows.
+    crate::widgets::min_width::min_width(MIN_WIDTH, move |width| {
+        content(width, editor, &ctx, &flat)
+    })
+    .height(Length::Fixed(HEIGHT))
+    .into()
+}
+
+/// The tabs and the selected tab's page, `width` wide.
+fn content<'a>(
+    width: f32,
+    editor: &'a Editor,
+    ctx: &Context<'a>,
+    flat: &[FlatCueEntry],
+) -> Element<'a, Message> {
+    let Some(cue) = ctx.cue else {
+        return Space::new().into();
     };
 
     // A tab left over from another kind of cue gives way to Basics.
@@ -691,16 +713,17 @@ pub fn view<'a>(
     .padding(1);
 
     let body = match current {
-        Tab::Basics => basics(editor, &ctx, cue, flat),
+        Tab::Basics => basics(editor, ctx, cue, flat),
         Tab::Trigger => trigger(cue),
-        Tab::Audio => type_tabs::audio(&ctx, cue),
-        Tab::Levels => type_tabs::levels(editor, &ctx, cue),
-        Tab::Fade => type_tabs::fade(editor, &ctx, cue, flat),
-        Tab::Playback => type_tabs::playback(&ctx, cue, flat),
-        Tab::Group => type_tabs::group(&ctx, cue),
+        Tab::Audio => type_tabs::audio(ctx, cue),
+        Tab::Levels => type_tabs::levels(editor, ctx, cue),
+        Tab::Fade => type_tabs::fade(editor, ctx, cue, flat),
+        Tab::Playback => type_tabs::playback(ctx, cue, flat),
+        Tab::Group => type_tabs::group(ctx, cue),
     };
 
     column![tabs, divider::horizontal(), container(body).padding(8).width(Length::Fill).height(Length::Fill)]
+        .width(width)
         .height(HEIGHT)
         .into()
 }

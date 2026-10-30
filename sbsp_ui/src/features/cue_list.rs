@@ -398,17 +398,22 @@ struct Env<'a, 'b> {
     edit: Option<EditMode<'b>>,
 }
 
+/// The narrowest the list is laid out at; below it, it scrolls sideways.
+pub const MIN_WIDTH: f32 = 640.0;
+
 /// The column header plus the rows. Column widths are shared constants
 /// (cells below, header cells here), so the two line up without a table
-/// widget. `edit` is `Some` in edit mode.
+/// widget. `edit` is `Some` in edit mode. `min_width` is the narrowest the
+/// list is laid out at (`0.0`: it always fits the room it has).
 pub fn view<'a>(
     model: &'a ShowModelState,
     ui: &'a UiState,
-    playback: &PlaybackState,
-    assets: &AssetResults,
-    name_format: &NameFormatSettings,
+    playback: &'a PlaybackState,
+    assets: &'a AssetResults,
+    name_format: &'a NameFormatSettings,
     viewport: Viewport,
-    edit: Option<EditMode<'_>>,
+    edit: Option<EditMode<'a>>,
+    min_width: f32,
 ) -> Element<'a, Message> {
     let flat = flatten(
         &model.cue_list.root_ids,
@@ -430,6 +435,24 @@ pub fn view<'a>(
         name_format,
         edit,
     };
+    // The rows are built again whenever the room changes, from what they
+    // borrow: elements cannot be kept and handed out twice.
+    crate::widgets::min_width::min_width(min_width, move |width| {
+        list_view(width, env, &flat, &layout, target, drag)
+    })
+    .into()
+}
+
+/// The header and the rows at `width`.
+fn list_view<'a>(
+    width: f32,
+    env: Env<'a, 'a>,
+    flat: &[FlatCueEntry],
+    layout: &[RenderRow],
+    target: Option<usize>,
+    drag: Option<&'a Drag>,
+) -> Element<'a, Message> {
+    let Env { model, ui, .. } = env;
     let rows: Vec<Element<'a, Message>> = layout
         .iter()
         .enumerate()
@@ -501,7 +524,9 @@ pub fn view<'a>(
         stack![area, ghost].into()
     };
 
-    column![header(ui), divider::horizontal(), body].into()
+    column![header(ui), divider::horizontal(), body]
+        .width(width)
+        .into()
 }
 
 fn cell<'a>(content: impl Into<Element<'a, Message>>, width: f32) -> Element<'a, Message> {

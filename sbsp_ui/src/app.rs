@@ -114,6 +114,9 @@ pub fn run(target: &'static str) -> iced::Result {
             size,
             position,
             maximized: rect.is_some_and(|rect| rect.maximized),
+            // Narrower than this the layout stops being usable even with the
+            // lists scrolling sideways.
+            min_size: Some(iced::Size::new(480.0, 320.0)),
             exit_on_close_request: false,
             ..Default::default()
         })
@@ -3378,7 +3381,7 @@ impl State {
                         duration: active.duration,
                     }),
             },
-            &flat,
+            flat,
         )
         .map(Message::Editor)
     }
@@ -3431,6 +3434,7 @@ impl State {
                     can_paste: !self.clipboard.is_empty(),
                     drag: self.cue_drag.as_ref(),
                 }),
+                cue_list::MIN_WIDTH,
             )
                 .map(Message::CueList),
         )
@@ -3513,6 +3517,7 @@ impl State {
                 &self.name_format,
                 self.cue_view,
                 None,
+                0.0,
             )
             .map(Message::CueList),
             mobile::Tab::Controls => mobile::controls(self.mobile_controls()).map(Message::Mobile),

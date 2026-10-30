@@ -105,6 +105,8 @@ const W_TYPE: f32 = 150.0;
 const W_NUMBER: f32 = 50.0;
 const W_TIME: f32 = 80.0;
 const W_MARK: f32 = 24.0;
+/// The narrowest the list is laid out at; below it, it scrolls sideways.
+const MIN_WIDTH: f32 = 600.0;
 
 fn cell<'a>(content: impl Into<Element<'a, Message>>, width: Length) -> Element<'a, Message> {
     container(content).width(width).into()
@@ -178,10 +180,16 @@ pub fn view<'a>(
     drafts: &'a Drafts,
     editing: Editing<'a, '_>,
 ) -> Element<'a, Message> {
-    let mut list = column![header()].spacing(1);
-    for kind in KINDS {
-        list = list.push(line(kind, kind.get(templates), selected == Some(kind)));
-    }
+    // Built again whenever the room changes, from what it borrows. Inside
+    // the dialog's vertical scroll the height is not known, so it shrinks.
+    let list = crate::widgets::min_width::min_width(MIN_WIDTH, move |width| {
+        let mut list = column![header()].spacing(1).width(width);
+        for kind in KINDS {
+            list = list.push(line(kind, kind.get(templates), selected == Some(kind)));
+        }
+        list.into()
+    })
+    .height(Length::Shrink);
 
     let cue = selected.map(|kind| kind.get(templates));
     let editor = editor::view(
@@ -199,7 +207,7 @@ pub fn view<'a>(
             waveform: None,
             playing: None,
         },
-        editing.flat,
+        editing.flat.to_vec(),
     )
     .map(|message| Message::Editor(EditorMessage(message)));
 

@@ -7,6 +7,7 @@ pub mod field;
 pub mod icon;
 pub mod inputs;
 pub mod menu_bar;
+pub mod min_width;
 pub mod progress;
 pub mod modal;
 pub mod toast;
