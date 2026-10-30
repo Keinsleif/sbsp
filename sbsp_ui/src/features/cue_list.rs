@@ -765,9 +765,9 @@ fn row_view<'a>(
 /// after the last row.
 fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
     let label = if level > 0 {
-        fl!("cue-list-end")
+        "end"
     } else {
-        fl!("cue-list-end-of-list")
+        "end of list"
     };
     // Lined up with the name column of a row at the same level: after its
     // padding and the columns before it come the guide, then the space of

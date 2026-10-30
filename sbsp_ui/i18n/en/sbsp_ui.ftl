@@ -108,8 +108,6 @@ main-cue-list-moving-cue = { $n ->
     [one] Move { $n } cue
    *[other] Move { $n } cues
 }
-cue-list-end = end
-cue-list-end-of-list = end of list
 dialog-renumber-increment = Increment
 dialog-renumber-prefix = Prefix
 dialog-renumber-preview = Preview
