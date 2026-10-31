@@ -15,6 +15,7 @@
 //! The add-cue buttons are always enabled, as in the original; the ones
 //! that need a selected cue simply add nothing without it.
 
+use iced::theme::palette::mix;
 use iced::widget::{button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Length, Theme};
 
@@ -283,7 +284,7 @@ fn transport_button<'a>(
                 Highlight::Warning => palette.warning.base,
             };
             button::Style {
-                background: Some(pair.color.scale_alpha(strength.0).into()),
+                background: Some(mix(palette.secondary.base.color, pair.color, strength.0).into()),
                 text_color: if strength.shows_accent() { pair.text } else { base.text_color },
                 ..base
             }
