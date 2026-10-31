@@ -18,7 +18,7 @@ use iced::theme::Palette;
 /// Accent color shared by both themes (a show-control amber, distinct from
 /// the red/green used for danger/success so cue selection doesn't read as
 /// an error or a "go").
-const PRIMARY: Color = color!(0xE0A030);
+const PRIMARY: Color = color!(0x1867C0);
 
 pub const DARK: Palette = Palette {
     background: color!(0x1B1D21),
