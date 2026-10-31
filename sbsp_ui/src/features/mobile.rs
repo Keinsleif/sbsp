@@ -22,6 +22,7 @@ use crate::domain::flat_list::flatten;
 use crate::domain::time::format_seconds;
 use crate::features::header::{self, ClockTime};
 use crate::fl;
+use crate::widgets::blink::Strength;
 use crate::widgets::divider;
 use crate::widgets::icon::{Icon, colored};
 
@@ -185,6 +186,8 @@ pub struct Controls {
     pub playing: Option<Playing>,
     /// The seek bar's value while it is being dragged.
     pub dragging: Option<f64>,
+    /// The flashing level of the transport buttons (see `widgets::blink`).
+    pub blink: f32,
 }
 
 pub struct Playing {
@@ -194,11 +197,7 @@ pub struct Playing {
 }
 
 pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
-    use PlaybackStatus as S;
-
-    let lit = |on: bool| on;
     let status = c.status;
-    let in_status = |list: &[S]| status.is_some_and(|status| list.contains(&status));
 
     let skips = row![
         key(Icon::ArrowUpLeft, false, Tone::Plain, 2, Some(Message::Skip(Skip::Parent))),
@@ -231,7 +230,7 @@ pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
 
     let seeks = row![
         key(Icon::Rewind, false, Tone::Plain, 1, running.then_some(Message::Rewind)),
-        key(Icon::Repeat, lit(repeating), Tone::Warning, 1, running.then_some(Message::ToggleRepeat)),
+        key(Icon::Repeat, repeating, Tone::Warning, 1, running.then_some(Message::ToggleRepeat)),
         key(Icon::FastForward, false, Tone::Plain, 1, running.then_some(Message::FastForward)),
     ]
     .spacing(2);
@@ -241,21 +240,21 @@ pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
     let buttons = row![
         key(
             Icon::Stop,
-            in_status(&[S::Stopping]),
+            header::lit_for(header::Message::Stop, status).strength(c.blink),
             Tone::Danger,
             1,
             transport(header::Message::Stop),
         ),
         key(
             Icon::Play,
-            in_status(&[S::Playing, S::PreWaiting]),
+            header::lit_for(header::Message::Play, status).strength(c.blink),
             Tone::Success,
             1,
             transport(header::Message::Play),
         ),
         key(
             Icon::Pause,
-            in_status(&[S::Paused, S::Loaded]),
+            header::lit_for(header::Message::ReadyPause, status).strength(c.blink),
             Tone::Warning,
             1,
             transport(header::Message::ReadyPause),
@@ -293,11 +292,12 @@ enum Tone {
 /// what they mean.
 fn key<'a>(
     glyph: Icon,
-    lit: bool,
+    lit: impl Into<Strength>,
     tone: Tone,
     portion: u16,
     on_press: Option<Message>,
 ) -> Element<'a, Message> {
+    let lit = lit.into();
     let pair = move |theme: &Theme| {
         let palette = theme.extended_palette();
         match tone {
@@ -310,7 +310,7 @@ fn key<'a>(
 
     button(
         container(colored(glyph, 26.0, move |theme: &Theme| {
-            if lit {
+            if lit.shows_accent() {
                 pair(theme).text
             } else {
                 theme.extended_palette().background.base.text
@@ -322,13 +322,13 @@ fn key<'a>(
     .padding([14, 0])
     .style(move |theme: &Theme, status| {
         let base = button::secondary(theme, status);
-        if !lit {
+        if !lit.is_lit() {
             return base;
         }
         let pair = pair(theme);
         button::Style {
-            background: Some(pair.color.into()),
-            text_color: pair.text,
+            background: Some(pair.color.scale_alpha(lit.0).into()),
+            text_color: if lit.shows_accent() { pair.text } else { base.text_color },
             ..base
         }
     })

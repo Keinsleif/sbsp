@@ -193,6 +193,12 @@ pub struct State {
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
+    /// How lit the flashing transport buttons are, and when the flashing began.
+    blink: f32,
+    blink_origin: Option<Instant>,
+    /// The flashing level of the transport buttons, and when it began.
+    blink: f32,
+    blink_origin: Option<Instant>,
     /// The request that keeps the machine awake, held while
     /// `ui.keep_awake` and the window focus ask for it.
     power: crate::power::KeepAwake,
@@ -526,6 +532,8 @@ impl State {
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
+            blink: 1.0,
+            blink_origin: None,
             power: crate::power::KeepAwake::default(),
             target,
             window_size: saved
@@ -1009,6 +1017,8 @@ impl State {
             Message::Nothing => {}
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
+                let origin = *self.blink_origin.get_or_insert(now);
+                self.blink = crate::widgets::blink::level(now.duration_since(origin));
             }
             #[cfg(feature = "host")]
             Message::BackendStarted(backend, state, settings) => {
@@ -3419,6 +3429,7 @@ impl State {
                 .playback_cursor
                 .and_then(|id| self.playback.active_cues.get(&id))
                 .map(|active| active.status),
+            blink: self.blink,
         })
         .map(Message::Header);
 
@@ -3565,6 +3576,7 @@ impl State {
                 repeating: matches!(active.params, StateParam::Audio(audio) if audio.repeating),
             }),
             dragging: self.mobile_seek,
+            blink: self.blink,
         }
     }
 

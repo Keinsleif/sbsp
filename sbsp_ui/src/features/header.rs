@@ -14,9 +14,6 @@
 //!
 //! The add-cue buttons are always enabled, as in the original; the ones
 //! that need a selected cue simply add nothing without it.
-//!
-//! Not here yet: the buttons' blinking while a cue is
-//! pre-waiting/stopping/loaded -- they are only highlighted for now.
 
 use iced::widget::{button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Length, Theme};
@@ -26,6 +23,7 @@ use sbsp_backend::model::cue::Cue;
 
 use crate::domain::new_cue::CueKind;
 use crate::port::Control;
+use crate::widgets::blink::{Lit, Strength};
 use crate::widgets::icon::{Icon, colored};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,6 +88,21 @@ pub fn controls_for(
     }
 }
 
+/// How a transport button is lit for the cue under the playback cursor:
+/// stop while stopping, play while playing, pause while paused. The cue
+/// being pre-waited (play) or loaded (pause) is shown flashing.
+pub fn lit_for(message: Message, status: Option<PlaybackStatus>) -> Lit {
+    use PlaybackStatus as S;
+    match (message, status) {
+        (Message::Stop, Some(S::Stopping)) => Lit::Flashing,
+        (Message::Play, Some(S::Playing)) => Lit::On,
+        (Message::Play, Some(S::PreWaiting)) => Lit::Flashing,
+        (Message::ReadyPause, Some(S::Paused)) => Lit::On,
+        (Message::ReadyPause, Some(S::Loaded)) => Lit::Flashing,
+        _ => Lit::Off,
+    }
+}
+
 /// "number・name" for the title bar, leaving out an empty number.
 pub fn cue_title(cue: &Cue, name: String) -> String {
     [cue.number.as_str(), name.as_str()]
@@ -111,6 +124,8 @@ pub struct View<'a> {
     /// Display name of `cursor_cue` (its own, or the generated one).
     pub cursor_cue_name: String,
     pub cursor_status: Option<PlaybackStatus>,
+    /// The flashing level of the transport buttons (see `widgets::blink`).
+    pub blink: f32,
 }
 
 pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
@@ -144,25 +159,24 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
     let mut left = column![clock].spacing(12).height(Length::Fill);
     if v.show_controls {
         let has_cursor = v.cursor_cue.is_some();
-        let status = v.cursor_status;
-        use PlaybackStatus as S;
+        let lit = |message| lit_for(message, v.cursor_status).strength(v.blink);
 
         let transport = row![
             transport_button(
                 Icon::Stop,
-                matches!(status, Some(S::Stopping)),
+                lit(Message::Stop),
                 Danger,
                 has_cursor.then_some(Message::Stop),
             ),
             transport_button(
                 Icon::Play,
-                matches!(status, Some(S::Playing | S::PreWaiting)),
+                lit(Message::Play),
                 Success,
                 has_cursor.then_some(Message::Play),
             ),
             transport_button(
                 Icon::Pause,
-                matches!(status, Some(S::Paused | S::Loaded)),
+                lit(Message::ReadyPause),
                 Warning,
                 has_cursor.then_some(Message::ReadyPause),
             ),
@@ -247,15 +261,14 @@ use Highlight::{Danger, Success, Warning};
 
 fn transport_button<'a>(
     glyph: Icon,
-    active: bool,
+    strength: impl Into<Strength>,
     highlight: Highlight,
     on_press: Option<Message>,
 ) -> Element<'a, Message> {
-    // Lit buttons get an accent background, so their icon switches to the
-    // text color made for it.
+    let strength = strength.into();
     let glyph = colored(glyph, 22.0, move |theme| {
         let palette = theme.extended_palette();
-        if !active {
+        if !strength.shows_accent() {
             return palette.background.base.text;
         }
         match highlight {
@@ -270,7 +283,7 @@ fn transport_button<'a>(
         .padding([6, 0])
         .style(move |theme: &Theme, status| {
             let base = button::secondary(theme, status);
-            if !active {
+            if !strength.is_lit() {
                 return base;
             }
             let palette = theme.extended_palette();
@@ -280,8 +293,8 @@ fn transport_button<'a>(
                 Highlight::Warning => palette.warning.base,
             };
             button::Style {
-                background: Some(pair.color.into()),
-                text_color: pair.text,
+                background: Some(pair.color.scale_alpha(strength.0).into()),
+                text_color: if strength.shows_accent() { pair.text } else { base.text_color },
                 ..base
             }
         })
@@ -310,6 +323,19 @@ mod tests {
             parent_id: None,
             params: CueParam::Wait(WaitCueParam { duration: 1.0 }),
         }
+    }
+
+    #[test]
+    fn the_transport_buttons_light_for_their_status() {
+        use PlaybackStatus as S;
+
+        assert_eq!(lit_for(Message::Stop, Some(S::Stopping)), Lit::Flashing);
+        assert_eq!(lit_for(Message::Play, Some(S::Playing)), Lit::On);
+        assert_eq!(lit_for(Message::Play, Some(S::PreWaiting)), Lit::Flashing);
+        assert_eq!(lit_for(Message::ReadyPause, Some(S::Paused)), Lit::On);
+        assert_eq!(lit_for(Message::ReadyPause, Some(S::Loaded)), Lit::Flashing);
+        assert_eq!(lit_for(Message::Play, None), Lit::Off);
+        assert_eq!(lit_for(Message::Stop, Some(S::Playing)), Lit::Off);
     }
 
     #[test]
