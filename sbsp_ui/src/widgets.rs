@@ -5,6 +5,7 @@ pub mod blink;
 pub mod curve;
 pub mod divider;
 pub mod field;
+pub mod held_size;
 pub mod icon;
 pub mod inputs;
 pub mod menu_bar;

@@ -21,6 +21,8 @@ use crate::time::{Duration, Instant};
 
 use iced::mouse;
 use iced::widget::canvas::{self, Cache, Canvas, LineDash, Path, Stroke};
+
+use crate::widgets::held_size::HeldSize;
 use iced::{Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
 use crate::domain::envelope::{self, Segment};
@@ -49,6 +51,7 @@ pub enum Message {
 pub struct Surface {
     cache: Cache,
     key: RefCell<Option<Key>>,
+    held: HeldSize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,6 +79,8 @@ pub struct Props<'a> {
     /// and nothing can be edited.
     pub seek_duration: Option<f64>,
     pub height: f32,
+    /// Keep the waveform as drawn (the window is being resized).
+    pub frozen: bool,
 }
 
 pub fn view(props: Props<'_>) -> Element<'_, Message> {
@@ -512,9 +517,13 @@ impl canvas::Program<Message> for Editor<'_> {
             .props
             .surface
             .cache
-            .draw(renderer, bounds.size(), |frame| {
-                viewer::draw_peaks(frame, self.props.waveform, self.props.gain);
-            });
+            .draw(
+                renderer,
+                self.props.surface.held.pick(bounds.size(), self.props.frozen),
+                |frame| {
+                    viewer::draw_peaks(frame, self.props.waveform, self.props.gain);
+                },
+            );
 
         let mut overlay = canvas::Frame::new(renderer, bounds.size());
         self.draw_overlay(&mut overlay, theme, cursor.position_in(bounds));

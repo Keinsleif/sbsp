@@ -641,6 +641,8 @@ pub struct Context<'a> {
     pub waveform: Option<&'a [f32]>,
     /// The selected cue's progress while it plays.
     pub playing: Option<Playing>,
+    /// The window is being resized.
+    pub resizing: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

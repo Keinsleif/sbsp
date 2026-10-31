@@ -74,6 +74,10 @@ use crate::fl;
 /// revisit once there's an actual level meter / progress bar reading it
 /// (Phase 5) to judge smoothness against.
 const POSITION_TICK: Duration = Duration::from_millis(50);
+/// How long after the last resize event the window counts as settled, and
+/// how often that is checked.
+const RESIZE_SETTLE: Duration = Duration::from_millis(150);
+const RESIZE_CHECK: Duration = Duration::from_millis(100);
 
 /// Level meter refresh (about 30fps, same as the Tauri host's poll).
 const METER_TICK: Duration = Duration::from_millis(33);
@@ -197,6 +201,8 @@ pub struct State {
     /// How lit the flashing transport buttons are, and when the flashing began.
     blink: f32,
     blink_origin: Option<Instant>,
+    /// When the window was last resized, until it has settled.
+    resized_at: Option<Instant>,
     /// The flashing level of the transport buttons, and when it began.
     blink: f32,
     blink_origin: Option<Instant>,
@@ -329,6 +335,7 @@ pub enum Message {
     /// is asked before the new geometry is remembered (see `WindowSettled`).
     WindowMoved(iced::window::Id, iced::Point),
     WindowResized(iced::window::Id, iced::Size),
+    ResizeCheck(Instant),
     /// The answer: the geometry to remember, unless the window is maximized
     /// (then the size and place from before it was maximized stay).
     WindowSettled {
@@ -535,6 +542,7 @@ impl State {
             window_focused: true,
             blink: 1.0,
             blink_origin: None,
+            resized_at: None,
             power: crate::power::KeepAwake::default(),
             target,
             window_size: saved
@@ -779,6 +787,7 @@ impl State {
                 })
             }
             Message::WindowResized(id, size) => {
+                self.resized_at = Some(Instant::now());
                 iced::window::is_maximized(id).map(move |maximized| Message::WindowSettled {
                     size: Some(size),
                     position: None,
@@ -999,6 +1008,14 @@ impl State {
             }
             // Handled in `update_inner`, which can ask the window.
             Message::WindowMoved(..) | Message::WindowResized(..) => {}
+            Message::ResizeCheck(now) => {
+                if self
+                    .resized_at
+                    .is_some_and(|at| now.saturating_duration_since(at) >= RESIZE_SETTLE)
+                {
+                    self.resized_at = None;
+                }
+            }
             // Handled in `update_inner`, which can start the connection.
             #[cfg(client)]
             Message::Connect(_)
@@ -3215,8 +3232,15 @@ impl State {
 
         let close = iced::window::close_requests().map(|_| Message::CloseRequested);
 
+        let resizing = if self.resized_at.is_some() {
+            iced::time::every(RESIZE_CHECK).map(Message::ResizeCheck)
+        } else {
+            Subscription::none()
+        };
+
         Subscription::batch([
             close,
+            resizing,
             toasts,
             discovery,
             file_lists,
@@ -3397,6 +3421,7 @@ impl State {
                         ratio: viewer::position_ratio(active),
                         duration: active.duration,
                     }),
+                resizing: self.resized_at.is_some(),
             },
             flat,
         )
@@ -3472,6 +3497,7 @@ impl State {
                         &self.ui,
                         &self.playback,
                         &self.assets,
+                        self.resized_at.is_some(),
                     )
                     .map(Message::Viewer),
                     viewer::HEIGHT,

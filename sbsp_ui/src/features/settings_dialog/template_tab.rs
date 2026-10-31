@@ -212,6 +212,7 @@ pub fn view<'a>(
             lufs_target: editing.model.settings.audio.lufs_target,
             waveform: None,
             playing: None,
+            resizing: false,
         },
         editing.flat.to_vec(),
     )

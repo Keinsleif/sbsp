@@ -323,6 +323,7 @@ pub(super) fn levels<'a>(
             playhead: ctx.playing.map(|playing| playing.ratio),
             seek_duration: ctx.playing.map(|playing| playing.duration),
             height: WAVE_HEIGHT,
+            frozen: ctx.resizing,
         })
         .map(Message::Wave),
     )

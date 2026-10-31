@@ -28,6 +28,7 @@ use sbsp_backend::model::cue::{audio::AudioCueParam, CueParam, Uuid};
 
 use crate::domain::time::format_seconds;
 use crate::state::assets::AssetResults;
+use crate::widgets::held_size::HeldSize;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{Mode, UiState};
@@ -63,6 +64,7 @@ struct CacheKey {
 pub struct Viewer {
     cache: Cache,
     key: RefCell<Option<CacheKey>>,
+    held: HeldSize,
 }
 
 /// Where the cue's start/end sit on the file, as fractions of its length.
@@ -262,6 +264,7 @@ pub fn view<'a>(
     ui: &UiState,
     playback: &'a PlaybackState,
     assets: &'a AssetResults,
+    frozen: bool,
 ) -> Element<'a, Message> {
     let target = ui
         .selected
@@ -293,7 +296,7 @@ pub fn view<'a>(
             }
         });
 
-    Canvas::new(Waveform { viewer, target })
+    Canvas::new(Waveform { viewer, target, frozen })
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
@@ -302,6 +305,8 @@ pub fn view<'a>(
 struct Waveform<'a> {
     viewer: &'a Viewer,
     target: Option<Target<'a>>,
+    /// Keep the waveform as drawn (the window is being resized).
+    frozen: bool,
 }
 
 impl Waveform<'_> {
@@ -427,7 +432,11 @@ impl canvas::Program<Message> for Waveform<'_> {
         let waveform = self
             .viewer
             .cache
-            .draw(renderer, bounds.size(), |frame| self.draw_waveform(frame));
+            .draw(
+                renderer,
+                self.viewer.held.pick(bounds.size(), self.frozen),
+                |frame| self.draw_waveform(frame),
+            );
 
         let mut overlay = canvas::Frame::new(renderer, bounds.size());
         self.draw_overlay(&mut overlay, theme, cursor.position_in(bounds));
