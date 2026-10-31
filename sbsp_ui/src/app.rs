@@ -203,9 +203,6 @@ pub struct State {
     blink_origin: Option<Instant>,
     /// When the window was last resized, until it has settled.
     resized_at: Option<Instant>,
-    /// The flashing level of the transport buttons, and when it began.
-    blink: f32,
-    blink_origin: Option<Instant>,
     /// The request that keeps the machine awake, held while
     /// `ui.keep_awake` and the window focus ask for it.
     power: crate::power::KeepAwake,
