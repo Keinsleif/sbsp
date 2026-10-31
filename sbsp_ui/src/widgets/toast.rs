@@ -140,7 +140,7 @@ impl Toasts {
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(Alignment::End)
-            .align_y(Alignment::End)
+            .align_y(Alignment::Start)
             .padding(16);
 
         stack![base, positioned].into()
