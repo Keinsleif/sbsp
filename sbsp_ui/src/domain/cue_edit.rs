@@ -196,7 +196,7 @@ pub fn audio_end(cue: &Cue) -> Option<f64> {
 
 /// A start of 0 is stored as "no start", as the original does.
 pub fn set_start_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue> {
-    let start = audio_start(cue)?;
+    let start = audio_start(cue).unwrap_or(0.0);
     let spec = TimeSpec {
         min: Some(0.0),
         max: audio_end(cue).or(duration),
@@ -770,7 +770,7 @@ mod tests {
     #[test]
     fn start_and_end_follow_the_files_duration() {
         let cue = audio();
-        assert_eq!(audio_start(&cue), Some(0.0));
+        assert_eq!(audio_start(&cue), None);
         assert_eq!(audio_end(&cue), None);
 
         let started = set_start_time(&cue, "2", Some(10.0)).unwrap();
