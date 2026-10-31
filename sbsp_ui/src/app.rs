@@ -3068,7 +3068,6 @@ impl State {
                     self.toasts.push(toast::Kind::Danger, message);
                 }
             }
-            other => log::debug!("unhandled backend event: {other:?}"),
         }
     }
 
