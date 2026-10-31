@@ -40,7 +40,7 @@ pub const HEIGHT: f32 = 64.0;
 /// full scale, as in the worker).
 const CLIP_THRESHOLD: f32 = 1.0 + f32::EPSILON;
 
-const TOOLTIP_W: f32 = 128.0;
+const TOOLTIP_W: f32 = 144.0;
 const TOOLTIP_H: f32 = 20.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
