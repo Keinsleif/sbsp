@@ -2,13 +2,13 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The right-hand sidebar: the running cues (title, elapsed/remaining,
-//! progress) and the master level meter, on two tabs. Ported from
-//! `SideBar.vue`, `ActiveCueItem.vue` and `LevelMeter.vue`.
+//! progress) and the master level meter, on two tabs.
 
 use std::collections::HashMap;
 
 use iced::mouse;
 use iced::widget::canvas::{self, Canvas};
+use iced::widget::container::Style;
 use iced::widget::{Space, button, column, container, row, scrollable, stack, text};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
@@ -25,10 +25,9 @@ use crate::state::level_meter::{Channel, FLOOR_DB, LevelMeterState};
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{SideBarTab, UiState};
-use crate::widgets::icon::{Icon, Tone, icon, toned};
+use crate::widgets::icon::{Icon, icon};
 use crate::widgets::{divider, progress};
 
-/// The original's `w-65`.
 pub const WIDTH: f32 = 260.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,7 +158,13 @@ fn bar_color(status: PlaybackStatus) -> impl Fn(&Theme) -> Color {
 fn active_item<'a>(title: String, active: &ActiveCue) -> Element<'a, Message> {
     let repeating = matches!(active.params, StateParam::Audio(audio) if audio.repeating);
     let mark: Element<'a, Message> = if active.status == PlaybackStatus::Stopping {
-        toned(Icon::TimerSand, 16.0, Tone::Warning).into()
+        container(iced_aw::Spinner::new()
+            .width(Length::Fixed(18.0))
+            .height(Length::Fixed(18.0))
+        ).style(|theme: &Theme| {
+            let palette = theme.palette();
+            Style::default().color(palette.warning)
+        }).into()
     } else if repeating {
         icon(Icon::Repeat, 16.0).into()
     } else {

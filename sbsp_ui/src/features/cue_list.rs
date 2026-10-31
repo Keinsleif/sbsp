@@ -13,6 +13,7 @@
 //! modifiers, which this widget cannot see).
 
 use iced::theme::palette::Pair;
+use iced::widget::container::Style;
 use iced::widget::{
     Space, button, center, column, container, mouse_area, row, scrollable, stack, text,
 };
@@ -633,8 +634,18 @@ fn row_view<'a>(
         .style(button::text)
         .on_press(Message::SetCursor(id));
 
-    let status: Element<'a, Message> = match active.and_then(|a| status_icon(a.status)) {
-        Some((glyph, tone)) => toned(glyph, 18.0, tone).into(),
+    let status: Element<'a, Message> = match active.map(|a| a.status) {
+        Some(PlaybackStatus::Stopping) => container(iced_aw::Spinner::new()
+                .width(Length::Fixed(18.0))
+                .height(Length::Fixed(18.0))
+            ).style(|theme: &Theme| {
+                let palette = theme.palette();
+                Style::default().color(palette.warning)
+            }).into(),
+        Some(status) => match status_icon(status) {
+            Some((glyph, tone)) => toned(glyph, 18.0, tone).into(),
+            None => Space::new().into(),
+        },
         None => Space::new().into(),
     };
 
