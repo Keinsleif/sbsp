@@ -3010,6 +3010,12 @@ impl State {
             BackendEvent::SyncState(data) => self.playback.handle_sync_event(&data, Instant::now()),
             BackendEvent::ShowModelLoaded { model, .. } => {
                 self.replace_model(model, true);
+                self.toasts
+                    .push(toast::Kind::Success, fl!("notification-model-loaded"));
+            }
+            BackendEvent::ShowModelSaved { .. } => {
+                self.toasts
+                    .push(toast::Kind::Success, fl!("notification-model-saved"));
             }
             BackendEvent::ShowModelReset { model } => {
                 self.replace_model(model, false);
