@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub mod blink;
+pub mod clip;
 pub mod curve;
 pub mod divider;
 pub mod field;

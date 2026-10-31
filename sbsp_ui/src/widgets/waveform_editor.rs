@@ -22,6 +22,7 @@ use crate::time::{Duration, Instant};
 use iced::mouse;
 use iced::widget::canvas::{self, Cache, Canvas, LineDash, Path, Stroke};
 
+use crate::widgets::clip::clip;
 use crate::widgets::held_size::HeldSize;
 use iced::{Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
@@ -85,10 +86,12 @@ pub struct Props<'a> {
 
 pub fn view(props: Props<'_>) -> Element<'_, Message> {
     let height = props.height;
-    Canvas::new(Editor { props })
-        .width(Length::Fill)
-        .height(Length::Fixed(height))
-        .into()
+    clip(
+        Canvas::new(Editor { props })
+            .width(Length::Fill)
+            .height(Length::Fixed(height)),
+    )
+    .into()
 }
 
 // ---------------------------------------------------------------------

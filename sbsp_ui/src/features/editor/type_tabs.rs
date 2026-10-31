@@ -326,7 +326,6 @@ pub(super) fn levels<'a>(
     )
     .width(Length::Fill)
     .height(WAVE_HEIGHT)
-    .clip(true)
     .style(container::bordered_box);
 
     let tool = |glyph: Icon, message: Message, enabled: bool| {

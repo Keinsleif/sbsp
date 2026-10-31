@@ -28,6 +28,7 @@ use sbsp_backend::model::cue::{audio::AudioCueParam, CueParam, Uuid};
 
 use crate::domain::time::format_seconds;
 use crate::state::assets::AssetResults;
+use crate::widgets::clip::clip;
 use crate::widgets::held_size::HeldSize;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
@@ -296,10 +297,12 @@ pub fn view<'a>(
             }
         });
 
-    Canvas::new(Waveform { viewer, target, frozen })
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+    clip(
+        Canvas::new(Waveform { viewer, target, frozen })
+            .width(Length::Fill)
+            .height(Length::Fill),
+    )
+    .into()
 }
 
 struct Waveform<'a> {
