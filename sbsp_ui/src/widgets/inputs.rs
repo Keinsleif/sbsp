@@ -148,34 +148,55 @@ pub enum FaderMessage {
     Nothing,
 }
 
-/// How many tick labels a volume fader shows (the original thins them out
-/// on narrow layouts).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ThumbAmount {
-    #[default]
-    Full,
-    Decreased,
-    BaseOnly,
+/// A label under a fader's track. A label of a higher rank is dropped
+/// first when the track is too short to keep them apart.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Tick {
+    position: f64,
+    label: &'static str,
+    rank: u8,
 }
 
-/// (fader position, label). The labels name the dB the position stands
-/// for: the fader is not linear below -10 dB (`domain::fader`).
-fn volume_ticks(amount: ThumbAmount) -> &'static [(f64, &'static str)] {
-    match amount {
-        ThumbAmount::Full => &[
-            (10.0, "10"),
-            (5.0, "5"),
-            (0.0, "0"),
-            (-5.0, "-5"),
-            (-10.0, "-10"),
-            (-15.0, "-20"),
-            (-20.0, "-30"),
-            (-25.0, "-40"),
-            (-30.0, "-60"),
-        ],
-        ThumbAmount::Decreased => &[(10.0, "10"), (0.0, "0"), (-10.0, "-10"), (-30.0, "-60")],
-        ThumbAmount::BaseOnly => &[(0.0, "0")],
+const fn tick(position: f64, label: &'static str, rank: u8) -> Tick {
+    Tick { position, label, rank }
+}
+
+/// The labels name the dB the position stands for: the fader is not linear
+/// below -10 dB (`domain::fader`).
+const VOLUME_TICKS: [Tick; 9] = [
+    tick(10.0, "10", 1),
+    tick(5.0, "5", 2),
+    tick(0.0, "0", 0),
+    tick(-5.0, "-5", 2),
+    tick(-10.0, "-10", 1),
+    tick(-15.0, "-20", 2),
+    tick(-20.0, "-30", 2),
+    tick(-25.0, "-40", 2),
+    tick(-30.0, "-60", 1),
+];
+
+const PANNING_TICKS: [Tick; 3] = [tick(-64.0, "L", 0), tick(0.0, "C", 0), tick(64.0, "R", 0)];
+
+/// The least room, in pixels, between two neighbouring labels' centers.
+const MIN_TICK_GAP: f32 = 32.0;
+
+/// The labels to draw on a track `span` pixels long: as many ranks as keep
+/// every neighbour at least [`MIN_TICK_GAP`] apart, and always the rank 0
+/// ones.
+fn visible_ticks(ticks: &[Tick], min: f64, max: f64, span: f32) -> Vec<Tick> {
+    let top = ticks.iter().map(|tick| tick.rank).max().unwrap_or(0);
+    for limit in (0..=top).rev() {
+        let mut shown: Vec<Tick> = ticks.iter().copied().filter(|tick| tick.rank <= limit).collect();
+        shown.sort_by(|a, b| a.position.total_cmp(&b.position));
+        let apart = shown.windows(2).all(|pair| {
+            let gap = (pair[1].position - pair[0].position) / (max - min) * f64::from(span);
+            gap >= f64::from(MIN_TICK_GAP)
+        });
+        if apart || limit == 0 {
+            return shown;
+        }
     }
+    Vec::new()
 }
 
 const FADER_MIN: f64 = -30.0;
@@ -186,7 +207,6 @@ pub struct VolumeFader<'a> {
     pub id: FieldId,
     pub label: &'a str,
     pub volume: f64,
-    pub thumb: ThumbAmount,
     pub enabled: bool,
 }
 
@@ -195,7 +215,6 @@ pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, 
         id,
         label,
         volume,
-        thumb,
         enabled,
     } = fader;
 
@@ -219,7 +238,7 @@ pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, 
 
     column![
         header,
-        ticks(volume_ticks(thumb), FADER_MIN, FADER_MAX),
+        ticks(&VOLUME_TICKS, FADER_MIN, FADER_MAX),
         track
     ]
     .spacing(2)
@@ -290,11 +309,7 @@ pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a
 
     column![
         header,
-        ticks(
-            &[(-PANNING_RANGE, "L"), (0.0, "C"), (PANNING_RANGE, "R")],
-            -PANNING_RANGE,
-            PANNING_RANGE
-        ),
+        ticks(&PANNING_TICKS, -PANNING_RANGE, PANNING_RANGE),
         track
     ]
     .spacing(2)
@@ -331,7 +346,7 @@ impl DoubleRelease {
 const HANDLE_INSET: f32 = 8.0;
 const TICKS_HEIGHT: f32 = 14.0;
 
-fn ticks<'a>(ticks: &[(f64, &'static str)], min: f64, max: f64) -> Element<'a, FaderMessage> {
+fn ticks<'a>(ticks: &[Tick], min: f64, max: f64) -> Element<'a, FaderMessage> {
     canvas::Canvas::new(Ticks {
         ticks: ticks.to_vec(),
         min,
@@ -343,7 +358,7 @@ fn ticks<'a>(ticks: &[(f64, &'static str)], min: f64, max: f64) -> Element<'a, F
 }
 
 struct Ticks {
-    ticks: Vec<(f64, &'static str)>,
+    ticks: Vec<Tick>,
     min: f64,
     max: f64,
 }
@@ -363,10 +378,10 @@ impl<Message> canvas::Program<Message> for Ticks {
         let color: Color = theme.extended_palette().background.base.text.scale_alpha(0.7);
         let span = (bounds.width - HANDLE_INSET * 2.0).max(0.0);
 
-        for &(value, label) in &self.ticks {
-            let fraction = ((value - self.min) / (self.max - self.min)) as f32;
+        for tick in visible_ticks(&self.ticks, self.min, self.max, span) {
+            let fraction = ((tick.position - self.min) / (self.max - self.min)) as f32;
             frame.fill_text(canvas::Text {
-                content: label.to_string(),
+                content: tick.label.to_string(),
                 position: Point::new(HANDLE_INSET + span * fraction, 0.0),
                 color,
                 size: 10.0.into(),
@@ -417,19 +432,39 @@ mod tests {
 
     #[test]
     fn every_tick_sits_inside_its_fader() {
-        for amount in [ThumbAmount::Full, ThumbAmount::Decreased, ThumbAmount::BaseOnly] {
-            for (position, _) in volume_ticks(amount) {
-                assert!((FADER_MIN..=FADER_MAX).contains(position), "{position}");
-            }
+        for tick in VOLUME_TICKS {
+            assert!((FADER_MIN..=FADER_MAX).contains(&tick.position), "{}", tick.position);
         }
     }
 
     #[test]
     fn the_tick_labels_name_the_decibels_of_their_position() {
-        for (position, label) in volume_ticks(ThumbAmount::Full) {
-            let decibels = fader_to_decibels(*position);
-            let expected: f64 = label.parse().unwrap();
-            assert!((decibels - expected).abs() < 1e-9, "{position}: {decibels} vs {label}");
+        for tick in VOLUME_TICKS {
+            let decibels = fader_to_decibels(tick.position);
+            let expected: f64 = tick.label.parse().unwrap();
+            assert!(
+                (decibels - expected).abs() < 1e-9,
+                "{}: {decibels} vs {}",
+                tick.position,
+                tick.label
+            );
         }
+    }
+
+    #[test]
+    fn a_longer_track_shows_more_labels() {
+        let shown = |span| visible_ticks(&VOLUME_TICKS, FADER_MIN, FADER_MAX, span).len();
+
+        assert_eq!(shown(40.0), 1);
+        assert_eq!(shown(140.0), 4);
+        assert_eq!(shown(300.0), 9);
+    }
+
+    #[test]
+    fn the_labels_kept_stay_in_order_and_include_zero() {
+        let shown = visible_ticks(&VOLUME_TICKS, FADER_MIN, FADER_MAX, 140.0);
+
+        assert!(shown.windows(2).all(|pair| pair[0].position < pair[1].position));
+        assert!(shown.iter().any(|tick| tick.label == "0"));
     }
 }

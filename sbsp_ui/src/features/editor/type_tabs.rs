@@ -24,7 +24,7 @@ use crate::widgets::field;
 use crate::widgets::icon::{Icon, icon};
 use crate::widgets::divider;
 use crate::widgets::inputs::{
-    PanningFader, ThumbAmount, VolumeFader, labeled, panning_fader, time_input, volume_fader,
+    PanningFader, VolumeFader, labeled, panning_fader, time_input, volume_fader,
 };
 
 use super::parts::{Choice, FadeInput, check, cue_choices, fade_param_input, picker};
@@ -129,7 +129,6 @@ pub(super) fn fade<'a>(
             id: VOLUME,
             label: &volume_label,
             volume: editor.volume_for(cue),
-            thumb: ThumbAmount::Full,
             enabled,
         },
         ctx.drafts,
@@ -370,7 +369,6 @@ pub(super) fn levels<'a>(
             id: VOLUME,
             label: &volume_label,
             volume: volume_value,
-            thumb: ThumbAmount::Decreased,
             enabled: true,
         },
         ctx.drafts,
