@@ -182,14 +182,14 @@ pub fn set_sound_static(cue: &Cue, is_static: bool) -> Option<Cue> {
 /// start is 0, no end is the file's duration (when known).
 pub fn audio_start(cue: &Cue) -> Option<f64> {
     match &cue.params {
-        CueParam::Audio(audio) => Some(audio.start_time.unwrap_or(0.0)),
+        CueParam::Audio(audio) => audio.start_time,
         _ => None,
     }
 }
 
-pub fn audio_end(cue: &Cue, duration: Option<f64>) -> Option<f64> {
+pub fn audio_end(cue: &Cue) -> Option<f64> {
     match &cue.params {
-        CueParam::Audio(audio) => audio.end_time.or(duration),
+        CueParam::Audio(audio) => audio.end_time,
         _ => None,
     }
 }
@@ -199,7 +199,7 @@ pub fn set_start_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cu
     let start = audio_start(cue)?;
     let spec = TimeSpec {
         min: Some(0.0),
-        max: audio_end(cue, duration),
+        max: audio_end(cue).or(duration),
         ..TimeSpec::default()
     };
     match commit_time(text, Some(start), &spec) {
@@ -213,7 +213,7 @@ pub fn set_start_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cu
 /// An end at the file's duration (or an emptied field) is stored as
 /// "no end".
 pub fn set_end_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue> {
-    let start = audio_start(cue)?;
+    let start = audio_start(cue).unwrap_or(0.0);
     if text.trim().is_empty() {
         return with_audio(cue, |audio| audio.end_time = None);
     }
@@ -222,7 +222,7 @@ pub fn set_end_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue>
         max: duration,
         ..TimeSpec::default()
     };
-    match commit_time(text, audio_end(cue, duration), &spec) {
+    match commit_time(text, audio_end(cue).or(duration), &spec) {
         Commit::Value(value) => with_audio(cue, |audio| {
             audio.end_time = match duration {
                 Some(duration) if value >= duration - 1e-9 => None,
@@ -771,8 +771,7 @@ mod tests {
     fn start_and_end_follow_the_files_duration() {
         let cue = audio();
         assert_eq!(audio_start(&cue), Some(0.0));
-        assert_eq!(audio_end(&cue, Some(10.0)), Some(10.0));
-        assert_eq!(audio_end(&cue, None), None);
+        assert_eq!(audio_end(&cue), None);
 
         let started = set_start_time(&cue, "2", Some(10.0)).unwrap();
         assert!(matches!(&started.params, CueParam::Audio(a) if a.start_time == Some(2.0)));

@@ -2,12 +2,9 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The editor's tabs that belong to one kind of cue: audio, fade,
-//! playback (start / stop / pause / load) and group. Ported from
-//! `AudioBasicEditor.vue`, `FadeBasicEditor.vue`,
-//! `PlaybakcBasicEditor.vue` and `GroupBasicEditor.vue`.
+//! playback (start / stop / pause / load) and group.
 //!
-//! While the cue is playing its settings are greyed out, as in the
-//! original.
+//! While the cue is playing its settings are greyed out.
 
 use iced::alignment::Horizontal;
 use iced::widget::{button, column, container, row, scrollable, text, tooltip};
@@ -21,7 +18,7 @@ use crate::domain::field::TimeSpec;
 use crate::domain::flat_list::FlatCueEntry;
 use crate::fl;
 use crate::widgets::field;
-use crate::widgets::icon::{Icon, icon};
+use crate::widgets::icon::{Icon, glyph, icon};
 use crate::widgets::divider;
 use crate::widgets::inputs::{
     PanningFader, VolumeFader, labeled, panning_fader, time_input, volume_fader,
@@ -264,14 +261,14 @@ pub(super) fn levels<'a>(
         tooltip(content, hint(label), position)
     };
 
-    let time = |id, label: String, value: Option<f64>, glyph: Icon, hint_text: String, message: Message| {
+    let time = |id, label: String, value: Option<f64>, icon: Icon, hint_text: String, message: Message| {
         row![
             container(
                 time_input(id, Some(&label), value, &spec, ctx.drafts, !active).map(Message::Field)
             )
             .width(Length::Fill),
             tipped(
-                button(icon(glyph, 18.0))
+                button(glyph(icon, 18.0))
                     .padding(4)
                     .style(button::secondary)
                     .on_press_maybe((!active).then_some(message))
@@ -295,7 +292,7 @@ pub(super) fn levels<'a>(
         time(
             END,
             fl!("main-bottom-editor-time-levels-end-time"),
-            cue_edit::audio_end(cue, ctx.file.duration),
+            cue_edit::audio_end(cue),
             Icon::SkipPrevious,
             fl!("main-bottom-editor-time-levels-skip-last-silence"),
             Message::SkipLastSilence,
@@ -329,6 +326,7 @@ pub(super) fn levels<'a>(
     )
     .width(Length::Fill)
     .height(WAVE_HEIGHT)
+    .clip(true)
     .style(container::bordered_box);
 
     let tool = |glyph: Icon, message: Message, enabled: bool| {

@@ -1175,7 +1175,7 @@ mod tests {
         let cue = audio_cue();
 
         let edited = editor.apply(&commit(END, "4"), &cue).unwrap();
-        assert_eq!(cue_edit::audio_end(&edited, Some(10.0)), Some(4.0));
+        assert_eq!(cue_edit::audio_end(&edited), Some(4.0));
         assert!(editor.apply(&commit(END, "10"), &cue).is_none(), "the duration is no end");
         let started = editor.apply(&commit(START, "1"), &cue).unwrap();
         assert_eq!(cue_edit::audio_start(&started), Some(1.0));
