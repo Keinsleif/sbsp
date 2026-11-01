@@ -256,7 +256,10 @@ fn row_view<'a>(panel: &Panel, index: usize, row: &Row) -> Element<'a, Message> 
     row![
         password,
         flag(fl!("dialog-server-permissions-read"), Permissions::READ),
-        flag(fl!("dialog-server-permissions-control"), Permissions::CONTROL),
+        flag(
+            fl!("dialog-server-permissions-control"),
+            Permissions::CONTROL
+        ),
         flag(fl!("dialog-server-permissions-edit"), Permissions::EDIT),
         generate,
         info,
@@ -286,7 +289,11 @@ fn info_view<'a>(info: &'a Info) -> Element<'a, Message> {
         info.hostname.as_deref().unwrap_or(""),
         fl!("dialog-server-info-hostname-unavailable"),
     );
-    let port = copy_field(fl!("dialog-server-port"), &info.port.to_string(), String::new());
+    let port = copy_field(
+        fl!("dialog-server-port"),
+        &info.port.to_string(),
+        String::new(),
+    );
     let qr: Element<'a, Message> = match &info.qr {
         Some(data) => qr_code(data).cell_size(6).into(),
         None => Space::new().into(),
@@ -294,9 +301,13 @@ fn info_view<'a>(info: &'a Info) -> Element<'a, Message> {
 
     column![
         text(fl!("dialog-server-connect-info")).size(18),
-        row![container(host).width(Length::Fill), text(":"), container(port).width(110)]
-            .spacing(8)
-            .align_y(Alignment::End),
+        row![
+            container(host).width(Length::Fill),
+            text(":"),
+            container(port).width(110)
+        ]
+        .spacing(8)
+        .align_y(Alignment::End),
         copy_field(
             fl!("dialog-server-password"),
             &info.password,
@@ -361,7 +372,11 @@ pub fn view<'a>(panel: &'a Panel) -> Element<'a, Message> {
     .spacing(14);
 
     let eye = button(icon::toned(
-        if panel.password_visible { Icon::Eye } else { Icon::EyeOff },
+        if panel.password_visible {
+            Icon::Eye
+        } else {
+            Icon::EyeOff
+        },
         16.0,
         Tone::Muted,
     ))
@@ -388,7 +403,11 @@ pub fn view<'a>(panel: &'a Panel) -> Element<'a, Message> {
     } else {
         fl!("dialog-server-start")
     }))
-    .style(if running { button::danger } else { button::success })
+    .style(if running {
+        button::danger
+    } else {
+        button::success
+    })
     .on_press(Message::Toggle);
 
     column![
@@ -409,7 +428,8 @@ pub fn view<'a>(panel: &'a Panel) -> Element<'a, Message> {
             Space::new().width(Length::Fill),
             start,
         ],
-    ].width(Length::Shrink)
+    ]
+    .width(Length::Shrink)
     .spacing(14)
     .into()
 }
@@ -437,7 +457,10 @@ mod tests {
         assert_eq!(back.port, 5800);
         assert_eq!(back.discoverry.as_deref(), Some("Stage"));
         assert_eq!(back.auth_map[0].password, "secret");
-        assert_eq!(back.auth_map[0].permission, Permissions::READ | Permissions::CONTROL);
+        assert_eq!(
+            back.auth_map[0].permission,
+            Permissions::READ | Permissions::CONTROL
+        );
     }
 
     #[test]
@@ -446,7 +469,10 @@ mod tests {
         panel.update(&Message::Discoverable(false));
         assert_eq!(panel.options().unwrap().discoverry, None);
         panel.update(&Message::Discoverable(true));
-        assert_eq!(panel.options().unwrap().discoverry.as_deref(), Some("Stage"));
+        assert_eq!(
+            panel.options().unwrap().discoverry.as_deref(),
+            Some("Stage")
+        );
 
         let none = ApiServerOptions {
             discoverry: None,
@@ -480,7 +506,10 @@ mod tests {
         assert_eq!(panel.rows()[1].password.len(), PASSWORD_LENGTH);
 
         panel.update(&Message::Permission(1, Permissions::EDIT, true));
-        assert_eq!(panel.rows()[1].permission, Permissions::READ | Permissions::EDIT);
+        assert_eq!(
+            panel.rows()[1].permission,
+            Permissions::READ | Permissions::EDIT
+        );
         panel.update(&Message::Permission(1, Permissions::READ, false));
         assert_eq!(panel.rows()[1].permission, Permissions::EDIT);
 
@@ -520,7 +549,10 @@ mod tests {
         // Bytes at or above 248 would favour the first characters.
         assert_eq!(password_from([255u8; 40]), None);
         assert_eq!(password_from([1u8; 3]), None);
-        assert_eq!(password_from([0u8; 16]).as_deref(), Some("AAAAAAAAAAAAAAAA"));
+        assert_eq!(
+            password_from([0u8; 16]).as_deref(),
+            Some("AAAAAAAAAAAAAAAA")
+        );
         assert_ne!(generate_password(), generate_password());
     }
 

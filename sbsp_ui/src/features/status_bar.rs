@@ -13,8 +13,8 @@ use iced::widget::{button, container, pick_list, row, text};
 use iced::{Alignment, Element, Length};
 
 use crate::fl;
-use crate::widgets::icon::{self, Icon, Tone};
 use crate::state::ui::{Mode, UiState};
+use crate::widgets::icon::{self, Icon, Tone};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
@@ -70,17 +70,25 @@ pub fn view<'a>(
             label: mode_label(mode),
         })
         .collect();
-    let selected = options.iter().find(|option| option.mode == ui.mode).cloned();
+    let selected = options
+        .iter()
+        .find(|option| option.mode == ui.mode)
+        .cloned();
 
-    let picker = pick_list(options, selected, |option| Message::ModeSelected(option.mode))
-        .width(120);
+    let picker = pick_list(options, selected, |option| {
+        Message::ModeSelected(option.mode)
+    })
+    .width(120);
 
     // Beside the mode picker, it stays while an update is waiting and opens the update dialog.
     let update = update_available.then(|| {
         button(
-            row![icon::icon(Icon::Refresh, 16.0), text(fl!("dialog-update-updates-available"))]
-                .spacing(4)
-                .align_y(Alignment::Center),
+            row![
+                icon::icon(Icon::Refresh, 16.0),
+                text(fl!("dialog-update-updates-available"))
+            ]
+            .spacing(4)
+            .align_y(Alignment::Center),
         )
         .padding([3, 8])
         .style(button::secondary)
@@ -105,12 +113,20 @@ pub fn view<'a>(
     };
     let btn = |glyph: Icon, message: Message| {
         button(icon::icon(glyph, 20.0))
-        .padding(4)
-        .style(button::text)
-        .on_press(message)
+            .padding(4)
+            .style(button::text)
+            .on_press(message)
     };
-    let bottom_toggle = toggle(Icon::DockBottom, ui.is_bottom_tab_open, Message::ToggleBottomTab);
-    let sidebar_toggle = toggle(Icon::DockRight, ui.is_right_sidebar_open, Message::ToggleSidebar);
+    let bottom_toggle = toggle(
+        Icon::DockBottom,
+        ui.is_bottom_tab_open,
+        Message::ToggleBottomTab,
+    );
+    let sidebar_toggle = toggle(
+        Icon::DockRight,
+        ui.is_right_sidebar_open,
+        Message::ToggleSidebar,
+    );
 
     let settings = btn(Icon::Cog, Message::OpenSettings);
 

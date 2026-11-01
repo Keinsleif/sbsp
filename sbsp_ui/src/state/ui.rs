@@ -366,7 +366,10 @@ mod tests {
     #[test]
     fn modes_follow_permissions_in_picker_order() {
         let mut ui = UiState::new(true);
-        assert_eq!(ui.available_modes(), vec![Mode::View, Mode::Run, Mode::Edit]);
+        assert_eq!(
+            ui.available_modes(),
+            vec![Mode::View, Mode::Run, Mode::Edit]
+        );
 
         ui.set_permission(Permissions::READ | Permissions::CONTROL);
         assert_eq!(ui.available_modes(), vec![Mode::View, Mode::Run]);

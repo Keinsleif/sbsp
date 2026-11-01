@@ -123,10 +123,19 @@ mod tests {
 
     #[test]
     fn a_stored_setting_wins_over_the_system() {
-        assert_eq!(Language::from_setting(Some("ja"), Some("en-US")), Language::Ja);
-        assert_eq!(Language::from_setting(Some("en"), Some("ja-JP")), Language::En);
+        assert_eq!(
+            Language::from_setting(Some("ja"), Some("en-US")),
+            Language::Ja
+        );
+        assert_eq!(
+            Language::from_setting(Some("en"), Some("ja-JP")),
+            Language::En
+        );
         assert_eq!(Language::from_setting(Some("ja-JP"), None), Language::Ja);
-        assert_eq!(Language::from_setting(Some("fr"), Some("ja-JP")), Language::En);
+        assert_eq!(
+            Language::from_setting(Some("fr"), Some("ja-JP")),
+            Language::En
+        );
     }
 
     #[test]
@@ -139,7 +148,10 @@ mod tests {
     #[test]
     fn what_is_stored_is_read_back() {
         for language in [Language::En, Language::Ja] {
-            assert_eq!(Language::from_setting(Some(language.setting()), None), language);
+            assert_eq!(
+                Language::from_setting(Some(language.setting()), None),
+                language
+            );
         }
     }
 }

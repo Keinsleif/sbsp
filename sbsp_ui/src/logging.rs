@@ -112,7 +112,10 @@ mod tests {
         let dir = temp_dir("append");
         writeln!(open_file(&dir, "app").unwrap(), "one").unwrap();
         writeln!(open_file(&dir, "app").unwrap(), "two").unwrap();
-        assert_eq!(fs::read_to_string(dir.join("app.log")).unwrap(), "one\ntwo\n");
+        assert_eq!(
+            fs::read_to_string(dir.join("app.log")).unwrap(),
+            "one\ntwo\n"
+        );
         let _ = fs::remove_dir_all(dir);
     }
 

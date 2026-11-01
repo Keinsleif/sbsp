@@ -12,9 +12,9 @@ use iced::widget::container::Style;
 use iced::widget::{Space, button, column, container, row, scrollable, stack, text};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
+use crate::settings::NameFormatSettings;
 use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus, StateParam};
 use sbsp_backend::model::cue::Uuid;
-use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::build_cue_name;
 use crate::domain::flat_list::flatten;
@@ -92,7 +92,12 @@ pub fn ordered_active_cues<'a>(
     let mut active: Vec<&ActiveCue> = playback.active_cues.values().collect();
     // Cues missing from the list (removed while running) sort last, by id,
     // so they stay put too.
-    active.sort_by_key(|cue| (order.get(&cue.cue_id).copied().unwrap_or(usize::MAX), cue.cue_id));
+    active.sort_by_key(|cue| {
+        (
+            order.get(&cue.cue_id).copied().unwrap_or(usize::MAX),
+            cue.cue_id,
+        )
+    });
     active
 }
 
@@ -135,12 +140,20 @@ pub fn readouts(status: PlaybackStatus, position: f64, duration: f64) -> (String
 
     match status {
         PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused => (
-            if duration > 0.0 { remaining() } else { String::new() },
+            if duration > 0.0 {
+                remaining()
+            } else {
+                String::new()
+            },
             format_seconds(Some(0.0)),
         ),
         _ => (
             format_seconds(Some(position)),
-            if duration > 0.0 { remaining() } else { String::new() },
+            if duration > 0.0 {
+                remaining()
+            } else {
+                String::new()
+            },
         ),
     }
 }
@@ -158,13 +171,16 @@ fn bar_color(status: PlaybackStatus) -> impl Fn(&Theme) -> Color {
 fn active_item<'a>(title: String, active: &ActiveCue) -> Element<'a, Message> {
     let repeating = matches!(active.params, StateParam::Audio(audio) if audio.repeating);
     let mark: Element<'a, Message> = if active.status == PlaybackStatus::Stopping {
-        container(iced_aw::Spinner::new()
-            .width(Length::Fixed(18.0))
-            .height(Length::Fixed(18.0))
-        ).style(|theme: &Theme| {
+        container(
+            iced_aw::Spinner::new()
+                .width(Length::Fixed(18.0))
+                .height(Length::Fixed(18.0)),
+        )
+        .style(|theme: &Theme| {
             let palette = theme.palette();
             Style::default().color(palette.warning)
-        }).into()
+        })
+        .into()
     } else if repeating {
         icon(Icon::Repeat, 16.0).into()
     } else {
@@ -178,22 +194,20 @@ fn active_item<'a>(title: String, active: &ActiveCue) -> Element<'a, Message> {
         0.0
     };
 
-    let track = container(stack![
-        progress::bar(ratio, bar_color(active.status)),
-    ])
-    .width(Length::Fill)
-    .height(16)
-    .style(|theme: &Theme| {
-        let palette = theme.extended_palette();
-        container::Style {
-            border: iced::Border {
-                color: palette.background.strong.color,
-                width: 1.0,
-                radius: 0.0.into(),
-            },
-            ..Default::default()
-        }
-    });
+    let track = container(stack![progress::bar(ratio, bar_color(active.status)),])
+        .width(Length::Fill)
+        .height(16)
+        .style(|theme: &Theme| {
+            let palette = theme.extended_palette();
+            container::Style {
+                border: iced::Border {
+                    color: palette.background.strong.color,
+                    width: 1.0,
+                    radius: 0.0.into(),
+                },
+                ..Default::default()
+            }
+        });
 
     column![
         row![container(text(title)).width(Length::Fill), mark]
@@ -299,7 +313,11 @@ impl<Message> canvas::Program<Message> for MeterProgram<'_> {
             // The clip lamp above the bar.
             let lamp_origin = Point::new(x, TOP - BAR_W - 4.0);
             if channel.is_clipping() {
-                frame.fill_rectangle(lamp_origin, Size::new(BAR_W, BAR_W), Color::from_rgb8(239, 68, 68));
+                frame.fill_rectangle(
+                    lamp_origin,
+                    Size::new(BAR_W, BAR_W),
+                    Color::from_rgb8(239, 68, 68),
+                );
             }
             frame.stroke_rectangle(
                 lamp_origin,

@@ -21,14 +21,14 @@ use iced::{Alignment, Border, Color, Element, Length, Padding, Point, Theme, mou
 use iced_aw::ContextMenu as AwContextMenu;
 use std::collections::HashMap;
 
+use crate::settings::NameFormatSettings;
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::manager::InsertPosition;
 use sbsp_backend::model::cue::{Cue, CueChain, CueColor, CueParam, Uuid, group::GroupMode};
-use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::{display_name, get_duration};
-use crate::domain::time::format_seconds;
 use crate::domain::flat_list::{FlatCueEntry, flatten};
+use crate::domain::time::format_seconds;
 use crate::fl;
 use crate::state::assets::AssetResults;
 use crate::state::model::ShowModelState;
@@ -240,7 +240,10 @@ pub fn select_all(model: &ShowModelState, ui: &mut UiState) {
 pub enum RenderRow {
     /// An index into the flat list.
     Entry(usize),
-    End { parent: Option<Uuid>, level: usize },
+    End {
+        parent: Option<Uuid>,
+        level: usize,
+    },
 }
 
 /// The rows to draw, top to bottom
@@ -339,7 +342,11 @@ pub fn drop_position(
     viewport: Viewport,
     drag: &Drag,
 ) -> Option<InsertPosition> {
-    let flat = flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows);
+    let flat = flatten(
+        &model.cue_list.root_ids,
+        &model.cue_list.cues,
+        &ui.expanded_rows,
+    );
     let rows = render_rows(&flat);
     drop_target(&flat, &rows, &model.cue_list.cues, viewport, drag).map(|(_, position)| position)
 }
@@ -372,7 +379,11 @@ pub fn drag_scroll_offset(
     if delta == 0.0 {
         return None;
     }
-    let flat = flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows);
+    let flat = flatten(
+        &model.cue_list.root_ids,
+        &model.cue_list.cues,
+        &ui.expanded_rows,
+    );
     let content = render_rows(&flat).len() as f32 * ROW_HEIGHT;
     let max = (content - viewport.height).max(0.0);
     let offset = (viewport.offset_y + delta).clamp(0.0, max);
@@ -426,11 +437,7 @@ pub const MIN_WIDTH: f32 = 640.0;
 /// (cells below, header cells here), so the two line up without a table
 /// widget. `edit` is `Some` in edit mode. `min_width` is the narrowest the
 /// list is laid out at (`0.0`: it always fits the room it has).
-pub fn view<'a>(
-    env: CueListEnv<'a>,
-    viewport: Viewport,
-    min_width: f32,
-) -> Element<'a, Message> {
+pub fn view<'a>(env: CueListEnv<'a>, viewport: Viewport, min_width: f32) -> Element<'a, Message> {
     let flat = flatten(
         &env.model.cue_list.root_ids,
         &env.model.cue_list.cues,
@@ -503,32 +510,33 @@ fn list_view<'a>(
                 .interaction(mouse::Interaction::Grabbing);
         }
 
-        let ghost: Element<'a, Message> = match drag.and_then(|drag| Some((drag.ids.len(), drag.pointer?))) {
-            Some((count, pointer)) => container(
-                container(text(fl!("main-cue-list-moving-cue", n = (count as i64))).size(12))
-                    .padding([2, 10])
-                    .style(|theme: &Theme| {
-                        let palette = theme.extended_palette();
-                        container::Style {
-                            background: Some(palette.primary.base.color.into()),
-                            text_color: Some(palette.primary.base.text),
-                            border: Border {
-                                radius: 4.0.into(),
-                                ..Border::default()
-                            },
-                            ..Default::default()
-                        }
-                    }),
-            )
-            .padding(Padding {
-                top: pointer.y + 8.0,
-                left: pointer.x + 16.0,
-                right: 0.0,
-                bottom: 0.0,
-            })
-            .into(),
-            None => Space::new().into(),
-        };
+        let ghost: Element<'a, Message> =
+            match drag.and_then(|drag| Some((drag.ids.len(), drag.pointer?))) {
+                Some((count, pointer)) => container(
+                    container(text(fl!("main-cue-list-moving-cue", n = (count as i64))).size(12))
+                        .padding([2, 10])
+                        .style(|theme: &Theme| {
+                            let palette = theme.extended_palette();
+                            container::Style {
+                                background: Some(palette.primary.base.color.into()),
+                                text_color: Some(palette.primary.base.text),
+                                border: Border {
+                                    radius: 4.0.into(),
+                                    ..Border::default()
+                                },
+                                ..Default::default()
+                            }
+                        }),
+                )
+                .padding(Padding {
+                    top: pointer.y + 8.0,
+                    left: pointer.x + 16.0,
+                    right: 0.0,
+                    bottom: 0.0,
+                })
+                .into(),
+                None => Space::new().into(),
+            };
         stack![area, ghost].into()
     };
 
@@ -571,7 +579,9 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
         divider::vertical(),
         cell(text("#"), W_NUMBER - 1.0),
         divider::vertical(),
-        container(text(fl!("main-name"))).width(Length::Fill).padding([0, 8]),
+        container(text(fl!("main-name")))
+            .width(Length::Fill)
+            .padding([0, 8]),
         divider::vertical(),
         time_header(
             fl!("main-pre-wait"),
@@ -627,20 +637,23 @@ fn row_view<'a>(
             .center_x(Length::Fill)
             .center_y(Length::Fill),
     )
-        .width(W_CURSOR)
-        .height(ROW_HEIGHT - 1.0)
-        .padding(0)
-        .style(button::text)
-        .on_press(Message::SetCursor(id));
+    .width(W_CURSOR)
+    .height(ROW_HEIGHT - 1.0)
+    .padding(0)
+    .style(button::text)
+    .on_press(Message::SetCursor(id));
 
     let status: Element<'a, Message> = match active.map(|a| a.status) {
-        Some(PlaybackStatus::Stopping) => container(iced_aw::Spinner::new()
+        Some(PlaybackStatus::Stopping) => container(
+            iced_aw::Spinner::new()
                 .width(Length::Fixed(18.0))
-                .height(Length::Fixed(18.0))
-            ).style(|theme: &Theme| {
-                let palette = theme.palette();
-                Style::default().color(palette.warning)
-            }).into(),
+                .height(Length::Fixed(18.0)),
+        )
+        .style(|theme: &Theme| {
+            let palette = theme.palette();
+            Style::default().color(palette.warning)
+        })
+        .into(),
         Some(status) => match status_icon(status) {
             Some((glyph, tone)) => toned(glyph, 18.0, tone).into(),
             None => Space::new().into(),
@@ -658,17 +671,16 @@ fn row_view<'a>(
             },
             18.0,
         ))
-            .padding(0)
-            .width(20)
-            .style(button::text)
-            .on_press(Message::ToggleExpand(id))
-            .into(),
+        .padding(0)
+        .width(20)
+        .style(button::text)
+        .on_press(Message::ToggleExpand(id))
+        .into(),
         None => Space::new().width(20).into(),
     };
     // One line, whatever the name: what does not fit is cut off.
     let name = container(
-        text(display_name(cue, &model.cue_list.cues, name_format))
-            .wrapping(text::Wrapping::None),
+        text(display_name(cue, &model.cue_list.cues, name_format)).wrapping(text::Wrapping::None),
     )
     .width(Length::Fill)
     .clip(true);
@@ -676,7 +688,10 @@ fn row_view<'a>(
     // While a cue is in its pre-wait the pre-wait cell is the live one and
     // the duration cell stays static; from playback on it flips.
     let in_pre_wait = active.is_some_and(|a| {
-        matches!(a.status, PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused)
+        matches!(
+            a.status,
+            PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused
+        )
     });
     let in_playback = active.is_some_and(|a| {
         matches!(
@@ -721,10 +736,15 @@ fn row_view<'a>(
 
     // Edit mode: a handle to drag the row by.
     let handle: Element<'a, Message> = if edit.is_some() {
-        mouse_area(container(icon(Icon::DragVertical, 18.0)).center_y(Length::Fill).center_x(W_HANDLE).style(move |_| handle_style(color)))
-            .on_press(Message::DragStart(id))
-            .interaction(mouse::Interaction::Grab)
-            .into()
+        mouse_area(
+            container(icon(Icon::DragVertical, 18.0))
+                .center_y(Length::Fill)
+                .center_x(W_HANDLE)
+                .style(move |_| handle_style(color)),
+        )
+        .on_press(Message::DragStart(id))
+        .interaction(mouse::Interaction::Grab)
+        .into()
     } else {
         Space::new().width(W_HANDLE).into()
     };
@@ -774,11 +794,7 @@ fn row_view<'a>(
 /// The closing row of an open group or of the list: where a drop lands
 /// after the last row.
 fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
-    let label = if level > 0 {
-        "end"
-    } else {
-        "end of list"
-    };
+    let label = if level > 0 { "end" } else { "end of list" };
     // Lined up with the name column of a row at the same level: after its
     // padding and the columns before it come the guide, then the space of
     // the disclosure triangle (and the gaps around it).
@@ -915,20 +931,20 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
             .width(Length::Fill)
             .height(Length::Fill),
     )
-        .width(Length::Fill)
-        .height(ROW_HEIGHT * 0.75)
-        .style(move |theme: &Theme| container::Style {
-            border: if active {
-                Border {
-                    color: theme.extended_palette().primary.base.color,
-                    width: 1.0,
-                    radius: 2.0.into(),
-                }
-            } else {
-                Border::default()
-            },
-            ..Default::default()
-        });
+    .width(Length::Fill)
+    .height(ROW_HEIGHT * 0.75)
+    .style(move |theme: &Theme| container::Style {
+        border: if active {
+            Border {
+                color: theme.extended_palette().primary.base.color,
+                width: 1.0,
+                radius: 2.0.into(),
+            }
+        } else {
+            Border::default()
+        },
+        ..Default::default()
+    });
 
     container(field)
         .padding([0, 4])
@@ -940,7 +956,11 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
 fn handle_style(color: CueColor) -> container::Style {
     let color_pair = cue_color(color);
 
-    container::Style { text_color: color_pair.map(|c| c.text), background: color_pair.map(|c| c.color.into()), ..Default::default() }
+    container::Style {
+        text_color: color_pair.map(|c| c.text),
+        background: color_pair.map(|c| c.color.into()),
+        ..Default::default()
+    }
 }
 
 fn row_style(
@@ -1016,7 +1036,7 @@ fn cue_color(color: CueColor) -> Option<Pair> {
 
     bg.map(|bg| {
         let text = get_text_color(bg);
-    
+
         Pair::new(bg, text)
     })
 }
@@ -1288,7 +1308,11 @@ mod tests {
     }
 
     fn flat_of(model: &ShowModel, ui: &UiState) -> Vec<FlatCueEntry> {
-        flatten(&model.cue_list.root_ids, &model.cue_list.cues, &ui.expanded_rows)
+        flatten(
+            &model.cue_list.root_ids,
+            &model.cue_list.cues,
+            &ui.expanded_rows,
+        )
     }
 
     #[test]
@@ -1302,7 +1326,10 @@ mod tests {
             vec![
                 RenderRow::Entry(0),
                 RenderRow::Entry(1),
-                RenderRow::End { parent: None, level: 0 },
+                RenderRow::End {
+                    parent: None,
+                    level: 0
+                },
             ]
         );
     }
@@ -1321,8 +1348,14 @@ mod tests {
                 RenderRow::Entry(1),
                 RenderRow::Entry(2),
                 RenderRow::Entry(3),
-                RenderRow::End { parent: Some(g), level: 1 },
-                RenderRow::End { parent: None, level: 0 },
+                RenderRow::End {
+                    parent: Some(g),
+                    level: 1
+                },
+                RenderRow::End {
+                    parent: None,
+                    level: 0
+                },
             ]
         );
     }
@@ -1340,7 +1373,13 @@ mod tests {
         // g, c, d, end of g, b, a, end of list
         let rows = render_rows(&flat);
         assert_eq!(rows.len(), 7);
-        assert_eq!(rows[3], RenderRow::End { parent: Some(g), level: 1 });
+        assert_eq!(
+            rows[3],
+            RenderRow::End {
+                parent: Some(g),
+                level: 1
+            }
+        );
         assert_eq!(rows[4], RenderRow::Entry(3));
     }
 
@@ -1359,8 +1398,14 @@ mod tests {
             vec![
                 RenderRow::Entry(0),
                 RenderRow::Entry(1),
-                RenderRow::End { parent: Some(g), level: 1 },
-                RenderRow::End { parent: None, level: 0 },
+                RenderRow::End {
+                    parent: Some(g),
+                    level: 1
+                },
+                RenderRow::End {
+                    parent: None,
+                    level: 0
+                },
             ]
         );
         let _ = a;
@@ -1369,7 +1414,10 @@ mod tests {
     fn pointer_at(row: f32, offset: f32) -> Drag {
         Drag {
             ids: Vec::new(),
-            pointer: Some(Point::new(50.0, row * ROW_HEIGHT + ROW_HEIGHT / 2.0 - offset)),
+            pointer: Some(Point::new(
+                50.0,
+                row * ROW_HEIGHT + ROW_HEIGHT / 2.0 - offset,
+            )),
         }
     }
 
@@ -1387,7 +1435,10 @@ mod tests {
         let (model, a, g, c, _d) = sample();
         let mut ui = UiState::new(true);
         ui.toggle_expand(g);
-        let view = Viewport { offset_y: 0.0, height: 300.0 };
+        let view = Viewport {
+            offset_y: 0.0,
+            height: 300.0,
+        };
         // Rows: a, g, c, d, end of g, end of list.
 
         assert!(matches!(
@@ -1404,11 +1455,25 @@ mod tests {
         ));
         assert!(matches!(
             target(&model, &ui, view, &pointer_at(5.0, 0.0)),
-            Some(InsertPosition::Inside { target: None, index: None })
+            Some(InsertPosition::Inside {
+                target: None,
+                index: None
+            })
         ));
         // Below the last row, or no pointer: nowhere.
         assert!(target(&model, &ui, view, &pointer_at(6.0, 0.0)).is_none());
-        assert!(target(&model, &ui, view, &Drag { ids: vec![], pointer: None }).is_none());
+        assert!(
+            target(
+                &model,
+                &ui,
+                view,
+                &Drag {
+                    ids: vec![],
+                    pointer: None
+                }
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -1416,7 +1481,10 @@ mod tests {
         let (model, _a, g, c, _d) = sample();
         let mut ui = UiState::new(true);
         ui.toggle_expand(g);
-        let view = Viewport { offset_y: 60.0, height: 60.0 };
+        let view = Viewport {
+            offset_y: 60.0,
+            height: 60.0,
+        };
 
         // Two rows scrolled away: the pointer's first row is row 2.
         assert!(matches!(
@@ -1430,7 +1498,10 @@ mod tests {
         let (model, a, g, c, _d) = sample();
         let mut ui = UiState::new(true);
         ui.toggle_expand(g);
-        let view = Viewport { offset_y: 0.0, height: 300.0 };
+        let view = Viewport {
+            offset_y: 0.0,
+            height: 300.0,
+        };
         let dragging = |ids: Vec<Uuid>, row: f32| Drag {
             ids,
             pointer: pointer_at(row, 0.0).pointer,
@@ -1472,8 +1543,14 @@ mod tests {
             drag_scroll_offset(
                 &model,
                 &ui,
-                Viewport { offset_y, height: 100.0 },
-                &Drag { ids: vec![], pointer: Some(Point::new(10.0, y)) },
+                Viewport {
+                    offset_y,
+                    height: 100.0,
+                },
+                &Drag {
+                    ids: vec![],
+                    pointer: Some(Point::new(10.0, y)),
+                },
             )
         };
 

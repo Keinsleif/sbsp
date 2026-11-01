@@ -131,8 +131,8 @@ fn shift_clicking_selects_the_range_from_the_current_selection() {
 }
 
 fn press(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Message {
-    let press = hotkeys::KeyPress::new(&key, &key, modifiers, false)
-        .expect("test keys are all bindable");
+    let press =
+        hotkeys::KeyPress::new(&key, &key, modifiers, false).expect("test keys are all bindable");
     Message::KeyPressed(press)
 }
 
@@ -169,7 +169,9 @@ fn the_header_toggles_flip_the_time_display_modes() {
 #[serial]
 fn transport_buttons_show_outside_view_mode_only() {
     let mut state = new_state();
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
     assert!(state.show_controls(), "shown in edit mode");
 
     state.ui.set_mode(Mode::View);
@@ -180,7 +182,9 @@ fn transport_buttons_show_outside_view_mode_only() {
 #[serial]
 fn hide_controls_setting_hides_the_transport_buttons() {
     let mut state = new_state();
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
     state.hide_controls = true;
 
     assert!(!state.show_controls());
@@ -210,10 +214,14 @@ fn the_keep_awake_mode_defaults_to_the_focus_and_can_be_chosen() {
 fn selecting_a_mode_switches_it_when_allowed() {
     let mut state = new_state();
     // Without the `host` feature a state starts with no permissions.
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
     assert_eq!(state.ui.mode, Mode::Edit);
 
-    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::View)));
+    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(
+        Mode::View,
+    )));
     assert_eq!(state.ui.mode, Mode::View);
 }
 
@@ -223,7 +231,9 @@ fn hotkeys_that_move_the_selection_still_work_in_view_mode() {
     use keyboard::key::Named;
 
     let (mut state, ids) = populated_state();
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
     state.ui.set_mode(Mode::View);
     state.ui.set_selected(ids[0], false);
 
@@ -318,9 +328,7 @@ fn the_phone_layout_has_its_screens_and_the_controls_only_with_the_permission() 
     assert!(ui.find(fl!("main-mobile-active").as_str()).is_ok());
     drop(ui);
 
-    let _ = state.update(Message::Mobile(mobile::Message::Tab(
-        mobile::Tab::Controls,
-    )));
+    let _ = state.update(Message::Mobile(mobile::Message::Tab(mobile::Tab::Controls)));
     assert_eq!(state.mobile_tab, mobile::Tab::Controls);
     let _ = state.mobile_view();
 
@@ -344,9 +352,7 @@ fn the_skip_buttons_move_the_playback_cursor() {
     state.model.cue_list.root_ids = vec![a, b];
     state.ui.playback_cursor = Some(a);
 
-    let _ = state.update(Message::Mobile(mobile::Message::Skip(
-        mobile::Skip::Next,
-    )));
+    let _ = state.update(Message::Mobile(mobile::Message::Skip(mobile::Skip::Next)));
     assert_eq!(state.ui.playback_cursor, Some(b));
     let _ = state.update(Message::Mobile(mobile::Message::Skip(
         mobile::Skip::Previous,
@@ -403,8 +409,12 @@ fn the_footer_buttons_toggle_the_bottom_tab() {
 #[serial]
 fn a_seek_from_the_viewer_is_ignored_in_view_mode() {
     let mut state = new_state();
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
-    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::View)));
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
+    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(
+        Mode::View,
+    )));
 
     // Nothing to assert on the Task itself; this guards the match arm
     // (and that a seek with no backend cannot panic).
@@ -446,7 +456,9 @@ fn escape_discards_a_field_edit() {
 
 fn editing_state() -> (State, [Uuid; 3]) {
     let (mut state, ids) = populated_state();
-    state.ui.set_permission(sbsp_backend::api::Permissions::all());
+    state
+        .ui
+        .set_permission(sbsp_backend::api::Permissions::all());
     state.ui.set_mode(Mode::Edit);
     (state, ids)
 }
@@ -549,7 +561,10 @@ fn dragging_a_row_outside_the_selection_selects_only_that_row() {
 
     let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[1])));
     assert_eq!(state.ui.selected_rows, vec![ids[1]]);
-    assert_eq!(state.cue_drag.as_ref().map(|drag| drag.ids.clone()), Some(vec![ids[1]]));
+    assert_eq!(
+        state.cue_drag.as_ref().map(|drag| drag.ids.clone()),
+        Some(vec![ids[1]])
+    );
 }
 
 #[test]
@@ -560,7 +575,10 @@ fn the_pointer_is_followed_while_dragging_and_forgotten_outside_the_list() {
 
     let at = iced::Point::new(12.0, 34.0);
     let _ = state.update(cue_list_message(cue_list::Message::DragMoved(at)));
-    assert_eq!(state.cue_drag.as_ref().and_then(|drag| drag.pointer), Some(at));
+    assert_eq!(
+        state.cue_drag.as_ref().and_then(|drag| drag.pointer),
+        Some(at)
+    );
     let _ = state.update(cue_list_message(cue_list::Message::DragLeft));
     assert_eq!(state.cue_drag.as_ref().and_then(|drag| drag.pointer), None);
 }
@@ -587,7 +605,9 @@ fn a_drop_ends_the_drag_and_leaving_edit_mode_cancels_it() {
     assert!(state.cue_drag.is_none());
 
     let _ = state.update(cue_list_message(cue_list::Message::DragStart(ids[0])));
-    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(Mode::Run)));
+    let _ = state.update(Message::StatusBar(status_bar::Message::ModeSelected(
+        Mode::Run,
+    )));
     assert!(state.cue_drag.is_none());
 }
 
@@ -626,7 +646,11 @@ fn delete_asks_before_removing_and_cancel_keeps_everything() {
     }
 
     assert_eq!(state.pending_remove, None);
-    assert_eq!(state.model.cue_list.cues.len(), 3, "nothing is removed locally");
+    assert_eq!(
+        state.model.cue_list.cues.len(),
+        3,
+        "nothing is removed locally"
+    );
 }
 
 #[test]
@@ -682,7 +706,11 @@ fn dropped_files_wait_for_the_batch_then_become_audio_cues() {
 
     let _ = state.update(Message::FileDropped("a.wav".into()));
     let _ = state.update(Message::FileDropped("b.txt".into()));
-    assert_eq!(state.dropped_files.len(), 2, "nothing happens until settled");
+    assert_eq!(
+        state.dropped_files.len(),
+        2,
+        "nothing happens until settled"
+    );
 
     let _ = state.update(Message::DropsSettled);
     assert!(state.dropped_files.is_empty());
@@ -714,7 +742,10 @@ fn a_waiting_question_takes_enter_and_escape_and_nothing_else() {
 
     state.confirm = Some(file_ops::Confirm::StopActive(file_ops::After::New));
     let _ = state.update(key(keyboard::key::Named::Enter));
-    assert_eq!(state.confirm, None, "yes: nothing else to ask without changes");
+    assert_eq!(
+        state.confirm, None,
+        "yes: nothing else to ask without changes"
+    );
 }
 
 #[test]
@@ -786,7 +817,13 @@ fn backend_failures_get_their_own_titles() {
             .starts_with(&fl!("notification-audio-output-fallback-both-summary"))
     );
     assert_eq!(fallback(false, false), None);
-    let custom = |id| failure_message(&E::Custom { id, message: "x".to_owned() }).unwrap();
+    let custom = |id| {
+        failure_message(&E::Custom {
+            id,
+            message: "x".to_owned(),
+        })
+        .unwrap()
+    };
     assert!(custom(1).ends_with(&fl!("notification-authentication-failed")));
     assert!(custom(2).ends_with(&fl!("notification-authentication-rate-limit-exceeded")));
     assert!(custom(3).ends_with(&fl!("notification-permission-denied")));
@@ -891,7 +928,10 @@ fn adding_a_group_opens_it_only_when_rows_move_into_it() {
     let (mut state, ids) = editing_state();
 
     let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
-    assert!(state.ui.expanded_rows.is_empty(), "nothing selected, nothing to open");
+    assert!(
+        state.ui.expanded_rows.is_empty(),
+        "nothing selected, nothing to open"
+    );
 
     state.ui.set_selected(ids[0], false);
     let _ = state.update(Message::Header(header::Message::AddCue(CueKind::Group)));
@@ -918,7 +958,8 @@ fn the_editor_replaces_the_viewer_in_edit_mode() {
     {
         let mut ui = iced_test::simulator(state.view());
         assert!(
-            ui.find(fl!("main-bottom-editor-no-selection").as_str()).is_ok(),
+            ui.find(fl!("main-bottom-editor-no-selection").as_str())
+                .is_ok(),
             "nothing is selected"
         );
     }
@@ -932,7 +973,10 @@ fn the_editor_replaces_the_viewer_in_edit_mode() {
 
     state.ui.set_mode(Mode::Run);
     let mut ui = iced_test::simulator(state.view());
-    assert!(ui.find(fl!("main-number").as_str()).is_err(), "no editor outside edit mode");
+    assert!(
+        ui.find(fl!("main-number").as_str()).is_err(),
+        "no editor outside edit mode"
+    );
 }
 
 #[test]
@@ -997,7 +1041,10 @@ fn loaded_settings_reach_the_ui() {
 
     state.apply_preferences(&loaded);
 
-    assert_eq!(state.lock_cursor_to_selection, loaded.general.lock_cursor_to_selection);
+    assert_eq!(
+        state.lock_cursor_to_selection,
+        loaded.general.lock_cursor_to_selection
+    );
     assert_eq!(state.seek_amount, 7.5);
     assert_eq!(state.theme_mode, ThemeMode::Light);
     assert_eq!(state.lang, Language::Ja);
@@ -1008,7 +1055,11 @@ fn loaded_settings_reach_the_ui() {
             .hotkeys
             .shortcut(hotkeys::Action::Open, hotkeys::is_mac())
             .as_deref(),
-        Some(if hotkeys::is_mac() { "⇧⌘O" } else { "Ctrl+Shift+O" })
+        Some(if hotkeys::is_mac() {
+            "⇧⌘O"
+        } else {
+            "Ctrl+Shift+O"
+        })
     );
     // The language took effect, not only the field.
     assert_eq!(fl!("menu-file-quit"), "終了");
@@ -1055,7 +1106,9 @@ fn the_settings_dialog_closes_on_escape_and_cancel_without_applying() {
     let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
 
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
-    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(!before)));
+    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(
+        !before,
+    )));
     let _ = state.update(key(keyboard::key::Named::ArrowDown));
     assert!(state.settings_dialog.is_some(), "other keys do nothing");
     let _ = state.update(key(keyboard::key::Named::Escape));
@@ -1075,7 +1128,9 @@ fn done_applies_the_edited_settings() {
     let before = state.lock_cursor_to_selection;
 
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
-    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(!before)));
+    let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(
+        !before,
+    )));
     let _ = state.update(Message::Settings(settings_dialog::Message::DarkMode(
         crate::settings::DarkMode::Dark,
     )));
@@ -1147,14 +1202,22 @@ fn a_waiting_hotkey_input_takes_the_next_press_including_escape() {
     let _ = state.update(Message::Settings(settings_dialog::Message::SelectTab(
         settings_dialog::Tab::Hotkey,
     )));
-    let _ = state.update(Message::Settings(settings_dialog::Message::Capture(Slot::Load)));
+    let _ = state.update(Message::Settings(settings_dialog::Message::Capture(
+        Slot::Load,
+    )));
 
     let _ = state.update(press(
         keyboard::Key::Named(keyboard::key::Named::Escape),
         keyboard::Modifiers::empty(),
     ));
-    let dialog = state.settings_dialog.as_ref().expect("Escape was taken as the binding");
-    assert_eq!(dialog.preferences.hotkey.playback.load.as_deref(), Some("Escape"));
+    let dialog = state
+        .settings_dialog
+        .as_ref()
+        .expect("Escape was taken as the binding");
+    assert_eq!(
+        dialog.preferences.hotkey.playback.load.as_deref(),
+        Some("Escape")
+    );
     assert_eq!(dialog.capturing, None);
 
     // Not waiting any more: Escape closes the dialog again.
@@ -1223,8 +1286,13 @@ fn the_hardware_tab_exists_only_where_the_settings_have_audio() {
     if cfg!(feature = "host") {
         return;
     }
-    let _ = state.update(Message::Settings(settings_dialog::Message::Device(Some("x".to_owned()))));
-    assert!(state.settings_dialog.as_ref().unwrap().audio.is_none(), "nothing to change");
+    let _ = state.update(Message::Settings(settings_dialog::Message::Device(Some(
+        "x".to_owned(),
+    ))));
+    assert!(
+        state.settings_dialog.as_ref().unwrap().audio.is_none(),
+        "nothing to change"
+    );
 }
 
 #[test]
@@ -1335,7 +1403,13 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     use crate::persist::{Saved, WindowRect};
 
     let saved = Saved {
-        window: Some(WindowRect { width: 1000.0, height: 600.0, x: Some(40.0), y: Some(30.0), maximized: true }),
+        window: Some(WindowRect {
+            width: 1000.0,
+            height: 600.0,
+            x: Some(40.0),
+            y: Some(30.0),
+            maximized: true,
+        }),
         mode: Some(Mode::Run),
         is_bottom_tab_open: Some(false),
         ..Saved::default()
@@ -1348,16 +1422,30 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     assert!(state.window_maximized);
 
     let settle = |state: &mut State, size, position, maximized| {
-        let _ = state.update(Message::WindowSettled { size, position, maximized });
+        let _ = state.update(Message::WindowSettled {
+            size,
+            position,
+            maximized,
+        });
     };
-    settle(&mut state, Some(iced::Size::new(900.0, 500.0)), Some(iced::Point::new(5.0, 6.0)), false);
+    settle(
+        &mut state,
+        Some(iced::Size::new(900.0, 500.0)),
+        Some(iced::Point::new(5.0, 6.0)),
+        false,
+    );
     assert_eq!(state.window_position, Some(iced::Point::new(5.0, 6.0)));
     assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
     assert!(!state.window_maximized);
 
     // Maximizing reports the screen-sized window; the size from before
     // stays, so un-maximizing (and the next start) return to it.
-    settle(&mut state, Some(iced::Size::new(1920.0, 1080.0)), None, true);
+    settle(
+        &mut state,
+        Some(iced::Size::new(1920.0, 1080.0)),
+        None,
+        true,
+    );
     settle(&mut state, None, Some(iced::Point::new(0.0, 0.0)), true);
     assert_eq!(state.window_position, Some(iced::Point::new(5.0, 6.0)));
     assert_eq!(state.window_size, Some(iced::Size::new(900.0, 500.0)));
@@ -1373,7 +1461,9 @@ mod remote {
     #[serial]
     fn connecting_asks_for_the_password_and_a_failure_lets_it_be_tried_again() {
         let mut state = new_state();
-        let _ = state.update(Message::Connect(connect::Message::Host("host.local".to_owned())));
+        let _ = state.update(Message::Connect(connect::Message::Host(
+            "host.local".to_owned(),
+        )));
         let _ = state.update(Message::Connect(connect::Message::ConnectTyped));
         assert!(state.connect.prompt.is_some());
         assert!(!state.connect.connecting);
@@ -1409,7 +1499,10 @@ mod remote {
         assert!(state.needs_connection());
         assert!(state.ui.available_modes().is_empty());
         let _ = state.view();
-        assert!(!new_state().needs_connection(), "the tests' own state shows the main screen");
+        assert!(
+            !new_state().needs_connection(),
+            "the tests' own state shows the main screen"
+        );
     }
 
     #[test]

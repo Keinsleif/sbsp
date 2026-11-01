@@ -18,10 +18,10 @@
 
 use std::sync::Arc;
 
+use crate::settings::{GlobalHostSettings, manager::SettingsManager};
 use sbsp_backend::api::{ApiServerOptions, server::start_apiserver_with};
 use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendSettings, start_backend};
-use crate::settings::{GlobalHostSettings, manager::SettingsManager};
 use tokio::sync::{broadcast, watch};
 
 use crate::port::{FullState, Link};
@@ -177,7 +177,8 @@ impl HostPort {
     pub fn import_settings(
         &self,
         path: std::path::PathBuf,
-    ) -> impl std::future::Future<Output = anyhow::Result<GlobalHostSettings>> + Send + 'static {
+    ) -> impl std::future::Future<Output = anyhow::Result<GlobalHostSettings>> + Send + 'static
+    {
         let settings = self.settings.clone();
         let tx = self.settings_tx.clone();
         async move {

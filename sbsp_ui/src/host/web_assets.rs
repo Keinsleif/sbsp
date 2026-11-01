@@ -76,7 +76,10 @@ fn locate(source: &dyn Source, request_path: &str) -> Option<(String, Asset)> {
     let path = request_path.trim_start_matches('/');
     // Nothing embedded has these, and nothing here should be asked to
     // look for them.
-    if path.split('/').any(|part| part == ".." || part.contains('\\')) {
+    if path
+        .split('/')
+        .any(|part| part == ".." || part.contains('\\'))
+    {
         return None;
     }
     let path = if path.is_empty() { "index.html" } else { path };
@@ -269,12 +272,18 @@ mod tests {
         assert_eq!((body(&plain), plain.encoding), (&b"wasm"[..], None));
 
         let brotli = find(&site, "/app.wasm", "gzip, deflate, br").unwrap();
-        assert_eq!((body(&brotli), brotli.encoding), (&b"wasm-br"[..], Some("br")));
+        assert_eq!(
+            (body(&brotli), brotli.encoding),
+            (&b"wasm-br"[..], Some("br"))
+        );
         // The content type is the original file's, not the compressed one's.
         assert_eq!(brotli.content_type, "application/wasm");
 
         let gzip = find(&site, "/app.wasm", "gzip;q=0.8").unwrap();
-        assert_eq!((body(&gzip), gzip.encoding), (&b"wasm-gz"[..], Some("gzip")));
+        assert_eq!(
+            (body(&gzip), gzip.encoding),
+            (&b"wasm-gz"[..], Some("gzip"))
+        );
 
         // No compressed copy exists for this one.
         assert_eq!(find(&site, "/app.js", "br, gzip").unwrap().encoding, None);
@@ -290,7 +299,11 @@ mod tests {
         assert_eq!(content_type("no-extension"), "application/octet-stream");
     }
 
-    fn request(method: Method, path: &str, headers: &[(header::HeaderName, &str)]) -> Response<Body> {
+    fn request(
+        method: Method,
+        path: &str,
+        headers: &[(header::HeaderName, &str)],
+    ) -> Response<Body> {
         let mut map = HeaderMap::new();
         for (name, value) in headers {
             map.insert(name.clone(), value.parse().unwrap());
@@ -302,9 +315,15 @@ mod tests {
     fn responses_carry_the_validators_and_answer_not_modified() {
         let response = request(Method::GET, "/app.js", &[]);
         assert_eq!(response.status(), StatusCode::OK);
-        assert_eq!(response.headers()[header::CONTENT_TYPE], "text/javascript; charset=utf-8");
+        assert_eq!(
+            response.headers()[header::CONTENT_TYPE],
+            "text/javascript; charset=utf-8"
+        );
         assert_eq!(response.headers()[header::CACHE_CONTROL], "no-cache");
-        let etag = response.headers()[header::ETAG].to_str().unwrap().to_string();
+        let etag = response.headers()[header::ETAG]
+            .to_str()
+            .unwrap()
+            .to_string();
 
         let again = request(Method::GET, "/app.js", &[(header::IF_NONE_MATCH, &etag)]);
         assert_eq!(again.status(), StatusCode::NOT_MODIFIED);
@@ -312,8 +331,14 @@ mod tests {
 
     #[test]
     fn only_get_and_head_are_answered_and_head_has_no_body() {
-        assert_eq!(request(Method::POST, "/app.js", &[]).status(), StatusCode::METHOD_NOT_ALLOWED);
-        assert_eq!(request(Method::GET, "/missing.js", &[]).status(), StatusCode::NOT_FOUND);
+        assert_eq!(
+            request(Method::POST, "/app.js", &[]).status(),
+            StatusCode::METHOD_NOT_ALLOWED
+        );
+        assert_eq!(
+            request(Method::GET, "/missing.js", &[]).status(),
+            StatusCode::NOT_FOUND
+        );
         let head = request(Method::HEAD, "/app.js", &[]);
         assert_eq!(head.status(), StatusCode::OK);
         assert_eq!(head.headers()[header::CONTENT_LENGTH], "2");

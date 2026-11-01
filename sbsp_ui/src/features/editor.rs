@@ -14,30 +14,32 @@
 //! are a multi-line `text_editor`, which keeps its own `Content`; a copy
 //! of its text goes into the same drafts so it ends the same way.
 
-use std::path::PathBuf;
 use crate::time::Instant;
+use std::path::PathBuf;
 
 use iced::widget::{Space, button, center, column, container, row, text, text_editor};
 use iced::{Alignment, Element, Length, Theme};
 
+use crate::settings::NameFormatSettings;
 use sbsp_backend::model::cue::audio::Decibels;
 use sbsp_backend::model::cue::{
     Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
 };
 use sbsp_backend::model::settings::CursorAdvanceTrigger;
-use crate::settings::NameFormatSettings;
 
 use crate::domain::cue::display_name;
 use crate::domain::cue_edit::{self, ChainKind, FadeSlot, GroupModeKind};
 use crate::domain::easing::CurveKind;
 use crate::domain::envelope::{self, Segment};
-use crate::domain::field::{Commit, commit_volume};
 use crate::domain::field::TimeSpec;
+use crate::domain::field::{Commit, commit_volume};
 use crate::domain::flat_list::FlatCueEntry;
+use crate::features::viewer::TimeRange;
 use crate::fl;
 use crate::state::model::ShowModelState;
-use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field, text_field_with_placeholder};
-use crate::features::viewer::TimeRange;
+use crate::widgets::field::{
+    self, Drafts, FieldId, Outcome, text_field, text_field_with_placeholder,
+};
 use crate::widgets::inputs::{DoubleRelease, FaderMessage, labeled, time_input};
 use crate::widgets::{divider, waveform_editor};
 
@@ -81,7 +83,19 @@ const FADE_SLOTS: [FadeSlot; 3] = [FadeSlot::AudioIn, FadeSlot::AudioOut, FadeSl
 
 /// Whether `id` is one of this editor's fields.
 pub fn owns(id: FieldId) -> bool {
-    [NUMBER, NAME, PRE_WAIT, DURATION, NOTES, AUDIO_TARGET, VOLUME, START, END, PAN].contains(&id)
+    [
+        NUMBER,
+        NAME,
+        PRE_WAIT,
+        DURATION,
+        NOTES,
+        AUDIO_TARGET,
+        VOLUME,
+        START,
+        END,
+        PAN,
+    ]
+    .contains(&id)
         || FADE_SLOTS.iter().any(|&slot| {
             let (duration, power) = fade_fields(slot);
             id == duration || id == power
@@ -406,7 +420,9 @@ impl Editor {
                         .and_then(|param| cue_edit::fade_with_kind(param, kind))
                         .and_then(|param| cue_edit::set_fade_param(cue, slot, Some(param))),
                     Message::FadeTarget(target) => cue_edit::set_fade_target(cue, target),
-                    Message::FadeStopOnComplete(stop) => cue_edit::set_fade_stop_on_complete(cue, stop),
+                    Message::FadeStopOnComplete(stop) => {
+                        cue_edit::set_fade_stop_on_complete(cue, stop)
+                    }
                     Message::PlaybackTarget(target) => cue_edit::set_playback_target(cue, target),
                     Message::StopHard(hard) => cue_edit::set_stop_hard(cue, hard),
                     Message::GroupMode(kind) => cue_edit::set_group_mode_kind(cue, kind),
@@ -610,9 +626,7 @@ impl Editor {
         }
         let id = cue.map(|cue| cue.id);
         let wanted = cue.map(|cue| cue.notes.as_str()).unwrap_or("");
-        if self.notes_cue != id
-            || plain(self.notes.text()) != plain(wanted.to_string())
-        {
+        if self.notes_cue != id || plain(self.notes.text()) != plain(wanted.to_string()) {
             self.notes = text_editor::Content::with_text(wanted);
             self.notes_cue = id;
         }
@@ -725,10 +739,17 @@ fn content<'a>(
         Tab::Group => type_tabs::group(ctx, cue),
     };
 
-    column![tabs, divider::horizontal(), container(body).padding(8).width(Length::Fill).height(Length::Fill)]
-        .width(width)
-        .height(HEIGHT)
-        .into()
+    column![
+        tabs,
+        divider::horizontal(),
+        container(body)
+            .padding(8)
+            .width(Length::Fill)
+            .height(Length::Fill)
+    ]
+    .width(width)
+    .height(HEIGHT)
+    .into()
 }
 
 fn tab_button<'a>(current: Tab, tab: Tab, label: String) -> Element<'a, Message> {
@@ -785,10 +806,14 @@ fn basics<'a>(
     let chain_mode = labeled(
         Some(&fl!("main-chain-mode")),
         picker(
-            [ChainKind::DoNotChain, ChainKind::AfterStart, ChainKind::AfterComplete]
-                .into_iter()
-                .map(|kind| Choice::new(kind, chain_label(kind)))
-                .collect(),
+            [
+                ChainKind::DoNotChain,
+                ChainKind::AfterStart,
+                ChainKind::AfterComplete,
+            ]
+            .into_iter()
+            .map(|kind| Choice::new(kind, chain_label(kind)))
+            .collect(),
             Some(&chain_kind),
             !locked,
             Message::ChainKind,
@@ -831,9 +856,7 @@ fn basics<'a>(
         flat.iter()
             .filter(|entry| entry.cue_id != cue.id)
             .filter_map(|entry| cues.get(&entry.cue_id))
-            .map(|other| {
-                Choice::new(Some(other.id), choice_name(other, cues, ctx.name_format))
-            }),
+            .map(|other| Choice::new(Some(other.id), choice_name(other, cues, ctx.name_format))),
     );
     let target = labeled(
         Some(&fl!("main-bottom-editor-continue-target-cue")),
@@ -848,7 +871,10 @@ fn basics<'a>(
     let colors = labeled(
         Some(&fl!("main-bottom-editor-basics-color")),
         picker(
-            COLORS.iter().map(|&color| Choice::new(color, color_label(color))).collect(),
+            COLORS
+                .iter()
+                .map(|&color| Choice::new(color, color_label(color)))
+                .collect(),
             Some(&cue.color),
             true,
             Message::Color,
@@ -859,7 +885,9 @@ fn basics<'a>(
         .on_press_maybe(ctx.is_active.then_some(Message::Timestamp));
 
     let bottom = row![
-        container(target).width(Length::FillPortion(1)).max_width(600.0),
+        container(target)
+            .width(Length::FillPortion(1))
+            .max_width(600.0),
         Space::new().width(Length::Fill),
         container(colors).width(Length::Fixed(150.0)),
         timestamp,
@@ -874,7 +902,9 @@ fn basics<'a>(
 
 fn trigger(cue: &Cue) -> Element<'_, Message> {
     let advance = labeled(
-        Some(&fl!("main-bottom-editor-trigger-cursor-advance-trigger-override")),
+        Some(&fl!(
+            "main-bottom-editor-trigger-cursor-advance-trigger-override"
+        )),
         picker(
             ADVANCE
                 .iter()
@@ -960,7 +990,9 @@ fn advance_label(value: CueCursorAdvanceTriggerOverride) -> String {
 mod tests {
     use super::*;
     use crate::widgets::field::Commit;
-    use sbsp_backend::model::cue::{CueCursorAdvanceTriggerOverride as Advance, CueParam, WaitCueParam};
+    use sbsp_backend::model::cue::{
+        CueCursorAdvanceTriggerOverride as Advance, CueParam, WaitCueParam,
+    };
 
     fn cue() -> Cue {
         Cue {
@@ -990,13 +1022,26 @@ mod tests {
         let editor = Editor::default();
         let cue = cue();
 
-        assert_eq!(editor.apply(&commit(NUMBER, "7"), &cue).unwrap().number, "7");
         assert_eq!(
-            editor.apply(&commit(NAME, "Intro"), &cue).unwrap().name.as_deref(),
+            editor.apply(&commit(NUMBER, "7"), &cue).unwrap().number,
+            "7"
+        );
+        assert_eq!(
+            editor
+                .apply(&commit(NAME, "Intro"), &cue)
+                .unwrap()
+                .name
+                .as_deref(),
             Some("Intro")
         );
-        assert_eq!(editor.apply(&commit(NOTES, "new"), &cue).unwrap().notes, "new");
-        assert!(editor.apply(&commit(NUMBER, "1"), &cue).is_none(), "unchanged");
+        assert_eq!(
+            editor.apply(&commit(NOTES, "new"), &cue).unwrap().notes,
+            "new"
+        );
+        assert!(
+            editor.apply(&commit(NUMBER, "1"), &cue).is_none(),
+            "unchanged"
+        );
         assert!(editor.apply(&commit(FieldId("other"), "x"), &cue).is_none());
         assert!(editor.apply(&Outcome::Step(NUMBER, 1), &cue).is_none());
     }
@@ -1081,7 +1126,10 @@ mod tests {
     }
 
     fn fade_cue() -> Cue {
-        use sbsp_backend::model::cue::{FadeCueParam, audio::{Decibels, Easing, FadeParam}};
+        use sbsp_backend::model::cue::{
+            FadeCueParam,
+            audio::{Decibels, Easing, FadeParam},
+        };
         let mut cue = cue();
         cue.params = CueParam::Fade(FadeCueParam {
             target: Uuid::from_u128(2),
@@ -1111,10 +1159,18 @@ mod tests {
         let (duration, power) = fade_fields(FadeSlot::Fade);
 
         let edited = editor.apply(&commit(duration, "5"), &cue).unwrap();
-        assert_eq!(cue_edit::fade_param(&edited, FadeSlot::Fade).unwrap().duration, 5.0);
+        assert_eq!(
+            cue_edit::fade_param(&edited, FadeSlot::Fade)
+                .unwrap()
+                .duration,
+            5.0
+        );
 
         assert!(editor.apply(&Outcome::Step(power, 1), &cue).is_some());
-        assert!(editor.apply(&commit(duration, "3"), &cue).is_none(), "unchanged");
+        assert!(
+            editor.apply(&commit(duration, "3"), &cue).is_none(),
+            "unchanged"
+        );
     }
 
     #[test]
@@ -1123,17 +1179,31 @@ mod tests {
         let cue = fade_cue();
         let now = Instant::now();
 
-        let _ = editor.update(Message::Volume(FaderMessage::Moved(Decibels(-12.0))), Some(&cue), None, now);
+        let _ = editor.update(
+            Message::Volume(FaderMessage::Moved(Decibels(-12.0))),
+            Some(&cue),
+            None,
+            now,
+        );
         assert_eq!(editor.volume_for(&cue), Decibels(-12.0));
 
-        match editor.update(Message::Volume(FaderMessage::Released), Some(&cue), None, now) {
-            Update::Edit(edited) => assert_eq!(cue_edit::fade_volume(&edited), Some(Decibels(-12.0))),
+        match editor.update(
+            Message::Volume(FaderMessage::Released),
+            Some(&cue),
+            None,
+            now,
+        ) {
+            Update::Edit(edited) => {
+                assert_eq!(cue_edit::fade_volume(&edited), Some(Decibels(-12.0)))
+            }
             _ => panic!("expected an edit"),
         }
 
         // The backend's answer arrives: the drag value is dropped.
         let mut stored = cue.clone();
-        stored.params = cue_edit::set_fade_volume(&cue, Decibels(-12.0)).unwrap().params;
+        stored.params = cue_edit::set_fade_volume(&cue, Decibels(-12.0))
+            .unwrap()
+            .params;
         editor.sync(Some(&stored), &Drafts::default());
         assert!(editor.drag_volume.is_none());
     }
@@ -1177,11 +1247,20 @@ mod tests {
 
         let edited = editor.apply(&commit(END, "4"), &cue).unwrap();
         assert_eq!(cue_edit::audio_end(&edited), Some(4.0));
-        assert!(editor.apply(&commit(END, "10"), &cue).is_none(), "the duration is no end");
+        assert!(
+            editor.apply(&commit(END, "10"), &cue).is_none(),
+            "the duration is no end"
+        );
         let started = editor.apply(&commit(START, "1"), &cue).unwrap();
         assert_eq!(cue_edit::audio_start(&started), Some(1.0));
-        assert_eq!(cue_edit::pan(&editor.apply(&commit(PAN, "0.5"), &cue).unwrap()), Some(0.5));
-        assert_eq!(cue_edit::level(&editor.apply(&commit(VOLUME, "-6"), &cue).unwrap()), Some(Decibels(-6.0)));
+        assert_eq!(
+            cue_edit::pan(&editor.apply(&commit(PAN, "0.5"), &cue).unwrap()),
+            Some(0.5)
+        );
+        assert_eq!(
+            cue_edit::level(&editor.apply(&commit(VOLUME, "-6"), &cue).unwrap()),
+            Some(Decibels(-6.0))
+        );
     }
 
     #[test]
@@ -1191,7 +1270,12 @@ mod tests {
         cue = cue_edit::set_pan(&cue, 0.5).unwrap();
         let now = Instant::now();
 
-        let _ = editor.update(Message::Pan(FaderMessage::Moved(-0.25)), Some(&cue), None, now);
+        let _ = editor.update(
+            Message::Pan(FaderMessage::Moved(-0.25)),
+            Some(&cue),
+            None,
+            now,
+        );
         assert_eq!(editor.pan_for(&cue), -0.25);
         match editor.update(Message::Pan(FaderMessage::Released), Some(&cue), None, now) {
             Update::Edit(edited) => assert_eq!(cue_edit::pan(&edited), Some(-0.25)),
@@ -1211,7 +1295,9 @@ mod tests {
         let now = Instant::now();
 
         match editor.update(Message::Repeat(true), Some(&cue), None, now) {
-            Update::Edit(edited) => assert!(matches!(&edited.params, CueParam::Audio(a) if a.repeat)),
+            Update::Edit(edited) => {
+                assert!(matches!(&edited.params, CueParam::Audio(a) if a.repeat))
+            }
             _ => panic!("expected an edit"),
         }
         assert!(matches!(
@@ -1246,7 +1332,10 @@ mod tests {
         let cue = audio_cue();
         let now = Instant::now();
         let dragged = vec![seg(0.0, 1.0, -6.0)];
-        let range = TimeRange { start: 0.2, end: 1.0 };
+        let range = TimeRange {
+            start: 0.2,
+            end: 1.0,
+        };
 
         let changed = waveform_editor::Message::Changed {
             segments: dragged.clone(),
@@ -1259,7 +1348,12 @@ mod tests {
         let (segments, shown) = editor.shown(&cue);
         assert_eq!((segments, shown), (dragged.clone(), range));
 
-        match editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now) {
+        match editor.update(
+            Message::Wave(waveform_editor::Message::Commit),
+            Some(&cue),
+            None,
+            now,
+        ) {
             Update::Edit(edited) => {
                 assert_eq!(cue_edit::envelope(&edited), dragged);
                 assert!(matches!(&edited.params, CueParam::Audio(a) if a.start_time == Some(2.0)));
@@ -1315,7 +1409,11 @@ mod tests {
             Update::Edit(edited) => assert_eq!(cue_edit::envelope(&edited).len(), 1),
             _ => panic!("expected an edit"),
         }
-        assert_eq!(editor.selected_in(&split), None, "the selection goes with it");
+        assert_eq!(
+            editor.selected_in(&split),
+            None,
+            "the selection goes with it"
+        );
 
         match editor.update(Message::ClearSegments, Some(&split), None, now) {
             Update::Edit(edited) => assert!(cue_edit::envelope(&edited).is_empty()),
@@ -1354,9 +1452,12 @@ mod tests {
             None,
             now,
         );
-        let Update::Edit(edited) =
-            editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now)
-        else {
+        let Update::Edit(edited) = editor.update(
+            Message::Wave(waveform_editor::Message::Commit),
+            Some(&cue),
+            None,
+            now,
+        ) else {
             panic!("expected an edit");
         };
 
@@ -1380,7 +1481,12 @@ mod tests {
             now,
         );
         assert!(matches!(
-            editor.update(Message::Wave(waveform_editor::Message::Commit), Some(&cue), None, now),
+            editor.update(
+                Message::Wave(waveform_editor::Message::Commit),
+                Some(&cue),
+                None,
+                now
+            ),
             Update::None
         ));
         assert!(editor.working.is_none());
@@ -1396,11 +1502,15 @@ mod tests {
             Update::Edit(edited) => *edited,
             _ => panic!("expected an edit"),
         };
-        assert!(matches!(&first.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time.is_none()));
+        assert!(
+            matches!(&first.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time.is_none())
+        );
 
         match editor.update(Message::SkipLastSilence, Some(&first), None, now) {
             Update::Edit(edited) => {
-                assert!(matches!(&edited.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time == Some(9.0)));
+                assert!(
+                    matches!(&edited.params, CueParam::Audio(a) if a.start_time == Some(1.0) && a.end_time == Some(9.0))
+                );
             }
             _ => panic!("expected an edit"),
         }

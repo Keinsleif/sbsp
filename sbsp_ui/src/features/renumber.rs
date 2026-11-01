@@ -114,7 +114,11 @@ impl Dialog {
         if !self.start.is_finite() || !self.increment.is_finite() || self.increment < 1.0 {
             return None;
         }
-        let trimmed = |text: &str| Some(text.trim()).filter(|t| !t.is_empty()).map(str::to_owned);
+        let trimmed = |text: &str| {
+            Some(text.trim())
+                .filter(|t| !t.is_empty())
+                .map(str::to_owned)
+        };
         Some(Request {
             start: self.start.max(0.0) as usize,
             increment: self.increment as usize,
@@ -181,10 +185,7 @@ pub fn view<'a>(dialog: &Dialog, drafts: &Drafts) -> Element<'a, Message> {
         ),
         label(PREFIX, fl!("dialog-renumber-prefix"), &dialog.prefix),
         label(SUFFIX, fl!("dialog-renumber-suffix"), &dialog.suffix),
-        labeled(
-            Some(fl!("dialog-renumber-preview").as_str()),
-            text(shown),
-        ),
+        labeled(Some(fl!("dialog-renumber-preview").as_str()), text(shown),),
         row![
             button(text(fl!("general-cancel")))
                 .style(button::secondary)

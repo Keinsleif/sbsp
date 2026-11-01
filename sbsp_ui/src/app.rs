@@ -24,10 +24,10 @@ use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
 use sbsp_backend::model::cue::audio::Decibels;
 
-use crate::domain::{clipboard, cue_edit};
-use crate::domain::new_cue::{self, CueKind};
 #[cfg(backend)]
 use crate::domain::cursor::{CueEvent, CursorMove, advance};
+use crate::domain::new_cue::{self, CueKind};
+use crate::domain::{clipboard, cue_edit};
 #[cfg(client)]
 use crate::features::{connect, file_list};
 use crate::features::{
@@ -36,6 +36,7 @@ use crate::features::{
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
+use crate::persist::{Saved, WindowRect};
 use crate::state::preferences::{self, Preferences};
 use crate::state::{
     assets::AssetResults,
@@ -44,29 +45,28 @@ use crate::state::{
     playback::PlaybackState,
     ui::{KeepAwakeMode, Mode, SideBarTab, UiState},
 };
-use crate::persist::{Saved, WindowRect};
 use crate::theme::ThemeMode;
 use crate::widgets::{divider, field, menu_bar, modal, toast};
 
+#[cfg(installer)]
+use crate::features::update_dialog::Stage;
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
-use crate::port::{Control, ModelEdit};
 #[cfg(backend)]
 use crate::port::FullState;
+use crate::port::{Control, ModelEdit};
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
 #[cfg(client)]
 use crate::remote::backend::{RemotePort, RemoteSettings};
-#[cfg(installer)]
-use crate::features::update_dialog::Stage;
 
-use sbsp_backend::helper::SupportedHardware;
-use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
-use crate::settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
 #[cfg(feature = "host")]
 use crate::settings::GlobalHostSettings;
 #[cfg(client)]
 use crate::settings::GlobalRemoteSettings;
+use crate::settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
+use sbsp_backend::helper::SupportedHardware;
+use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 
 use crate::fl;
 
@@ -108,28 +108,27 @@ pub fn run(target: &'static str) -> iced::Result {
         State::update,
         State::view,
     )
-        .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
-        .theme(|state: &State| crate::theme::resolve(state.theme_mode))
-        .subscription(State::subscription)
-        // Closing the window goes through `Message::CloseRequested`, which
-        // may ask about unsaved changes first.
-        .window(iced::window::Settings {
-            size,
-            position,
-            maximized: rect.is_some_and(|rect| rect.maximized),
-            // Narrower than this the layout stops being usable even with the
-            // lists scrolling sideways.
-            min_size: Some(iced::Size::new(660.0, 350.0)),
-            exit_on_close_request: false,
-            ..Default::default()
-        })
-        // `settings` replaces the whole `Settings`, so it comes before the
-        // builder calls that fill in its fonts.
-        .settings(iced::Settings {
-            default_text_size: iced::Pixels(crate::theme::fonts::TEXT_SIZE),
-            ..Default::default()
-        })
-        ;
+    .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
+    .theme(|state: &State| crate::theme::resolve(state.theme_mode))
+    .subscription(State::subscription)
+    // Closing the window goes through `Message::CloseRequested`, which
+    // may ask about unsaved changes first.
+    .window(iced::window::Settings {
+        size,
+        position,
+        maximized: rect.is_some_and(|rect| rect.maximized),
+        // Narrower than this the layout stops being usable even with the
+        // lists scrolling sideways.
+        min_size: Some(iced::Size::new(660.0, 350.0)),
+        exit_on_close_request: false,
+        ..Default::default()
+    })
+    // `settings` replaces the whole `Settings`, so it comes before the
+    // builder calls that fill in its fonts.
+    .settings(iced::Settings {
+        default_text_size: iced::Pixels(crate::theme::fonts::TEXT_SIZE),
+        ..Default::default()
+    });
     // The browser fetches its fonts (see `State::new`).
     #[cfg(not(target_arch = "wasm32"))]
     let app = app
@@ -482,8 +481,10 @@ impl State {
 
         // At most once a day, and only where the app can update itself.
         #[cfg(installer)]
-        let boot_task = if crate::update::due(saved.last_update_check.unwrap_or(0), crate::update::now_ms())
-            && crate::update::installed(target)
+        let boot_task = if crate::update::due(
+            saved.last_update_check.unwrap_or(0),
+            crate::update::now_ms(),
+        ) && crate::update::installed(target)
         {
             Task::batch([
                 boot_task,
@@ -620,8 +621,10 @@ impl State {
     /// Starts or ends the "do not sleep" request to match the chosen mode
     /// and the window focus.
     fn sync_power(&mut self) {
-        self.power
-            .set(crate::power::wanted(self.ui.keep_awake, self.window_focused));
+        self.power.set(crate::power::wanted(
+            self.ui.keep_awake,
+            self.window_focused,
+        ));
     }
 
     fn sync_editor(&mut self) {
@@ -660,9 +663,13 @@ impl State {
     fn send_cue_edit(&self, before: &Cue, edited: Cue) -> Task<Message> {
         let volume = match (&before.params, &edited.params) {
             (CueParam::Audio(old), CueParam::Audio(new))
-                if old.volume != new.volume && self.playback.active_cues.contains_key(&edited.id) =>
+                if old.volume != new.volume
+                    && self.playback.active_cues.contains_key(&edited.id) =>
             {
-                Some(Control::SetVolume(edited.id, f64::from(f32::from(new.volume))))
+                Some(Control::SetVolume(
+                    edited.id,
+                    f64::from(f32::from(new.volume)),
+                ))
             }
             _ => None,
         };
@@ -723,7 +730,8 @@ impl State {
             Message::FontsLoaded(result) => {
                 if let Err(error) = result {
                     log::error!("could not load the fonts: {error}");
-                    self.toasts.push(toast::Kind::Danger, format!("fonts: {error}"));
+                    self.toasts
+                        .push(toast::Kind::Danger, format!("fonts: {error}"));
                 }
                 self.fonts_ready = true;
                 Task::none()
@@ -771,9 +779,7 @@ impl State {
                 self.audio_warning = false;
                 Task::none()
             }
-            Message::CueList(cue_list::Message::Context(action)) => {
-                self.run_context_action(action)
-            }
+            Message::CueList(cue_list::Message::Context(action)) => self.run_context_action(action),
             Message::CueList(cue_list::Message::DragDropped) => self.finish_drag(),
             Message::CueList(cue_list::Message::DragTick) => self.scroll_while_dragging(),
             Message::AudioFilesPicked(files) => self.add_audio_cues(files),
@@ -974,7 +980,10 @@ impl State {
             }
             Message::MeterTick(now) => self.tick_meter(now),
             // Handled in update(): they need to return a Task.
-            Message::Menu(_) | Message::KeyPressed(_) | Message::Header(_) | Message::Mobile(_)
+            Message::Menu(_)
+            | Message::KeyPressed(_)
+            | Message::Header(_)
+            | Message::Mobile(_)
             | Message::Viewer(_)
             | Message::Field(_)
             | Message::Editor(_)
@@ -1080,7 +1089,10 @@ impl State {
                     log::error!("settings import failed: {message}");
                     self.toasts.push(
                         toast::Kind::Danger,
-                        format!("{}: {message}", fl!("notification-failed-to-apply-settings")),
+                        format!(
+                            "{}: {message}",
+                            fl!("notification-failed-to-apply-settings")
+                        ),
                     );
                 }
             },
@@ -1095,7 +1107,10 @@ impl State {
                     log::error!("settings import failed: {message}");
                     self.toasts.push(
                         toast::Kind::Danger,
-                        format!("{}: {message}", fl!("notification-failed-to-apply-settings")),
+                        format!(
+                            "{}: {message}",
+                            fl!("notification-failed-to-apply-settings")
+                        ),
                     );
                 }
             },
@@ -1103,9 +1118,11 @@ impl State {
             Message::BackendError(message) => {
                 log::error!("backend error: {message}");
                 self.toasts.push(toast::Kind::Danger, message);
-            },
+            }
             #[cfg(installer)]
-            Message::UpdateChecked(_, _) | Message::UpdateProgress(_) | Message::UpdateApplied(_) => {}
+            Message::UpdateChecked(_, _)
+            | Message::UpdateProgress(_)
+            | Message::UpdateApplied(_) => {}
         }
     }
 
@@ -1508,8 +1525,8 @@ impl State {
                     field::Outcome::Commit(_) => self.editor.draft_cue,
                 };
                 let cue = cue_id.and_then(|id| self.model.cue_list.cues.get(&id));
-                if let Some((before, edited)) = cue
-                    .and_then(|cue| self.editor.apply(&outcome, cue).map(|edited| (cue, edited)))
+                if let Some((before, edited)) =
+                    cue.and_then(|cue| self.editor.apply(&outcome, cue).map(|edited| (cue, edited)))
                 {
                     edit = self.send_cue_edit(before, edited);
                 }
@@ -1572,10 +1589,7 @@ impl State {
         };
         let handle = backend.handle();
         crate::files::dialog().then(move |dialog| {
-            Task::perform(
-                crate::files::open(handle.clone(), dialog),
-                backend_result,
-            )
+            Task::perform(crate::files::open(handle.clone(), dialog), backend_result)
         })
     }
 
@@ -1784,7 +1798,8 @@ impl State {
         self.ui.reset_selected();
         self.ui.expanded_rows.clear();
         self.ui.playback_cursor = None;
-        self.ui.set_permission(sbsp_backend::api::Permissions::empty());
+        self.ui
+            .set_permission(sbsp_backend::api::Permissions::empty());
         self.clipboard.clear();
         self.store_clipboard();
         self.cue_drag = None;
@@ -1998,7 +2013,10 @@ impl State {
     /// The panel's Start / Stop button.
     #[cfg(feature = "host")]
     fn toggle_server(&mut self) -> Task<Message> {
-        let (Some(panel), Some(backend)) = (&self.server_panel, self.backend.as_ref().and_then(Port::host).cloned()) else {
+        let (Some(panel), Some(backend)) = (
+            &self.server_panel,
+            self.backend.as_ref().and_then(Port::host).cloned(),
+        ) else {
             return Task::none();
         };
         if panel.running {
@@ -2047,7 +2065,10 @@ impl State {
                     let Some(path) = crate::files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
-                    backend.import_settings(path).await.map(|s| Some(Box::new(s)))
+                    backend
+                        .import_settings(path)
+                        .await
+                        .map(|s| Some(Box::new(s)))
                 },
                 |result| Message::SettingsImported(result.map_err(|e| e.to_string())),
             )
@@ -2149,10 +2170,10 @@ impl State {
                     other,
                     settings_dialog::Message::SelectTab(_)
                         | settings_dialog::Message::SelectTemplate(_)
-                )
-                    && let Some(outcome) = self.fields.flush() {
-                        self.apply_settings_outcome(&outcome);
-                    }
+                ) && let Some(outcome) = self.fields.flush()
+                {
+                    self.apply_settings_outcome(&outcome);
+                }
                 if let Some(dialog) = &mut self.settings_dialog {
                     dialog.update(&other);
                 }
@@ -2181,9 +2202,9 @@ impl State {
         let Some(dialog) = &mut self.settings_dialog else {
             return Task::none();
         };
-        let update = self
-            .template_editor
-            .update(message, dialog.template_cue(), None, Instant::now());
+        let update =
+            self.template_editor
+                .update(message, dialog.template_cue(), None, Instant::now());
         match update {
             editor::Update::Field(message) => return self.handle_field(message),
             editor::Update::Edit(edited) => dialog.set_template_cue(*edited),
@@ -2421,7 +2442,9 @@ impl State {
                     }),
                     editor::Match::Peak => info.peak.map(cue_edit::volume_for_peak),
                 };
-                match volume.and_then(|volume| cue_edit::set_level(&before, Decibels(volume as f32))) {
+                match volume
+                    .and_then(|volume| cue_edit::set_level(&before, Decibels(volume as f32)))
+                {
                     Some(edited) => self.send_cue_edit(&before, edited),
                     None => Task::none(),
                 }
@@ -2653,8 +2676,9 @@ impl State {
         {
             return Task::none();
         }
-        let (audio, other): (Vec<_>, Vec<_>) =
-            files.into_iter().partition(|file| new_cue::is_audio_file(file));
+        let (audio, other): (Vec<_>, Vec<_>) = files
+            .into_iter()
+            .partition(|file| new_cue::is_audio_file(file));
         if !other.is_empty() {
             self.toasts
                 .push(toast::Kind::Warning, fl!("notification-invalid-file-type"));
@@ -2861,11 +2885,8 @@ impl State {
             return Task::none();
         }
         let flat = self.flat_cues();
-        let cues = clipboard::selected_cues(
-            &flat,
-            &self.model.cue_list.cues,
-            &self.ui.selected_rows,
-        );
+        let cues =
+            clipboard::selected_cues(&flat, &self.model.cue_list.cues, &self.ui.selected_rows);
         let Some(position) = clipboard::duplicate_position(&flat, &self.ui.selected_rows) else {
             return Task::none();
         };
@@ -2887,8 +2908,7 @@ impl State {
         if self.ui.mode != Mode::Edit {
             return Task::none();
         }
-        let Some(position) =
-            cue_list::drop_position(&self.model, &self.ui, self.cue_view, &drag)
+        let Some(position) = cue_list::drop_position(&self.model, &self.ui, self.cue_view, &drag)
         else {
             return Task::none();
         };
@@ -3133,7 +3153,10 @@ impl State {
 
         // The host's list of files, while it is being chosen from.
         #[cfg(client)]
-        let file_lists = match (&self.file_picker, self.backend.as_ref().and_then(Port::remote)) {
+        let file_lists = match (
+            &self.file_picker,
+            self.backend.as_ref().and_then(Port::remote),
+        ) {
             (Some(_), Some(port)) => port.file_lists().map(Message::FileListReceived),
             _ => Subscription::none(),
         };
@@ -3297,22 +3320,21 @@ impl State {
         };
 
         let mut file_menu = vec![
-                    MenuNode::item("file.new", fl!("menu-file-new"))
-                        .enabled(cfg!(feature = "host")),
-                    host_only("file.open", fl!("menu-file-open"), hotkeys::Action::Open),
-                    host_only("file.save", fl!("menu-file-save"), hotkeys::Action::Save),
-                    host_only(
-                        "file.save-as",
-                        fl!("menu-file-save-as"),
-                        hotkeys::Action::SaveAs,
-                    ),
-                    host_only(
-                        "file.export",
-                        fl!("menu-file-export-to-folder"),
-                        hotkeys::Action::Export,
-                    ),
-                    MenuNode::separator(),
-                    MenuNode::item("file.quit", fl!("menu-file-quit")),
+            MenuNode::item("file.new", fl!("menu-file-new")).enabled(cfg!(feature = "host")),
+            host_only("file.open", fl!("menu-file-open"), hotkeys::Action::Open),
+            host_only("file.save", fl!("menu-file-save"), hotkeys::Action::Save),
+            host_only(
+                "file.save-as",
+                fl!("menu-file-save-as"),
+                hotkeys::Action::SaveAs,
+            ),
+            host_only(
+                "file.export",
+                fl!("menu-file-export-to-folder"),
+                hotkeys::Action::Export,
+            ),
+            MenuNode::separator(),
+            MenuNode::item("file.quit", fl!("menu-file-quit")),
         ];
         // A remote can end its connection.
         if cfg!(client) {
@@ -3376,9 +3398,21 @@ impl State {
                     MenuNode::submenu(
                         fl!("menu-tools-keep-awake"),
                         [
-                            ("tools.keep-awake.never", fl!("menu-tools-keep-awake-never"), KeepAwakeMode::Never),
-                            ("tools.keep-awake.focused", fl!("menu-tools-keep-awake-focused"), KeepAwakeMode::WhileFocused),
-                            ("tools.keep-awake.always", fl!("menu-tools-keep-awake-always"), KeepAwakeMode::Always),
+                            (
+                                "tools.keep-awake.never",
+                                fl!("menu-tools-keep-awake-never"),
+                                KeepAwakeMode::Never,
+                            ),
+                            (
+                                "tools.keep-awake.focused",
+                                fl!("menu-tools-keep-awake-focused"),
+                                KeepAwakeMode::WhileFocused,
+                            ),
+                            (
+                                "tools.keep-awake.always",
+                                fl!("menu-tools-keep-awake-always"),
+                                KeepAwakeMode::Always,
+                            ),
                         ]
                         .into_iter()
                         .map(|(id, label, mode)| {
@@ -3508,7 +3542,7 @@ impl State {
                 self.cue_view,
                 cue_list::MIN_WIDTH,
             )
-                .map(Message::CueList),
+            .map(Message::CueList),
         )
         .width(Length::Fill)
         .height(Length::Fill);
@@ -3563,7 +3597,8 @@ impl State {
                 self.model.cue_list.cues.len(),
                 cfg!(feature = "host"),
                 self.update_available(),
-            ).map(Message::StatusBar),
+            )
+            .map(Message::StatusBar),
         )
         .width(Length::Fill);
 
@@ -3580,7 +3615,10 @@ impl State {
 
     /// The main screen of a phone.
     fn mobile_view(&self) -> Element<'_, Message> {
-        let can_control = self.ui.permission.contains(sbsp_backend::api::Permissions::CONTROL);
+        let can_control = self
+            .ui
+            .permission
+            .contains(sbsp_backend::api::Permissions::CONTROL);
         let tab = mobile::effective_tab(self.mobile_tab, can_control);
         let body: Element<'_, Message> = match tab {
             mobile::Tab::List => cue_list::view(
@@ -3597,13 +3635,10 @@ impl State {
             )
             .map(Message::CueList),
             mobile::Tab::Controls => mobile::controls(self.mobile_controls()).map(Message::Mobile),
-            mobile::Tab::Active => side_bar::active_cues(
-                &self.model,
-                &self.ui,
-                &self.playback,
-                &self.name_format,
-            )
-            .map(Message::SideBar),
+            mobile::Tab::Active => {
+                side_bar::active_cues(&self.model, &self.ui, &self.playback, &self.name_format)
+                    .map(Message::SideBar)
+            }
         };
         mobile::frame(self.clock, tab, can_control, body, |tab| {
             Message::Mobile(mobile::Message::Tab(tab))
@@ -3735,10 +3770,9 @@ impl State {
         };
 
         let content = match self.confirm {
-            Some(confirm) => modal::over_blocking(
-                content,
-                file_ops::view(confirm).map(Message::Confirm),
-            ),
+            Some(confirm) => {
+                modal::over_blocking(content, file_ops::view(confirm).map(Message::Confirm))
+            }
             None => content,
         };
 
@@ -3773,35 +3807,31 @@ impl State {
         };
 
         let content = match &self.credits {
-            Some(dialog) => modal::over_blocking(
-                content,
-                credits::view(dialog).map(Message::Credits),
-            ),
+            Some(dialog) => {
+                modal::over_blocking(content, credits::view(dialog).map(Message::Credits))
+            }
             None => content,
         };
 
         let content = match &self.update_dialog {
-            Some(dialog) => modal::over_blocking(
-                content,
-                update_dialog::view(dialog).map(Message::Update),
-            ),
+            Some(dialog) => {
+                modal::over_blocking(content, update_dialog::view(dialog).map(Message::Update))
+            }
             None => content,
         };
 
         let content = match &self.server_panel {
-            Some(panel) => modal::over_blocking(
-                content,
-                server_panel::view(panel).map(Message::ServerPanel),
-            ),
+            Some(panel) => {
+                modal::over_blocking(content, server_panel::view(panel).map(Message::ServerPanel))
+            }
             None => content,
         };
 
         #[cfg(client)]
         let content = match &self.file_picker {
-            Some(picker) => modal::over_blocking(
-                content,
-                file_list::view(picker).map(Message::FilePicker),
-            ),
+            Some(picker) => {
+                modal::over_blocking(content, file_list::view(picker).map(Message::FilePicker))
+            }
             None => content,
         };
 
@@ -3828,10 +3858,9 @@ impl State {
         .into();
 
         let content = match &self.prompt_for_connect() {
-            Some(prompt) => modal::over_blocking(
-                content,
-                connect::prompt_view(prompt).map(Message::Connect),
-            ),
+            Some(prompt) => {
+                modal::over_blocking(content, connect::prompt_view(prompt).map(Message::Connect))
+            }
             None => content,
         };
         let content = if self.connect.connecting {
@@ -3840,17 +3869,15 @@ impl State {
             content
         };
         let content = match &self.credits {
-            Some(dialog) => modal::over_blocking(
-                content,
-                credits::view(dialog).map(Message::Credits),
-            ),
+            Some(dialog) => {
+                modal::over_blocking(content, credits::view(dialog).map(Message::Credits))
+            }
             None => content,
         };
         let content = match &self.update_dialog {
-            Some(dialog) => modal::over_blocking(
-                content,
-                update_dialog::view(dialog).map(Message::Update),
-            ),
+            Some(dialog) => {
+                modal::over_blocking(content, update_dialog::view(dialog).map(Message::Update))
+            }
             None => content,
         };
         self.toasts.overlay(content, Message::Toast)

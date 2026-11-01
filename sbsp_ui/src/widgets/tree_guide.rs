@@ -32,7 +32,9 @@ pub fn view<'a, Message: 'a>(level: usize, kind: Kind, height: f32) -> Element<'
         return Space::new().into();
     }
     canvas(Guide { level, kind })
-        .width(Length::Fixed(LINE_X + (level - 1) as f32 * LEVEL_WIDTH + BRANCH))
+        .width(Length::Fixed(
+            LINE_X + (level - 1) as f32 * LEVEL_WIDTH + BRANCH,
+        ))
         .height(Length::Fixed(height))
         .into()
 }
@@ -100,7 +102,10 @@ mod tests {
     fn one_level_deep_is_a_line_and_a_branch() {
         assert_eq!(
             lines(1, Kind::Item, SAMPLE_HEIGHT),
-            vec![(LINE_X, 0.0, 1.0, SAMPLE_HEIGHT), (LINE_X, SAMPLE_HEIGHT / 2.0, BRANCH, 1.0)]
+            vec![
+                (LINE_X, 0.0, 1.0, SAMPLE_HEIGHT),
+                (LINE_X, SAMPLE_HEIGHT / 2.0, BRANCH, 1.0)
+            ]
         );
     }
 

@@ -19,19 +19,17 @@ pub use template_tab::{Editing, Kind as TemplateKind};
 
 use std::fmt;
 
-use iced::widget::{
-    Space, button, checkbox, column, container, pick_list, row, scrollable, text,
-};
+use crate::settings::{AudioHardwareSettings, DarkMode};
+use iced::widget::{Space, button, checkbox, column, container, pick_list, row, scrollable, text};
 use iced::{Alignment, Element, Length, Theme};
 use sbsp_backend::model::settings::{CursorAdvanceTrigger, ShowSettings};
-use crate::settings::{AudioHardwareSettings, DarkMode};
 
 use crate::domain::field::{Commit, NumberSpec, commit_number, step_number};
 use crate::fl;
 use crate::state::preferences::Preferences;
+use crate::widgets::divider;
 use crate::widgets::field::{self, Drafts, FieldId, Outcome, text_field};
 use crate::widgets::inputs::{NumberInput, labeled, number_input};
-use crate::widgets::divider;
 
 const SHOW_NAME: FieldId = FieldId("settings.show-name");
 const ASSETS_DIRECTORY: FieldId = FieldId("settings.assets-directory");
@@ -232,11 +230,8 @@ impl SettingsDialog {
                     );
                 }
                 LUFS_TARGET => {
-                    self.show.audio.lufs_target = step_number(
-                        Some(self.show.audio.lufs_target),
-                        &lufs_spec(),
-                        *direction,
-                    );
+                    self.show.audio.lufs_target =
+                        step_number(Some(self.show.audio.lufs_target), &lufs_spec(), *direction);
                 }
                 _ => {}
             },
@@ -360,17 +355,29 @@ fn picker<'a, T: PartialEq + Clone + 'a>(
     current: &T,
     on_pick: impl Fn(T) -> Message + 'a,
 ) -> Element<'a, Message> {
-    let selected = options.iter().find(|option| option.value == *current).cloned();
-    pick_list(options, selected, move |option: Choice<T>| on_pick(option.value))
-        .width(Length::Fill)
-        .into()
+    let selected = options
+        .iter()
+        .find(|option| option.value == *current)
+        .cloned();
+    pick_list(options, selected, move |option: Choice<T>| {
+        on_pick(option.value)
+    })
+    .width(Length::Fill)
+    .into()
 }
 
 fn muted<'a>(content: String) -> Element<'a, Message> {
     text(content)
         .size(12)
         .style(|theme: &Theme| text::Style {
-            color: Some(theme.extended_palette().background.base.text.scale_alpha(0.7)),
+            color: Some(
+                theme
+                    .extended_palette()
+                    .background
+                    .base
+                    .text
+                    .scale_alpha(0.7),
+            ),
         })
         .into()
 }
@@ -404,11 +411,7 @@ pub fn view<'a>(
             })
             .on_press(Message::SelectTab(tab))
     };
-    let heading = |label: String| {
-        container(muted(label))
-            .padding([6, 8])
-            .width(Length::Fill)
-    };
+    let heading = |label: String| container(muted(label)).padding([6, 8]).width(Length::Fill);
 
     let hardware_button: Element<'a, Message> = if dialog.audio.is_some() {
         tab_button(Tab::AudioHardware).into()
@@ -464,19 +467,21 @@ pub fn view<'a>(
 
     // A fixed size: the dialog is centred by the modal, which gives its
     // content only what it asks for.
-    container(column![
-        row![
-            tabs,
-            divider::vertical(),
-            scrollable(container(page).padding([0, 16]).width(Length::Fill))
-                .width(Length::Fill)
-                .height(Length::Fill),
+    container(
+        column![
+            row![
+                tabs,
+                divider::vertical(),
+                scrollable(container(page).padding([0, 16]).width(Length::Fill))
+                    .width(Length::Fill)
+                    .height(Length::Fill),
+            ]
+            .spacing(8)
+            .height(Length::Fill),
+            buttons,
         ]
-        .spacing(8)
-        .height(Length::Fill),
-        buttons,
-    ]
-    .spacing(12))
+        .spacing(12),
+    )
     .width(960)
     .height(640)
     .into()
@@ -557,13 +562,19 @@ fn show_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a
         ),
         labeled(
             Some(fl!("dialog-settings-show-general-cursor-advance-trigger").as_str()),
-            picker(triggers, &general.cursor_advance_trigger, Message::CursorAdvance),
+            picker(
+                triggers,
+                &general.cursor_advance_trigger,
+                Message::CursorAdvance
+            ),
         ),
         text_row(
             ASSETS_DIRECTORY,
             fl!("dialog-settings-show-general-assets-directory-title"),
             &general.copy_assets_destination,
-            Some(fl!("dialog-settings-show-general-assets-directory-description")),
+            Some(fl!(
+                "dialog-settings-show-general-assets-directory-description"
+            )),
             drafts,
         ),
     ]
@@ -604,25 +615,30 @@ fn global_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<
 
     column![
         checkbox(general.lock_cursor_to_selection)
-            .label(fl!("dialog-settings-global-general-lock-cursor-to-selection"))
+            .label(fl!(
+                "dialog-settings-global-general-lock-cursor-to-selection"
+            ))
             .on_toggle(Message::LockCursor),
         checkbox(general.copy_assets_when_add)
             .label(fl!("dialog-settings-global-general-copy-assets-when-add"))
             .on_toggle(Message::CopyAssets),
-        container(number_input(
-            NumberInput {
-                id: SEEK_AMOUNT,
-                label: Some(fl!("dialog-settings-global-general-seek-amount").as_str()),
-                prefix: None,
-                suffix: None,
-                value: Some(general.seek_amount),
-                spec: seek_spec(),
-                show_buttons: true,
-                enabled: true,
-            },
-            drafts,
+        container(
+            number_input(
+                NumberInput {
+                    id: SEEK_AMOUNT,
+                    label: Some(fl!("dialog-settings-global-general-seek-amount").as_str()),
+                    prefix: None,
+                    suffix: None,
+                    value: Some(general.seek_amount),
+                    spec: seek_spec(),
+                    show_buttons: true,
+                    enabled: true,
+                },
+                drafts,
+            )
+            .map(Message::Field)
         )
-        .map(Message::Field)).max_width(320),
+        .max_width(320),
     ]
     .spacing(16)
     .into()
@@ -631,7 +647,10 @@ fn global_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<
 fn appearance_page<'a>(dialog: &SettingsDialog) -> Element<'a, Message> {
     let appearance = &dialog.preferences.appearance;
     let languages = vec![
-        choice(None, fl!("dialog-settings-global-appearance-system-language")),
+        choice(
+            None,
+            fl!("dialog-settings-global-appearance-system-language"),
+        ),
         choice(Some("en".to_owned()), "English"),
         choice(Some("ja".to_owned()), "日本語"),
     ];
@@ -780,7 +799,10 @@ mod tests {
         d.apply(&commit(LUFS_TARGET, "-23"));
         assert_eq!(d.show.audio.lufs_target, -23.0);
         d.apply(&commit(LUFS_TARGET, "loud"));
-        assert_eq!(d.show.audio.lufs_target, -23.0, "unusable text changes nothing");
+        assert_eq!(
+            d.show.audio.lufs_target, -23.0,
+            "unusable text changes nothing"
+        );
     }
 
     #[test]
@@ -812,7 +834,10 @@ mod tests {
         d.update(&Message::HideControls(true));
         d.update(&Message::SelectTab(Tab::Appearance));
 
-        assert_eq!(d.show.general.cursor_advance_trigger, CursorAdvanceTrigger::OnCompleted);
+        assert_eq!(
+            d.show.general.cursor_advance_trigger,
+            CursorAdvanceTrigger::OnCompleted
+        );
         assert!(d.show.audio.mono_output);
         assert!(!d.preferences.general.lock_cursor_to_selection);
         assert!(d.preferences.general.copy_assets_when_add);
@@ -841,7 +866,10 @@ mod tests {
         assert_eq!(playback.execute.as_deref(), Some("Enter"));
         assert_eq!(playback.pause_and_resume.as_deref(), Some("Space"));
         assert_eq!(playback.stop.as_deref(), Some("Backspace"));
-        assert_eq!(d.preferences.hotkey.audio_action.toggle_repeat.as_deref(), Some("R"));
+        assert_eq!(
+            d.preferences.hotkey.audio_action.toggle_repeat.as_deref(),
+            Some("R")
+        );
     }
 
     #[test]
@@ -862,11 +890,18 @@ mod tests {
         assert_eq!(d.capturing, Some(Slot::Load));
 
         d.capture("$mod+K".to_owned());
-        assert_eq!(d.preferences.hotkey.playback.load.as_deref(), Some("$mod+K"));
+        assert_eq!(
+            d.preferences.hotkey.playback.load.as_deref(),
+            Some("$mod+K")
+        );
         assert_eq!(d.capturing, None);
 
         d.capture("X".to_owned());
-        assert_eq!(d.preferences.hotkey.playback.load.as_deref(), Some("$mod+K"), "not waiting");
+        assert_eq!(
+            d.preferences.hotkey.playback.load.as_deref(),
+            Some("$mod+K"),
+            "not waiting"
+        );
     }
 
     #[test]

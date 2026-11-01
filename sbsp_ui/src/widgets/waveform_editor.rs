@@ -15,9 +15,9 @@
 //! keeps them as its working state and the next `view` draws them, and
 //! the end of a drag publishes [`Message::Commit`].
 
+use crate::time::{Duration, Instant};
 use std::cell::RefCell;
 use std::path::PathBuf;
-use crate::time::{Duration, Instant};
 
 use iced::mouse;
 use iced::widget::canvas::{self, Cache, Canvas, LineDash, Path, Stroke};
@@ -329,7 +329,11 @@ impl Editor<'_> {
             };
             let (left, right, top) = (x(segment.start), x(segment.end), y(segment));
 
-            frame.fill_rectangle(Point::new(left, top - 2.0), Size::new(right - left, 4.0), fill);
+            frame.fill_rectangle(
+                Point::new(left, top - 2.0),
+                Size::new(right - left, 4.0),
+                fill,
+            );
             frame.stroke_rectangle(
                 Point::new(left, top - 2.0),
                 Size::new(right - left, 4.0),
@@ -371,7 +375,10 @@ impl Editor<'_> {
         let range = self.props.range;
         let blue = Color::from_rgb8(0, 0, 255);
 
-        for at in [start_marker(range, size.width), end_marker(range, size.width)] {
+        for at in [
+            start_marker(range, size.width),
+            end_marker(range, size.width),
+        ] {
             frame.fill_rectangle(Point::new(at, 0.0), Size::new(2.0, size.height), blue);
         }
 
@@ -429,7 +436,10 @@ impl canvas::Program<Message> for Editor<'_> {
                         &self.props.segments,
                         self.props.range,
                     )?;
-                    return Some(canvas::Action::publish(Message::Changed { segments, range }));
+                    return Some(canvas::Action::publish(Message::Changed {
+                        segments,
+                        range,
+                    }));
                 }
 
                 let over = cursor.is_over(bounds);
@@ -445,8 +455,9 @@ impl canvas::Program<Message> for Editor<'_> {
                 // While it plays, a click seeks.
                 if let Some(duration) = self.props.seek_duration {
                     let position = within_range(self.props.range, size.width, point.x)?;
-                    return (position > 0.0 && position < 1.0)
-                        .then(|| canvas::Action::publish(Message::Seek(position * duration)).and_capture());
+                    return (position > 0.0 && position < 1.0).then(|| {
+                        canvas::Action::publish(Message::Seek(position * duration)).and_capture()
+                    });
                 }
 
                 let now = Instant::now();
@@ -516,17 +527,16 @@ impl canvas::Program<Message> for Editor<'_> {
             }
         }
 
-        let waveform = self
-            .props
-            .surface
-            .cache
-            .draw(
-                renderer,
-                self.props.surface.held.pick(bounds.size(), self.props.frozen),
-                |frame| {
-                    viewer::draw_peaks(frame, self.props.waveform, self.props.gain);
-                },
-            );
+        let waveform = self.props.surface.cache.draw(
+            renderer,
+            self.props
+                .surface
+                .held
+                .pick(bounds.size(), self.props.frozen),
+            |frame| {
+                viewer::draw_peaks(frame, self.props.waveform, self.props.gain);
+            },
+        );
 
         let mut overlay = canvas::Frame::new(renderer, bounds.size());
         self.draw_overlay(&mut overlay, theme, cursor.position_in(bounds));
@@ -581,7 +591,10 @@ mod tests {
         width: 400.0,
         height: 100.0,
     };
-    const FULL: TimeRange = TimeRange { start: 0.0, end: 1.0 };
+    const FULL: TimeRange = TimeRange {
+        start: 0.0,
+        end: 1.0,
+    };
 
     fn seg(start: f64, end: f64, volume: f64) -> Segment {
         Segment { start, end, volume }
@@ -593,11 +606,24 @@ mod tests {
 
     #[test]
     fn positions_follow_the_played_part() {
-        let range = TimeRange { start: 0.25, end: 0.75 };
+        let range = TimeRange {
+            start: 0.25,
+            end: 0.75,
+        };
         assert_eq!(px(range, 400.0, 0.0), 100.0);
         assert_eq!(px(range, 400.0, 1.0), 300.0);
         assert_eq!(within_range(range, 400.0, 200.0), Some(0.5));
-        assert_eq!(within_range(TimeRange { start: 0.5, end: 0.5 }, 400.0, 200.0), None);
+        assert_eq!(
+            within_range(
+                TimeRange {
+                    start: 0.5,
+                    end: 0.5
+                },
+                400.0,
+                200.0
+            ),
+            None
+        );
     }
 
     #[test]
@@ -622,7 +648,10 @@ mod tests {
 
     #[test]
     fn the_range_markers_can_be_grabbed_with_and_without_the_envelope() {
-        let range = TimeRange { start: 0.25, end: 0.75 };
+        let range = TimeRange {
+            start: 0.25,
+            end: 0.75,
+        };
         let start = start_marker(range, SIZE.width);
         let end = end_marker(range, SIZE.width);
 
@@ -642,21 +671,58 @@ mod tests {
     fn dragging_changes_the_envelope_or_the_range() {
         let segments = two();
 
-        let (louder, _) = dragged(Kind::Volume, 1, Point::new(300.0, 0.0), SIZE, &segments, FULL).unwrap();
+        let (louder, _) = dragged(
+            Kind::Volume,
+            1,
+            Point::new(300.0, 0.0),
+            SIZE,
+            &segments,
+            FULL,
+        )
+        .unwrap();
         assert_eq!(louder[1].volume, 0.0);
 
-        let (moved, _) = dragged(Kind::End, 0, Point::new(100.0, 0.0), SIZE, &segments, FULL).unwrap();
+        let (moved, _) =
+            dragged(Kind::End, 0, Point::new(100.0, 0.0), SIZE, &segments, FULL).unwrap();
         assert!((moved[0].end - 0.25).abs() < 1e-9);
 
-        let (_, range) = dragged(Kind::RangeStart, 0, Point::new(100.0, 0.0), SIZE, &segments, FULL).unwrap();
-        assert_eq!(range, TimeRange { start: 0.25, end: 1.0 });
+        let (_, range) = dragged(
+            Kind::RangeStart,
+            0,
+            Point::new(100.0, 0.0),
+            SIZE,
+            &segments,
+            FULL,
+        )
+        .unwrap();
+        assert_eq!(
+            range,
+            TimeRange {
+                start: 0.25,
+                end: 1.0
+            }
+        );
         // The start marker cannot pass the end marker.
-        let narrow = TimeRange { start: 0.0, end: 0.5 };
-        let (_, range) = dragged(Kind::RangeStart, 0, Point::new(300.0, 0.0), SIZE, &segments, narrow).unwrap();
+        let narrow = TimeRange {
+            start: 0.0,
+            end: 0.5,
+        };
+        let (_, range) = dragged(
+            Kind::RangeStart,
+            0,
+            Point::new(300.0, 0.0),
+            SIZE,
+            &segments,
+            narrow,
+        )
+        .unwrap();
         assert_eq!(range.start, 0.5);
 
         // An empty range cannot place segments.
-        let empty = TimeRange { start: 0.5, end: 0.5 };
+        let empty = TimeRange {
+            start: 0.5,
+            end: 0.5,
+        };
         assert!(dragged(Kind::End, 0, Point::new(100.0, 0.0), SIZE, &segments, empty).is_none());
     }
 }

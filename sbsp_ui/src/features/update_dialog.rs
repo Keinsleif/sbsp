@@ -51,7 +51,9 @@ impl Dialog {
 }
 
 fn line<'a>(label: String, value: String) -> Element<'a, Message> {
-    row![text(format!("{label} :")), text(value)].spacing(6).into()
+    row![text(format!("{label} :")), text(value)]
+        .spacing(6)
+        .into()
 }
 
 pub fn view<'a>(dialog: &'a Dialog) -> Element<'a, Message> {

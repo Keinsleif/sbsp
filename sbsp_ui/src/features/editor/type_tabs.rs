@@ -17,15 +17,15 @@ use crate::domain::cue_edit::{self, FadeSlot, GroupModeKind};
 use crate::domain::field::TimeSpec;
 use crate::domain::flat_list::FlatCueEntry;
 use crate::fl;
+use crate::widgets::divider;
 use crate::widgets::field;
 use crate::widgets::icon::{Icon, glyph, icon};
-use crate::widgets::divider;
 use crate::widgets::inputs::{
     PanningFader, VolumeFader, labeled, panning_fader, time_input, volume_fader,
 };
 
 use super::parts::{Choice, FadeInput, check, cue_choices, fade_param_input, picker};
-use super::{AUDIO_TARGET, Context, Editor, END, Message, PAN, START, VOLUME};
+use super::{AUDIO_TARGET, Context, END, Editor, Message, PAN, START, VOLUME};
 use crate::widgets::waveform_editor;
 
 fn body<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
@@ -175,7 +175,9 @@ pub(super) fn playback<'a>(
         picker(targets, Some(&current), enabled, Message::PlaybackTarget),
     );
 
-    let mut content = column![container(target).max_width(600.0)].spacing(12).padding(4);
+    let mut content = column![container(target).max_width(600.0)]
+        .spacing(12)
+        .padding(4);
     if let CueParam::Stop(stop) = &cue.params {
         content = content.push(check(
             fl!("main-bottom-editor-playback-hard"),
@@ -195,9 +197,18 @@ pub(super) fn group<'a>(ctx: &Context<'a>, cue: &'a Cue) -> Element<'a, Message>
     let enabled = !ctx.is_active;
 
     let kinds = [
-        (GroupModeKind::Playlist, fl!("main-bottom-editor-group-mode-playlist")),
-        (GroupModeKind::Concurrency, fl!("main-bottom-editor-group-mode-concurrency")),
-        (GroupModeKind::StartFirst, fl!("main-bottom-editor-group-mode-start-first")),
+        (
+            GroupModeKind::Playlist,
+            fl!("main-bottom-editor-group-mode-playlist"),
+        ),
+        (
+            GroupModeKind::Concurrency,
+            fl!("main-bottom-editor-group-mode-concurrency"),
+        ),
+        (
+            GroupModeKind::StartFirst,
+            fl!("main-bottom-editor-group-mode-start-first"),
+        ),
     ]
     .into_iter()
     .map(|(kind, label)| Choice::new(kind, label))
@@ -212,7 +223,9 @@ pub(super) fn group<'a>(ctx: &Context<'a>, cue: &'a Cue) -> Element<'a, Message>
         ),
     );
 
-    let mut content = column![container(mode_elem).max_width(400.0)].spacing(12).padding(4);
+    let mut content = column![container(mode_elem).max_width(400.0)]
+        .spacing(12)
+        .padding(4);
     match mode {
         GroupMode::Playlist { repeat } => {
             content = content.push(check(
@@ -261,25 +274,27 @@ pub(super) fn levels<'a>(
         tooltip(content, hint(label), position)
     };
 
-    let time = |id, label: String, value: Option<f64>, icon: Icon, hint_text: String, message: Message| {
-        row![
-            container(
-                time_input(id, Some(&label), value, &spec, ctx.drafts, !active).map(Message::Field)
-            )
-            .width(Length::Fill),
-            tipped(
-                button(glyph(icon, 18.0))
-                    .padding(4)
-                    .style(button::secondary)
-                    .on_press_maybe((!active).then_some(message))
-                    .into(),
-                hint_text,
-                tooltip::Position::Right,
-            ),
-        ]
-        .spacing(4)
-        .align_y(Alignment::End)
-    };
+    let time =
+        |id, label: String, value: Option<f64>, icon: Icon, hint_text: String, message: Message| {
+            row![
+                container(
+                    time_input(id, Some(&label), value, &spec, ctx.drafts, !active)
+                        .map(Message::Field)
+                )
+                .width(Length::Fill),
+                tipped(
+                    button(glyph(icon, 18.0))
+                        .padding(4)
+                        .style(button::secondary)
+                        .on_press_maybe((!active).then_some(message))
+                        .into(),
+                    hint_text,
+                    tooltip::Position::Right,
+                ),
+            ]
+            .spacing(4)
+            .align_y(Alignment::End)
+        };
     let times = column![
         time(
             START,

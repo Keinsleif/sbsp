@@ -187,7 +187,10 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
         .cursor_cue
         .map(|cue| cue_title(cue, v.cursor_cue_name.clone()))
         .unwrap_or_default();
-    let notes = v.cursor_cue.map(|cue| cue.notes.clone()).unwrap_or_default();
+    let notes = v
+        .cursor_cue
+        .map(|cue| cue.notes.clone())
+        .unwrap_or_default();
 
     let cue_box = column![
         container(text(title))
@@ -281,7 +284,11 @@ fn transport_button<'a>(
             };
             button::Style {
                 background: Some(mix(palette.secondary.base.color, pair.color, strength.0).into()),
-                text_color: if strength.shows_accent() { pair.text } else { base.text_color },
+                text_color: if strength.shows_accent() {
+                    pair.text
+                } else {
+                    base.text_color
+                },
                 ..base
             }
         })
@@ -337,7 +344,10 @@ mod tests {
         let id = Uuid::new_v4();
         use PlaybackStatus as S;
 
-        assert_eq!(controls_for(Message::Play, Some(id), None), vec![Control::Execute(id)]);
+        assert_eq!(
+            controls_for(Message::Play, Some(id), None),
+            vec![Control::Execute(id)]
+        );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Playing)),
             vec![Control::Execute(id)]

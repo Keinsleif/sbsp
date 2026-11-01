@@ -10,8 +10,8 @@ use std::fmt;
 use iced::widget::{button, column, container, pick_list, row, text};
 use iced::{Alignment, Element, Length, Theme};
 
-use sbsp_backend::model::cue::{Cue, Uuid, audio::FadeParam};
 use crate::settings::NameFormatSettings;
+use sbsp_backend::model::cue::{Cue, Uuid, audio::FadeParam};
 
 use crate::domain::cue::display_name;
 use crate::domain::cue_edit::{FADE_POWER, FadeSlot};
@@ -79,16 +79,23 @@ where
             .style(|theme: &Theme| {
                 let mut style = container::bordered_box(theme);
                 style.text_color = Some(
-                    theme.extended_palette().background.base.text.scale_alpha(0.5),
+                    theme
+                        .extended_palette()
+                        .background
+                        .base
+                        .text
+                        .scale_alpha(0.5),
                 );
                 style
             })
             .into();
     }
 
-    pick_list(options, current, move |choice: Choice<T>| on_select(choice.value))
-        .width(Length::Fill)
-        .into()
+    pick_list(options, current, move |choice: Choice<T>| {
+        on_select(choice.value)
+    })
+    .width(Length::Fill)
+    .into()
 }
 
 /// A labeled check box (a button, as iced's own check box is not used
@@ -103,10 +110,14 @@ pub(super) fn check<'a>(
     } else {
         Icon::CheckboxBlankOutline
     };
-    button(row![icon(glyph, 20.0), text(label)].spacing(8).align_y(Alignment::Center))
-        .style(button::text)
-        .on_press_maybe(on_press)
-        .into()
+    button(
+        row![icon(glyph, 20.0), text(label)]
+            .spacing(8)
+            .align_y(Alignment::Center),
+    )
+    .style(button::text)
+    .on_press_maybe(on_press)
+    .into()
 }
 
 pub(super) fn choice_name(

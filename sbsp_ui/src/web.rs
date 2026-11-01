@@ -90,10 +90,8 @@ pub fn startup_connection() -> (
     let search = location.search().unwrap_or_default();
     let hash = location.hash().unwrap_or_default();
 
-    let request = parse_startup(&search, &hash).map(|(address, password)| Request {
-        address,
-        password,
-    });
+    let request =
+        parse_startup(&search, &hash).map(|(address, password)| Request { address, password });
     match &request {
         Some(request) => match request.address.rsplit_once(':') {
             Some((host, port)) => {

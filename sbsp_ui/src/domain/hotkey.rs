@@ -122,7 +122,12 @@ impl Hotkey {
             text + &key
         } else {
             let mut parts = Vec::new();
-            for (on, name) in [(ctrl, "Ctrl"), (alt, "Alt"), (shift, "Shift"), (logo, "Win")] {
+            for (on, name) in [
+                (ctrl, "Ctrl"),
+                (alt, "Alt"),
+                (shift, "Shift"),
+                (logo, "Win"),
+            ] {
                 if on {
                     parts.push(name.to_owned());
                 }
@@ -189,13 +194,26 @@ mod tests {
     fn bindings_display_the_way_menus_show_them() {
         let save_as = Hotkey::parse("$mod+Shift+S", false).unwrap();
         assert_eq!(save_as.display(false), "Ctrl+Shift+S");
-        assert_eq!(Hotkey::parse("$mod+Shift+S", true).unwrap().display(true), "⇧⌘S");
-        assert_eq!(Hotkey::parse("Escape", false).unwrap().display(false), "Esc");
         assert_eq!(
-            Hotkey::parse("$mod+Backspace", false).unwrap().display(false),
+            Hotkey::parse("$mod+Shift+S", true).unwrap().display(true),
+            "⇧⌘S"
+        );
+        assert_eq!(
+            Hotkey::parse("Escape", false).unwrap().display(false),
+            "Esc"
+        );
+        assert_eq!(
+            Hotkey::parse("$mod+Backspace", false)
+                .unwrap()
+                .display(false),
             "Ctrl+Backspace"
         );
-        assert_eq!(Hotkey::parse("Shift+ArrowUp", false).unwrap().display(false), "Shift+↑");
+        assert_eq!(
+            Hotkey::parse("Shift+ArrowUp", false)
+                .unwrap()
+                .display(false),
+            "Shift+↑"
+        );
     }
 
     #[test]

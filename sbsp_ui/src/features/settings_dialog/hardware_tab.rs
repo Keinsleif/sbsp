@@ -9,10 +9,10 @@
 //! unplugged, say) shows as "Default" and is flagged; it stays in the
 //! settings until something else is chosen.
 
+use crate::settings::AudioHardwareSettings;
 use iced::widget::{Space, column, container, row, text, tooltip};
 use iced::{Alignment, Element, Length};
 use sbsp_backend::helper::{DeviceInformation, SupportedHardware};
-use crate::settings::AudioHardwareSettings;
 
 use super::{Choice, Message, choice, picker};
 use crate::fl;
@@ -108,7 +108,11 @@ pub fn options(hardware: &SupportedHardware, saved: &AudioHardwareSettings) -> O
     rates.dedup();
     let mut sample_rates = vec![choice(
         None,
-        format!("{} ({})", default_label(), kilohertz(device.default_sample_rate)),
+        format!(
+            "{} ({})",
+            default_label(),
+            kilohertz(device.default_sample_rate)
+        ),
     )];
     sample_rates.extend(rates.into_iter().map(|r| choice(Some(r), kilohertz(r))));
     let sample_rate = offered(&sample_rates, saved.sample_rate);
@@ -125,7 +129,11 @@ pub fn options(hardware: &SupportedHardware, saved: &AudioHardwareSettings) -> O
     sizes.sort_unstable();
     sizes.dedup();
     let mut buffer_sizes = vec![choice(None, default_label())];
-    buffer_sizes.extend(sizes.into_iter().map(|s| choice(Some(s), format!("{s} Frames"))));
+    buffer_sizes.extend(
+        sizes
+            .into_iter()
+            .map(|s| choice(Some(s), format!("{s} Frames"))),
+    );
     let buffer_size = offered(&buffer_sizes, saved.buffer_size);
 
     // A list with only "Default" in it (nothing is known about the
@@ -206,15 +214,27 @@ pub fn view<'a>(
                 ),
                 labeled(
                     Some(fl!("dialog-settings-global-audio-hardware-channel-count").as_str()),
-                    picker(options.channel_counts, &options.channel_count, Message::ChannelCount),
+                    picker(
+                        options.channel_counts,
+                        &options.channel_count,
+                        Message::ChannelCount
+                    ),
                 ),
                 labeled(
                     Some(fl!("dialog-settings-global-audio-hardware-sample-rate").as_str()),
-                    picker(options.sample_rates, &options.sample_rate, Message::SampleRate),
+                    picker(
+                        options.sample_rates,
+                        &options.sample_rate,
+                        Message::SampleRate
+                    ),
                 ),
                 labeled(
                     Some(fl!("dialog-settings-global-audio-hardware-buffer-size").as_str()),
-                    picker(options.buffer_sizes, &options.buffer_size, Message::BufferSize),
+                    picker(
+                        options.buffer_sizes,
+                        &options.buffer_size,
+                        Message::BufferSize
+                    ),
                 ),
             ]
             .spacing(12)
@@ -287,7 +307,10 @@ mod tests {
         );
         assert_eq!(values(&options.channel_counts), [None, Some(2), Some(8)]);
         // The default channel count (2) decides the rates and sizes.
-        assert_eq!(values(&options.sample_rates), [None, Some(44100), Some(48000)]);
+        assert_eq!(
+            values(&options.sample_rates),
+            [None, Some(44100), Some(48000)]
+        );
         assert_eq!(
             values(&options.buffer_sizes),
             [None, Some(256), Some(512), Some(1024)]

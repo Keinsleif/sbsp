@@ -98,9 +98,15 @@ mod tests {
             CurveKind::OutPow,
             CurveKind::InOutPow,
         ] {
-            let curve = Curve { kind, power: Some(3.0) };
+            let curve = Curve {
+                kind,
+                power: Some(3.0),
+            };
             assert!((curve.factor(0.0)).abs() < 1e-12, "{kind:?} starts at 0");
-            assert!((curve.factor(1.0) - 1.0).abs() < 1e-12, "{kind:?} ends at 1");
+            assert!(
+                (curve.factor(1.0) - 1.0).abs() < 1e-12,
+                "{kind:?} ends at 1"
+            );
         }
     }
 

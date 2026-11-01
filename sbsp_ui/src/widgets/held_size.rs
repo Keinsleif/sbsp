@@ -39,7 +39,13 @@ mod tests {
 
         assert_eq!(held.pick(first, true), first);
         assert_eq!(held.pick(Size::new(500.0, 80.0), true), first);
-        assert_eq!(held.pick(Size::new(500.0, 80.0), false), Size::new(500.0, 80.0));
-        assert_eq!(held.pick(Size::new(600.0, 80.0), true), Size::new(500.0, 80.0));
+        assert_eq!(
+            held.pick(Size::new(500.0, 80.0), false),
+            Size::new(500.0, 80.0)
+        );
+        assert_eq!(
+            held.pick(Size::new(600.0, 80.0), true),
+            Size::new(500.0, 80.0)
+        );
     }
 }

@@ -17,10 +17,10 @@ use sbsp_backend::{
         AuthInfo, WsCommand, WsFeedback,
         auth::{generate_authentication_string, generate_secret},
     },
+    asset_processor::AssetProcessorCommand,
     controller::ControllerCommand,
     manager::{InsertPosition, ModelCommand},
     model::cue::audio::Decibels,
-    asset_processor::AssetProcessorCommand,
 };
 
 use super::{Control, ModelEdit};
@@ -44,9 +44,10 @@ pub fn controls(controls: Vec<Control>) -> Vec<WsCommand> {
                 Control::HardStop(id) => ControllerCommand::HardStop(id),
                 Control::SeekBy(id, amount) => ControllerCommand::SeekBy(id, amount),
                 Control::SeekTo(id, position) => ControllerCommand::SeekTo(id, position),
-                Control::ToggleRepeat(id) => {
-                    ControllerCommand::PerformAction(id, CueAction::Audio(AudioAction::ToggleRepeat))
-                }
+                Control::ToggleRepeat(id) => ControllerCommand::PerformAction(
+                    id,
+                    CueAction::Audio(AudioAction::ToggleRepeat),
+                ),
                 Control::SetVolume(id, volume) => ControllerCommand::PerformAction(
                     id,
                     CueAction::Audio(AudioAction::SetVolume(Decibels::from(volume as f32))),
@@ -161,7 +162,11 @@ mod tests {
     #[test]
     fn controls_go_out_in_order_in_the_hosts_wire_form() {
         let id = Uuid::nil();
-        let commands = controls(vec![Control::Load(id), Control::Execute(id), Control::StopAll]);
+        let commands = controls(vec![
+            Control::Load(id),
+            Control::Execute(id),
+            Control::StopAll,
+        ]);
         assert_eq!(commands.len(), 3);
 
         let first = value(&commands[0]);
@@ -175,7 +180,10 @@ mod tests {
     #[test]
     fn volume_and_repeat_are_cue_actions() {
         let id = Uuid::nil();
-        let commands = controls(vec![Control::SetVolume(id, -6.0), Control::ToggleRepeat(id)]);
+        let commands = controls(vec![
+            Control::SetVolume(id, -6.0),
+            Control::ToggleRepeat(id),
+        ]);
         assert_eq!(value(&commands[0])["command"], "performAction");
         assert_eq!(value(&commands[1])["command"], "performAction");
     }

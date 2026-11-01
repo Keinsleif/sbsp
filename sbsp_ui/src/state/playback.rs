@@ -15,8 +15,8 @@
 //! the clock, so the interpolation can be tested without a real clock; the
 //! caller passes `Instant::now()`.
 
-use std::collections::HashMap;
 use crate::time::Instant;
+use std::collections::HashMap;
 
 #[cfg(backend)]
 use sbsp_backend::event::{CueStatusEventParam, SyncData};

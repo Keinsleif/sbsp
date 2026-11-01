@@ -126,8 +126,8 @@ fn text_width(text: &str, size: f32) -> f32 {
         return width;
     }
 
-    let paragraph = <iced::Renderer as advanced_text::Renderer>::Paragraph::with_text(
-        advanced_text::Text {
+    let paragraph =
+        <iced::Renderer as advanced_text::Renderer>::Paragraph::with_text(advanced_text::Text {
             content: text,
             bounds: iced::Size::INFINITE,
             size: iced::Pixels(size),
@@ -137,8 +137,7 @@ fn text_width(text: &str, size: f32) -> f32 {
             align_y: iced::alignment::Vertical::Top,
             shaping: advanced_text::Shaping::Advanced,
             wrapping: advanced_text::Wrapping::None,
-        },
-    );
+        });
     let measured = paragraph.min_bounds().width;
     let width = if measured > 0.0 {
         measured
@@ -205,9 +204,7 @@ where
         })
         .collect::<Vec<_>>();
 
-    Menu::new(items)
-        .width(menu_width(nodes))
-        .spacing(0.0)
+    Menu::new(items).width(menu_width(nodes)).spacing(0.0)
 }
 
 fn top_level_button<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
@@ -254,11 +251,13 @@ fn entry_button<'a, Message: Clone + 'a>(
 
 fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
     let content = row![
-        text(label).width(Length::Fill).wrapping(text::Wrapping::None),
+        text(label)
+            .width(Length::Fill)
+            .wrapping(text::Wrapping::None),
         text("›").size(SHORTCUT_SIZE),
     ]
-        .spacing(12)
-        .align_y(Alignment::Center);
+    .spacing(12)
+    .align_y(Alignment::Center);
 
     inert(
         button(content)

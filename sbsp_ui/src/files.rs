@@ -22,9 +22,8 @@ const SAVE_POLL: Duration = Duration::from_millis(20);
 /// owner). Every dialog starts from this, then adds its own title, filters
 /// and so on.
 pub fn dialog() -> Task<AsyncFileDialog> {
-    iced::window::latest().and_then(|id| {
-        iced::window::run(id, |window| AsyncFileDialog::new().set_parent(&window))
-    })
+    iced::window::latest()
+        .and_then(|id| iced::window::run(id, |window| AsyncFileDialog::new().set_parent(&window)))
 }
 
 fn show_filter(dialog: AsyncFileDialog) -> AsyncFileDialog {
@@ -97,7 +96,9 @@ pub async fn save(
         }
     })
     .await;
-    waited.map(|()| true).map_err(|_| anyhow!("saving timed out"))
+    waited
+        .map(|()| true)
+        .map_err(|_| anyhow!("saving timed out"))
 }
 
 /// Asks for a folder and exports the show with its assets there.

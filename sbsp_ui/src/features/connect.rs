@@ -7,7 +7,9 @@
 //! Choosing a host (or pressing Connect) asks for the password first; an
 //! empty one means the host has none for what this connection may do.
 
-use iced::widget::{Space, button, column, container, mouse_area, row, scrollable, text, text_input};
+use iced::widget::{
+    Space, button, column, container, mouse_area, row, scrollable, text, text_input,
+};
 use iced::{Alignment, Element, Length};
 use sbsp_backend::api::client::ServiceEntry;
 
@@ -148,8 +150,7 @@ pub fn view(screen: &Screen) -> Element<'_, Message> {
             .style(button::secondary)
             .padding([2, 10])
             .on_press_maybe(
-                (!screen.connecting)
-                    .then(|| Message::ConnectTo(entry.host.clone(), entry.port)),
+                (!screen.connecting).then(|| Message::ConnectTo(entry.host.clone(), entry.port)),
             );
         mouse_area(
             row![
@@ -183,12 +184,7 @@ pub fn view(screen: &Screen) -> Element<'_, Message> {
     .padding(8)
     .align_y(Alignment::Center);
 
-    column![
-        header,
-        scrollable(rows).height(Length::Fill),
-        fields,
-    ]
-    .into()
+    column![header, scrollable(rows).height(Length::Fill), fields,].into()
 }
 
 /// The password question, as a dialog.
@@ -280,7 +276,10 @@ mod tests {
     fn an_empty_password_means_none_and_cancel_asks_nothing() {
         let mut screen = Screen::default();
         screen.update(Message::ConnectTo("host".to_owned(), 6000));
-        assert_eq!((screen.host.as_str(), screen.port.as_str()), ("host", "6000"));
+        assert_eq!(
+            (screen.host.as_str(), screen.port.as_str()),
+            ("host", "6000")
+        );
         let request = screen.update(Message::Submit).unwrap();
         assert_eq!(request.password, None);
 
@@ -303,8 +302,14 @@ mod tests {
     #[test]
     fn picking_a_row_fills_the_fields_without_connecting() {
         let mut screen = Screen::default();
-        assert_eq!(screen.update(Message::Pick("a.local".to_owned(), 5801)), None);
-        assert_eq!((screen.host.as_str(), screen.port.as_str()), ("a.local", "5801"));
+        assert_eq!(
+            screen.update(Message::Pick("a.local".to_owned(), 5801)),
+            None
+        );
+        assert_eq!(
+            (screen.host.as_str(), screen.port.as_str()),
+            ("a.local", "5801")
+        );
         assert!(screen.prompt.is_none());
     }
 }

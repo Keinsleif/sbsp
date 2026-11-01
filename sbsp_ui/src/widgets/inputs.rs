@@ -29,9 +29,18 @@ pub fn labeled<'a, Message: 'a>(
 ) -> Element<'a, Message> {
     match label {
         Some(label) => column![
-            text(label.to_string()).size(12).style(|theme: &Theme| text::Style {
-                color: Some(theme.extended_palette().background.base.text.scale_alpha(0.7)),
-            }),
+            text(label.to_string())
+                .size(12)
+                .style(|theme: &Theme| text::Style {
+                    color: Some(
+                        theme
+                            .extended_palette()
+                            .background
+                            .base
+                            .text
+                            .scale_alpha(0.7)
+                    ),
+                }),
             content.into()
         ]
         .spacing(2)
@@ -157,7 +166,11 @@ struct Tick {
 }
 
 const fn tick(position: f64, label: &'static str, rank: u8) -> Tick {
-    Tick { position, label, rank }
+    Tick {
+        position,
+        label,
+        rank,
+    }
 }
 
 /// The labels name the dB the position stands for: the fader is not linear
@@ -185,7 +198,11 @@ const MIN_TICK_GAP: f32 = 32.0;
 fn visible_ticks(ticks: &[Tick], min: f64, max: f64, span: f32) -> Vec<Tick> {
     let top = ticks.iter().map(|tick| tick.rank).max().unwrap_or(0);
     for limit in (0..=top).rev() {
-        let mut shown: Vec<Tick> = ticks.iter().copied().filter(|tick| tick.rank <= limit).collect();
+        let mut shown: Vec<Tick> = ticks
+            .iter()
+            .copied()
+            .filter(|tick| tick.rank <= limit)
+            .collect();
         shown.sort_by(|a, b| a.position.total_cmp(&b.position));
         let apart = shown.windows(2).all(|pair| {
             let gap = (pair[1].position - pair[0].position) / (max - min) * f64::from(span);
@@ -209,7 +226,10 @@ pub struct VolumeFader<'a> {
     pub enabled: bool,
 }
 
-pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage<Decibels>> {
+pub fn volume_fader<'a>(
+    fader: VolumeFader<'_>,
+    drafts: &Drafts,
+) -> Element<'a, FaderMessage<Decibels>> {
     let VolumeFader {
         id,
         label,
@@ -232,7 +252,9 @@ pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, 
         .step(0.05_f32)
         .on_release(FaderMessage::Released)
     } else {
-        slider(FADER_MIN as f32..=FADER_MAX as f32, position, |_| FaderMessage::Nothing)
+        slider(FADER_MIN as f32..=FADER_MAX as f32, position, |_| {
+            FaderMessage::Nothing
+        })
     };
 
     column![
@@ -251,7 +273,10 @@ pub struct PanningFader<'a> {
     pub enabled: bool,
 }
 
-pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage<f64>> {
+pub fn panning_fader<'a>(
+    fader: PanningFader<'_>,
+    drafts: &Drafts,
+) -> Element<'a, FaderMessage<f64>> {
     let PanningFader {
         id,
         label,
@@ -373,7 +398,12 @@ impl<Message> canvas::Program<Message> for Ticks {
         _cursor: mouse::Cursor,
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
-        let color: Color = theme.extended_palette().background.base.text.scale_alpha(0.7);
+        let color: Color = theme
+            .extended_palette()
+            .background
+            .base
+            .text
+            .scale_alpha(0.7);
         let span = (bounds.width - HANDLE_INSET * 2.0).max(0.0);
 
         for tick in visible_ticks(&self.ticks, self.min, self.max, span) {
@@ -431,7 +461,11 @@ mod tests {
     #[test]
     fn every_tick_sits_inside_its_fader() {
         for tick in VOLUME_TICKS {
-            assert!((FADER_MIN..=FADER_MAX).contains(&tick.position), "{}", tick.position);
+            assert!(
+                (FADER_MIN..=FADER_MAX).contains(&tick.position),
+                "{}",
+                tick.position
+            );
         }
     }
 
@@ -462,7 +496,11 @@ mod tests {
     fn the_labels_kept_stay_in_order_and_include_zero() {
         let shown = visible_ticks(&VOLUME_TICKS, FADER_MIN, FADER_MAX, 140.0);
 
-        assert!(shown.windows(2).all(|pair| pair[0].position < pair[1].position));
+        assert!(
+            shown
+                .windows(2)
+                .all(|pair| pair[0].position < pair[1].position)
+        );
         assert!(shown.iter().any(|tick| tick.label == "0"));
     }
 }

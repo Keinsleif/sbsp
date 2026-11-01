@@ -202,7 +202,13 @@ mod tests {
         ui.duration_display_mode = DisplayMode::Remain;
         ui.keep_awake = KeepAwakeMode::Always;
         ui.last_update_check = 1_700_000_000_000;
-        let window = WindowRect { width: 1000.0, height: 600.0, x: Some(10.0), y: None, maximized: true };
+        let window = WindowRect {
+            width: 1000.0,
+            height: 600.0,
+            x: Some(10.0),
+            y: None,
+            maximized: true,
+        };
 
         let saved = Saved::parse(&Saved::capture(&ui, Some(window)).to_json());
 
@@ -224,7 +230,10 @@ mod tests {
         assert_eq!(Saved::parse("{ \"mode\": \"sideways\" }"), Saved::default());
         assert_eq!(Saved::parse("not json"), Saved::default());
         // An unknown field from a later version is ignored.
-        assert_eq!(Saved::parse("{ \"mode\": \"run\", \"later\": 1 }").mode, Some(Mode::Run));
+        assert_eq!(
+            Saved::parse("{ \"mode\": \"run\", \"later\": 1 }").mode,
+            Some(Mode::Run)
+        );
     }
 
     #[test]
@@ -238,14 +247,26 @@ mod tests {
 
     #[test]
     fn implausible_windows_are_not_restored() {
-        let rect = |width, height, x, y| WindowRect { width, height, x, y, maximized: false };
+        let rect = |width, height, x, y| WindowRect {
+            width,
+            height,
+            x,
+            y,
+            maximized: false,
+        };
         assert!(rect(1280.0, 720.0, None, None).is_usable());
         assert!(!rect(100.0, 720.0, None, None).is_usable());
         assert!(!rect(1280.0, 100_000.0, None, None).is_usable());
         assert!(!rect(f32::NAN, 720.0, None, None).is_usable());
-        assert_eq!(rect(1280.0, 720.0, Some(-5.0), Some(30.0)).position(), Some((-5.0, 30.0)));
+        assert_eq!(
+            rect(1280.0, 720.0, Some(-5.0), Some(30.0)).position(),
+            Some((-5.0, 30.0))
+        );
         // The Windows "minimized" placeholder, and a half-known position.
-        assert_eq!(rect(1280.0, 720.0, Some(-32_000.0), Some(-32_000.0)).position(), None);
+        assert_eq!(
+            rect(1280.0, 720.0, Some(-32_000.0), Some(-32_000.0)).position(),
+            None
+        );
         assert_eq!(rect(1280.0, 720.0, Some(10.0), None).position(), None);
     }
 }

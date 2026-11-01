@@ -24,7 +24,8 @@ pub fn fader_to_decibels(fader: f64) -> Decibels {
         2.0f32 * (fader as f32 + 10.0f32) - 10.0f32
     } else {
         4.0f32 * (fader as f32 + 25.0f32) - 40.0f32
-    }.into()
+    }
+    .into()
 }
 
 /// dB -> fader position.
@@ -64,13 +65,23 @@ mod tests {
         for fader in [0.0, -5.0, -10.0, -15.0, -25.0, -30.0, -60.0, -100.0] {
             let db = fader_to_decibels(fader);
             let db_display = db.0;
-            assert_eq!(decibels_to_fader(db), fader, "fader {fader} -> dB {db_display}");
+            assert_eq!(
+                decibels_to_fader(db),
+                fader,
+                "fader {fader} -> dB {db_display}"
+            );
         }
     }
 
     #[test]
     fn deep_attenuation() {
-        assert_eq!(fader_to_decibels(-60.0), Decibels(4.0 * (-60.0 + 25.0) - 40.0));
-        assert_eq!(decibels_to_fader(Decibels(-100.0)), (-100.0 + 40.0) / 4.0 - 25.0);
+        assert_eq!(
+            fader_to_decibels(-60.0),
+            Decibels(4.0 * (-60.0 + 25.0) - 40.0)
+        );
+        assert_eq!(
+            decibels_to_fader(Decibels(-100.0)),
+            (-100.0 + 40.0) / 4.0 - 25.0
+        );
     }
 }

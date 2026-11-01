@@ -7,8 +7,8 @@
 //! content; a canvas ignores the viewport, so geometry drawn larger than the
 //! canvas (a cached drawing kept at an earlier size) would spill over.
 
-use iced::advanced::widget::{tree, Operation, Tree};
-use iced::advanced::{layout, mouse, overlay, renderer, Clipboard, Layout, Shell, Widget};
+use iced::advanced::widget::{Operation, Tree, tree};
+use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
 use iced::{Element, Event, Length, Rectangle, Size, Vector};
 
 pub struct Clip<'a, Message, Theme, Renderer> {
@@ -23,7 +23,8 @@ pub fn clip<'a, Message, Theme, Renderer>(
     }
 }
 
-impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Clip<'_, Message, Theme, Renderer>
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer>
+    for Clip<'_, Message, Theme, Renderer>
 where
     Renderer: iced::advanced::Renderer,
 {

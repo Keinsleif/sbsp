@@ -108,21 +108,30 @@ pub struct AuthInfo {
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 pub enum WsFeedback {
-    Hello { auth: AuthInfo },
-    Authenticated { perm: Permissions },
+    Hello {
+        auth: AuthInfo,
+    },
+    Authenticated {
+        perm: Permissions,
+    },
     Event(Box<BackendEvent>),
     AssetList(Vec<FileList>),
     FullShowState(Box<FullShowState>),
     /// The peak output level of the host's audio engine, per channel. Sent
     /// only while the client has asked for it (`WsCommand::SubscribeLevel`).
-    Level { left: f32, right: f32 },
+    Level {
+        left: f32,
+        right: f32,
+    },
     Error(WsError),
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum WsCommand {
-    Authenticate { response: Option<String> },
+    Authenticate {
+        response: Option<String>,
+    },
     Control(ControllerCommand),
     Model(Box<ModelCommand>),
     AssetProcessor(AssetProcessorCommand),
@@ -131,7 +140,9 @@ pub enum WsCommand {
     RequestSyncState,
     /// Starts (or stops) the host sending `WsFeedback::Level`. Clients that
     /// never ask are never sent one.
-    SubscribeLevel { enabled: bool },
+    SubscribeLevel {
+        enabled: bool,
+    },
 }
 
 #[cfg(test)]
@@ -152,7 +163,10 @@ mod tests {
 
         let command: WsCommand =
             serde_json::from_str(r#"{"type":"subscribeLevel","enabled":true}"#).unwrap();
-        assert!(matches!(command, WsCommand::SubscribeLevel { enabled: true }));
+        assert!(matches!(
+            command,
+            WsCommand::SubscribeLevel { enabled: true }
+        ));
     }
 }
 

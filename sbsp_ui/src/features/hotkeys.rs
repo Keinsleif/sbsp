@@ -8,8 +8,8 @@
 //! action is allowed right now (view mode, nothing selected, ...) and what
 //! it does is the app's business.
 
-use iced::keyboard::{Key, Modifiers, key::Named};
 use crate::settings::hotkey::HotkeySettings;
+use iced::keyboard::{Key, Modifiers, key::Named};
 
 use crate::domain::hotkey::{Hotkey, Mods};
 
@@ -255,10 +255,22 @@ mod tests {
         settings.playback.fade_all_out = Some("F3".to_owned());
         settings.playback.hard_stop_all = Some("F4".to_owned());
         let b = Bindings::from_settings(&settings, false);
-        assert_eq!(b.find(&press(named(Named::F1), none)), Some(Action::FadeOut));
-        assert_eq!(b.find(&press(named(Named::F2), none)), Some(Action::HardStop));
-        assert_eq!(b.find(&press(named(Named::F3), none)), Some(Action::FadeAllOut));
-        assert_eq!(b.find(&press(named(Named::F4), none)), Some(Action::HardStopAll));
+        assert_eq!(
+            b.find(&press(named(Named::F1), none)),
+            Some(Action::FadeOut)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::F2), none)),
+            Some(Action::HardStop)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::F3), none)),
+            Some(Action::FadeAllOut)
+        );
+        assert_eq!(
+            b.find(&press(named(Named::F4), none)),
+            Some(Action::HardStopAll)
+        );
     }
 
     #[test]
@@ -349,7 +361,11 @@ mod tests {
         let b_mac = bindings_mac();
         assert_eq!(b.shortcut(Action::Save, false).as_deref(), Some("Ctrl+S"));
         assert_eq!(b_mac.shortcut(Action::Copy, true).as_deref(), Some("⌘C"));
-        assert_eq!(b.shortcut(Action::Export, false), None, "unbound by default");
+        assert_eq!(
+            b.shortcut(Action::Export, false),
+            None,
+            "unbound by default"
+        );
     }
 
     #[test]

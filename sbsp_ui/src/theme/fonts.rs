@@ -48,7 +48,11 @@ mod tests {
     #[test]
     fn the_embedded_files_are_fonts() {
         for bytes in [UI_REGULAR, MONO_REGULAR] {
-            assert!(bytes.len() > 100_000, "suspiciously small: {} bytes", bytes.len());
+            assert!(
+                bytes.len() > 100_000,
+                "suspiciously small: {} bytes",
+                bytes.len()
+            );
             let tag = &bytes[..4];
             assert!(
                 tag == [0, 1, 0, 0] || tag == b"OTTO" || tag == b"true" || tag == b"ttcf",

@@ -7,11 +7,11 @@
 //! The editor's pickers (chain target, fade target and so on) list the
 //! cues of the show that is open, as in the original.
 
+use crate::settings::TemplateSettings;
 use iced::widget::{Space, button, column, container, row, text};
 use iced::{Alignment, Element, Length};
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, group::GroupMode};
-use crate::settings::TemplateSettings;
 
 use super::{EditorMessage, Message};
 use crate::domain::flat_list::FlatCueEntry;
@@ -122,7 +122,10 @@ fn repeats(cue: &Cue) -> bool {
 fn header<'a>() -> Element<'a, Message> {
     let title = |label: String, width: Length| cell(text(label).size(12), width);
     row![
-        title(fl!("dialog-settings-global-template-type"), Length::Fixed(W_TYPE)),
+        title(
+            fl!("dialog-settings-global-template-type"),
+            Length::Fixed(W_TYPE)
+        ),
         title(fl!("main-number"), Length::Fixed(W_NUMBER)),
         title(fl!("main-name"), Length::Fill),
         title(fl!("main-pre-wait"), Length::Fixed(W_TIME)),
@@ -149,9 +152,12 @@ fn line<'a>(kind: Kind, cue: &Cue, selected: bool) -> Element<'a, Message> {
 
     let columns = row![
         cell(
-            row![icon::icon(type_icon(&cue.params), 16.0), text(kind.label()).size(13)]
-                .spacing(6)
-                .align_y(Alignment::Center),
+            row![
+                icon::icon(type_icon(&cue.params), 16.0),
+                text(kind.label()).size(13)
+            ]
+            .spacing(6)
+            .align_y(Alignment::Center),
             Length::Fixed(W_TYPE),
         ),
         cell(text(cue.number.clone()).size(13), Length::Fixed(W_NUMBER)),
@@ -162,9 +168,18 @@ fn line<'a>(kind: Kind, cue: &Cue, selected: bool) -> Element<'a, Message> {
                 .clip(true),
             Length::Fill,
         ),
-        cell(text(format_seconds(Some(cue.pre_wait))).size(13), Length::Fixed(W_TIME)),
-        cell(text(format_seconds(duration)).size(13), Length::Fixed(W_TIME)),
-        cell(mark(repeats(cue).then_some(Icon::Repeat)), Length::Fixed(W_MARK)),
+        cell(
+            text(format_seconds(Some(cue.pre_wait))).size(13),
+            Length::Fixed(W_TIME)
+        ),
+        cell(
+            text(format_seconds(duration)).size(13),
+            Length::Fixed(W_TIME)
+        ),
+        cell(
+            mark(repeats(cue).then_some(Icon::Repeat)),
+            Length::Fixed(W_MARK)
+        ),
         cell(mark(chain_icon(&cue.chain)), Length::Fixed(W_MARK)),
     ]
     .spacing(6)
@@ -173,7 +188,11 @@ fn line<'a>(kind: Kind, cue: &Cue, selected: bool) -> Element<'a, Message> {
     button(columns)
         .width(Length::Fill)
         .padding([3, 8])
-        .style(if selected { button::secondary } else { button::text })
+        .style(if selected {
+            button::secondary
+        } else {
+            button::text
+        })
         .on_press(Message::SelectTemplate(kind))
         .into()
 }
@@ -248,8 +267,17 @@ mod tests {
     #[test]
     fn the_kinds_match_their_cue_types() {
         let templates = TemplateSettings::default();
-        assert!(matches!(Kind::Audio.get(&templates).params, CueParam::Audio(_)));
-        assert!(matches!(Kind::Wait.get(&templates).params, CueParam::Wait(_)));
-        assert!(matches!(Kind::Group.get(&templates).params, CueParam::Group { .. }));
+        assert!(matches!(
+            Kind::Audio.get(&templates).params,
+            CueParam::Audio(_)
+        ));
+        assert!(matches!(
+            Kind::Wait.get(&templates).params,
+            CueParam::Wait(_)
+        ));
+        assert!(matches!(
+            Kind::Group.get(&templates).params,
+            CueParam::Group { .. }
+        ));
     }
 }

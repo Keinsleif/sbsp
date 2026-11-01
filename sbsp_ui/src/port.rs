@@ -16,13 +16,13 @@
 //! `Control` and `ModelEdit` into the protocol's commands and reads the
 //! host's answers.
 
-#[cfg(feature = "web")]
-pub mod wire;
 #[cfg(any(feature = "host", feature = "remote"))]
 mod link;
 #[cfg(all(feature = "web", target_arch = "wasm32"))]
 #[path = "port/web_link.rs"]
 pub(crate) mod link;
+#[cfg(feature = "web")]
+pub mod wire;
 
 #[cfg(backend)]
 pub use link::Link;

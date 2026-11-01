@@ -16,6 +16,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
 };
 
+use crate::settings::GlobalRemoteSettings;
 use gloo_net::websocket::{Message, futures::WebSocket};
 use gloo_timers::future::TimeoutFuture;
 use iced::futures::{
@@ -27,7 +28,6 @@ use sbsp_backend::{
     api::{FileList, Permissions, WsCommand, WsError, WsFeedback, client::ServiceEntry},
     event::{BackendError, BackendEvent},
 };
-use crate::settings::GlobalRemoteSettings;
 
 use crate::port::link::{Handoff, Levels, subscribe};
 use crate::port::{FullState, Link, PortEvent, wire};
@@ -66,7 +66,8 @@ impl RemotePort {
         password: Option<String>,
     ) -> anyhow::Result<(Self, FullState)> {
         let url = format!("{}://{address}/ws", scheme());
-        let socket = WebSocket::open(&url).map_err(|e| anyhow::anyhow!("Failed to open {url}: {e}"))?;
+        let socket =
+            WebSocket::open(&url).map_err(|e| anyhow::anyhow!("Failed to open {url}: {e}"))?;
         let (mut write, mut read) = socket.split();
 
         let permission = with_timeout(AUTH_TIMEOUT_MS, "connecting to the host", async {

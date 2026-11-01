@@ -21,7 +21,9 @@ impl Decibels {
 
     #[cfg(feature = "backend")]
     #[inline]
-    pub fn is_silent(self) -> bool { self.0 <= Self::MUTE.0 }
+    pub fn is_silent(self) -> bool {
+        self.0 <= Self::MUTE.0
+    }
 
     #[cfg(feature = "backend")]
     #[inline]

@@ -167,13 +167,20 @@ fn entry_view<'a>(index: usize, section: &'a Section, open: bool) -> Element<'a,
     };
     let marker = if open { "v" } else { ">" };
     let header = button(
-        row![text(marker).font(fonts::MONO), text(format!("{}{count}", section.name))]
-            .spacing(8)
-            .align_y(Alignment::Center),
+        row![
+            text(marker).font(fonts::MONO),
+            text(format!("{}{count}", section.name))
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center),
     )
     .width(Length::Fill)
     .padding([4, 8])
-    .style(if open { button::secondary } else { button::text })
+    .style(if open {
+        button::secondary
+    } else {
+        button::text
+    })
     .on_press(Message::Toggle(index));
 
     if !open {
@@ -283,7 +290,11 @@ Permission is hereby granted\n\
 
     #[test]
     fn nothing_after_the_next_top_level_heading_is_listed() {
-        assert!(parse(SAMPLE).iter().all(|section| section.name != "ignored"));
+        assert!(
+            parse(SAMPLE)
+                .iter()
+                .all(|section| section.name != "ignored")
+        );
     }
 
     #[test]

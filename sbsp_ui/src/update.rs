@@ -35,7 +35,9 @@ const CHECK_INTERVAL_MS: u64 = 24 * 60 * 60 * 1000;
 pub fn now_ms() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 /// Whether the startup check is due: more than a day since `last`, or the

@@ -216,26 +216,31 @@ impl Link {
             }
         }
 
-        iced::Subscription::run_with(Source(self.event_tx.clone(), self.id), |Source(event_tx, _)| {
-            let mut event_rx = event_tx.subscribe();
+        iced::Subscription::run_with(
+            Source(self.event_tx.clone(), self.id),
+            |Source(event_tx, _)| {
+                let mut event_rx = event_tx.subscribe();
 
-            iced::stream::channel(64, async move |mut output| {
-                use iced::futures::SinkExt;
+                iced::stream::channel(64, async move |mut output| {
+                    use iced::futures::SinkExt;
 
-                loop {
-                    match event_rx.recv().await {
-                        Ok(event) => {
-                            if output.send(event).await.is_err() {
-                                break;
+                    loop {
+                        match event_rx.recv().await {
+                            Ok(event) => {
+                                if output.send(event).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Err(broadcast::error::RecvError::Closed) => break,
+                            Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                                log::warn!(
+                                    "Backend event subscriber lagged, skipped {skipped} events"
+                                );
                             }
                         }
-                        Err(broadcast::error::RecvError::Closed) => break,
-                        Err(broadcast::error::RecvError::Lagged(skipped)) => {
-                            log::warn!("Backend event subscriber lagged, skipped {skipped} events");
-                        }
                     }
-                }
-            })
-        })
+                })
+            },
+        )
     }
 }

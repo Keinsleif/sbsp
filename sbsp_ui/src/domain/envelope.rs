@@ -201,9 +201,10 @@ pub fn remove(segments: &[Segment], index: usize) -> Vec<Segment> {
             first.start = 0.0;
         }
     } else if index == result.len()
-        && let Some(last) = result.last_mut() {
-            last.end = 1.0;
-        }
+        && let Some(last) = result.last_mut()
+    {
+        last.end = 1.0;
+    }
     result
 }
 
@@ -237,7 +238,10 @@ mod tests {
     #[test]
     fn volume_and_y_map_back_and_forth() {
         assert_eq!(volume_to_y(0.0, 100.0), 0.0);
-        assert!((volume_to_y(-200.0, 100.0) - 100.0).abs() < 1e-6, "very quiet is the bottom");
+        assert!(
+            (volume_to_y(-200.0, 100.0) - 100.0).abs() < 1e-6,
+            "very quiet is the bottom"
+        );
         for volume in [-3.0, -12.0, -30.0] {
             let y = volume_to_y(volume, 120.0);
             assert!((y_to_volume(y, 120.0) - volume).abs() < 1e-9, "{volume}");
@@ -264,13 +268,21 @@ mod tests {
         assert!((moved[1].start - (0.3 + MIN_GAP)).abs() < 1e-12);
         let moved = move_start(&segments, 1, 0.799);
         assert!((moved[1].start - (0.8 - MIN_GAP)).abs() < 1e-12);
-        assert_eq!(move_start(&segments, 0, 0.2), segments.to_vec(), "the first start is pinned");
+        assert_eq!(
+            move_start(&segments, 0, 0.2),
+            segments.to_vec(),
+            "the first start is pinned"
+        );
 
         let moved = move_end(&segments, 1, 0.95);
         assert!((moved[1].end - (0.9 - MIN_GAP)).abs() < 1e-12);
         let moved = move_end(&segments, 1, 0.5);
         assert!((moved[1].end - (0.5 + MIN_GAP)).abs() < 1e-12);
-        assert_eq!(move_end(&segments, 2, 0.95), segments.to_vec(), "the last end is pinned");
+        assert_eq!(
+            move_end(&segments, 2, 0.95),
+            segments.to_vec(),
+            "the last end is pinned"
+        );
     }
 
     #[test]
@@ -292,8 +304,14 @@ mod tests {
         assert!((gap[1].start - 0.46).abs() < 1e-12 && (gap[1].end - 0.54).abs() < 1e-12);
 
         // No room: a tiny segment cannot be split, a tiny gap cannot be filled.
-        assert_eq!(add_or_split(&[seg(0.0, 0.01, 0.0), seg(0.9, 1.0, 0.0)], 0.005), None);
-        assert_eq!(add_or_split(&[seg(0.0, 0.5, 0.0), seg(0.51, 1.0, 0.0)], 0.505), None);
+        assert_eq!(
+            add_or_split(&[seg(0.0, 0.01, 0.0), seg(0.9, 1.0, 0.0)], 0.005),
+            None
+        );
+        assert_eq!(
+            add_or_split(&[seg(0.0, 0.5, 0.0), seg(0.51, 1.0, 0.0)], 0.505),
+            None
+        );
     }
 
     #[test]

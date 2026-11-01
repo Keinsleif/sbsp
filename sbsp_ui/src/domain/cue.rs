@@ -11,8 +11,8 @@
 
 use std::collections::HashMap;
 
-use sbsp_backend::model::cue::{Cue, CueParam, Uuid, group::GroupMode};
 use crate::settings::NameFormatSettings;
+use sbsp_backend::model::cue::{Cue, CueParam, Uuid, group::GroupMode};
 
 use super::text::{camel_to_title_case, format_template};
 use super::time::format_human;

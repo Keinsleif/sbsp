@@ -18,9 +18,7 @@ use sbsp_backend::model::cue::{
 
 use crate::domain::easing::{Curve, CurveKind};
 use crate::domain::envelope::{self, Segment};
-use crate::domain::field::{
-    Commit, NumberSpec, TimeSpec, commit_number, commit_time, step_number,
-};
+use crate::domain::field::{Commit, NumberSpec, TimeSpec, commit_number, commit_time, step_number};
 use crate::domain::time::format_seconds;
 
 fn edited(cue: &Cue, change: impl FnOnce(&mut Cue)) -> Option<Cue> {
@@ -639,7 +637,10 @@ mod tests {
     #[test]
     fn an_empty_name_goes_back_to_the_generated_one() {
         let cue = wait(1.0);
-        assert_eq!(set_name(&cue, "Outro").unwrap().name.as_deref(), Some("Outro"));
+        assert_eq!(
+            set_name(&cue, "Outro").unwrap().name.as_deref(),
+            Some("Outro")
+        );
         assert_eq!(set_name(&cue, "").unwrap().name, None);
     }
 
@@ -708,7 +709,11 @@ mod tests {
                 .cursor_advance_trigger_override,
             advance
         );
-        assert!(set_treat_stop_as_completed(&cue, true).unwrap().treat_stop_as_completed);
+        assert!(
+            set_treat_stop_as_completed(&cue, true)
+                .unwrap()
+                .treat_stop_as_completed
+        );
     }
 
     #[test]
@@ -774,7 +779,10 @@ mod tests {
 
         let started = set_start_time(&cue, "2", Some(10.0)).unwrap();
         assert!(matches!(&started.params, CueParam::Audio(a) if a.start_time == Some(2.0)));
-        assert!(set_start_time(&started, "2", Some(10.0)).is_none(), "unchanged");
+        assert!(
+            set_start_time(&started, "2", Some(10.0)).is_none(),
+            "unchanged"
+        );
         // Back to 0 is "no start".
         let reset = set_start_time(&started, "0", Some(10.0)).unwrap();
         assert!(matches!(&reset.params, CueParam::Audio(a) if a.start_time.is_none()));
@@ -805,7 +813,10 @@ mod tests {
 
         let fade = fade_cue();
         assert_eq!(level(&fade), Some(Decibels(0.0)));
-        assert_eq!(level(&set_level(&fade, Decibels(-3.0)).unwrap()), Some(Decibels(-3.0)));
+        assert_eq!(
+            level(&set_level(&fade, Decibels(-3.0)).unwrap()),
+            Some(Decibels(-3.0))
+        );
         assert_eq!(level(&wait(1.0)), None);
         assert!(set_level(&wait(1.0), Decibels(-3.0)).is_none());
     }
@@ -841,8 +852,16 @@ mod tests {
         assert!(envelope(&cue).is_empty());
 
         let segments = [
-            Segment { start: 0.0, end: 0.5, volume: -3.0 },
-            Segment { start: 0.6, end: 1.0, volume: -9.0 },
+            Segment {
+                start: 0.0,
+                end: 0.5,
+                volume: -3.0,
+            },
+            Segment {
+                start: 0.6,
+                end: 1.0,
+                volume: -9.0,
+            },
         ];
         let with = set_envelope(&cue, &segments).unwrap();
         assert_eq!(envelope(&with), segments.to_vec());
@@ -851,10 +870,14 @@ mod tests {
 
         // 0.25 .. 0.75 of a 10 s file.
         let ranged = set_range(&cue, 0.25, 0.75, Some(10.0)).unwrap();
-        assert!(matches!(&ranged.params, CueParam::Audio(a) if a.start_time == Some(2.5) && a.end_time == Some(7.5)));
+        assert!(
+            matches!(&ranged.params, CueParam::Audio(a) if a.start_time == Some(2.5) && a.end_time == Some(7.5))
+        );
         // The very start and end are "none".
         let full = set_range(&ranged, 0.0, 1.0, Some(10.0)).unwrap();
-        assert!(matches!(&full.params, CueParam::Audio(a) if a.start_time.is_none() && a.end_time.is_none()));
+        assert!(
+            matches!(&full.params, CueParam::Audio(a) if a.start_time.is_none() && a.end_time.is_none())
+        );
         assert!(set_range(&cue, 0.0, 1.0, Some(10.0)).is_none());
 
         // One drag changes both; one of them changing is enough.
@@ -888,10 +911,18 @@ mod tests {
 
         let on = set_fade_param(&cue, FadeSlot::AudioIn, fade_enabled(None, true)).unwrap();
         assert_eq!(fade_param(&on, FadeSlot::AudioIn), Some(DEFAULT_FADE));
-        assert_eq!(fade_param(&on, FadeSlot::AudioOut), None, "the other slot is untouched");
+        assert_eq!(
+            fade_param(&on, FadeSlot::AudioOut),
+            None,
+            "the other slot is untouched"
+        );
 
-        let off = set_fade_param(&on, FadeSlot::AudioIn, fade_enabled(Some(DEFAULT_FADE), false))
-            .unwrap();
+        let off = set_fade_param(
+            &on,
+            FadeSlot::AudioIn,
+            fade_enabled(Some(DEFAULT_FADE), false),
+        )
+        .unwrap();
         assert_eq!(fade_param(&off, FadeSlot::AudioIn), None);
     }
 
@@ -921,7 +952,11 @@ mod tests {
         assert_eq!(linear.easing, Easing::Linear);
 
         let back = fade_with_kind(linear, CurveKind::OutPow).unwrap();
-        assert_eq!(back.easing, Easing::OutPow(2.0), "linear has none, so the default");
+        assert_eq!(
+            back.easing,
+            Easing::OutPow(2.0),
+            "linear has none, so the default"
+        );
 
         let steeper = fade_with_power(back, "3").unwrap();
         let in_pow = fade_with_kind(steeper, CurveKind::InPow).unwrap();
@@ -943,7 +978,10 @@ mod tests {
         assert!(fade_with_power(linear, "3").is_none());
         assert!(fade_step_power(linear, 1).is_none());
 
-        assert_eq!(fade_step_power(DEFAULT_FADE, 1).unwrap().easing, Easing::InOutPow(3.0));
+        assert_eq!(
+            fade_step_power(DEFAULT_FADE, 1).unwrap().easing,
+            Easing::InOutPow(3.0)
+        );
         let one = FadeParam {
             easing: Easing::InOutPow(1.0),
             ..DEFAULT_FADE
@@ -1005,10 +1043,16 @@ mod tests {
         let playlist = group(GroupMode::Playlist { repeat: false });
 
         let start_first = set_group_mode_kind(&playlist, GroupModeKind::StartFirst).unwrap();
-        assert_eq!(group_mode(&start_first), Some(GroupMode::StartFirst { enter: false }));
+        assert_eq!(
+            group_mode(&start_first),
+            Some(GroupMode::StartFirst { enter: false })
+        );
 
         let back = set_group_mode_kind(&start_first, GroupModeKind::Playlist).unwrap();
-        assert_eq!(group_mode(&back), Some(GroupMode::Playlist { repeat: true }));
+        assert_eq!(
+            group_mode(&back),
+            Some(GroupMode::Playlist { repeat: true })
+        );
 
         assert!(set_group_mode_kind(&back, GroupModeKind::Playlist).is_none());
         assert!(set_group_mode_kind(&wait(1.0), GroupModeKind::Concurrency).is_none());
@@ -1018,12 +1062,18 @@ mod tests {
     fn repeat_and_enter_belong_to_their_own_modes() {
         let playlist = group(GroupMode::Playlist { repeat: true });
         let once = set_group_repeat(&playlist, false).unwrap();
-        assert_eq!(group_mode(&once), Some(GroupMode::Playlist { repeat: false }));
+        assert_eq!(
+            group_mode(&once),
+            Some(GroupMode::Playlist { repeat: false })
+        );
         assert!(set_group_enter(&playlist, true).is_none());
 
         let start_first = group(GroupMode::StartFirst { enter: false });
         let entering = set_group_enter(&start_first, true).unwrap();
-        assert_eq!(group_mode(&entering), Some(GroupMode::StartFirst { enter: true }));
+        assert_eq!(
+            group_mode(&entering),
+            Some(GroupMode::StartFirst { enter: true })
+        );
         assert!(set_group_repeat(&start_first, true).is_none());
     }
 }

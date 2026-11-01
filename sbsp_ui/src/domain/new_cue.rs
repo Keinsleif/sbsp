@@ -17,9 +17,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::settings::TemplateSettings;
 use sbsp_backend::manager::InsertPosition;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
-use crate::settings::TemplateSettings;
 
 /// File extensions the audio file picker offers (the original's list).
 pub const AUDIO_EXTENSIONS: &[&str] = &[
@@ -83,9 +83,8 @@ pub fn build(
         CueKind::Wait => (templates.wait.clone(), position_after(selected)),
         CueKind::Group => (templates.group.clone(), position_after(selected)),
         CueKind::Fade => {
-            let target = selected_cue.filter(|cue| {
-                matches!(cue.params, CueParam::Audio(_) | CueParam::Group { .. })
-            })?;
+            let target = selected_cue
+                .filter(|cue| matches!(cue.params, CueParam::Audio(_) | CueParam::Group { .. }))?;
             let mut cue = templates.fade.clone();
             if let CueParam::Fade(fade) = &mut cue.params {
                 fade.target = target.id;
@@ -202,7 +201,10 @@ mod tests {
         let last = build(CueKind::Wait, id(9), &templates, None, &cues).unwrap();
         assert!(matches!(
             last.position,
-            InsertPosition::Inside { target: None, index: None }
+            InsertPosition::Inside {
+                target: None,
+                index: None
+            }
         ));
     }
 
@@ -277,8 +279,7 @@ mod tests {
         let templates = TemplateSettings::default();
         let files = vec![PathBuf::from("/a.wav"), PathBuf::from("/b.wav")];
 
-        let (cues, position) =
-            audio_cues(files, [id(1), id(2)], &templates, Some(id(7))).unwrap();
+        let (cues, position) = audio_cues(files, [id(1), id(2)], &templates, Some(id(7))).unwrap();
 
         assert_eq!(cues.len(), 2);
         assert_eq!(cues[0].id, id(1));

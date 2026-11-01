@@ -21,15 +21,15 @@ use iced::widget::canvas::{self, Cache, Canvas, Path as CanvasPath, Stroke};
 use iced::{Color, Element, Length, Point, Rectangle, Renderer, Size, Theme};
 
 use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus};
-use sbsp_backend::model::cue::{audio::AudioCueParam, CueParam, Uuid};
+use sbsp_backend::model::cue::{CueParam, Uuid, audio::AudioCueParam};
 
 use crate::domain::time::format_seconds;
 use crate::state::assets::AssetResults;
-use crate::widgets::clip::clip;
-use crate::widgets::held_size::HeldSize;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{Mode, UiState};
+use crate::widgets::clip::clip;
+use crate::widgets::held_size::HeldSize;
 
 pub const HEIGHT: f32 = 64.0;
 
@@ -72,7 +72,10 @@ pub struct TimeRange {
 }
 
 impl TimeRange {
-    pub const FULL: Self = Self { start: 0.0, end: 1.0 };
+    pub const FULL: Self = Self {
+        start: 0.0,
+        end: 1.0,
+    };
 
     /// A missing end time means "to the end of the file".
     pub fn new(duration: Option<f64>, start_time: Option<f64>, end_time: Option<f64>) -> Self {
@@ -200,7 +203,12 @@ pub fn draw_peaks(frame: &mut canvas::Frame, waveform: Option<&[f32]>, gain: Opt
 
 /// "position / duration" next to the pointer, for a pointer over the whole
 /// width of a file of `duration` seconds.
-pub fn draw_tooltip(frame: &mut canvas::Frame, theme: &Theme, cursor: Point, duration: Option<f64>) {
+pub fn draw_tooltip(
+    frame: &mut canvas::Frame,
+    theme: &Theme,
+    cursor: Point,
+    duration: Option<f64>,
+) {
     let size = frame.size();
     let label = match duration {
         Some(duration) if size.width > 0.0 => format!(
@@ -293,9 +301,13 @@ pub fn view<'a>(
         });
 
     clip(
-        Canvas::new(Waveform { viewer, target, frozen })
-            .width(Length::Fill)
-            .height(Length::Fill),
+        Canvas::new(Waveform {
+            viewer,
+            target,
+            frozen,
+        })
+        .width(Length::Fill)
+        .height(Length::Fill),
     )
     .into()
 }
@@ -322,12 +334,7 @@ impl Waveform<'_> {
         draw_peaks(frame, self.target.as_ref().and_then(|t| t.waveform), gain);
     }
 
-    fn draw_overlay(
-        &self,
-        frame: &mut canvas::Frame,
-        theme: &Theme,
-        cursor: Option<Point>,
-    ) {
+    fn draw_overlay(&self, frame: &mut canvas::Frame, theme: &Theme, cursor: Option<Point>) {
         let Some(target) = &self.target else {
             return;
         };
@@ -427,14 +434,11 @@ impl canvas::Program<Message> for Waveform<'_> {
             }
         }
 
-        let waveform = self
-            .viewer
-            .cache
-            .draw(
-                renderer,
-                self.viewer.held.pick(bounds.size(), self.frozen),
-                |frame| self.draw_waveform(frame),
-            );
+        let waveform = self.viewer.cache.draw(
+            renderer,
+            self.viewer.held.pick(bounds.size(), self.frozen),
+            |frame| self.draw_waveform(frame),
+        );
 
         let mut overlay = canvas::Frame::new(renderer, bounds.size());
         self.draw_overlay(&mut overlay, theme, cursor.position_in(bounds));
@@ -455,7 +459,13 @@ mod tests {
     #[test]
     fn the_range_follows_start_and_end_time() {
         let range = TimeRange::new(Some(10.0), Some(2.0), Some(8.0));
-        assert_eq!(range, TimeRange { start: 0.2, end: 0.8 });
+        assert_eq!(
+            range,
+            TimeRange {
+                start: 0.2,
+                end: 0.8
+            }
+        );
         assert!((range.delta() - 0.6).abs() < 1e-12);
     }
 
@@ -499,21 +509,30 @@ mod tests {
 
     #[test]
     fn a_click_inside_the_range_maps_to_the_cue_position() {
-        let range = TimeRange { start: 0.2, end: 0.8 };
+        let range = TimeRange {
+            start: 0.2,
+            end: 0.8,
+        };
         let seconds = seek_seconds(0.5, range, 30.0).unwrap();
         assert!((seconds - 15.0).abs() < 1e-9);
     }
 
     #[test]
     fn a_click_outside_the_range_does_not_seek() {
-        let range = TimeRange { start: 0.2, end: 0.8 };
+        let range = TimeRange {
+            start: 0.2,
+            end: 0.8,
+        };
         assert_eq!(seek_seconds(0.1, range, 30.0), None);
         assert_eq!(seek_seconds(0.9, range, 30.0), None);
     }
 
     #[test]
     fn an_empty_range_never_seeks() {
-        let range = TimeRange { start: 0.5, end: 0.5 };
+        let range = TimeRange {
+            start: 0.5,
+            end: 0.5,
+        };
         assert_eq!(seek_seconds(0.5, range, 30.0), None);
     }
 }

@@ -7,9 +7,9 @@
 //! (Escape included, since Stop All is bound to it by default), pressing
 //! it again or switching tab stops waiting. The cross button unbinds.
 
+use crate::settings::hotkey::HotkeySettings;
 use iced::widget::{Space, button, column, container, row, text, tooltip};
 use iced::{Alignment, Element, Length};
-use crate::settings::hotkey::HotkeySettings;
 
 use super::Message;
 use crate::domain::hotkey::{Hotkey, normalize_hotkey};
@@ -47,7 +47,12 @@ pub enum Slot {
     ToggleRepeat,
 }
 
-const FILE: [Slot; 4] = [Slot::FileOpen, Slot::FileSave, Slot::FileSaveAs, Slot::FileExport];
+const FILE: [Slot; 4] = [
+    Slot::FileOpen,
+    Slot::FileSave,
+    Slot::FileSaveAs,
+    Slot::FileExport,
+];
 const EDIT: [Slot; 7] = [
     Slot::EditDelete,
     Slot::EditSelectAll,
@@ -107,7 +112,11 @@ impl Slot {
     }
 
     pub fn set(self, settings: &mut HotkeySettings, binding: Option<String>) {
-        let (file, edit, playback) = (&mut settings.file, &mut settings.edit, &mut settings.playback);
+        let (file, edit, playback) = (
+            &mut settings.file,
+            &mut settings.edit,
+            &mut settings.playback,
+        );
         let target = match self {
             Slot::FileOpen => &mut file.open,
             Slot::FileSave => &mut file.save,
@@ -186,7 +195,11 @@ pub fn is_duplicate(settings: &HotkeySettings, slot: Slot) -> bool {
         return false;
     };
     let wanted = normalize_hotkey(binding);
-    all_normalized(settings).iter().filter(|b| **b == wanted).count() > 1
+    all_normalized(settings)
+        .iter()
+        .filter(|b| **b == wanted)
+        .count()
+        > 1
 }
 
 /// A binding the way the input shows it.
@@ -217,7 +230,11 @@ fn input<'a>(
     let field = button(text(content).width(Length::Fill))
         .width(180)
         .padding([4, 8])
-        .style(if waiting { button::primary } else { button::secondary })
+        .style(if waiting {
+            button::primary
+        } else {
+            button::secondary
+        })
         .on_press(Message::Capture(slot));
 
     let warning: Element<'a, Message> = if is_duplicate(settings, slot) {
@@ -264,15 +281,30 @@ fn section<'a>(
 
 pub fn view<'a>(settings: &HotkeySettings, capturing: Option<Slot>) -> Element<'a, Message> {
     column![
-        section(fl!("dialog-settings-global-hotkey-file"), &FILE, settings, capturing),
-        section(fl!("dialog-settings-global-hotkey-edit"), &EDIT, settings, capturing),
+        section(
+            fl!("dialog-settings-global-hotkey-file"),
+            &FILE,
+            settings,
+            capturing
+        ),
+        section(
+            fl!("dialog-settings-global-hotkey-edit"),
+            &EDIT,
+            settings,
+            capturing
+        ),
         section(
             fl!("dialog-settings-global-hotkey-playback"),
             &PLAYBACK,
             settings,
             capturing
         ),
-        section(fl!("dialog-settings-global-hotkey-audio"), &AUDIO, settings, capturing),
+        section(
+            fl!("dialog-settings-global-hotkey-audio"),
+            &AUDIO,
+            settings,
+            capturing
+        ),
     ]
     .spacing(20)
     .into()
@@ -287,7 +319,10 @@ mod tests {
         let mut settings = HotkeySettings::default();
         for slot in FILE.iter().chain(&EDIT).chain(&PLAYBACK).chain(&AUDIO) {
             slot.set(&mut settings, Some(format!("F{}", *slot as u8)));
-            assert_eq!(slot.get(&settings).as_deref(), Some(format!("F{}", *slot as u8).as_str()));
+            assert_eq!(
+                slot.get(&settings).as_deref(),
+                Some(format!("F{}", *slot as u8).as_str())
+            );
         }
         // Every slot got a different value, so none shares a field.
         assert!(!is_duplicate(&settings, Slot::Load));
@@ -304,6 +339,9 @@ mod tests {
         assert!(is_duplicate(&settings, Slot::Stop));
 
         Slot::Stop.set(&mut settings, None);
-        assert!(!is_duplicate(&settings, Slot::Load), "an unbound slot counts for nothing");
+        assert!(
+            !is_duplicate(&settings, Slot::Load),
+            "an unbound slot counts for nothing"
+        );
     }
 }

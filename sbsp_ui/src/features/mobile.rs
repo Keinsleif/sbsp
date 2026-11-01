@@ -155,15 +155,31 @@ pub fn frame<'a, M: Clone + 'a>(
         )
         .width(Length::Fill)
         .padding([12, 0])
-        .style(if selected { button::primary } else { button::secondary })
+        .style(if selected {
+            button::primary
+        } else {
+            button::secondary
+        })
         .on_press(on_tab(target))
     };
 
-    let mut tabs = row![tab_button(Icon::FormatListBulleted, fl!("main-mobile-list"), Tab::List)];
+    let mut tabs = row![tab_button(
+        Icon::FormatListBulleted,
+        fl!("main-mobile-list"),
+        Tab::List
+    )];
     if can_control {
-        tabs = tabs.push(tab_button(Icon::Remote, fl!("main-mobile-controls"), Tab::Controls));
+        tabs = tabs.push(tab_button(
+            Icon::Remote,
+            fl!("main-mobile-controls"),
+            Tab::Controls,
+        ));
     }
-    tabs = tabs.push(tab_button(Icon::Monitor, fl!("main-mobile-active"), Tab::Active));
+    tabs = tabs.push(tab_button(
+        Icon::Monitor,
+        fl!("main-mobile-active"),
+        Tab::Active,
+    ));
 
     column![
         clock,
@@ -198,28 +214,54 @@ pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
     let status = c.status;
 
     let skips = row![
-        key(Icon::ArrowUpLeft, false, Tone::Plain, 2, Some(Message::Skip(Skip::Parent))),
-        key(Icon::SkipPrevious, false, Tone::Plain, 1, Some(Message::Skip(Skip::Previous))),
-        key(Icon::SkipNext, false, Tone::Plain, 1, Some(Message::Skip(Skip::Next))),
-        key(Icon::ArrowDownRight, false, Tone::Plain, 2, Some(Message::Skip(Skip::Child))),
+        key(
+            Icon::ArrowUpLeft,
+            false,
+            Tone::Plain,
+            2,
+            Some(Message::Skip(Skip::Parent))
+        ),
+        key(
+            Icon::SkipPrevious,
+            false,
+            Tone::Plain,
+            1,
+            Some(Message::Skip(Skip::Previous))
+        ),
+        key(
+            Icon::SkipNext,
+            false,
+            Tone::Plain,
+            1,
+            Some(Message::Skip(Skip::Next))
+        ),
+        key(
+            Icon::ArrowDownRight,
+            false,
+            Tone::Plain,
+            2,
+            Some(Message::Skip(Skip::Child))
+        ),
     ]
     .spacing(2);
 
     let running = c.playing.is_some();
-    let (position, duration, repeating) = c
-        .playing
-        .as_ref()
-        .map_or((0.0, 1.0, false), |p| (p.position, p.duration.max(0.001), p.repeating));
+    let (position, duration, repeating) = c.playing.as_ref().map_or((0.0, 1.0, false), |p| {
+        (p.position, p.duration.max(0.001), p.repeating)
+    });
     let shown = c.dragging.unwrap_or(position).clamp(0.0, duration);
 
     let bar = if running {
-        slider(0.0..=duration as f32, shown as f32, |value| Message::Seek(f64::from(value)))
-            .step(0.01_f32)
-            .on_release(Message::SeekReleased)
+        slider(0.0..=duration as f32, shown as f32, |value| {
+            Message::Seek(f64::from(value))
+        })
+        .step(0.01_f32)
+        .on_release(Message::SeekReleased)
     } else {
         slider(0.0..=1.0_f32, 0.0, |_| Message::Seek(0.0))
     };
-    let readout = |seconds: Option<f64>| text(format_seconds(seconds)).font(crate::theme::fonts::MONO);
+    let readout =
+        |seconds: Option<f64>| text(format_seconds(seconds)).font(crate::theme::fonts::MONO);
     let times = row![
         readout(running.then_some(shown)),
         Space::new().width(Length::Fill),
@@ -227,9 +269,27 @@ pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
     ];
 
     let seeks = row![
-        key(Icon::Rewind, false, Tone::Plain, 1, running.then_some(Message::Rewind)),
-        key(Icon::Repeat, repeating, Tone::Warning, 1, running.then_some(Message::ToggleRepeat)),
-        key(Icon::FastForward, false, Tone::Plain, 1, running.then_some(Message::FastForward)),
+        key(
+            Icon::Rewind,
+            false,
+            Tone::Plain,
+            1,
+            running.then_some(Message::Rewind)
+        ),
+        key(
+            Icon::Repeat,
+            repeating,
+            Tone::Warning,
+            1,
+            running.then_some(Message::ToggleRepeat)
+        ),
+        key(
+            Icon::FastForward,
+            false,
+            Tone::Plain,
+            1,
+            running.then_some(Message::FastForward)
+        ),
     ]
     .spacing(2);
 
@@ -326,7 +386,11 @@ fn key<'a>(
         let pair = pair(theme);
         button::Style {
             background: Some(pair.color.scale_alpha(lit.0).into()),
-            text_color: if lit.shows_accent() { pair.text } else { base.text_color },
+            text_color: if lit.shows_accent() {
+                pair.text
+            } else {
+                base.text_color
+            },
             ..base
         }
     })

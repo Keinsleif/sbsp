@@ -89,7 +89,8 @@ impl Drafts {
                 let task = match &self.active {
                     Some((id, _)) => {
                         let id = *id;
-                        operation::is_focused(id.0).map(move |focused| Message::FocusChecked(id, focused))
+                        operation::is_focused(id.0)
+                            .map(move |focused| Message::FocusChecked(id, focused))
                     }
                     None => Task::none(),
                 };
@@ -245,7 +246,10 @@ mod tests {
         assert_eq!(drafts.update(Message::FocusChecked(A, true)).0, None);
         assert!(drafts.is_editing(A));
 
-        assert_eq!(drafts.update(Message::FocusChecked(A, false)).0, commit(A, "2"));
+        assert_eq!(
+            drafts.update(Message::FocusChecked(A, false)).0,
+            commit(A, "2")
+        );
         assert!(!drafts.is_editing(A));
     }
 

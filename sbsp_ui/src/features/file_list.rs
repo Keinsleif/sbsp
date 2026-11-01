@@ -231,7 +231,11 @@ fn row_view<'a>(line: Row) -> Element<'a, Message> {
             row![
                 Space::new().width(depth as f32 * INDENT),
                 icon::toned(
-                    if open { Icon::MenuDown } else { Icon::MenuRight },
+                    if open {
+                        Icon::MenuDown
+                    } else {
+                        Icon::MenuRight
+                    },
                     18.0,
                     Tone::Text
                 ),
@@ -259,7 +263,11 @@ fn row_view<'a>(line: Row) -> Element<'a, Message> {
             .spacing(4)
             .align_y(Alignment::Center),
         )
-        .style(if selected { button::primary } else { button::text })
+        .style(if selected {
+            button::primary
+        } else {
+            button::text
+        })
         .width(Length::Fill)
         .padding([3, 6])
         .on_press(Message::Pick(path))
@@ -322,7 +330,10 @@ mod tests {
         assert_eq!(names(&dialog), ["music", "a.mp3", "deep", "top.flac"]);
 
         dialog.update(Message::Toggle("music/deep".to_owned()));
-        assert_eq!(names(&dialog), ["music", "a.mp3", "deep", "b.WAV", "top.flac"]);
+        assert_eq!(
+            names(&dialog),
+            ["music", "a.mp3", "deep", "b.WAV", "top.flac"]
+        );
 
         dialog.update(Message::Toggle("music".to_owned()));
         assert_eq!(names(&dialog), ["music", "top.flac"]);
@@ -334,9 +345,16 @@ mod tests {
         add.set_list(sample());
         add.update(Message::Pick(PathBuf::from("/top.flac")));
         add.update(Message::Pick(PathBuf::from("/m/a.mp3")));
-        assert_eq!(add.selected(), [PathBuf::from("/top.flac"), PathBuf::from("/m/a.mp3")]);
+        assert_eq!(
+            add.selected(),
+            [PathBuf::from("/top.flac"), PathBuf::from("/m/a.mp3")]
+        );
         add.update(Message::Pick(PathBuf::from("/top.flac")));
-        assert_eq!(add.selected(), [PathBuf::from("/m/a.mp3")], "picking again takes it back");
+        assert_eq!(
+            add.selected(),
+            [PathBuf::from("/m/a.mp3")],
+            "picking again takes it back"
+        );
 
         let mut target = Dialog::new(Purpose::Target(Uuid::nil()));
         target.set_list(sample());
@@ -365,10 +383,7 @@ mod tests {
         dialog.set_list(sample());
         dialog.update(Message::Toggle("music".to_owned()));
         dialog.update(Message::Pick(PathBuf::from("/m/a.mp3")));
-        assert!(matches!(
-            dialog.rows()[1],
-            Row::File { selected: true, .. }
-        ));
+        assert!(matches!(dialog.rows()[1], Row::File { selected: true, .. }));
 
         dialog.set_list(sample());
         assert!(dialog.selected().is_empty());

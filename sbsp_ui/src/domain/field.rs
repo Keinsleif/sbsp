@@ -245,7 +245,7 @@ pub fn commit_volume(text: &str, current: Decibels) -> Commit<Decibels> {
 mod tests {
     use sbsp_backend::model::cue::audio::Decibels;
 
-use super::*;
+    use super::*;
 
     fn spec(min: Option<f64>, max: Option<f64>, precision: usize) -> NumberSpec {
         NumberSpec {
@@ -282,7 +282,10 @@ use super::*;
     fn committing_the_shown_text_changes_nothing() {
         let spec = spec(None, None, 2);
         assert_eq!(commit_number("2.50", Some(2.5), &spec), Commit::Unchanged);
-        assert_eq!(commit_number("  2.50 ", Some(2.5), &spec), Commit::Unchanged);
+        assert_eq!(
+            commit_number("  2.50 ", Some(2.5), &spec),
+            Commit::Unchanged
+        );
     }
 
     #[test]
@@ -338,7 +341,10 @@ use super::*;
             max: Some(100.0),
             ..TimeSpec::default()
         };
-        assert_eq!(commit_time("01:30.00", Some(0.0), &spec), Commit::Value(90.0));
+        assert_eq!(
+            commit_time("01:30.00", Some(0.0), &spec),
+            Commit::Value(90.0)
+        );
         assert_eq!(commit_time("10:00", Some(0.0), &spec), Commit::Value(100.0));
         assert_eq!(commit_time("00:00.00", Some(0.0), &spec), Commit::Unchanged);
     }
@@ -355,13 +361,19 @@ use super::*;
     #[test]
     fn a_negative_time_needs_accept_minus() {
         let plain = TimeSpec::default();
-        assert_eq!(commit_time("-00:10.00", Some(3.0), &plain), Commit::Value(0.0));
+        assert_eq!(
+            commit_time("-00:10.00", Some(3.0), &plain),
+            Commit::Value(0.0)
+        );
 
         let signed = TimeSpec {
             accept_minus: true,
             ..TimeSpec::default()
         };
-        assert_eq!(commit_time("-00:10.00", Some(3.0), &signed), Commit::Value(-10.0));
+        assert_eq!(
+            commit_time("-00:10.00", Some(3.0), &signed),
+            Commit::Value(-10.0)
+        );
     }
 
     #[test]
@@ -372,7 +384,10 @@ use super::*;
         };
         // Shown value is value * 2.
         assert_eq!(format_time(Some(30.0), &spec), "01:00.00");
-        assert_eq!(commit_time("02:00.00", Some(30.0), &spec), Commit::Value(60.0));
+        assert_eq!(
+            commit_time("02:00.00", Some(30.0), &spec),
+            Commit::Value(60.0)
+        );
     }
 
     #[test]
@@ -385,10 +400,16 @@ use super::*;
 
     #[test]
     fn a_volume_commits_numbers_and_reverts_text() {
-        assert_eq!(commit_volume("-6", Decibels(0.0)), Commit::Value(Decibels(-6.0)));
+        assert_eq!(
+            commit_volume("-6", Decibels(0.0)),
+            Commit::Value(Decibels(-6.0))
+        );
         assert_eq!(commit_volume("0.00", Decibels(0.0)), Commit::Unchanged);
         assert_eq!(commit_volume("-∞", Decibels(-60.0)), Commit::Unchanged);
         assert_eq!(commit_volume("loud", Decibels(0.0)), Commit::Unchanged);
-        assert_eq!(commit_volume("", Decibels(-6.0)), Commit::Value(Decibels(0.0)));
+        assert_eq!(
+            commit_volume("", Decibels(-6.0)),
+            Commit::Value(Decibels(0.0))
+        );
     }
 }
