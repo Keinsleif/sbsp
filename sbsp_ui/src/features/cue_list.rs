@@ -477,7 +477,7 @@ fn list_view<'a>(
 
     // Only the closing row of the root: no cues.
     let body: Element<'a, Message> = if layout.len() <= 1 {
-        container(text(fl!("cue-list-empty")))
+        container(text(fl!("main-cue-list-empty")))
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)

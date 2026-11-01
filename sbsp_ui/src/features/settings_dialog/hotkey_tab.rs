@@ -265,15 +265,15 @@ fn section<'a>(
 
 pub fn view<'a>(settings: &HotkeySettings, capturing: Option<Slot>) -> Element<'a, Message> {
     column![
-        section(fl!("dialog-settings-global-hotkey-file-title"), &FILE, settings, capturing),
-        section(fl!("dialog-settings-global-hotkey-edit-title"), &EDIT, settings, capturing),
+        section(fl!("dialog-settings-global-hotkey-file"), &FILE, settings, capturing),
+        section(fl!("dialog-settings-global-hotkey-edit"), &EDIT, settings, capturing),
         section(
-            fl!("dialog-settings-global-hotkey-playback-title"),
+            fl!("dialog-settings-global-hotkey-playback"),
             &PLAYBACK,
             settings,
             capturing
         ),
-        section(fl!("dialog-settings-global-hotkey-audio-title"), &AUDIO, settings, capturing),
+        section(fl!("dialog-settings-global-hotkey-audio"), &AUDIO, settings, capturing),
     ]
     .spacing(20)
     .into()

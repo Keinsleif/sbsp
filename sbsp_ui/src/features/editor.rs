@@ -116,13 +116,13 @@ impl Tab {
 
     fn label(self) -> String {
         match self {
-            Tab::Basics => fl!("main-bottom-editor-basics-title"),
-            Tab::Trigger => fl!("main-bottom-editor-trigger-title"),
-            Tab::Audio => fl!("main-bottom-editor-audio-title"),
-            Tab::Levels => fl!("main-bottom-editor-time-levels-title"),
-            Tab::Fade => fl!("main-bottom-editor-fade-title"),
-            Tab::Playback => fl!("main-bottom-editor-playback-title"),
-            Tab::Group => fl!("main-bottom-editor-group-title"),
+            Tab::Basics => fl!("main-bottom-editor-basics"),
+            Tab::Trigger => fl!("main-bottom-editor-trigger"),
+            Tab::Audio => fl!("main-bottom-editor-audio"),
+            Tab::Levels => fl!("main-bottom-editor-time-levels"),
+            Tab::Fade => fl!("main-bottom-editor-fade"),
+            Tab::Playback => fl!("main-bottom-editor-playback"),
+            Tab::Group => fl!("main-bottom-editor-group"),
         }
     }
 }
@@ -782,7 +782,7 @@ fn basics<'a>(
     let chain_kind = cue_edit::chain_kind(chain);
     let locked = ctx.is_active || ctx.chain_override.is_some();
     let chain_mode = labeled(
-        Some(&fl!("main-chain-mode-title")),
+        Some(&fl!("main-chain-mode")),
         picker(
             [ChainKind::DoNotChain, ChainKind::AfterStart, ChainKind::AfterComplete]
                 .into_iter()
@@ -873,7 +873,7 @@ fn basics<'a>(
 
 fn trigger(cue: &Cue) -> Element<'_, Message> {
     let advance = labeled(
-        Some(&fl!("main-bottom-editor-trigger-cursor-advance-trigger-override-title")),
+        Some(&fl!("main-bottom-editor-trigger-cursor-advance-trigger-override")),
         picker(
             ADVANCE
                 .iter()

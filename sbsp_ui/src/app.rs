@@ -3332,7 +3332,7 @@ impl State {
         MenuSpec::new()
             .menu(fl!("menu-file"), file_menu)
             .menu(
-                fl!("menu-edit-title"),
+                fl!("menu-edit"),
                 vec![
                     MenuNode::item("edit.copy", fl!("menu-edit-copy"))
                         .enabled(has_selection)
@@ -3373,7 +3373,7 @@ impl State {
                 ],
             )
             .menu(
-                fl!("menu-tools-title"),
+                fl!("menu-tools"),
                 vec![
                     MenuNode::item("tools.renumber", fl!("menu-tools-renumber"))
                         .enabled(editing && has_selection)
@@ -3915,7 +3915,7 @@ fn remove_dialog<'a>(count: usize) -> Element<'a, Message> {
     column![
         text(fl!("dialog-message-confirmation")).size(18),
         text(fl!("dialog-message-remove-cue")),
-        text(fl!("main-foot-bar-cue-count-suffix", n = (count as i64))).size(12),
+        text(fl!("main-status-bar-cue-count-suffix", n = (count as i64))).size(12),
         row![
             button(text(fl!("general-cancel")))
                 .style(button::secondary)

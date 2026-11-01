@@ -149,7 +149,7 @@ fn empty_cue_list_shows_its_placeholder() {
     let state = new_state();
     let mut ui = iced_test::simulator(state.view());
 
-    assert!(ui.find(fl!("cue-list-empty").as_str()).is_ok());
+    assert!(ui.find(fl!("main-cue-list-empty").as_str()).is_ok());
 }
 
 #[test]
@@ -352,7 +352,7 @@ fn shell_skeleton_renders_the_footer_count() {
     let mut ui = iced_test::simulator(state.view());
 
     assert!(
-        ui.find(fl!("main-foot-bar-cue-count-suffix", n = 0_i64).as_str())
+        ui.find(fl!("main-status-bar-cue-count-suffix", n = 0_i64).as_str())
             .is_ok(),
         "the footer's cue count should render"
     );
@@ -982,7 +982,7 @@ fn the_editor_replaces_the_viewer_in_edit_mode() {
     state.ui.set_selected(ids[0], false);
     {
         let mut ui = iced_test::simulator(state.view());
-        assert!(ui.find(fl!("main-bottom-editor-basics-title").as_str()).is_ok());
+        assert!(ui.find(fl!("main-bottom-editor-basics").as_str()).is_ok());
         assert!(ui.find(fl!("main-number").as_str()).is_ok());
     }
 
@@ -999,7 +999,7 @@ fn the_trigger_tab_can_be_opened() {
     state.ui.set_selected(ids[0], false);
 
     let mut ui = iced_test::simulator(state.view());
-    ui.click(fl!("main-bottom-editor-trigger-title").as_str())
+    ui.click(fl!("main-bottom-editor-trigger").as_str())
         .expect("the tab is a button");
     for message in ui.into_messages() {
         let _ = state.update(message);

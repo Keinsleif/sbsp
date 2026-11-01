@@ -50,9 +50,9 @@ impl fmt::Display for ModeOption {
 
 fn mode_label(mode: Mode) -> String {
     match mode {
-        Mode::View => fl!("main-foot-bar-modes-view"),
-        Mode::Run => fl!("main-foot-bar-modes-run"),
-        Mode::Edit => fl!("main-foot-bar-modes-edit"),
+        Mode::View => fl!("main-status-bar-modes-view"),
+        Mode::Run => fl!("main-status-bar-modes-run"),
+        Mode::Edit => fl!("main-status-bar-modes-edit"),
     }
 }
 
@@ -90,7 +90,7 @@ pub fn view<'a>(
     });
 
     let count = container(text(fl!(
-        "main-foot-bar-cue-count-suffix",
+        "main-status-bar-cue-count-suffix",
         n = (cue_count as i64)
     )))
     .center_x(Length::Fill);

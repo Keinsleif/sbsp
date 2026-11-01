@@ -556,7 +556,7 @@ fn show_general_page<'a>(dialog: &SettingsDialog, drafts: &Drafts) -> Element<'a
             drafts,
         ),
         labeled(
-            Some(fl!("dialog-settings-show-general-cursor-advance-trigger-title").as_str()),
+            Some(fl!("dialog-settings-show-general-cursor-advance-trigger").as_str()),
             picker(triggers, &general.cursor_advance_trigger, Message::CursorAdvance),
         ),
         text_row(
