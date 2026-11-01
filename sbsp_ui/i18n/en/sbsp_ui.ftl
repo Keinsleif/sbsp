@@ -300,7 +300,6 @@ dialog-update-retry = Retry
 dialog-update-unavailable = This copy was not installed by the installer, so it cannot update itself. Update it with the package manager or install the latest release.
 menu-help-check-update = Check for Updates
 dialog-update-updates-available = Updates available
-toast-update-check-failed = Failed to check for updates.
 dialog-settings-global-hotkey-playback-fade-out = Fade Out
 dialog-settings-global-hotkey-playback-hard-stop = Hard Stop
 dialog-settings-global-hotkey-playback-fade-all-out = Fade All Out

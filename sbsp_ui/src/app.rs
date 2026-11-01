@@ -1905,11 +1905,8 @@ impl State {
                     self.update_found = Some(found);
                 }
                 Ok(None) => {}
-                Err(error) => {
-                    log::error!("update check failed: {error}");
-                    self.toasts
-                        .push(toast::Kind::Danger, fl!("toast-update-check-failed"));
-                }
+                // Offline is normal, and nothing here needs the update.
+                Err(error) => log::info!("update check skipped: {error}"),
             }
             return Task::none();
         }
