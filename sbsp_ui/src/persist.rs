@@ -134,8 +134,8 @@ mod storage {
 
     use super::Saved;
 
-    /// The same identifiers as the Tauri builds, so the file sits next to
-    /// the settings.
+    /// The file sits next to the settings, in the folder named by the
+    /// app's identifier.
     fn path(target: &str) -> Option<PathBuf> {
         let identifier = match target {
             "host" => "com.keinsleif.sbsp",
@@ -164,16 +164,7 @@ mod storage {
         let Some(path) = path(target) else {
             return;
         };
-        // Written beside the file and renamed over it, so an interrupted
-        // write never leaves half a file behind.
-        let result = (|| {
-            if let Some(dir) = path.parent() {
-                std::fs::create_dir_all(dir)?;
-            }
-            let temporary = path.with_extension("json.tmp");
-            std::fs::write(&temporary, saved.to_json())?;
-            std::fs::rename(&temporary, &path)
-        })();
+        let result = crate::atomic_write::write_atomic(&path, saved.to_json().as_bytes());
         if let Err(error) = result {
             log::warn!("could not save {}: {error}", path.display());
         }

@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-use std::io::Write as _;
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt as _;
 use std::path::{Path, PathBuf};
 
 use serde::{Serialize, de::DeserializeOwned};
@@ -82,46 +79,8 @@ where
     pub async fn write_settings_to_file(path: &Path, settings: T) -> anyhow::Result<()> {
         let dest_path = path.to_path_buf();
         task::spawn_blocking(move || -> anyhow::Result<()> {
-            let Some(parent) = dest_path.parent() else {
-                anyhow::bail!("Invalid path to save");
-            };
-            std::fs::create_dir_all(parent)?;
-
             let content = serde_json::to_string_pretty(&settings)?;
-            #[cfg(unix)]
-            let permissions = {
-                match std::fs::metadata(&dest_path) {
-                    Ok(metadata) => Some(metadata.permissions()),
-                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-                    Err(error) => return Err(error.into()),
-                }
-            };
-            #[cfg(unix)]
-            let mut temp_file = tempfile::Builder::new()
-                .permissions(
-                    permissions
-                        .clone()
-                        .unwrap_or_else(|| std::fs::Permissions::from_mode(0o666)),
-                )
-                .tempfile_in(parent)?;
-            #[cfg(not(unix))]
-            let mut temp_file = tempfile::NamedTempFile::new_in(parent)?;
-            {
-                let file = temp_file.as_file_mut();
-                file.write_all(content.as_bytes())?;
-                file.flush()?;
-                #[cfg(unix)]
-                if let Some(perm) = permissions {
-                    file.set_permissions(perm)?;
-                }
-                file.sync_all()?;
-            }
-            temp_file.persist(&dest_path)?;
-            #[cfg(unix)]
-            {
-                std::fs::File::open(parent)?.sync_all()?;
-            }
-            Ok(())
+            crate::atomic_write::write_atomic(&dest_path, content.as_bytes())
         })
         .await??;
 

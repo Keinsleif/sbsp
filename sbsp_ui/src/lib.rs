@@ -16,6 +16,8 @@ pub mod menu;
 pub mod time;
 #[cfg(installer)]
 pub mod update;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod atomic_write;
 pub mod persist;
 pub mod port;
 pub mod power;
