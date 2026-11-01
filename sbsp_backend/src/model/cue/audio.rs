@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-#[cfg(feature = "backend")]
 use std::ops::{Add, Mul, Sub};
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Decibels(f32);
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Decibels(pub f32);
 
 impl Default for Decibels {
     fn default() -> Self {
@@ -58,7 +57,12 @@ impl From<Decibels> for f32 {
     }
 }
 
-#[cfg(feature = "backend")]
+impl Display for Decibels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl Add for Decibels {
     type Output = Decibels;
 
@@ -68,7 +72,6 @@ impl Add for Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl Sub for Decibels {
     type Output = Decibels;
 
@@ -78,7 +81,6 @@ impl Sub for Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl Mul<f32> for Decibels {
     type Output = Decibels;
 

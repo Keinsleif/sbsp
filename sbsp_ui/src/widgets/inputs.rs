@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The input parts the editors are built from. Ported from
-//! `components/input/{NumberInput,TimeInput,VolumeInput,VolumeFader,
-//! PanningFader}.vue`.
+//! The input parts the editors are built from.
 //!
 //! None of these hold a value. A field shows what it is given and reports
 //! what the user does as [`field::Message`]; the owner of the value runs
@@ -11,19 +9,20 @@
 //! value with the matching `domain::field::commit_*`. The faders report
 //! their own movement (`FaderMessage`): `Moved` while dragging (the owner
 //! updates its local value) and `Released` at the end (the owner sends the
-//! change to the backend once, as the original did on pointer-up).
+//! change to the backend once).
 
 use crate::time::{Duration, Instant};
 
 use iced::widget::{Space, button, canvas, column, row, slider, text};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Theme, mouse};
+use sbsp_backend::model::cue::audio::Decibels;
 
 use crate::domain::fader::{decibels_to_fader, fader_to_decibels};
 use crate::domain::field::{NumberSpec, TimeSpec, format_number, format_time, format_volume};
 use crate::widgets::field::{self, Drafts, FieldId, text_field};
 use crate::widgets::icon::{Icon, Tone, toned};
 
-/// A small caption above a field (the original's floating label).
+/// A small caption above a field.
 pub fn labeled<'a, Message: 'a>(
     label: Option<&str>,
     content: impl Into<Element<'a, Message>>,
@@ -123,7 +122,7 @@ pub fn time_input<'a>(
 
 pub fn volume_input<'a>(
     id: FieldId,
-    volume: f64,
+    volume: Decibels,
     drafts: &Drafts,
     enabled: bool,
 ) -> Element<'a, field::Message> {
@@ -136,12 +135,12 @@ pub fn volume_input<'a>(
 // Faders
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum FaderMessage {
+pub enum FaderMessage<T> {
     /// The number field next to the slider.
     Field(field::Message),
     /// The value while dragging: dB for the volume fader, -1..1 for the
     /// panning fader.
-    Moved(f64),
+    Moved(T),
     /// The drag ended; send the value.
     Released,
     /// A disabled fader's slider still has to produce something.
@@ -206,11 +205,11 @@ const PANNING_RANGE: f64 = 64.0;
 pub struct VolumeFader<'a> {
     pub id: FieldId,
     pub label: &'a str,
-    pub volume: f64,
+    pub volume: Decibels,
     pub enabled: bool,
 }
 
-pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage> {
+pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage<Decibels>> {
     let VolumeFader {
         id,
         label,
@@ -238,7 +237,7 @@ pub fn volume_fader<'a>(fader: VolumeFader<'_>, drafts: &Drafts) -> Element<'a, 
 
     column![
         header,
-        ticks(&VOLUME_TICKS, FADER_MIN, FADER_MAX),
+        ticks::<Decibels>(&VOLUME_TICKS, FADER_MIN, FADER_MAX),
         track
     ]
     .spacing(2)
@@ -252,7 +251,7 @@ pub struct PanningFader<'a> {
     pub enabled: bool,
 }
 
-pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage> {
+pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a, FaderMessage<f64>> {
     let PanningFader {
         id,
         label,
@@ -309,7 +308,7 @@ pub fn panning_fader<'a>(fader: PanningFader<'_>, drafts: &Drafts) -> Element<'a
 
     column![
         header,
-        ticks(&PANNING_TICKS, -PANNING_RANGE, PANNING_RANGE),
+        ticks::<f64>(&PANNING_TICKS, -PANNING_RANGE, PANNING_RANGE),
         track
     ]
     .spacing(2)
@@ -346,7 +345,7 @@ impl DoubleRelease {
 const HANDLE_INSET: f32 = 8.0;
 const TICKS_HEIGHT: f32 = 14.0;
 
-fn ticks<'a>(ticks: &[Tick], min: f64, max: f64) -> Element<'a, FaderMessage> {
+fn ticks<T>(ticks: &[Tick], min: f64, max: f64) -> canvas::Canvas<Ticks, FaderMessage<T>> {
     canvas::Canvas::new(Ticks {
         ticks: ticks.to_vec(),
         min,
@@ -354,7 +353,6 @@ fn ticks<'a>(ticks: &[Tick], min: f64, max: f64) -> Element<'a, FaderMessage> {
     })
     .width(Length::Fill)
     .height(TICKS_HEIGHT)
-    .into()
 }
 
 struct Ticks {
@@ -441,9 +439,9 @@ mod tests {
     fn the_tick_labels_name_the_decibels_of_their_position() {
         for tick in VOLUME_TICKS {
             let decibels = fader_to_decibels(tick.position);
-            let expected: f64 = tick.label.parse().unwrap();
+            let expected: f32 = tick.label.parse().unwrap();
             assert!(
-                (decibels - expected).abs() < 1e-9,
+                (decibels - Decibels(expected)).0.abs() < 1e-9,
                 "{}: {decibels} vs {}",
                 tick.position,
                 tick.label

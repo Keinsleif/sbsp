@@ -8,9 +8,9 @@
 //! the individual cue types (audio, time & levels, fade, playback, group)
 //! followed in [`type_tabs`] module
 //!
-//! Every edit sends the whole edited cue (`ModelEdit::UpdateCue`), as the
-//! original does. Text fields go through the shared [`Drafts`]: what is
-//! typed is applied when the edit ends (see `widgets::field`). The notes
+//! Every edit sends the whole edited cue (`ModelEdit::UpdateCue`).
+//! Text fields go through the shared [`Drafts`]: what is typed is
+//! applied when the edit ends (see `widgets::field`). The notes
 //! are a multi-line `text_editor`, which keeps its own `Content`; a copy
 //! of its text goes into the same drafts so it ends the same way.
 
@@ -20,6 +20,7 @@ use crate::time::Instant;
 use iced::widget::{Space, button, center, column, container, row, text, text_editor};
 use iced::{Alignment, Element, Length, Theme};
 
+use sbsp_backend::model::cue::audio::Decibels;
 use sbsp_backend::model::cue::{
     Cue, CueChain, CueColor, CueCursorAdvanceTriggerOverride, CueParam, Uuid,
 };
@@ -148,8 +149,8 @@ pub enum Message {
     /// Stop the target of a fade cue when the fade completes.
     FadeStopOnComplete(bool),
     /// The volume fader of an audio or fade cue.
-    Volume(FaderMessage),
-    Pan(FaderMessage),
+    Volume(FaderMessage<Decibels>),
+    Pan(FaderMessage<f64>),
     Repeat(bool),
     /// Set the volume from the file's loudness / peak.
     VolumeToLufs,
@@ -202,7 +203,7 @@ pub struct Editor {
     /// The volume of a fade cue while its fader is being dragged: the
     /// value goes to the backend on release, but the fader must follow the
     /// pointer meanwhile (and until the backend's answer arrives).
-    drag_volume: Option<(Uuid, f64)>,
+    drag_volume: Option<(Uuid, Decibels)>,
     volume_release: DoubleRelease,
     /// The same for the panning fader.
     drag_pan: Option<(Uuid, f64)>,
@@ -296,7 +297,7 @@ impl Editor {
                     return Update::None;
                 };
                 let value = if self.volume_release.released(now) {
-                    Some(0.0)
+                    Some(Decibels::IDENTITY)
                 } else {
                     self.drag_volume
                         .filter(|(id, _)| *id == cue.id)
@@ -529,10 +530,10 @@ impl Editor {
 
     /// The volume to show for an audio or fade cue: the dragged one while
     /// dragging.
-    fn volume_for(&self, cue: &Cue) -> f64 {
+    fn volume_for(&self, cue: &Cue) -> Decibels {
         match self.drag_volume {
             Some((id, value)) if id == cue.id => value,
-            _ => cue_edit::level(cue).unwrap_or(0.0),
+            _ => cue_edit::level(cue).unwrap_or(Decibels::IDENTITY),
         }
     }
 
@@ -574,7 +575,7 @@ impl Editor {
         // (or another cue is shown).
         if let Some((id, value)) = self.drag_volume {
             let stored = cue.filter(|cue| cue.id == id).and_then(cue_edit::level);
-            if stored.is_none_or(|stored| (stored - value).abs() < 1e-3) {
+            if stored.is_none_or(|stored| (stored - value).0.abs() < 1e-3) {
                 self.drag_volume = None;
             }
         }
@@ -1122,17 +1123,17 @@ mod tests {
         let cue = fade_cue();
         let now = Instant::now();
 
-        let _ = editor.update(Message::Volume(FaderMessage::Moved(-12.0)), Some(&cue), None, now);
-        assert_eq!(editor.volume_for(&cue), -12.0);
+        let _ = editor.update(Message::Volume(FaderMessage::Moved(Decibels(-12.0))), Some(&cue), None, now);
+        assert_eq!(editor.volume_for(&cue), Decibels(-12.0));
 
         match editor.update(Message::Volume(FaderMessage::Released), Some(&cue), None, now) {
-            Update::Edit(edited) => assert_eq!(cue_edit::fade_volume(&edited), Some(-12.0)),
+            Update::Edit(edited) => assert_eq!(cue_edit::fade_volume(&edited), Some(Decibels(-12.0))),
             _ => panic!("expected an edit"),
         }
 
         // The backend's answer arrives: the drag value is dropped.
         let mut stored = cue.clone();
-        stored.params = cue_edit::set_fade_volume(&cue, -12.0).unwrap().params;
+        stored.params = cue_edit::set_fade_volume(&cue, Decibels(-12.0)).unwrap().params;
         editor.sync(Some(&stored), &Drafts::default());
         assert!(editor.drag_volume.is_none());
     }
@@ -1180,7 +1181,7 @@ mod tests {
         let started = editor.apply(&commit(START, "1"), &cue).unwrap();
         assert_eq!(cue_edit::audio_start(&started), Some(1.0));
         assert_eq!(cue_edit::pan(&editor.apply(&commit(PAN, "0.5"), &cue).unwrap()), Some(0.5));
-        assert_eq!(cue_edit::level(&editor.apply(&commit(VOLUME, "-6"), &cue).unwrap()), Some(-6.0));
+        assert_eq!(cue_edit::level(&editor.apply(&commit(VOLUME, "-6"), &cue).unwrap()), Some(Decibels(-6.0)));
     }
 
     #[test]

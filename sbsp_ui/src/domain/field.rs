@@ -9,6 +9,8 @@
 //! it gets the text and the current value and says what should happen, so
 //! the widgets stay dumb and the rules are testable without a window.
 
+use sbsp_backend::model::cue::audio::Decibels;
+
 use super::time::{format_seconds, parse_seconds};
 
 /// What committing a field does to its value.
@@ -206,9 +208,9 @@ pub fn commit_time(text: &str, current: Option<f64>, spec: &TimeSpec) -> Commit<
 // Volume
 
 /// Where "silence" starts: at or below this the field shows `-∞`.
-pub const VOLUME_FLOOR_DB: f64 = -60.0;
+pub const VOLUME_FLOOR_DB: Decibels = Decibels(-60.0);
 
-pub fn format_volume(decibels: f64) -> String {
+pub fn format_volume(decibels: Decibels) -> String {
     if decibels <= VOLUME_FLOOR_DB {
         "-∞".to_string()
     } else {
@@ -218,16 +220,16 @@ pub fn format_volume(decibels: f64) -> String {
 
 /// An empty field is 0 dB (JavaScript's `Number("")`); text that is not a
 /// number, including the `-∞` the field itself shows, reverts.
-pub fn commit_volume(text: &str, current: f64) -> Commit<f64> {
+pub fn commit_volume(text: &str, current: Decibels) -> Commit<Decibels> {
     let text = text.trim();
     if text == format_volume(current) {
         return Commit::Unchanged;
     }
     let value = if text.is_empty() {
-        0.0
+        Decibels(0.0)
     } else {
-        match text.parse::<f64>() {
-            Ok(value) if value.is_finite() => value,
+        match text.parse::<f32>() {
+            Ok(value) if value.is_finite() => Decibels(value),
             _ => return Commit::Unchanged,
         }
     };
@@ -241,7 +243,9 @@ pub fn commit_volume(text: &str, current: f64) -> Commit<f64> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use sbsp_backend::model::cue::audio::Decibels;
+
+use super::*;
 
     fn spec(min: Option<f64>, max: Option<f64>, precision: usize) -> NumberSpec {
         NumberSpec {
@@ -373,18 +377,18 @@ mod tests {
 
     #[test]
     fn the_volume_floor_shows_as_minus_infinity() {
-        assert_eq!(format_volume(-60.0), "-∞");
-        assert_eq!(format_volume(-75.0), "-∞");
-        assert_eq!(format_volume(-12.346), "-12.35");
-        assert_eq!(format_volume(0.0), "0.00");
+        assert_eq!(format_volume(Decibels(-60.0)), "-∞");
+        assert_eq!(format_volume(Decibels(-75.0)), "-∞");
+        assert_eq!(format_volume(Decibels(-12.346)), "-12.35");
+        assert_eq!(format_volume(Decibels(0.0)), "0.00");
     }
 
     #[test]
     fn a_volume_commits_numbers_and_reverts_text() {
-        assert_eq!(commit_volume("-6", 0.0), Commit::Value(-6.0));
-        assert_eq!(commit_volume("0.00", 0.0), Commit::Unchanged);
-        assert_eq!(commit_volume("-∞", -60.0), Commit::Unchanged);
-        assert_eq!(commit_volume("loud", 0.0), Commit::Unchanged);
-        assert_eq!(commit_volume("", -6.0), Commit::Value(0.0));
+        assert_eq!(commit_volume("-6", Decibels(0.0)), Commit::Value(Decibels(-6.0)));
+        assert_eq!(commit_volume("0.00", Decibels(0.0)), Commit::Unchanged);
+        assert_eq!(commit_volume("-∞", Decibels(-60.0)), Commit::Unchanged);
+        assert_eq!(commit_volume("loud", Decibels(0.0)), Commit::Unchanged);
+        assert_eq!(commit_volume("", Decibels(-6.0)), Commit::Value(Decibels(0.0)));
     }
 }

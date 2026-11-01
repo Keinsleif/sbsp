@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The real root `State`/`Message`/`update`/`view`/`subscription`, per the
-//! migration plan's Phase 3. Replaces `prototype.rs` (Phase 0's throwaway
-//! verification scaffold, now deleted -- it did its job: IME, the 2000-row
-//! list, theme/language switching, the menu bar, toast/modal, and the
-//! backend connection were all exercised through it and are now folded in
-//! here for real).
+//! The root of the app: `State`, `Message`, `update`, `view` and
+//! `subscription`.
 //!
-//! Scope for this patch: a working shell (menu bar, header/sidebar/footer
-//! skeleton, theme, toasts) wired to the real `state::*` modules and the
-//! host backend connection, with the backend's periodic position tick
-//! actually driving `PlaybackState::calculate_position`. The sidebar and
-//! main content are placeholders -- the cue list itself is Phase 4.
+//! `State` ties together the show model, the playback state, the UI state
+//! and the settings, and the connection to the backend: the in-process one
+//! on the host, the network one on a remote. `update` turns every message
+//! into a change of that state and the `Task`s it needs (commands to the
+//! backend, file dialogs, saving); `view` draws the menu bar, the
+//! transport, the cue list with the sidebar and editor, the status bar and
+//! the dialogs and toasts on top; `subscription` brings in the backend's
+//! events, the timers (playback position, level meter, resize settling,
+//! blinking) and the keyboard, mouse and window events.
 
 #[cfg(test)]
 mod tests;
@@ -22,6 +22,7 @@ use crate::time::{Duration, Instant};
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
+use sbsp_backend::model::cue::audio::Decibels;
 
 use crate::domain::{clipboard, cue_edit};
 use crate::domain::new_cue::{self, CueKind};
@@ -70,24 +71,21 @@ use crate::settings::GlobalRemoteSettings;
 use crate::fl;
 
 /// How often `calculate_position` re-derives interpolated positions while
-/// something is active. 50ms is a placeholder, not a measured choice --
-/// revisit once there's an actual level meter / progress bar reading it
-/// (Phase 5) to judge smoothness against.
+/// something is active.
 const POSITION_TICK: Duration = Duration::from_millis(50);
 /// How long after the last resize event the window counts as settled, and
 /// how often that is checked.
 const RESIZE_SETTLE: Duration = Duration::from_millis(150);
 const RESIZE_CHECK: Duration = Duration::from_millis(100);
 
-/// Level meter refresh (about 30fps, same as the Tauri host's poll).
+/// Level meter refresh (about 30fps).
 const METER_TICK: Duration = Duration::from_millis(33);
 
 /// Longest step the meter decay takes at once, so a stalled frame (window
 /// dragged, machine asleep) does not drop the bars in a single jump.
 const METER_MAX_DT: f32 = 0.1;
 
-/// How often the backend is asked where the playing cues are (the original
-/// asked every 5 seconds too).
+/// How often the backend is asked where the playing cues are.
 #[cfg(backend)]
 const SYNC_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -143,11 +141,11 @@ pub fn run(target: &'static str) -> iced::Result {
 pub struct State {
     theme_mode: ThemeMode,
     lang: Language,
-    // Not yet synced from the loaded settings (they live behind an async
-    // RwLock inside HostPort, unreadable from the synchronous view()). The
-    // defaults match what a first run loads anyway; wiring real values in
-    // is a Phase 7 job (a settings dialog is the first thing that can
-    // change them).
+    // The preferences the screen reads. They are copied here when the
+    // settings are loaded or saved, because the settings live behind an
+    // async lock inside `HostPort`, which the synchronous `view()` cannot
+    // read. Until then they hold the defaults, which is also what a first
+    // run loads.
     name_format: NameFormatSettings,
     lock_cursor_to_selection: bool,
     cue_view: cue_list::Viewport,
@@ -658,7 +656,7 @@ impl State {
     }
 
     /// Sends an edited cue. A volume change of a cue that is playing goes
-    /// to the playing cue as well, as the original's editor does.
+    /// to the playing cue as well.
     fn send_cue_edit(&self, before: &Cue, edited: Cue) -> Task<Message> {
         let volume = match (&before.params, &edited.params) {
             (CueParam::Audio(old), CueParam::Audio(new))
@@ -806,7 +804,7 @@ impl State {
             }
             Message::DropsSettled => self.add_dropped_files(),
             Message::Viewer(viewer::Message::Seek(id, seconds)) => {
-                // Same guard as the original: View mode does not seek.
+                // View mode does not seek.
                 if self.ui.mode == Mode::View {
                     Task::none()
                 } else {
@@ -1123,7 +1121,7 @@ impl State {
 
         #[cfg(backend)]
         if let Some((left, right)) = self.backend.as_ref().and_then(|backend| backend.level()) {
-            // The Tauri host only forwards non-silent frames; same here.
+            // Only non-silent frames go into the meter.
             if left > 0.001 || right > 0.001 {
                 self.meter.push(left, right);
             }
@@ -1154,7 +1152,7 @@ impl State {
             cue_list::Message::RightClicked => {
                 // The menu opens by itself; what it acts on is the row
                 // under the pointer, unless that is in the selection
-                // already (the original did the same).
+                // already.
                 if let Some(id) = self.hovered_row
                     && self.ui.mode == Mode::Edit
                     && !self.ui.selected_rows.contains(&id)
@@ -1352,9 +1350,8 @@ impl State {
         }
     }
 
-    /// What each hotkey does. The guards mirror the original's per-hotkey
-    /// callbacks: selection movement works in every mode, everything that
-    /// plays or stops something is off in view mode.
+    /// What each hotkey does. Selection movement works in every mode;
+    /// everything that plays or stops something is off in view mode.
     fn run_action(&mut self, action: hotkeys::Action) -> Task<Message> {
         use cue_list::Step;
         use hotkeys::Action as A;
@@ -1484,8 +1481,7 @@ impl State {
             field::Message::Input(id, _) if editor::owns(*id) && !self.fields.is_editing(*id)
         );
 
-        // Enter in one of the renumber dialog's fields runs it, as in the
-        // original; Escape in one closes it.
+        // Enter in one of the renumber dialog's fields runs it; Escape in one closes it.
         let submits_renumber = self.renumber_open
             && matches!(&message, field::Message::Submit(id) if renumber::owns(*id));
         if self.renumber_open && message == field::Message::Escape {
@@ -2425,7 +2421,7 @@ impl State {
                     }),
                     editor::Match::Peak => info.peak.map(cue_edit::volume_for_peak),
                 };
-                match volume.and_then(|volume| cue_edit::set_level(&before, volume)) {
+                match volume.and_then(|volume| cue_edit::set_level(&before, Decibels(volume as f32))) {
                     Some(edited) => self.send_cue_edit(&before, edited),
                     None => Task::none(),
                 }
@@ -2479,9 +2475,8 @@ impl State {
 
     /// Asks the backend to analyze every audio file in the cue list that
     /// has no result yet (the viewer needs the waveform, the list needs
-    /// the duration). The original did this lazily as rows rendered; the
-    /// processor already bounds its own concurrency, so asking up front is
-    /// fine and keeps `view()` free of side effects.
+    /// the duration). The processor already bounds its own concurrency,
+    /// so asking up front is fine and keeps view() free of side effects.
     #[cfg(backend)]
     fn request_assets(&mut self) -> Task<Message> {
         use sbsp_backend::model::cue::CueParam;
@@ -2529,7 +2524,7 @@ impl State {
         Task::perform(backend.send(controls), backend_result)
     }
 
-    /// Web has no backend connection yet (Phase 9).
+    /// The web build has no backend connection.
     #[cfg(not(backend))]
     fn send(&self, controls: Vec<Control>) -> Task<Message> {
         if !controls.is_empty() {
@@ -2546,7 +2541,7 @@ impl State {
         Task::perform(backend.edit(edit), backend_result)
     }
 
-    /// Web has no backend connection yet (Phase 9).
+    /// The web build has no backend connection.
     #[cfg(not(backend))]
     fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
         log::warn!("no backend to send {edit:?} to");
@@ -2823,7 +2818,7 @@ impl State {
     }
 
     /// Cut: copy, then remove the originals without asking (edit mode;
-    /// elsewhere it only copies, as in the original).
+    /// elsewhere it only copies).
     fn cut_selection(&mut self) -> Task<Message> {
         self.copy_selection();
         if self.ui.mode != Mode::Edit {
@@ -3083,10 +3078,10 @@ impl State {
                         .set_playback_cursor(None, lock, &self.model.cue_list.cues);
                 }
             }
-            // The authoritative post-mutation list; add_cue/remove_cue/
-            // move_cue and friends (Phase 4's cue list operations) all
-            // produce this rather than a per-operation delta, so handling
-            // just this one event keeps the model in sync with all of them.
+            // The authoritative list after any change; add, remove, move
+            // and the like all produce this rather than a per-operation
+            // delta, so handling just this event keeps the model in sync
+            // with all of them.
             BackendEvent::CueListUpdated { cue_list } => {
                 self.model.cue_list = cue_list;
                 self.assets_stale = true;
