@@ -29,6 +29,7 @@ dialog-quit-while-active-content = Cues are active. Do you want to quit?
 dialog-message-remove-cue = Are you sure you want to remove?
 general-cancel = Cancel
 general-confirm = Confirm
+general-exit = Exit
 menu-cue-audio = Audio Cue
 menu-cue-fade = Fade Cue
 menu-cue-group = Group Cue

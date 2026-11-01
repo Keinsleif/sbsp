@@ -77,7 +77,7 @@ pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
             button(text(fl!("general-cancel")))
                 .style(button::secondary)
                 .on_press(Answer::Cancel),
-            button(text(fl!("general-confirm"))).on_press(Answer::Yes),
+            button(text(fl!("general-exit"))).on_press(Answer::Yes),
         ],
         Confirm::SaveChanges(_) => row![
             button(text(fl!("dialog-save-confirm-cancel")))

@@ -26,6 +26,7 @@ dialog-quit-while-active-content = アクティブなキューがあります。
 dialog-message-remove-cue = キューを削除してもよろしいですか？
 general-cancel = キャンセル
 general-confirm = 確認
+general-exit = 終了
 menu-cue-audio = 音声キュー
 menu-cue-fade = フェードキュー
 menu-cue-group = グループキュー
