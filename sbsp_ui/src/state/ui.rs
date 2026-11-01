@@ -82,6 +82,9 @@ pub struct UiState {
     pub pre_wait_display_mode: DisplayMode,
     pub duration_display_mode: DisplayMode,
     pub keep_awake: KeepAwakeMode,
+    /// When the update feed was last asked, in milliseconds since the Unix
+    /// epoch (0: never).
+    pub last_update_check: u64,
 }
 
 impl UiState {
@@ -108,6 +111,7 @@ impl UiState {
             pre_wait_display_mode: DisplayMode::Elapsed,
             duration_display_mode: DisplayMode::Elapsed,
             keep_awake: KeepAwakeMode::default(),
+            last_update_check: 0,
         }
     }
 

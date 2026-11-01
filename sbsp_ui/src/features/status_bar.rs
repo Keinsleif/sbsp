@@ -4,7 +4,7 @@
 //! The bottom bar: the mode picker (view / run / edit, limited to what the
 //! permissions allow) and the cue count. Ported from `AppFooter.vue`.
 //!
-//! The update-available button, the asset-processing indicator and the
+//! The asset-processing indicator and the
 //! server/settings/dock buttons that bar also held come with the features
 //! they belong to (Phase 6/7).
 
@@ -24,6 +24,7 @@ pub enum Message {
     ToggleBottomTab,
     OpenSettings,
     OpenServerPanel,
+    OpenUpdate,
 }
 
 /// A mode with its translated label, which is what `pick_list` shows.
@@ -56,7 +57,12 @@ fn mode_label(mode: Mode) -> String {
 }
 
 /// `has_server`: this build can run the API server (the host).
-pub fn view<'a>(ui: &UiState, cue_count: usize, has_server: bool) -> Element<'a, Message> {
+pub fn view<'a>(
+    ui: &UiState,
+    cue_count: usize,
+    has_server: bool,
+    update_available: bool,
+) -> Element<'a, Message> {
     let options: Vec<ModeOption> = ui
         .available_modes()
         .into_iter()
@@ -69,6 +75,19 @@ pub fn view<'a>(ui: &UiState, cue_count: usize, has_server: bool) -> Element<'a,
 
     let picker = pick_list(options, selected, |option| Message::ModeSelected(option.mode))
         .width(120);
+
+    // Beside the mode picker, as in the original; it stays while an update
+    // is waiting and opens the update dialog.
+    let update = update_available.then(|| {
+        button(
+            row![icon::icon(Icon::Refresh, 16.0), text(fl!("dialog-update-updates-available"))]
+                .spacing(4)
+                .align_y(Alignment::Center),
+        )
+        .padding([3, 8])
+        .style(button::secondary)
+        .on_press(Message::OpenUpdate)
+    });
 
     let count = container(text(fl!(
         "main-foot-bar-cue-count-suffix",
@@ -97,7 +116,11 @@ pub fn view<'a>(ui: &UiState, cue_count: usize, has_server: bool) -> Element<'a,
 
     let settings = btn(Icon::Cog, Message::OpenSettings);
 
-    let mut bar = row![picker, count, bottom_toggle, sidebar_toggle].align_y(Alignment::Center);
+    let mut bar = row![picker].align_y(Alignment::Center);
+    if let Some(update) = update {
+        bar = bar.push(update);
+    }
+    let mut bar = bar.push(count).push(bottom_toggle).push(sidebar_toggle);
     if has_server {
         bar = bar.push(btn(Icon::Server, Message::OpenServerPanel));
     }

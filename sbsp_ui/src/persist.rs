@@ -66,6 +66,7 @@ pub struct Saved {
     pub is_right_sidebar_open: Option<bool>,
     pub is_bottom_tab_open: Option<bool>,
     pub keep_awake: Option<KeepAwakeMode>,
+    pub last_update_check: Option<u64>,
 }
 
 impl Saved {
@@ -79,6 +80,7 @@ impl Saved {
             is_right_sidebar_open: Some(ui.is_right_sidebar_open),
             is_bottom_tab_open: Some(ui.is_bottom_tab_open),
             keep_awake: Some(ui.keep_awake),
+            last_update_check: Some(ui.last_update_check),
         }
     }
 
@@ -106,6 +108,9 @@ impl Saved {
         }
         if let Some(value) = self.keep_awake {
             ui.keep_awake = value;
+        }
+        if let Some(value) = self.last_update_check {
+            ui.last_update_check = value;
         }
     }
 
@@ -206,6 +211,7 @@ mod tests {
         ui.is_right_sidebar_open = false;
         ui.duration_display_mode = DisplayMode::Remain;
         ui.keep_awake = KeepAwakeMode::Always;
+        ui.last_update_check = 1_700_000_000_000;
         let window = WindowRect { width: 1000.0, height: 600.0, x: Some(10.0), y: None, maximized: true };
 
         let saved = Saved::parse(&Saved::capture(&ui, Some(window)).to_json());
@@ -218,6 +224,7 @@ mod tests {
         assert!(restored.is_bottom_tab_open);
         assert_eq!(restored.duration_display_mode, DisplayMode::Remain);
         assert_eq!(restored.keep_awake, KeepAwakeMode::Always);
+        assert_eq!(restored.last_update_check, 1_700_000_000_000);
         assert_eq!(saved.window, Some(window));
     }
 

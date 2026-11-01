@@ -482,13 +482,20 @@ impl State {
             Task::perform(crate::web::fetch_fonts(), Message::FontsFetched),
         ]);
 
+        // At most once a day, and only where the app can update itself.
         #[cfg(installer)]
-        let boot_task = Task::batch([
-            boot_task,
-            Task::perform(crate::update::check(target), |result| {
-                Message::UpdateChecked(true, result)
-            }),
-        ]);
+        let boot_task = if crate::update::due(saved.last_update_check.unwrap_or(0), crate::update::now_ms())
+            && crate::update::installed(target)
+        {
+            Task::batch([
+                boot_task,
+                Task::perform(crate::update::check(target), |result| {
+                    Message::UpdateChecked(true, result)
+                }),
+            ])
+        } else {
+            boot_task
+        };
 
         let is_host = cfg!(feature = "host");
         let lang = Language::default();
@@ -677,6 +684,7 @@ impl State {
             Message::Settings(message) => self.handle_settings(message),
             Message::StatusBar(status_bar::Message::OpenSettings) => self.open_settings(),
             Message::StatusBar(status_bar::Message::OpenServerPanel) => self.open_server_panel(),
+            Message::StatusBar(status_bar::Message::OpenUpdate) => self.open_update_dialog(),
             Message::ServerPanel(message) => self.handle_server_panel(message),
             Message::Credits(message) => {
                 match message {
@@ -929,6 +937,7 @@ impl State {
             }
             Message::StatusBar(status_bar::Message::OpenSettings)
             | Message::StatusBar(status_bar::Message::OpenServerPanel)
+            | Message::StatusBar(status_bar::Message::OpenUpdate)
             | Message::ServerPanel(_)
             | Message::Credits(_)
             | Message::Update(_)
@@ -1829,6 +1838,31 @@ impl State {
         }
     }
 
+    /// The footer's update button: shows the update that was found, or asks
+    /// the feed when there is none to show.
+    fn open_update_dialog(&mut self) -> Task<Message> {
+        #[cfg(installer)]
+        if let Some(found) = &self.update_found {
+            self.update_dialog = Some(update_dialog::Dialog::new(update_dialog::Stage::Available(
+                found.version(),
+            )));
+            return Task::none();
+        }
+        self.start_update_check()
+    }
+
+    /// Whether an update was found and is still waiting.
+    fn update_available(&self) -> bool {
+        #[cfg(installer)]
+        {
+            self.update_found.is_some()
+        }
+        #[cfg(not(installer))]
+        {
+            false
+        }
+    }
+
     /// Opens the update dialog and asks the feed.
     fn start_update_check(&mut self) -> Task<Message> {
         use update_dialog::Stage;
@@ -1860,17 +1894,22 @@ impl State {
     ) -> Task<Message> {
         use update_dialog::Stage;
 
+        if result.is_ok() {
+            self.ui.last_update_check = crate::update::now_ms();
+        }
         if silent {
             match result {
+                // The footer shows the button while `update_found` is set.
                 Ok(Some(found)) => {
                     log::info!("update {} is available", found.version());
                     self.update_found = Some(found);
-                    self.toasts
-                        .push(toast::Kind::Info, fl!("toast-update-available"));
                 }
                 Ok(None) => {}
-                // Not installed, or no network: not worth bothering about.
-                Err(error) => log::info!("update check skipped: {error}"),
+                Err(error) => {
+                    log::error!("update check failed: {error}");
+                    self.toasts
+                        .push(toast::Kind::Danger, fl!("toast-update-check-failed"));
+                }
             }
             return Task::none();
         }
@@ -3531,6 +3570,7 @@ impl State {
                 &self.ui,
                 self.model.cue_list.cues.len(),
                 cfg!(feature = "host"),
+                self.update_available(),
             ).map(Message::StatusBar),
         )
         .width(Length::Fill);

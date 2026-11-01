@@ -28,6 +28,22 @@ fn manager(target: &str) -> Result<UpdateManager, String> {
     UpdateManager::new(HttpSource::new(&feed(target)), None, None).map_err(|e| e.to_string())
 }
 
+/// How long after a check the next startup check waits.
+const CHECK_INTERVAL_MS: u64 = 24 * 60 * 60 * 1000;
+
+/// Now, in milliseconds since the Unix epoch.
+pub fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX))
+}
+
+/// Whether the startup check is due: more than a day since `last`, or the
+/// clock went back past it.
+pub fn due(last: u64, now: u64) -> bool {
+    last > now || now - last > CHECK_INTERVAL_MS
+}
+
 /// An update that was found.
 #[derive(Clone)]
 pub struct Found(Arc<UpdateInfo>);
@@ -122,6 +138,16 @@ mod tests {
         assert!(feed("host").ends_with("/host"));
         assert!(feed("remote").ends_with("/remote"));
         assert!(!feed("host").contains("//host"));
+    }
+
+    #[test]
+    fn the_startup_check_waits_a_day() {
+        let day = 24 * 60 * 60 * 1000;
+        assert!(due(0, day + 1));
+        assert!(!due(1_000, 1_000 + day));
+        assert!(due(1_000, 1_001 + day));
+        // The clock went back.
+        assert!(due(5_000, 1_000));
     }
 
     #[test]
