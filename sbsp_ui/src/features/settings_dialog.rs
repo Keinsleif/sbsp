@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The settings dialog. Ported from `SettingsDialog.vue`.
+//! The settings dialog.
 //!
 //! The dialog edits a copy of the settings (the show's and the global
 //! ones); Done hands the copy back to the app, Cancel throws it away.
@@ -276,7 +276,7 @@ impl SettingsDialog {
     }
 
     /// The hotkeys of another cue player's layout. Only the playback keys
-    /// and the repeat toggle change, as in the original.
+    /// and the repeat toggle change.
     fn recall(&mut self, preset: Preset) {
         use crate::settings::hotkey::{AudioActionHotkey, PlaybackHotkey};
 

@@ -3,8 +3,8 @@
 
 //! The edit buffer behind every text field.
 //!
-//! The original inputs keep what the user is typing apart from the value
-//! it edits, and apply it when the edit is finished: on Enter or when the
+//! The inputs keep what the user is typing apart from the value it
+//! edits, and apply it when the edit is finished: on Enter or when the
 //! field loses focus (Escape throws the edit away). iced's `text_input`
 //! only reports typing and Enter, not losing focus, so the missing piece
 //! is rebuilt here.

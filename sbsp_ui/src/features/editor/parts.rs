@@ -144,8 +144,8 @@ pub(super) struct FadeInput<'a> {
     pub drafts: &'a Drafts,
 }
 
-/// The original's `FadeParamInput`: an on/off box, the duration, the curve
-/// and its intensity, and a picture of the curve.
+/// An on/off box, the duration, the curve and its intensity, and
+/// a picture of the curve.
 pub(super) fn fade_param_input<'a>(input: FadeInput<'a>) -> Element<'a, Message> {
     let FadeInput {
         slot,

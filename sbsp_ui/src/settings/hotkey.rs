@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
+//! The keyboard shortcuts, as they are kept in the settings file.
+//!
+//! A binding is a string such as `"$mod+Shift+S"` or `"ArrowUp"`: modifiers
+//! joined to a key with `+`, where `$mod` stands for Cmd on macOS and Ctrl
+//! elsewhere (the string is parsed by `domain::hotkey`). `None` means the
+//! action has no shortcut. Bindings are grouped by what they act on: files,
+//! editing, playback, and audio cues.
+//!
+//! Field names are written in camelCase so that settings files stay
+//! readable across versions. Every group and most fields fall back to their
+//! defaults when missing, so a file written before a shortcut existed still
+//! loads and gets that shortcut's default. `execute` also accepts the old
+//! name `go`.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]

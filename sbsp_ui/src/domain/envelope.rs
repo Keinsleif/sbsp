@@ -2,7 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The volume envelope of an audio cue, as the waveform editor edits it.
-//! Ported from `WaveformEditor.vue`.
 //!
 //! An envelope is a list of segments, each holding one volume (dB) for a
 //! stretch of the played part of the file. Positions are fractions of that

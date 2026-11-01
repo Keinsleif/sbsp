@@ -1,16 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `utils.ts`: `easingToCurve`, `curveToEasing`.
-//!
-//! `sbsp_backend::model::cue::audio::Easing` already carries its intensity
-//! inline per-variant (`InPow(f64)` etc.), unlike the old `ts-rs`-generated
-//! TS type, which the Vue frontend bridged to a flat `{ type, power }`
-//! shape for its curve-editor widget (a dropdown for the curve kind, plus
-//! one shared number input for the intensity, since `Linear` has none).
-//! [`Curve`] is that same flat shape, kept because the editor widget
-//! (Phase 6) will likely want it for the same reason, not because the
-//! Easing type itself needs bridging for serialization anymore.
+//! [`Curve`] is the flat shape of `sbsp_backend::model::cue::audio::Easing`
+//! for the editor widget (a dropdown for the curve kind, plus one shared number input for the intensity).
 //!
 //! `sbsp_backend::model` has no feature gate, so this works on every
 //! target (host, remote, and eventually web) without needing `backend` or

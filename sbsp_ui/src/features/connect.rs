@@ -2,8 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The remote's connect screen: the hosts found on the network, the address
-//! typed in by hand, and the password asked for when connecting. Ported
-//! from `ConnectView.vue`.
+//! typed in by hand, and the password asked for when connecting.
 //!
 //! Choosing a host (or pressing Connect) asks for the password first; an
 //! empty one means the host has none for what this connection may do.

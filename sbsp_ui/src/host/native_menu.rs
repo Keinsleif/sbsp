@@ -5,11 +5,11 @@
 //! [`crate::menu::MenuSpec`].
 //!
 //! On Windows and Linux the same [`MenuSpec`] is instead rendered in-app by
-//! [`crate::widgets::menu_bar`] (see the migration plan, section 5.1):
-//! `muda` cannot attach accelerators to a winit window on Windows, and
-//! cannot attach to a winit window at all on Linux (it requires a GTK
-//! window). macOS has neither limitation, because `init_for_nsapp` sets the
-//! process-wide menu bar without needing a window handle at all.
+//! [`crate::widgets::menu_bar`]: `muda` cannot attach accelerators to a winit
+//! window on Windows, and cannot attach to a winit window at all on Linux (it
+//! requires a GTK window). macOS has neither limitation, because
+//! `init_for_nsapp` sets the process-wide menu bar without needing a window
+//! handle at all.
 //!
 //! This module only builds and installs the menu and forwards click events;
 //! keyboard handling stays in iced's own keyboard subscription.

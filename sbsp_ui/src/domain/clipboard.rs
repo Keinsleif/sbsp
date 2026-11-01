@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! What copy, cut, paste and duplicate do with cues. Ported from
-//! `CueList.vue`.
+//! What copy, cut, paste and duplicate do with cues.
 //!
 //! The clipboard is the app's own list of cues, not the system's: cues
 //! are not text, and the original kept them in a variable too. A pasted

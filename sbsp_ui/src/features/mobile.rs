@@ -3,8 +3,7 @@
 
 //! The phone layout of the web build: a big clock, one of three screens
 //! (the cue list, the controls for the cue under the playback cursor, the
-//! running cues) and a bar to choose between them. Ported from
-//! `MainViewMobile.vue`, `ControlsPanel.vue` and `SeekBar.vue`.
+//! running cues) and a bar to choose between them.
 //!
 //! The list and the running cues are the desktop's own views; this module
 //! has the frame around them, the controls screen, and the cursor moves of
@@ -26,8 +25,7 @@ use crate::widgets::blink::Strength;
 use crate::widgets::divider;
 use crate::widgets::icon::{Icon, colored};
 
-/// The layout is used below this width (Tailwind's `sm`, which the original
-/// switched on too).
+/// The layout is used below this width
 pub const MAX_WIDTH: f32 = 640.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -72,8 +70,8 @@ pub enum Message {
 
 /// Where the playback cursor goes for a skip button. `Previous` and `Next`
 /// move through the list (children included, collapsed or not) to the
-/// nearest cue on the same level, as the original does; with no cursor
-/// they go to the first and the last cue.
+/// nearest cue on the same level. with no cursor they go to the first and
+/// the last cue.
 pub fn skip(
     direction: Skip,
     cursor: Option<Uuid>,

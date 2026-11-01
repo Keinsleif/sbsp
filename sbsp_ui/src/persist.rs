@@ -2,16 +2,15 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! What the app remembers between runs: the window's place and size, and
-//! the UI choices the Tauri build kept with `pinia-plugin-persistedstate`
-//! (mode, the pre-wait / duration display modes, the sidebar tab and the
-//! open/closed state of the sidebar and bottom viewer) and when to keep the
-//! machine awake.
+//! the UI choices (mode, the pre-wait / duration display modes, the sidebar
+//! tab and the open/closed state of the sidebar and bottom viewer) and when
+//! to keep the machine awake.
 //!
 //! The file is `ui_state.json` next to the settings (`config_dir()/<identifier>`).
 //! Everything is optional, so a missing field, a missing file and a file
 //! from an older version all fall back to the defaults. It is written when
-//! the app quits. The web build keeps this in `localStorage` (Phase 9);
-//! until then `load`/`save` do nothing there.
+//! the app quits. The web build keeps this in `localStorage`, until then
+//! `load`/`save` do nothing there.
 
 use serde::{Deserialize, Serialize};
 

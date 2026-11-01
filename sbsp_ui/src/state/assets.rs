@@ -1,29 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `stores/assetResult.ts`.
+//! The results of processing audio files: waveforms and peaks, metadata,
+//! and the files that failed, keyed by path.
 //!
-//! `sbsp_backend::asset_processor::{AssetData, AssetMetadata}` have no
-//! feature gate, same pattern as the rest of Phase 2's state modules.
-//!
-//! Scoped to the local cache only (`add`/`addError`/`addMetadata`/
-//! `resetError`/`clear`, plus a plain lookup by path). The original's
-//! `get(cueId)`/`getMetadata(cueId)` do three things at once: resolve a
-//! cue id to its audio target path via the show model, look that path up
-//! in the cache, and -- as a side effect, if missing -- call the backend
-//! to start processing it. Those are three different concerns (model
-//! lookup, pure cache read, and an API call), so they're split here
-//! instead of combined:
-//! - the cue-id-to-path resolution is just matching the cue's `CueParam`
-//!   at the call site (which already has both `ShowModelState` and
-//!   `AssetResults` available), not something this module needs to do;
-//! - [`AssetResults::get`]/[`AssetResults::get_metadata`] take the path
-//!   directly and do only the cache read, no side effects;
-//! - triggering processing is a `Task` issued through `Port` once that
-//!   exists (Phase 4+), not state mutation -- [`AssetResults::should_request`]
-//!   exposes the "is it worth asking" check that decision needs,
-//!   and [`AssetResults::mark_processing`] is how the caller records that
-//!   it did.
+//! This is a cache the app reads from. [`AssetResults::get`] and
+//! [`AssetResults::get_metadata`] only look a path up; they never ask the
+//! backend for anything. Finding the path of a cue's audio is the caller's
+//! job (it matches the cue's `CueParam`), and asking the backend to process
+//! a file is a `Task` sent through the port. To decide whether that is
+//! worth doing, [`AssetResults::should_request`] says whether the path is
+//! neither in flight nor already failed, and
+//! [`AssetResults::mark_processing`] records that it was asked for.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -62,9 +50,8 @@ impl AssetResults {
         self.failed.remove(path);
     }
 
-    /// `processing` is deliberately left untouched here, matching the
-    /// original: `clear()` resets known results/metadata/failures, but
-    /// does not cancel any processing request already in flight.
+    /// Forgets the known results, metadata and failures. Requests already in
+    /// flight are not cancelled, so `processing` is left as it is.
     pub fn clear(&mut self) {
         self.results.clear();
         self.metadatas.clear();
@@ -79,9 +66,8 @@ impl AssetResults {
         self.metadatas.get(path)
     }
 
-    /// Whether `path` is worth requesting processing for: not already
-    /// in flight, and hasn't already failed (matching the original's
-    /// `requestProcess` guard).
+    /// Whether `path` is worth requesting processing for: not already in
+    /// flight, and not already failed.
     pub fn should_request(&self, path: &Path) -> bool {
         !self.processing.contains(path) && !self.failed.contains(path)
     }

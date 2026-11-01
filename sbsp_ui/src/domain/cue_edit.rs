@@ -194,7 +194,7 @@ pub fn audio_end(cue: &Cue) -> Option<f64> {
     }
 }
 
-/// A start of 0 is stored as "no start", as the original does.
+/// A start of 0 is stored as "no start".
 pub fn set_start_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue> {
     let start = audio_start(cue).unwrap_or(0.0);
     let spec = TimeSpec {
@@ -234,18 +234,18 @@ pub fn set_end_time(cue: &Cue, text: &str, duration: Option<f64>) -> Option<Cue>
 }
 
 /// The volume (dB) of an audio or fade cue: what the volume fader shows.
-pub fn level(cue: &Cue) -> Option<f64> {
+pub fn level(cue: &Cue) -> Option<Decibels> {
     match &cue.params {
-        CueParam::Audio(audio) => Some(f64::from(f32::from(audio.volume))),
+        CueParam::Audio(audio) => Some(audio.volume),
         CueParam::Fade(_) => fade_volume(cue),
         _ => None,
     }
 }
 
-pub fn set_level(cue: &Cue, decibels: f64) -> Option<Cue> {
+pub fn set_level(cue: &Cue, decibels: Decibels) -> Option<Cue> {
     match &cue.params {
         CueParam::Audio(_) => with_audio(cue, |audio| {
-            audio.volume = Decibels::from(decibels as f32);
+            audio.volume = decibels;
         }),
         CueParam::Fade(_) => set_fade_volume(cue, decibels),
         _ => None,
@@ -308,8 +308,7 @@ pub fn set_envelope(cue: &Cue, segments: &[Segment]) -> Option<Cue> {
 }
 
 /// Sets the played part from fractions of the file: the very start is "no
-/// start", the very end "no end". `duration` is the file's (1 if unknown,
-/// as in the original).
+/// start", the very end "no end". `duration` is the file's (1 if unknown).
 pub fn set_range(cue: &Cue, start: f64, end: f64, duration: Option<f64>) -> Option<Cue> {
     let duration = duration.unwrap_or(1.0);
     with_audio(cue, |audio| {
@@ -485,20 +484,20 @@ pub fn set_fade_stop_on_complete(cue: &Cue, stop: bool) -> Option<Cue> {
     })
 }
 
-pub fn set_fade_volume(cue: &Cue, decibels: f64) -> Option<Cue> {
+pub fn set_fade_volume(cue: &Cue, decibels: Decibels) -> Option<Cue> {
     if !matches!(cue.params, CueParam::Fade(_)) {
         return None;
     }
     edited(cue, |cue| {
         if let CueParam::Fade(fade) = &mut cue.params {
-            fade.volume = Decibels::from(decibels as f32);
+            fade.volume = decibels;
         }
     })
 }
 
-pub fn fade_volume(cue: &Cue) -> Option<f64> {
+pub fn fade_volume(cue: &Cue) -> Option<Decibels> {
     match &cue.params {
-        CueParam::Fade(fade) => Some(f64::from(f32::from(fade.volume))),
+        CueParam::Fade(fade) => Some(fade.volume),
         _ => None,
     }
 }
@@ -799,16 +798,16 @@ mod tests {
     #[test]
     fn level_is_the_volume_of_audio_and_fade_cues() {
         let cue = audio();
-        assert_eq!(level(&cue), Some(0.0));
-        let quieter = set_level(&cue, -6.0).unwrap();
-        assert_eq!(level(&quieter), Some(-6.0));
-        assert!(set_level(&quieter, -6.0).is_none());
+        assert_eq!(level(&cue), Some(Decibels(0.0)));
+        let quieter = set_level(&cue, Decibels(-6.0)).unwrap();
+        assert_eq!(level(&quieter), Some(Decibels(-6.0)));
+        assert!(set_level(&quieter, Decibels(-6.0)).is_none());
 
         let fade = fade_cue();
-        assert_eq!(level(&fade), Some(0.0));
-        assert_eq!(level(&set_level(&fade, -3.0).unwrap()), Some(-3.0));
+        assert_eq!(level(&fade), Some(Decibels(0.0)));
+        assert_eq!(level(&set_level(&fade, Decibels(-3.0)).unwrap()), Some(Decibels(-3.0)));
         assert_eq!(level(&wait(1.0)), None);
-        assert!(set_level(&wait(1.0), -3.0).is_none());
+        assert!(set_level(&wait(1.0), Decibels(-3.0)).is_none());
     }
 
     #[test]
@@ -962,10 +961,10 @@ mod tests {
         ));
         assert!(set_fade_target(&cue, Uuid::from_u128(5)).is_none());
 
-        let quieter = set_fade_volume(&cue, -12.0).unwrap();
-        assert_eq!(fade_volume(&quieter), Some(-12.0));
-        assert!(set_fade_volume(&quieter, -12.0).is_none());
-        assert!(set_fade_volume(&wait(1.0), -12.0).is_none());
+        let quieter = set_fade_volume(&cue, Decibels(-12.0)).unwrap();
+        assert_eq!(fade_volume(&quieter), Some(Decibels(-12.0)));
+        assert!(set_fade_volume(&quieter, Decibels(-12.0)).is_none());
+        assert!(set_fade_volume(&wait(1.0), Decibels(-12.0)).is_none());
     }
 
     #[test]

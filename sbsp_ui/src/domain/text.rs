@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `utils.ts`: `format`, `camelToTitleCase`, `firstUpper`,
-//! `getExtension`.
+//! Utilities related to text conversion and extraction
 
 use std::collections::HashMap;
 

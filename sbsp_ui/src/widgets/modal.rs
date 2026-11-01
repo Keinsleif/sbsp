@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! A modal dialog overlay, replacing PrimeVue's `Dialog` (see the migration
-//! plan, section 6).
+//! A modal dialog overlay.
 //!
 //! Unlike [`crate::widgets::toast`], this widget does not own any state of
 //! its own: "which dialog is open, if any" is application state (see the

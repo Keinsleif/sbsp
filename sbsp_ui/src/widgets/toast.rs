@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! A stack of auto-dismissing toast notifications, replacing PrimeVue's
-//! `Toast` (see the migration plan, section 6).
+//! A stack of auto-dismissing toast notifications.
 //!
 //! [`Toasts`] owns its own state (the current list of notifications) and is
 //! meant to be embedded as a field of a larger `State`, with its `Message`
-//! wrapped the same way as any other nested TEA module (see the earlier
-//! discussion on global/shared state: edit mode, settings, etc. all follow
-//! this "own a field, thread it through as an argument" shape).
+//! wrapped the same way as any other nested TEA module.
 //!
 //! ```ignore
 //! struct State {

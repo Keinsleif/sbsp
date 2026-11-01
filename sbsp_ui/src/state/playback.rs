@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `stores/showState.ts`.
+//! The playback state the UI shows: the active cues and where each one is.
 //!
-//! `sbsp_backend::controller::state` (`ActiveCue`/`PlaybackStatus`/
-//! `ShowState`/`StateParam`) is available on every target. The two methods
-//! that take the backend's events (`handle_sync_event`,
-//! `handle_cue_state_event`) exist where there is a backend connection to
-//! get them from (`#[cfg(backend)]`, see `build.rs`); `update`/
-//! `calculate_position`/`get_position` stay unconditional.
+//! The backend's `ActiveCue`, `PlaybackStatus`, `ShowState` and `StateParam`
+//! are available on every target. The two methods that apply the backend's
+//! events (`handle_sync_event`, `handle_cue_state_event`) exist where there
+//! is a backend connection to get them from (`#[cfg(backend)]`, see
+//! `build.rs`); `update`, `calculate_position` and `get_position` are always
+//! there.
 //!
-//! One deliberate change from the original: every method that needs "now"
-//! (`performance.now()` in the original) takes it as an explicit `Instant`
-//! parameter instead of calling `Instant::now()` internally. This makes
-//! the interpolation math in `calculate_position`/`get_position` testable
-//! without a real clock; the caller (Phase 4+ wiring) passes
-//! `Instant::now()`.
+//! Positions are interpolated from the last sync. Every method that needs
+//! the current time takes it as an `Instant` parameter instead of reading
+//! the clock, so the interpolation can be tested without a real clock; the
+//! caller passes `Instant::now()`.
 
 use std::collections::HashMap;
 use crate::time::Instant;
@@ -46,11 +44,10 @@ impl PlaybackState {
         Self::default()
     }
 
-    /// A periodic full sync: updates `latency` and each synced cue's
-    /// position, then drops any `active_cues` entry no longer present in
-    /// `synced_data` (the original's own "status may be broken!" warning
-    /// path -- a cue appearing in the sync without existing synced data --
-    /// is preserved as a `log::warn!`).
+    /// A periodic full sync: updates `latency` and each synced cue's position,
+    /// then drops any `active_cues` entry no longer present in `synced_data`.
+    /// A cue that appears in the sync without synced data means the status may
+    /// be broken; that is logged as a warning.
     #[cfg(backend)]
     pub fn handle_sync_event(&mut self, data: &SyncData, now: Instant) {
         for cue in &data.cues {
@@ -99,9 +96,8 @@ impl PlaybackState {
         self.active_cues = new_active;
     }
 
-    /// Applies one incremental cue-status event. See `CueStatusEventParam`
-    /// for the full set; each arm mirrors the original's `switch` case of
-    /// the same name.
+    /// Applies one incremental cue-status event. Each variant of
+    /// `CueStatusEventParam` has its own arm.
     #[cfg(backend)]
     pub fn handle_cue_state_event(&mut self, data: &CueStatusEventParam, now: Instant) {
         use CueStatusEventParam as E;
@@ -246,10 +242,9 @@ impl PlaybackState {
     }
 
     /// Every synced cue's interpolated position right now. When
-    /// `update_active_cues` is true, each `ActiveCue`'s stored `position`
-    /// (and `status`, if it changed) is updated to match -- matching the
-    /// original, which is called this way once per animation frame to
-    /// drive the UI's own reactive state.
+    /// `update_active_cues` is true, each `ActiveCue`'s stored `position` (and
+    /// `status`, if it changed) is updated to match; the UI calls it this way
+    /// once per frame.
     pub fn calculate_position(
         &mut self,
         update_active_cues: bool,
@@ -283,10 +278,10 @@ impl PlaybackState {
         positions
     }
 
-    /// A single cue's interpolated position, without touching stored
-    /// state. `None` if `id` isn't synced; also `None` (after a warning,
-    /// matching the original) if it's synced but has no matching
-    /// `active_cues` entry, which should not normally happen.
+    /// A single cue's interpolated position, without touching stored state.
+    /// `None` if `id` isn't synced; also `None` (after a warning) if it's
+    /// synced but has no matching `active_cues` entry, which should not
+    /// normally happen.
     pub fn get_position(&self, id: Uuid, now: Instant) -> Option<f64> {
         let synced = self.synced_data.get(&id)?;
         let Some(active) = self.active_cues.get(&id) else {

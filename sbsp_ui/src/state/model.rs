@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `stores/showModel.ts`.
+//! The show model as the UI holds it.
 //!
-//! Unlike `state::ui`, this is almost nothing: `sbsp_backend::model::ShowModel`
-//! (via its flattened `CueList`) already has exactly the shape the Vue
-//! store wrapped -- `cues: HashMap<Uuid, Cue>` and `root_ids: Vec<Uuid>` --
-//! so there is no separate state struct to define. `getCueById` is just
-//! `model.cue_list.cues.get(id)`; `getNextCueById`/`flatCueList` are
-//! [`crate::domain::flat_list::next_cue_id`]/[`crate::domain::flat_list::flatten`]
-//! called directly on `model.cue_list`; `updateAll` is just assigning a new
-//! `ShowModel`. None of that needs a wrapper method here.
-//!
-//! The original's remaining actions (`addEmptyAudioCue` and friends) all
-//! call the backend API and have no local state logic of their own; they
-//! belong with command wiring in Phase 4+, not here.
+//! `sbsp_backend::model::ShowModel` already has the shape the UI needs
+//! (`cue_list.cues: HashMap<Uuid, Cue>` and `cue_list.root_ids:
+//! Vec<Uuid>`), so there is no state struct of its own: [`ShowModelState`]
+//! is that type. A cue is found with `model.cue_list.cues.get(id)`; the
+//! list in display order and the cue after a given one come from
+//! [`crate::domain::flat_list::flatten`] and
+//! [`crate::domain::flat_list::next_cue_id`], called on `model.cue_list`;
+//! a new model from the backend replaces the old one as a whole.
 
 use sbsp_backend::model::ShowModel;
 use sbsp_backend::model::cue::Cue;
@@ -26,13 +22,10 @@ pub type ShowModelState = ShowModel;
 
 /// The `Cue`s currently selected, in flat-list (depth-first, visual) order.
 ///
-/// Ported as-is, including the original's own warning: this rebuilds the
-/// flat list, so don't call it often. (A selected_rows.iter().filter_map
-/// version would skip that cost and still drop stale/deleted ids the same
-/// way `HashMap::get` returning `None` would -- but it would return
-/// selection order instead of tree order, so it isn't a drop-in
-/// replacement without checking whether a caller relies on the current
-/// order.)
+/// This flattens the whole list, so it is not cheap; avoid calling it every
+/// frame. Walking `selected_rows` directly would skip that cost and also
+/// skip stale ids, but it would give selection order rather than tree
+/// order.
 pub fn selected_cues<'a>(model: &'a ShowModel, ui: &UiState) -> Vec<&'a Cue> {
     let flat = flatten(
         &model.cue_list.root_ids,

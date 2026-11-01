@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The "renumber cues" dialog. Ported from `RenumberDialog.vue`.
+//! The "renumber cues" dialog.
 //!
 //! The selected cues get the numbers `start`, `start + increment`, ...,
 //! each wrapped in the prefix and suffix. The dialog only collects the
@@ -107,9 +107,9 @@ impl Dialog {
         }
     }
 
-    /// `None` while the values cannot be used (the original's guards:
-    /// finite numbers and an increment of at least 1). Prefix and suffix
-    /// are trimmed, and empty ones are left out.
+    /// `None` while the values cannot be used (finite numbers and an
+    /// increment of at least 1). Prefix and suffix are trimmed, and
+    /// empty ones are left out.
     pub fn request(&self) -> Option<Request> {
         if !self.start.is_finite() || !self.increment.is_finite() || self.increment < 1.0 {
             return None;

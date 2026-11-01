@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Icons: the same Material Design Icons the Vue frontend drew with
-//! `@mdi/js` (each icon is the 24x24 path data from that package, v7.4.47,
-//! Apache-2.0), rendered as small inline SVGs and tinted from the theme.
+//! Icons: the Material Design Icons, rendered as small inline SVGs
+//! and tinted from the theme.
 //!
 //! SVG rather than an icon font so the paths stay identical to the
 //! original and need no font asset or subsetting step; add an icon by

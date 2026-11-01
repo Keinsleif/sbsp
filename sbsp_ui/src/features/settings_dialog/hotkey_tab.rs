@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The hotkey tab: one input per binding. Ported from `HotkeyInput.vue` and
-//! the hotkey part of `SettingsDialog.vue`.
+//! The hotkey tab: one input per binding.
 //!
 //! An input is a button: pressing it makes the next key press its binding
 //! (Escape included, since Stop All is bound to it by default), pressing

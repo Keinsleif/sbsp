@@ -2,8 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! Playback-cursor advance: where the cursor goes when the cue under it
-//! is triggered or completes. Ported from the `cueStatus` case of
-//! `useBackendEvent` in `MainView.vue`.
+//! is triggered or completes.
 
 use std::collections::HashMap;
 

@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `utils.ts`: `buildCueName`, `calculateDuration`,
-//! `getDuration`.
-//!
 //! Unlike the rest of `domain/`, these take the show model (or at least a
 //! `&HashMap<Uuid, Cue>`) as an explicit parameter rather than being
 //! context-free: `buildCueName` looks up a target cue by id for
@@ -34,8 +31,7 @@ pub fn display_name(
 }
 
 /// Builds a cue's generated name from the name-format settings. `None`
-/// (a missing target, matching the original's `cue ?? null`) renders as an
-/// empty string.
+/// renders as an empty string.
 pub fn build_cue_name(
     cue: Option<&Cue>,
     cues: &HashMap<Uuid, Cue>,

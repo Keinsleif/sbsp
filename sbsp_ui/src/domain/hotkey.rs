@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `utils.ts`: `normalizeHotkey` (and its `MODIFIER_KEYS`
-//! constant, from `composables/useHotkey.ts`).
+//! Hotkey bindings: their stored string form, and matching them against key
+//! presses.
 //!
-//! This only normalizes the stored string representation (e.g.
-//! `"ctrl+Shift+s"` -> `"Control+Shift+S"` is not quite right -- case of
-//! the non-modifier key is left as-is, matching the original, which never
-//! touched casing beyond the literal `"Ctrl"` -> `"Control"` substitution).
-//! [`Hotkey`] parses a binding into modifiers + key name and matches it
-//! against a key press; turning an iced key event into that key name is
-//! `features::hotkeys`' job, so this module stays free of iced types.
+//! A binding is stored as text such as `"$mod+Shift+S"` in the settings.
+//! [`normalize_hotkey`] puts such a string into one canonical shape
+//! (modifiers first and sorted, then the key; `Ctrl` is spelled `Control`),
+//! so that two spellings of the same binding compare equal. It does not
+//! touch the case of the key itself. [`format_binding`] writes the stored
+//! form of a key press, for the input that records a new binding.
+//! [`Hotkey`] parses a stored binding into modifiers and a key name and
+//! matches it against a key press.
+//!
+//! Turning an iced key event into a key name is the job of
+//! `features::hotkeys`, so this module stays free of iced types.
 
 const MODIFIER_KEYS: [&str; 6] = ["Control", "Meta", "OS", "Alt", "AltGraph", "Shift"];
 
@@ -46,9 +50,9 @@ fn is_modifier(part: &str) -> bool {
     MODIFIER_KEYS.contains(&part)
 }
 
-/// Modifier state of a key press or a binding; compared exactly, as the
-/// original's `tinykeys` does (`Shift+ArrowUp` does not fire for a plain
-/// `ArrowUp` binding, and vice versa).
+/// Modifier state of a key press or a binding. Compared exactly: a
+/// `Shift+ArrowUp` binding does not fire for a plain `ArrowUp` press, and
+/// vice versa.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Mods {
     pub ctrl: bool,
@@ -63,7 +67,7 @@ pub struct Mods {
 /// The key is kept as a lowercased name (`"arrowup"`, `"space"`, `"["`);
 /// [`Hotkey::matches`] compares case-insensitively against whatever name
 /// the UI layer derives from its own key event. `$mod` resolves to Cmd on
-/// macOS and Ctrl elsewhere, like `tinykeys`.
+/// macOS and Ctrl elsewhere.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hotkey {
     mods: Mods,
@@ -133,8 +137,8 @@ impl Hotkey {
     }
 }
 
-/// The stored form of a key press, as the original's hotkey input wrote
-/// it: `Control+` (Ctrl on a Mac), `$mod+` (Cmd on a Mac, Ctrl elsewhere),
+/// The stored form of a key press, as the hotkey input records it:
+/// `Control+` (Ctrl on a Mac), `$mod+` (Cmd on a Mac, Ctrl elsewhere),
 /// `Meta+` (the Windows key elsewhere), `Alt+`, `Shift+`, then the key,
 /// upper-cased when it is a single character.
 pub fn format_binding(mods: Mods, key: &str, is_mac: bool) -> String {
@@ -277,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn a_key_press_is_stored_as_the_original_did() {
+    fn a_key_press_is_stored_in_the_canonical_form() {
         let mods = Mods {
             ctrl: true,
             shift: true,

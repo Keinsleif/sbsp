@@ -5,16 +5,15 @@
 //!
 //! `log::info!`/`log::error!`/etc. are no-ops until some logger
 //! implementation calls `log::set_logger` -- this is that implementation.
-//! It writes to stderr and to a log file in the OS log folder (the migration
-//! plan, section 5.2): `~/Library/Logs/<identifier>` on macOS,
+//! It writes to stderr and to a log file in the OS log folder:
+//! `~/Library/Logs/<identifier>` on macOS,
 //! `dirs::data_local_dir()/<identifier>/logs` elsewhere. The file is
 //! appended to across runs; once it passes `MAX_FILE_BYTES` at startup it
 //! is moved to `<name>.log.old` (replacing the previous one), so the two
 //! files together stay bounded.
 //!
 //! Not used by the web target: stdio isn't connected to the browser console
-//! on wasm32, so Phase 9 will need a separate `console_log`-based setup
-//! there instead of this module.
+//! on wasm32.
 
 use std::{
     fs::{self, File, OpenOptions},

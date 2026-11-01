@@ -2,14 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! Color values for the two SBSP themes.
-//!
-//! The original Vue frontend did not define its own palette; it relied on
-//! PrimeVue's default preset (see the migration plan, section 6). These are
-//! new starting values for the iced UI, chosen to read clearly on a
-//! projector/booth laptop in a dim room (the primary use case), not a
-//! reproduction of PrimeVue's colors. Treat them as a first draft: replace
-//! `PRIMARY_LIGHT`/`PRIMARY_DARK` (and, if needed, the rest) once there is a
-//! visual pass on the real screens in Phase 3.
 
 use iced::Color;
 use iced::color;

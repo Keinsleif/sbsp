@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `stores/uiState.ts`. Scoped to permission/mode, selection,
-//! the playback cursor, and expand/collapse -- the parts the migration
-//! plan's Phase 2 explicitly calls out ("選択・カーソル制御"). Everything
-//! else in the original (dialog-open flags, the file list resolver, the
-//! sidebar/bottom-tab toggles, envelope/waveform display flags, the
-//! last-update-check date) is left for whichever later phase actually
-//! implements that screen or feature, rather than guessing its shape now.
+//! The UI's own state: what the user has selected and how the screen is
+//! arranged, apart from the show itself.
 //!
-//! `lock_cursor_to_selection` (read from `uiSettings` in the original, via
-//! another Pinia store) is taken as an explicit parameter instead, per the
-//! earlier discussion on cross-cutting settings: pass the value in rather
-//! than reach across to another piece of state.
+//! It holds the permissions granted and the mode, the selection, the
+//! playback cursor, which groups are expanded, the display modes and layout
+//! toggles, and the keep-awake setting; [`crate::persist`] saves the part
+//! that survives a restart.
 //!
-//! `selected_rows` is a `Vec<Uuid>`, not a `HashSet`: `remove_from_selected`
-//! needs "the first-inserted remaining id" when the removed id was the
-//! active selection, which relies on JS `Set`'s insertion-order iteration.
-//! `std::collections::HashSet` has no such guarantee, so a `Vec` (checked
-//! linearly for membership) is used instead to keep that exact behavior.
-//! `expanded_rows` has no such ordering need and stays a `HashSet`.
+//! `lock_cursor_to_selection` belongs to the user's settings, not to this
+//! state, so the methods that need it take it as a parameter.
+//!
+//! `selected_rows` is a `Vec<Uuid>`, not a `HashSet`:
+//! `remove_from_selected` needs the first-inserted remaining id when the
+//! removed one was the active selection, and a `HashSet` has no insertion
+//! order. Membership is checked linearly. `expanded_rows` has no ordering
+//! need and is a `HashSet`.
 
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -40,7 +37,7 @@ pub enum Mode {
 #[serde(rename_all = "kebab-case")]
 pub enum KeepAwakeMode {
     Never,
-    /// While the window has the focus (what the Tauri build did).
+    /// While the window has the focus.
     #[default]
     WhileFocused,
     Always,
@@ -88,9 +85,9 @@ pub struct UiState {
 }
 
 impl UiState {
-    /// `is_host` selects the original's `INITIAL_PERMISSION`: a host starts
-    /// with every permission (it *is* the backend); a remote starts with
-    /// none, until the host grants some over the connection.
+    /// `is_host` selects the initial permission: a host starts with every
+    /// permission (it *is* the backend); a remote starts with none, until the
+    /// host grants some over the connection.
     pub fn new(is_host: bool) -> Self {
         let permission = if is_host {
             Permissions::READ | Permissions::CONTROL | Permissions::EDIT
@@ -152,12 +149,9 @@ impl UiState {
         self.validate_mode();
     }
 
-    /// Drops `self.mode` to the highest permission still held, if the
-    /// current mode's permission was just revoked. If no permission is
-    /// held at all, `mode` is left as-is (matching the original: its
-    /// `highestBitPos` is `-1` for zero permissions, which doesn't match
-    /// any of its `switch` cases, so `mode` is never written in that case
-    /// -- not a gap, this is deliberately preserved).
+    /// Drops `self.mode` to the highest permission still held, if the current
+    /// mode's permission was just revoked. If no permission is held at all,
+    /// `mode` is left as it is.
     fn validate_mode(&mut self) {
         if self.permission.intersects(self.mode_as_perm()) {
             return;
@@ -258,11 +252,6 @@ impl UiState {
     /// group's hidden children only to land past them). `target` becomes
     /// `selected`; `anchor` is typically the previous `selected`, found by
     /// the caller before this replaces it.
-    ///
-    /// This has no equivalent in the original `uiState.ts`: the Vue
-    /// frontend's shift-click range logic lived in `CueList.vue` itself,
-    /// not the store, so there was nothing to port here -- this is new
-    /// logic for Phase 4, not a port.
     pub fn select_range(
         &mut self,
         anchor: Uuid,
@@ -423,8 +412,8 @@ mod tests {
         let mut state = UiState::new(true);
         state.mode = Mode::View;
         state.set_permission(Permissions::empty());
-        // No case matches zero permissions in the original either: mode is
-        // simply never written, not reset to some default.
+        // With no permission left, no mode matches: mode is not written, rather than
+        // reset to some default.
         assert_eq!(state.mode, Mode::View);
     }
 

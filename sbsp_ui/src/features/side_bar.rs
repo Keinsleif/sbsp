@@ -129,7 +129,7 @@ pub fn active_cues<'a>(
 /// The two time readouts of a running cue: (elapsed, remaining). While
 /// pre-waiting the first counts down the pre-wait ("-00:03.20") and the
 /// second reads zero; once playing they are the position and what's left.
-/// An unknown duration leaves its readout blank, as in the original.
+/// An unknown duration leaves its readout blank.
 pub fn readouts(status: PlaybackStatus, position: f64, duration: f64) -> (String, String) {
     let remaining = || format!("-{}", format_seconds(Some(duration - position)));
 
@@ -268,8 +268,7 @@ impl<Message> canvas::Program<Message> for MeterProgram<'_> {
         let right_x = label_x + LABEL_W + GAP;
 
         let mut draw_bar = |x: f32, channel: &Channel| {
-            // The three zones of the original's gradient, bottom up: green
-            // to 70%, amber to 95%, red above.
+            // green to 70%, amber to 95%, red above.
             for (from, to, color) in [
                 (0.0, 0.70, Color::from_rgb8(52, 211, 103)),
                 (0.70, 0.95, Color::from_rgb8(251, 191, 36)),

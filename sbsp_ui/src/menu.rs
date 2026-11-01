@@ -30,8 +30,7 @@ pub enum MenuNode {
         id: MenuId,
         label: String,
         /// Human-readable shortcut hint (e.g. `"Ctrl+S"`). Display only;
-        /// the actual key handling stays in iced's keyboard subscription
-        /// (see the migration plan, section 5.1).
+        /// the actual key handling stays in iced's keyboard subscription.
         shortcut: Option<String>,
         enabled: bool,
         /// `Some(_)` renders a checkmark/indicator; `None` renders a plain item.

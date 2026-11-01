@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! The backend boundary (see the migration plan, section 4.2).
+//! The boundary between the UI and the backend it talks to.
 //!
-//! Phase 1 scope only: this currently just aliases `sbsp_backend`'s own
-//! types rather than defining independent `PortCommand`/`PortEvent` enums.
-//! That works today because both `host` (via the `server` feature) and
-//! `remote` (via `client`) pull in `sbsp_backend`'s `backend` feature, so
-//! `FullShowState` and `BackendEvent` are the same concrete Rust type on
-//! both targets.
+//! [`Port`] is the backend of a native build: the host's own, or the one a
+//! remote is connected to. What the two share is on [`Link`], which `Port`
+//! derefs to. The UI sends the backend [`Control`]s (playback) and
+//! [`ModelEdit`]s (the cue list) as data, and receives [`PortEvent`]s and a
+//! [`FullState`] when it connects.
 //!
-//! This stops being true once `web` needs its own port (Phase 9): wasm
-//! cannot enable the `backend` feature (it pulls in cpal, rodio, etc.), so
-//! the web build will only have `sbsp_backend::api` (the `protocol`
-//! feature) and will need to decode these from JSON instead. At that point
-//! `PortEvent`/`FullState` should become real enums/structs defined here,
-//! with `From`/`TryFrom` conversions on each platform, rather than a
-//! shared alias. Not needed yet, so not done yet.
+//! On the native targets those event and state types are `sbsp_backend`'s
+//! own, because both `host` and `remote` link its `backend` feature. The
+//! browser cannot link it (it pulls in the audio and file code), so the web
+//! build has its own `Link` (`port/web_link.rs`) and `wire`, which turns
+//! `Control` and `ModelEdit` into the protocol's commands and reads the
+//! host's answers.
+
 #[cfg(feature = "web")]
 pub mod wire;
 #[cfg(any(feature = "host", feature = "remote"))]
@@ -80,7 +79,7 @@ impl Port {
 }
 
 /// A playback command from the UI to whichever backend it talks to. Kept
-/// as data (not a call on `HostPort`) so a remote/web port can later
+/// as data (not a call on `HostPort`), so that a remote or the web build can
 /// serialize the same values instead of invoking a local handle.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Control {

@@ -311,7 +311,7 @@ pub(super) fn levels<'a>(
             surface: &editor.waveform,
             path: audio.target.clone(),
             waveform: ctx.waveform,
-            gain: editor.scale_waveform.then_some(volume_value as f32),
+            gain: editor.scale_waveform.then_some(volume_value.into()),
             segments,
             range,
             envelope_visible: editor.envelope_visible,

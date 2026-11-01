@@ -2,8 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The master level meter's display state: a peak-hold-and-decay value per
-//! channel plus a short "clipped" flash. Ported from `LevelMeter.vue`'s
-//! `decayLoop`; the drawing is `features::side_bar`'s.
+//! channel plus a short "clipped" flash. the drawing is `features::side_bar`'s.
 
 /// Quietest level shown; also what a channel decays to.
 pub const FLOOR_DB: f32 = -60.0;
@@ -38,8 +37,7 @@ impl Channel {
     }
 
     /// How much of the bar is empty, 0 (full, at 0 dB or above) to 1
-    /// (empty, at the floor): the original covers the bar from the top by
-    /// this fraction.
+    /// (empty, at the floor).
     pub fn empty_fraction(&self) -> f32 {
         (self.level_db.min(0.0) / FLOOR_DB).clamp(0.0, 1.0)
     }

@@ -2,9 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The credits dialog: the app itself, the icons and fonts it ships, and
-//! the licenses of the libraries it is built from. Ported from
-//! `CreditsDialog.vue`, which rendered `THIRD_PARTY_NOTICES.md` as one
-//! long page.
+//! the licenses of the libraries it is built from.
 //!
 //! The notices run to hundreds of kilobytes, so they are split into one
 //! entry per license and only the opened entry's text is laid out.
@@ -18,8 +16,7 @@ use crate::fl;
 use crate::theme::fonts;
 
 /// What `cargo about` wrote (the generated file is committed). The web
-/// build does not carry it (it would double the download); its credits
-/// come with Phase 9.
+/// build does not carry it (it would double the download).
 #[cfg(not(target_arch = "wasm32"))]
 const NOTICES: &str = include_str!("../../../THIRD_PARTY_NOTICES.md");
 #[cfg(target_arch = "wasm32")]
@@ -80,6 +77,7 @@ pub fn parse(markdown: &str) -> Vec<Section> {
     let mut sections: Vec<Section> = Vec::new();
     let mut in_fence = false;
     let mut started = false;
+    let mut listening = false;
 
     for line in markdown.lines() {
         if in_fence {
@@ -92,11 +90,15 @@ pub fn parse(markdown: &str) -> Vec<Section> {
             continue;
         }
         if line.starts_with("```") {
-            in_fence = started;
+            in_fence = listening && started;
             continue;
         }
-        if line.starts_with("# ") && started {
-            break;
+        if let Some(heading) = line.strip_prefix("## ") {
+            listening = heading.trim() == "Rust Dependencies";
+            continue;
+        }
+        if !listening {
+            continue;
         }
         if let Some(name) = line.strip_prefix("### ") {
             started = true;
@@ -254,14 +256,7 @@ mod tests {
 ```text\n\
 Permission is hereby granted\n\
 ```\n\
-\n\
-# JavaScript Dependencies\n\
-\n\
-### ignored\n\
-\n\
-```text\n\
-nope\n\
-```\n";
+\n";
 
     #[test]
     fn a_license_has_its_name_crates_and_text() {

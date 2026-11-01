@@ -4,11 +4,9 @@
 //! Keyboard shortcuts: the settings' hotkey strings turned into a lookup
 //! from a key press to an [`Action`].
 //!
-//! Ported from the `useHotkey` calls in `MainView.vue` / `CueList.vue`.
 //! This module only decides *which* action a key press names; whether the
 //! action is allowed right now (view mode, nothing selected, ...) and what
-//! it does is the app's business, as in the original where each
-//! `useHotkey` callback carried its own guards.
+//! it does is the app's business.
 
 use iced::keyboard::{Key, Modifiers, key::Named};
 use crate::settings::hotkey::HotkeySettings;
@@ -23,7 +21,6 @@ pub enum Action {
     PauseAll,
     ResumeAll,
     Stop,
-    /// Stop with the fade-out of the cue's own settings.
     FadeOut,
     HardStop,
     StopAll,
@@ -167,8 +164,7 @@ impl Bindings {
             (&file.export_to_folder, Action::Export),
         ];
 
-        // Not in the settings: the original left these to the browser's
-        // own copy / cut / paste events.
+        // Not in the settings
         let fixed = [
             ("$mod+C", Action::Copy),
             ("$mod+X", Action::Cut),

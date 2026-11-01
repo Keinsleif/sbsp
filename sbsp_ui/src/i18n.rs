@@ -58,8 +58,7 @@ pub fn select(language: &LanguageIdentifier) {
 
 /// The app's supported UI languages. A small fixed enum, not a wrapper
 /// around an arbitrary [`LanguageIdentifier`]: every caller that needs to
-/// show or cycle through "the language" (a menu item today; eventually the
-/// settings dialog's language picker, Phase 7) wants a closed set with a
+/// show or cycle through "the language" wants a closed set with a
 /// display label per entry, not an open-ended identifier.
 ///
 /// Stored in the settings' `appearance.language` (see

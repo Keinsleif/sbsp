@@ -29,62 +29,6 @@ fn new_state() -> State {
 
 #[test]
 #[serial]
-fn menu_toggle_theme_cycles_light_dark_system() {
-    let mut state = new_state();
-    assert_eq!(state.theme_mode, ThemeMode::System);
-
-    let mut ui = iced_test::simulator(state.view());
-    ui.click("View").expect("the View menu should be clickable");
-    ui.click("Toggle Theme")
-        .expect("the Toggle Theme item should be clickable");
-
-    for message in ui.into_messages() {
-        let _ = state.update(message);
-    }
-
-    assert_eq!(state.theme_mode, ThemeMode::Dark);
-}
-
-/// Deliberately does not assert on any `fl!()`-rendered text after the
-/// switch (e.g. that the item now reads "English", or that other
-/// labels appear in Japanese): `i18n::LOADER` is one process-wide
-/// `static`, and `cargo test` runs tests in parallel on separate
-/// threads by default, all sharing it. Asserting on rendered text here
-/// would be racing every other test in this module that calls `fl!()`
-/// expecting English (`menu_about_shows_a_toast`,
-/// `shell_skeleton_renders_its_placeholder_text`) -- this test could
-/// flip the language out from under one of them mid-run, or one of
-/// them could run while this test's own assertion expects Japanese.
-/// `state.lang` itself is this test's own field, not shared, so that
-/// part is safe to check same as `theme_mode` above.
-#[test]
-#[serial]
-fn menu_toggle_language_switches_state() {
-    let mut state = new_state();
-    assert_eq!(state.lang, Language::En);
-
-    let mut ui = iced_test::simulator(state.view());
-    ui.click("View").expect("the View menu should be clickable");
-    // The item shows the language it switches *to*; starting from
-    // English that's its own name for Japanese, not "Japanese".
-    ui.click("日本語")
-        .expect("the language item should be clickable");
-
-    for message in ui.into_messages() {
-        let _ = state.update(message);
-    }
-
-    assert_eq!(state.lang, Language::Ja);
-
-    // Leave the shared LOADER back in English: #[serial] only
-    // serializes this module's own tests against each other, not
-    // against fl!()-calling tests elsewhere in the crate that may be
-    // added later and aren't tagged to know about this one.
-    crate::i18n::select(&Language::En.langid());
-}
-
-#[test]
-#[serial]
 fn menu_about_shows_a_toast() {
     let mut state = new_state();
 

@@ -2,7 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! New / open / save / export and the questions that come before them.
-//! Ported from `window-menu.ts` and `MainView.vue`.
 //!
 //! This module holds the decisions (what to ask, in what order) and the
 //! confirmation dialogs. Doing the work (file dialogs, the backend calls)

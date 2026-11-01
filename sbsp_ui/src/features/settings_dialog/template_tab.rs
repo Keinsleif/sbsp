@@ -2,8 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The template tab: the cues a new cue starts from, one per kind, listed
-//! above the same editor the main window has. Ported from
-//! `TemplateSettings.vue` and `TemplateRow.vue`.
+//! above the same editor the main window has.
 //!
 //! The editor's pickers (chain target, fade target and so on) list the
 //! cues of the show that is open, as in the original.

@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The waveform of an audio cue with its start / end markers and volume
-//! envelope, all draggable. Ported from `WaveformEditor.vue`.
+//! envelope, all draggable.
 //!
 //! - Drag the blue lines: the cue's start and end.
 //! - With the envelope shown: drag a bar up or down to change its volume,

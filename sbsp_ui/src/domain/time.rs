@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `utils.ts`: `secondsToFormat`, `formatToSeconds`,
-//! `secondsToHMR`.
+//! Utilities related to conversion of time-display text
 
 /// Formats seconds as `MM:SS.CC` (or `HH:MM:SS.CC` once an hour is
 /// reached), for display next to a cue (time fields, the transport bar).
@@ -32,13 +31,6 @@ pub fn format_human(source_seconds: f64) -> String {
     if hour > 0 {
         format!("{hour:02}h {minute:02}m {second:02}s")
     } else if minute > 0 {
-        // Seconds are zero-padded here (matching the original, which uses
-        // its pre-padded `ss` string in this branch) but not in the two
-        // branches below, which use the raw number. Also note this branch
-        // always appends a decimal, even when it trims down to a single
-        // "0" (exact whole seconds, e.g. 90.0 -> "01m 30.0s", not
-        // "01m 30s") -- there is no separate "no decimal" case in here the
-        // way there is for the two branches below.
         format!(
             "{minute:02}m {}s",
             trim_trailing_zero(second, centisecond, true)
@@ -51,14 +43,11 @@ pub fn format_human(source_seconds: f64) -> String {
 }
 
 /// Parses a `[[HH:]MM:]SS[.cc]` string back into seconds. A leading `-` is
-/// honored only when `accept_minus` is true (matching the original's
-/// per-field toggle for inputs that must stay non-negative); otherwise a
-/// negative input parses as `0.0`.
+/// honored only when `accept_minus` is true, otherwise a negative input
+/// parses as `0.0`.
 ///
 /// Returns `0.0` for an empty string or a token that doesn't parse as a
-/// non-negative number, matching the original's silent-stop-and-return
-/// behavior (it was written for a text input that filters keystrokes, so a
-/// malformed value should not occur, but is not an error if it does).
+/// non-negative number.
 pub fn parse_seconds(source: &str, accept_minus: bool) -> f64 {
     let source = source.trim();
     let (is_minus, source) = match source.strip_prefix('-') {
@@ -88,8 +77,8 @@ pub fn parse_seconds(source: &str, accept_minus: bool) -> f64 {
 }
 
 /// Splits seconds into (hour, minute, second, centisecond), truncating
-/// rather than rounding (matching the original's `Math.floor` throughout,
-/// so e.g. 59.996s displays as `59.99`, not as `60.00`/`1:00.00`).
+/// rather than rounding (e.g. 59.996s displays as `59.99`,
+/// not as `60.00`/`1:00.00`).
 fn split(source_seconds: f64) -> (u64, u64, u64, u64) {
     let total = source_seconds.max(0.0);
     let hour = (total / 3600.0).floor();
@@ -105,11 +94,11 @@ fn split(source_seconds: f64) -> (u64, u64, u64, u64) {
     )
 }
 
-/// `(3, 50)` -> `"3.5"` (or `"03.5"` with `pad_second`), matching the
-/// original's one-trailing-zero trim (it only ever strips a single zero,
-/// not every trailing zero -- e.g. a hypothetical `.50` stays `.5`, not
-/// `.05` -> `""`; centiseconds are always exactly two digits coming in, so
-/// this never needs to strip more than one).
+/// `(3, 50)` -> `"3.5"` (or `"03.5"` with `pad_second`), one-trailing-zero
+/// trim (it only ever strips a single zero, not every trailing zero
+/// e.g. a hypothetical `.50` stays `.5`, not `.05` -> `""`; centiseconds
+/// are always exactly two digits coming in, so this never needs to strip
+/// more than one).
 fn trim_trailing_zero(second: u64, centisecond: u64, pad_second: bool) -> String {
     let ms = format!("{centisecond:02}");
     let ms = ms.strip_suffix('0').unwrap_or(&ms);

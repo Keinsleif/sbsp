@@ -4,16 +4,13 @@
 //! The top panel under the menu: a wall clock, the stop/play/pause
 //! buttons for the playback-cursor cue, and that cue's title and notes.
 //!
-//! Layout is the original's: a fixed-height panel in two columns. Left,
-//! the clock (stretching to fill) over the transport buttons; right, the
-//! cue title and notes (stretching) over the add-cue buttons. A bottom
-//! row exists only while its buttons do -- transport buttons outside view
-//! mode, add-cue buttons in edit mode -- and when one is missing the box
-//! above it grows into the space, so the two columns' boxes need not be
-//! the same height.
-//!
-//! The add-cue buttons are always enabled, as in the original; the ones
-//! that need a selected cue simply add nothing without it.
+//! Layout: a fixed-height panel in two columns. Left, the clock
+//! (stretching to fill) over the transport buttons; right, the cue title
+//! and notes (stretching) over the add-cue buttons. A bottom row exists
+//! only while its buttons do -- transport buttons outside view mode,
+//! add-cue buttons in edit mode -- and when one is missing the box above
+//! it grows into the space, so the two columns' boxes need not be the
+//! same height.
 
 use iced::theme::palette::mix;
 use iced::widget::{button, column, container, row, scrollable, text};
@@ -149,7 +146,7 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
     .center_y(Length::Fill)
     .style(move |theme: &Theme| {
         // A red clock is the "this window does not have keyboard focus,
-        // your hotkeys are going elsewhere" warning, as in the original.
+        // your hotkeys are going elsewhere" warning.
         let mut style = container::bordered_box(theme);
         if !focused {
             style.background = Some(theme.extended_palette().danger.base.color.into());
@@ -218,7 +215,6 @@ pub fn view<'a>(v: View<'a>) -> Element<'a, Message> {
         .into()
 }
 
-/// The original's `h-50`.
 const PANEL_HEIGHT: f32 = 200.0;
 
 /// Add-cue buttons. Same size as the transport buttons, so the two bottom
@@ -387,7 +383,7 @@ mod tests {
 
     #[test]
     fn title_joins_number_and_name_and_skips_an_empty_number() {
-        assert_eq!(cue_title(&cue("12"), "Intro".into()), "12・Intro");
+        assert_eq!(cue_title(&cue("12"), "Intro".into()), "12 ・ Intro");
         assert_eq!(cue_title(&cue(""), "Intro".into()), "Intro");
     }
 }

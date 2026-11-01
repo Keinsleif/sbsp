@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The audio hardware tab (host only): the output device and its
-//! configuration. Ported from `AudioHardware.vue`.
+//! configuration.
 //!
 //! Each list starts with "Default" and goes on with what the chosen device
 //! supports. A saved value the hardware does not offer (a device that was

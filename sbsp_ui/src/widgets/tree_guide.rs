@@ -89,29 +89,31 @@ impl<Message> canvas::Program<Message> for Guide {
 mod tests {
     use super::*;
 
+    const SAMPLE_HEIGHT: f32 = 30.0;
+
     #[test]
     fn the_top_level_has_no_lines() {
-        assert!(lines(0, Kind::Item, 30.0).is_empty());
+        assert!(lines(0, Kind::Item, SAMPLE_HEIGHT).is_empty());
     }
 
     #[test]
     fn one_level_deep_is_a_line_and_a_branch() {
         assert_eq!(
-            lines(1, Kind::Item, 30.0),
-            vec![(8.0, 0.0, 1.0, 30.0), (8.0, 15.0, 8.0, 1.0)]
+            lines(1, Kind::Item, SAMPLE_HEIGHT),
+            vec![(LINE_X, 0.0, 1.0, SAMPLE_HEIGHT), (LINE_X, SAMPLE_HEIGHT / 2.0, BRANCH, 1.0)]
         );
     }
 
     #[test]
     fn each_enclosing_level_adds_a_full_height_line() {
-        let result = lines(3, Kind::Item, 30.0);
+        let result = lines(3, Kind::Item, SAMPLE_HEIGHT);
         assert_eq!(
             result,
             vec![
-                (8.0, 0.0, 1.0, 30.0),
-                (24.0, 0.0, 1.0, 30.0),
-                (40.0, 0.0, 1.0, 30.0),
-                (40.0, 15.0, 8.0, 1.0),
+                (LINE_X, 0.0, 1.0, SAMPLE_HEIGHT),
+                (LINE_X + LEVEL_WIDTH, 0.0, 1.0, SAMPLE_HEIGHT),
+                (LINE_X + LEVEL_WIDTH * 2.0, 0.0, 1.0, SAMPLE_HEIGHT),
+                (LINE_X + LEVEL_WIDTH * 2.0, SAMPLE_HEIGHT / 2.0, BRANCH, 1.0),
             ]
         );
     }
@@ -119,11 +121,11 @@ mod tests {
     #[test]
     fn an_end_row_turns_a_corner_at_the_middle() {
         assert_eq!(
-            lines(2, Kind::End, 30.0),
+            lines(2, Kind::End, SAMPLE_HEIGHT),
             vec![
-                (8.0, 0.0, 1.0, 30.0),
-                (24.0, 0.0, 1.0, 15.0),
-                (24.0, 15.0, 8.0, 1.0),
+                (LINE_X, 0.0, 1.0, SAMPLE_HEIGHT),
+                (LINE_X + LEVEL_WIDTH, 0.0, 1.0, SAMPLE_HEIGHT / 2.0),
+                (LINE_X + LEVEL_WIDTH, SAMPLE_HEIGHT / 2.0, BRANCH, 1.0),
             ]
         );
     }

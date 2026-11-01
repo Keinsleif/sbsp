@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! Making a new cue from the settings' templates and deciding where it
-//! goes. Ported from the `addEmpty*Cue` actions of `stores/showModel.ts`.
+//! goes.
 //!
 //! The rules, as the original has them:
 //! - a new cue goes *after* the selected cue, or at the end of the list

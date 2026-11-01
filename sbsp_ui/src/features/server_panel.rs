@@ -2,8 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The server panel: start and stop the API server, its port, discovery
-//! name and the passwords with the permissions each one gives. Ported from
-//! `ServerPanelDialog.vue` and `ServerPanelPasswordRow.vue`.
+//! name and the passwords with the permissions each one gives.
 //!
 //! The panel edits a copy of the server options; starting the server hands
 //! them to the backend. While the server runs they are locked.

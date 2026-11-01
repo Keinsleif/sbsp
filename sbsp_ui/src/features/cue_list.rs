@@ -145,9 +145,8 @@ pub enum Step {
 /// selection, for scrolling it into view.
 ///
 /// With nothing selected, Up lands on the first visible row and Down on
-/// the last, as in the original. Extending only crosses to a row at the
-/// same nesting level (the original refuses to extend a selection into or
-/// out of a group), and does nothing at either end of the list.
+/// the last. Extending only crosses to a row at the same nesting level,
+/// and does nothing at either end of the list.
 pub fn move_cursor(
     model: &ShowModelState,
     ui: &mut UiState,
@@ -195,7 +194,7 @@ pub fn move_cursor(
     Some(id)
 }
 
-/// Selects every visible row. Like the original, this leaves `selected`
+/// Selects every visible row. This leaves `selected`
 /// (the single "primary" row) alone.
 /// The vertical scroll offset that brings `id`'s row fully into view, or
 /// `None` if it already is (or the viewport size is not known yet, i.e.
@@ -675,8 +674,7 @@ fn row_view<'a>(
     .clip(true);
 
     // While a cue is in its pre-wait the pre-wait cell is the live one and
-    // the duration cell stays static; from playback on it flips, as in the
-    // original.
+    // the duration cell stays static; from playback on it flips.
     let in_pre_wait = active.is_some_and(|a| {
         matches!(a.status, PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused)
     });
@@ -953,7 +951,7 @@ fn row_style(
 ) -> container::Style {
     let palette = theme.extended_palette();
 
-    // Selection wins over the cue's own color tint, as in the original.
+    // Selection wins over the cue's own color tint.
     let background = if is_selected {
         Some(palette.primary.weak.color.scale_alpha(0.3).into())
     } else {
@@ -1023,8 +1021,8 @@ fn cue_color(color: CueColor) -> Option<Pair> {
     })
 }
 
-/// The marker for a playback status, as in the original's status column;
-/// pre-waiting reads as playing and its paused state as paused, since the
+/// The marker for a playback status.
+/// Pre-waiting reads as playing and its paused state as paused, since the
 /// pre-wait cell itself is what tells the two apart.
 fn status_icon(status: PlaybackStatus) -> Option<(Icon, Tone)> {
     Some(match status {

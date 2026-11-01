@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Ported from `stores/showModel.ts`: `recursiveCueCheck` / `FlatCueEntry`
-//! (-> [`flatten`] / [`FlatCueEntry`]) and `getNextCueById` (->
-//! [`next_cue_id`]).
+//! The cue tree as a flat list, for list rendering and cursor movement.
 //!
-//! One deliberate change from the original: [`FlatCueEntry`] stores a
-//! `cue_id`, not an owned `Cue`. The original stores the actual cue object
-//! (cheap in JS -- it's a reference into the same reactive Map, not a
-//! clone), but the Rust equivalent (`&Cue`) would tie the returned
-//! `Vec<FlatCueEntry>`'s lifetime to the `cues` map's borrow, and this list
-//! is meant to be recomputed and held in UI state across update/view calls
-//! where that borrow wouldn't survive. The caller already has `cues`
-//! available to look up the id when rendering a row.
+//! The cue list is stored as a tree: a map of cues by id, a list of root
+//! ids, and a group cue holding the ids of its children. A list view wants
+//! one row per cue in display order, so [`flatten`] walks the tree depth
+//! first (a group's children follow it) and yields a [`FlatCueEntry`] per
+//! cue with what a row needs: its nesting level, parent, index among its
+//! siblings, whether an ancestor group hides it, and the chain setting that
+//! applies to it. [`next_cue_id`] finds the cue after a given one in the
+//! same tree order, climbing out of a group when its last child is reached.
+//!
+//! A [`FlatCueEntry`] holds the cue's id rather than a reference or a copy.
+//! The flat list is recomputed from the model and kept across `update` and
+//! `view` calls, so it must not borrow from the cue map; the caller looks the
+//! cue up by id when it draws the row. Rows under a collapsed group stay in
+//! the list, marked `is_hidden`, so that selection and the playback cursor
+//! keep pointing at cues that are not on screen.
 
 use std::collections::{HashMap, HashSet};
 
@@ -66,9 +71,7 @@ fn flatten_level(
 
     for (index, cue_id) in ids.iter().enumerate() {
         let Some(cue) = cues.get(cue_id) else {
-            // A dangling id (shouldn't happen with a consistent model, but
-            // the original silently skips it too -- `cues.get(cueId)` ->
-            // `if (cue == null) return;` inside the forEach).
+            // An id with no cue behind it (the model should not produce one) is skipped.
             continue;
         };
 
@@ -106,14 +109,11 @@ fn flatten_level(
     result
 }
 
-/// The chain override a playlist/concurrency parent imposes on its
-/// `index`-th child out of `ids`, or `None` if the parent doesn't override
-/// chaining (no parent, or a `StartFirst` group -- the original only
-/// special-cases `playlist`/`concurrency`; `StartFirst` is a newer
-/// `GroupMode` variant the original frontend's chain logic predates, so
-/// leaving it as "no override" here matches the original's behavior for
-/// every mode it knew about, rather than guessing new behavior for one it
-/// didn't).
+/// The chain a playlist or concurrency group imposes on its `index`-th
+/// child out of `ids` (a playlist chains each child to the next and, with
+/// `repeat`, the last back to the first; a concurrency group chains
+/// nothing). `None` when there is no parent or the group does not override
+/// chaining (`StartFirst`), so the cue keeps its own chain.
 fn chain_override(parent: Option<&Cue>, ids: &[Uuid], index: usize) -> Option<CueChain> {
     let parent = parent?;
     let CueParam::Group { base, .. } = &parent.params else {

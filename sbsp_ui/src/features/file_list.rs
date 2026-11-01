@@ -4,7 +4,7 @@
 //! The remote's file picker: the audio files the host offers, as a tree to
 //! choose from. A remote has no audio files of its own to use, so adding an
 //! audio cue or choosing a cue's file shows this instead of the system's
-//! file dialog. Ported from `FileListDialog.vue`.
+//! file dialog.
 //!
 //! The list comes from the host (`FileList`: folders and files, each file
 //! with the path the host knows it by) after the dialog asks for it.

@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The update dialog: checks for a newer version, downloads it with its
-//! progress, and installs it. Ported from `UpdateDialog.vue`.
+//! progress, and installs it.
 
 use iced::widget::{Space, button, column, progress_bar, row, text};
 use iced::{Alignment, Element, Length};

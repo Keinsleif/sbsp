@@ -3,15 +3,12 @@
 
 //! The bottom viewer: the selected audio cue's waveform with its start/end
 //! markers, the live playback position, a hover time tooltip, and
-//! click-to-seek. Ported from `BottomViewer.vue`, `WaveformPath.vue` and
-//! `waveform.worker.ts`.
+//! click-to-seek.
 //!
-//! The original rendered on an `OffscreenCanvas` in a worker because
-//! re-drawing on a webview's main thread would stall it. Here the
-//! waveform geometry sits in a [`canvas::Cache`] (rebuilt only when the
-//! cue, its waveform data, its gain or the width changes) and only the
-//! cheap overlay (markers, position, tooltip) is redrawn per frame, so no
-//! worker is needed.
+//! Here the waveform geometry sits in a [`canvas::Cache`] (rebuilt only
+//! when the cue, its waveform data, its gain or the width changes) and
+//! only the cheap overlay (markers, position, tooltip) is redrawn per
+//! frame, so no worker is needed.
 //!
 //! The editor that replaces this area in Edit mode is Phase 6; until then
 //! the viewer is shown in every mode.
@@ -34,7 +31,6 @@ use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
 use crate::state::ui::{Mode, UiState};
 
-/// The original's `h-16`.
 pub const HEIGHT: f32 = 64.0;
 
 /// A scaled sample at or above this is drawn as clipped (f32 epsilon over
@@ -78,8 +74,7 @@ pub struct TimeRange {
 impl TimeRange {
     pub const FULL: Self = Self { start: 0.0, end: 1.0 };
 
-    /// A missing (or zero, like the original's `||`) end time means "to
-    /// the end of the file".
+    /// A missing end time means "to the end of the file".
     pub fn new(duration: Option<f64>, start_time: Option<f64>, end_time: Option<f64>) -> Self {
         let duration = duration.filter(|d| *d != 0.0).unwrap_or(1.0);
         let start = start_time.unwrap_or(0.0) / duration;
@@ -92,7 +87,7 @@ impl TimeRange {
     }
 }
 
-/// The waveform's gain: the original shows the file normalized to its peak
+/// The waveform's gain: shows the waveform normalized to its peak
 /// (`-peak` dB), or untouched when no peak is known yet.
 pub fn gain_db(peak: Option<f32>) -> f32 {
     match peak {

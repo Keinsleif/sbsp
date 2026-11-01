@@ -2,11 +2,10 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! The bottom bar: the mode picker (view / run / edit, limited to what the
-//! permissions allow) and the cue count. Ported from `AppFooter.vue`.
+//! permissions allow) and the cue count.
 //!
 //! The asset-processing indicator and the
-//! server/settings/dock buttons that bar also held come with the features
-//! they belong to (Phase 6/7).
+//! server/settings/dock buttons that bar also held come with the features.
 
 use std::fmt;
 
@@ -76,8 +75,7 @@ pub fn view<'a>(
     let picker = pick_list(options, selected, |option| Message::ModeSelected(option.mode))
         .width(120);
 
-    // Beside the mode picker, as in the original; it stays while an update
-    // is waiting and opens the update dialog.
+    // Beside the mode picker, it stays while an update is waiting and opens the update dialog.
     let update = update_available.then(|| {
         button(
             row![icon::icon(Icon::Refresh, 16.0), text(fl!("dialog-update-updates-available"))]

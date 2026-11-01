@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Domain-specific TEA modules (see the migration plan, section 4.3):
-//! each owns its own view logic and `Message` type, nested into the app's
-//! via `.map()`, the same pattern used for `widgets::toast`.
+//! Domain-specific TEA modules:each owns its own view logic and `Message`
+//! type, nested into the app's via `.map()`, the same pattern used for
+//! `widgets::toast`.
 
 #[cfg(client)]
 pub mod connect;

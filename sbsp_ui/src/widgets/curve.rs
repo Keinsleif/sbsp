@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! A small picture of a fade curve, next to the fade fields. Ported from
-//! `CurveViewer.vue`: a grid with the curve over it; `falling` draws the
-//! curve of a fade *out* (the same curve from the top left down).
+//! A small picture of a fade curve, next to the fade fields. A
+//! grid with the curve over it; `falling` draws the curve of a
+//! fade *out* (the same curve from the top left down).
 
 use iced::widget::canvas::{self, Canvas, Path, Stroke};
 use iced::{Element, Length, Point, Rectangle, Renderer, Theme, mouse};
 
 use crate::domain::easing::Curve;
 
-/// The original's `w-16`.
 pub const WIDTH: f32 = 48.0;
 pub const HEIGHT: f32 = 48.0;
 
@@ -27,7 +26,7 @@ struct CurveProgram {
     falling: bool,
 }
 
-/// How many segments the curve is drawn with (the original's 100).
+/// How many segments the curve is drawn with.
 const STEPS: u32 = 100;
 
 impl<Message> canvas::Program<Message> for CurveProgram {

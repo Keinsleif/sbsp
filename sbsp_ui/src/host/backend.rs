@@ -1,29 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Host-side backend connection.
+//! The host's connection to the backend it runs in the same process.
 //!
-//! `HostPort::start()` now does two things Phase 1's version didn't:
-//! loads persisted settings (falling back to defaults on first run or a
-//! read error) instead of always using `GlobalHostSettings::default()`,
-//! and fetches the full show state as part of the same call, rather than
-//! as a separate step after construction.
+//! [`HostPort::start`] loads the saved settings (defaults on a first run or a
+//! read error), starts the backend with them and fetches the full show
+//! state, so that one call gives the app everything it needs for its first
+//! frame. It must be run as a `Task`: `start_backend` spawns its manager
+//! tasks with `tokio::spawn`, which needs the runtime that iced runs tasks
+//! on.
 //!
-//! That second change is what let `HostPort` move out of `App::new()` and
-//! into a proper boot `Task` (see `prototype.rs`), resolving the risk
-//! flagged in Phase 1's patch: starting the backend synchronously inside
-//! `App::new()`, on the unverified assumption that iced's boot closure
-//! already runs inside the tokio runtime it uses for `Task`/`Subscription`
-//! execution. `start_backend` spawns its manager tasks with `tokio::spawn`
-//! internally, which needs a runtime; a `Task::perform`'d async fn is
-//! guaranteed to run inside one. The other half of that original
-//! workaround -- keeping `HostPort` out of `Message` because
-//! `BackendHandle`/`FullShowState` aren't `Debug` -- is no longer needed
-//! either: `Message` only derives `Clone` now (dropped `Debug` in the
-//! Phase 1 patch, for the same reason), and every field of `HostPort` is a
-//! cheaply-`Clone`-able handle (a `tokio::sync` `Sender`, or a `BackendHandle`
-//! that is itself just a bundle of those), so `HostPort: Clone` costs
-//! nothing beyond what `App` already pays to hold one.
+//! [`HostPort`] derefs to [`Link`], the handle the app sends commands
+//! through, and adds what only the host has: saving the settings, the
+//! output devices, and the API server's options and lifetime. It is cheap
+//! to clone: every field is a handle (a channel end, an `Arc`, or the
+//! backend handle, itself a bundle of those).
 
 use std::sync::Arc;
 

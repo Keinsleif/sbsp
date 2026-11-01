@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-//! Host filesystem paths, per the migration plan's section 5.2.
-//!
-//! A free function for now, not part of a `platform/` abstraction: that
-//! abstraction is worth building once `remote` (Phase 8) needs its own
-//! version of this (a different identifier, otherwise the same shape) --
-//! premature to design the trait boundary around a single caller.
+//! Where the host keeps its files.
 
 use std::path::PathBuf;
 
-/// Matches the existing Tauri build's `identifier`, so settings saved by
-/// that version are found by this one (see the migration plan's risk
-/// table: "保存済み設定との非互換").
+/// The application identifier, which names the host's directory under the
+/// OS config directory. It is also the identifier of the installed
+/// package, so it must not change: settings saved under the old name would
+/// no longer be found.
 const IDENTIFIER: &str = "com.keinsleif.sbsp";
 
 /// `dirs::config_dir()/<identifier>/config.json`. `None` if the OS config
