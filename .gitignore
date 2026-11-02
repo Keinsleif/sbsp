@@ -30,3 +30,5 @@ dist-ssr
 *.bak
 
 /undefined
+/sbsp_ui/web_dist/
+/sbsp_ui/web/fonts/
