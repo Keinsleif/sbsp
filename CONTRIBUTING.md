@@ -39,8 +39,8 @@
 
 * バージョン更新時に作成されます。
 * マージ後、GitHub Actionsにより [cocogitto](https://docs.cocogitto.io/) が自動で呼び出され、以下の処理が実行されます。
-    * バージョンの自動バンプ（繰り上げ）
-    * 変更履歴（`CHANGELOG.md`）の自動生成
+* バージョンの自動バンプ（繰り上げ）
+* 変更履歴（`CHANGELOG.md`）の自動生成
 
 ### Conventional Commits 形式について
 
@@ -75,11 +75,17 @@
 `<scope>`は指定されないか、以下のうちの一つから選択されます。
 
 * backend: sbsp_backendクレートに関する変更
-* frontend: sbsp_frontendパッケージに関する変更
-* license: sbsp_licenseクレートに関する変更
-* app: sbsp_appクレートにのみ関する変更
-* remote_app: sbsp_remote_appクレートにのみ関する変更
+* ui: sbsp_uiクレート（ホスト・リモート・Web）に関する変更
 * docs: sbsp_docsに関する変更
+* deps: 依存関係の更新
+
+##### backend などの変更と ui の変更
+
+`sbsp_backend` の変更は `sbsp_ui` のバージョンにも反映されます（backend の `feat` は ui の minor 更新になります）。変更履歴では、これらの scope のコミットは「Core changes」節に分けて表示されます。
+
+* 変更は crate ごとにコミットを分け、それぞれの scope（`backend` と `ui` など）を付けてください。
+* 分けられない場合は、利用者から見える側（通常は `ui`、または scope なし）を付け、backend 側の内容は本文に記述してください。
+* 破壊的変更は、どの scope でも `!` を付けてください。ui の major 更新になります。
 
 #### 破壊的変更について
 
@@ -99,54 +105,41 @@
 
 * [mise 公式ドキュメント](https://mise.jdx.dev/getting-started.html#installing-mise-cli)
 
-### ステップ 2: 依存パッケージのインストール
+### ステップ 2: ツールと依存パッケージのセットアップ
 
-Tauri およびオーディオ制御（cpal）に必要なシステムパッケージをインストールします。
-
-#### ① Tauri v2 の前提パッケージ
-
-各OSに応じた必須パッケージをインストールしてください。
-
-* 詳細は [Tauri 公式ドキュメント: 前提条件](https://v2.tauri.app/ja/start/prerequisites/) を参照。
-
-#### ② Linux環境のみ：cpal のビルド依存関係
-
-Linux環境で開発する場合は、ALSAやASOUND関連の開発用パッケージが必要です。
-
-* 詳細は [RustAudio/cpal (Linux build dependencies)](https://github.com/RustAudio/cpal#linux-build-dependencies) を参照。
-
-### ステップ 3: ツールと依存関係のセットアップ
-
-環境が整ったら、リポジトリのルートで以下のコマンドを順番に実行します。
+リポジトリのルートで以下を実行します。
 
 ```bash
 # 1. (任意) cargo-binstall の追加を行う場合
 mise use -g cargo-binstall
 
-# 2. miseに定義されたツールチェイン（Rust, Node.js等）のインストール
+# 2. miseに定義されたツールチェイン（Rust, trunk, Python, .NET等）のインストール
 mise install
 
-# 3. フロントエンド依存パッケージのインストール
-pnpm install
+# 3. Linux のみ：オーディオ（cpal）のビルドに必要なシステムパッケージのインストール
+mise bootstrap packages apply
 ```
 
-### ステップ 4: アプリケーションのビルド・起動
+オーディオ制御（cpal）のビルド依存関係の詳細は [RustAudio/cpal (Linux build dependencies)](https://github.com/RustAudio/cpal#linux-build-dependencies) を参照してください。
 
-開発対象のアプリケーションディレクトリに移動し、Tauriのビルドを行います。
-
-sbsp_app の場合:
+### ステップ 3: アプリケーションのビルド・起動
 
 ```bash
-cd sbsp_app
-cargo tauri build
+# SBS Player（Web 版を含む）
+mise run build_host
+
+# SBS Player Remote
+mise run build_remote
 ```
 
-sbsp_remote_app の場合:
+開発中は、通常の `cargo run` で起動できます。
 
 ```bash
-cd sbsp_remote_app
-cargo tauri build
+cargo run -p sbsp_ui --no-default-features --features host --bin sbsp_host
+cargo run -p sbsp_ui --no-default-features --features remote --bin sbsp_remote
 ```
+
+ドキュメント（`sbsp_docs`）の開発には Node.js と pnpm を使用します（`mise install` で入ります）。
 
 ---
 

@@ -1,0 +1,6 @@
+# Added to mise.toml when MISE_ENV=ci. The release workflow builds the web
+# app once in its own job and hands it to the builds of the apps, so here the
+# host does not build it again.
+[tasks.build_host]
+run = 'python scripts/build.py host'
+depends = []
