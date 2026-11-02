@@ -36,10 +36,10 @@ use crate::domain::cursor::{CueEvent, CursorMove, advance};
 use crate::domain::new_cue::{self, CueKind};
 use crate::domain::{clipboard, cue_edit};
 #[cfg(client)]
-use crate::features::{connect, file_list};
+use crate::features::{connect, dialog::file_list};
 use crate::features::{
-    credits, cue_list, editor, file_ops, header, hotkeys, mobile, renumber, server_panel,
-    settings_dialog, side_bar, status_bar, update_dialog, viewer,
+    cue_list, editor, file_ops, header, hotkeys, mobile,
+    side_bar, status_bar, viewer, dialog::{credits, renumber, server_panel, settings as settings_dialog, update as update_dialog}
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -56,7 +56,7 @@ use crate::theme::ThemeMode;
 use crate::widgets::{divider, field, menu_bar, modal, toast};
 
 #[cfg(installer)]
-use crate::features::update_dialog::Stage;
+use crate::features::dialog::update::Stage;
 #[cfg(feature = "host")]
 use crate::host::backend::HostPort;
 #[cfg(backend)]

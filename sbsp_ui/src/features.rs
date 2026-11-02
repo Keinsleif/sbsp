@@ -7,19 +7,13 @@
 
 #[cfg(client)]
 pub mod connect;
-pub mod credits;
 pub mod cue_list;
+pub mod dialog;
 pub mod editor;
-#[cfg(client)]
-pub mod file_list;
 pub mod file_ops;
 pub mod header;
 pub mod hotkeys;
 pub mod mobile;
-pub mod renumber;
-pub mod server_panel;
-pub mod settings_dialog;
 pub mod side_bar;
 pub mod status_bar;
-pub mod update_dialog;
 pub mod viewer;

@@ -18,12 +18,12 @@ use crate::theme::fonts;
 /// What `cargo about` wrote (the generated file is committed). The web
 /// build does not carry it (it would double the download).
 #[cfg(not(target_arch = "wasm32"))]
-const NOTICES: &str = include_str!("../../../THIRD_PARTY_NOTICES.md");
+const NOTICES: &str = include_str!("../../../../THIRD_PARTY_NOTICES.md");
 #[cfg(target_arch = "wasm32")]
 const NOTICES: &str = "";
 
 /// SIL Open Font License 1.1, with the fonts' copyright notice.
-const FONT_LICENSE: &str = include_str!("../../assets/fonts/OFL.txt");
+const FONT_LICENSE: &str = include_str!("../../../assets/fonts/OFL.txt");
 
 const ICON_NOTICE: &str = "Material Design Icons\n\
 Copyright (c) Pictogrammers (https://pictogrammers.com/library/mdi/)\n\
