@@ -25,7 +25,6 @@ All notable changes to this project will be documented in this file. See [conven
 #### Build system
 
 - (**deps**) bump markdown-it from 14.3.2 to 14.3.3 (#225) - ([a49fbad](https://github.com/Keinsleif/sbsp/commit/a49fbadc2eb76044938e095c2f26fa5a402c79c9)) - dependabot[bot], [@Keinsleif](https://github.com/Keinsleif), dependabot[bot]
-
 - (**deps**) bump shell-quote from 1.10.0 to 1.12.0 - ([46e0f56](https://github.com/Keinsleif/sbsp/commit/46e0f561f717d98a8dbb10fd0b7e2481548196d7)) - dependabot[bot]
 
 #### Miscellaneous Chores
