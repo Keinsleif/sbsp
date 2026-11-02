@@ -619,6 +619,9 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                         }
                                     }
                                     if reauth {
+                                        if !permission.contains(Permissions::READ) {
+                                            level_enabled = false;
+                                        }
                                         if let Some(entry) = state.rate_limit.lock().await.get_mut(&ip) {
                                             entry.count = entry.count.saturating_sub(1);
                                         }
