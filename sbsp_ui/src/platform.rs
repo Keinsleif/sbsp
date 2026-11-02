@@ -12,4 +12,4 @@ pub mod update;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod logging;
 #[cfg(target_arch = "wasm32")]
-mod browser;
+pub mod browser;
