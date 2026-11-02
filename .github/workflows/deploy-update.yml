@@ -1,5 +1,10 @@
 name: 'deploy-update'
 
+# Puts the update feed of a published release on GitHub Pages:
+# `update/host/` and `update/remote/` (what the apps look at), with the
+# packages and the index files of the release. The feed of the Tauri versions
+# (`update/latest-*.json`) stays where it is.
+
 on:
   release:
     types: [released]
@@ -9,23 +14,31 @@ on:
         description: 'Target Release Tag'
         required: true
         type: string
-        default: 'app-1.2.1'
+        default: 'ui-3.0.0'
 
 jobs:
   upload:
+    if: startsWith(github.event.inputs.tag_name || github.event.release.tag_name, 'ui-')
     permissions:
       contents: write
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - run: mkdir upload
-
-      - name: 'update latest.json'
-        run: gh release download ${{ github.event.inputs.tag_name || github.event.release.tag_name }} -p latest.json -O upload/latest-${{ contains(github.event.inputs.tag_name || github.event.release.tag_name, 'remote') && 'remote' || 'main' }}.json
+      - name: collect the feed
+        run: |
+          tag="${{ github.event.inputs.tag_name || github.event.release.tag_name }}"
+          mkdir -p assets upload/host upload/remote
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir assets \
+            --pattern '*.nupkg' --pattern 'host.*' --pattern 'remote.*'
+          for file in assets/*; do
+            name=$(basename "$file")
+            case "$name" in
+              host.*) mv "$file" "upload/host/${name#host.}" ;;
+              remote.*) mv "$file" "upload/remote/${name#remote.}" ;;
+              com.keinsleif.sbsp.remote-*) mv "$file" upload/remote/ ;;
+              com.keinsleif.sbsp-*) mv "$file" upload/host/ ;;
+            esac
+          done
+          ls -R upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
