@@ -96,6 +96,7 @@ windows-sys = { version = "0.61", optional = true, features = [
 
 [dev-dependencies]
 env_logger = "0.11"
+serde_json = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { workspace = true, features = ["js"] }
