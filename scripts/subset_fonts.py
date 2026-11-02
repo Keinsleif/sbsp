@@ -12,10 +12,10 @@
 The desktop builds embed the whole BIZ UD fonts (about 4.6 MB each). The
 web build fetches these instead (see `sbsp_ui/src/web.rs`):
 
-  web/fonts/ui.ttf    BIZ UDPGothic: ASCII and all of JIS X 0208 (kana,
+  target/web/fonts/ui.ttf    BIZ UDPGothic: ASCII and all of JIS X 0208 (kana,
                       symbols, 6355 kanji), which is what a name typed in
                       Japanese is made of.
-  web/fonts/mono.ttf  BIZ UDGothic: ASCII and JIS X 0208's non-kanji rows
+  target/web/fonts/mono.ttf  BIZ UDGothic: ASCII and JIS X 0208's non-kanji rows
                       (the clock and the times; the credits' text).
 
 The family names are kept (the fonts' license has no Reserved Font Name),
@@ -30,7 +30,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = ROOT / "sbsp_ui" / "assets" / "fonts"
-OUT = ROOT / "sbsp_ui" / "web" / "fonts"
+OUT = ROOT / "target" / "web" / "fonts"
 I18N = ROOT / "sbsp_ui" / "i18n"
 
 

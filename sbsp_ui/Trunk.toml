@@ -7,16 +7,7 @@ dist = "web_dist"
 public_url = "/"
 
 # What the build itself writes must not start another build.
-watch = [
-  "assets",
-  "i18n",
-  "src",
-  "index.html",
-  "build.rs",
-  "Cargo.toml",
-  "i18n.toml",
-  "Trunk.toml",
-]
+ignore = ["web_dist"]
 
 [[hooks]]
 stage = "pre_build"
