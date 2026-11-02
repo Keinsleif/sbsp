@@ -181,11 +181,11 @@ mod storage {
     }
 
     pub fn load(target: &str) -> Saved {
-        crate::browser::get(&key(target)).map_or_else(Saved::default, |json| Saved::parse(&json))
+        crate::platform::browser::get(&key(target)).map_or_else(Saved::default, |json| Saved::parse(&json))
     }
 
     pub fn save(target: &str, saved: &Saved) {
-        crate::browser::set(&key(target), &saved.to_json());
+        crate::platform::browser::set(&key(target), &saved.to_json());
     }
 }
 

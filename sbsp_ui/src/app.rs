@@ -2831,7 +2831,7 @@ impl State {
     fn store_clipboard(&self) {
         #[cfg(target_arch = "wasm32")]
         match serde_json::to_string(&self.clipboard) {
-            Ok(json) => crate::browser::set(CLIPBOARD_KEY, &json),
+            Ok(json) => crate::platform::browser::set(CLIPBOARD_KEY, &json),
             Err(error) => log::warn!("could not keep the clipboard: {error}"),
         }
     }
@@ -2840,7 +2840,7 @@ impl State {
     /// tab's, which another tab may have replaced.
     fn refresh_clipboard(&mut self) {
         #[cfg(target_arch = "wasm32")]
-        if let Some(json) = crate::browser::get(CLIPBOARD_KEY) {
+        if let Some(json) = crate::platform::browser::get(CLIPBOARD_KEY) {
             match serde_json::from_str::<Vec<Cue>>(&json) {
                 Ok(cues) => self.clipboard = cues,
                 Err(error) => log::warn!("ignoring the stored clipboard: {error}"),
