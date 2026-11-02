@@ -20,21 +20,21 @@ macOS向けには for macOS
 
 を選択します。
 
-## GitHub Releases（アップデート配信元）
+## GitHub Releases
 
 [GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest)
 
 上記のページの`Assets`より、OSに応じたファイルをダウンロードします。
 
-Windows向けには `SBS Player_x.x.x_x64-setup.exe`
+Windows向けには `com.keinsleif.sbsp-win-Setup.exe`
 
-macOS向けには `SBS.Player_x.x.x_universal.dmg`
+macOS向けには `com.keinsleif.sbsp-osx-Setup.pkg`
 
-Linux向けには、
-Debian, Ubuntu : `SBS.Player_x.x.x_amd64.deb`
-RedHat, CentOS : `SBS.Player-x.x.x-1.x86_64.rpm`
+Linux向けには `com.keinsleif.sbsp-linux.AppImage`
 
-をダウンロードします。（x.x.xにはバージョン番号が入ります）
+をダウンロードします。
+
+インストール後は、メニューの「ヘルプ」→「アップデートを確認」から、新しいバージョンの確認とインストールができます。
 
 <script setup>
     import DownloadButton from './components/DownloadButton.vue';
