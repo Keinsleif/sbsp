@@ -167,10 +167,6 @@ Pre-Waitはキューが実行されるまでの待機時間を表します。
 
 リモート操作用のサーバー管理パネルを開きます。
 
-::: warning NOTE
-この機能を利用するにはライセンス認証が必要です。
-:::
-
 ### <svg viewBox="0 0 26 26" width="25" height="25"><circle cx="13" cy="13" r="12" stroke="white" stroke-width="2px" fill="#ff00e8" /><text x="13" y="20" text-anchor="middle" fill="white" font-size="13pt">22</text></svg> 下部パネルの表示切り替え
 
 下部パネルの表示・非表示を切り替えます。
