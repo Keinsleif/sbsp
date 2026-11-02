@@ -1,6 +1,6 @@
 # SBS Player
 
-創価大学放送部（SBS）での使用を想定した音源再生ソフトです。  
+イベント等での使用を想定した音源再生ソフトです。  
 Mac用の舞台オペレーティングソフトウェアである [QLab](https://qlab.app/) にインスパイアされています。  
 
 ## ドキュメント
@@ -9,32 +9,23 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 
 ## ビルド
 
+ツールの管理には [mise](https://mise.jdx.dev/) を使います。
+
 ### 前準備
 
-- Tauri Prerequisites
+1. [mise](https://mise.jdx.dev/getting-started.html#installing-mise-cli) をインストール
 
-[https://v2.tauri.app/ja/start/prerequisites/](https://v2.tauri.app/ja/start/prerequisites/)
+2. ツールをインストール（Rust、trunk、Python など）
 
-上記のページを元に Rust, Node.js, その他の依存パッケージをインストール
+    ```bash
+    mise install
+    ```
 
-> [!NOTE]
-> Linuxにおいては、追加で以下の依存関係が必要です。
->
-> > Debian/Ubuntu/Mint では `libasound2-dev`、Fedora/Centos では`alsa-lib-devel` パッケージ
+3. Linux のみ: 音声出力（ALSA）などのシステムパッケージをインストール
 
-- pnpm
-
-[https://pnpm.io/ja/installation](https://pnpm.io/ja/installation)
-
-上記のページを元に pnpm をインストール
-
-- Tauri CLI
-
-以下のコマンドでTauri CLIをインストール
-
-```bash
-cargo install tauri-cli --version "^2.0.0" --locked
-```
+    ```bash
+    mise bootstrap packages apply
+    ```
 
 ### ビルド手順
 
@@ -42,34 +33,46 @@ cargo install tauri-cli --version "^2.0.0" --locked
 
     ```bash
     git clone https://github.com/Keinsleif/sbsp.git
+    cd sbsp
     ```
 
-2. Node.js 依存関係をインストール
+2. ビルドを実行
 
     ```bash
-    cd sbsp/sbsp_frontend
-    pnpm i
-    ```
-
-3. ビルドを実行
-
-    ```bash
-    # SBS Player をビルド
-    cd ../sbsp_app
-
-    cargo tauri build
+    # SBS Player をビルド（Web 版も含めてビルドされます）
+    mise run build_host
 
     # SBS Player Remote をビルド
-    cd ../sbsp_remote_app
-
-    cargo tauri build
+    mise run build_remote
     ```
 
-> [!NOTE]
-> 開発のためにホットリロードやDevtoolsを利用するときは以下のコマンドで実行まで行えます。
->
-> ```bash
-> cargo tauri dev
-> ```
+    `target/release/` に `sbsp_host` と `sbsp_remote` が出力されます。
 
-  `sbsp/target/release/` に実行ファイルが出力されます。
+3. インストーラーとアップデート用のパッケージを作成（任意）
+
+    [.NET 8 SDK](https://dotnet.microsoft.com/) が必要です（`mise install` で入ります）。
+
+    ```bash
+    mise run pack_host
+    mise run pack_remote
+    ```
+
+    `target/dist/` に出力されます。
+
+> [!NOTE]
+> Web 版だけを開発するときは `mise run dev_web` でブラウザ向けの開発サーバーが起動します。
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+### Freedom to use, study, share and improve
+
+This software respects your freedom. You can:
+
+- Use it for any purpose
+- Study how it works and adapt it to your needs
+- Share copies with others
+- Improve the software and share your improvements with others
+
+All derivative works must also be licensed under GPL v3.0.

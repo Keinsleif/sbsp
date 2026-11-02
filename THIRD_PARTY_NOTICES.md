@@ -1,5 +1,21 @@
 # THIRD PARTY NOTICES
 
+<!-- markdownlint-disable MD024 -->
+
+## Resources
+
+### Material Design Icons
+
+Copyright (c) Pictogrammers (<https://pictogrammers.com/library/mdi/>).
+Licensed under the Apache License, Version 2.0 (<https://www.apache.org/licenses/LICENSE-2.0>).
+The license text is the "Apache License 2.0" entry under Rust Dependencies.
+
+### BIZ UD Gothic / BIZ UDP Gothic
+
+Copyright 2022 The BIZ UDGothic Project Authors (<https://github.com/googlefonts/morisawa-biz-ud-mincho>).
+Licensed under the SIL Open Font License, Version 1.1 (<https://scripts.sil.org/OFL>).
+The license text is `sbsp_ui/assets/fonts/OFL.txt`.
+
 ## Rust Dependencies
 
 ### Apache License 2.0
@@ -665,9 +681,6 @@
     - [linux-raw-sys 0.4.15]( https://github.com/sunfishcode/linux-raw-sys )
     - [rustix 0.38.44]( https://github.com/bytecodealliance/rustix )
     - [rustix 1.1.5]( https://github.com/bytecodealliance/rustix )
-    - [wasi 0.11.1+wasi-snapshot-preview1]( https://github.com/bytecodealliance/wasi )
-    - [wasip2 1.0.4+wasi-0.2.12]( https://github.com/bytecodealliance/wasi-rs )
-    - [wit-bindgen 0.57.1]( https://github.com/bytecodealliance/wit-bindgen )
 
 ```text
 
@@ -1125,19 +1138,8 @@ Software.
     - [windows-threading 0.2.1]( https://github.com/microsoft/windows-rs )
     - [windows 0.58.0]( https://github.com/microsoft/windows-rs )
     - [windows 0.62.2]( https://github.com/microsoft/windows-rs )
-    - [windows_aarch64_gnullvm 0.48.5]( https://github.com/microsoft/windows-rs )
-    - [windows_aarch64_gnullvm 0.52.6]( https://github.com/microsoft/windows-rs )
-    - [windows_aarch64_msvc 0.48.5]( https://github.com/microsoft/windows-rs )
-    - [windows_aarch64_msvc 0.52.6]( https://github.com/microsoft/windows-rs )
-    - [windows_i686_gnu 0.48.5]( https://github.com/microsoft/windows-rs )
-    - [windows_i686_gnu 0.52.6]( https://github.com/microsoft/windows-rs )
-    - [windows_i686_gnullvm 0.52.6]( https://github.com/microsoft/windows-rs )
-    - [windows_i686_msvc 0.48.5]( https://github.com/microsoft/windows-rs )
-    - [windows_i686_msvc 0.52.6]( https://github.com/microsoft/windows-rs )
     - [windows_x86_64_gnu 0.48.5]( https://github.com/microsoft/windows-rs )
     - [windows_x86_64_gnu 0.52.6]( https://github.com/microsoft/windows-rs )
-    - [windows_x86_64_gnullvm 0.48.5]( https://github.com/microsoft/windows-rs )
-    - [windows_x86_64_gnullvm 0.52.6]( https://github.com/microsoft/windows-rs )
     - [windows_x86_64_msvc 0.48.5]( https://github.com/microsoft/windows-rs )
     - [windows_x86_64_msvc 0.52.6]( https://github.com/microsoft/windows-rs )
 
@@ -3505,8 +3507,6 @@ Software.
     - [foreign-types 0.5.0]( https://github.com/sfackler/foreign-types )
     - [hex 0.4.3]( https://github.com/KokaKiwi/rust-hex )
     - [humantime 2.4.0]( https://github.com/chronotope/humantime )
-    - [jni-sys 0.3.1]( https://github.com/jni-rs/jni-sys )
-    - [jni-sys 0.4.1]( https://github.com/jni-rs/jni-sys )
     - [no_std_io2 0.9.4]( https://github.com/wcampbell0x2a/no-std-io2 )
     - [quick-error 2.0.1]( http://github.com/tailhook/quick-error )
 
@@ -5627,7 +5627,6 @@ limitations under the License.
 
 - Used by
 
-    - [iana-time-zone-haiku 0.1.2]( https://github.com/strawlab/iana-time-zone )
     - [iana-time-zone 0.1.65]( https://github.com/strawlab/iana-time-zone )
 
 ```text
@@ -6697,7 +6696,6 @@ limitations under the License.
 
     - [ahash 0.8.12]( https://github.com/tkaitchuck/ahash )
     - [aligned 0.4.3]( https://github.com/rust-embedded-community/aligned )
-    - [arbitrary 1.5.0]( https://github.com/rust-fuzz/arbitrary/ )
     - [arc-swap 1.9.3]( https://github.com/vorner/arc-swap )
     - [arrayvec 0.7.8]( https://github.com/bluss/arrayvec )
     - [as-slice 0.2.1]( https://github.com/japaric/as-slice )
@@ -6753,7 +6751,6 @@ limitations under the License.
     - [hashbrown 0.15.5]( https://github.com/rust-lang/hashbrown )
     - [hashbrown 0.16.1]( https://github.com/rust-lang/hashbrown )
     - [hashbrown 0.17.1]( https://github.com/rust-lang/hashbrown )
-    - [hermit-abi 0.5.3]( https://github.com/hermit-os/hermit-rs )
     - [idna 1.1.0]( https://github.com/servo/rust-url/ )
     - [idna_adapter 1.2.2]( https://github.com/hsivonen/idna_adapter )
     - [indexmap 2.14.2]( https://github.com/indexmap-rs/indexmap )
@@ -6761,7 +6758,6 @@ limitations under the License.
     - [js-sys 0.3.106]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys )
     - [khronos-egl 6.0.0]( https://github.com/timothee-haudebourg/khronos-egl )
     - [lazy_static 1.5.1]( https://github.com/rust-lang-nursery/lazy-static.rs )
-    - [libfuzzer-sys 0.4.13]( https://github.com/rust-fuzz/libfuzzer )
     - [linux-raw-sys 0.12.1]( https://github.com/sunfishcode/linux-raw-sys )
     - [linux-raw-sys 0.4.15]( https://github.com/sunfishcode/linux-raw-sys )
     - [lock_api 0.4.14]( https://github.com/Amanieu/parking_lot )
@@ -6781,7 +6777,6 @@ limitations under the License.
     - [parking_lot_core 0.9.12]( https://github.com/Amanieu/parking_lot )
     - [percent-encoding 2.3.2]( https://github.com/servo/rust-url/ )
     - [piper 0.2.5]( https://github.com/smol-rs/piper )
-    - [plain 0.2.3]( https://github.com/randomites/plain )
     - [png 0.17.16]( https://github.com/image-rs/image-png )
     - [png 0.18.1]( https://github.com/image-rs/image-png )
     - [polling 3.11.0]( https://github.com/smol-rs/polling )
@@ -6800,7 +6795,6 @@ limitations under the License.
     - [scopeguard 1.2.0]( https://github.com/bluss/scopeguard )
     - [shellexpand 3.1.2]( https://gitlab.com/ijackson/rust-shellexpand )
     - [signal-hook-registry 1.4.8]( https://github.com/vorner/signal-hook )
-    - [simd_cesu8 1.2.0]( https://github.com/seancroach/simd_cesu8 )
     - [simplecss 0.2.2]( https://github.com/linebender/simplecss )
     - [smallvec 1.16.4]( https://github.com/servo/rust-smallvec )
     - [smol_str 0.2.2]( https://github.com/rust-analyzer/smol_str )
@@ -6825,15 +6819,12 @@ limitations under the License.
     - [url 2.5.8]( https://github.com/servo/rust-url )
     - [uuid 1.29.0]( https://github.com/uuid-rs/uuid )
     - [value-bag 1.14.1]( https://github.com/sval-rs/value-bag )
-    - [wasi 0.11.1+wasi-snapshot-preview1]( https://github.com/bytecodealliance/wasi )
-    - [wasip2 1.0.4+wasi-0.2.12]( https://github.com/bytecodealliance/wasi-rs )
     - [wasm-bindgen-futures 0.4.79]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures )
     - [wasm-bindgen-macro-support 0.2.129]( https://github.com/wasm-bindgen/wasm-bindgen/tree/main/crates/macro-support )
     - [wasm-bindgen-macro 0.2.129]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro )
     - [wasm-bindgen-shared 0.2.129]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared )
     - [wasm-bindgen 0.2.129]( https://github.com/wasm-bindgen/wasm-bindgen )
     - [web-sys 0.3.106]( https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys )
-    - [wit-bindgen 0.57.1]( https://github.com/bytecodealliance/wit-bindgen )
 
 ```text
                               Apache License
@@ -7488,7 +7479,6 @@ limitations under the License.
 - Used by
 
     - [rand_core 0.6.4]( https://github.com/rust-random/rand )
-    - [rand_core 0.9.5]( https://github.com/rust-random/rand )
 
 ```text
                               Apache License
@@ -10305,8 +10295,6 @@ limitations under the License.
     - [ab_glyph 0.2.32]( https://github.com/alexheretic/ab-glyph )
     - [ab_glyph_rasterizer 0.1.10]( https://github.com/alexheretic/ab-glyph )
     - [alsa 0.11.0]( https://github.com/diwic/alsa-rs )
-    - [android-activity 0.6.1]( https://github.com/rust-mobile/android-activity )
-    - [android_system_properties 0.1.6]( https://github.com/nical/android_system_properties )
     - [anyhow 1.0.104]( https://github.com/dtolnay/anyhow )
     - [async-trait 0.1.92]( https://github.com/dtolnay/async-trait )
     - [audio-core 0.2.1]( https://github.com/udoprog/audio )
@@ -10335,9 +10323,6 @@ limitations under the License.
     - [image 0.25.10]( https://github.com/image-rs/image )
     - [intl_pluralrules 7.0.2]( https://github.com/zbraniecki/pluralrules )
     - [itoa 1.0.18]( https://github.com/dtolnay/itoa )
-    - [jni-macros 0.22.4]( https://github.com/jni-rs/jni-rs )
-    - [jni-sys-macros 0.4.1]( https://github.com/jni-rs/jni-sys )
-    - [jni 0.22.4]( https://github.com/jni-rs/jni-rs )
     - [libc 0.2.191]( https://github.com/rust-lang/libc )
     - [linebender_resource_handle 0.1.1]( https://github.com/linebender/raw_resource_handle )
     - [litrs 1.0.1]( https://github.com/LukasKalbertodt/litrs )
@@ -10350,15 +10335,9 @@ limitations under the License.
     - [miniz_oxide 0.8.9]( https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide )
     - [miniz_oxide 0.9.1]( https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide )
     - [naga 27.0.3]( https://github.com/gfx-rs/wgpu )
-    - [ndk-context 0.1.1]( https://github.com/rust-windowing/android-ndk-rs )
-    - [ndk-sys 0.6.0+11769913]( https://github.com/rust-mobile/ndk )
-    - [ndk 0.9.0]( https://github.com/rust-mobile/ndk )
     - [normpath 1.5.2]( https://github.com/dylni/normpath )
-    - [num_enum 0.7.6]( https://github.com/illicitonion/num_enum )
-    - [num_enum_derive 0.7.6]( https://github.com/illicitonion/num_enum )
     - [objc2-app-kit 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2-audio-toolbox 0.3.2]( https://github.com/madsmtm/objc2 )
-    - [objc2-avf-audio 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2-cloud-kit 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2-core-audio-types 0.3.2]( https://github.com/madsmtm/objc2 )
     - [objc2-core-audio 0.3.2]( https://github.com/madsmtm/objc2 )
@@ -10375,17 +10354,11 @@ limitations under the License.
     - [pin-project-internal 1.1.13]( https://github.com/taiki-e/pin-project )
     - [pin-project-lite 0.2.17]( https://github.com/taiki-e/pin-project-lite )
     - [pin-project 1.1.13]( https://github.com/taiki-e/pin-project )
-    - [portable-atomic-util 0.2.8]( https://github.com/taiki-e/portable-atomic-util )
-    - [portable-atomic 1.15.0]( https://github.com/taiki-e/portable-atomic )
     - [proc-macro2 1.0.107]( https://github.com/dtolnay/proc-macro2 )
     - [profiling-procmacros 1.0.18]( https://github.com/aclysma/profiling )
     - [profiling 1.0.18]( https://github.com/aclysma/profiling )
     - [quote 1.0.47]( https://github.com/dtolnay/quote )
-    - [r-efi 5.3.0]( https://github.com/r-efi/r-efi )
-    - [r-efi 6.0.0]( https://github.com/r-efi/r-efi )
     - [rand 0.8.8]( https://github.com/rust-random/rand )
-    - [rand 0.9.5]( https://github.com/rust-random/rand )
-    - [rand_chacha 0.9.0]( https://github.com/rust-random/rand )
     - [range-alloc 0.1.5]( https://github.com/gfx-rs/range-alloc )
     - [raw-window-handle 0.6.2]( https://github.com/rust-windowing/raw-window-handle )
     - [resvg 0.45.1]( https://github.com/linebender/resvg )
@@ -10410,7 +10383,6 @@ limitations under the License.
     - [unicode-ident 1.0.27]( https://github.com/dtolnay/unicode-ident )
     - [usvg 0.45.1]( https://github.com/linebender/resvg )
     - [wgpu-core-deps-apple 27.0.0]( https://github.com/gfx-rs/wgpu )
-    - [wgpu-core-deps-emscripten 27.0.0]( https://github.com/gfx-rs/wgpu )
     - [wgpu-core-deps-windows-linux-android 27.0.0]( https://github.com/gfx-rs/wgpu )
     - [wgpu-core 27.0.3]( https://github.com/gfx-rs/wgpu )
     - [wgpu-hal 27.0.4]( https://github.com/gfx-rs/wgpu )
@@ -13103,42 +13075,6 @@ SOFTWARE.
 
 - Used by
 
-    - [redox_syscall 0.4.1]( https://gitlab.redox-os.org/redox-os/syscall )
-    - [redox_syscall 0.5.18]( https://gitlab.redox-os.org/redox-os/syscall )
-    - [redox_syscall 0.9.5]( https://gitlab.redox-os.org/redox-os/kernel )
-
-```text
-Copyright (c) 2017 Redox OS Developers
-
-MIT License
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-&quot;Software&quot;), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
     - [bytes 1.12.1]( https://github.com/tokio-rs/bytes )
 
 ```text
@@ -13923,7 +13859,6 @@ SOFTWARE.
 - Used by
 
     - [arg_enum_proc_macro 0.3.4]( https://github.com/lu-zero/arg_enum_proc_macro )
-    - [interpolate_name 0.2.4]( https://github.com/lu-zero/interpolate_name )
 
 ```text
 MIT License
@@ -14188,39 +14123,6 @@ SOFTWARE.
 
 - Used by
 
-    - [android-properties 0.2.2]( https://github.com/miklelappo/android-properties )
-
-```text
-MIT License
-
-Copyright (c) 2020 Mikhail Lappo
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
     - [xcursor 0.3.11]( https://github.com/esposm03/xcursor-rs )
 
 ```text
@@ -14422,39 +14324,6 @@ SOFTWARE.
 
 - Used by
 
-    - [libredox 0.1.25]( https://gitlab.redox-os.org/redox-os/libredox.git )
-
-```text
-MIT License
-
-Copyright (c) 2023 4lDO2
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
     - [equator-macro 0.4.2]( https://github.com/sarah-ek/equator/ )
     - [equator 0.4.2]( https://github.com/sarah-ek/equator/ )
 
@@ -14611,7 +14480,6 @@ SOFTWARE.
     - [objc2-encode 4.1.0]( https://github.com/madsmtm/objc2 )
     - [objc2-foundation 0.2.2]( https://github.com/madsmtm/objc2 )
     - [objc2-foundation 0.3.2]( https://github.com/madsmtm/objc2 )
-    - [objc2-ui-kit 0.2.2]( https://github.com/madsmtm/objc2 )
     - [objc2 0.5.3]( https://github.com/madsmtm/objc2 )
     - [objc2 0.6.5]( https://github.com/madsmtm/objc2 )
     - [pulp-wasm-simd-flag 0.1.1]( https://github.com/sarah-quinones/pulp/ )
@@ -15111,73 +14979,6 @@ THE SOFTWARE.
 
 - Used by
 
-    - [combine 4.6.9]( https://github.com/Marwes/combine )
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2015 Markus Westerlind
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-
-```
-
----
-
-### MIT License
-
-- Used by
-
-    - [orbclient 0.3.55]( https://gitlab.redox-os.org/redox-os/orbclient )
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2015-2019 Jeremy Soller
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
     - [y4m 0.8.0]( https://github.com/image-rs/y4m.git )
 
 ```text
@@ -15270,40 +15071,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
-    - [redox_users 0.4.6]( https://gitlab.redox-os.org/redox-os/users )
-
-```text
-The MIT License (MIT)
-
-Copyright (c) 2017 Jose Narvaez
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 
 ```
 
@@ -15455,39 +15222,6 @@ The MIT License (MIT)
 
 Copyright (c) HarfBuzz developers
 Copyright (c) 2020 Yevhenii Reizner
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the &quot;Software&quot;), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-```
-
----
-
-### MIT License
-
-- Used by
-
-    - [crunchy 0.2.4]( https://github.com/eira-fransham/crunchy )
-
-```text
-The MIT License (MIT)
-
-Copyright 2017-2023 Eira Fransham.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the &quot;Software&quot;), to deal
@@ -16066,33 +15800,6 @@ Exhibit B - &quot;Incompatible With Secondary Licenses&quot; Notice
 
 ---
 
-### University of Illinois/NCSA Open Source License
-
-- Used by
-
-    - [libfuzzer-sys 0.4.13]( https://github.com/rust-fuzz/libfuzzer )
-
-```text
-University of Illinois/NCSA Open Source License
-
-Copyright (c) &lt;Year&gt; &lt;Owner Organization Name&gt;. All rights reserved.
-
-Developed by: &lt;Name of Development Group&gt; &lt;Name of Institution&gt; &lt;URL for Development Group/Institution&gt;
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the &quot;Software&quot;), to deal with the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-     * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimers.
-
-     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimers in the documentation and/or other materials provided with the distribution.
-
-     * Neither the names of &lt;Name of Development Group, Name of Institution&gt;, nor the names of its contributors may be used to endorse or promote products derived from this Software without specific prior written permission.
-
-THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE SOFTWARE.
-
-```
-
----
-
 ### Unicode License v3
 
 - Used by
@@ -16331,4 +16038,3 @@ the following restrictions:
 ```
 
 ---
-
