@@ -7,6 +7,8 @@ use serde::{Serialize, de::DeserializeOwned};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use tokio::{fs, task};
 
+use crate::platform::atomic_write;
+
 pub struct SettingsManager<T> {
     path: Option<PathBuf>,
     settings: RwLock<T>,
@@ -80,7 +82,7 @@ where
         let dest_path = path.to_path_buf();
         task::spawn_blocking(move || -> anyhow::Result<()> {
             let content = serde_json::to_string_pretty(&settings)?;
-            crate::atomic_write::write_atomic(&dest_path, content.as_bytes())
+            atomic_write::write_atomic(&dest_path, content.as_bytes())
         })
         .await??;
 

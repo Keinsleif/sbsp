@@ -25,7 +25,7 @@ fn feed(target: &str) -> String {
 }
 
 fn manager(target: &str) -> Result<UpdateManager, String> {
-    UpdateManager::new(HttpSource::new(&feed(target)), None, None).map_err(|e| e.to_string())
+    UpdateManager::new(HttpSource::new(feed(target)), None, None).map_err(|e| e.to_string())
 }
 
 /// How long after a check the next startup check waits.

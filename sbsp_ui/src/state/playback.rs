@@ -15,7 +15,7 @@
 //! the clock, so the interpolation can be tested without a real clock; the
 //! caller passes `Instant::now()`.
 
-use crate::time::Instant;
+use crate::platform::time::Instant;
 use std::collections::HashMap;
 
 #[cfg(backend)]

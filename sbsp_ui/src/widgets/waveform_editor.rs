@@ -15,7 +15,7 @@
 //! keeps them as its working state and the next `view` draws them, and
 //! the end of a drag publishes [`Message::Commit`].
 
-use crate::time::{Duration, Instant};
+use crate::platform::time::{Duration, Instant};
 use std::cell::RefCell;
 use std::path::PathBuf;
 

@@ -11,7 +11,7 @@
 //! updates its local value) and `Released` at the end (the owner sends the
 //! change to the backend once).
 
-use crate::time::{Duration, Instant};
+use crate::platform::time::{Duration, Instant};
 
 use iced::widget::{Space, button, canvas, column, row, slider, text};
 use iced::{Alignment, Color, Element, Length, Point, Rectangle, Renderer, Theme, mouse};

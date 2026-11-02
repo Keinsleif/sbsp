@@ -14,7 +14,7 @@
 //! are a multi-line `text_editor`, which keeps its own `Content`; a copy
 //! of its text goes into the same drafts so it ends the same way.
 
-use crate::time::Instant;
+use crate::platform::time::Instant;
 use std::path::PathBuf;
 
 use iced::widget::{Space, button, center, column, container, row, text, text_editor};

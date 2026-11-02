@@ -18,7 +18,14 @@
 mod tests;
 
 use crate::features::cue_list::CueListEnv;
-use crate::time::{Duration, Instant};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::platform::logging;
+use crate::platform::power::{self, KeepAwake};
+use crate::platform::time::{Duration, Instant};
+#[cfg(installer)]
+use crate::platform::update;
+#[cfg(any(feature = "host", feature = "remote"))]
+use crate::platform::files;
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
@@ -175,7 +182,7 @@ pub struct State {
     update_dialog: Option<update_dialog::Dialog>,
     /// The update that was found, to download.
     #[cfg(installer)]
-    update_found: Option<crate::update::Found>,
+    update_found: Option<update::Found>,
     /// The server panel, while it is open.
     server_panel: Option<server_panel::Panel>,
     /// The settings dialog, while it is open.
@@ -202,7 +209,7 @@ pub struct State {
     resized_at: Option<Instant>,
     /// The request that keeps the machine awake, held while
     /// `ui.keep_awake` and the window focus ask for it.
-    power: crate::power::KeepAwake,
+    power: KeepAwake,
     /// Which app this is ("host", "remote" or "web"); picks where the
     /// remembered UI state is kept.
     target: &'static str,
@@ -283,9 +290,9 @@ pub enum Message {
     /// The feed was asked for a newer version (`true`: at startup, with no
     /// dialog open).
     #[cfg(installer)]
-    UpdateChecked(bool, Result<Option<crate::update::Found>, String>),
+    UpdateChecked(bool, Result<Option<update::Found>, String>),
     #[cfg(installer)]
-    UpdateProgress(crate::update::Progress),
+    UpdateProgress(update::Progress),
     /// Installing failed (on success the app has restarted).
     #[cfg(installer)]
     UpdateApplied(String),
@@ -347,7 +354,7 @@ pub enum Message {
     /// Result of a fire-and-forget backend call that succeeded.
     Nothing,
     #[cfg(feature = "host")]
-    BackendStarted(HostPort, FullState, Box<GlobalHostSettings>),
+    BackendStarted(HostPort, Box<FullState>, Box<GlobalHostSettings>),
     /// The connect screen.
     #[cfg(client)]
     RemoteSettingsLoaded(RemoteSettings, Box<GlobalRemoteSettings>),
@@ -462,7 +469,7 @@ impl State {
         #[cfg(feature = "host")]
         let boot_task = Task::perform(HostPort::start(), |result| match result {
             Ok((backend, state, settings)) => {
-                Message::BackendStarted(backend, state, Box::new(settings))
+                Message::BackendStarted(backend, Box::new(state), Box::new(settings))
             }
             Err(e) => Message::BackendError(e.to_string()),
         });
@@ -481,14 +488,14 @@ impl State {
 
         // At most once a day, and only where the app can update itself.
         #[cfg(installer)]
-        let boot_task = if crate::update::due(
+        let boot_task = if update::due(
             saved.last_update_check.unwrap_or(0),
-            crate::update::now_ms(),
-        ) && crate::update::installed(target)
+            update::now_ms(),
+        ) && update::installed(target)
         {
             Task::batch([
                 boot_task,
-                Task::perform(crate::update::check(target), |result| {
+                Task::perform(update::check(target), |result| {
                     Message::UpdateChecked(true, result)
                 }),
             ])
@@ -546,7 +553,7 @@ impl State {
             blink: 1.0,
             blink_origin: None,
             resized_at: None,
-            power: crate::power::KeepAwake::default(),
+            power: KeepAwake::default(),
             target,
             window_size: saved
                 .window
@@ -621,7 +628,7 @@ impl State {
     /// Starts or ends the "do not sleep" request to match the chosen mode
     /// and the window focus.
     fn sync_power(&mut self) {
-        self.power.set(crate::power::wanted(
+        self.power.set(power::wanted(
             self.ui.keep_awake,
             self.window_focused,
         ));
@@ -1588,8 +1595,8 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::files::dialog().then(move |dialog| {
-            Task::perform(crate::files::open(handle.clone(), dialog), backend_result)
+        files::dialog().then(move |dialog| {
+            Task::perform(files::open(handle.clone(), dialog), backend_result)
         })
     }
 
@@ -1600,9 +1607,9 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             Task::perform(
-                crate::files::save(handle.clone(), dialog, ask_for_path),
+                files::save(handle.clone(), dialog, ask_for_path),
                 move |result| Message::FileSaved(result.map_err(|e| e.to_string()), after),
             )
         })
@@ -1614,9 +1621,9 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             Task::perform(
-                crate::files::export(handle.clone(), dialog),
+                files::export(handle.clone(), dialog),
                 |result| match result {
                     Ok(_) => Message::Nothing,
                     Err(error) => Message::BackendError(format!(
@@ -1679,7 +1686,7 @@ impl State {
     fn can_show_log_files(&self) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            crate::logging::dir().is_some()
+            logging::dir().is_some()
         }
         #[cfg(target_arch = "wasm32")]
         {
@@ -1690,7 +1697,7 @@ impl State {
     /// Opens the log folder in the OS file manager.
     fn show_log_files(&self) {
         #[cfg(not(target_arch = "wasm32"))]
-        if let Some(dir) = crate::logging::dir() {
+        if let Some(dir) = logging::dir() {
             // Launching the file manager can block for a moment, so it
             // stays off the UI thread.
             std::thread::spawn(move || {
@@ -1840,7 +1847,7 @@ impl State {
                         dialog.stage = Stage::Downloading(0);
                     }
                     return Task::run(
-                        crate::update::download(self.target, found),
+                        update::download(self.target, found),
                         Message::UpdateProgress,
                     );
                 }
@@ -1880,13 +1887,13 @@ impl State {
 
         #[cfg(installer)]
         {
-            if !crate::update::installed(self.target) {
+            if !update::installed(self.target) {
                 self.update_dialog = Some(update_dialog::Dialog::new(Stage::Unavailable));
                 return Task::none();
             }
             self.update_found = None;
             self.update_dialog = Some(update_dialog::Dialog::new(Stage::Checking));
-            Task::perform(crate::update::check(self.target), |result| {
+            Task::perform(update::check(self.target), |result| {
                 Message::UpdateChecked(false, result)
             })
         }
@@ -1901,12 +1908,12 @@ impl State {
     fn update_checked(
         &mut self,
         silent: bool,
-        result: Result<Option<crate::update::Found>, String>,
+        result: Result<Option<update::Found>, String>,
     ) -> Task<Message> {
         use update_dialog::Stage;
 
         if result.is_ok() {
-            self.ui.last_update_check = crate::update::now_ms();
+            self.ui.last_update_check = update::now_ms();
         }
         if silent {
             match result {
@@ -1940,8 +1947,8 @@ impl State {
     }
 
     #[cfg(installer)]
-    fn update_progress(&mut self, progress: crate::update::Progress) -> Task<Message> {
-        use crate::update::Progress;
+    fn update_progress(&mut self, progress: update::Progress) -> Task<Message> {
+        use update::Progress;
         use update_dialog::Stage;
 
         let Some(dialog) = &mut self.update_dialog else {
@@ -1957,7 +1964,7 @@ impl State {
                 dialog.stage = Stage::Restarting;
                 if let Some(found) = self.update_found.clone() {
                     return Task::perform(
-                        crate::update::apply(self.target, found),
+                        update::apply(self.target, found),
                         Message::UpdateApplied,
                     );
                 }
@@ -2058,11 +2065,11 @@ impl State {
         let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let backend = backend.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::files::pick_settings(dialog).await else {
+                    let Some(path) = files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
                     backend
@@ -2081,11 +2088,11 @@ impl State {
         let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
             return Task::none();
         };
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let backend = backend.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::files::settings_destination(dialog).await else {
+                    let Some(path) = files::settings_destination(dialog).await else {
                         return Ok(());
                     };
                     backend.export_settings(path).await
@@ -2100,11 +2107,11 @@ impl State {
         let Some(store) = self.remote_store.clone() else {
             return Task::none();
         };
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let store = store.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::files::pick_settings(dialog).await else {
+                    let Some(path) = files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
                     store.import(path).await.map(|s| Some(Box::new(s)))
@@ -2119,11 +2126,11 @@ impl State {
         let Some(store) = self.remote_store.clone() else {
             return Task::none();
         };
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let store = store.clone();
             Task::perform(
                 async move {
-                    let Some(path) = crate::files::settings_destination(dialog).await else {
+                    let Some(path) = files::settings_destination(dialog).await else {
                         return Ok(());
                     };
                     store.export(path).await
@@ -2455,7 +2462,7 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_target(&self, id: Uuid) -> Task<Message> {
         let title = fl!("main-bottom-editor-audio-target-file");
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let title = title.clone();
             Task::perform(
                 async move {
@@ -2613,7 +2620,7 @@ impl State {
     #[cfg(feature = "host")]
     fn pick_audio_files(&self) -> Task<Message> {
         let title = fl!("menu-cue-audio");
-        crate::files::dialog().then(move |dialog| {
+        files::dialog().then(move |dialog| {
             let title = title.clone();
             Task::perform(
                 async move {

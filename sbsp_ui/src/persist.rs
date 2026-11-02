@@ -131,7 +131,9 @@ impl Saved {
 mod storage {
     use std::path::PathBuf;
 
-    use super::Saved;
+    use crate::platform::atomic_write;
+
+use super::Saved;
 
     /// The file sits next to the settings, in the folder named by the
     /// app's identifier.
@@ -163,7 +165,7 @@ mod storage {
         let Some(path) = path(target) else {
             return;
         };
-        let result = crate::atomic_write::write_atomic(&path, saved.to_json().as_bytes());
+        let result = atomic_write::write_atomic(&path, saved.to_json().as_bytes());
         if let Err(error) = result {
             log::warn!("could not save {}: {error}", path.display());
         }
