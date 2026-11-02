@@ -99,7 +99,7 @@ async fn main() -> Result<(), anyhow::Error> {
         },
     });
 
-    let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, false) {
+    let (backend_handle, state_rx, event_tx) = match start_backend(settings_rx, true) {
         Ok(backends) => backends,
         Err(e) => {
             log::error!("{}", e);

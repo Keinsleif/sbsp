@@ -46,6 +46,13 @@ const SMOOTH_FACTOR: f64 = 0.2;
 const MAX_ATTEMPTS: u32 = 5;
 const WINDOW_DURATION: Duration = Duration::from_secs(60);
 
+/// How often a client that asked for the output level is sent it (at most;
+/// it is not sent while the output is silent).
+const LEVEL_INTERVAL: Duration = Duration::from_millis(50);
+/// Peaks at or below this are silence (the same threshold the host's own
+/// meter uses).
+const LEVEL_SILENCE: f32 = 0.001;
+
 #[derive(Clone)]
 struct ApiState {
     backend_handle: BackendHandle,
@@ -132,10 +139,23 @@ where
         )
         .unwrap()
         .enable_addr_auto();
+        let fullname = sv_info.get_fullname().to_string();
         mdns.register(sv_info).unwrap();
 
         tokio::spawn(async move {
             let _ = shutdown_rx_clone.recv().await;
+            // Say goodbye first, so browsers drop this server now instead
+            // of when its record expires.
+            match mdns.unregister(&fullname) {
+                Ok(status) => {
+                    let _ = tokio::time::timeout(
+                        std::time::Duration::from_secs(1),
+                        status.recv_async(),
+                    )
+                    .await;
+                }
+                Err(e) => log::warn!("Failed to unregister the mdns service: {e}"),
+            }
             let mut result = mdns.shutdown();
             while let Err(mdns_sd::Error::Again) = result {
                 result = mdns.shutdown();
@@ -334,6 +354,16 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
 
     let mut shutdown_rx = state.shutdown_tx.subscribe();
 
+    // The output level goes out on its own timer, not through the event
+    // broadcast: it must not be able to crowd real events out of the
+    // channel, and a tick that comes while the connection is busy is
+    // skipped, not queued, so a slow client never builds up a backlog.
+    let mut level_timer = interval(LEVEL_INTERVAL);
+    level_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    let mut level_enabled = false;
+    let mut level_silent = false;
+    let mut level_sent = false;
+
     loop {
         tokio::select! {
             result = event_rx.recv() => {
@@ -353,6 +383,25 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                     Err(_) => {
                         log::warn!("Event serving receiver Lagged.");
                     },
+                }
+            }
+            _ = level_timer.tick(), if level_enabled => {
+                if let Some((left, right)) = state.backend_handle.level_meter.as_ref().map(|level| level.get()) {
+                    let silent = left <= LEVEL_SILENCE && right <= LEVEL_SILENCE;
+                    // Silence is sent once, so the client's meter settles,
+                    // and then not at all until sound returns.
+                    if !(silent && level_silent) {
+                        level_silent = silent;
+                        if !std::mem::replace(&mut level_sent, true) {
+                            log::info!("Sending the output level to a client.");
+                        }
+                        let (left, right) = if silent { (0.0, 0.0) } else { (left, right) };
+                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Level { left, right })
+                            && socket.send(Message::Text(payload.into())).await.is_err() {
+                            log::info!("WebSocket client disconnected (send error).");
+                            break;
+                        }
+                    }
                 }
             }
             _ = ping_timer.tick() => {
@@ -471,6 +520,26 @@ async fn handle_socket(mut socket: WebSocket, state: ApiState, ip: String) {
                                             log::info!("WebSocket client disconnected (send error).");
                                             break;
                                         }
+                                    } else {
+                                        if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
+                                        && let Err(e) = socket.send(Message::Text(payload.into())).await {
+                                            log::error!("Error on responding error. e={}", e);
+                                            return;
+                                        }
+                                        log::warn!("Permission denied.");
+                                    }
+                                }
+                                WsCommand::SubscribeLevel { enabled } => {
+                                    if permission.contains(Permissions::READ) {
+                                        level_enabled = enabled;
+                                        level_sent = false;
+                                        log::info!("Output level stream {} for a client.", if enabled { "on" } else { "off" });
+                                        if enabled && state.backend_handle.level_meter.is_none() {
+                                            log::warn!("The output level was requested, but this backend has no level meter.");
+                                        }
+                                        // The first frame after subscribing
+                                        // is sent whatever the level is.
+                                        level_silent = false;
                                     } else {
                                         if let Ok(payload) = serde_json::to_string(&WsFeedback::Error(WsError::PermissionDenied))
                                         && let Err(e) = socket.send(Message::Text(payload.into())).await {
