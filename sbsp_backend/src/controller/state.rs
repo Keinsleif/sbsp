@@ -8,7 +8,6 @@ use uuid::Uuid;
 use crate::model::cue::audio::Decibels;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum PlaybackStatus {
     Loaded,
@@ -20,7 +19,6 @@ pub enum PlaybackStatus {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, Copy)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -33,7 +31,6 @@ pub enum StateParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Copy)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioStateParam {
     pub repeating: bool,
@@ -41,7 +38,6 @@ pub struct AudioStateParam {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveCue {
     pub cue_id: Uuid,
@@ -52,7 +48,6 @@ pub struct ActiveCue {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct ShowState {
     pub active_cues: IndexMap<Uuid, ActiveCue>,

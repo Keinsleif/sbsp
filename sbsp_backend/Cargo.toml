@@ -30,29 +30,29 @@ backend = [
     "dep:rmp-serde",
     "dep:windows-sys",
 ]
+protocol = ["dep:bitflags", "dep:sha2", "dep:base64"]
 server = [
     "backend",
+    "protocol",
     "dep:axum",
     "dep:rand",
     "dep:base64",
-    "dep:bitflags",
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
 ]
 client = [
     "backend",
+    "protocol",
     "dep:tokio-tungstenite",
     "dep:futures-util",
     "dep:rand",
     "dep:base64",
-    "dep:bitflags",
     "dep:mdns-sd",
     "dep:gethostname",
     "dep:serde_json",
 ]
 cli = ["dep:env_logger", "dep:clap", "dep:termtree"]
-type_export = ["dep:ts-rs"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
@@ -88,8 +88,6 @@ axum = { version = "0.8", default-features = false, features = ["tokio", "http1"
 tokio-tungstenite = { version = "*", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["sink"], optional = true }
 
-ts-rs = { workspace = true, features = ["uuid-impl", "indexmap-impl"], optional = true }
-
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", optional = true, features = [
     "Win32_Storage_FileSystem",
@@ -98,3 +96,6 @@ windows-sys = { version = "0.61", optional = true, features = [
 
 [dev-dependencies]
 env_logger = "0.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { workspace = true, features = ["js"] }
