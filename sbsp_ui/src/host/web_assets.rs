@@ -29,7 +29,7 @@ use axum::{
 };
 
 #[derive(rust_embed::RustEmbed)]
-#[folder = "$CARGO_MANIFEST_DIR/sbsp_ui/web_dist/"]
+#[folder = "$CARGO_MANIFEST_DIR/web_dist/"]
 struct WebDist;
 
 /// One embedded file.
