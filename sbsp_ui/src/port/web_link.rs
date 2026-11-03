@@ -156,15 +156,26 @@ pub fn subscribe<T: Send + 'static>(
     }
 
     iced::Subscription::run_with(Source(queue, id, name), |Source(queue, _, _)| {
+        let slot = queue.clone();
         let receiver = queue.lock().ok().and_then(|mut slot| slot.take());
         iced::stream::channel(64, async move |mut output| {
             use iced::futures::{SinkExt, StreamExt};
 
-            let Some(mut receiver) = receiver else {
+            struct Restore<T>(Handoff<T>, Option<UnboundedReceiver<T>>);
+            impl<T> Drop for Restore<T> {
+                fn drop(&mut self) {
+                    if let (Ok(mut slot), Some(rx)) = (self.0.lock(), self.1.take()) {
+                        *slot = Some(rx);
+                    }
+                }
+            }
+
+            let Some(receiver) = receiver else {
                 // Already listened to; nothing more to hand out.
                 return std::future::pending::<()>().await;
             };
-            while let Some(item) = receiver.next().await {
+            let mut guard = Restore(slot, Some(receiver));
+            while let Some(item) = guard.1.as_mut().unwrap().next().await {
                 if output.send(item).await.is_err() {
                     break;
                 }
