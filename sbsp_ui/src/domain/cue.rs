@@ -30,6 +30,8 @@ pub fn display_name(
     }
 }
 
+const MAX_TARGET_DEPTH: usize = 8;
+
 /// Builds a cue's generated name from the name-format settings. `None`
 /// renders as an empty string.
 pub fn build_cue_name(
@@ -37,9 +39,21 @@ pub fn build_cue_name(
     cues: &HashMap<Uuid, Cue>,
     name_format: &NameFormatSettings,
 ) -> String {
+    build_cue_name_at(cue, cues, name_format, 0)
+}
+
+fn build_cue_name_at(
+    cue: Option<&Cue>,
+    cues: &HashMap<Uuid, Cue>,
+    name_format: &NameFormatSettings,
+    depth: usize,
+) -> String {
     let Some(cue) = cue else {
         return String::new();
     };
+    if depth > MAX_TARGET_DEPTH {
+        return String::new();
+    }
 
     match &cue.params {
         CueParam::Audio(param) => {
