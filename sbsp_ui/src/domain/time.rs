@@ -80,18 +80,14 @@ pub fn parse_seconds(source: &str, accept_minus: bool) -> f64 {
 /// rather than rounding (e.g. 59.996s displays as `59.99`,
 /// not as `60.00`/`1:00.00`).
 fn split(source_seconds: f64) -> (u64, u64, u64, u64) {
-    let total = source_seconds.max(0.0);
-    let hour = (total / 3600.0).floor();
-    let minute = ((total - 3600.0 * hour) / 60.0).floor();
-    let second = (total - 3600.0 * hour - 60.0 * minute).floor();
-    let centisecond = ((total - 3600.0 * hour - 60.0 * minute - second) * 100.0).floor();
-
-    (
-        hour as u64,
-        minute as u64,
-        second as u64,
-        centisecond as u64,
-    )
+    // The epsilon absorbs binary-representation error (2.3 -> 229.99..)
+    // while still truncating real sub-centisecond parts (59.996 -> 5999).
+    let total_cs = (source_seconds.max(0.0) * 100.0 + 1e-6).floor() as u64;
+    let hour = total_cs / 360_000;
+    let minute = (total_cs / 6_000) % 60;
+    let second = (total_cs / 100) % 60;
+    let centisecond = total_cs % 100;
+    (hour, minute, second, centisecond)
 }
 
 /// `(3, 50)` -> `"3.5"` (or `"03.5"` with `pad_second`), one-trailing-zero
