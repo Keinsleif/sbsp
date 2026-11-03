@@ -141,13 +141,9 @@ impl Accepted {
 pub fn find(source: &dyn Source, request_path: &str, accepted: Accepted) -> Option<Found> {
     let (path, plain) = locate(source, request_path)?;
     let content_type = content_type(&path);
-    for (allowed, encoding, extension) in [
-        (accepted.br, "br", "br"),
-        (accepted.gzip, "gzip", "gz"),
-    ] {
-        if allowed
-            && let Some(asset) = source.get(&format!("{path}.{extension}"))
-        {
+    for (allowed, encoding, extension) in [(accepted.br, "br", "br"), (accepted.gzip, "gzip", "gz")]
+    {
+        if allowed && let Some(asset) = source.get(&format!("{path}.{extension}")) {
             return Some(Found {
                 asset,
                 content_type,
@@ -285,15 +281,27 @@ mod tests {
     #[test]
     fn files_are_found_by_path_and_the_root_is_the_index() {
         let site = site();
-        assert_eq!(body(&find(&site, "/app.js", Accepted::default()).unwrap()), b"js");
-        assert_eq!(body(&find(&site, "/fonts/ui.ttf", Accepted::default()).unwrap()), b"font");
-        assert_eq!(body(&find(&site, "/", Accepted::default()).unwrap()), b"index");
+        assert_eq!(
+            body(&find(&site, "/app.js", Accepted::default()).unwrap()),
+            b"js"
+        );
+        assert_eq!(
+            body(&find(&site, "/fonts/ui.ttf", Accepted::default()).unwrap()),
+            b"font"
+        );
+        assert_eq!(
+            body(&find(&site, "/", Accepted::default()).unwrap()),
+            b"index"
+        );
     }
 
     #[test]
     fn pages_fall_back_to_the_index_but_missing_files_do_not() {
         let site = site();
-        assert_eq!(body(&find(&site, "/remote/connect", Accepted::default()).unwrap()), b"index");
+        assert_eq!(
+            body(&find(&site, "/remote/connect", Accepted::default()).unwrap()),
+            b"index"
+        );
         assert!(find(&site, "/missing.js", Accepted::default()).is_none());
         assert!(find(&site, "/fonts/missing.ttf", Accepted::default()).is_none());
         assert!(find(&Fake(HashMap::new()), "/", Accepted::default()).is_none());
@@ -327,7 +335,12 @@ mod tests {
         );
 
         // No compressed copy exists for this one.
-        assert_eq!(find(&site, "/app.js", Accepted::parse("br, gzip")).unwrap().encoding, None);
+        assert_eq!(
+            find(&site, "/app.js", Accepted::parse("br, gzip"))
+                .unwrap()
+                .encoding,
+            None
+        );
     }
 
     #[test]
@@ -341,8 +354,14 @@ mod tests {
 
     #[test]
     fn accept_encoding_is_read_into_what_is_allowed() {
-        let both = Accepted { br: true, gzip: true };
-        let only_gzip = Accepted { br: false, gzip: true };
+        let both = Accepted {
+            br: true,
+            gzip: true,
+        };
+        let only_gzip = Accepted {
+            br: false,
+            gzip: true,
+        };
         let none = Accepted::default();
 
         assert_eq!(Accepted::parse(""), none);
