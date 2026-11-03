@@ -31,7 +31,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 i18n-embed = { version = "0.16", features = ["fluent-system"] }
 i18n-embed-fl = "0.10"
-rust-embed = "8"
+rust-embed = { version = "8", features = ["interpolate-folder-path"] }
 unic-langid = { version = "0.9", features = ["macros"] }
 log = { workspace = true }
 # Keeps the machine awake while a show is run (host and remote).
