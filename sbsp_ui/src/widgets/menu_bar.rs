@@ -209,7 +209,14 @@ where
 fn top_level_button<'a, Message: Clone + 'a>(label: String) -> Element<'a, Message> {
     button(text(label))
         .padding([3, 8])
-        .style(button::text)
+        .style(|theme, status| {
+            let status = if status == button::Status::Disabled {
+                button::Status::Active
+            } else {
+                status
+            };
+            button::text(theme, status)
+        })
         .into()
 }
 
