@@ -88,9 +88,15 @@ pub fn events() -> iced::Subscription<String> {
 
             tokio::task::spawn_blocking(move || {
                 let receiver = muda::MenuEvent::receiver();
-                while let Ok(event) = receiver.recv() {
-                    if tx.send(event.id.0.clone()).is_err() {
-                        break;
+                while !tx.is_closed() {
+                    match receiver.recv_timeout(std::time::Duration::from_millis(250)) {
+                        Ok(event) => {
+                            if tx.send(event.id.0.clone()).is_err() {
+                                break;
+                            }
+                        }
+                        Err(error) if error.is_timeout() => continue,
+                        Err(_) => break,
                     }
                 }
             });
