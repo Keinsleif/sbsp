@@ -43,7 +43,7 @@ velopack = { version = "1", optional = true }
 axum = { version = "0.8", default-features = false, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-muda = { version = "0.17", optional = true }
+muda = { version = "0.21", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Atomic writes of the settings and UI state files.
