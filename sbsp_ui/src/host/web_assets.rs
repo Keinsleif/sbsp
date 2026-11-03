@@ -95,18 +95,57 @@ fn locate(source: &dyn Source, request_path: &str) -> Option<(String, Asset)> {
         .map(|asset| ("index.html".to_string(), asset))
 }
 
+/// What the browser's `Accept-Encoding` allows among the encodings that can
+/// be pre-compressed here.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Accepted {
+    pub br: bool,
+    pub gzip: bool,
+}
+
+impl Accepted {
+    /// Reads an `Accept-Encoding` value. Coding names are case-insensitive
+    /// and a q-value of 0 refuses a coding (`br;q=0`); a malformed q-value
+    /// counts as a refusal, since the plain file is always a valid answer.
+    /// `*` stands for every coding the header does not name.
+    pub fn parse(header: &str) -> Self {
+        let (mut br, mut gzip, mut any) = (None, None, None);
+        for item in header.split(',') {
+            let mut parts = item.split(';');
+            let coding = parts.next().unwrap_or("").trim().to_ascii_lowercase();
+            // No q-value: accepted. One that does not parse: refused.
+            let allowed = parts
+                .find_map(|param| {
+                    let (key, value) = param.trim().split_once('=')?;
+                    key.trim()
+                        .eq_ignore_ascii_case("q")
+                        .then(|| value.trim().parse::<f32>().is_ok_and(|q| q > 0.0))
+                })
+                .unwrap_or(true);
+            match coding.as_str() {
+                "br" => br = Some(allowed),
+                "gzip" | "x-gzip" => gzip = Some(allowed),
+                "*" => any = Some(allowed),
+                _ => {}
+            }
+        }
+        Self {
+            br: br.or(any).unwrap_or(false),
+            gzip: gzip.or(any).unwrap_or(false),
+        }
+    }
+}
+
 /// Picks the file and, when the browser accepts it and it exists, the
 /// pre-compressed copy of it.
-pub fn find(source: &dyn Source, request_path: &str, accept_encoding: &str) -> Option<Found> {
+pub fn find(source: &dyn Source, request_path: &str, accepted: Accepted) -> Option<Found> {
     let (path, plain) = locate(source, request_path)?;
     let content_type = content_type(&path);
-    let accepts = |name: &str| {
-        accept_encoding
-            .split(',')
-            .any(|item| item.split(';').next().is_some_and(|n| n.trim() == name))
-    };
-    for (encoding, extension) in [("br", "br"), ("gzip", "gz")] {
-        if accepts(encoding)
+    for (allowed, encoding, extension) in [
+        (accepted.br, "br", "br"),
+        (accepted.gzip, "gzip", "gz"),
+    ] {
+        if allowed
             && let Some(asset) = source.get(&format!("{path}.{extension}"))
         {
             return Some(Found {
@@ -157,11 +196,13 @@ fn respond(source: &dyn Source, method: &Method, uri: &Uri, headers: &HeaderMap)
     if method != Method::GET && method != Method::HEAD {
         return status(StatusCode::METHOD_NOT_ALLOWED);
     }
-    let accept_encoding = headers
-        .get(header::ACCEPT_ENCODING)
-        .and_then(|value| value.to_str().ok())
-        .unwrap_or("");
-    let Some(found) = find(source, uri.path(), accept_encoding) else {
+    let accepted = Accepted::parse(
+        headers
+            .get(header::ACCEPT_ENCODING)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or(""),
+    );
+    let Some(found) = find(source, uri.path(), accepted) else {
         return status(StatusCode::NOT_FOUND);
     };
 
@@ -244,34 +285,34 @@ mod tests {
     #[test]
     fn files_are_found_by_path_and_the_root_is_the_index() {
         let site = site();
-        assert_eq!(body(&find(&site, "/app.js", "").unwrap()), b"js");
-        assert_eq!(body(&find(&site, "/fonts/ui.ttf", "").unwrap()), b"font");
-        assert_eq!(body(&find(&site, "/", "").unwrap()), b"index");
+        assert_eq!(body(&find(&site, "/app.js", Accepted::default()).unwrap()), b"js");
+        assert_eq!(body(&find(&site, "/fonts/ui.ttf", Accepted::default()).unwrap()), b"font");
+        assert_eq!(body(&find(&site, "/", Accepted::default()).unwrap()), b"index");
     }
 
     #[test]
     fn pages_fall_back_to_the_index_but_missing_files_do_not() {
         let site = site();
-        assert_eq!(body(&find(&site, "/remote/connect", "").unwrap()), b"index");
-        assert!(find(&site, "/missing.js", "").is_none());
-        assert!(find(&site, "/fonts/missing.ttf", "").is_none());
-        assert!(find(&Fake(HashMap::new()), "/", "").is_none());
+        assert_eq!(body(&find(&site, "/remote/connect", Accepted::default()).unwrap()), b"index");
+        assert!(find(&site, "/missing.js", Accepted::default()).is_none());
+        assert!(find(&site, "/fonts/missing.ttf", Accepted::default()).is_none());
+        assert!(find(&Fake(HashMap::new()), "/", Accepted::default()).is_none());
     }
 
     #[test]
     fn climbing_out_of_the_folder_is_not_answered() {
         let site = site();
-        assert!(find(&site, "/../secret", "").is_none());
-        assert!(find(&site, "/fonts/../../secret", "").is_none());
+        assert!(find(&site, "/../secret", Accepted::default()).is_none());
+        assert!(find(&site, "/fonts/../../secret", Accepted::default()).is_none());
     }
 
     #[test]
     fn a_compressed_copy_is_used_only_when_accepted() {
         let site = site();
-        let plain = find(&site, "/app.wasm", "").unwrap();
+        let plain = find(&site, "/app.wasm", Accepted::default()).unwrap();
         assert_eq!((body(&plain), plain.encoding), (&b"wasm"[..], None));
 
-        let brotli = find(&site, "/app.wasm", "gzip, deflate, br").unwrap();
+        let brotli = find(&site, "/app.wasm", Accepted::parse("gzip, deflate, br")).unwrap();
         assert_eq!(
             (body(&brotli), brotli.encoding),
             (&b"wasm-br"[..], Some("br"))
@@ -279,14 +320,63 @@ mod tests {
         // The content type is the original file's, not the compressed one's.
         assert_eq!(brotli.content_type, "application/wasm");
 
-        let gzip = find(&site, "/app.wasm", "gzip;q=0.8").unwrap();
+        let gzip = find(&site, "/app.wasm", Accepted::parse("gzip;q=0.8")).unwrap();
         assert_eq!(
             (body(&gzip), gzip.encoding),
             (&b"wasm-gz"[..], Some("gzip"))
         );
 
         // No compressed copy exists for this one.
-        assert_eq!(find(&site, "/app.js", "br, gzip").unwrap().encoding, None);
+        assert_eq!(find(&site, "/app.js", Accepted::parse("br, gzip")).unwrap().encoding, None);
+    }
+
+    #[test]
+    fn a_refused_encoding_is_not_used() {
+        let site = site();
+        let gzip = find(&site, "/app.wasm", Accepted::parse("br;q=0, gzip")).unwrap();
+        assert_eq!(gzip.encoding, Some("gzip"));
+        let plain = find(&site, "/app.wasm", Accepted::parse("br;q=0")).unwrap();
+        assert_eq!((body(&plain), plain.encoding), (&b"wasm"[..], None));
+    }
+
+    #[test]
+    fn accept_encoding_is_read_into_what_is_allowed() {
+        let both = Accepted { br: true, gzip: true };
+        let only_gzip = Accepted { br: false, gzip: true };
+        let none = Accepted::default();
+
+        assert_eq!(Accepted::parse(""), none);
+        assert_eq!(Accepted::parse("deflate, identity"), none);
+        assert_eq!(Accepted::parse("br, gzip"), both);
+        assert_eq!(Accepted::parse("BR, GZip"), both);
+        assert_eq!(Accepted::parse("x-gzip"), only_gzip);
+        assert_eq!(Accepted::parse("br;q=0, gzip"), only_gzip);
+        assert_eq!(Accepted::parse("br; q=0.0, gzip;q=1"), only_gzip);
+        assert_eq!(Accepted::parse("gzip;q=0.5, br;q=0.8"), both);
+        // A q-value that does not parse refuses the coding.
+        assert_eq!(Accepted::parse("br;q=abc, gzip"), only_gzip);
+        // `*` covers what is not named; what is named wins over it.
+        assert_eq!(Accepted::parse("*"), both);
+        assert_eq!(Accepted::parse("*, br;q=0"), only_gzip);
+        assert_eq!(Accepted::parse("*;q=0, gzip"), only_gzip);
+    }
+
+    #[test]
+    fn a_request_header_picks_the_encoding() {
+        let response = request(
+            Method::GET,
+            "/app.wasm",
+            &[(header::ACCEPT_ENCODING, "br;q=0, gzip")],
+        );
+        assert_eq!(response.headers()[header::CONTENT_ENCODING], "gzip");
+        assert_eq!(response.headers()[header::VARY], "Accept-Encoding");
+
+        let refused = request(
+            Method::GET,
+            "/app.wasm",
+            &[(header::ACCEPT_ENCODING, "br;q=0, gzip;q=0")],
+        );
+        assert!(refused.headers().get(header::CONTENT_ENCODING).is_none());
     }
 
     #[test]
