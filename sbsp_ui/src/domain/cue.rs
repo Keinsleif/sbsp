@@ -68,11 +68,11 @@ fn build_cue_name_at(
             &name_format.wait,
             &values([("duration", format_human(param.duration))]),
         ),
-        CueParam::Fade(param) => target_named(cues, param.target, &name_format.fade, name_format),
-        CueParam::Start(param) => target_named(cues, param.target, &name_format.start, name_format),
-        CueParam::Stop(param) => target_named(cues, param.target, &name_format.stop, name_format),
-        CueParam::Pause(param) => target_named(cues, param.target, &name_format.pause, name_format),
-        CueParam::Load(param) => target_named(cues, param.target, &name_format.load, name_format),
+        CueParam::Fade(param) => target_named(cues, param.target, &name_format.fade, name_format, depth + 1),
+        CueParam::Start(param) => target_named(cues, param.target, &name_format.start, name_format, depth + 1),
+        CueParam::Stop(param) => target_named(cues, param.target, &name_format.stop, name_format, depth + 1),
+        CueParam::Pause(param) => target_named(cues, param.target, &name_format.pause, name_format, depth + 1),
+        CueParam::Load(param) => target_named(cues, param.target, &name_format.load, name_format, depth + 1),
         CueParam::Group { base, .. } => format_template(
             &name_format.group,
             &values([("mode", camel_to_title_case(group_mode_name(&base.mode)))]),
@@ -85,8 +85,9 @@ fn target_named(
     target: Uuid,
     template: &str,
     name_format: &NameFormatSettings,
+    depth: usize,
 ) -> String {
-    let target_name = build_cue_name(cues.get(&target), cues, name_format);
+    let target_name = build_cue_name_at(cues.get(&target), cues, name_format, depth);
     format_template(template, &values([("targetName", target_name)]))
 }
 
