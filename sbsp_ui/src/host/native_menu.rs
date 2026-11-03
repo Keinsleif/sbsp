@@ -14,7 +14,7 @@
 //! This module only builds and installs the menu and forwards click events;
 //! keyboard handling stays in iced's own keyboard subscription.
 
-use muda::{Menu, MenuId as MudaMenuId, MenuItem, PredefinedMenuItem, Submenu};
+use muda::{Menu, MenuId as MudaMenuId, MenuItem, CheckMenuItem, PredefinedMenuItem, Submenu};
 
 use crate::menu::{MenuNode, MenuSpec};
 
@@ -48,9 +48,13 @@ fn append(target: &Submenu, nodes: &[MenuNode]) {
             // enabled state; `checked` has no simple muda equivalent for a
             // plain `MenuItem` and is left to the in-app renderer.
             MenuNode::Item {
-                id, label, enabled, ..
+                id, label, enabled, checked,
             } => {
-                let item = MenuItem::with_id(MudaMenuId::new(id.0), label, *enabled, None);
+                let item = if let Some(is_checked) = checked {
+                    CheckMenuItem::with_id(MudaMenuId::new(id.0), label, *enabled, *is_checked, None)
+                } else {
+                    MenuItem::with_id(MudaMenuId::new(id.0), label, *enabled, None)
+                };
                 target.append(&item).expect("failed to append menu item");
             }
             MenuNode::Submenu { label, children } => {
