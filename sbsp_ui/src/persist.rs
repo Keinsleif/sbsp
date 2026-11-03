@@ -133,7 +133,7 @@ mod storage {
 
     use crate::platform::atomic_write;
 
-use super::Saved;
+    use super::Saved;
 
     /// The file sits next to the settings, in the folder named by the
     /// app's identifier.
@@ -181,7 +181,8 @@ mod storage {
     }
 
     pub fn load(target: &str) -> Saved {
-        crate::platform::browser::get(&key(target)).map_or_else(Saved::default, |json| Saved::parse(&json))
+        crate::platform::browser::get(&key(target))
+            .map_or_else(Saved::default, |json| Saved::parse(&json))
     }
 
     pub fn save(target: &str, saved: &Saved) {
