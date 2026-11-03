@@ -139,13 +139,12 @@ fn text_width(text: &str, size: f32) -> f32 {
             wrapping: advanced_text::Wrapping::None,
         });
     let measured = paragraph.min_bounds().width;
-    let width = if measured > 0.0 {
+    if measured > 0.0 {
+        MEASURED.with(|cache| cache.borrow_mut().insert(key, measured));
         measured
     } else {
         estimated_width(text, size)
-    };
-    MEASURED.with(|cache| cache.borrow_mut().insert(key, width));
-    width
+    }
 }
 
 /// A rough width of `text` at `size`: full-width (CJK) characters take a
