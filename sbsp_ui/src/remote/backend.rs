@@ -20,7 +20,9 @@ use crate::settings::{GlobalRemoteSettings, manager::SettingsManager};
 
 use sbsp_backend::api::{
     FileList, Permissions,
-    client::{FileListHandle, ServiceEntry, create_remote_backend, start_discovery},
+    client::{
+        FULL_STATE_TIMEOUT, FileListHandle, ServiceEntry, create_remote_backend, start_discovery,
+    },
 };
 use tokio::sync::mpsc;
 
@@ -57,7 +59,15 @@ impl RemotePort {
     ) -> anyhow::Result<(Self, FullState)> {
         let (handle, event_tx, file_list, disconnect_tx, permission) =
             create_remote_backend(address.clone(), password).await?;
-        let full_state = handle.get_full_state().await?;
+        let full_state = match handle.get_full_state_within(FULL_STATE_TIMEOUT).await {
+            Ok(state) => state,
+            Err(error) => {
+                // The connection's task keeps the socket open; close it
+                // before giving up.
+                let _ = disconnect_tx.send(()).await;
+                return Err(error);
+            }
+        };
         let id = NEXT_CONNECTION.fetch_add(1, Ordering::Relaxed);
 
         let port = Self {
