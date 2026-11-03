@@ -156,7 +156,7 @@ dialog-settings-tab-audio-hardware = Audio Hardware
 dialog-settings-tab-template = Template
 dialog-settings-tab-name-format = Name Format
 
-dialog-settings-preset-hotkey-cursor-title = Hotkey & Cursor behavier
+dialog-settings-preset-hotkey-cursor-title = Hotkey & Cursor behavior
 dialog-settings-preset-hotkey-cursor-music-bee-description = Preset for MusicBee like controls.
 dialog-settings-preset-hotkey-cursor-q-lab-description = Preset for QLab like controls.
 
