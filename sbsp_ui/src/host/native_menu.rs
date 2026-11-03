@@ -54,22 +54,25 @@ fn append(target: &Submenu, nodes: &[MenuNode]) {
                 checked,
                 ..
             } => {
+                let escaped_label = label.replace('&', "&&");
                 if let Some(is_checked) = checked {
                     let item = CheckMenuItem::with_id(
                         MudaMenuId::new(id.0),
-                        label,
+                        escaped_label,
                         *enabled,
                         *is_checked,
                         None,
                     );
                     target.append(&item).expect("failed to append menu item");
                 } else {
-                    let item = MenuItem::with_id(MudaMenuId::new(id.0), label, *enabled, None);
+                    let item =
+                        MenuItem::with_id(MudaMenuId::new(id.0), escaped_label, *enabled, None);
                     target.append(&item).expect("failed to append menu item");
                 }
             }
             MenuNode::Submenu { label, children } => {
-                let child = Submenu::new(label, true);
+                let escaped_label = label.replace('&', "&&");
+                let child = Submenu::new(escaped_label, true);
                 append(&child, children);
                 target.append(&child).expect("failed to append submenu");
             }
