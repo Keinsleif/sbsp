@@ -43,10 +43,8 @@ fn append(target: &Submenu, nodes: &[MenuNode]) {
     for node in nodes {
         match node {
             // Accelerators are intentionally not set here: keyboard
-            // handling stays in iced's keyboard subscription (migration
-            // plan, section 5.1). muda only needs the id, label and
-            // enabled state; `checked` has no simple muda equivalent for a
-            // plain `MenuItem` and is left to the in-app renderer.
+            // handling stays in iced's keyboard subscription.
+            // muda only needs the id, label and enabled state;
             MenuNode::Item {
                 id,
                 label,
