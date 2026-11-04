@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn none_cue_is_empty_name() {
-        assert_eq!(build_cue_name(None, &HashMap::new(), &name_format()), "", 0);
+        assert_eq!(build_cue_name(None, &HashMap::new(), &name_format(), 0), "");
     }
 
     #[test]
