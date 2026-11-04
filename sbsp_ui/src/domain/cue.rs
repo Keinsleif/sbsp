@@ -24,25 +24,14 @@ pub fn display_name(
     cues: &HashMap<Uuid, Cue>,
     name_format: &NameFormatSettings,
 ) -> String {
-    match &cue.name {
-        Some(name) => name.clone(),
-        None => build_cue_name(Some(cue), cues, name_format),
-    }
+    build_cue_name(Some(cue), cues, name_format, 0)
 }
 
 const MAX_TARGET_DEPTH: usize = 8;
 
 /// Builds a cue's generated name from the name-format settings. `None`
 /// renders as an empty string.
-pub fn build_cue_name(
-    cue: Option<&Cue>,
-    cues: &HashMap<Uuid, Cue>,
-    name_format: &NameFormatSettings,
-) -> String {
-    build_cue_name_at(cue, cues, name_format, 0)
-}
-
-fn build_cue_name_at(
+fn build_cue_name(
     cue: Option<&Cue>,
     cues: &HashMap<Uuid, Cue>,
     name_format: &NameFormatSettings,
@@ -51,6 +40,9 @@ fn build_cue_name_at(
     let Some(cue) = cue else {
         return String::new();
     };
+    if let Some(name) = &cue.name {
+        return name.clone();
+    }
     if depth > MAX_TARGET_DEPTH {
         return String::new();
     }
@@ -87,7 +79,7 @@ fn target_named(
     name_format: &NameFormatSettings,
     depth: usize,
 ) -> String {
-    let target_name = build_cue_name_at(cues.get(&target), cues, name_format, depth);
+    let target_name = build_cue_name(cues.get(&target), cues, name_format, depth);
     format_template(template, &values([("targetName", target_name)]))
 }
 
@@ -185,7 +177,7 @@ mod tests {
 
     #[test]
     fn none_cue_is_empty_name() {
-        assert_eq!(build_cue_name(None, &HashMap::new(), &name_format()), "");
+        assert_eq!(build_cue_name(None, &HashMap::new(), &name_format()), "", 0);
     }
 
     #[test]
@@ -208,7 +200,7 @@ mod tests {
             }),
         );
         assert_eq!(
-            build_cue_name(Some(&cue), &HashMap::new(), &name_format()),
+            display_name(&cue, &HashMap::new(), &name_format()),
             "kick.wav"
         );
     }
@@ -224,7 +216,7 @@ mod tests {
         // appends ".{ms}", even when ms trims down to a single "0" (see
         // domain::time's doc comment / tests) -- this is not "01m 30s".
         assert_eq!(
-            build_cue_name(Some(&cue), &HashMap::new(), &name_format()),
+            display_name(&cue, &HashMap::new(), &name_format()),
             "Wait 01m 30.0s"
         );
     }
@@ -249,7 +241,7 @@ mod tests {
         cues.insert(start_id, start.clone());
 
         assert_eq!(
-            build_cue_name(Some(&start), &cues, &name_format()),
+            display_name(&start, &cues, &name_format()),
             "Start Wait 1s"
         );
     }
@@ -264,7 +256,7 @@ mod tests {
             }),
         );
         assert_eq!(
-            build_cue_name(Some(&start), &HashMap::new(), &name_format()),
+            display_name(&start, &HashMap::new(), &name_format()),
             "Start "
         );
     }
@@ -282,7 +274,7 @@ mod tests {
             },
         );
         assert_eq!(
-            build_cue_name(Some(&group), &HashMap::new(), &name_format()),
+            display_name(&group, &HashMap::new(), &name_format()),
             "Group"
         );
     }
