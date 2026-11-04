@@ -16,7 +16,7 @@ use crate::settings::NameFormatSettings;
 use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus, StateParam};
 use sbsp_backend::model::cue::Uuid;
 
-use crate::domain::cue::build_cue_name;
+use crate::domain::cue::display_name;
 use crate::domain::flat_list::flatten;
 use crate::domain::time::format_seconds;
 use crate::features::header::cue_title;
@@ -115,10 +115,7 @@ pub fn active_cues<'a>(
                 .cues
                 .get(&active.cue_id)
                 .map(|cue| {
-                    let name = match &cue.name {
-                        Some(name) => name.clone(),
-                        None => build_cue_name(Some(cue), &model.cue_list.cues, name_format),
-                    };
+                    let name = display_name(cue), &model.cue_list.cues, name_format);
                     cue_title(cue, name)
                 })
                 .unwrap_or_default();
