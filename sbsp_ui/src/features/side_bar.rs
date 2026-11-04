@@ -115,7 +115,7 @@ pub fn active_cues<'a>(
                 .cues
                 .get(&active.cue_id)
                 .map(|cue| {
-                    let name = display_name(cue), &model.cue_list.cues, name_format);
+                    let name = display_name(cue, &model.cue_list.cues, name_format);
                     cue_title(cue, name)
                 })
                 .unwrap_or_default();
