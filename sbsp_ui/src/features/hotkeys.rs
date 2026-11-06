@@ -213,12 +213,6 @@ impl Bindings {
     }
 }
 
-/// `is_mac` for the host platforms; the web build will need the browser's
-/// answer instead (Phase 9).
-pub fn is_mac() -> bool {
-    cfg!(target_os = "macos")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

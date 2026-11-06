@@ -6,6 +6,9 @@
 //! `localStorage` can be missing or refuse (a private window, blocked site
 //! data), so nothing here fails: a read finds nothing, a write is logged.
 
+use std::sync::LazyLock;
+use web_sys::window;
+
 fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
 }
@@ -24,3 +27,24 @@ pub fn set(key: &str, value: &str) {
         None => log::debug!("the browser's storage is not available"),
     }
 }
+
+/// In the Wasm only, perform a runtime check upon the initial access and cache the result.
+pub static IS_MACOS: LazyLock<bool> = LazyLock::new(|| {
+    let window = match window() {
+        Some(w) => w,
+        None => return false,
+    };
+    let navigator = window.navigator();
+
+    if let Ok(platform) = navigator.platform() {
+        if platform.to_lowercase().contains("mac") {
+            return true;
+        }
+    }
+    if let Ok(user_agent) = navigator.user_agent() {
+        if user_agent.to_lowercase().contains("macintosh") || user_agent.to_lowercase().contains("mac os x") {
+            return true;
+        }
+    }
+    false
+});
