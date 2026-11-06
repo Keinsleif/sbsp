@@ -109,11 +109,10 @@ impl Screen {
             }
             Message::Submit => {
                 let prompt = self.prompt.take()?;
-                let password = prompt.password.trim();
                 self.connecting = true;
                 return Some(Request {
                     address: prompt.address,
-                    password: (!password.is_empty()).then(|| password.to_owned()),
+                    password: (!prompt.password.is_empty()).then(|| prompt.password.to_owned()),
                 });
             }
             Message::Cancel => self.prompt = None,
@@ -274,7 +273,7 @@ mod tests {
         screen.update(Message::Password(" secret ".to_owned()));
         let request = screen.update(Message::Submit).unwrap();
         assert_eq!(request.address, "example.local:5800");
-        assert_eq!(request.password.as_deref(), Some("secret"));
+        assert_eq!(request.password.as_deref(), Some(" secret "));
         assert!(screen.prompt.is_none());
         assert!(screen.connecting);
     }
