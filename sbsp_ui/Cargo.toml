@@ -12,7 +12,7 @@ publish.workspace = true
 [features]
 default = []
 host = ["iced/tokio", "dep:tokio", "sbsp_backend/server", "dep:keepawake", "dep:muda", "dep:rfd", "dep:axum", "dep:velopack"]
-remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:keepawake", "dep:rfd", "dep:velopack"]
+remote = ["iced/tokio", "dep:tokio", "sbsp_backend/client", "dep:keepawake", "dep:muda", "dep:rfd", "dep:velopack"]
 web = ["sbsp_backend/protocol", "iced/webgl", "rust-embed/debug-embed"]
 
 [dependencies]
