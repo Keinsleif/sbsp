@@ -3,6 +3,8 @@
 
 use serial_test::serial;
 
+use crate::platform;
+
 use super::*;
 
 // Every test here is #[serial]: all of them call fl!(), which reads
@@ -1053,9 +1055,9 @@ fn loaded_settings_reach_the_ui() {
     assert_eq!(
         state
             .hotkeys
-            .shortcut(hotkeys::Action::Open, hotkeys::is_mac())
+            .shortcut(hotkeys::Action::Open, platform::is_mac())
             .as_deref(),
-        Some(if hotkeys::is_mac() {
+        Some(if platform::is_mac() {
             "⇧⌘O"
         } else {
             "Ctrl+Shift+O"
@@ -1081,7 +1083,7 @@ fn menus_show_the_bindings() {
             _ => None,
         })
     };
-    let save = if hotkeys::is_mac() { "⌘S" } else { "Ctrl+S" };
+    let save = if platform::is_mac() { "⌘S" } else { "Ctrl+S" };
     assert_eq!(shortcut_of("file.save"), Some(Some(save.to_owned())));
     assert_eq!(shortcut_of("file.export"), Some(None), "unbound by default");
 }
@@ -1508,7 +1510,7 @@ mod remote {
     #[test]
     #[serial]
     fn the_host_s_files_are_chosen_from_a_dialog_that_closes_when_done() {
-        use crate::features::file_list;
+        use crate::features::dialog::file_list;
         use sbsp_backend::api::FileList;
 
         let mut state = new_state();
