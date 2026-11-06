@@ -9,6 +9,8 @@ pub mod browser;
 pub mod files;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod logging;
+#[cfg(target_os = "macos")]
+pub mod native_menu;
 pub mod power;
 pub mod time;
 #[cfg(installer)]
