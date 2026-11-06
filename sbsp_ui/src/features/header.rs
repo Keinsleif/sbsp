@@ -75,7 +75,8 @@ pub fn controls_for(
         Message::Stop => vec![Control::Stop(id)],
         Message::Play => match status {
             Some(S::Paused | S::PreWaitPaused) => vec![Control::Resume(id)],
-            _ => vec![Control::Execute(id)],
+            Some(S::Loaded) | None => vec![Control::Execute(id)],
+            _ => vec![],
         },
         Message::ReadyPause => match status {
             Some(S::PreWaiting | S::Playing) => vec![Control::Pause(id)],
