@@ -8,8 +8,8 @@
 //!
 //! - [`crate::widgets::menu_bar`]: an in-app menu bar drawn by iced itself.
 //!   Used on Windows, Linux and Web.
-//! - `crate::host::native_menu` (macOS only, `host` feature): a native
-//!   global menu bar built with `muda`.
+//! - `crate::platform::native_menu` (macOS only):a native global menu bar
+//!   built with `muda`.
 //!
 //! Both backends only need to read this tree; neither needs to know about
 //! the other.

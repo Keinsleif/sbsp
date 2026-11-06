@@ -4,7 +4,7 @@
 //! Renders a [`MenuSpec`] as an in-app menu bar using `iced_aw`.
 //!
 //! Used on every target except the macOS host/remote build, which uses a
-//! native global menu instead (see `crate::host::native_menu`).
+//! native global menu instead (see `crate::platform::native_menu`).
 
 use iced::advanced::text::{self as advanced_text, Paragraph as _};
 use iced::widget::{button, container, mouse_area, row, text};
