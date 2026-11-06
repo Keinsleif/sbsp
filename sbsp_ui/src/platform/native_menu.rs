@@ -50,6 +50,20 @@ thread_local! {
     static INSTALLED: RefCell<Option<Installed>> = const { RefCell::new(None) };
 }
 
+static MENU_EVENT_BUS: LazyLock<broadcast::Sender<String>> = LazyLock::new(|| {
+    let (tx, _) = broadcast::channel(32);
+    let bus_tx = tx.clone();
+
+    std::thread::spawn(move || {
+        let receiver = muda::MenuEvent::receiver();
+        while let Ok(event) = receiver.recv() {
+            let _ = bus_tx.send(event.id.0);
+        }
+    });
+
+    tx
+});
+
 /// Builds the native menu from `spec` and installs it as the application's
 /// global menu bar.
 ///
@@ -231,32 +245,18 @@ fn append(target: &Submenu, nodes: &[MenuNode], entries: &mut HashMap<&'static s
 /// one back into a [`MenuId`], on the main thread.
 ///
 /// `muda::MenuEvent::receiver()` returns a blocking `crossbeam_channel`
-/// receiver, so it is drained on a dedicated blocking thread
-/// (`tokio::task::spawn_blocking`) rather than awaited directly, which would
-/// otherwise permanently block one of iced's async worker threads.
+/// receiver. To prevent race conditions when iced drops and restarts this
+/// subscription, events are forwarded to a global `broadcast` channel by a
+/// single dedicated thread spawned on startup, rather than spawning transient
+/// blocking tasks.
 pub fn events() -> iced::Subscription<String> {
     iced::Subscription::run(|| {
         iced::stream::channel(32, async |mut output| {
             use iced::futures::SinkExt;
 
-            let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+            let mut rx = MENU_EVENT_BUS.subscribe();
 
-            tokio::task::spawn_blocking(move || {
-                let receiver = muda::MenuEvent::receiver();
-                while !tx.is_closed() {
-                    match receiver.recv_timeout(std::time::Duration::from_millis(250)) {
-                        Ok(event) => {
-                            if tx.send(event.id.0.clone()).is_err() {
-                                break;
-                            }
-                        }
-                        Err(error) if error.is_timeout() => continue,
-                        Err(_) => break,
-                    }
-                }
-            });
-
-            while let Some(id) = rx.recv().await {
+            while let Ok(id) = rx.recv().await {
                 if output.send(id).await.is_err() {
                     break;
                 }
