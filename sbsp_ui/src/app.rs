@@ -53,7 +53,7 @@ use crate::state::{
     ui::{KeepAwakeMode, Mode, SideBarTab, UiState},
 };
 use crate::theme::ThemeMode;
-use crate::widgets::{divider, field, menu_bar, modal, toast};
+use crate::widgets::{divider, field, modal, toast};
 
 #[cfg(installer)]
 use crate::features::dialog::update::Stage;
@@ -75,7 +75,7 @@ use crate::settings::{AudioHardwareSettings, NameFormatSettings, TemplateSetting
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 
-use crate::fl;
+use crate::{fl, platform};
 
 /// How often `calculate_position` re-derives interpolated positions while
 /// something is active.
@@ -331,6 +331,12 @@ pub enum Message {
     Header(header::Message),
     ClockTick,
     WindowFocused(bool),
+    /// A window opened (the macOS menu is installed once the first has).
+    #[cfg(target_os = "macos")]
+    WindowOpened(iced::window::Id),
+    /// A click in the native macOS menu, by the id string of its item.
+    #[cfg(target_os = "macos")]
+    NativeMenu(String),
     SetKeepAwake(KeepAwakeMode),
     /// The OS moved or resized the window. Whether the window is maximized
     /// is asked before the new geometry is remembered (see `WindowSettled`).
@@ -525,7 +531,7 @@ impl State {
             seek_amount: crate::settings::GeneralSettings::default().seek_amount,
             hotkeys: hotkeys::Bindings::from_settings(
                 &crate::settings::hotkey::HotkeySettings::default(),
-                hotkeys::is_mac(),
+                platform::is_mac(),
             ),
             templates: TemplateSettings::default(),
             #[cfg(feature = "host")]
@@ -621,6 +627,8 @@ impl State {
         let task = self.update_inner(message);
         if sync {
             self.sync_editor();
+            #[cfg(target_os = "macos")]
+            self.sync_native_menu();
         }
         task
     }
@@ -632,6 +640,12 @@ impl State {
             self.ui.keep_awake,
             self.window_focused,
         ));
+    }
+
+    /// Brings the state of the native menu's items up to date.
+    #[cfg(target_os = "macos")]
+    fn sync_native_menu(&self) {
+        crate::platform::native_menu::sync(&self.menu_spec());
     }
 
     fn sync_editor(&mut self) {
@@ -687,6 +701,20 @@ impl State {
     fn update_inner(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Menu(id) => self.handle_menu(id),
+            #[cfg(target_os = "macos")]
+            Message::WindowOpened(_) => {
+                // Only now: winit puts its default menu in place while the
+                // application launches, and would replace an earlier one.
+                crate::platform::native_menu::install(&self.menu_spec());
+                Task::none()
+            }
+            #[cfg(target_os = "macos")]
+            Message::NativeMenu(raw) => {
+                if let Some(id) = crate::platform::native_menu::resolve(&raw) {
+                    return self.handle_menu(id);
+                }
+                Task::none()
+            }
             Message::Header(message) => self.handle_header(message),
             Message::Mobile(message) => self.handle_mobile(message),
             Message::KeyPressed(press) => self.handle_key(press),
@@ -885,7 +913,7 @@ impl State {
         self.name_format = preferences.name_format.clone();
         self.lock_cursor_to_selection = preferences.general.lock_cursor_to_selection;
         self.seek_amount = preferences.general.seek_amount;
-        self.hotkeys = hotkeys::Bindings::from_settings(&preferences.hotkey, hotkeys::is_mac());
+        self.hotkeys = hotkeys::Bindings::from_settings(&preferences.hotkey, platform::is_mac());
         self.hide_controls = preferences.appearance.hide_controls;
         self.templates = preferences.template.clone();
         self.theme_mode = preferences::theme_mode(preferences.appearance.dark_mode);
@@ -1011,6 +1039,9 @@ impl State {
                 self.window_focused = focused;
                 self.sync_power();
             }
+            #[cfg(target_os = "macos")]
+            Message::WindowOpened(_)
+            | Message::NativeMenu(_) => {}
             Message::SetKeepAwake(mode) => {
                 self.ui.keep_awake = mode;
                 self.sync_power();
@@ -1346,7 +1377,7 @@ impl State {
                     dialog.capture(crate::domain::hotkey::format_binding(
                         press.mods,
                         name,
-                        hotkeys::is_mac(),
+                        platform::is_mac(),
                     ));
                 }
                 return Task::none();
@@ -3289,6 +3320,16 @@ impl State {
 
         let close = iced::window::close_requests().map(|_| Message::CloseRequested);
 
+        // The macOS menu bar: installed when the first window has opened,
+        // and its clicks come in as events.
+        #[cfg(target_os = "macos")]
+        let native_menu = Subscription::batch([
+            iced::window::open_events().map(Message::WindowOpened),
+            crate::platform::native_menu::events().map(Message::NativeMenu),
+        ]);
+        #[cfg(not(target_os = "macos"))]
+        let native_menu = Subscription::none();
+
         let resizing = if self.resized_at.is_some() {
             iced::time::every(RESIZE_CHECK).map(Message::ResizeCheck)
         } else {
@@ -3309,6 +3350,7 @@ impl State {
             modifiers,
             dragging,
             drops,
+            native_menu,
         ])
     }
 
@@ -3318,7 +3360,7 @@ impl State {
         let has_selection = !self.ui.selected_rows.is_empty();
         // Opening and saving shows is the host's job; a remote or the web
         // build has no show of its own.
-        let is_mac = hotkeys::is_mac();
+        let is_mac = platform::is_mac();
         let shortcut = |action| self.hotkeys.shortcut(action, is_mac);
         let host_only = |id, label: String, action| {
             MenuNode::item(id, label)
@@ -3496,11 +3538,18 @@ impl State {
         .map(Message::Editor)
     }
 
-    fn menu_header(&self) -> Element<'_, Message> {
-        container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
-            .width(Length::Fill)
-            .padding(4)
-            .into()
+    fn menu_bar(&self) -> Element<'_, Message> {
+        // The native menu bar replaces it.
+        #[cfg(target_os = "macos")]
+        { iced::widget::Space::new().into() }
+        #[cfg(not(target_os = "macos"))]
+        {
+            use crate::widgets::menu_bar;
+            container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
+                .width(Length::Fill)
+                .padding(4)
+                .into()
+        }
     }
 
     /// The main screen of the desktop (and of a browser wide enough for it).
@@ -3509,7 +3558,7 @@ impl State {
             .ui
             .playback_cursor
             .and_then(|id| self.model.cue_list.cues.get(&id));
-        let transport = header::view(header::View {
+        let header = header::view(header::View {
             clock: self.clock,
             window_focused: self.window_focused,
             show_controls: self.show_controls(),
@@ -3610,8 +3659,8 @@ impl State {
         .width(Length::Fill);
 
         column![
-            self.menu_header(),
-            transport,
+            self.menu_bar(),
+            header,
             divider::horizontal(),
             body,
             divider::horizontal(),
@@ -3753,7 +3802,7 @@ impl State {
         // A remote without a connection has only the connect screen.
         #[cfg(client)]
         if self.needs_connection() {
-            return self.connect_view(self.menu_header());
+            return self.connect_view();
         }
 
         // A phone gets its own layout (the web build; the desktop keeps the
@@ -3852,13 +3901,13 @@ impl State {
     }
 }
 
+#[cfg(client)]
 impl State {
     /// The remote's screen before (and between) connections: the menu, the
     /// list of hosts, and the questions about the connection on top.
-    #[cfg(client)]
-    fn connect_view<'a>(&'a self, header: Element<'a, Message>) -> Element<'a, Message> {
+    fn connect_view<'a>(&'a self) -> Element<'a, Message> {
         let content: Element<'a, Message> = column![
-            header,
+            self.menu_bar(),
             divider::horizontal(),
             connect::view(&self.connect).map(Message::Connect),
         ]
@@ -3893,12 +3942,10 @@ impl State {
     /// Whether this is a remote that has no host to work with yet. (Not
     /// any build with the `remote` feature: the tests of the main screen
     /// run in one, with `target` "test".)
-    #[cfg(client)]
     fn needs_connection(&self) -> bool {
         matches!(self.target, "remote" | "web") && self.backend.is_none()
     }
 
-    #[cfg(client)]
     fn prompt_for_connect(&self) -> Option<&connect::Prompt> {
         self.connect.prompt.as_ref()
     }
