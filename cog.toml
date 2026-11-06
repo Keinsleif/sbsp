@@ -22,7 +22,8 @@ post_package_bump_hooks = []
 
 [changelog]
 path = "CHANGELOG.md"
-template = "remote"
+template = "scripts/changelog.tera"
+package_template = "scripts/changelog.tera"
 remote = "github.com"
 repository = "sbsp"
 owner = "Keinsleif"
