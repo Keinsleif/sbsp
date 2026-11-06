@@ -24,8 +24,10 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use muda::{CheckMenuItem, Menu, MenuId as MudaMenuId, MenuItem, PredefinedMenuItem, Submenu};
+use tokio::sync::broadcast;
 
 use crate::menu::{MenuId, MenuNode, MenuSpec};
 /// The items macOS keeps in the application menu. They stay items of the
