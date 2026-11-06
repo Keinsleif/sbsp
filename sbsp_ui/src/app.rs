@@ -332,10 +332,10 @@ pub enum Message {
     ClockTick,
     WindowFocused(bool),
     /// A window opened (the macOS menu is installed once the first has).
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", backend))]
     WindowOpened(iced::window::Id),
     /// A click in the native macOS menu, by the id string of its item.
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", backend))]
     NativeMenu(String),
     SetKeepAwake(KeepAwakeMode),
     /// The OS moved or resized the window. Whether the window is maximized
@@ -627,7 +627,7 @@ impl State {
         let task = self.update_inner(message);
         if sync {
             self.sync_editor();
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", backend))]
             self.sync_native_menu();
         }
         task
@@ -643,7 +643,7 @@ impl State {
     }
 
     /// Brings the state of the native menu's items up to date.
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", backend))]
     fn sync_native_menu(&self) {
         crate::platform::native_menu::sync(&self.menu_spec());
     }
@@ -701,14 +701,14 @@ impl State {
     fn update_inner(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Menu(id) => self.handle_menu(id),
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", backend))]
             Message::WindowOpened(_) => {
                 // Only now: winit puts its default menu in place while the
                 // application launches, and would replace an earlier one.
                 crate::platform::native_menu::install(&self.menu_spec());
                 Task::none()
             }
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", backend))]
             Message::NativeMenu(raw) => {
                 if let Some(id) = crate::platform::native_menu::resolve(&raw) {
                     return self.handle_menu(id);
@@ -1039,7 +1039,7 @@ impl State {
                 self.window_focused = focused;
                 self.sync_power();
             }
-            #[cfg(target_os = "macos")]
+            #[cfg(all(target_os = "macos", backend))]
             Message::WindowOpened(_)
             | Message::NativeMenu(_) => {}
             Message::SetKeepAwake(mode) => {
@@ -3322,7 +3322,7 @@ impl State {
 
         // The macOS menu bar: installed when the first window has opened,
         // and its clicks come in as events.
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", backend))]
         let native_menu = Subscription::batch([
             iced::window::open_events().map(Message::WindowOpened),
             crate::platform::native_menu::events().map(Message::NativeMenu),
@@ -3540,7 +3540,7 @@ impl State {
 
     fn menu_bar(&self) -> Element<'_, Message> {
         // The native menu bar replaces it.
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", backend))]
         { iced::widget::Space::new().into() }
         #[cfg(not(target_os = "macos"))]
         {
