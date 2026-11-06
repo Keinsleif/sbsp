@@ -13,7 +13,7 @@ use iced::{Alignment, Element, Length};
 
 use super::Message;
 use crate::domain::hotkey::{Hotkey, normalize_hotkey};
-use crate::features::hotkeys::is_mac;
+use crate::platform::is_mac;
 use crate::fl;
 use crate::widgets::icon::{self, Icon, Tone};
 
