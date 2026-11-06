@@ -8,7 +8,7 @@
 //! empty one means the host has none for what this connection may do.
 
 use iced::widget::{
-    Space, button, column, container, mouse_area, row, scrollable, text, text_input,
+    Space, button, column, container, mouse_area, row, scrollable, text, text_input, tooltip,
 };
 use iced::{Alignment, Element, Length};
 use sbsp_backend::api::client::ServiceEntry;
@@ -172,6 +172,13 @@ pub fn view(screen: &Screen) -> Element<'_, Message> {
             .on_input(Message::Host)
             .on_submit(Message::ConnectTyped)
             .width(Length::FillPortion(3)),
+        tooltip(
+            container("!").padding([4, 8]).style(container::rounded_box),
+            container(text(fl!("view-connect-hostname-format-tooltip")))
+                .padding([4, 8])
+                .style(container::rounded_box),
+            tooltip::Position::Left
+        ),
         text_input(&fl!("view-connect-remote-port"), &screen.port)
             .on_input(Message::Port)
             .on_submit(Message::ConnectTyped)
