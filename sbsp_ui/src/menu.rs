@@ -114,6 +114,21 @@ impl MenuSpec {
         self
     }
 
+    /// The same menus without the items with these ids, for a platform that
+    /// shows them elsewhere. A separator left at the start or end of a
+    /// menu, or next to another, is dropped, and so is a menu left empty.
+    pub fn without(&self, ids: &[&str]) -> MenuSpec {
+        MenuSpec {
+            menus: self
+                .menus
+                .iter()
+                .map(|(label, nodes)| (label.clone(), strip(nodes, ids)))
+                .filter(|(_, nodes)| !nodes.is_empty())
+                .collect(),
+        }
+    }
+
+
     /// [`MenuSpec::menu`], but only adds the menu when `condition` holds
     /// (e.g. a host-only menu in a build shared with remote/web).
     pub fn menu_if(self, condition: bool, label: impl Into<String>, items: Vec<MenuNode>) -> Self {
@@ -125,9 +140,111 @@ impl MenuSpec {
     }
 }
 
+fn strip(nodes: &[MenuNode], ids: &[&str]) -> Vec<MenuNode> {
+    let mut kept: Vec<MenuNode> = Vec::new();
+    for node in nodes {
+        match node {
+            MenuNode::Item { id, .. } if ids.contains(&id.0) => {}
+            MenuNode::Submenu { label, children } => {
+                let children = strip(children, ids);
+                if !children.is_empty() {
+                    kept.push(MenuNode::Submenu {
+                        label: label.clone(),
+                        children,
+                    });
+                }
+            }
+            MenuNode::Separator => {
+                if !matches!(kept.last(), None | Some(MenuNode::Separator)) {
+                    kept.push(MenuNode::Separator);
+                }
+            }
+            other => kept.push(other.clone()),
+        }
+    }
+    while matches!(kept.last(), Some(MenuNode::Separator)) {
+        kept.pop();
+    }
+    kept
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn ids(nodes: &[MenuNode]) -> Vec<&str> {
+        nodes
+            .iter()
+            .map(|node| match node {
+                MenuNode::Item { id, .. } => id.0,
+                MenuNode::Submenu { .. } => "<submenu>",
+                MenuNode::Separator => "-",
+            })
+            .collect()
+    }
+
+    #[test]
+    fn removed_items_take_their_dangling_separators_with_them() {
+        let spec = MenuSpec::new()
+            .menu(
+                "File",
+                vec![
+                    MenuNode::item("file.open", "Open"),
+                    MenuNode::separator(),
+                    MenuNode::item("file.quit", "Quit"),
+                ],
+            )
+            .menu(
+                "Help",
+                vec![
+                    MenuNode::item("help.credits", "Credits"),
+                    MenuNode::separator(),
+                    MenuNode::item("help.about", "About"),
+                ],
+            );
+
+        let trimmed = spec.without(&["file.quit", "help.about"]);
+
+        assert_eq!(ids(&trimmed.menus[0].1), ["file.open"]);
+        assert_eq!(ids(&trimmed.menus[1].1), ["help.credits"]);
+    }
+
+    #[test]
+    fn a_separator_left_at_the_start_or_doubled_is_dropped() {
+        let spec = MenuSpec::new().menu(
+            "Edit",
+            vec![
+                MenuNode::item("a", "A"),
+                MenuNode::separator(),
+                MenuNode::item("gone", "Gone"),
+                MenuNode::separator(),
+                MenuNode::item("b", "B"),
+            ],
+        );
+
+        let trimmed = spec.without(&["gone"]);
+
+        assert_eq!(ids(&trimmed.menus[0].1), ["a", "-", "b"]);
+    }
+
+    #[test]
+    fn an_emptied_menu_or_submenu_is_dropped() {
+        let spec = MenuSpec::new()
+            .menu("Only", vec![MenuNode::item("gone", "Gone")])
+            .menu(
+                "Tools",
+                vec![
+                    MenuNode::item("keep", "Keep"),
+                    MenuNode::submenu("Inner", vec![MenuNode::item("gone", "Gone")]),
+                ],
+            );
+
+        let trimmed = spec.without(&["gone"]);
+
+        assert_eq!(trimmed.menus.len(), 1);
+        assert_eq!(trimmed.menus[0].0, "Tools");
+        assert_eq!(ids(&trimmed.menus[0].1), ["keep"]);
+    }
 
     #[test]
     fn menu_if_only_adds_the_menu_when_the_condition_holds() {
