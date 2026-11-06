@@ -72,12 +72,19 @@ pub fn after_stop_confirmed(modified: bool) -> Step {
 
 pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
     let buttons = match confirm {
-        Confirm::StopActive(_) => row![
-            button(text(fl!("general-cancel")))
-                .style(button::secondary)
-                .on_press(Answer::Cancel),
-            button(text(fl!("general-exit"))).on_press(Answer::Yes),
-        ],
+        Confirm::StopActive(after) => {
+            let yes_text = if After::Quit == after {
+                fl!("general-exit")
+            } else {
+                fl!("general-continue")
+            };
+            row![
+                button(text(fl!("general-cancel")))
+                    .style(button::secondary)
+                    .on_press(Answer::Cancel),
+                button(text(yes_text)).on_press(Answer::Yes),
+            ]
+        },
         Confirm::SaveChanges(_) => row![
             button(text(fl!("dialog-save-confirm-cancel")))
                 .style(button::secondary)
