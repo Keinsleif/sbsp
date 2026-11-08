@@ -20,6 +20,7 @@ use crate::{
     },
     asset_processor::{AssetProcessorCommand, AssetProcessorHandle},
     controller::{ControllerCommand, CueControllerHandle},
+    engine::audio_engine::level_meter::SharedLevel,
     event::{BackendError, BackendEvent},
     manager::{ModelCommand, ShowModelHandle, project::ProjectStatus},
     model::ShowModel,
@@ -57,6 +58,13 @@ pub async fn create_remote_backend(
     let mut full_state_responder: Option<oneshot::Sender<FullShowState>> = None;
 
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel(1);
+
+    // The host's output level, as it arrives, for the UI to read like the
+    // host reads the engine's.
+    let level = SharedLevel::default();
+    let level_clone = level.clone();
+    let (level_stream_tx, mut level_stream_rx) = mpsc::channel::<bool>(4);
+    let mut level_seen = false;
 
     let model_clone = model.clone();
     let project_status_clone = project_status.clone();
@@ -283,6 +291,12 @@ pub async fn create_remote_backend(
                                             },
                                         }
                                     }
+                                    WsFeedback::Level { left, right } => {
+                                        if !std::mem::replace(&mut level_seen, true) {
+                                            log::info!("Receiving the host's output level.");
+                                        }
+                                        level_clone.set(left, right);
+                                    }
                                     WsFeedback::Hello { .. } => {},
                                     WsFeedback::Authenticated { .. } => {},
                                 }
@@ -344,6 +358,14 @@ pub async fn create_remote_backend(
                         break;
                     }
                 }
+                Some(enabled) = level_stream_rx.recv() => {
+                    log::info!("Asking the host to {} its output level.", if enabled { "send" } else { "stop sending" });
+                    if let Ok(payload) = serde_json::to_string(&WsCommand::SubscribeLevel { enabled })
+                    && websocket.send(Message::Text(payload.into())).await.is_err() {
+                        log::info!("WebSocket client disconnected (send error).");
+                        break;
+                    }
+                }
                 _ = shutdown_rx.recv() => {
                     if let Err(e) = websocket.send(Message::Close(None)).await {
                         log::warn!("Failed to send Close message to client: {}", e);
@@ -368,9 +390,10 @@ pub async fn create_remote_backend(
             controller_handle: CueControllerHandle {
                 command_tx: controller_tx,
             },
-            level_meter: None,
+            level_meter: Some(level),
             request_state_sync_tx,
             request_full_state_tx,
+            level_stream_tx: Some(level_stream_tx),
         },
         event_tx,
         asset_list_handle,

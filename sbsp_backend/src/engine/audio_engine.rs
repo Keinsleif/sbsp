@@ -14,7 +14,11 @@ pub use event::AudioEngineEvent;
 
 use anyhow::{Context, Result};
 use rodio::{
-    Decoder, Device, DeviceTrait, Source, SupportedStreamConfig, cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait}, mixer::Mixer, source::Zero, stream::{DeviceSinkBuilder, MixerDeviceSink},
+    Decoder, Device, DeviceTrait, Source, SupportedStreamConfig,
+    cpal::{BufferSize, DeviceId, SampleFormat, SupportedBufferSize, traits::HostTrait},
+    mixer::Mixer,
+    source::Zero,
+    stream::{DeviceSinkBuilder, MixerDeviceSink},
 };
 use std::{
     collections::HashMap,
@@ -711,9 +715,7 @@ impl AudioEngine {
     }
 }
 
-fn get_builder(
-    settings: &BackendAudioSettings,
-) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
+fn get_builder(settings: &BackendAudioSettings) -> Result<(DeviceSinkBuilder, OutputFallbackInfo)> {
     let mut fallback_info = OutputFallbackInfo {
         device: false,
         config: false,
@@ -790,13 +792,17 @@ fn select_config(
                 None => 0,
             };
             let fmt_prec = format_priority(c.sample_format());
-            
+
             let ch = if settings.channel_count.is_none() {
                 default_ch.map_or(0, |d| (c.channels() as i32 - d as i32).abs())
-            } else { 0 };
+            } else {
+                0
+            };
             let sr = if settings.sample_rate.is_none() {
                 default_sr.map_or(0, |d| (c.sample_rate() as i64 - d as i64).abs())
-            } else { 0 };
+            } else {
+                0
+            };
             (is_not_default, fmt_prec, ch, sr)
         })
 }
@@ -810,12 +816,12 @@ fn format_priority(format: SampleFormat) -> u8 {
         SampleFormat::I24 => 3,
         SampleFormat::I16 => 4,
         SampleFormat::I64 => 5,
-        SampleFormat::I8  => 6,
+        SampleFormat::I8 => 6,
 
         SampleFormat::U32 => 7,
         SampleFormat::U24 => 8,
         SampleFormat::U16 => 9,
-        SampleFormat::U8  => 10,
+        SampleFormat::U8 => 10,
         SampleFormat::U64 => 11,
 
         _ => 99,

@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-#[cfg(feature = "backend")]
 use std::ops::{Add, Mul, Sub};
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
-#[cfg_attr(feature = "type_export", ts(as = "f32"))]
-pub struct Decibels(f32);
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Decibels(pub f32);
 
 impl Default for Decibels {
     fn default() -> Self {
@@ -22,11 +19,11 @@ impl Decibels {
     pub const MUTE: Self = Self(-60.0);
     pub const IDENTITY: Self = Self(0.0);
 
-    #[cfg(feature = "backend")]
     #[inline]
-    pub fn is_silent(self) -> bool { self.0 <= Self::MUTE.0 }
+    pub fn is_silent(self) -> bool {
+        self.0 <= Self::MUTE.0
+    }
 
-    #[cfg(feature = "backend")]
     #[inline]
     pub fn stack(self, rhs: Self) -> Self {
         let sum = self.0 + rhs.0;
@@ -37,7 +34,6 @@ impl Decibels {
         }
     }
 
-    #[cfg(feature = "backend")]
     #[inline]
     pub fn as_amplitude(&self) -> f32 {
         if self.is_silent() {
@@ -48,21 +44,24 @@ impl Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl From<f32> for Decibels {
     fn from(value: f32) -> Self {
         Self(value)
     }
 }
 
-#[cfg(feature = "backend")]
 impl From<Decibels> for f32 {
     fn from(value: Decibels) -> Self {
         value.0
     }
 }
 
-#[cfg(feature = "backend")]
+impl Display for Decibels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 impl Add for Decibels {
     type Output = Decibels;
 
@@ -72,7 +71,6 @@ impl Add for Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl Sub for Decibels {
     type Output = Decibels;
 
@@ -82,7 +80,6 @@ impl Sub for Decibels {
     }
 }
 
-#[cfg(feature = "backend")]
 impl Mul<f32> for Decibels {
     type Output = Decibels;
 
@@ -93,7 +90,6 @@ impl Mul<f32> for Decibels {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct AudioCueParam {
     pub target: PathBuf,
@@ -110,7 +106,6 @@ pub struct AudioCueParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FadeParam {
     pub duration: f64,
@@ -127,7 +122,6 @@ impl Default for FadeParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct EnvelopeSegment {
     pub start: f64,
@@ -136,7 +130,6 @@ pub struct EnvelopeSegment {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     content = "intensity",
@@ -172,7 +165,6 @@ impl Easing {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum SoundType {
     Static,

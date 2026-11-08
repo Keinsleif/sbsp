@@ -7,7 +7,6 @@ use uuid::Uuid;
 use crate::action::CueAction;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "command",
     content = "params",
