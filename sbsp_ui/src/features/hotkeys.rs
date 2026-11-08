@@ -164,7 +164,8 @@ impl Bindings {
             (&file.export_to_folder, Action::Export),
         ];
 
-        // Not in the settings
+        // Not in the settings; reserved first so a configured hotkey can
+        // never shadow them.
         let fixed = [
             ("$mod+C", Action::Copy),
             ("$mod+X", Action::Cut),
@@ -172,23 +173,31 @@ impl Bindings {
             ("$mod+D", Action::Duplicate),
         ];
 
-        Self(
-            table
-                .into_iter()
-                .filter_map(|(spec, action)| {
-                    let hotkey = Hotkey::parse(spec.as_deref()?, is_mac);
-                    if hotkey.is_none() {
-                        log::warn!("ignoring unparsable hotkey {spec:?} for {action:?}");
-                    }
-                    Some((hotkey?, action))
-                })
-                .chain(
-                    fixed
-                        .into_iter()
-                        .filter_map(|(spec, action)| Some((Hotkey::parse(spec, is_mac)?, action))),
-                )
-                .collect(),
-        )
+        let mut bindings: Vec<(Hotkey, Action)> = Vec::new();
+        for (spec, action) in fixed {
+            if let Some(hotkey) = Hotkey::parse(spec, is_mac) {
+                bindings.push((hotkey, action));
+            }
+        }
+        for (spec, action) in table {
+            let Some(spec) = spec.as_deref() else {
+                continue;
+            };
+            let Some(hotkey) = Hotkey::parse(spec, is_mac) else {
+                log::warn!("ignoring unparsable hotkey {spec:?} for {action:?}");
+                continue;
+            };
+            // One key press must mean one action, and the shortcut shown
+            // for an action must be the one that triggers it.
+            if let Some((_, owner)) = bindings.iter().find(|(taken, _)| *taken == hotkey) {
+                log::warn!(
+                    "ignoring hotkey {spec:?} for {action:?}: already bound to {owner:?}"
+                );
+                continue;
+            }
+            bindings.push((hotkey, action));
+        }
+        Self(bindings)
     }
 
     /// How a menu shows the first binding of `action`, if it has one.
@@ -418,6 +427,49 @@ mod tests {
         // Holding the key does not paste over and over.
         let held = KeyPress::new(&ch("v"), &ch("v"), Modifiers::CTRL, true).unwrap();
         assert_eq!(b.find(&held), None);
+    }
+
+    #[test]
+    fn a_configured_hotkey_cannot_shadow_a_fixed_one() {
+        let mut settings = HotkeySettings::default();
+        settings.playback.execute = Some("$mod+C".to_owned());
+        let b = Bindings::from_settings(&settings, false);
+        assert_eq!(
+            b.find(&press(ch("c"), Modifiers::CTRL)),
+            Some(Action::Copy)
+        );
+        assert_eq!(b.shortcut(Action::Execute, false), None);
+    }
+
+    #[test]
+    fn conflicts_are_resolved_by_the_resolved_key_not_the_spelling() {
+        let mut settings = HotkeySettings::default();
+        settings.playback.execute = Some("Control+c".to_owned());
+        let win = Bindings::from_settings(&settings, false);
+        assert_eq!(win.shortcut(Action::Execute, false), None);
+        // On a Mac `$mod` is the command key, so Control+C is free.
+        let mac = Bindings::from_settings(&settings, true);
+        assert_eq!(
+            mac.find(&press(ch("c"), Modifiers::CTRL)),
+            Some(Action::Execute)
+        );
+        assert_eq!(
+            mac.find(&press(ch("c"), Modifiers::LOGO)),
+            Some(Action::Copy)
+        );
+    }
+
+    #[test]
+    fn the_first_of_two_configured_duplicates_wins() {
+        let mut settings = HotkeySettings::default();
+        settings.playback.execute = Some("F5".to_owned());
+        settings.playback.load = Some("f5".to_owned());
+        let b = Bindings::from_settings(&settings, false);
+        assert_eq!(
+            b.find(&press(named(Named::F5), Modifiers::empty())),
+            Some(Action::Execute)
+        );
+        assert_eq!(b.shortcut(Action::Load, false), None);
     }
 
     #[test]
