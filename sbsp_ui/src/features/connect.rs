@@ -112,7 +112,7 @@ impl Screen {
                 self.connecting = true;
                 return Some(Request {
                     address: prompt.address,
-                    password: (!prompt.password.is_empty()).then(|| prompt.password.to_owned()),
+                    password: (!prompt.password.is_empty()).then_some(prompt.password),
                 });
             }
             Message::Cancel => self.prompt = None,
