@@ -74,27 +74,19 @@ impl Action {
 /// One key press, reduced to what binding lookup needs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyPress {
-    /// Candidate names for the pressed key (see [`key_names`]); a binding
-    /// matches if it equals any of them.
-    pub names: Vec<String>,
+    /// The pressed key's name (see [`key_name`]), as the key itself: with
+    /// Shift held, `1` stays `"1"` rather than becoming `"!"`.
+    pub name: String,
     pub mods: Mods,
     pub repeat: bool,
 }
 
 impl KeyPress {
-    pub fn new(key: &Key, modified_key: &Key, modifiers: Modifiers, repeat: bool) -> Option<Self> {
-        let mut names = key_names(key);
-        for name in key_names(modified_key) {
-            if !names.contains(&name) {
-                names.push(name);
-            }
-        }
-        if names.is_empty() {
-            return None;
-        }
-
+    /// `key` is the key without the modifiers applied (iced's `key`, not
+    /// its `modified_key`).
+    pub fn new(key: &Key, modifiers: Modifiers, repeat: bool) -> Option<Self> {
         Some(Self {
-            names,
+            name: key_name(key)?,
             mods: Mods {
                 ctrl: modifiers.control(),
                 shift: modifiers.shift(),
@@ -106,12 +98,12 @@ impl KeyPress {
     }
 }
 
-/// Names a key goes by in binding strings: `"ArrowUp"`, `"Enter"`,
+/// The name a key goes by in binding strings: `"ArrowUp"`, `"Enter"`,
 /// `"Space"` for named keys (the same spelling the settings use, which
 /// comes from the browser's `KeyboardEvent.key`), the character itself
-/// for character keys. Empty for keys that cannot be bound (`Unidentified`,
-/// and bare modifier presses).
-fn key_names(key: &Key) -> Vec<String> {
+/// for character keys. `None` for keys that cannot be bound
+/// (`Unidentified`, and bare modifier presses).
+fn key_name(key: &Key) -> Option<String> {
     match key {
         Key::Named(
             Named::Shift
@@ -120,11 +112,11 @@ fn key_names(key: &Key) -> Vec<String> {
             | Named::Super
             | Named::Meta
             | Named::AltGraph,
-        ) => Vec::new(),
-        Key::Named(named) => vec![format!("{named:?}")],
-        Key::Character(c) if c.as_str() == " " => vec!["Space".to_owned()],
-        Key::Character(c) => vec![c.to_string()],
-        Key::Unidentified => Vec::new(),
+        ) => None,
+        Key::Named(named) => Some(format!("{named:?}")),
+        Key::Character(c) if c.as_str() == " " => Some("Space".to_owned()),
+        Key::Character(c) => Some(c.to_string()),
+        Key::Unidentified => None,
     }
 }
 
@@ -211,12 +203,7 @@ impl Bindings {
     pub fn find(&self, press: &KeyPress) -> Option<Action> {
         self.0
             .iter()
-            .find(|(hotkey, _)| {
-                press
-                    .names
-                    .iter()
-                    .any(|name| hotkey.matches(name, press.mods))
-            })
+            .find(|(hotkey, _)| hotkey.matches(&press.name, press.mods))
             .map(|(_, action)| *action)
             .filter(|action| !press.repeat || action.repeats())
     }
@@ -235,7 +222,7 @@ mod tests {
     }
 
     fn press(key: Key, modifiers: Modifiers) -> KeyPress {
-        KeyPress::new(&key, &key, modifiers, false).unwrap()
+        KeyPress::new(&key, modifiers, false).unwrap()
     }
 
     fn named(n: Named) -> Key {
@@ -396,13 +383,7 @@ mod tests {
     #[test]
     fn deleting_does_not_repeat_when_held() {
         let b = bindings();
-        let held = KeyPress::new(
-            &named(Named::Backspace),
-            &named(Named::Backspace),
-            Modifiers::CTRL,
-            true,
-        )
-        .unwrap();
+        let held = KeyPress::new(&named(Named::Backspace), Modifiers::CTRL, true).unwrap();
         assert_eq!(b.find(&held), None);
     }
 
@@ -425,7 +406,7 @@ mod tests {
             Some(Action::Copy)
         );
         // Holding the key does not paste over and over.
-        let held = KeyPress::new(&ch("v"), &ch("v"), Modifiers::CTRL, true).unwrap();
+        let held = KeyPress::new(&ch("v"), Modifiers::CTRL, true).unwrap();
         assert_eq!(b.find(&held), None);
     }
 
@@ -473,6 +454,24 @@ mod tests {
     }
 
     #[test]
+    fn a_shifted_key_is_looked_up_as_the_key_itself() {
+        let mut settings = HotkeySettings::default();
+        settings.playback.execute = Some("Shift+1".to_owned());
+        settings.playback.load = Some("Shift+!".to_owned());
+        let b = Bindings::from_settings(&settings, false);
+        // Shift+1 is the key "1" with Shift held, never "!".
+        assert_eq!(
+            b.find(&press(ch("1"), Modifiers::SHIFT)),
+            Some(Action::Execute)
+        );
+        // `Shift+!` only fires on a keyboard that has "!" as a key of its own.
+        assert_eq!(
+            b.find(&press(ch("!"), Modifiers::SHIFT)),
+            Some(Action::Load)
+        );
+    }
+
+    #[test]
     fn unbound_keys_resolve_to_nothing() {
         let b = bindings();
         assert_eq!(b.find(&press(ch("q"), Modifiers::empty())), None);
@@ -481,7 +480,7 @@ mod tests {
     #[test]
     fn held_keys_only_repeat_for_movement_and_seek() {
         let b = bindings();
-        let held = |key: Key| KeyPress::new(&key, &key, Modifiers::empty(), true).unwrap();
+        let held = |key: Key| KeyPress::new(&key, Modifiers::empty(), true).unwrap();
 
         assert_eq!(b.find(&held(named(Named::Enter))), None);
         assert_eq!(b.find(&held(named(Named::Space))), None);
@@ -510,13 +509,7 @@ mod tests {
     #[test]
     fn bare_modifier_presses_are_not_bindable() {
         assert!(
-            KeyPress::new(
-                &named(Named::Shift),
-                &named(Named::Shift),
-                Modifiers::SHIFT,
-                false
-            )
-            .is_none()
+            KeyPress::new(&named(Named::Shift), Modifiers::SHIFT, false).is_none()
         );
     }
 }
