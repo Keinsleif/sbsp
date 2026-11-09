@@ -76,7 +76,7 @@ pub fn controls_for(
         Message::Play => match status {
             Some(S::Paused | S::PreWaitPaused) => vec![Control::Resume(id)],
             Some(S::Loaded) | None => vec![Control::Execute(id)],
-            _ => vec![],
+            _ => Vec::new(),
         },
         Message::ReadyPause => match status {
             Some(S::PreWaiting | S::Playing) => vec![Control::Pause(id)],
@@ -346,12 +346,16 @@ mod tests {
         use PlaybackStatus as S;
 
         assert_eq!(
+            controls_for(Message::Play, Some(id), Some(S::Loaded)),
+            vec![Control::Execute(id)]
+        );
+        assert_eq!(
             controls_for(Message::Play, Some(id), None),
             vec![Control::Execute(id)]
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Playing)),
-            vec![Control::Execute(id)]
+            Vec::new(),
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Paused)),
