@@ -134,7 +134,7 @@ fn shift_clicking_selects_the_range_from_the_current_selection() {
 
 fn press(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Message {
     let press =
-        hotkeys::KeyPress::new(&key, &key, modifiers, false).expect("test keys are all bindable");
+        hotkeys::KeyPress::new(&key, modifiers, false).expect("test keys are all bindable");
     Message::KeyPressed(press)
 }
 

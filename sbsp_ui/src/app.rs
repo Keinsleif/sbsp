@@ -1285,14 +1285,14 @@ impl State {
     fn handle_key(&mut self, press: hotkeys::KeyPress) -> Task<Message> {
         // Escape drops a drag on the floor (and is not Stop All, which it
         // is bound to).
-        if self.cue_drag.is_some() && press.names.iter().any(|name| name == "Escape") {
+        if self.cue_drag.is_some() && press.name == "Escape" {
             self.cue_drag = None;
             return Task::none();
         }
         // The host's file list: Escape closes it.
         #[cfg(client)]
         if self.file_picker.is_some() {
-            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+            if press.name == "Escape" && !press.repeat {
                 return self.handle_file_picker(file_list::Message::Cancel);
             }
             return Task::none();
@@ -1300,14 +1300,14 @@ impl State {
         // The password question of the connect screen: Escape cancels it.
         #[cfg(client)]
         if self.connect.prompt.is_some() {
-            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+            if press.name == "Escape" && !press.repeat {
                 return self.handle_connect(connect::Message::Cancel);
             }
             return Task::none();
         }
         // The same for the question about replacing or closing the show.
         if self.confirm.is_some() {
-            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            let is = |name: &str| press.name == name && !press.repeat;
             return if is("Enter") {
                 self.answer_confirm(file_ops::Answer::Yes)
             } else if is("Escape") {
@@ -1319,7 +1319,7 @@ impl State {
         // Behind the removal confirmation only its own keys work: GO on
         // Enter must not fire while the question is open.
         if self.pending_remove.is_some() {
-            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            let is = |name: &str| press.name == name && !press.repeat;
             return if is("Enter") {
                 self.confirm_remove()
             } else if is("Escape") {
@@ -1332,7 +1332,7 @@ impl State {
         // Credits and the update dialog: Escape closes them; nothing reaches
         // the cue list behind them.
         if self.credits.is_some() || self.update_dialog.is_some() {
-            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+            if press.name == "Escape" && !press.repeat {
                 if let Some(dialog) = &self.update_dialog {
                     if !dialog.busy() {
                         self.update_dialog = None;
@@ -1346,7 +1346,7 @@ impl State {
         // The server panel: Escape closes the connect information, then
         // the panel; nothing reaches the cue list behind it.
         if let Some(panel) = &mut self.server_panel {
-            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+            if press.name == "Escape" && !press.repeat {
                 if panel.info.is_some() {
                     panel.info = None;
                 } else {
@@ -1357,7 +1357,7 @@ impl State {
         }
         // The question about stopping audio for a hardware change.
         if self.audio_warning {
-            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            let is = |name: &str| press.name  == name && !press.repeat;
             return if is("Enter") {
                 self.audio_warning = false;
                 self.finish_settings(true)
@@ -1373,23 +1373,23 @@ impl State {
         if let Some(dialog) = &mut self.settings_dialog {
             // An input waiting for a key takes any press, Escape included.
             if dialog.capturing.is_some() {
-                if let (false, Some(name)) = (press.repeat, press.names.first()) {
+                if !press.repeat {
                     dialog.capture(crate::domain::hotkey::format_binding(
                         press.mods,
-                        name,
+                        &press.name,
                         platform::is_mac(),
                     ));
                 }
                 return Task::none();
             }
-            if press.names.iter().any(|n| n == "Escape") && !press.repeat {
+            if press.name == "Escape" && !press.repeat {
                 self.settings_dialog = None;
             }
             return Task::none();
         }
         // Likewise the renumber dialog: Enter runs it, Escape closes it.
         if self.renumber_open {
-            let is = |name: &str| press.names.iter().any(|n| n == name) && !press.repeat;
+            let is = |name: &str| press.name == name && !press.repeat;
             return if is("Enter") {
                 self.run_renumber()
             } else if is("Escape") {
@@ -3276,11 +3276,10 @@ impl State {
                 }
                 iced::Event::Keyboard(keyboard::Event::KeyPressed {
                     key,
-                    modified_key,
                     modifiers,
                     repeat,
                     ..
-                }) => hotkeys::KeyPress::new(&key, &modified_key, modifiers, repeat)
+                }) => hotkeys::KeyPress::new(&key, modifiers, repeat)
                     .map(Message::KeyPressed),
                 _ => None,
             }
