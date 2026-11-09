@@ -268,7 +268,14 @@ fn entry_button_label<'a, Message: Clone + 'a>(label: String) -> Element<'a, Mes
     inert(
         button(content)
             .width(Length::Fill)
-            .padding([3, 10])
+            .style(|theme, status| {
+                let status = if status == button::Status::Disabled {
+                    button::Status::Active
+                } else {
+                    status
+                };
+                button::text(theme, status)
+            })
             .style(button::text)
             .into(),
     )
