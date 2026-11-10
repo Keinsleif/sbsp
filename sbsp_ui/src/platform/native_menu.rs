@@ -150,7 +150,7 @@ fn sync_nodes(nodes: &[MenuNode], entries: &HashMap<&'static str, Entry>) {
                         item.set_enabled(*enabled);
                     }
                     if item.text() != *label {
-                        item.set_text(label);
+                        item.set_text(label.replace('&', "&&"));
                     }
                 }
                 Some(Entry::Check(item)) => {
