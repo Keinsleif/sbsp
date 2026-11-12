@@ -9,9 +9,53 @@ cmake = "4"
 "cargo:trunk" = "0.21"
 "python" = "3.15"
 "uv" = "latest"
+dotnet = "8"
+"dotnet:vpk" = "latest"
+
+[env]
+DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = "1"
+
+[bootstrap.packages]
+# squashfs-tools: vpk makes the AppImage with it. The ALSA headers and
+# pkg-config: the audio output (alsa-sys).
+"apt:squashfs-tools" = "latest"
+"apt:libasound2-dev" = "latest"
+"apt:pkg-config" = "latest"
+"dnf:squashfs-tools" = "latest"
+"dnf:alsa-lib-devel" = "latest"
+"dnf:pkgconf-pkg-config" = "latest"
+"pacman:squashfs-tools" = "latest"
+"pacman:alsa-lib" = "latest"
+"pacman:pkgconf" = "latest"
 
 [tasks.generate_notices]
 run = 'cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md'
+
+# The browser build, then the host (which embeds it).
+[tasks.build_web]
+dir = "sbsp_ui"
+# Size over speed for the wasm: cargo's own override of the release profile,
+# which affects only this build.
+env = { CARGO_PROFILE_RELEASE_OPT_LEVEL = "z" }
+run = 'trunk build --release'
+
+[tasks.build_host]
+depends = ["build_web"]
+run = 'uv run --script scripts/build.py host'
+
+[tasks.build_remote]
+run = 'uv run --script scripts/build.py remote'
+
+# Packages: `vpk` (Velopack's CLI) makes the installers and the update feed;
+# see scripts/pack.py. On Linux, `mise bootstrap packages apply` installs
+# what the build needs first.
+[tasks.pack_host]
+depends = ["build_host"]
+run = 'uv run --script scripts/pack.py host'
+
+[tasks.pack_remote]
+depends = ["build_remote"]
+run = 'uv run --script scripts/pack.py remote'
 
 [settings]
 cargo.binstall_quickinstall = true
