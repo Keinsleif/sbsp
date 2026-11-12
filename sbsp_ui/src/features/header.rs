@@ -341,7 +341,7 @@ mod tests {
     }
 
     #[test]
-    fn play_executes_unless_the_cue_is_paused() {
+    fn play_command_respects_state() {
         let id = Uuid::new_v4();
         use PlaybackStatus as S;
 
