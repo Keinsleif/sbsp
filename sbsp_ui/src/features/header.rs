@@ -96,7 +96,7 @@ pub fn lit_for(message: Message, status: Option<PlaybackStatus>) -> Lit {
         (Message::Stop, Some(S::Stopping)) => Lit::Flashing,
         (Message::Play, Some(S::Playing)) => Lit::On,
         (Message::Play, Some(S::PreWaiting)) => Lit::Flashing,
-        (Message::ReadyPause, Some(S::Paused)) => Lit::On,
+        (Message::ReadyPause, Some(S::Paused | S::PreWaitPaused)) => Lit::On,
         (Message::ReadyPause, Some(S::Loaded)) => Lit::Flashing,
         _ => Lit::Off,
     }
