@@ -251,14 +251,15 @@ pub fn controls<'a>(c: Controls) -> Element<'a, Message> {
     });
     let shown = c.dragging.unwrap_or(position).clamp(0.0, duration);
 
-    let bar = if running {
+    let bar: Element<'a, Message> = if running {
         slider(0.0..=duration as f32, shown as f32, |value| {
             Message::Seek(f64::from(value))
         })
         .step(0.01_f32)
         .on_release(Message::SeekReleased)
+        .into()
     } else {
-        slider(0.0..=1.0_f32, 0.0, |_| Message::Seek(0.0))
+        Space::new().height(16.0).into()
     };
     let readout =
         |seconds: Option<f64>| text(format_seconds(seconds)).font(crate::theme::fonts::MONO);
