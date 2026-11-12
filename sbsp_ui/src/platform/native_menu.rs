@@ -158,7 +158,7 @@ fn sync_nodes(nodes: &[MenuNode], entries: &HashMap<&'static str, Entry>) {
                         item.set_enabled(*enabled);
                     }
                     if item.text() != *label {
-                        item.set_text(label);
+                        item.set_text(label.replace('&', "&&"));
                     }
                     let checked = checked.unwrap_or(false);
                     if item.is_checked() != checked {
