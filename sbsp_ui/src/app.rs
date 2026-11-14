@@ -1843,6 +1843,13 @@ impl State {
         self.store_clipboard();
         self.cue_drag = None;
         self.pending_remove = None;
+        self.settings_dialog = None;
+        self.template_editor = editor::Editor::default();
+        self.hardware = None;
+        self.audio_warning = false;
+        self.renumber_open = false;
+        self.fields = field::Drafts::default();
+        self.mobile_seek = None;
         if !std::mem::take(&mut self.disconnecting) {
             self.toasts
                 .push(toast::Kind::Warning, fl!("notification-connection-lost"));

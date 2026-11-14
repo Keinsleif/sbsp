@@ -1520,6 +1520,28 @@ mod remote {
 
     #[test]
     #[serial]
+    fn a_closed_connection_takes_the_hosts_dialogs_and_drafts_with_it() {
+        let mut state = new_state();
+        let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
+        state.renumber_open = true;
+        state.audio_warning = true;
+        state.mobile_seek = Some((sbsp_backend::model::cue::Uuid::nil(), 1.0));
+        let _ = state.update(Message::Field(field::Message::Input(
+            field::FieldId("renumber.start"),
+            "7".to_owned(),
+        )));
+        assert!(state.settings_dialog.is_some());
+
+        let _ = state.update(Message::RemoteClosed);
+        assert!(state.settings_dialog.is_none());
+        assert!(!state.renumber_open);
+        assert!(!state.audio_warning);
+        assert!(state.mobile_seek.is_none());
+        assert!(!state.fields.is_editing(field::FieldId("renumber.start")));
+    }
+
+    #[test]
+    #[serial]
     fn without_a_connection_the_connect_screen_is_all_there_is() {
         let state = State::new("remote", crate::persist::Saved::default()).0;
         assert!(state.backend.is_none());
