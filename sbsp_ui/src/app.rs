@@ -254,7 +254,8 @@ pub struct State {
     connect: connect::Screen,
     /// The phone layout: the screen shown, and the seek bar while dragged.
     mobile_tab: mobile::Tab,
-    mobile_seek: Option<f64>,
+    /// The cue the drag started on and the position dragged to.
+    mobile_seek: Option<(Uuid, f64)>,
     /// The connection is being closed by the user, so its end is not news.
     #[cfg(client)]
     disconnecting: bool,
@@ -3730,7 +3731,10 @@ impl State {
                 duration: active.duration,
                 repeating: matches!(active.params, StateParam::Audio(audio) if audio.repeating),
             }),
-            dragging: self.mobile_seek,
+            dragging: self
+                .mobile_seek
+                .filter(|(id, _)| self.ui.playback_cursor == Some(*id))
+                .map(|(_, position)| position),
             blink: self.blink,
         }
     }
@@ -3777,11 +3781,14 @@ impl State {
                 _ => Task::none(),
             },
             mobile::Message::Seek(position) => {
-                self.mobile_seek = Some(position);
-                Task::none()
+                // The drag belongs to the cue it started on, even if the
+                // cursor moves on meanwhile.
+                let started_on = self.mobile_seek.map(|(id, _)| id).or(cursor);
+                self.mobile_seek = started_on.map(|id| (id, position));
+                 Task::none()
             }
-            mobile::Message::SeekReleased => match (self.mobile_seek.take(), cursor) {
-                (Some(position), Some(id)) if running => {
+            mobile::Message::SeekReleased => match self.mobile_seek.take() {
+                Some((id, position)) if self.playback.active_cues.contains_key(&id) => {
                     self.send(vec![Control::SeekTo(id, position)])
                 }
                 _ => Task::none(),

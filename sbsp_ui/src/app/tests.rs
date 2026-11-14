@@ -428,6 +428,31 @@ fn a_seek_from_the_viewer_is_ignored_in_view_mode() {
 
 #[test]
 #[serial]
+fn a_seek_drag_stays_with_the_cue_it_started_on() {
+    let mut state = new_state();
+    let (a, b) = (
+        sbsp_backend::model::cue::Uuid::from_u128(1),
+        sbsp_backend::model::cue::Uuid::from_u128(2),
+    );
+    state.ui.playback_cursor = Some(a);
+
+    let _ = state.update(Message::Mobile(mobile::Message::Seek(3.0)));
+    // The cursor moves on to another cue while the thumb is held.
+    state.ui.playback_cursor = Some(b);
+    let _ = state.update(Message::Mobile(mobile::Message::Seek(4.0)));
+    assert_eq!(state.mobile_seek, Some((a, 4.0)));
+    assert_eq!(
+        state.mobile_controls().dragging,
+        None,
+        "the bar of the new cue does not show the old drag"
+    );
+
+    let _ = state.update(Message::Mobile(mobile::Message::SeekReleased));
+    assert_eq!(state.mobile_seek, None);
+}
+
+#[test]
+#[serial]
 fn a_field_edit_is_applied_when_submitted() {
     let mut state = new_state();
     let id = field::FieldId("renumber.start");
