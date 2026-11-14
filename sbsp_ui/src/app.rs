@@ -3795,12 +3795,12 @@ impl State {
                 self.mobile_seek = started_on.map(|id| (id, position));
                  Task::none()
             }
-            mobile::Message::SeekReleased => match self.mobile_seek.take() {
-                Some((id, position)) if self.playback.active_cues.contains_key(&id) => {
-                    self.send(vec![Control::SeekTo(id, position)])
+            mobile::Message::SeekReleased => {
+                match released_seek(self.mobile_seek.take(), cursor, &self.playback.active_cues) {
+                    Some(control) => self.send(vec![control]),
+                    None => Task::none(),
                 }
-                _ => Task::none(),
-            },
+            }
         }
     }
 
@@ -4019,4 +4019,16 @@ fn remove_dialog<'a>(count: usize) -> Element<'a, Message> {
     ]
     .spacing(12)
     .into()
+}
+
+/// What letting go of the seek bar sends: the seek, if the cue it was
+/// dragged on is still the one under the cursor and still active.
+/// Otherwise the seek is dropped rather than landing on another cue.
+fn released_seek(
+    seek: Option<(Uuid, f64)>,
+    cursor: Option<Uuid>,
+    active: &std::collections::HashMap<Uuid, sbsp_backend::controller::state::ActiveCue>,
+) -> Option<Control> {
+    let (id, position) = seek?;
+    (cursor == Some(id) && active.contains_key(&id)).then_some(Control::SeekTo(id, position))
 }

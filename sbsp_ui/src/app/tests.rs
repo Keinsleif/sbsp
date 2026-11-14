@@ -453,6 +453,42 @@ fn a_seek_drag_stays_with_the_cue_it_started_on() {
 }
 
 #[test]
+fn a_seek_is_released_only_on_the_cue_it_started_on() {
+    use sbsp_backend::controller::state::{ActiveCue, PlaybackStatus, StateParam};
+    use sbsp_backend::model::cue::Uuid;
+    use std::collections::HashMap;
+
+    let (a, b) = (Uuid::from_u128(1), Uuid::from_u128(2));
+    let playing = |id| {
+        (
+            id,
+            ActiveCue {
+                cue_id: id,
+                position: 0.0,
+                duration: 10.0,
+                status: PlaybackStatus::Playing,
+                params: StateParam::None,
+            },
+        )
+    };
+    let both: HashMap<_, _> = [playing(a), playing(b)].into();
+    let only_b: HashMap<_, _> = [playing(b)].into();
+
+    // The cursor is still on the cue the drag began on.
+    assert!(matches!(
+        released_seek(Some((a, 3.0)), Some(a), &both),
+        Some(Control::SeekTo(id, position)) if id == a && position == 3.0
+    ));
+    // The cursor moved to B, which is active too: nothing is sent.
+    assert!(released_seek(Some((a, 3.0)), Some(b), &both).is_none());
+    // The cue stopped meanwhile.
+    assert!(released_seek(Some((a, 3.0)), Some(a), &only_b).is_none());
+    // No drag, no cursor.
+    assert!(released_seek(None, Some(a), &both).is_none());
+    assert!(released_seek(Some((a, 3.0)), None, &both).is_none());
+}
+
+#[test]
 #[serial]
 fn a_field_edit_is_applied_when_submitted() {
     let mut state = new_state();
