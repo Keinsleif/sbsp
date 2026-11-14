@@ -6,6 +6,5 @@ pub mod paths;
 pub mod web_assets;
 
 pub fn run() -> iced::Result {
-    // crate::app::run("host")
-    Ok(())
+    crate::app::run("host")
 }
