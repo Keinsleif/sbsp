@@ -2204,6 +2204,7 @@ impl State {
         match message {
             settings_dialog::Message::Field(message) => self.handle_field(message),
             settings_dialog::Message::Cancel => {
+                let _ = self.fields.update(field::Message::Escape);
                 self.settings_dialog = None;
                 Task::none()
             }
@@ -3838,13 +3839,6 @@ impl State {
             None => content,
         };
 
-        let content = match self.confirm {
-            Some(confirm) => {
-                modal::over_blocking(content, file_ops::view(confirm).map(Message::Confirm))
-            }
-            None => content,
-        };
-
         let content = if self.renumber_open {
             modal::over_blocking(
                 content,
@@ -3909,6 +3903,14 @@ impl State {
         } else {
             content
         };
+
+        let content = match self.confirm {
+            Some(confirm) => {
+                modal::over_blocking(content, file_ops::view(confirm).map(Message::Confirm))
+            }
+            None => content,
+        };
+
 
         self.toasts.overlay(content, Message::Toast)
     }
