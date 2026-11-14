@@ -180,7 +180,21 @@ impl Panel {
 /// The address a browser opens to control this server with a password.
 pub fn connect_url(hostname: &str, port: u16, password: &str) -> String {
     let address = format!("{hostname}:{port}");
-    format!("http://{address}/?address={address}#{password}")
+    format!("http://{address}/?address={address}#{}", fragment_encoded(password))
+}
+
+/// Percent-encodes every byte except unreserved characters, so that
+/// `parse_startup` in `sbsp_ui/src/web.rs` decodes the original password.
+fn fragment_encoded(password: &str) -> String {
+    password
+        .bytes()
+        .map(|byte| match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                char::from(byte).to_string()
+            }
+            _ => format!("%{byte:02X}"),
+        })
+        .collect()
 }
 
 /// A password made from the random bytes given (bytes that would favour
