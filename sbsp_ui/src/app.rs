@@ -3335,7 +3335,7 @@ impl State {
             iced::window::open_events().map(Message::WindowOpened),
             crate::platform::native_menu::events().map(Message::NativeMenu),
         ]);
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(all(target_os = "macos", backend)))]
         let native_menu = Subscription::none();
 
         let resizing = if self.resized_at.is_some() {
@@ -3550,7 +3550,7 @@ impl State {
         // The native menu bar replaces it.
         #[cfg(all(target_os = "macos", backend))]
         { iced::widget::Space::new().into() }
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(all(target_os = "macos", backend)))]
         {
             use crate::widgets::menu_bar;
             container(menu_bar::menu_bar(&self.menu_spec(), Message::Menu))
