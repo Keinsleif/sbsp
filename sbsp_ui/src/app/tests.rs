@@ -203,6 +203,7 @@ fn window_focus_events_are_tracked() {
 }
 
 #[test]
+#[serial]
 fn the_keep_awake_mode_defaults_to_the_focus_and_can_be_chosen() {
     let mut state = new_state();
     assert_eq!(state.ui.keep_awake, KeepAwakeMode::WhileFocused);
@@ -1426,6 +1427,7 @@ fn the_credits_open_from_the_help_menu_and_close_on_escape() {
 }
 
 #[test]
+#[serial]
 fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
     use crate::persist::{Saved, WindowRect};
 
