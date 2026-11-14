@@ -20,6 +20,8 @@ const INCREMENT: FieldId = FieldId("renumber.increment");
 const PREFIX: FieldId = FieldId("renumber.prefix");
 const SUFFIX: FieldId = FieldId("renumber.suffix");
 
+const MAX_NUMBER: f64 = 10_000.0;
+
 pub fn owns(id: FieldId) -> bool {
     [START, INCREMENT, PREFIX, SUFFIX].contains(&id)
 }
@@ -27,6 +29,7 @@ pub fn owns(id: FieldId) -> bool {
 fn start_spec() -> NumberSpec {
     NumberSpec {
         min: Some(0.0),
+        max: Some(MAX_NUMBER),
         ..NumberSpec::default()
     }
 }
@@ -34,6 +37,7 @@ fn start_spec() -> NumberSpec {
 fn increment_spec() -> NumberSpec {
     NumberSpec {
         min: Some(1.0),
+        max: Some(MAX_NUMBER),
         ..NumberSpec::default()
     }
 }
@@ -107,11 +111,14 @@ impl Dialog {
         }
     }
 
-    /// `None` while the values cannot be used (finite numbers and an
-    /// increment of at least 1). Prefix and suffix are trimmed, and
-    /// empty ones are left out.
+    /// `None` while the values cannot be used: the start within
+    /// `0..=MAX_NUMBER` and the increment within `1..=MAX_NUMBER` (which
+    /// also rules out NaN and infinities). Prefix and suffix are trimmed,
+    /// and empty ones are left out.
     pub fn request(&self) -> Option<Request> {
-        if !self.start.is_finite() || !self.increment.is_finite() || self.increment < 1.0 {
+        if !(0.0..=MAX_NUMBER).contains(&self.start)
+            || !(1.0..=MAX_NUMBER).contains(&self.increment)
+        {
             return None;
         }
         let trimmed = |text: &str| {
@@ -120,7 +127,7 @@ impl Dialog {
                 .map(str::to_owned)
         };
         Some(Request {
-            start: self.start.max(0.0) as usize,
+            start: self.start as usize,
             increment: self.increment as usize,
             prefix: trimmed(&self.prefix),
             suffix: trimmed(&self.suffix),
@@ -244,6 +251,29 @@ mod tests {
         dialog.apply(&commit(INCREMENT, "5"));
         assert_eq!(dialog.increment, 5.0);
     }
+
+    #[test]
+    fn numbers_beyond_the_upper_bound_are_not_accepted() {
+        let mut dialog = Dialog::default();
+        dialog.apply(&commit(START, "100000000000000000000"));
+        assert_eq!(dialog.start, MAX_NUMBER);
+        dialog.apply(&commit(INCREMENT, "100000000000000000000"));
+        assert_eq!(dialog.increment, MAX_NUMBER);
+        let request = dialog.request().unwrap();
+        assert_eq!((request.start, request.increment), (10000, 10000));
+
+        // Values that did not come through the fields are rejected, not
+        // saturated to `usize::MAX`.
+        for (start, increment) in [(1e20, 1.0), (1.0, 1e20), (-1.0, 1.0), (f64::NAN, 1.0)] {
+            let dialog = Dialog {
+                start,
+                increment,
+                ..Dialog::default()
+            };
+            assert_eq!(dialog.request(), None);
+        }
+    }
+
 
     #[test]
     fn unusable_text_leaves_the_value_alone() {
