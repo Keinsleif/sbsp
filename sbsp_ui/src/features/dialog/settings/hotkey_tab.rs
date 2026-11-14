@@ -12,7 +12,7 @@ use iced::widget::{Space, button, column, container, row, text, tooltip};
 use iced::{Alignment, Element, Length};
 
 use super::Message;
-use crate::domain::hotkey::{Hotkey, normalize_hotkey};
+use crate::domain::hotkey::Hotkey;
 use crate::platform::is_mac;
 use crate::fl;
 use crate::widgets::icon::{self, Icon, Tone};
@@ -178,26 +178,31 @@ impl Slot {
     }
 }
 
-/// Every binding there is, in the canonical form that makes equal
-/// shortcuts compare equal.
-fn all_normalized(settings: &HotkeySettings) -> Vec<String> {
+/// Every binding that parses, as the key combination it stands for, so
+/// that equal shortcuts compare equal however they are spelled (`$mod+K`
+/// and `Control+K` on a PC, `ctrl+k` and `Control+K`). Unparsable
+/// bindings never trigger anything and are left out.
+fn all_parsed(settings: &HotkeySettings, is_mac: bool) -> Vec<Hotkey> {
     [FILE.as_slice(), &EDIT, &PLAYBACK, &AUDIO]
         .into_iter()
         .flatten()
         .filter_map(|slot| slot.get(settings).as_deref())
-        .map(normalize_hotkey)
+        .filter_map(|binding| Hotkey::parse(binding, is_mac))
         .collect()
 }
 
 /// Whether another binding has the same keys.
-pub fn is_duplicate(settings: &HotkeySettings, slot: Slot) -> bool {
-    let Some(binding) = slot.get(settings) else {
+fn is_duplicate(settings: &HotkeySettings, slot: Slot, is_mac: bool) -> bool {
+    let Some(wanted) = slot
+        .get(settings)
+        .as_deref()
+        .and_then(|binding| Hotkey::parse(binding, is_mac))
+    else {
         return false;
     };
-    let wanted = normalize_hotkey(binding);
-    all_normalized(settings)
+    all_parsed(settings, is_mac)
         .iter()
-        .filter(|b| **b == wanted)
+        .filter(|hotkey| **hotkey == wanted)
         .count()
         > 1
 }
@@ -237,7 +242,7 @@ fn input<'a>(
         })
         .on_press(Message::Capture(slot));
 
-    let warning: Element<'a, Message> = if is_duplicate(settings, slot) {
+    let warning: Element<'a, Message> = if is_duplicate(settings, slot, is_mac()) {
         tooltip(
             icon::toned(Icon::Alert, 18.0, Tone::Warning),
             container(text(fl!("dialog-settings-global-hotkey-duplicate-warning")).size(12))
@@ -325,23 +330,53 @@ mod tests {
             );
         }
         // Every slot got a different value, so none shares a field.
-        assert!(!is_duplicate(&settings, Slot::Load));
+        assert!(!is_duplicate(&settings, Slot::Load, is_mac()));
     }
 
     #[test]
     fn equal_shortcuts_are_flagged_however_they_are_written() {
         let mut settings = HotkeySettings::default();
-        assert!(!is_duplicate(&settings, Slot::Execute));
+        assert!(!is_duplicate(&settings, Slot::Execute, is_mac()));
 
         Slot::Load.set(&mut settings, Some("Shift+Control+K".to_owned()));
         Slot::Stop.set(&mut settings, Some("Control+Shift+K".to_owned()));
-        assert!(is_duplicate(&settings, Slot::Load));
-        assert!(is_duplicate(&settings, Slot::Stop));
+        assert!(is_duplicate(&settings, Slot::Load, is_mac()));
+        assert!(is_duplicate(&settings, Slot::Stop, is_mac()));
 
         Slot::Stop.set(&mut settings, None);
         assert!(
-            !is_duplicate(&settings, Slot::Load),
+            !is_duplicate(&settings, Slot::Load, is_mac()),
             "an unbound slot counts for nothing"
         );
+    }
+
+    #[test]
+    fn mod_and_control_are_the_same_key_on_a_pc_only() {
+        let mut settings = HotkeySettings::default();
+        Slot::Load.set(&mut settings, Some("$mod+K".to_owned()));
+        Slot::Stop.set(&mut settings, Some("Control+K".to_owned()));
+        assert!(is_duplicate(&settings, Slot::Load, false));
+        assert!(is_duplicate(&settings, Slot::Stop, false));
+        // On a Mac `$mod` is Cmd, a different key from Control.
+        assert!(!is_duplicate(&settings, Slot::Load, true));
+        assert!(!is_duplicate(&settings, Slot::Stop, true));
+    }
+
+    #[test]
+    fn the_case_of_the_key_does_not_make_bindings_differ() {
+        let mut settings = HotkeySettings::default();
+        Slot::Load.set(&mut settings, Some("Control+k".to_owned()));
+        Slot::Stop.set(&mut settings, Some("Control+K".to_owned()));
+        assert!(is_duplicate(&settings, Slot::Load, false));
+        assert!(is_duplicate(&settings, Slot::Stop, false));
+    }
+
+    #[test]
+    fn unparsable_bindings_are_not_duplicates() {
+        let mut settings = HotkeySettings::default();
+        Slot::Load.set(&mut settings, Some("Control+".to_owned()));
+        Slot::Stop.set(&mut settings, Some("Control+".to_owned()));
+        assert!(!is_duplicate(&settings, Slot::Load, false));
+        assert!(!is_duplicate(&settings, Slot::Stop, false));
     }
 }
