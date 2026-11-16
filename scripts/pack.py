@@ -27,6 +27,8 @@ Signing (nothing is signed unless these are set):
   SBSP_MAC_SIGN_APP_IDENTITY      "Developer ID Application: ..."
   SBSP_MAC_SIGN_INSTALL_IDENTITY  "Developer ID Installer: ..."
   SBSP_MAC_NOTARY_PROFILE         a notarytool keychain profile
+  SBSP_MAC_KEYCHAIN               the keychain holding the identities and the
+                                  profile, when it is not the default one
 """
 
 import os
@@ -62,6 +64,7 @@ SIGNING = {
         "SBSP_MAC_SIGN_APP_IDENTITY": "--signAppIdentity",
         "SBSP_MAC_SIGN_INSTALL_IDENTITY": "--signInstallIdentity",
         "SBSP_MAC_NOTARY_PROFILE": "--notaryProfile",
+        "SBSP_MAC_KEYCHAIN": "--keychain",
     },
 }
 

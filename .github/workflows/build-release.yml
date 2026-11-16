@@ -94,6 +94,14 @@ jobs:
       SBSP_MAC_SIGN_APP_IDENTITY: ${{ secrets.SBSP_MAC_SIGN_APP_IDENTITY }}
       SBSP_MAC_SIGN_INSTALL_IDENTITY: ${{ secrets.SBSP_MAC_SIGN_INSTALL_IDENTITY }}
       SBSP_MAC_NOTARY_PROFILE: ${{ secrets.SBSP_MAC_NOTARY_PROFILE }}
+      # What `sign macOS` needs to make the keychain; without the
+      # certificates that step is skipped.
+      SBSP_MAC_CERT_APP_BASE64: ${{ secrets.SBSP_MAC_CERT_APP_BASE64 }}
+      SBSP_MAC_CERT_INSTALL_BASE64: ${{ secrets.SBSP_MAC_CERT_INSTALL_BASE64 }}
+      SBSP_MAC_CERT_PASSWORD: ${{ secrets.SBSP_MAC_CERT_PASSWORD }}
+      SBSP_MAC_NOTARY_APPLE_ID: ${{ secrets.SBSP_MAC_NOTARY_APPLE_ID }}
+      SBSP_MAC_NOTARY_TEAM_ID: ${{ secrets.SBSP_MAC_NOTARY_TEAM_ID }}
+      SBSP_MAC_NOTARY_PASSWORD: ${{ secrets.SBSP_MAC_NOTARY_PASSWORD }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -115,6 +123,33 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # A temporary keychain with the two Developer ID certificates and the
+      # notarytool profile; `pack.py` points vpk at it (SBSP_MAC_KEYCHAIN).
+      - name: sign macOS
+        if: runner.os == 'macOS' && env.SBSP_MAC_CERT_APP_BASE64 != ''
+        run: |
+          keychain="$RUNNER_TEMP/sbsp-signing.keychain-db"
+          password=$(openssl rand -base64 24)
+          echo "::add-mask::$password"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$SBSP_MAC_CERT_APP_BASE64" | base64 --decode > "$RUNNER_TEMP/app.p12"
+          echo "$SBSP_MAC_CERT_INSTALL_BASE64" | base64 --decode > "$RUNNER_TEMP/installer.p12"
+          for p12 in app installer; do
+            security import "$RUNNER_TEMP/$p12.p12" -P "$SBSP_MAC_CERT_PASSWORD" \
+              -A -t cert -f pkcs12 -k "$keychain"
+          done
+          rm -f "$RUNNER_TEMP/app.p12" "$RUNNER_TEMP/installer.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain
+          xcrun notarytool store-credentials "$SBSP_MAC_NOTARY_PROFILE" \
+            --apple-id "$SBSP_MAC_NOTARY_APPLE_ID" \
+            --team-id "$SBSP_MAC_NOTARY_TEAM_ID" \
+            --password "$SBSP_MAC_NOTARY_PASSWORD" \
+            --keychain "$keychain"
+          echo "SBSP_MAC_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
       # `pack_*` builds the binary first (macOS: universal), with the web app
       # from above (mise.ci.toml: the host does not build it).
       - name: pack
@@ -132,3 +167,7 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: remove the signing keychain
+        if: always() && env.SBSP_MAC_KEYCHAIN != ''
+        run: security delete-keychain "$SBSP_MAC_KEYCHAIN" || true
