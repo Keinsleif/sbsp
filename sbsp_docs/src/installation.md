@@ -22,7 +22,7 @@ macOS向けには for macOS
 
 ## GitHub Releases
 
-[GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest)
+[GitHub Releases](https://github.com/Keinsleif/sbsp/releases)
 
 上記のページの`Assets`より、OSに応じたファイルをダウンロードします。
 

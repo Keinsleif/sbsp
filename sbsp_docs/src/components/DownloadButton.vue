@@ -18,33 +18,47 @@ const detectOS = () => {
   return ''
 }
 
-// The assets of the latest release of the host app. The remote app's packages
-// are named `com.keinsleif.sbsp.remote-...` and are left out.
-const findAsset = (assets, pattern) =>
-  assets.find((asset) => asset.name.startsWith('com.keinsleif.sbsp-') && pattern.test(asset.name))?.browser_download_url ?? null;
+// The host app's packages are named after its id and its channel
+// (`com.keinsleif.sbsp-host-win-Setup.exe`, `...-host-osx-Setup.pkg`,
+// `...-host-linux.AppImage`, see scripts/pack.py). The remote app's are
+// `com.keinsleif.sbsp.remote-remote-...` and are left out.
+const HOST_PREFIX = 'com.keinsleif.sbsp-host-'
 
-const linkData = computed(() => {
-  const assets = latestData.value?.assets ?? [];
-  return {
-    win: findAsset(assets, /Setup\.exe$/i),
-    mac: findAsset(assets, /\.pkg$/i),
-    linux_appimage: findAsset(assets, /\.AppImage$/i),
-  };
-})
+const findAsset = (assets, pattern) =>
+  assets.find((asset) => asset.name.startsWith(HOST_PREFIX) && pattern.test(asset.name))?.browser_download_url ?? null;
+
+const installers = (assets) => ({
+  win: findAsset(assets, /Setup\.exe$/i),
+  mac: findAsset(assets, /\.pkg$/i),
+  linux_appimage: findAsset(assets, /\.AppImage$/i),
+});
+
+const linkData = computed(() => installers(latestData.value?.assets ?? []))
 
 onMounted(async () => {
   userOS.value = detectOS();
   try {
-    const response = await fetch('https://api.github.com/repos/Keinsleif/sbsp/releases/latest')
+    // The newest published `ui-` release that has the host installers.
+    // `/releases/latest` is the newest of any tag, which may belong to
+    // another line of versions.
+    const response = await fetch('https://api.github.com/repos/Keinsleif/sbsp/releases?per_page=100')
     if (!response.ok) throw new Error('Network response was not ok')
 
-    const data = await response.json()
+    const releases = await response.json()
+    const release = (Array.isArray(releases) ? releases : []).find(
+      (candidate) =>
+        !candidate.draft &&
+        !candidate.prerelease &&
+        String(candidate.tag_name ?? '').startsWith('ui-') &&
+        Array.isArray(candidate.assets) &&
+        Object.values(installers(candidate.assets)).some(Boolean),
+    )
 
-    if (data != null && Array.isArray(data.assets)) {
-      latestData.value = data;
-      version.value = String(data.tag_name ?? '').replace(/^ui-/, '')
+    if (release) {
+      latestData.value = release;
+      version.value = String(release.tag_name).replace(/^ui-/, '')
     } else {
-      throw new Error('Asset not found')
+      throw new Error('No release with the installers')
     }
   } catch (err) {
     console.error('Failed to fetch latest release:', err)
@@ -61,7 +75,7 @@ onMounted(async () => {
     
     <div v-else-if="isError" :class="$style['error']">
       情報を取得できませんでした。<br>
-      <a :href="`https://github.com/Keinsleif/sbsp/releases/latest`" target="_blank" rel="noopener">
+      <a :href="`https://github.com/Keinsleif/sbsp/releases`" target="_blank" rel="noopener">
         GitHubのリリース一覧ページ
       </a> から直接ダウンロードしてください。
     </div>
