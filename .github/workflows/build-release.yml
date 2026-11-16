@@ -157,13 +157,34 @@ jobs:
           SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_host
           SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_remote
 
-      # Every file is named after its app and OS (the channel), so they go up
-      # as they are.
+      # The installers get names a person can read (`SBSP-Host-Windows-Setup.exe`).
+      # Only they are renamed: the packages and index files of the feed
+      # (`*.nupkg`, `releases.*`, `assets.*`, `RELEASES*`) are looked up by
+      # their names and go up as they are.
       - name: attach to the release
         run: |
-          for file in target/dist/host/* target/dist/remote/*; do
-            [ -f "$file" ] || continue
-            gh release upload "ui-${{ needs.prepare.outputs.version }}" "$file" --clobber
+          mkdir -p target/upload
+          case "$RUNNER_OS" in
+            Windows) os=Windows ;;
+            macOS) os=macOS ;;
+            *) os=Linux ;;
+          esac
+          for app in host remote; do
+            case "$app" in
+              host) title=SBSP-Host ;;
+              *) title=SBSP-Remote ;;
+            esac
+            for file in target/dist/$app/*; do
+              [ -f "$file" ] || continue
+              case "$file" in
+                *-Setup.exe | *-Setup.pkg) name="$title-$os-Setup.${file##*.}" ;;
+                *-Portable.zip) name="$title-$os-Portable.zip" ;;
+                *.AppImage) name="$title-$os.AppImage" ;;
+                *) name="$(basename "$file")" ;;
+              esac
+              cp "$file" "target/upload/$name"
+              gh release upload "ui-${{ needs.prepare.outputs.version }}" "target/upload/$name" --clobber
+            done
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

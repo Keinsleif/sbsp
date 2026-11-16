@@ -18,11 +18,11 @@ const detectOS = () => {
   return ''
 }
 
-// The host app's packages are named after its id and its channel
-// (`com.keinsleif.sbsp-host-win-Setup.exe`, `...-host-osx-Setup.pkg`,
-// `...-host-linux.AppImage`, see scripts/pack.py). The remote app's are
-// `com.keinsleif.sbsp.remote-remote-...` and are left out.
-const HOST_PREFIX = 'com.keinsleif.sbsp-host-'
+// The host app's installers are named `SBSP-Host-Windows-Setup.exe`,
+// `SBSP-Host-macOS-Setup.pkg` and `SBSP-Host-Linux.AppImage` when they are
+// attached to the release (see the build-release workflow). The remote
+// app's start with `SBSP-Remote-` and are left out.
+const HOST_PREFIX = 'SBSP-Host-'
 
 const findAsset = (assets, pattern) =>
   assets.find((asset) => asset.name.startsWith(HOST_PREFIX) && pattern.test(asset.name))?.browser_download_url ?? null;

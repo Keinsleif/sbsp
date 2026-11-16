@@ -26,11 +26,11 @@ macOS向けには for macOS
 
 上記のページの`Assets`より、OSに応じたファイルをダウンロードします。
 
-Windows向けには `com.keinsleif.sbsp-win-Setup.exe`
+Windows向けには `SBSP-Host-Windows-Setup.exe`
 
-macOS向けには `com.keinsleif.sbsp-osx-Setup.pkg`
+macOS向けには `SBSP-Host-macOS-Setup.pkg`
 
-Linux向けには `com.keinsleif.sbsp-linux.AppImage`
+Linux向けには `SBSP-Host-Linux.AppImage`
 
 をダウンロードします。
 
