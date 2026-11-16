@@ -27,6 +27,27 @@
 ## Unreleased ([{{ from_shorthand ~ ".." ~ to_shorthand }}]({{repository_url ~ "/compare/" ~ from_shorthand ~ ".." ~ to_shorthand}}))
 {% endif -%}
 
+{#- パッケージの更新 (monorepo のルートの changelog のみ。cocogitto が `packages` を渡す) -#}
+{% if packages %}
+{% if package_lock -%}
+### Packages
+{% for package in packages -%}
+{% if package.version.tag -%}
+- [{{ package.package_name }}]({{ package.package_path }}) locked to [{{ package.version.tag }}]({{ repository_url ~ "/tree/" ~ package.version.tag }})
+{% endif -%}
+{% endfor -%}
+{% else -%}
+### Package updates
+{% for package in packages -%}
+{% if package.version.tag and package.from.tag -%}
+- [{{ package.package_name }}]({{ package.package_path }}) bumped to [{{ package.version.tag }}]({{ repository_url ~ "/compare/" ~ package.from.tag ~ ".." ~ package.version.tag }})
+{% elif package.version.tag and package.from.id -%}
+- [{{ package.package_name }}]({{ package.package_path }}) bumped to [{{ package.version.tag }}]({{ repository_url ~ "/compare/" ~ package.from.id ~ ".." ~ package.version.tag }})
+{% endif -%}
+{% endfor -%}
+{% endif -%}
+{% endif -%}
+
 {#- 2nd pass: 通常の変更 (split のときは core_scopes を除く) -#}
 {% for value in commits | group_by_type -%}
 {% set_global shown = 0 -%}
