@@ -8,8 +8,10 @@
 //! update dialog says so. Velopack's calls block, so they run on tokio's
 //! blocking threads.
 //!
-//! The feed is `<base>/<target>` (`host` or `remote`), where `<base>` is
-//! `SBSP_UPDATE_BASE_URL` at build time.
+//! The feed is `SBSP_UPDATE_BASE_URL` at build time, shared by both apps:
+//! each package carries its own channel (`host-win`, `remote-osx`, ...,
+//! see scripts/pack.py), and the manager looks at the channel the installed
+//! package was built for.
 
 use std::sync::Arc;
 
@@ -18,14 +20,13 @@ use velopack::{UpdateCheck, UpdateInfo, UpdateManager, sources::HttpSource};
 
 const DEFAULT_BASE: &str = "https://keinsleif.github.io/sbsp/update";
 
-/// The feed of one of the two apps.
-fn feed(target: &str) -> String {
+fn feed() -> String {
     let base = option_env!("SBSP_UPDATE_BASE_URL").unwrap_or(DEFAULT_BASE);
-    format!("{}/{target}", base.trim_end_matches('/'))
+    base.trim_end_matches('/').to_owned()
 }
 
-fn manager(target: &str) -> Result<UpdateManager, String> {
-    UpdateManager::new(HttpSource::new(feed(target)), None, None).map_err(|e| e.to_string())
+fn manager() -> Result<UpdateManager, String> {
+    UpdateManager::new(HttpSource::new(feed()), None, None).map_err(|e| e.to_string())
 }
 
 /// How long after a check the next startup check waits.
@@ -57,14 +58,14 @@ impl Found {
 }
 
 /// Whether this copy was installed by Velopack, so that it can update.
-pub fn installed(target: &str) -> bool {
-    manager(target).is_ok()
+pub fn installed() -> bool {
+    manager().is_ok()
 }
 
 /// Asks the feed whether there is a newer version.
-pub async fn check(target: &'static str) -> Result<Option<Found>, String> {
+pub async fn check() -> Result<Option<Found>, String> {
     tokio::task::spawn_blocking(move || {
-        let manager = manager(target)?;
+        let manager = manager()?;
         match manager.check_for_updates().map_err(|e| e.to_string())? {
             UpdateCheck::UpdateAvailable(info) => Ok(Some(Found(Arc::from(info)))),
             _ => Ok(None),
@@ -83,7 +84,7 @@ pub enum Progress {
 }
 
 /// Downloads the update, reporting how far it got.
-pub fn download(target: &'static str, found: Found) -> impl Stream<Item = Progress> {
+pub fn download(found: Found) -> impl Stream<Item = Progress> {
     iced::stream::channel(16, async move |mut output| {
         let (sender, receiver) = std::sync::mpsc::channel::<i16>();
         let (forward, mut percents) = tokio::sync::mpsc::unbounded_channel::<i16>();
@@ -97,7 +98,7 @@ pub fn download(target: &'static str, found: Found) -> impl Stream<Item = Progre
             }
         });
         let job = tokio::task::spawn_blocking(move || {
-            let manager = manager(target)?;
+            let manager = manager()?;
             manager
                 .download_updates(&found.0, Some(sender))
                 .map_err(|e| e.to_string())
@@ -117,9 +118,9 @@ pub fn download(target: &'static str, found: Found) -> impl Stream<Item = Progre
 
 /// Installs the downloaded update and restarts. On success the process
 /// ends, so this only returns with the reason it failed.
-pub async fn apply(target: &'static str, found: Found) -> String {
+pub async fn apply(found: Found) -> String {
     tokio::task::spawn_blocking(move || {
-        let manager = manager(target)?;
+        let manager = manager()?;
         manager
             .apply_updates_and_restart(&*found.0)
             .map_err(|e| e.to_string())
@@ -136,10 +137,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn each_app_has_its_own_feed() {
-        assert!(feed("host").ends_with("/host"));
-        assert!(feed("remote").ends_with("/remote"));
-        assert!(!feed("host").contains("//host"));
+    fn the_feed_has_no_trailing_slash() {
+        assert!(!feed().ends_with('/'));
     }
 
     #[test]

@@ -15,8 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Where the apps look for updates (`<base>/host`, `<base>/remote`).
-  # Changing the host of the feed means changing this and `deploy-update`.
+  # Where the apps look for updates; the two apps share it (their channels
+  # differ, see scripts/pack.py). Changing the host of the feed means
+  # changing this and `deploy-update`.
   SBSP_UPDATE_BASE_URL: https://keinsleif.github.io/sbsp/update
 
 jobs:
@@ -118,23 +119,16 @@ jobs:
       # from above (mise.ci.toml: the host does not build it).
       - name: pack
         run: |
-          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/host" mise run pack_host
-          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL/remote" mise run pack_remote
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_host
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_remote
 
-      # The feed's index files have the same names in the two apps, so they
-      # go up with the name of the app in front. The rest is named after the
-      # package already.
+      # Every file is named after its app and OS (the channel), so they go up
+      # as they are.
       - name: attach to the release
         run: |
-          for app in host remote; do
-            for file in target/dist/$app/*; do
-              [ -f "$file" ] || continue
-              name=$(basename "$file")
-              case "$name" in
-                releases.*|RELEASES*) cp "$file" "target/upload-$app.$name"; file="target/upload-$app.$name" ;;
-              esac
-              gh release upload "ui-${{ needs.prepare.outputs.version }}" "$file" --clobber
-            done
+          for file in target/dist/host/* target/dist/remote/*; do
+            [ -f "$file" ] || continue
+            gh release upload "ui-${{ needs.prepare.outputs.version }}" "$file" --clobber
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

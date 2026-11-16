@@ -498,11 +498,11 @@ impl State {
         let boot_task = if update::due(
             saved.last_update_check.unwrap_or(0),
             update::now_ms(),
-        ) && update::installed(target)
+        ) && update::installed()
         {
             Task::batch([
                 boot_task,
-                Task::perform(update::check(target), |result| {
+                Task::perform(update::check(), |result| {
                     Message::UpdateChecked(true, result)
                 }),
             ])
@@ -1886,7 +1886,7 @@ impl State {
                         dialog.stage = Stage::Downloading(0);
                     }
                     return Task::run(
-                        update::download(self.target, found),
+                        update::download(found),
                         Message::UpdateProgress,
                     );
                 }
@@ -1926,13 +1926,13 @@ impl State {
 
         #[cfg(installer)]
         {
-            if !update::installed(self.target) {
+            if !update::installed() {
                 self.update_dialog = Some(update_dialog::Dialog::new(Stage::Unavailable));
                 return Task::none();
             }
             self.update_found = None;
             self.update_dialog = Some(update_dialog::Dialog::new(Stage::Checking));
-            Task::perform(update::check(self.target), |result| {
+            Task::perform(update::check(), |result| {
                 Message::UpdateChecked(false, result)
             })
         }
@@ -2003,7 +2003,7 @@ impl State {
                 dialog.stage = Stage::Restarting;
                 if let Some(found) = self.update_found.clone() {
                     return Task::perform(
-                        update::apply(self.target, found),
+                        update::apply(found),
                         Message::UpdateApplied,
                     );
                 }

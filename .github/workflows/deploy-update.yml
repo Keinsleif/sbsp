@@ -1,9 +1,10 @@
 name: 'deploy-update'
 
 # Puts the update feed of a published release on GitHub Pages:
-# `update/host/` and `update/remote/` (what the apps look at), with the
-# packages and the index files of the release. The feed of the Tauri versions
-# (`update/latest-*.json`) stays where it is.
+# `update/` (what the apps look at): the packages and the index files of the
+# release. The files of both apps sit side by side, told apart by the channel
+# in their names (`releases.host-win.json`, `...-remote-osx-full.nupkg`). The
+# feed of the Tauri versions (`update/latest-*.json`) stays where it is.
 
 on:
   release:
@@ -26,18 +27,10 @@ jobs:
       - name: collect the feed
         run: |
           tag="${{ github.event.inputs.tag_name || github.event.release.tag_name }}"
-          mkdir -p assets upload/host upload/remote
-          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir assets \
-            --pattern '*.nupkg' --pattern 'host.*' --pattern 'remote.*'
-          for file in assets/*; do
-            name=$(basename "$file")
-            case "$name" in
-              host.*) mv "$file" "upload/host/${name#host.}" ;;
-              remote.*) mv "$file" "upload/remote/${name#remote.}" ;;
-              com.keinsleif.sbsp.remote-*) mv "$file" upload/remote/ ;;
-              com.keinsleif.sbsp-*) mv "$file" upload/host/ ;;
-            esac
-          done
+          mkdir -p upload
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir upload \
+            --pattern '*.nupkg' --pattern 'releases.*' --pattern 'assets.*' \
+            --pattern 'RELEASES*'
           ls -R upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

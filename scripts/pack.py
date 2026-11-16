@@ -8,11 +8,17 @@
 Build the binary first (`mise run build_host` / `build_remote`). The package
 lands in target/dist/<app>/.
 
+Both apps are published into one feed. Each package is made for the channel
+`<app>-<os>` (`host-win`, `remote-osx`, ...), so the index files
+(`releases.<channel>.json`) and the packages never share a name. The channel
+is stored in the package and is what the installed app looks for, so it must
+not be renamed once released.
+
 Environment:
   SBSP_BIN_DIR   where the release binary is (default target/release, and
                  target/universal on macOS: see scripts/build.py)
-  SBSP_FEED_URL  the published feed of this app: when set, the previous
-                 release is downloaded first so that delta packages are made
+  SBSP_FEED_URL  the published feed: when set, the previous release of this
+                 channel is downloaded first so that delta packages are made
 
 Signing (nothing is signed unless these are set):
   SBSP_WIN_SIGN_PARAMS    signtool parameters (vpk --signParams)
@@ -36,6 +42,15 @@ APPS = {
     "host": ("com.keinsleif.sbsp", "sbsp_host", "SBS Player"),
     "remote": ("com.keinsleif.sbsp.remote", "sbsp_remote", "SBS Player Remote"),
 }
+
+# sys.platform -> the OS part of the channel
+CHANNEL_OS = {"win32": "win", "darwin": "osx"}
+
+
+def channel(app: str) -> str:
+    """The Velopack channel of an app on this OS: `host-win`, `remote-linux`."""
+    return f"{app}-{CHANNEL_OS.get(sys.platform, 'linux')}"
+
 
 # environment variable -> vpk option
 SIGNING = {
@@ -99,7 +114,9 @@ def main() -> None:
 
     feed = os.environ.get("SBSP_FEED_URL")
     if feed:
-        previous = subprocess.run([vpk, "download", "http", "--url", feed, "--outputDir", str(out)])
+        previous = subprocess.run(
+            [vpk, "download", "http", "--url", feed, "--channel", channel(app), "--outputDir", str(out)]
+        )
         if previous.returncode != 0:
             print("no previous release; making a full package only")
 
@@ -107,6 +124,7 @@ def main() -> None:
         vpk, "pack",
         "--packId", pack_id,
         "--packVersion", version(),
+        "--channel", channel(app),
         "--packDir", str(stage),
         "--mainExe", exe,
         "--packTitle", title,
