@@ -15,28 +15,22 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 
 1. [mise](https://mise.jdx.dev/getting-started.html#installing-mise-cli) をインストール
 
-2. ツールをインストール（Rust、trunk、Python など）
-
-    ```bash
-    mise install
-    ```
-
-3. Linux のみ: 音声出力（ALSA）などのシステムパッケージをインストール
-
-    ```bash
-    mise bootstrap packages apply
-    ```
-
-### ビルド手順
-
-1. リポジトリをクローン
+2. リポジトリをクローン
 
     ```bash
     git clone https://github.com/Keinsleif/sbsp.git
     cd sbsp
     ```
 
-2. ビルドを実行
+3. 依存ツール，パッケージをインストール（Rust、trunk、Python など）
+
+    ```bash
+    mise bootstrap
+    ```
+
+### ビルド手順
+
+1. ビルドの実行
 
     ```bash
     # SBS Player をビルド（Web 版も含めてビルドされます）
@@ -48,7 +42,7 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 
     `target/release/` に `sbsp_host` と `sbsp_remote` が出力されます。
 
-3. インストーラーとアップデート用のパッケージを作成（任意）
+2. インストーラーとアップデート用のパッケージを作成（任意）
 
     [.NET 8 SDK](https://dotnet.microsoft.com/) が必要です（`mise install` で入ります）。
 
