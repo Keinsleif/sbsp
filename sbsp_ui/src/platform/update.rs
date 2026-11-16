@@ -153,6 +153,6 @@ mod tests {
 
     #[test]
     fn a_build_that_was_not_installed_cannot_update() {
-        assert!(!installed("host"));
+        assert!(!installed());
     }
 }
