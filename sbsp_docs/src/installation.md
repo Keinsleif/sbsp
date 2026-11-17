@@ -5,22 +5,20 @@ description: SBS Playerの入手方法
 
 # インストール方法
 
+## ダウンロード
+
 以下の配布元からインストーラまたはアプリ本体を入手できます。
 
 <DownloadButton />
 
-もしくは、以下のページよりインストーラーのZIPファイルを入手できます。
+Free code signing provided by SignPath.io, certificate by SignPath Foundation
+本ソフトウェアはローカル環境で動作し、個人情報や利用データを一切収集・外部送信・保存しません。
 
-## BOOTH
+> v2をご利用でv3へのアップデートを行う場合、[v2からv3への移行](./migration/v2tov3)を参照してください。
 
-[BOOTH 商品ページ](https://keinsleif.booth.pm/items/7619260)
+もしくは、以下のページよりインストーラーを入手できます。
 
-Windows向けには for Windows
-macOS向けには for macOS
-
-を選択します。
-
-## GitHub Releases
+### GitHub Releases
 
 [GitHub Releases](https://github.com/Keinsleif/sbsp/releases)
 
