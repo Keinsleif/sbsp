@@ -1,4 +1,7 @@
 <script setup>
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
 import { ref, onMounted, computed } from 'vue'
 
 const latestData = ref(null)

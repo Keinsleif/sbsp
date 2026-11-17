@@ -6,10 +6,8 @@ on:
     paths:
       - 'Cargo.lock'
       - 'THIRD_PARTY_NOTICES.md'
-      - 'pnpm-lock.yaml'
       - 'about.hbs'
       - 'about.toml'
-      - 'scripts/notice_json2md.js'
       - .github/workflows/check-license-notices.yml
   workflow_dispatch:
 
@@ -27,19 +25,8 @@ jobs:
 
       - uses: cargo-bins/cargo-binstall@main
       - uses: jdx/mise-action@v4
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: install frontend dependencies
-        run: pnpm install --frozen-lockfile # change this to npm, pnpm or bun depending on which one you use.
+          install_args: rust cargo:cargo-about
 
       - name: Generate notices
         run: |
