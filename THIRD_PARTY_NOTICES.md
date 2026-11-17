@@ -6798,6 +6798,7 @@ limitations under the License.
     - [rustix 1.1.5]( https://github.com/bytecodealliance/rustix )
     - [scoped-tls 1.0.1]( https://github.com/alexcrichton/scoped-tls )
     - [scopeguard 1.2.0]( https://github.com/bluss/scopeguard )
+    - [shellexpand 3.1.2]( https://gitlab.com/ijackson/rust-shellexpand )
     - [signal-hook-registry 1.4.8]( https://github.com/vorner/signal-hook )
     - [simd_cesu8 1.2.0]( https://github.com/seancroach/simd_cesu8 )
     - [simplecss 0.2.2]( https://github.com/linebender/simplecss )

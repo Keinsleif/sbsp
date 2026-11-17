@@ -91,6 +91,17 @@ impl BackendHandle {
         }
     }
 
+    /// Like [`Self::get_full_state`], but gives up when the answer has not
+    /// come within `limit`, for a peer that stays connected and says nothing.
+    pub async fn get_full_state_within(
+        &self,
+        limit: std::time::Duration,
+    ) -> anyhow::Result<FullShowState> {
+        tokio::time::timeout(limit, self.get_full_state())
+            .await
+            .map_err(|_| anyhow::anyhow!("the host did not send its state within {limit:?}"))?
+    }
+
     pub async fn get_full_state(&self) -> anyhow::Result<FullShowState> {
         let (request_responder_tx, request_responder_rx) = oneshot::channel();
         if let Err(e) = self.request_full_state_tx.send(request_responder_tx).await {

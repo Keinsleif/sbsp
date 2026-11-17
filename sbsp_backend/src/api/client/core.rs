@@ -36,6 +36,8 @@ type ConnectionHandles = (
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(25);
 const AUTH_TIMEOUT: Duration = Duration::from_secs(10);
+/// How long to wait for the host's full state once connected.
+pub const FULL_STATE_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub async fn create_remote_backend(
     address: String,
@@ -229,9 +231,11 @@ pub async fn create_remote_backend(
                                             }
                                             _ => {}
                                         }
+                                        // No receiver is normal: the UI subscribes only
+                                        // after it has connected. It must not end the
+                                        // connection.
                                         if event_tx_clone.send(*ui_event).is_err() {
-                                            log::error!("Failed to send BackendEvent to channel.");
-                                            break;
+                                            log::trace!("No one is listening to backend events.");
                                         }
                                     },
                                     WsFeedback::AssetList(file_list) => {
@@ -257,37 +261,28 @@ pub async fn create_remote_backend(
                                     WsFeedback::Error(error) => {
                                         match error {
                                             WsError::AuthenticationFailed => {
-                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                let _ = event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
                                                         id: 1,
                                                         message: "Authentication Failed".to_string(),
                                                     }
-                                                }).is_err() {
-                                                    log::error!("Failed to send BackendEvent to channel.");
-                                                    break;
-                                                }
+                                                });
                                             },
                                             WsError::AuthenticationRateLimitExceeded => {
-                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                let _ = event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
                                                         id: 2,
                                                         message: "Authentication rate limit exceeded".to_string(),
                                                     }
-                                                }).is_err() {
-                                                    log::error!("Failed to send BackendEvent to channel.");
-                                                    break;
-                                                }
+                                                });
                                             },
                                             WsError::PermissionDenied => {
-                                                if event_tx_clone.send(BackendEvent::OperationFailed {
+                                                let _ = event_tx_clone.send(BackendEvent::OperationFailed {
                                                     error: BackendError::Custom {
                                                         id: 3,
                                                         message: "Permission denied.".to_string(),
                                                     }
-                                                }).is_err() {
-                                                    log::error!("Failed to send BackendEvent to channel.");
-                                                    break;
-                                                }
+                                                });
                                             },
                                         }
                                     }
