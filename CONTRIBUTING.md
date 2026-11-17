@@ -1,5 +1,25 @@
 # CONTRIBUTING.md (コントリビューションガイド)
 
+## 0. ガイドライン
+
+1. 最初に既存のIssueを確認する
+    新しいIssueを開く前に同一の内容のものが存在しないか必ず確認してください。重複したIssueはクローズされます。
+
+2. PRは機能提案の場では無い
+    新しい機能についてはその与える影響について議論をするひつようがあります。新機能のアイデアがある場合はまずIssueを作成してください。PRをIssueの代わりに使用しないでください。
+
+3. 正しいターゲットを利用する
+    すべてのPRは`dev`ブランチをターゲットする必要があります。`master`ブランチをターゲットにしたPRはクローズされます。
+
+4. PRは必ずIssueを参照する
+    PRはコードレビューの場であり機能に関する議論を行う場ではありません。Issueにて、このプロジェクトの方針、優先事項に合致していることを確認してからPRを作成してください。
+
+### AI ガイドライン
+
+このプロジェクトではLLMによるコーディングを歓迎しますが、その成果物を理解している人間が関与することを求めます。
+
+このプロジェクトのメンテナンスは人間が行っています。メンテナーとのやり取りをLLMに代行させないでください。これに違反されると思われるPRはクローズされます。
+
 ## 1. ワークフローとブランチ戦略
 
 当プロジェクトでは、GitHubを利用したPR（Pull Request）ベースの開発を行っています。
@@ -113,11 +133,9 @@
 # 1. (任意) cargo-binstall の追加を行う場合
 mise use -g cargo-binstall
 
-# 2. miseに定義されたツールチェイン（Rust, trunk, Python, .NET等）のインストール
-mise install
+# 2. miseに定義されたツールチェイン（Rust, trunk, Python, .NET等）、前提パッケージのインストール
+mise bootstrap
 
-# 3. Linux のみ：オーディオ（cpal）のビルドに必要なシステムパッケージのインストール
-mise bootstrap packages apply
 ```
 
 オーディオ制御（cpal）のビルド依存関係の詳細は [RustAudio/cpal (Linux build dependencies)](https://github.com/RustAudio/cpal#linux-build-dependencies) を参照してください。
@@ -135,8 +153,8 @@ mise run build_remote
 開発中は、通常の `cargo run` で起動できます。
 
 ```bash
-cargo run -p sbsp_ui --no-default-features --features host --bin sbsp_host
-cargo run -p sbsp_ui --no-default-features --features remote --bin sbsp_remote
+cargo run -p sbsp_ui --features host --bin sbsp_host
+cargo run -p sbsp_ui --features remote --bin sbsp_remote
 ```
 
 ドキュメント（`sbsp_docs`）の開発には Node.js と pnpm を使用します（`mise install` で入ります）。
