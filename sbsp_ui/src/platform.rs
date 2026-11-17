@@ -15,3 +15,12 @@ pub mod power;
 pub mod time;
 #[cfg(installer)]
 pub mod update;
+
+pub fn is_mac() -> bool {
+    #[cfg(not(target_arch = "wasm32"))]
+    { cfg!(target_os = "macos") }
+    #[cfg(target_arch = "wasm32")]
+    {
+        *browser::IS_MACOS
+    }
+}

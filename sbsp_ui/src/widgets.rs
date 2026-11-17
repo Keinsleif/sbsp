@@ -15,4 +15,4 @@ pub mod modal;
 pub mod progress;
 pub mod toast;
 pub mod tree_guide;
-// TODO: waveform_editor
+pub mod waveform_editor;
