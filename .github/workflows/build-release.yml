@@ -68,7 +68,7 @@ jobs:
 
       - run: mise run build_web
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web_dist
           path: sbsp_ui/web_dist
@@ -107,7 +107,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: web_dist
           path: sbsp_ui/web_dist
