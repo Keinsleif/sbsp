@@ -1,11 +1,14 @@
 [tools]
-rust = "stable"
+rust = { version = "stable", targets = "wasm32-unknown-unknown" }
 node = "24"
 pnpm = "12"
 cocogitto = "7"
 cmake = "4"
 "cargo:cargo-about" = "0.9"
 "cargo:cargo-edit" = "0.13"
+"cargo:trunk" = "0.21"
+"python" = "3.15"
+"uv" = "latest"
 
 [tasks.generate_notices]
 run = 'cargo about generate about.hbs --workspace -o THIRD_PARTY_NOTICES.md'

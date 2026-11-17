@@ -30,3 +30,6 @@ dist-ssr
 *.bak
 
 /undefined
+# The web build, embedded by the host (sbsp_ui/build.rs creates the folder)
+/sbsp_ui/web_dist/
+/sbsp_ui/web/fonts/
