@@ -1,103 +1,196 @@
 name: 'build-release'
 
+# Builds the host and the remote for Windows, Linux and macOS, packs them with
+# Velopack and attaches everything to a draft release `ui-<version>`. The
+# version is the one in sbsp_ui/Cargo.toml (see scripts/pack.py).
+#
+# Publishing the release (not a draft any more) runs `deploy-update`, which
+# puts the update feed on GitHub Pages.
+
 on:
   workflow_dispatch:
 
-# This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 
+env:
+  # Where the apps look for updates; the two apps share it (their channels
+  # differ, see scripts/pack.py). Changing the host of the feed means
+  # changing this and `deploy-update`.
+  SBSP_UPDATE_BASE_URL: https://keinsleif.github.io/sbsp/update
+
 jobs:
-  build:
+  prepare:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest' # for universal build.
-            args: '--target universal-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-    runs-on: ${{ matrix.platform }}
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.10
+      - id: version
+        run: |
+          version=$(sed -n 's/^version *= *"\([^"]*\)".*/\1/p' sbsp_ui/Cargo.toml | head -n 1)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: create the draft release
+        run: |
+          gh release view "ui-${{ steps.version.outputs.version }}" >/dev/null 2>&1 \
+            || gh release create "ui-${{ steps.version.outputs.version }}" \
+              --draft --target "$GITHUB_SHA" \
+              --title "SBS Player v${{ steps.version.outputs.version }}" \
+              --notes "See the assets to download this version and install."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The browser build, once; the host of every OS embeds it (sbsp_ui/web_dist).
+  web:
+    runs-on: ubuntu-latest
+    env:
+      MISE_ENV: ci
+    steps:
+      - uses: actions/checkout@v6
         with:
-          version: 12
-
-      - name: setup node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - uses: Swatinem/rust-cache@v2
+          persist-credentials: false
 
       - uses: cargo-bins/cargo-binstall@main
 
-      - run: cargo binstall tauri-cli@2 --no-confirm --force
+      # Rust with the wasm target, trunk, and Python with uv for the fonts.
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: rust cargo:trunk python uv
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+      - uses: Swatinem/rust-cache@v2
+
+      - run: mise run build_web
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web_dist
+          path: sbsp_ui/web_dist
+          if-no-files-found: error
+
+  build:
+    needs: [prepare, web]
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, ubuntu-26.04, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      MISE_ENV: ci
+      # Signing is on when these are set (scripts/pack.py); unset, nothing is signed.
+      SBSP_WIN_SIGN_PARAMS: ${{ secrets.SBSP_WIN_SIGN_PARAMS }}
+      SBSP_WIN_SIGN_TEMPLATE: ${{ secrets.SBSP_WIN_SIGN_TEMPLATE }}
+      SBSP_MAC_SIGN_APP_IDENTITY: ${{ secrets.SBSP_MAC_SIGN_APP_IDENTITY }}
+      SBSP_MAC_SIGN_INSTALL_IDENTITY: ${{ secrets.SBSP_MAC_SIGN_INSTALL_IDENTITY }}
+      SBSP_MAC_NOTARY_PROFILE: ${{ secrets.SBSP_MAC_NOTARY_PROFILE }}
+      # What `sign macOS` needs to make the keychain; without the
+      # certificates that step is skipped.
+      SBSP_MAC_CERT_APP_BASE64: ${{ secrets.SBSP_MAC_CERT_APP_BASE64 }}
+      SBSP_MAC_CERT_INSTALL_BASE64: ${{ secrets.SBSP_MAC_CERT_INSTALL_BASE64 }}
+      SBSP_MAC_CERT_PASSWORD: ${{ secrets.SBSP_MAC_CERT_PASSWORD }}
+      SBSP_MAC_NOTARY_APPLE_ID: ${{ secrets.SBSP_MAC_NOTARY_APPLE_ID }}
+      SBSP_MAC_NOTARY_TEAM_ID: ${{ secrets.SBSP_MAC_NOTARY_TEAM_ID }}
+      SBSP_MAC_NOTARY_PASSWORD: ${{ secrets.SBSP_MAC_NOTARY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: web_dist
+          path: sbsp_ui/web_dist
+
+      # Rust, Python for the scripts, .NET and vpk for the packages.
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: rust python dotnet dotnet:vpk
+
+      - name: install system packages (Linux)
+        if: runner.os == 'Linux'
+        run: mise bootstrap packages apply --yes
+
+      - uses: Swatinem/rust-cache@v2
+
+      # A temporary keychain with the two Developer ID certificates and the
+      # notarytool profile; `pack.py` points vpk at it (SBSP_MAC_KEYCHAIN).
+      - name: sign macOS
+        if: runner.os == 'macOS' && env.SBSP_MAC_CERT_APP_BASE64 != ''
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-          sudo apt-get install -y libasound2-dev # alsa-sys dependencies
+          keychain="$RUNNER_TEMP/sbsp-signing.keychain-db"
+          password=$(openssl rand -base64 24)
+          echo "::add-mask::$password"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$SBSP_MAC_CERT_APP_BASE64" | base64 --decode > "$RUNNER_TEMP/app.p12"
+          echo "$SBSP_MAC_CERT_INSTALL_BASE64" | base64 --decode > "$RUNNER_TEMP/installer.p12"
+          for p12 in app installer; do
+            security import "$RUNNER_TEMP/$p12.p12" -P "$SBSP_MAC_CERT_PASSWORD" \
+              -A -t cert -f pkcs12 -k "$keychain"
+          done
+          rm -f "$RUNNER_TEMP/app.p12" "$RUNNER_TEMP/installer.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain
+          xcrun notarytool store-credentials "$SBSP_MAC_NOTARY_PROFILE" \
+            --apple-id "$SBSP_MAC_NOTARY_APPLE_ID" \
+            --team-id "$SBSP_MAC_NOTARY_TEAM_ID" \
+            --password "$SBSP_MAC_NOTARY_PASSWORD" \
+            --keychain "$keychain"
+          echo "SBSP_MAC_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
-      - name: install frontend dependencies
-        run: pnpm install --frozen-lockfile # change this to npm, pnpm or bun depending on which one you use.
+      # `pack_*` builds the binary first (macOS: universal), with the web app
+      # from above (mise.ci.toml: the host does not build it).
+      - name: pack
+        run: |
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_host
+          SBSP_FEED_URL="$SBSP_UPDATE_BASE_URL" mise run pack_remote
 
-      # SBSP
-
-      - uses: tauri-apps/tauri-action@v0
+      # The installers get names a person can read (`SBSP-Host-Windows-Setup.exe`).
+      # Only they are renamed: the packages and index files of the feed
+      # (`*.nupkg`, `releases.*`) are looked up by their names and go up as
+      # they are. `RELEASES*` (the legacy index) and `assets.*` (the list
+      # for `vpk upload`) are not used by the updater and stay out.
+      - name: attach to the release
+        run: |
+          mkdir -p target/upload
+          case "$RUNNER_OS" in
+            Windows) os=Windows ;;
+            macOS) os=macOS ;;
+            *) os=Linux ;;
+          esac
+          for app in host remote; do
+            case "$app" in
+              host) title=SBSP-Host ;;
+              *) title=SBSP-Remote ;;
+            esac
+            for file in target/dist/$app/*; do
+              [ -f "$file" ] || continue
+              case "$file" in
+                *-Setup.exe | *-Setup.pkg) name="$title-$os-Setup.${file##*.}" ;;
+                *-Portable.zip) name="$title-$os-Portable.zip" ;;
+                *.AppImage) name="$title-$os.AppImage" ;;
+                */RELEASES* | */assets.*) continue ;;
+                *) name="$(basename "$file")" ;;
+              esac
+              cp "$file" "target/upload/$name"
+              gh release upload "ui-${{ needs.prepare.outputs.version }}" "target/upload/$name" --clobber
+            done
+          done
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_MAIN }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_MAIN }}
-        with:
-          tagName: app-__VERSION__
-          releaseName: 'SBS Player v__VERSION__'
-          projectPath: ./sbsp_app
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
-          tauriScript: cargo tauri
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # SBSP Remote
-
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_REMOTE }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD_REMOTE }}
-        with:
-          tagName: remote_app-__VERSION__
-          releaseName: 'SBS Player Remote v__VERSION__'
-          projectPath: ./sbsp_remote_app
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
-          tauriScript: cargo tauri
+      - name: remove the signing keychain
+        if: always() && env.SBSP_MAC_KEYCHAIN != ''
+        run: security delete-keychain "$SBSP_MAC_KEYCHAIN" || true

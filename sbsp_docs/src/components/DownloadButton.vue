@@ -18,42 +18,50 @@ const detectOS = () => {
   return ''
 }
 
-const linkData = computed(() => {
-  if (latestData.value == null) {
-    return {
-      win: null,
-      mac: null,
-      linux_appimage: null,
-      linux_deb: null,
-      linux_rpm: null,
-    };
-  }
+// The host app's installers are named `SBSP-Host-Windows-Setup.exe`,
+// `SBSP-Host-macOS-Setup.pkg`, `SBSP-Host-Linux.AppImage` and the
+// `SBSP-Host-<Windows|macOS>-Portable.zip` archives when they are
+// attached to the release (see the build-release workflow). The remote
+// app's start with `SBSP-Remote-` and are left out.
+const HOST_PREFIX = 'SBSP-Host-'
 
-  const baseMacUrl = latestData.value.platforms["darwin-aarch64"]?.url ?? null;
-  const dmgUrl = baseMacUrl != null ? baseMacUrl.replace(/[^/]+$/, `SBS.Player_${version.value}_universal.dmg`) : null;
+const findAsset = (assets, pattern) =>
+  assets.find((asset) => asset.name.startsWith(HOST_PREFIX) && pattern.test(asset.name))?.browser_download_url ?? null;
 
-  return {
-    win: latestData.value.platforms['windows-x86_64']?.url ?? null,
-    mac: dmgUrl,
-    linux_appimage: latestData.value.platforms['linux-x86_64-appimage']?.url ?? null,
-    linux_deb: latestData.value.platforms['linux-x86_64-deb']?.url ?? null,
-    linux_rpm: latestData.value.platforms['linux-x86_64-rpm']?.url ?? null,
-  }
-})
+const installers = (assets) => ({
+  win: findAsset(assets, /Setup\.exe$/i),
+  win_portable: findAsset(assets, /Windows-Portable\.zip$/i),
+  mac: findAsset(assets, /\.pkg$/i),
+  mac_portable: findAsset(assets, /macOS-Portable\.zip$/i),
+  linux_appimage: findAsset(assets, /\.AppImage$/i),
+});
+
+const linkData = computed(() => installers(latestData.value?.assets ?? []))
 
 onMounted(async () => {
   userOS.value = detectOS();
   try {
-    const response = await fetch(`https://keinsleif.github.io/sbsp/update/latest-main.json`)
+    // The newest published `ui-` release that has the host installers.
+    // `/releases/latest` is the newest of any tag, which may belong to
+    // another line of versions.
+    const response = await fetch('https://api.github.com/repos/Keinsleif/sbsp/releases?per_page=100')
     if (!response.ok) throw new Error('Network response was not ok')
-    
-    const data = await response.json()
-    
-    if (data != null) {
-      latestData.value = data;
-      version.value = data.version
+
+    const releases = await response.json()
+    const release = (Array.isArray(releases) ? releases : []).find(
+      (candidate) =>
+        !candidate.draft &&
+        !candidate.prerelease &&
+        String(candidate.tag_name ?? '').startsWith('ui-') &&
+        Array.isArray(candidate.assets) &&
+        Object.values(installers(candidate.assets)).some(Boolean),
+    )
+
+    if (release) {
+      latestData.value = release;
+      version.value = String(release.tag_name).replace(/^ui-/, '')
     } else {
-      throw new Error('Asset not found')
+      throw new Error('No release with the installers')
     }
   } catch (err) {
     console.error('Failed to fetch latest release:', err)
@@ -70,7 +78,7 @@ onMounted(async () => {
     
     <div v-else-if="isError" :class="$style['error']">
       情報を取得できませんでした。<br>
-      <a :href="`https://github.com/Keinsleif/sbsp/releases/latest`" target="_blank" rel="noopener">
+      <a :href="`https://github.com/Keinsleif/sbsp/releases`" target="_blank" rel="noopener">
         GitHubのリリース一覧ページ
       </a> から直接ダウンロードしてください。
     </div>
@@ -92,6 +100,12 @@ onMounted(async () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
               </span>
             </VPButton>
+            <VPButton :href="linkData.win_portable ?? '#'" theme="alt">
+              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
+                Windows (ZIP)
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
+              </span>
+            </VPButton>
           </div>
         </div>
         <div :class="[$style['download-card'], userOS === 'mac' ? $style['recommended'] : '']">
@@ -108,6 +122,12 @@ onMounted(async () => {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
               </span>
             </VPButton>
+            <VPButton :href="linkData.mac_portable ?? '#'" theme="alt">
+              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
+                macOS (ZIP)
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
+              </span>
+            </VPButton>
           </div>
         </div>
         <div :class="[$style['download-card'], userOS === 'linux' ? $style['recommended'] : '']">
@@ -118,18 +138,6 @@ onMounted(async () => {
             Linux
           </span>
           <div style="display: flex; flex-direction: column; gap: 1em; padding: 1em;">
-            <VPButton :href="linkData.linux_deb ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
-              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
-              Debian/Ubuntu
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
-              </span>
-            </VPButton>
-            <VPButton :href="linkData.linux_rpm ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
-              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
-              Red Hat/Fedora
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
-              </span>
-            </VPButton>
             <VPButton :href="linkData.linux_appimage ?? '#'" :theme="userOS === 'linux' ? 'brand' : 'alt'">
               <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
               AppImage
