@@ -18,7 +18,6 @@ use crate::model::{
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum ProjectType {
     #[default]
@@ -27,7 +26,6 @@ pub enum ProjectType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "status",
     rename_all = "camelCase",

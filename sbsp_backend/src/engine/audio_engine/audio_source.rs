@@ -550,17 +550,17 @@ where
             }
 
             if state.is_advancing() {
-                let factor = (self.transport_gain.level
+                let factor = (self
+                    .transport_gain
+                    .level
                     .stack(self.level.level)
                     .stack(self.fade.level)
-                    .stack(
-                        self.envelope.update(
-                            self.offset_position
-                                + self.playing_frames_counted as f64
-                                    / self.current_span_sample_rate.get() as f64,
-                        )
-                    )
-                ).as_amplitude();
+                    .stack(self.envelope.update(
+                        self.offset_position
+                            + self.playing_frames_counted as f64
+                                / self.current_span_sample_rate.get() as f64,
+                    )))
+                .as_amplitude();
 
                 let mut completed = false;
                 let mut inputs = [0.0; MAX_CHANNELS as usize];

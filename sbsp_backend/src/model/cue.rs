@@ -20,7 +20,6 @@ use crate::model::{
 };
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct CueList {
     pub cues: HashMap<Uuid, Cue>,
@@ -149,7 +148,6 @@ impl TryFrom<CueList> for Vec<ProjectCue> {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct Cue {
     pub id: Uuid,
@@ -175,7 +173,6 @@ pub struct Cue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum CueColor {
     #[default]
@@ -191,7 +188,6 @@ pub enum CueColor {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -209,7 +205,6 @@ pub enum CueChain {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CueCursorAdvanceTriggerOverride {
     #[default]
@@ -219,7 +214,6 @@ pub enum CueCursorAdvanceTriggerOverride {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -241,14 +235,12 @@ pub enum CueParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct WaitCueParam {
     pub duration: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct FadeCueParam {
     pub target: Uuid,
@@ -259,14 +251,12 @@ pub struct FadeCueParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct StartCueParam {
     pub target: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct StopCueParam {
     pub target: Uuid,
@@ -275,14 +265,12 @@ pub struct StopCueParam {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct PauseCueParam {
     pub target: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "type_export", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct LoadCueParam {
     pub target: Uuid,
