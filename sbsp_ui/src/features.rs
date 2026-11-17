@@ -8,7 +8,7 @@
 #[cfg(client)]
 pub mod connect;
 pub mod cue_list;
-// pub mod dialog;
+pub mod dialog;
 pub mod editor;
 pub mod file_ops;
 pub mod header;
