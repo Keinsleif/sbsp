@@ -19,7 +19,8 @@ const detectOS = () => {
 }
 
 // The host app's installers are named `SBSP-Host-Windows-Setup.exe`,
-// `SBSP-Host-macOS-Setup.pkg` and `SBSP-Host-Linux.AppImage` when they are
+// `SBSP-Host-macOS-Setup.pkg`, `SBSP-Host-Linux.AppImage` and the
+// `SBSP-Host-<Windows|macOS>-Portable.zip` archives when they are
 // attached to the release (see the build-release workflow). The remote
 // app's start with `SBSP-Remote-` and are left out.
 const HOST_PREFIX = 'SBSP-Host-'
@@ -29,7 +30,9 @@ const findAsset = (assets, pattern) =>
 
 const installers = (assets) => ({
   win: findAsset(assets, /Setup\.exe$/i),
+  win_portable: findAsset(assets, /Windows-Portable\.zip$/i),
   mac: findAsset(assets, /\.pkg$/i),
+  mac_portable: findAsset(assets, /macOS-Portable\.zip$/i),
   linux_appimage: findAsset(assets, /\.AppImage$/i),
 });
 
@@ -97,6 +100,12 @@ onMounted(async () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
               </span>
             </VPButton>
+            <VPButton :href="linkData.win_portable ?? '#'" theme="alt">
+              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
+                Windows (ZIP)
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
+              </span>
+            </VPButton>
           </div>
         </div>
         <div :class="[$style['download-card'], userOS === 'mac' ? $style['recommended'] : '']">
@@ -111,6 +120,12 @@ onMounted(async () => {
               <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
               macOS
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
+              </span>
+            </VPButton>
+            <VPButton :href="linkData.mac_portable ?? '#'" theme="alt">
+              <span style="display: flex; flex-direction: row; gap: 0.5em; justify-content: center; align-items: center;">
+                macOS (ZIP)
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 2 22 22" width="18"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" fill="currentColor" /></svg>
               </span>
             </VPButton>
           </div>
