@@ -66,7 +66,7 @@ rodio = { version = "0.22", git = "https://github.com/RustAudio/rodio", rev = "c
 rtrb = { version = "0.3", optional = true }
 symphonia = { version = "0.5", features = ["all", "opt-simd"], optional = true }
 symphonia-adapter-libopus = { version = "0.2", optional = true }
-anyhow = { version = "1.0", optional = true }
+anyhow = { workspace = true, optional = true }
 ebur128 = { version = "0.1", optional = true }
 normpath = { version = "1.5", optional = true }
 sha2 = { version = "0.10", optional = true }
@@ -83,7 +83,7 @@ bitflags = { version = "2.11", optional = true }
 mdns-sd = { version = "0.17", optional = true, default-features = false, features = ["async"]}
 gethostname = { version = "1.1", optional = true }
 
-axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "http2", "ws"], optional = true }
+axum = { workspace = true, default-features = false, features = ["tokio", "http1", "http2", "ws"], optional = true }
 
 tokio-tungstenite = { version = "*", optional = true }
 futures-util = { version = "0.3", default-features = false, features = ["sink"], optional = true }
