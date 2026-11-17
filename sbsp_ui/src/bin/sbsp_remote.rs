@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
+
+// No console window behind the app on Windows.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
+fn main() -> iced::Result {
+    // The installer and updater run this program with hooks; it must come
+    // before anything else, and it exits for them.
+    velopack::VelopackApp::build().run();
+    sbsp_ui::platform::logging::init("com.keinsleif.sbsp.remote", "sbsp_remote");
+    sbsp_ui::remote::run()
+}

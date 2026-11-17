@@ -8,8 +8,7 @@
 //! address the page itself came from, which is the host that serves it.
 
 pub fn run() -> iced::Result {
-    // crate::app::run("web")
-    Ok(())
+    crate::app::run("web")
 }
 
 /// The host and password the address asks to connect to, if it names one.
