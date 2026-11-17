@@ -29,8 +29,7 @@ jobs:
           tag="${{ github.event.inputs.tag_name || github.event.release.tag_name }}"
           mkdir -p upload
           gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir upload \
-            --pattern '*.nupkg' --pattern 'releases.*' --pattern 'assets.*' \
-            --pattern 'RELEASES*'
+            --pattern '*.nupkg' --pattern 'releases.*'
           ls -R upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

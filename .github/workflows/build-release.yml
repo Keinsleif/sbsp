@@ -159,8 +159,9 @@ jobs:
 
       # The installers get names a person can read (`SBSP-Host-Windows-Setup.exe`).
       # Only they are renamed: the packages and index files of the feed
-      # (`*.nupkg`, `releases.*`, `assets.*`, `RELEASES*`) are looked up by
-      # their names and go up as they are.
+      # (`*.nupkg`, `releases.*`) are looked up by their names and go up as
+      # they are. `RELEASES*` (the legacy index) and `assets.*` (the list
+      # for `vpk upload`) are not used by the updater and stay out.
       - name: attach to the release
         run: |
           mkdir -p target/upload
@@ -180,6 +181,7 @@ jobs:
                 *-Setup.exe | *-Setup.pkg) name="$title-$os-Setup.${file##*.}" ;;
                 *-Portable.zip) name="$title-$os-Portable.zip" ;;
                 *.AppImage) name="$title-$os.AppImage" ;;
+                */RELEASES* | */assets.*) continue ;;
                 *) name="$(basename "$file")" ;;
               esac
               cp "$file" "target/upload/$name"
