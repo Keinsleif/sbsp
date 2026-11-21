@@ -490,6 +490,47 @@ fn a_seek_is_released_only_on_the_cue_it_started_on() {
 
 #[test]
 #[serial]
+fn dragging_a_divider_resizes_the_column_beside_it() {
+    use crate::state::ui::Column;
+
+    let mut state = new_state();
+    let moved = |state: &mut State, x: f32| {
+        let _ = state.update(Message::CueList(cue_list::Message::ResizeMoved(x)));
+    };
+
+    // The number column grows with the pointer.
+    let _ = state.update(Message::CueList(cue_list::Message::ResizeStart(
+        Column::Number,
+    )));
+    moved(&mut state, 100.0);
+    moved(&mut state, 130.0);
+    assert_eq!(state.ui.column_widths.number, 54.0 + 30.0);
+
+    // The time columns lie right of their divider: moving it right
+    // narrows them.
+    let _ = state.update(Message::CueList(cue_list::Message::ResizeEnd));
+    moved(&mut state, 200.0);
+    assert_eq!(state.ui.column_widths.number, 54.0 + 30.0, "no drag, no change");
+
+    let _ = state.update(Message::CueList(cue_list::Message::ResizeStart(
+        Column::PreWait,
+    )));
+    moved(&mut state, 300.0);
+    moved(&mut state, 320.0);
+    assert_eq!(state.ui.column_widths.pre_wait, 112.0 - 20.0);
+    moved(&mut state, 3000.0);
+    assert_eq!(state.ui.column_widths.pre_wait, 80.0, "kept within its range");
+
+    // Double click: the default width, and the drag it started is over.
+    let _ = state.update(Message::CueList(cue_list::Message::ResetWidth(
+        Column::PreWait,
+    )));
+    moved(&mut state, 100.0);
+    assert_eq!(state.ui.column_widths.pre_wait, 112.0);
+}
+
+#[test]
+#[serial]
 fn a_field_edit_is_applied_when_submitted() {
     let mut state = new_state();
     let id = field::FieldId("renumber.start");

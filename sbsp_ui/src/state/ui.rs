@@ -66,6 +66,92 @@ pub enum SideBarTab {
     Meter,
 }
 
+/// A column of the cue list whose width can be changed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Column {
+    Number,
+    PreWait,
+    Duration,
+}
+
+impl Column {
+    /// Which way dragging the column's divider widens it: the number
+    /// column lies left of its divider, the two time columns right of
+    /// theirs (the name column between them takes what is left).
+    pub fn direction(self) -> f32 {
+        match self {
+            Column::Number => 1.0,
+            Column::PreWait | Column::Duration => -1.0,
+        }
+    }
+}
+
+/// The widths of the resizable columns of the cue list, in logical pixels.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct ColumnWidths {
+    pub number: f32,
+    pub pre_wait: f32,
+    pub duration: f32,
+}
+
+impl Default for ColumnWidths {
+    fn default() -> Self {
+        Self {
+            number: 54.0,
+            pre_wait: 112.0,
+            duration: 112.0,
+        }
+    }
+}
+
+impl ColumnWidths {
+    /// The narrowest and widest a column can be made.
+    pub fn range(column: Column) -> std::ops::RangeInclusive<f32> {
+        match column {
+            Column::Number => 40.0..=160.0,
+            Column::PreWait | Column::Duration => 80.0..=240.0,
+        }
+    }
+
+    pub fn get(&self, column: Column) -> f32 {
+        match column {
+            Column::Number => self.number,
+            Column::PreWait => self.pre_wait,
+            Column::Duration => self.duration,
+        }
+    }
+
+    /// Sets a width, kept within its range. A value that is not a number
+    /// is ignored.
+    pub fn set(&mut self, column: Column, width: f32) {
+        if !width.is_finite() {
+            return;
+        }
+        let range = Self::range(column);
+        let width = width.clamp(*range.start(), *range.end());
+        match column {
+            Column::Number => self.number = width,
+            Column::PreWait => self.pre_wait = width,
+            Column::Duration => self.duration = width,
+        }
+    }
+
+    pub fn reset(&mut self, column: Column) {
+        self.set(column, Self::default().get(column));
+    }
+
+    /// The same widths with every one inside its range, and the default
+    /// for one that is not a number (a hand-edited file).
+    pub fn sanitized(self) -> Self {
+        let mut widths = Self::default();
+        for column in [Column::Number, Column::PreWait, Column::Duration] {
+            widths.set(column, self.get(column));
+        }
+        widths
+    }
+}
+
 pub struct UiState {
     pub permission: Permissions,
     pub mode: Mode,
@@ -78,6 +164,7 @@ pub struct UiState {
     pub expanded_rows: HashSet<Uuid>,
     pub pre_wait_display_mode: DisplayMode,
     pub duration_display_mode: DisplayMode,
+    pub column_widths: ColumnWidths,
     pub keep_awake: KeepAwakeMode,
     /// When the update feed was last asked, in milliseconds since the Unix
     /// epoch (0: never).
@@ -107,6 +194,7 @@ impl UiState {
             expanded_rows: HashSet::new(),
             pre_wait_display_mode: DisplayMode::Elapsed,
             duration_display_mode: DisplayMode::Elapsed,
+            column_widths: ColumnWidths::default(),
             keep_awake: KeepAwakeMode::default(),
             last_update_check: 0,
         }
@@ -324,6 +412,33 @@ impl UiState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn column_widths_stay_within_their_range() {
+        let mut widths = ColumnWidths::default();
+        widths.set(Column::Number, 10.0);
+        assert_eq!(widths.number, 40.0);
+        widths.set(Column::PreWait, 10_000.0);
+        assert_eq!(widths.pre_wait, 240.0);
+        widths.set(Column::Duration, f32::NAN);
+        assert_eq!(widths.duration, ColumnWidths::default().duration);
+
+        widths.reset(Column::Number);
+        assert_eq!(widths.number, ColumnWidths::default().number);
+        assert_eq!(
+            ColumnWidths {
+                number: f32::NAN,
+                pre_wait: 1.0,
+                duration: 100.0,
+            }
+            .sanitized(),
+            ColumnWidths {
+                number: ColumnWidths::default().number,
+                pre_wait: 80.0,
+                duration: 100.0,
+            }
+        );
+    }
 
     fn leaf_with_parent(id: Uuid, parent_id: Option<Uuid>) -> Cue {
         use sbsp_backend::model::cue::{

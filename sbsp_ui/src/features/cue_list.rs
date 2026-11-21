@@ -33,7 +33,7 @@ use crate::fl;
 use crate::state::assets::AssetResults;
 use crate::state::model::ShowModelState;
 use crate::state::playback::PlaybackState;
-use crate::state::ui::{DisplayMode, UiState};
+use crate::state::ui::{Column, ColumnWidths, DisplayMode, UiState};
 use crate::theme::fonts;
 use crate::theme::palette::get_text_color;
 use crate::widgets::divider;
@@ -90,6 +90,13 @@ pub enum Message {
     DragDropped,
     /// While dragging: time to scroll if the pointer is at an edge.
     DragTick,
+    /// Pressed on a column divider of the header.
+    ResizeStart(Column),
+    /// The pointer's x in the window, while a divider is being dragged.
+    ResizeMoved(f32),
+    ResizeEnd,
+    /// Double click on a divider: the column's default width.
+    ResetWidth(Column),
 }
 
 /// What the context menu offers.
@@ -394,8 +401,6 @@ const W_HANDLE: f32 = 20.0;
 const W_CURSOR: f32 = 28.0;
 const W_STATUS: f32 = 28.0;
 const W_TYPE: f32 = 28.0;
-const W_NUMBER: f32 = 54.0;
-const W_TIME: f32 = 112.0;
 const W_REPEAT: f32 = 28.0;
 const W_CHAIN: f32 = 36.0;
 
@@ -430,8 +435,31 @@ impl<'a> CueListEnv<'a> {
     }
 }
 
+/// The narrowest the name column is made by the room the list has.
+const NAME_MIN: f32 = 194.0;
+
 /// The narrowest the list is laid out at; below it, it scrolls sideways.
-pub const MIN_WIDTH: f32 = 640.0;
+pub fn min_width(widths: &ColumnWidths) -> f32 {
+    W_HANDLE
+        + W_CURSOR
+        + W_STATUS
+        + W_TYPE
+        + widths.number
+        + NAME_MIN
+        + widths.pre_wait
+        + widths.duration
+        + W_REPEAT
+        + W_CHAIN
+}
+
+/// A column divider being dragged. The pointer's position when the button
+/// went down is not part of the press, so it is taken from the first move.
+#[derive(Debug, Clone, Copy)]
+pub struct ColumnDrag {
+    pub column: Column,
+    pub start_width: f32,
+    pub start_x: Option<f32>,
+}
 
 /// The column header plus the rows. Column widths are shared constants
 /// (cells below, header cells here), so the two line up without a table
@@ -477,7 +505,11 @@ fn list_view<'a>(
                 let cue = model.cue_list.cues.get(&entry.cue_id)?;
                 Some(row_view(entry, cue, &env, target == Some(index)))
             }
-            RenderRow::End { level, .. } => Some(end_row_view(level, target == Some(index))),
+            RenderRow::End { level, .. } => Some(end_row_view(
+                level,
+                ui.column_widths.number,
+                target == Some(index),
+            )),
         })
         .collect();
 
@@ -545,11 +577,28 @@ fn list_view<'a>(
         .into()
 }
 
+/// How wide a divider can be grabbed. The line is drawn in its middle, so
+/// the header's columns each give up a little of their width to it.
+const GRAB_WIDTH: f32 = 5.0;
+
+fn resize_handle<'a>(column: Column) -> Element<'a, Message> {
+    mouse_area(
+        container(divider::vertical())
+            .center_x(GRAB_WIDTH)
+            .height(Length::Fill),
+    )
+    .on_press(Message::ResizeStart(column))
+    .on_double_click(Message::ResetWidth(column))
+    .interaction(mouse::Interaction::ResizingHorizontally)
+    .into()
+}
+
 fn cell<'a>(content: impl Into<Element<'a, Message>>, width: f32) -> Element<'a, Message> {
     container(content).center_x(width).into()
 }
 
 fn header<'a>(ui: &UiState) -> Element<'a, Message> {
+    let widths = ui.column_widths;
     let display_toggle = |mode: DisplayMode, message: Message| {
         button(icon(
             match mode {
@@ -563,36 +612,46 @@ fn header<'a>(ui: &UiState) -> Element<'a, Message> {
         .on_press(message)
     };
 
-    let time_header = |label: String, mode: DisplayMode, message: Message| {
+    let time_header = |label: String, mode: DisplayMode, message: Message, width: f32| {
         cell(
             row![text(label), display_toggle(mode, message)]
                 .spacing(4)
                 .align_y(Alignment::Center),
-            W_TIME - 1.0,
+            width,
         )
     };
 
     // Each line takes its pixel from the column before it, so the header's
-    // columns stay over the rows' (the name column fills the rest).
+    // columns stay over the rows' (the name column fills the rest). The
+    // three dividers that can be dragged are `GRAB_WIDTH` wide, with the
+    // line in the middle: half of it comes out of each neighbour.
+    let half = (GRAB_WIDTH - 1.0) / 2.0;
     row![
         Space::new().width(W_HANDLE + W_CURSOR + W_STATUS + W_TYPE - 1.0),
         divider::vertical(),
-        cell(text("#"), W_NUMBER - 1.0),
-        divider::vertical(),
+        cell(text("#"), widths.number - 1.0 - half),
+        resize_handle(Column::Number),
         container(text(fl!("main-name")))
             .width(Length::Fill)
-            .padding([0, 8]),
-        divider::vertical(),
+            .padding(Padding {
+                top: 0.0,
+                right: 8.0,
+                bottom: 0.0,
+                left: 8.0 - half,
+            }),
+        resize_handle(Column::PreWait),
         time_header(
             fl!("main-pre-wait"),
             ui.pre_wait_display_mode,
             Message::TogglePreWaitDisplay,
+            widths.pre_wait - 1.0 - 2.0 * half,
         ),
-        divider::vertical(),
+        resize_handle(Column::Duration),
         time_header(
             fl!("main-duration"),
             ui.duration_display_mode,
             Message::ToggleDurationDisplay,
+            widths.duration - 1.0 - half,
         ),
         divider::vertical(),
         cell(icon(Icon::Repeat, 18.0), W_REPEAT - 1.0),
@@ -754,12 +813,12 @@ fn row_view<'a>(
         cursor,
         cell(status, W_STATUS),
         cell(icon(type_icon(&cue.params), 18.0), W_TYPE),
-        cell(text(cue.number.clone()), W_NUMBER),
+        cell(text(cue.number.clone()), ui.column_widths.number),
         row![indent, disclosure, name]
             .align_y(Alignment::Center)
             .width(Length::Fill),
-        time_cell(pre_wait.0, pre_wait.1, in_pre_wait),
-        time_cell(duration.0, duration.1, in_playback),
+        time_cell(pre_wait.0, pre_wait.1, in_pre_wait, ui.column_widths.pre_wait),
+        time_cell(duration.0, duration.1, in_playback, ui.column_widths.duration),
         cell(repeat_mark, W_REPEAT),
         cell(chain_mark, W_CHAIN),
     ]
@@ -793,12 +852,12 @@ fn row_view<'a>(
 
 /// The closing row of an open group or of the list: where a drop lands
 /// after the last row.
-fn end_row_view<'a>(level: usize, is_drop: bool) -> Element<'a, Message> {
+fn end_row_view<'a>(level: usize, number_width: f32, is_drop: bool) -> Element<'a, Message> {
     let label = if level > 0 { "end" } else { "end of list" };
     // Lined up with the name column of a row at the same level: after its
     // padding and the columns before it come the guide, then the space of
     // the disclosure triangle (and the gaps around it).
-    let lead = W_HANDLE + W_CURSOR + W_STATUS + W_TYPE + W_NUMBER;
+    let lead = W_HANDLE + W_CURSOR + W_STATUS + W_TYPE + number_width;
     let triangle = 20.0;
 
     let content = row![
@@ -918,7 +977,12 @@ pub(crate) fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
 
 /// A time field with its progress fill behind the text. `active` outlines
 /// it (the phase currently running).
-fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Message> {
+fn time_cell<'a>(
+    label: String,
+    progress: f32,
+    active: bool,
+    width: f32,
+) -> Element<'a, Message> {
     let bar = progress::bar(progress, |theme: &Theme| {
         theme.extended_palette().primary.base.color.scale_alpha(0.5)
     });
@@ -948,7 +1012,7 @@ fn time_cell<'a>(label: String, progress: f32, active: bool) -> Element<'a, Mess
 
     container(field)
         .padding([0, 4])
-        .width(W_TIME)
+        .width(width)
         .center_y(ROW_HEIGHT - 1.0)
         .into()
 }
@@ -1056,6 +1120,16 @@ fn status_icon(status: PlaybackStatus) -> Option<(Icon, Tone)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_default_widths_give_the_usual_minimum_width() {
+        assert_eq!(min_width(&ColumnWidths::default()), 640.0);
+        let wider = ColumnWidths {
+            number: 100.0,
+            ..ColumnWidths::default()
+        };
+        assert_eq!(min_width(&wider), 686.0);
+    }
     use sbsp_backend::model::ShowModel;
     use sbsp_backend::model::cue::{
         CueChain, CueCursorAdvanceTriggerOverride, CueParam, WaitCueParam,

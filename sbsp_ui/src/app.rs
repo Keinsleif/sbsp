@@ -199,6 +199,8 @@ pub struct State {
     hovered_row: Option<Uuid>,
     /// Cues being dragged to a new place in the list.
     cue_drag: Option<cue_list::Drag>,
+    /// A divider of the cue list header being dragged.
+    column_drag: Option<cue_list::ColumnDrag>,
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
@@ -554,6 +556,7 @@ impl State {
             clipboard: Vec::new(),
             hovered_row: None,
             cue_drag: None,
+            column_drag: None,
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
@@ -1238,6 +1241,25 @@ impl State {
                 if let Some(drag) = &mut self.cue_drag {
                     drag.pointer = None;
                 }
+            }
+            cue_list::Message::ResizeStart(column) => {
+                self.column_drag = Some(cue_list::ColumnDrag {
+                    column,
+                    start_width: self.ui.column_widths.get(column),
+                    start_x: None,
+                });
+            }
+            cue_list::Message::ResizeMoved(x) => {
+                if let Some(drag) = &mut self.column_drag {
+                    let start_x = *drag.start_x.get_or_insert(x);
+                    let width = drag.start_width + (x - start_x) * drag.column.direction();
+                    self.ui.column_widths.set(drag.column, width);
+                }
+            }
+            cue_list::Message::ResizeEnd => self.column_drag = None,
+            cue_list::Message::ResetWidth(column) => {
+                self.column_drag = None;
+                self.ui.column_widths.reset(column);
             }
             // These need to return a Task: see `update_inner`.
             cue_list::Message::Context(_)
@@ -3320,6 +3342,22 @@ impl State {
 
         // Files dropped together arrive as separate events; the first tick
         // after the last of them closes the batch.
+        // While a column divider is dragged, the pointer is followed
+        // wherever it goes, and releasing the button ends the drag.
+        let column_resize = if self.column_drag.is_some() {
+            event::listen_with(|event, _status, _window| match event {
+                iced::Event::Mouse(mouse::Event::CursorMoved { position }) => {
+                    Some(Message::CueList(cue_list::Message::ResizeMoved(position.x)))
+                }
+                iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                    Some(Message::CueList(cue_list::Message::ResizeEnd))
+                }
+                _ => None,
+            })
+        } else {
+            Subscription::none()
+        };
+
         let drops = if self.dropped_files.is_empty() {
             Subscription::none()
         } else {
@@ -3357,6 +3395,7 @@ impl State {
             backend_events,
             modifiers,
             dragging,
+            column_resize,
             drops,
             native_menu,
         ])
@@ -3604,7 +3643,7 @@ impl State {
                     }),
                 ),
                 self.cue_view,
-                cue_list::MIN_WIDTH,
+                cue_list::min_width(&self.ui.column_widths),
             )
             .map(Message::CueList),
         )

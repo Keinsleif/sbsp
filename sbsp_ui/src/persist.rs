@@ -2,7 +2,8 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 //! What the app remembers between runs: the window's place and size, and
-//! the UI choices (mode, the pre-wait / duration display modes, the sidebar
+//! the UI choices (mode, the pre-wait / duration display modes, the widths
+//! of the cue list columns, the sidebar
 //! tab and the open/closed state of the sidebar and bottom viewer) and when
 //! to keep the machine awake.
 //!
@@ -14,7 +15,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::state::ui::{DisplayMode, KeepAwakeMode, Mode, SideBarTab, UiState};
+use crate::state::ui::{ColumnWidths, DisplayMode, KeepAwakeMode, Mode, SideBarTab, UiState};
 
 /// The smallest window a saved size may restore.
 const MIN_WIDTH: f32 = 480.0;
@@ -61,6 +62,7 @@ pub struct Saved {
     pub mode: Option<Mode>,
     pub pre_wait_display_mode: Option<DisplayMode>,
     pub duration_display_mode: Option<DisplayMode>,
+    pub column_widths: Option<ColumnWidths>,
     pub side_bar_tab: Option<SideBarTab>,
     pub is_right_sidebar_open: Option<bool>,
     pub is_bottom_tab_open: Option<bool>,
@@ -75,6 +77,7 @@ impl Saved {
             mode: Some(ui.mode),
             pre_wait_display_mode: Some(ui.pre_wait_display_mode),
             duration_display_mode: Some(ui.duration_display_mode),
+            column_widths: Some(ui.column_widths),
             side_bar_tab: Some(ui.side_bar_tab),
             is_right_sidebar_open: Some(ui.is_right_sidebar_open),
             is_bottom_tab_open: Some(ui.is_bottom_tab_open),
@@ -95,6 +98,9 @@ impl Saved {
         }
         if let Some(value) = self.duration_display_mode {
             ui.duration_display_mode = value;
+        }
+        if let Some(value) = self.column_widths {
+            ui.column_widths = value.sanitized();
         }
         if let Some(value) = self.side_bar_tab {
             ui.side_bar_tab = value;
@@ -203,6 +209,7 @@ mod tests {
         ui.side_bar_tab = SideBarTab::Meter;
         ui.is_right_sidebar_open = false;
         ui.duration_display_mode = DisplayMode::Remain;
+        ui.column_widths.number = 80.0;
         ui.keep_awake = KeepAwakeMode::Always;
         ui.last_update_check = 1_700_000_000_000;
         let window = WindowRect {
@@ -222,9 +229,29 @@ mod tests {
         assert!(!restored.is_right_sidebar_open);
         assert!(restored.is_bottom_tab_open);
         assert_eq!(restored.duration_display_mode, DisplayMode::Remain);
+        assert_eq!(restored.column_widths.number, 80.0);
         assert_eq!(restored.keep_awake, KeepAwakeMode::Always);
         assert_eq!(restored.last_update_check, 1_700_000_000_000);
         assert_eq!(saved.window, Some(window));
+    }
+
+    #[test]
+    fn saved_column_widths_are_kept_within_their_range() {
+        let saved = Saved::parse(
+            r#"{ "column_widths": { "number": 9999, "pre_wait": 1, "duration": 100 } }"#,
+        );
+        let mut ui = UiState::new(true);
+        saved.apply(&mut ui);
+        assert_eq!(ui.column_widths.number, 160.0);
+        assert_eq!(ui.column_widths.pre_wait, 80.0);
+        assert_eq!(ui.column_widths.duration, 100.0);
+
+        // A missing width is the default one.
+        let saved = Saved::parse(r#"{ "column_widths": { "number": 70 } }"#);
+        let mut ui = UiState::new(true);
+        saved.apply(&mut ui);
+        assert_eq!(ui.column_widths.number, 70.0);
+        assert_eq!(ui.column_widths.pre_wait, ColumnWidths::default().pre_wait);
     }
 
     #[test]
