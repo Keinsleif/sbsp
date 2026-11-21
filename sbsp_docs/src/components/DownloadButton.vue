@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
-import { ref, onMounted, computed } from "vue";
-import { useData } from "vitepress";
+import { ref, onMounted, computed } from 'vue';
+import { useData } from 'vitepress';
 
 const { lang } = useData();
 
 const latestData = ref(null);
-const version = ref("");
-const userOS = ref("");
+const version = ref('');
+const userOS = ref('');
 const isLoading = ref(true);
 const isError = ref(false);
 
 const detectOS = () => {
   const ua = window.navigator.userAgent.toLowerCase();
-  if (ua.includes("win")) return "windows";
-  if (ua.includes("mac")) return "mac";
-  if (ua.includes("linux")) return "linux";
-  return "";
+  if (ua.includes('win')) return 'windows';
+  if (ua.includes('mac')) return 'mac';
+  if (ua.includes('linux')) return 'linux';
+  return '';
 };
 
 // The host app's installers are named `SBSP-Host-Windows-Setup.exe`,
@@ -26,7 +26,7 @@ const detectOS = () => {
 // `SBSP-Host-<Windows|macOS>-Portable.zip` archives when they are
 // attached to the release (see the build-release workflow). The remote
 // app's start with `SBSP-Remote-` and are left out.
-const HOST_PREFIX = "SBSP-Host-";
+const HOST_PREFIX = 'SBSP-Host-';
 
 const findAsset = (assets, pattern) =>
   assets.find((asset) => asset.name.startsWith(HOST_PREFIX) && pattern.test(asset.name))
@@ -49,28 +49,28 @@ onMounted(async () => {
     // `/releases/latest` is the newest of any tag, which may belong to
     // another line of versions.
     const response = await fetch(
-      "https://api.github.com/repos/Keinsleif/sbsp/releases?per_page=100",
+      'https://api.github.com/repos/Keinsleif/sbsp/releases?per_page=100',
     );
-    if (!response.ok) throw new Error("Network response was not ok");
+    if (!response.ok) throw new Error('Network response was not ok');
 
     const releases = await response.json();
     const release = (Array.isArray(releases) ? releases : []).find(
       (candidate) =>
         !candidate.draft &&
         !candidate.prerelease &&
-        String(candidate.tag_name ?? "").startsWith("ui-") &&
+        String(candidate.tag_name ?? '').startsWith('ui-') &&
         Array.isArray(candidate.assets) &&
         Object.values(installers(candidate.assets)).some(Boolean),
     );
 
     if (release) {
       latestData.value = release;
-      version.value = String(release.tag_name).replace(/^ui-/, "");
+      version.value = String(release.tag_name).replace(/^ui-/, '');
     } else {
-      throw new Error("No release with the installers");
+      throw new Error('No release with the installers');
     }
   } catch (err) {
-    console.error("Failed to fetch latest release:", err);
+    console.error('Failed to fetch latest release:', err);
     isError.value = true;
   } finally {
     isLoading.value = false;
@@ -79,20 +79,20 @@ onMounted(async () => {
 
 const messages = {
   ja: {
-    loading: "最新バージョンを確認中...",
-    failed: "情報を取得できませんでした\n下記ページよりダウンロードしてください\n",
-    releaseList: "GitHubのリリース一覧ページ",
-    latest: "最新版",
+    loading: '最新バージョンを確認中...',
+    failed: '情報を取得できませんでした\n下記ページよりダウンロードしてください\n',
+    releaseList: 'GitHubのリリース一覧ページ',
+    latest: '最新版',
   },
   en: {
-    loading: "Loading the latest version...",
-    failed: "Failed to fetch latest version\nDownload from below page\n",
-    releaseList: "GitHub Releases",
-    latest: "Latest",
+    loading: 'Loading the latest version...',
+    failed: 'Failed to fetch latest version\nDownload from below page\n',
+    releaseList: 'GitHub Releases',
+    latest: 'Latest',
   },
 };
 
-const t = computed(() => messages[lang.value] || messages["ja"]);
+const t = computed(() => messages[lang.value] || messages['ja']);
 </script>
 
 <template>
