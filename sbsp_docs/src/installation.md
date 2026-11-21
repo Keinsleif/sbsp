@@ -11,16 +11,14 @@ description: SBS Playerの入手方法
 
 <DownloadButton />
 
-Free code signing provided by SignPath.io, certificate by SignPath Foundation
 本ソフトウェアはローカル環境で動作し、個人情報や利用データを一切収集・外部送信・保存しません。
 
 > v2をご利用でv3へのアップデートを行う場合、[v2からv3への移行](./migration/v2tov3)を参照してください。
 
 もしくは、以下のページよりインストーラーを入手できます。
 
-### GitHub Releases
-
-[GitHub Releases](https://github.com/Keinsleif/sbsp/releases)
+::: details GitHub Releases
+[GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest)
 
 上記のページの`Assets`より、OSに応じたファイルをダウンロードします。
 
@@ -31,10 +29,22 @@ macOS向けには `SBSP-Host-macOS-Setup.pkg`（または `SBSP-Host-macOS-Porta
 Linux向けには `SBSP-Host-Linux.AppImage`
 
 をダウンロードします。
+:::
+
+## Windowsで警告が表示される場合
+
+現在のWindows向け配布物はインストーラの署名がなされていません。そのため、インストーラの起動時に「Windows によって PC が保護されました」と表示される場合があります。
+「詳細情報」をクリックし、表示された「実行」ボタンをクリックすることでインストーラを起動できます。
+
+> 上記手順を行う前にダウンロードしたファイルのハッシュ値を検証することを強く推奨します。
+> 検証方法については[ハッシュ値の検証方法](#ハッシュ値の検証方法)を参照
 
 ## macOSで開けない場合
 
 現在のmacOS向けの配布物は、Appleの署名・公証を受けていません。そのため、ダウンロードしたファイルをそのまま開くと「開発元を検証できません」などと表示され、起動が止められることがあります。次のいずれかの方法で開きます。
+
+> 下記手順を行う前にダウンロードしたファイルのハッシュ値を検証することを強く推奨します。
+> 検証方法については[ハッシュ値の検証方法](#ハッシュ値の検証方法)を参照
 
 ### `.pkg` のインストーラを開く
 
@@ -56,6 +66,48 @@ macOS 14 以前では、`.pkg` を右クリック（Controlキーを押しなが
 また，署名と公証を受けた配布物が用意されたときは、この手順は不要になります。
 
 インストール後は、メニューの「ヘルプ」→「アップデートを確認」から、新しいバージョンの確認とインストールができます。
+
+## ハッシュ値の検証方法
+
+1. ファイルをダウンロードする
+    ページ冒頭の案内より最新のファイルをダウンロードします
+
+2. ハッシュ値を計算する
+
+    ::: details macOSの場合
+    1. ターミナルを開く
+    2. 下記のコマンドを実行する
+
+        ```zsh
+        shasum -a 256 <対象ファイル>
+        ```
+
+        `<ファイルのパス>` については、ターミナルに対象のファイルをドラッグアンドドロップすることでも入力できます。
+    :::
+
+    ::: details Windowsの場合
+    1. ターミナル(Windows Terminal)を開く
+    2. Windows Powershell を起動する
+
+        ```cmd
+        powershell
+        ```
+
+        と入力しエンターで実行
+    3. 下記コマンドを実行する
+
+        ```powershell
+        Get-FileHash <ファイルのパス>
+        ```
+
+        `<ファイルのパス>` については、ターミナルに対象のファイルをドラッグアンドドロップすることでも入力できます。
+    :::
+
+3. ハッシュ値が正しいか確認する
+    [GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest)の`Assets`にダウンロードファイルとそれに対応するハッシュ値の記載があります。
+    例：`sha256:9d0775984bc4341f61388c93d...`
+
+    これをコピーアイコンからコピーし上記で計算したハッシュと比較し、一致しているか確認します。
 
 <script setup>
     import DownloadButton from './components/DownloadButton.vue';

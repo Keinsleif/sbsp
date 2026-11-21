@@ -11,15 +11,13 @@ You can obtain the installer or the application itself from the following source
 
 <DownloadButton />
 
-Free code signing provided by SignPath.io, certificate by SignPath Foundation
 This software operates in a local environment and does not collect, transmit, or store any personal information or usage data.
 
 > If you are using v2 and wish to update to v3, please refer to [Migrating from v2 to v3](./migration/v2tov3).
 
 Alternatively, you can obtain the installer from the following page.
 
-### GitHub Releases
-
+::: details GitHub Releases
 [GitHub Releases](https://github.com/Keinsleif/sbsp/releases)
 
 Download the file corresponding to your operating system from the "Assets" section on the page mentioned above.
@@ -29,11 +27,23 @@ For Windows, download `SBSP-Host-Windows-Setup.exe` (or `SBSP-Host-Windows-Porta
 For macOS, download `SBSP-Host-macOS-Setup.pkg` (or `SBSP-Host-macOS-Portable.zip`).
 
 For Linux, download `SBSP-Host-Linux.AppImage`.
+:::
+
+## If a security warning appears on Windows
+
+The current distribution for Windows is not digitally signed. Consequently, when you launch the installer, you may see a message stating, "Windows protected your PC."
+You can proceed by clicking "More info" and then selecting the "Run" button that appears.
+
+> Verifying the hash value of the downloaded file is strongly recommended before following the steps above.
+> For instructions on how to perform this verification, please refer to [How to verify hash values](#how-to-verify-hash-values).
 
 ## If you cannot open the application on macOS
 
 The current macOS distribution has not been signed or notarized by Apple.
 Consequently, if you attempt to open the downloaded file directly, you may encounter a warning—such as "cannot verify the developer"—that prevents the application from launching. Please use one of the following methods to open it.
+
+> Verifying the hash value of the downloaded file is strongly recommended before following the steps below.
+> For instructions on how to perform this verification, please refer to [How to verify hash values](#how-to-verify-hash-values).
 
 ### Opening the `.pkg` installer
 
@@ -55,6 +65,48 @@ This procedure is only required for the initial installation.
 Note that these steps will no longer be necessary once a signed and notarized version of the application is made available.
 
 After installation, you can check for and install new versions by selecting **Check for Updates** under the **Help** menu.
+
+## How to Verify Hash Values
+
+1. Download the file
+    Download the latest file using the instructions provided at the top of the page.
+
+2. Calculate the hash value
+
+    ::: details For macOS
+    1. Open Terminal.
+    2. Run the following command:
+
+    ```zsh
+    shasum -a 256 <file_path>
+    ```
+
+    You can specify the `<file_path>` by dragging and dropping the file into the Terminal window.
+    :::
+
+    ::: details For Windows
+    1. Open a terminal (Windows Terminal).
+    2. Launch Windows PowerShell:
+
+        ```cmd
+        powershell
+        ```
+
+        Type the command and press Enter.
+    3. Run the following command:
+
+        ```powershell
+        Get-FileHash <file_path>
+        ```
+
+        You can specify the `<file_path>` by dragging and dropping the file into the terminal window.
+    :::
+
+3. Verify the hash value
+    On the [GitHub Releases](https://github.com/Keinsleif/sbsp/releases/latest) page, the downloaded file and its corresponding hash value are listed under "Assets."
+    Example: `sha256:9d0775984bc4341f61388c93d...`
+
+    Copy the hash value (using the copy icon) and compare it with the value you calculated in the previous step to ensure they match.
 
 <script setup>
     import DownloadButton from '/components/DownloadButton.vue';
