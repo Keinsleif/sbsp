@@ -153,6 +153,7 @@ where
                 // otherwise where the cursor is.
                 let pressed_at = state.last_mouse.or_else(|| cursor.position());
                 if let Some(position) = pressed_at
+                    && viewport.contains(position)
                     && layout.bounds().contains(position)
                 {
                     state.drag = Some(Drag {
@@ -172,7 +173,9 @@ where
                 }
             }
             Event::Touch(touch::Event::FingerPressed { id, position })
-                if state.drag.is_none() && layout.bounds().contains(*position) =>
+                if state.drag.is_none()
+                && viewport.contains(*position)
+                && layout.bounds().contains(*position) =>
             {
                 state.drag = Some(Drag {
                     pointer: Pointer::Finger(*id),
