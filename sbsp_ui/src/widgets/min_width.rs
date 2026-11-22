@@ -25,16 +25,21 @@ pub fn min_width<'a, Message: 'a>(
     content: impl Fn(f32) -> Element<'a, Message> + 'a,
 ) -> Responsive<'a, Message> {
     responsive(move |room| {
-        if room.width >= min {
-            content(room.width)
+        let is_scrollable = room.width < min;
+        let scroll_bar = if is_scrollable {
+            scrollable::Scrollbar::default()
         } else {
-            scrollable(scroll_space(content(min)))
-                .direction(scrollable::Direction::Horizontal(
-                    scrollable::Scrollbar::default(),
-                ))
-                .width(Length::Fill)
-                .height(Length::Shrink)
-                .into()
-        }
+            scrollable::Scrollbar::hidden()
+        };
+        let content_width = if is_scrollable {
+            min
+        } else {
+            room.width
+        };
+        scrollable(scroll_space(content(content_width)))
+            .direction(scrollable::Direction::Horizontal(scroll_bar))
+            .width(Length::Fill)
+            .height(Length::Shrink)
+            .into()
     })
 }
