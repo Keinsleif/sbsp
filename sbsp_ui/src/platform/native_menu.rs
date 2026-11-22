@@ -107,7 +107,7 @@ pub fn install(spec: &MenuSpec) {
             _menu: menu,
             entries,
         });
-   });
+    });
 }
 
 /// Brings the items' enabled state, checkmark and label up to date with
@@ -219,7 +219,13 @@ fn append(target: &Submenu, nodes: &[MenuNode], entries: &mut HashMap<&'static s
                 let escaped_label = label.replace('&', "&&");
                 match checked {
                     Some(checked) => {
-                        let item = CheckMenuItem::with_id(muda_id, escaped_label, *enabled, *checked, None);
+                        let item = CheckMenuItem::with_id(
+                            muda_id,
+                            escaped_label,
+                            *enabled,
+                            *checked,
+                            None,
+                        );
                         target.append(&item).expect("failed to append menu item");
                         entries.insert(id.0, Entry::Check(item));
                     }

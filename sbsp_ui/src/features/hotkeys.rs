@@ -182,9 +182,7 @@ impl Bindings {
             // One key press must mean one action, and the shortcut shown
             // for an action must be the one that triggers it.
             if let Some((_, owner)) = bindings.iter().find(|(taken, _)| *taken == hotkey) {
-                log::warn!(
-                    "ignoring hotkey {spec:?} for {action:?}: already bound to {owner:?}"
-                );
+                log::warn!("ignoring hotkey {spec:?} for {action:?}: already bound to {owner:?}");
                 continue;
             }
             bindings.push((hotkey, action));
@@ -415,10 +413,7 @@ mod tests {
         let mut settings = HotkeySettings::default();
         settings.playback.execute = Some("$mod+C".to_owned());
         let b = Bindings::from_settings(&settings, false);
-        assert_eq!(
-            b.find(&press(ch("c"), Modifiers::CTRL)),
-            Some(Action::Copy)
-        );
+        assert_eq!(b.find(&press(ch("c"), Modifiers::CTRL)), Some(Action::Copy));
         assert_eq!(b.shortcut(Action::Execute, false), None);
     }
 
@@ -508,8 +503,6 @@ mod tests {
 
     #[test]
     fn bare_modifier_presses_are_not_bindable() {
-        assert!(
-            KeyPress::new(&named(Named::Shift), Modifiers::SHIFT, false).is_none()
-        );
+        assert!(KeyPress::new(&named(Named::Shift), Modifiers::SHIFT, false).is_none());
     }
 }

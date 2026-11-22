@@ -182,14 +182,12 @@ where
             }
             Event::Touch(
                 touch::Event::FingerLifted { id, .. } | touch::Event::FingerLost { id, .. },
-            ) => {
-                if state
-                    .drag
-                    .take_if(|drag| drag.pointer == Pointer::Finger(*id))
-                    .is_some()
-                {
-                    shell.publish(self.on_end.clone());
-                }
+            ) if state
+                .drag
+                .take_if(|drag| drag.pointer == Pointer::Finger(*id))
+                .is_some() =>
+            {
+                shell.publish(self.on_end.clone());
             }
             _ => {}
         }

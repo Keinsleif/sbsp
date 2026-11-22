@@ -42,7 +42,9 @@ pub static IS_MACOS: LazyLock<bool> = LazyLock::new(|| {
         }
     }
     if let Ok(user_agent) = navigator.user_agent() {
-        if user_agent.to_lowercase().contains("macintosh") || user_agent.to_lowercase().contains("mac os x") {
+        if user_agent.to_lowercase().contains("macintosh")
+            || user_agent.to_lowercase().contains("mac os x")
+        {
             return true;
         }
     }

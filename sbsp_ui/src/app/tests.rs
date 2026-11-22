@@ -133,8 +133,7 @@ fn shift_clicking_selects_the_range_from_the_current_selection() {
 }
 
 fn press(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Message {
-    let press =
-        hotkeys::KeyPress::new(&key, modifiers, false).expect("test keys are all bindable");
+    let press = hotkeys::KeyPress::new(&key, modifiers, false).expect("test keys are all bindable");
     Message::KeyPressed(press)
 }
 
@@ -517,9 +516,15 @@ fn dragging_a_divider_resizes_the_column_beside_it() {
     send(&mut state, cue_list::Message::ResizeBy(20.0));
     assert_eq!(state.ui.column_widths.pre_wait, 112.0 - 20.0);
     send(&mut state, cue_list::Message::ResizeBy(3000.0));
-    assert_eq!(state.ui.column_widths.pre_wait, 80.0, "kept within its range");
+    assert_eq!(
+        state.ui.column_widths.pre_wait, 80.0,
+        "kept within its range"
+    );
     send(&mut state, cue_list::Message::ResizeBy(-3000.0));
-    assert_eq!(state.ui.column_widths.pre_wait, 240.0, "kept within its range");
+    assert_eq!(
+        state.ui.column_widths.pre_wait, 240.0,
+        "kept within its range"
+    );
 
     // Double click: the default width, and the drag it started is over.
     send(&mut state, cue_list::Message::ResetWidth(Column::PreWait));

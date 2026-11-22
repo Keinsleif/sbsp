@@ -84,7 +84,7 @@ pub fn view<'a>(confirm: Confirm) -> Element<'a, Answer> {
                     .on_press(Answer::Cancel),
                 button(text(yes_text)).on_press(Answer::Yes),
             ]
-        },
+        }
         Confirm::SaveChanges(_) => row![
             button(text(fl!("dialog-save-confirm-cancel")))
                 .style(button::secondary)

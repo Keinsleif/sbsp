@@ -297,7 +297,10 @@ pub fn view<'a>(
                     .unwrap_or(TimeRange::FULL),
                 active,
                 can_seek: active.is_some_and(|a| {
-                    !matches!(a.status, PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused)
+                    !matches!(
+                        a.status,
+                        PlaybackStatus::PreWaiting | PlaybackStatus::PreWaitPaused
+                    )
                 }) && ui.mode != Mode::View,
             }
         });

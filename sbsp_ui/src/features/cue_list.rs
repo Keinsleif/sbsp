@@ -818,8 +818,18 @@ fn row_view<'a>(
         row![indent, disclosure, name]
             .align_y(Alignment::Center)
             .width(Length::Fill),
-        time_cell(pre_wait.0, pre_wait.1, in_pre_wait, ui.column_widths.pre_wait),
-        time_cell(duration.0, duration.1, in_playback, ui.column_widths.duration),
+        time_cell(
+            pre_wait.0,
+            pre_wait.1,
+            in_pre_wait,
+            ui.column_widths.pre_wait
+        ),
+        time_cell(
+            duration.0,
+            duration.1,
+            in_playback,
+            ui.column_widths.duration
+        ),
         cell(repeat_mark, W_REPEAT),
         cell(chain_mark, W_CHAIN),
     ]
@@ -978,12 +988,7 @@ pub(crate) fn asset_duration(cue: &Cue, assets: &AssetResults) -> Option<f64> {
 
 /// A time field with its progress fill behind the text. `active` outlines
 /// it (the phase currently running).
-fn time_cell<'a>(
-    label: String,
-    progress: f32,
-    active: bool,
-    width: f32,
-) -> Element<'a, Message> {
+fn time_cell<'a>(label: String, progress: f32, active: bool, width: f32) -> Element<'a, Message> {
     let bar = progress::bar(progress, |theme: &Theme| {
         theme.extended_palette().primary.base.color.scale_alpha(0.5)
     });
