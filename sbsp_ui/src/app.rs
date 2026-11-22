@@ -1041,6 +1041,9 @@ impl State {
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => {
                 self.window_focused = focused;
+                if !focused {
+                    self.column_drag = None;
+                }
                 self.sync_power();
             }
             #[cfg(all(target_os = "macos", backend))]
