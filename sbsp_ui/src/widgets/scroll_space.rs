@@ -272,7 +272,10 @@ mod tests {
             Event::Touch(touch::Event::FingerLost { position, .. }) if position == Point::new(152.0, 8.0)
         ));
         assert!(matches!(
-            shifted(&Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)), by),
+            shifted(
+                &Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)),
+                by
+            ),
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
         ));
     }
