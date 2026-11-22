@@ -37,6 +37,7 @@ use crate::state::ui::{Column, ColumnWidths, DisplayMode, UiState};
 use crate::theme::fonts;
 use crate::theme::palette::get_text_color;
 use crate::widgets::divider;
+use crate::widgets::grab::grab;
 use crate::widgets::icon::{Icon, Tone, icon, toned};
 use crate::widgets::progress;
 use crate::widgets::tree_guide::{self, Kind as GuideKind};
@@ -90,10 +91,10 @@ pub enum Message {
     DragDropped,
     /// While dragging: time to scroll if the pointer is at an edge.
     DragTick,
-    /// Pressed on a column divider of the header.
+    /// A column divider of the header was taken with the mouse or a finger.
     ResizeStart(Column),
-    /// The pointer's x in the window, while a divider is being dragged.
-    ResizeMoved(f32),
+    /// How far the pointer has gone sideways since the divider was taken.
+    ResizeBy(f32),
     ResizeEnd,
     /// Double click on a divider: the column's default width.
     ResetWidth(Column),
@@ -452,13 +453,12 @@ pub fn min_width(widths: &ColumnWidths) -> f32 {
         + W_CHAIN
 }
 
-/// A column divider being dragged. The pointer's position when the button
-/// went down is not part of the press, so it is taken from the first move.
+/// A column divider being dragged, and the width the column had when the
+/// drag began. The handle reports how far the pointer has gone since then.
 #[derive(Debug, Clone, Copy)]
 pub struct ColumnDrag {
     pub column: Column,
     pub start_width: f32,
-    pub start_x: Option<f32>,
 }
 
 /// The column header plus the rows. Column widths are shared constants
@@ -582,14 +582,15 @@ fn list_view<'a>(
 const GRAB_WIDTH: f32 = 5.0;
 
 fn resize_handle<'a>(column: Column) -> Element<'a, Message> {
-    mouse_area(
+    mouse_area(grab(
         container(divider::vertical())
             .center_x(GRAB_WIDTH)
             .height(Length::Fill),
-    )
-    .on_press(Message::ResizeStart(column))
+        Message::ResizeStart(column),
+        Message::ResizeBy,
+        Message::ResizeEnd,
+    ))
     .on_double_click(Message::ResetWidth(column))
-    .interaction(mouse::Interaction::ResizingHorizontally)
     .into()
 }
 

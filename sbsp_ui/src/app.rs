@@ -1246,13 +1246,11 @@ impl State {
                 self.column_drag = Some(cue_list::ColumnDrag {
                     column,
                     start_width: self.ui.column_widths.get(column),
-                    start_x: None,
                 });
             }
-            cue_list::Message::ResizeMoved(x) => {
-                if let Some(drag) = &mut self.column_drag {
-                    let start_x = *drag.start_x.get_or_insert(x);
-                    let width = drag.start_width + (x - start_x) * drag.column.direction();
+            cue_list::Message::ResizeBy(distance) => {
+                if let Some(drag) = self.column_drag {
+                    let width = drag.start_width + distance * drag.column.direction();
                     self.ui.column_widths.set(drag.column, width);
                 }
             }
@@ -3342,22 +3340,6 @@ impl State {
 
         // Files dropped together arrive as separate events; the first tick
         // after the last of them closes the batch.
-        // While a column divider is dragged, the pointer is followed
-        // wherever it goes, and releasing the button ends the drag.
-        let column_resize = if self.column_drag.is_some() {
-            event::listen_with(|event, _status, _window| match event {
-                iced::Event::Mouse(mouse::Event::CursorMoved { position }) => {
-                    Some(Message::CueList(cue_list::Message::ResizeMoved(position.x)))
-                }
-                iced::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
-                    Some(Message::CueList(cue_list::Message::ResizeEnd))
-                }
-                _ => None,
-            })
-        } else {
-            Subscription::none()
-        };
-
         let drops = if self.dropped_files.is_empty() {
             Subscription::none()
         } else {
@@ -3395,7 +3377,6 @@ impl State {
             backend_events,
             modifiers,
             dragging,
-            column_resize,
             drops,
             native_menu,
         ])
