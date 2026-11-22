@@ -7,8 +7,11 @@
 //! horizontal scrollable a `Fill` is worth nothing (the width there is
 //! unbounded). So the width has to be handed down: [`min_width`] asks for
 //! the room there is, builds the content at `max(room, min)` and, when the
-//! room is smaller than `min`, puts it in a horizontal scrollable.
+//! room is smaller than `min`, puts it in a horizontal scrollable (in which
+//! the pointer positions of events are given in the content's own space,
+//! see [`scroll_space`]).
 
+use crate::widgets::scroll_space::scroll_space;
 use iced::widget::{Responsive, responsive, scrollable};
 use iced::{Element, Length};
 
@@ -25,7 +28,7 @@ pub fn min_width<'a, Message: 'a>(
         if room.width >= min {
             content(room.width)
         } else {
-            scrollable(content(min))
+            scrollable(scroll_space(content(min)))
                 .direction(scrollable::Direction::Horizontal(
                     scrollable::Scrollbar::default(),
                 ))

@@ -11,6 +11,11 @@
 //! press that is followed by a move out of the handle before the batch is
 //! handled is still a press on the handle, and the first movement of a drag
 //! is not lost. One pointer owns a drag: another finger cannot move or end it.
+//!
+//! Positions of events are compared with the widget's bounds as they are,
+//! so inside a scrollable the content must be wrapped in
+//! [`scroll_space`](super::scroll_space), which puts them in the space of
+//! the layout.
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
@@ -144,23 +149,15 @@ where
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
                 if state.drag.is_none() =>
             {
-                let bounds = layout.bounds();
                 // Where the press was, if the mouse has been seen to move;
                 // otherwise where the cursor is.
-                let (start_x, hit) = match state.last_mouse {
-                    Some(position) => (
-                        Some(position.x),
-                        bounds.contains(position) || cursor.is_over(bounds),
-                    ),
-                    None => (
-                        cursor.position().map(|position| position.x),
-                        cursor.is_over(bounds),
-                    ),
-                };
-                if let (Some(start_x), true) = (start_x, hit) {
+                let pressed_at = state.last_mouse.or_else(|| cursor.position());
+                if let Some(position) = pressed_at
+                    && layout.bounds().contains(position)
+                {
                     state.drag = Some(Drag {
                         pointer: Pointer::Mouse,
-                        start_x,
+                        start_x: position.x,
                     });
                     shell.publish(self.on_start.clone());
                 }
@@ -175,8 +172,7 @@ where
                 }
             }
             Event::Touch(touch::Event::FingerPressed { id, position })
-                if state.drag.is_none()
-                    && (layout.bounds().contains(*position) || cursor.is_over(layout.bounds())) =>
+                if state.drag.is_none() && layout.bounds().contains(*position) =>
             {
                 state.drag = Some(Drag {
                     pointer: Pointer::Finger(*id),
