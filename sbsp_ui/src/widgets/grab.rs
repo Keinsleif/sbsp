@@ -7,8 +7,10 @@
 //! reports how far the pointer has gone since it went down. The press
 //! position comes from the events (the mouse's last known position, or the
 //! finger's own), not from the cursor at the time the batch of events is
-//! processed, so the first movement of a drag is not lost. One pointer owns
-//! a drag: another finger cannot move or end it.
+//! processed: the cursor is the latest one for every event of a batch, so a
+//! press that is followed by a move out of the handle before the batch is
+//! handled is still a press on the handle, and the first movement of a drag
+//! is not lost. One pointer owns a drag: another finger cannot move or end it.
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
@@ -140,13 +142,22 @@ where
                 }
             }
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-                if state.drag.is_none() && cursor.is_over(layout.bounds()) =>
+                if state.drag.is_none() =>
             {
-                let start_x = state
-                    .last_mouse
-                    .map(|position| position.x)
-                    .or_else(|| cursor.position().map(|position| position.x));
-                if let Some(start_x) = start_x {
+                let bounds = layout.bounds();
+                // Where the press was, if the mouse has been seen to move;
+                // otherwise where the cursor is.
+                let (start_x, hit) = match state.last_mouse {
+                    Some(position) => (
+                        Some(position.x),
+                        bounds.contains(position) || cursor.is_over(bounds),
+                    ),
+                    None => (
+                        cursor.position().map(|position| position.x),
+                        cursor.is_over(bounds),
+                    ),
+                };
+                if let (Some(start_x), true) = (start_x, hit) {
                     state.drag = Some(Drag {
                         pointer: Pointer::Mouse,
                         start_x,
@@ -164,7 +175,8 @@ where
                 }
             }
             Event::Touch(touch::Event::FingerPressed { id, position })
-                if state.drag.is_none() && cursor.is_over(layout.bounds()) =>
+                if state.drag.is_none()
+                    && (layout.bounds().contains(*position) || cursor.is_over(layout.bounds())) =>
             {
                 state.drag = Some(Drag {
                     pointer: Pointer::Finger(*id),
