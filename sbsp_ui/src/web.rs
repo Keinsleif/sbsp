@@ -56,10 +56,10 @@ fn percent_decode(text: &str) -> String {
 /// The fonts of the page: cut-down copies of the UI fonts that the host
 /// serves next to the page (`scripts/subset_fonts.py`).
 #[cfg(target_arch = "wasm32")]
-pub async fn fetch_fonts() -> Result<std::sync::Arc<(Vec<u8>, Vec<u8>)>, String> {
+pub async fn fetch_fonts() -> Result<(Vec<u8>, Vec<u8>), String> {
     let ui = fetch("fonts/ui.ttf").await?;
     let mono = fetch("fonts/mono.ttf").await?;
-    Ok(std::sync::Arc::new((ui, mono)))
+    Ok((ui, mono))
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -329,9 +329,6 @@ pub enum Message {
     #[cfg(backend)]
     AssetRequestFailed(std::path::PathBuf, String),
     MeterTick(Instant),
-    /// The browser's fonts arrived (or did not).
-    #[cfg(target_arch = "wasm32")]
-    FontsFetched(Result<std::sync::Arc<(Vec<u8>, Vec<u8>)>, String>),
     #[cfg(target_arch = "wasm32")]
     FontsLoaded(Result<(), String>),
     Header(header::Message),
@@ -495,7 +492,18 @@ impl State {
         #[cfg(target_arch = "wasm32")]
         let boot_task = Task::batch([
             boot_task,
-            Task::perform(crate::web::fetch_fonts(), Message::FontsFetched),
+            Task::future(crate::web::fetch_fonts()).then(|result| {
+                match result {
+                    Ok((ui, mono)) => {
+                        Task::batch([
+                            iced::font::load(ui),
+                            iced::font::load(mono),
+                        ])
+                        .map(|result| Message::FontsLoaded(result.map_err(|e| format!("{e:?}"))))
+                    }
+                    Err(error) => Task::done(Message::FontsLoaded(Err(error))),
+                }
+            }),
         ]);
 
         // At most once a day, and only where the app can update itself.
@@ -752,18 +760,6 @@ impl State {
                 }
                 Task::none()
             }
-            #[cfg(target_arch = "wasm32")]
-            Message::FontsFetched(Ok(fonts)) => {
-                let mono = fonts.1.clone();
-                iced::font::load(fonts.0.clone())
-                    .then(move |first| match first {
-                        Ok(()) => iced::font::load(mono.clone()),
-                        Err(error) => Task::done(Err(error)),
-                    })
-                    .map(|result| Message::FontsLoaded(result.map_err(|e| format!("{e:?}"))))
-            }
-            #[cfg(target_arch = "wasm32")]
-            Message::FontsFetched(Err(error)) => Task::done(Message::FontsLoaded(Err(error))),
             #[cfg(target_arch = "wasm32")]
             Message::FontsLoaded(result) => {
                 if let Err(error) = result {
@@ -1087,7 +1083,7 @@ impl State {
             Message::SyncTick => {}
             Message::Toast(message) => self.toasts.update(message),
             #[cfg(target_arch = "wasm32")]
-            Message::FontsFetched(_) | Message::FontsLoaded(_) => {}
+            Message::FontsLoaded(_) => {}
             Message::Nothing => {}
             Message::Tick(now) => {
                 let _ = self.playback.calculate_position(true, now);
