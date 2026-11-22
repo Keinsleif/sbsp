@@ -6,6 +6,7 @@ pub mod hotkey;
 pub mod manager;
 
 use serde::{Deserialize, Serialize};
+use unic_langid::LanguageIdentifier;
 use std::path::PathBuf;
 
 use hotkey::HotkeySettings;
@@ -18,6 +19,8 @@ use sbsp_backend::{
         group::{GroupCueParamBase, GroupMode},
     },
 };
+
+use crate::theme::ThemeMode;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
@@ -100,18 +103,9 @@ pub struct AudioHardwareSettings {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppearanceSettings {
-    pub language: Option<String>,
-    pub dark_mode: DarkMode,
+    pub language: Option<LanguageIdentifier>,
+    pub dark_mode: ThemeMode,
     pub hide_controls: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
-#[serde(rename_all = "camelCase")]
-pub enum DarkMode {
-    #[default]
-    Dark,
-    Light,
-    System,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

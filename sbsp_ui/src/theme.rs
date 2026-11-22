@@ -7,6 +7,8 @@
 //! The actual color values live in [`palette`], kept separate so they can
 //! be tuned without touching the resolution logic below.
 
+use serde::{Deserialize, Serialize};
+
 pub mod fonts;
 pub mod palette;
 
@@ -15,11 +17,11 @@ pub mod palette;
 /// This is intentionally a plain enum rather than `Option<iced::Theme>` so
 /// it can be serialized directly into `crate::settings` without making the
 /// settings types depend on iced.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ThemeMode {
-    Light,
-    Dark,
     #[default]
+    Dark,
+    Light,
     System,
 }
 

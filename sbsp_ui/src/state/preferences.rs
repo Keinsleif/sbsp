@@ -5,18 +5,18 @@
 //! what the app does with it. The host's settings also hold the audio
 //! hardware; the remote's do not.
 
+use crate::i18n::Language;
 use crate::settings::hotkey::HotkeySettings;
 use crate::settings::{
-    AppearanceSettings, DarkMode, GeneralSettings, GlobalHostSettings, GlobalRemoteSettings,
+    AppearanceSettings, GeneralSettings, GlobalHostSettings, GlobalRemoteSettings,
     NameFormatSettings, TemplateSettings,
 };
-
 use crate::theme::ThemeMode;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Preferences {
     pub general: GeneralSettings,
-    pub appearance: AppearanceSettings,
+    pub appearance: AppearancePreferences,
     pub hotkey: HotkeySettings,
     pub template: TemplateSettings,
     pub name_format: NameFormatSettings,
@@ -32,7 +32,7 @@ impl From<&GlobalHostSettings> for Preferences {
     fn from(settings: &GlobalHostSettings) -> Self {
         Self {
             general: settings.general.clone(),
-            appearance: settings.appearance.clone(),
+            appearance: (&settings.appearance).into(),
             hotkey: settings.hotkey.clone(),
             template: settings.template.clone(),
             name_format: settings.name_format.clone(),
@@ -44,7 +44,7 @@ impl From<&GlobalRemoteSettings> for Preferences {
     fn from(settings: &GlobalRemoteSettings) -> Self {
         Self {
             general: settings.general.clone(),
-            appearance: settings.appearance.clone(),
+            appearance: (&settings.appearance).into(),
             hotkey: settings.hotkey.clone(),
             template: settings.template.clone(),
             name_format: settings.name_format.clone(),
@@ -52,30 +52,29 @@ impl From<&GlobalRemoteSettings> for Preferences {
     }
 }
 
-pub fn theme_mode(mode: DarkMode) -> ThemeMode {
-    match mode {
-        DarkMode::Dark => ThemeMode::Dark,
-        DarkMode::Light => ThemeMode::Light,
-        DarkMode::System => ThemeMode::System,
+#[derive(Debug, Clone, PartialEq)]
+pub struct AppearancePreferences {
+    pub dark_mode: ThemeMode,
+    pub lang: Option<Language>,
+    pub hide_controls: bool,
+}
+
+impl From<&AppearanceSettings> for AppearancePreferences {
+    fn from(value: &AppearanceSettings) -> Self {
+        Self {
+            dark_mode: value.dark_mode,
+            lang: Language::from_setting(value.language.as_ref()),
+            hide_controls: value.hide_controls,
+        }
     }
 }
 
-pub fn dark_mode(mode: ThemeMode) -> DarkMode {
-    match mode {
-        ThemeMode::Dark => DarkMode::Dark,
-        ThemeMode::Light => DarkMode::Light,
-        ThemeMode::System => DarkMode::System,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn theme_modes_round_trip() {
-        for mode in [DarkMode::Dark, DarkMode::Light, DarkMode::System] {
-            assert_eq!(dark_mode(theme_mode(mode)), mode);
+impl From<&AppearancePreferences> for AppearanceSettings {
+    fn from(value: &AppearancePreferences) -> Self {
+        Self {
+            language: value.lang.map(|l| l.langid()),
+            dark_mode: value.dark_mode,
+            hide_controls: value.hide_controls,
         }
     }
 }

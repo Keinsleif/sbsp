@@ -16,9 +16,8 @@ struct Localizations;
 
 pub static LOADER: LazyLock<FluentLanguageLoader> = LazyLock::new(|| {
     let loader: FluentLanguageLoader = fluent_language_loader!();
-    let fallback = loader.fallback_language().clone();
     loader
-        .load_languages(&Localizations, &[fallback])
+        .load_languages(&Localizations, &[Language::default().langid()])
         .expect("failed to load the fallback language");
     loader
 });
@@ -34,25 +33,20 @@ macro_rules! fl {
     }};
 }
 
-/// The language the system (the OS on desktop, the browser on the web)
-/// asks for first, if it says.
-pub fn system_language() -> Option<String> {
+/// The Languages being requested by the operating system/environment.
+pub fn system_language() -> Option<Language> {
     #[cfg(not(target_arch = "wasm32"))]
-    let requested = i18n_embed::DesktopLanguageRequester::requested_languages();
+    let lang = i18n_embed::DesktopLanguageRequester::requested_languages();
     #[cfg(target_arch = "wasm32")]
-    let requested = i18n_embed::WebLanguageRequester::requested_languages();
-    requested.first().map(ToString::to_string)
+    let lang = i18n_embed::WebLanguageRequester::requested_languages();
+    lang.iter().find_map(|li| Language::from_setting(Some(li)))
 }
 
 /// Switch the active language. The fallback language is always kept.
-pub fn select(language: &LanguageIdentifier) {
-    let fallback = LOADER.fallback_language().clone();
-    let mut languages = vec![language.clone()];
-    if *language != fallback {
-        languages.push(fallback);
-    }
+pub fn select(language: Option<Language>) {
+    let languages = Vec::from_iter(language.or(system_language()).map(|l| l.langid()));
     if let Err(e) = LOADER.load_languages(&Localizations, &languages) {
-        log::error!("failed to load language {language}: {e}");
+        log::error!("failed to load language {languages:?}: {e}");
     }
 }
 
@@ -66,41 +60,38 @@ pub fn select(language: &LanguageIdentifier) {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Language {
     #[default]
-    En,
     Ja,
+    En,
 }
 
 impl Language {
+    /// Fallback from other unsupported languages. Not default language.
+    /// Same as `i18n.toml`'s `fallback_language`
+    pub const FALLBACK_LANGUAGE: Self = Language::En;
+    
     pub fn toggle(self) -> Self {
         match self {
-            Language::En => Language::Ja,
             Language::Ja => Language::En,
+            Language::En => Language::Ja,
         }
     }
 
-    /// The language a stored setting names: `"ja"` (or `"ja-JP"`, ...) is
-    /// Japanese and any other value is English. With no setting the
-    /// system's language decides (`system`, e.g. `"ja-JP"`), English when
-    /// that is unknown too.
-    pub fn from_setting(setting: Option<&str>, system: Option<&str>) -> Self {
-        match setting.or(system) {
-            Some(tag) if tag.to_lowercase().starts_with("ja") => Language::Ja,
-            _ => Language::En,
-        }
-    }
-
-    /// What goes into the settings for this language.
-    pub fn setting(self) -> &'static str {
-        match self {
-            Language::En => "en",
-            Language::Ja => "ja",
-        }
+    pub fn from_setting(setting: Option<&LanguageIdentifier>) -> Option<Self> {
+        setting.map(|lang| {
+            if lang.matches(&Self::Ja.langid(), false, true) {
+                Self::Ja
+            } else if lang.matches(&Self::En.langid(), false, true) {
+                Self::En
+            } else {
+                Self::FALLBACK_LANGUAGE
+            }
+        })
     }
 
     pub fn langid(self) -> LanguageIdentifier {
         match self {
-            Language::En => langid!("en"),
             Language::Ja => langid!("ja"),
+            Language::En => langid!("en"),
         }
     }
 
@@ -111,8 +102,8 @@ impl Language {
     /// unreadable to someone who can't read that one).
     pub fn label(self) -> &'static str {
         match self {
-            Language::En => "English",
             Language::Ja => "日本語",
+            Language::En => "English",
         }
     }
 }
@@ -122,35 +113,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_stored_setting_wins_over_the_system() {
+    fn setting_languid_correctly_parsed() {
         assert_eq!(
-            Language::from_setting(Some("ja"), Some("en-US")),
-            Language::Ja
+            Language::from_setting(Some(&langid!("ja"))),
+            Some(Language::Ja)
         );
         assert_eq!(
-            Language::from_setting(Some("en"), Some("ja-JP")),
-            Language::En
+            Language::from_setting(Some(&langid!("en"))),
+            Some(Language::En)
         );
-        assert_eq!(Language::from_setting(Some("ja-JP"), None), Language::Ja);
+        assert_eq!(Language::from_setting(Some(&langid!("ja-JP"))), Some(Language::Ja));
         assert_eq!(
-            Language::from_setting(Some("fr"), Some("ja-JP")),
-            Language::En
+            Language::from_setting(Some(&langid!("fr"))),
+            None
         );
-    }
-
-    #[test]
-    fn without_a_setting_the_system_decides() {
-        assert_eq!(Language::from_setting(None, Some("ja-JP")), Language::Ja);
-        assert_eq!(Language::from_setting(None, Some("en-GB")), Language::En);
-        assert_eq!(Language::from_setting(None, None), Language::En);
     }
 
     #[test]
     fn what_is_stored_is_read_back() {
         for language in [Language::En, Language::Ja] {
             assert_eq!(
-                Language::from_setting(Some(language.setting()), None),
-                language
+                Language::from_setting(Some(&language.langid())),
+                Some(language)
             );
         }
     }

@@ -3,7 +3,7 @@
 
 use serial_test::serial;
 
-use crate::platform;
+use crate::{platform, settings::TemplateSettings};
 
 use super::*;
 
@@ -186,7 +186,7 @@ fn hide_controls_setting_hides_the_transport_buttons() {
     state
         .ui
         .set_permission(sbsp_backend::api::Permissions::all());
-    state.hide_controls = true;
+    state.preferences.appearance.hide_controls = true;
 
     assert!(!state.show_controls());
 }
@@ -1135,29 +1135,30 @@ fn a_name_the_user_gave_is_what_the_list_shows() {
 #[test]
 #[serial]
 fn loaded_settings_reach_the_ui() {
-    use crate::settings::DarkMode;
+    use crate::theme::ThemeMode;
+    use crate::i18n::Language;
 
     let mut state = new_state();
     let mut loaded = Preferences::default();
-    loaded.general.lock_cursor_to_selection = !state.lock_cursor_to_selection;
+    loaded.general.lock_cursor_to_selection.toggle();
     loaded.general.seek_amount = 7.5;
-    loaded.appearance.dark_mode = DarkMode::Light;
-    loaded.appearance.language = Some("ja".to_owned());
-    loaded.appearance.hide_controls = !state.hide_controls;
+    loaded.appearance.dark_mode = ThemeMode::Light;
+    loaded.appearance.lang = Some(Language::Ja);
+    loaded.appearance.hide_controls.toggle();
     loaded.hotkey.file.open = Some("$mod+Shift+O".to_owned());
     loaded.name_format.audio = "custom".to_owned();
 
     state.apply_preferences(&loaded);
 
     assert_eq!(
-        state.lock_cursor_to_selection,
+        state.preferences.general.lock_cursor_to_selection,
         loaded.general.lock_cursor_to_selection
     );
-    assert_eq!(state.seek_amount, 7.5);
-    assert_eq!(state.theme_mode, ThemeMode::Light);
-    assert_eq!(state.lang, Language::Ja);
-    assert_eq!(state.hide_controls, loaded.appearance.hide_controls);
-    assert_eq!(state.name_format.audio, "custom");
+    assert_eq!(state.preferences.general.seek_amount, 7.5);
+    assert_eq!(state.preferences.appearance.dark_mode, ThemeMode::Light);
+    assert_eq!(state.preferences.appearance.lang, Some(Language::Ja));
+    assert_eq!(state.preferences.appearance.hide_controls, loaded.appearance.hide_controls);
+    assert_eq!(state.preferences.name_format.audio, "custom");
     assert_eq!(
         state
             .hotkeys
@@ -1174,7 +1175,7 @@ fn loaded_settings_reach_the_ui() {
 
     // Back to what the other tests expect.
     state.apply_preferences(&Preferences::default());
-    crate::i18n::select(&Language::En.langid());
+    crate::i18n::select(Some(Language::En));
 }
 
 #[test]
@@ -1210,7 +1211,7 @@ fn the_cog_opens_the_settings_dialog_with_the_current_values() {
 #[serial]
 fn the_settings_dialog_closes_on_escape_and_cancel_without_applying() {
     let mut state = new_state();
-    let before = state.lock_cursor_to_selection;
+    let before = state.preferences.general.lock_cursor_to_selection;
     let key = |named| press(keyboard::Key::Named(named), keyboard::Modifiers::empty());
 
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
@@ -1221,33 +1222,33 @@ fn the_settings_dialog_closes_on_escape_and_cancel_without_applying() {
     assert!(state.settings_dialog.is_some(), "other keys do nothing");
     let _ = state.update(key(keyboard::key::Named::Escape));
     assert!(state.settings_dialog.is_none());
-    assert_eq!(state.lock_cursor_to_selection, before);
+    assert_eq!(state.preferences.general.lock_cursor_to_selection, before);
 
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
     let _ = state.update(Message::Settings(settings_dialog::Message::Cancel));
     assert!(state.settings_dialog.is_none());
-    assert_eq!(state.lock_cursor_to_selection, before);
+    assert_eq!(state.preferences.general.lock_cursor_to_selection, before);
 }
 
 #[test]
 #[serial]
 fn done_applies_the_edited_settings() {
+    use crate::theme::ThemeMode;
     let mut state = new_state();
-    let before = state.lock_cursor_to_selection;
+    let before = state.preferences.general.lock_cursor_to_selection;
 
     let _ = state.update(Message::StatusBar(status_bar::Message::OpenSettings));
     let _ = state.update(Message::Settings(settings_dialog::Message::LockCursor(
         !before,
     )));
     let _ = state.update(Message::Settings(settings_dialog::Message::DarkMode(
-        crate::settings::DarkMode::Dark,
+        ThemeMode::Dark,
     )));
     let _ = state.update(Message::Settings(settings_dialog::Message::Done));
 
     assert!(state.settings_dialog.is_none());
-    assert_eq!(state.lock_cursor_to_selection, !before);
-    assert_eq!(state.theme_mode, ThemeMode::Dark);
     assert_eq!(state.preferences.general.lock_cursor_to_selection, !before);
+    assert_eq!(state.preferences.appearance.dark_mode, ThemeMode::Dark);
 }
 
 #[test]
@@ -1262,7 +1263,7 @@ fn done_takes_the_field_being_edited() {
     let _ = state.update(Message::Field(field::Message::Input(id, "7".to_owned())));
     let _ = state.update(Message::Settings(settings_dialog::Message::Done));
 
-    assert_eq!(state.seek_amount, 7.0);
+    assert_eq!(state.preferences.general.seek_amount, 7.0);
 }
 
 #[test]
@@ -1357,7 +1358,6 @@ fn the_template_editor_edits_the_template_not_the_selected_cue() {
     let _ = state.update(Message::Settings(settings_dialog::Message::Done));
 
     assert_eq!(state.preferences.template.wait.number, "W9");
-    assert_eq!(state.templates.wait.number, "W9", "new cues start from it");
     assert_eq!(state.model.cue_list.cues[&ids[0]].number, number_before);
 }
 

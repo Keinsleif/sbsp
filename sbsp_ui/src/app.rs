@@ -44,10 +44,9 @@ use crate::features::{
     },
     editor, file_ops, header, hotkeys, mobile, side_bar, status_bar, viewer,
 };
-use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
 use crate::persist::{Saved, WindowRect};
-use crate::state::preferences::{self, Preferences};
+use crate::state::preferences::Preferences;
 use crate::state::{
     assets::AssetResults,
     level_meter::LevelMeterState,
@@ -55,7 +54,6 @@ use crate::state::{
     playback::PlaybackState,
     ui::{KeepAwakeMode, Mode, SideBarTab, UiState},
 };
-use crate::theme::ThemeMode;
 use crate::widgets::{divider, field, modal, toast};
 
 #[cfg(installer)]
@@ -74,7 +72,7 @@ use crate::remote::backend::{RemotePort, RemoteSettings};
 use crate::settings::GlobalHostSettings;
 #[cfg(client)]
 use crate::settings::GlobalRemoteSettings;
-use crate::settings::{AudioHardwareSettings, NameFormatSettings, TemplateSettings};
+use crate::settings::{AudioHardwareSettings};
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 
@@ -119,7 +117,7 @@ pub fn run(target: &'static str) -> iced::Result {
         State::view,
     )
     .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
-    .theme(|state: &State| crate::theme::resolve(state.theme_mode))
+    .theme(|state: &State| crate::theme::resolve(state.preferences.appearance.dark_mode))
     .subscription(State::subscription)
     // Closing the window goes through `Message::CloseRequested`, which
     // may ask about unsaved changes first.
@@ -148,33 +146,18 @@ pub fn run(target: &'static str) -> iced::Result {
 }
 
 pub struct State {
-    theme_mode: ThemeMode,
-    lang: Language,
-    // The preferences the screen reads. They are copied here when the
-    // settings are loaded or saved, because the settings live behind an
-    // async lock inside `HostPort`, which the synchronous `view()` cannot
-    // read. Until then they hold the defaults, which is also what a first
-    // run loads.
-    name_format: NameFormatSettings,
-    lock_cursor_to_selection: bool,
-    cue_view: cue_list::Viewport,
-    // Same story as above: seek amount and the hotkey table come from
-    // the settings defaults until Phase 7 loads real ones.
-    seek_amount: f64,
+    /// The settings as last applied, which the settings dialog starts from.
+    preferences: Preferences,
     hotkeys: hotkeys::Bindings,
-    /// Templates for new cues; the defaults until Phase 7 loads the
-    /// settings.
-    templates: TemplateSettings,
     /// The settings as loaded (and as last saved).
     #[cfg(feature = "host")]
     host_settings: GlobalHostSettings,
+    cue_view: cue_list::Viewport,
     /// A question about replacing or closing the show, waiting for an
     /// answer.
     confirm: Option<file_ops::Confirm>,
     /// Cues waiting for the user to confirm their removal.
     pending_remove: Option<Vec<Uuid>>,
-    /// The settings as last applied, which the settings dialog starts from.
-    preferences: Preferences,
     /// What the audio hardware tab lists, once the system has said.
     hardware: Option<Result<SupportedHardware, String>>,
     /// Done was pressed with audio hardware changes while audio cues play;
@@ -224,7 +207,6 @@ pub struct State {
     /// Whether the window is maximized (the size and position above are
     /// from before that).
     window_maximized: bool,
-    hide_controls: bool,
     model: ShowModelState,
     ui: UiState,
     playback: PlaybackState,
@@ -276,8 +258,6 @@ pub struct State {
 
 #[derive(Clone)]
 pub enum Message {
-    ToggleTheme,
-    ToggleLanguage,
     ModifiersChanged(keyboard::Modifiers),
     KeyPressed(hotkeys::KeyPress),
     CueList(cue_list::Message),
@@ -522,30 +502,16 @@ impl State {
         };
 
         let is_host = cfg!(feature = "host");
-        let lang = Language::default();
-        // Redundant with LOADER's own lazy initialization today (it loads
-        // the fallback language, which is also Language::default()), but
-        // explicit rather than relying on that coincidence -- if the two
-        // ever diverge this still does the right thing instead of silently
-        // booting in the wrong language.
-        crate::i18n::select(&lang.langid());
 
         #[cfg(client)]
         let (connect, autoconnect) = startup_connection();
 
         let mut state = Self {
-            theme_mode: ThemeMode::default(),
-            lang,
-            name_format: NameFormatSettings::default(),
-            lock_cursor_to_selection: crate::settings::GeneralSettings::default()
-                .lock_cursor_to_selection,
             cue_view: cue_list::Viewport::default(),
-            seek_amount: crate::settings::GeneralSettings::default().seek_amount,
             hotkeys: hotkeys::Bindings::from_settings(
                 &crate::settings::hotkey::HotkeySettings::default(),
                 platform::is_mac(),
             ),
-            templates: TemplateSettings::default(),
             #[cfg(feature = "host")]
             host_settings: GlobalHostSettings::default(),
             confirm: None,
@@ -583,7 +549,6 @@ impl State {
                 .and_then(|rect| rect.position())
                 .map(|(x, y)| iced::Point::new(x, y)),
             window_maximized: saved.window.is_some_and(|rect| rect.maximized),
-            hide_controls: crate::settings::AppearanceSettings::default().hide_controls,
             model: ShowModelState::default(),
             ui: {
                 let mut ui = UiState::new(is_host);
@@ -851,16 +816,6 @@ impl State {
                     self.send(vec![Control::SeekTo(id, seconds)])
                 }
             }
-            #[cfg(feature = "host")]
-            message @ (Message::ToggleTheme | Message::ToggleLanguage) => {
-                self.apply(message);
-                self.save_appearance()
-            }
-            #[cfg(all(client, not(feature = "host")))]
-            message @ (Message::ToggleTheme | Message::ToggleLanguage) => {
-                self.apply(message);
-                self.save_remote_appearance()
-            }
             #[cfg(client)]
             Message::RemoteSettingsLoaded(store, settings) => {
                 self.apply_preferences(&Preferences::from(&*settings));
@@ -909,34 +864,9 @@ impl State {
     #[cfg_attr(not(any(feature = "host", test)), allow(dead_code))]
     fn apply_preferences(&mut self, preferences: &Preferences) {
         self.preferences = preferences.clone();
-        self.name_format = preferences.name_format.clone();
-        self.lock_cursor_to_selection = preferences.general.lock_cursor_to_selection;
-        self.seek_amount = preferences.general.seek_amount;
         self.hotkeys = hotkeys::Bindings::from_settings(&preferences.hotkey, platform::is_mac());
-        self.hide_controls = preferences.appearance.hide_controls;
-        self.templates = preferences.template.clone();
-        self.theme_mode = preferences::theme_mode(preferences.appearance.dark_mode);
-        self.lang = Language::from_setting(
-            preferences.appearance.language.as_deref(),
-            crate::i18n::system_language().as_deref(),
-        );
-        crate::i18n::select(&self.lang.langid());
-    }
 
-    /// The View menu's theme and language switches are kept in the
-    /// settings.
-    #[cfg(feature = "host")]
-    fn save_appearance(&mut self) -> Task<Message> {
-        let appearance = &mut self.host_settings.appearance;
-        appearance.dark_mode = preferences::dark_mode(self.theme_mode);
-        appearance.language = Some(self.lang.setting().to_owned());
-        match self.backend.as_ref().and_then(Port::host) {
-            Some(backend) => Task::perform(
-                backend.save_settings(self.host_settings.clone()),
-                backend_result,
-            ),
-            None => Task::none(),
-        }
+        crate::i18n::select(preferences.appearance.lang);
     }
 
     /// The remote's View menu choices go into its own settings file.
@@ -953,17 +883,6 @@ impl State {
 
     fn apply(&mut self, message: Message) {
         match message {
-            Message::ToggleTheme => {
-                self.theme_mode = match self.theme_mode {
-                    ThemeMode::System => ThemeMode::Dark,
-                    ThemeMode::Dark => ThemeMode::Light,
-                    ThemeMode::Light => ThemeMode::System,
-                };
-            }
-            Message::ToggleLanguage => {
-                self.lang = self.lang.toggle();
-                crate::i18n::select(&self.lang.langid());
-            }
             Message::ModifiersChanged(modifiers) => self.modifiers = modifiers,
             Message::CueList(message) => self.handle_cue_list(message),
             Message::StatusBar(status_bar::Message::ModeSelected(mode)) => {
@@ -1102,7 +1021,7 @@ impl State {
                 self.model = state.show_model;
                 self.ui.set_playback_cursor(
                     self.model.cue_list.root_ids.first().copied(),
-                    self.lock_cursor_to_selection,
+                    self.preferences.general.lock_cursor_to_selection,
                     &self.model.cue_list.cues,
                 );
                 self.ui
@@ -1187,7 +1106,7 @@ impl State {
     }
 
     fn handle_cue_list(&mut self, message: cue_list::Message) {
-        let lock = self.lock_cursor_to_selection;
+        let lock = self.preferences.general.lock_cursor_to_selection;
 
         match message {
             cue_list::Message::ToggleExpand(id) => self.ui.toggle_expand(id),
@@ -1282,7 +1201,7 @@ impl State {
 
     /// Whether the header's transport buttons are shown.
     fn show_controls(&self) -> bool {
-        !self.hide_controls && self.ui.mode != Mode::View
+        !self.preferences.appearance.hide_controls && self.ui.mode != Mode::View
     }
 
     fn handle_header(&mut self, message: header::Message) -> Task<Message> {
@@ -1430,7 +1349,7 @@ impl State {
         use hotkeys::Action as A;
         use sbsp_backend::controller::state::PlaybackStatus as S;
 
-        let lock = self.lock_cursor_to_selection;
+        let lock = self.preferences.general.lock_cursor_to_selection;
 
         match action {
             A::CursorUp | A::ExtendUp | A::CursorDown | A::ExtendDown => {
@@ -1517,11 +1436,11 @@ impl State {
             A::FadeAllOut => vec![Control::SoftStopAll],
             A::HardStopAll => vec![Control::HardStopAll],
             A::SeekForward => selected_active
-                .map(|(id, _)| Control::SeekBy(id, self.seek_amount))
+                .map(|(id, _)| Control::SeekBy(id, self.preferences.general.seek_amount))
                 .into_iter()
                 .collect(),
             A::SeekBackward => selected_active
-                .map(|(id, _)| Control::SeekBy(id, -self.seek_amount))
+                .map(|(id, _)| Control::SeekBy(id, -self.preferences.general.seek_amount))
                 .into_iter()
                 .collect(),
             // Handled above.
@@ -1825,7 +1744,7 @@ impl State {
         self.model = state.show_model;
         self.ui.set_playback_cursor(
             self.model.cue_list.root_ids.first().copied(),
-            self.lock_cursor_to_selection,
+            self.preferences.general.lock_cursor_to_selection,
             &self.model.cue_list.cues,
         );
         self.ui.set_permission(port.permission());
@@ -2275,22 +2194,13 @@ impl State {
         Task::none()
     }
 
-    /// The settings as they are right now: the View menu's switches may
-    /// have changed the theme and the language since they were applied.
-    fn current_preferences(&self) -> Preferences {
-        let mut preferences = self.preferences.clone();
-        preferences.appearance.dark_mode = preferences::dark_mode(self.theme_mode);
-        preferences.appearance.language = Some(self.lang.setting().to_owned());
-        preferences
-    }
-
     fn open_settings(&mut self) -> Task<Message> {
         self.template_editor = editor::Editor::default();
         self.hardware = None;
         let dialog = settings_dialog::SettingsDialog::new(
             &self.model.name,
             &self.model.settings,
-            &self.current_preferences(),
+            &self.preferences,
         );
         self.settings_dialog = Some(match self.audio_settings() {
             Some(audio) => dialog.with_audio(audio),
@@ -2359,7 +2269,7 @@ impl State {
         };
 
         let mut tasks = Vec::new();
-        let preferences_changed = dialog.preferences != self.current_preferences();
+        let preferences_changed = dialog.preferences != self.preferences;
         if preferences_changed {
             self.apply_preferences(&dialog.preferences);
         }
@@ -2381,7 +2291,7 @@ impl State {
         let p = self.preferences.clone();
         let settings = &mut self.host_settings;
         settings.general = p.general;
-        settings.appearance = p.appearance;
+        settings.appearance = (&p.appearance).into();
         settings.hotkey = p.hotkey;
         settings.template = p.template;
         settings.name_format = p.name_format;
@@ -2643,7 +2553,7 @@ impl State {
         let Some(new) = new_cue::build(
             kind,
             id,
-            &self.templates,
+            &self.preferences.template,
             self.ui.selected,
             &self.model.cue_list.cues,
         ) else {
@@ -2712,7 +2622,7 @@ impl State {
         let Some((cues, position)) = new_cue::audio_cues(
             files,
             std::iter::repeat_with(Uuid::new_v4),
-            &self.templates,
+            &self.preferences.template,
             self.ui.selected,
         ) else {
             return Task::none();
@@ -3075,7 +2985,7 @@ impl State {
             .flatten();
         self.ui.set_playback_cursor(
             first,
-            self.lock_cursor_to_selection,
+            self.preferences.general.lock_cursor_to_selection,
             &self.model.cue_list.cues,
         );
     }
@@ -3114,7 +3024,7 @@ impl State {
             event,
         );
         if let CursorMove::To(next) = moved {
-            let lock = self.lock_cursor_to_selection;
+            let lock = self.preferences.general.lock_cursor_to_selection;
             self.ui
                 .set_playback_cursor(next, lock, &self.model.cue_list.cues);
         }
@@ -3143,7 +3053,7 @@ impl State {
                 self.replace_model(model, false);
             }
             BackendEvent::CueRemoved { cue_ids } => {
-                let lock = self.lock_cursor_to_selection;
+                let lock = self.preferences.general.lock_cursor_to_selection;
                 let ids: Vec<_> = cue_ids.iter().copied().collect();
                 self.ui.remove_from_selected(&ids, lock);
                 if self
@@ -3526,7 +3436,7 @@ impl State {
             editor::Context {
                 cue,
                 model: &self.model,
-                name_format: &self.name_format,
+                name_format: &self.preferences.name_format,
                 drafts: &self.fields,
                 duration: crate::domain::cue::get_duration(cue, |_| {
                     cue.and_then(|cue| cue_list::asset_duration(cue, &self.assets))
@@ -3588,7 +3498,7 @@ impl State {
                     crate::domain::cue::display_name(
                         cue,
                         &self.model.cue_list.cues,
-                        &self.name_format,
+                        &self.preferences.name_format,
                     )
                 })
                 .unwrap_or_default(),
@@ -3608,7 +3518,7 @@ impl State {
                     &self.ui,
                     &self.playback,
                     &self.assets,
-                    &self.name_format,
+                    &self.preferences.name_format,
                     (self.ui.mode == Mode::Edit).then_some(cue_list::EditMode {
                         can_paste: !self.clipboard.is_empty(),
                         drag: self.cue_drag.as_ref(),
@@ -3655,7 +3565,7 @@ impl State {
                     &self.ui,
                     &self.playback,
                     &self.meter,
-                    &self.name_format,
+                    &self.preferences.name_format,
                 )
                 .map(Message::SideBar),
             )
@@ -3702,7 +3612,7 @@ impl State {
                     &self.ui,
                     &self.playback,
                     &self.assets,
-                    &self.name_format,
+                    &self.preferences.name_format,
                     None,
                 ),
                 self.cue_view,
@@ -3711,7 +3621,7 @@ impl State {
             .map(Message::CueList),
             mobile::Tab::Controls => mobile::controls(self.mobile_controls()).map(Message::Mobile),
             mobile::Tab::Active => {
-                side_bar::active_cues(&self.model, &self.ui, &self.playback, &self.name_format)
+                side_bar::active_cues(&self.model, &self.ui, &self.playback, &self.preferences.name_format)
                     .map(Message::SideBar)
             }
         };
@@ -3738,7 +3648,7 @@ impl State {
                     let name = crate::domain::cue::display_name(
                         cue,
                         &self.model.cue_list.cues,
-                        &self.name_format,
+                        &self.preferences.name_format,
                     );
                     header::cue_title(cue, name)
                 })
@@ -3778,7 +3688,7 @@ impl State {
                 if let Some(id) = target {
                     self.ui.set_playback_cursor(
                         Some(id),
-                        self.lock_cursor_to_selection,
+                        self.preferences.general.lock_cursor_to_selection,
                         &self.model.cue_list.cues,
                     );
                 }
@@ -3787,9 +3697,9 @@ impl State {
             mobile::Message::Rewind | mobile::Message::FastForward => match cursor {
                 Some(id) if running => {
                     let amount = if message == mobile::Message::Rewind {
-                        -self.seek_amount
+                        -self.preferences.general.seek_amount
                     } else {
-                        self.seek_amount
+                        self.preferences.general.seek_amount
                     };
                     self.send(vec![Control::SeekBy(id, amount)])
                 }

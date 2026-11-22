@@ -19,7 +19,9 @@ pub use template_tab::{Editing, Kind as TemplateKind};
 
 use std::fmt;
 
-use crate::settings::{AudioHardwareSettings, DarkMode};
+use crate::i18n::Language;
+use crate::settings::AudioHardwareSettings;
+use crate::theme::ThemeMode;
 use iced::widget::{Space, button, checkbox, column, container, pick_list, row, scrollable, text};
 use iced::{Alignment, Element, Length, Theme};
 use sbsp_backend::model::settings::{CursorAdvanceTrigger, ShowSettings};
@@ -119,8 +121,8 @@ pub enum Message {
     MonoOutput(bool),
     LockCursor(bool),
     CopyAssets(bool),
-    Language(Option<String>),
-    DarkMode(DarkMode),
+    Language(Option<Language>),
+    DarkMode(ThemeMode),
     HideControls(bool),
     /// A hotkey input was pressed: it waits for a key (or stops waiting).
     Capture(hotkey_tab::Slot),
@@ -263,7 +265,7 @@ impl SettingsDialog {
             Message::MonoOutput(on) => self.show.audio.mono_output = *on,
             Message::LockCursor(on) => self.preferences.general.lock_cursor_to_selection = *on,
             Message::CopyAssets(on) => self.preferences.general.copy_assets_when_add = *on,
-            Message::Language(language) => self.preferences.appearance.language = language.clone(),
+            Message::Language(language) => self.preferences.appearance.lang = *language,
             Message::DarkMode(mode) => self.preferences.appearance.dark_mode = *mode,
             Message::HideControls(on) => self.preferences.appearance.hide_controls = *on,
             Message::Field(_) | Message::Editor(_) | Message::Cancel | Message::Done => {}
@@ -651,22 +653,22 @@ fn appearance_page<'a>(dialog: &SettingsDialog) -> Element<'a, Message> {
             None,
             fl!("dialog-settings-global-appearance-system-language"),
         ),
-        choice(Some("en".to_owned()), "English"),
-        choice(Some("ja".to_owned()), "日本語"),
+        choice(Some(Language::En), Language::En.label()),
+        choice(Some(Language::Ja), Language::Ja.label()),
     ];
     let modes = vec![
         choice(
-            DarkMode::System,
+            ThemeMode::System,
             fl!("dialog-settings-global-appearance-system-settings"),
         ),
-        choice(DarkMode::Dark, "Dark"),
-        choice(DarkMode::Light, "Light"),
+        choice(ThemeMode::Dark, "Dark"),
+        choice(ThemeMode::Light, "Light"),
     ];
 
     column![
         labeled(
             Some(fl!("dialog-settings-global-appearance-language").as_str()),
-            picker(languages, &appearance.language, Message::Language),
+            picker(languages, &appearance.lang, Message::Language),
         ),
         labeled(
             Some(fl!("dialog-settings-global-appearance-dark-mode").as_str()),
@@ -829,8 +831,8 @@ mod tests {
         d.update(&Message::MonoOutput(true));
         d.update(&Message::LockCursor(false));
         d.update(&Message::CopyAssets(true));
-        d.update(&Message::Language(Some("ja".to_owned())));
-        d.update(&Message::DarkMode(DarkMode::Light));
+        d.update(&Message::Language(Some(Language::Ja)));
+        d.update(&Message::DarkMode(ThemeMode::Light));
         d.update(&Message::HideControls(true));
         d.update(&Message::SelectTab(Tab::Appearance));
 
@@ -841,8 +843,8 @@ mod tests {
         assert!(d.show.audio.mono_output);
         assert!(!d.preferences.general.lock_cursor_to_selection);
         assert!(d.preferences.general.copy_assets_when_add);
-        assert_eq!(d.preferences.appearance.language.as_deref(), Some("ja"));
-        assert_eq!(d.preferences.appearance.dark_mode, DarkMode::Light);
+        assert_eq!(d.preferences.appearance.lang, Some(Language::Ja));
+        assert_eq!(d.preferences.appearance.dark_mode, ThemeMode::Light);
         assert!(d.preferences.appearance.hide_controls);
         assert_eq!(d.tab, Tab::Appearance);
     }
