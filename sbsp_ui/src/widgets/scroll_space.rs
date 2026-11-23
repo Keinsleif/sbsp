@@ -14,6 +14,12 @@
 //! position in the events it forwards by it. When the offset changes under
 //! a pointer that does not move, the content is told where the pointer now
 //! is, as a `CursorMoved` would.
+//!
+//! While a pointer is held down the offset the content is given stays the
+//! one at the press, so that the distance the pointer travels from the
+//! press does not depend on the content scrolling meanwhile (it can: a
+//! drag that narrows the content can bring the offset back to zero). The
+//! content is caught up when the pointer is released.
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
@@ -21,8 +27,10 @@ use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
 
 #[derive(Debug, Default)]
 struct State {
-    /// The scroll offset the content was last given.
+    /// The scroll offset the content was last caught up with.
     translation: Vector,
+    /// The offset in force since a pointer was pressed, until it is released.
+    held: Option<Vector>,
     /// Where the mouse was last seen, in the window.
     last_mouse: Option<Point>,
 }
@@ -144,34 +152,22 @@ where
         let translation = Vector::new(viewport.x - bounds.x, viewport.y - bounds.y);
 
         let state = tree.state.downcast_mut::<State>();
-        if let Event::Mouse(mouse::Event::CursorMoved { position }) = event {
-            state.last_mouse = Some(*position);
+        match event {
+            Event::Mouse(mouse::Event::CursorMoved { position }) => {
+                state.last_mouse = Some(*position);
+            }
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) => {
+                state.held.get_or_insert(translation);
+            }
+            _ => {}
         }
-        let moved_under_the_pointer = translation != state.translation
-            && !matches!(event, Event::Mouse(mouse::Event::CursorMoved { .. }));
-        let pointer = state.last_mouse;
-        state.translation = translation;
+        let given = state.held.unwrap_or(translation);
 
-        if moved_under_the_pointer && let Some(position) = pointer {
-            let event = Event::Mouse(mouse::Event::CursorMoved {
-                position: position + translation,
-            });
-            self.content.as_widget_mut().update(
-                &mut tree.children[0],
-                &event,
-                layout,
-                cursor,
-                renderer,
-                clipboard,
-                shell,
-                viewport,
-            );
-        }
-
-        let event = shifted(event, translation);
+        let shifted_event = shifted(event, given);
         self.content.as_widget_mut().update(
             &mut tree.children[0],
-            &event,
+            &shifted_event,
             layout,
             cursor,
             renderer,
@@ -179,6 +175,38 @@ where
             shell,
             viewport,
         );
+
+        if matches!(
+            event,
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+                | Event::Touch(touch::Event::FingerLifted { .. } | touch::Event::FingerLost { .. })
+        ) {
+            state.held = None;
+        }
+
+        // Catch the content up with an offset that changed under the pointer.
+        if state.held.is_none() {
+            let changed = translation != state.translation;
+            state.translation = translation;
+            if changed
+                && !matches!(event, Event::Mouse(mouse::Event::CursorMoved { .. }))
+                && let Some(position) = state.last_mouse
+            {
+                let event = Event::Mouse(mouse::Event::CursorMoved {
+                    position: position + translation,
+                });
+                self.content.as_widget_mut().update(
+                    &mut tree.children[0],
+                    &event,
+                    layout,
+                    cursor,
+                    renderer,
+                    clipboard,
+                    shell,
+                    viewport,
+                );
+            }
+        }
     }
 
     fn mouse_interaction(
