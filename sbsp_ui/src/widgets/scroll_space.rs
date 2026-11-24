@@ -28,8 +28,9 @@ use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
 
 #[derive(Debug, Default)]
 struct State {
-    /// The scroll offset the content was last caught up with.
-    translation: Vector,
+    /// The offset that was last applied to the mouse position the content
+    /// was given.
+    mouse_offset: Vector,
     /// The pointers that are down and the offset in force at their press,
     /// until they are released.
     held: Vec<(Holder, Vector)>,
@@ -205,6 +206,9 @@ where
         let given = holder(event)
             .and_then(|holder| state.held_for(holder))
             .unwrap_or(translation);
+        if let Event::Mouse(mouse::Event::CursorMoved { .. }) = event {
+            state.mouse_offset = given;
+        }
 
         let shifted_event = shifted(event, given);
         // A touch is where the finger is, even when the scrollable was kept
@@ -244,12 +248,9 @@ where
 
         // Catch the content up with an offset that changed under the pointer.
         if state.held.is_empty() {
-            let changed = translation != state.translation;
-            state.translation = translation;
-            if changed
-                && !matches!(event, Event::Mouse(mouse::Event::CursorMoved { .. }))
-                && let Some(position) = state.last_mouse
-            {
+            let changed = translation != state.mouse_offset;
+            state.mouse_offset = translation;
+            if changed && let Some(position) = state.last_mouse {
                 let event = Event::Mouse(mouse::Event::CursorMoved {
                     position: position + translation,
                 });
