@@ -15,12 +15,12 @@
 //! a pointer that does not move, the content is told where the pointer now
 //! is, as a `CursorMoved` would.
 //!
-//! While a pointer is held down the offset the content is given stays the
-//! one at the press, so that the distance the pointer travels from the
+//! While a pointer is held down the offset its events are given stays the
+//! one at its press (each pointer has its own), so that the distance the pointer travels from the
 //! press does not depend on the content scrolling meanwhile (it can: a
 //! drag that narrows the content can bring the offset back to zero). The
-//! content is caught up when that pointer is released or lost; another
-//! pointer going away does not end the hold.
+//! content is caught up when no pointer is held any more; a pointer going
+//! away does not end the hold of another.
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
@@ -30,9 +30,9 @@ use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
 struct State {
     /// The scroll offset the content was last caught up with.
     translation: Vector,
-    /// The pointer that was pressed first and the offset in force since,
-    /// until that pointer is released.
-    held: Option<(Holder, Vector)>,
+    /// The pointers that are down and the offset in force at their press,
+    /// until they are released.
+    held: Vec<(Holder, Vector)>,
     /// Where the mouse was last seen, in the window.
     last_mouse: Option<Point>,
 }
@@ -41,6 +41,36 @@ struct State {
 enum Holder {
     Mouse,
     Finger(touch::Finger),
+}
+
+impl State {
+    /// Remembers the offset at the press of a pointer, unless it is down already.
+    fn hold(&mut self, pointer: Holder, translation: Vector) {
+        if self.held_for(pointer).is_none() {
+            self.held.push((pointer, translation));
+        }
+    }
+
+    fn held_for(&self, pointer: Holder) -> Option<Vector> {
+        self.held
+            .iter()
+            .find(|(holder, _)| *holder == pointer)
+            .map(|(_, translation)| *translation)
+    }
+}
+
+/// The pointer an event belongs to.
+fn holder(event: &Event) -> Option<Holder> {
+    match event {
+        Event::Mouse(_) => Some(Holder::Mouse),
+        Event::Touch(
+            touch::Event::FingerPressed { id, .. }
+            | touch::Event::FingerMoved { id, .. }
+            | touch::Event::FingerLifted { id, .. }
+            | touch::Event::FingerLost { id, .. },
+        ) => Some(Holder::Finger(*id)),
+        _ => None,
+    }
 }
 
 pub struct ScrollSpace<'a, Message, Theme, Renderer> {
@@ -165,14 +195,16 @@ where
                 state.last_mouse = Some(*position);
             }
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-                state.held.get_or_insert((Holder::Mouse, translation));
+                state.hold(Holder::Mouse, translation);
             }
             Event::Touch(touch::Event::FingerPressed { id, .. }) => {
-                state.held.get_or_insert((Holder::Finger(*id), translation));
+                state.hold(Holder::Finger(*id), translation);
             }
             _ => {}
         }
-        let given = state.held.map_or(translation, |(_, held)| held);
+        let given = holder(event)
+            .and_then(|holder| state.held_for(holder))
+            .unwrap_or(translation);
 
         let shifted_event = shifted(event, given);
         self.content.as_widget_mut().update(
@@ -195,14 +227,12 @@ where
             ) => Some(Holder::Finger(*id)),
             _ => None,
         };
-        if let Some(ended) = ended
-            && state.held.is_some_and(|(holder, _)| holder == ended)
-        {
-            state.held = None;
+        if let Some(ended) = ended {
+            state.held.retain(|(holder, _)| *holder != ended);
         }
 
         // Catch the content up with an offset that changed under the pointer.
-        if state.held.is_none() {
+        if state.held.is_empty() {
             let changed = translation != state.translation;
             state.translation = translation;
             if changed
