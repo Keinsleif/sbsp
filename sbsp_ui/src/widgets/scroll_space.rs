@@ -207,11 +207,22 @@ where
             .unwrap_or(translation);
 
         let shifted_event = shifted(event, given);
+        // A touch is where the finger is, even when the scrollable was kept
+        // from giving the content a cursor (see `touch_gate`).
+        let content_cursor = match &shifted_event {
+            Event::Touch(
+                touch::Event::FingerPressed { position, .. }
+                | touch::Event::FingerMoved { position, .. }
+                | touch::Event::FingerLifted { position, .. }
+                | touch::Event::FingerLost { position, .. },
+            ) if cursor.position().is_none() => mouse::Cursor::Available(*position),
+            _ => cursor,
+        };
         self.content.as_widget_mut().update(
             &mut tree.children[0],
             &shifted_event,
             layout,
-            cursor,
+            content_cursor,
             renderer,
             clipboard,
             shell,

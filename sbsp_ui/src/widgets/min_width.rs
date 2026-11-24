@@ -9,9 +9,12 @@
 //! the room there is, builds the content at `max(room, min)` and, when the
 //! room is smaller than `min`, puts it in a horizontal scrollable (in which
 //! the pointer positions of events are given in the content's own space,
-//! see [`scroll_space`]).
+//! see [`scroll_space`]). When the content fits, the scrollable is still
+//! there but is kept from taking touch gestures (see [`touch_gate`]), so a
+//! swipe goes on to the scrollable around it.
 
 use crate::widgets::scroll_space::scroll_space;
+use crate::widgets::touch_gate::touch_gate;
 use iced::widget::{Responsive, responsive, scrollable};
 use iced::{Element, Length};
 
@@ -36,10 +39,13 @@ pub fn min_width<'a, Message: 'a>(
         } else {
             room.width
         };
-        scrollable(scroll_space(content(content_width)))
+        let scrolling: Element<'_, Message> = scrollable(scroll_space(content(content_width)))
             .direction(scrollable::Direction::Horizontal(scroll_bar))
             .width(Length::Fill)
             .height(Length::Shrink)
-            .into()
+            .into();
+        // The scrollable stays when the content fits, so that what is inside
+        // keeps its state across the change, but it does not take touches.
+        touch_gate(scrolling, !is_scrollable).into()
     })
 }

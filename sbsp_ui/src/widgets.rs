@@ -16,5 +16,6 @@ pub mod modal;
 pub mod progress;
 pub mod scroll_space;
 pub mod toast;
+pub mod touch_gate;
 pub mod tree_guide;
 pub mod waveform_editor;
