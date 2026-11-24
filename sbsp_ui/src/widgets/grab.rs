@@ -19,7 +19,7 @@
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
-use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
+use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch, window};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Pointer {
@@ -199,6 +199,13 @@ where
                 .is_some() =>
             {
                 shell.publish(self.on_end.clone());
+            }
+            // A release that happens outside the window after the focus is lost
+            // is never delivered, so the drag ends with the focus.
+            Event::Window(window::Event::Unfocused) => {
+                if state.drag.take().is_some() {
+                    shell.publish(self.on_end.clone());
+                }
             }
             _ => {}
         }

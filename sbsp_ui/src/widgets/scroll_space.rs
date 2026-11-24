@@ -24,7 +24,7 @@
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
-use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
+use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch, window};
 
 #[derive(Debug, Default)]
 struct State {
@@ -201,6 +201,8 @@ where
             Event::Touch(touch::Event::FingerPressed { id, .. }) => {
                 state.hold(Holder::Finger(*id), translation);
             }
+            // Releases after the focus is lost may never arrive.
+            Event::Window(window::Event::Unfocused) => state.held.clear(),
             _ => {}
         }
         let given = holder(event)
