@@ -274,7 +274,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn unusable_text_leaves_the_value_alone() {
         let mut dialog = Dialog::default();

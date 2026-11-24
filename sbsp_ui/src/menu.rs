@@ -128,7 +128,6 @@ impl MenuSpec {
         }
     }
 
-
     /// [`MenuSpec::menu`], but only adds the menu when `condition` holds
     /// (e.g. a host-only menu in a build shared with remote/web).
     pub fn menu_if(self, condition: bool, label: impl Into<String>, items: Vec<MenuNode>) -> Self {

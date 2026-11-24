@@ -13,8 +13,8 @@ use iced::{Alignment, Element, Length};
 
 use super::Message;
 use crate::domain::hotkey::Hotkey;
-use crate::platform::is_mac;
 use crate::fl;
+use crate::platform::is_mac;
 use crate::widgets::icon::{self, Icon, Tone};
 
 /// One binding in the settings.

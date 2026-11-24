@@ -133,8 +133,7 @@ fn shift_clicking_selects_the_range_from_the_current_selection() {
 }
 
 fn press(key: keyboard::Key, modifiers: keyboard::Modifiers) -> Message {
-    let press =
-        hotkeys::KeyPress::new(&key, modifiers, false).expect("test keys are all bindable");
+    let press = hotkeys::KeyPress::new(&key, modifiers, false).expect("test keys are all bindable");
     Message::KeyPressed(press)
 }
 
@@ -486,6 +485,51 @@ fn a_seek_is_released_only_on_the_cue_it_started_on() {
     // No drag, no cursor.
     assert!(released_seek(None, Some(a), &both).is_none());
     assert!(released_seek(Some((a, 3.0)), None, &both).is_none());
+}
+
+#[test]
+#[serial]
+fn dragging_a_divider_resizes_the_column_beside_it() {
+    use crate::state::ui::Column;
+
+    let mut state = new_state();
+    let send = |state: &mut State, message: cue_list::Message| {
+        let _ = state.update(Message::CueList(message));
+    };
+
+    // The number column grows with the pointer, by the distance from where
+    // it was taken, however many moves that takes.
+    send(&mut state, cue_list::Message::ResizeStart(Column::Number));
+    send(&mut state, cue_list::Message::ResizeBy(30.0));
+    assert_eq!(state.ui.column_widths.number, 54.0 + 30.0);
+    send(&mut state, cue_list::Message::ResizeBy(10.0));
+    assert_eq!(state.ui.column_widths.number, 54.0 + 10.0);
+
+    // Nothing follows once it is over.
+    send(&mut state, cue_list::Message::ResizeEnd);
+    send(&mut state, cue_list::Message::ResizeBy(50.0));
+    assert_eq!(state.ui.column_widths.number, 54.0 + 10.0);
+
+    // The time columns lie right of their divider: moving it right
+    // narrows them.
+    send(&mut state, cue_list::Message::ResizeStart(Column::PreWait));
+    send(&mut state, cue_list::Message::ResizeBy(20.0));
+    assert_eq!(state.ui.column_widths.pre_wait, 112.0 - 20.0);
+    send(&mut state, cue_list::Message::ResizeBy(3000.0));
+    assert_eq!(
+        state.ui.column_widths.pre_wait, 80.0,
+        "kept within its range"
+    );
+    send(&mut state, cue_list::Message::ResizeBy(-3000.0));
+    assert_eq!(
+        state.ui.column_widths.pre_wait, 240.0,
+        "kept within its range"
+    );
+
+    // Double click: the default width, and the drag it started is over.
+    send(&mut state, cue_list::Message::ResetWidth(Column::PreWait));
+    send(&mut state, cue_list::Message::ResizeBy(20.0));
+    assert_eq!(state.ui.column_widths.pre_wait, 112.0);
 }
 
 #[test]

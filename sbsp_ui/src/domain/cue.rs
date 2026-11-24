@@ -270,10 +270,7 @@ mod tests {
         cues.insert(target_id, target);
         cues.insert(start_id, start.clone());
 
-        assert_eq!(
-            display_name(&start, &cues, &name_format()),
-            "Start Wait 1s"
-        );
+        assert_eq!(display_name(&start, &cues, &name_format()), "Start Wait 1s");
     }
 
     #[test]

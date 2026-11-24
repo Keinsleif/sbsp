@@ -18,14 +18,14 @@
 mod tests;
 
 use crate::features::cue_list::CueListEnv;
+#[cfg(any(feature = "host", feature = "remote"))]
+use crate::platform::files;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::platform::logging;
 use crate::platform::power::{self, KeepAwake};
 use crate::platform::time::{Duration, Instant};
 #[cfg(installer)]
 use crate::platform::update;
-#[cfg(any(feature = "host", feature = "remote"))]
-use crate::platform::files;
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
@@ -38,8 +38,11 @@ use crate::domain::{clipboard, cue_edit};
 #[cfg(client)]
 use crate::features::{connect, dialog::file_list};
 use crate::features::{
-    cue_list, editor, file_ops, header, hotkeys, mobile,
-    side_bar, status_bar, viewer, dialog::{credits, renumber, server_panel, settings as settings_dialog, update as update_dialog}
+    cue_list,
+    dialog::{
+        credits, renumber, server_panel, settings as settings_dialog, update as update_dialog,
+    },
+    editor, file_ops, header, hotkeys, mobile, side_bar, status_bar, viewer,
 };
 use crate::i18n::Language;
 use crate::menu::{MenuNode, MenuSpec};
@@ -199,6 +202,8 @@ pub struct State {
     hovered_row: Option<Uuid>,
     /// Cues being dragged to a new place in the list.
     cue_drag: Option<cue_list::Drag>,
+    /// A divider of the cue list header being dragged.
+    column_drag: Option<cue_list::ColumnDrag>,
     modifiers: keyboard::Modifiers,
     clock: header::ClockTime,
     window_focused: bool,
@@ -495,10 +500,8 @@ impl State {
 
         // At most once a day, and only where the app can update itself.
         #[cfg(installer)]
-        let boot_task = if update::due(
-            saved.last_update_check.unwrap_or(0),
-            update::now_ms(),
-        ) && update::installed()
+        let boot_task = if update::due(saved.last_update_check.unwrap_or(0), update::now_ms())
+            && update::installed()
         {
             Task::batch([
                 boot_task,
@@ -554,6 +557,7 @@ impl State {
             clipboard: Vec::new(),
             hovered_row: None,
             cue_drag: None,
+            column_drag: None,
             modifiers: keyboard::Modifiers::default(),
             clock: header::local_clock(),
             window_focused: true,
@@ -637,10 +641,8 @@ impl State {
     /// Starts or ends the "do not sleep" request to match the chosen mode
     /// and the window focus.
     fn sync_power(&mut self) {
-        self.power.set(power::wanted(
-            self.ui.keep_awake,
-            self.window_focused,
-        ));
+        self.power
+            .set(power::wanted(self.ui.keep_awake, self.window_focused));
     }
 
     /// Brings the state of the native menu's items up to date.
@@ -1038,11 +1040,13 @@ impl State {
             Message::ClockTick => self.clock = header::local_clock(),
             Message::WindowFocused(focused) => {
                 self.window_focused = focused;
+                if !focused {
+                    self.column_drag = None;
+                }
                 self.sync_power();
             }
             #[cfg(all(target_os = "macos", backend))]
-            Message::WindowOpened(_)
-            | Message::NativeMenu(_) => {}
+            Message::WindowOpened(_) | Message::NativeMenu(_) => {}
             Message::SetKeepAwake(mode) => {
                 self.ui.keep_awake = mode;
                 self.sync_power();
@@ -1239,6 +1243,23 @@ impl State {
                     drag.pointer = None;
                 }
             }
+            cue_list::Message::ResizeStart(column) => {
+                self.column_drag = Some(cue_list::ColumnDrag {
+                    column,
+                    start_width: self.ui.column_widths.get(column),
+                });
+            }
+            cue_list::Message::ResizeBy(distance) => {
+                if let Some(drag) = self.column_drag {
+                    let width = drag.start_width + distance * drag.column.direction();
+                    self.ui.column_widths.set(drag.column, width);
+                }
+            }
+            cue_list::Message::ResizeEnd => self.column_drag = None,
+            cue_list::Message::ResetWidth(column) => {
+                self.column_drag = None;
+                self.ui.column_widths.reset(column);
+            }
             // These need to return a Task: see `update_inner`.
             cue_list::Message::Context(_)
             | cue_list::Message::DragDropped
@@ -1358,7 +1379,7 @@ impl State {
         }
         // The question about stopping audio for a hardware change.
         if self.audio_warning {
-            let is = |name: &str| press.name  == name && !press.repeat;
+            let is = |name: &str| press.name == name && !press.repeat;
             return if is("Enter") {
                 self.audio_warning = false;
                 self.finish_settings(true)
@@ -1627,9 +1648,8 @@ impl State {
             return Task::none();
         };
         let handle = backend.handle();
-        files::dialog().then(move |dialog| {
-            Task::perform(files::open(handle.clone(), dialog), backend_result)
-        })
+        files::dialog()
+            .then(move |dialog| Task::perform(files::open(handle.clone(), dialog), backend_result))
     }
 
     /// Saves (or saves as); `after` is what waits for it.
@@ -1885,10 +1905,7 @@ impl State {
                     if let Some(dialog) = &mut self.update_dialog {
                         dialog.stage = Stage::Downloading(0);
                     }
-                    return Task::run(
-                        update::download(found),
-                        Message::UpdateProgress,
-                    );
+                    return Task::run(update::download(found), Message::UpdateProgress);
                 }
                 Task::none()
             }
@@ -2002,10 +2019,7 @@ impl State {
             Progress::Done => {
                 dialog.stage = Stage::Restarting;
                 if let Some(found) = self.update_found.clone() {
-                    return Task::perform(
-                        update::apply(found),
-                        Message::UpdateApplied,
-                    );
+                    return Task::perform(update::apply(found), Message::UpdateApplied);
                 }
             }
         }
@@ -3288,8 +3302,7 @@ impl State {
                     modifiers,
                     repeat,
                     ..
-                }) => hotkeys::KeyPress::new(&key, modifiers, repeat)
-                    .map(Message::KeyPressed),
+                }) => hotkeys::KeyPress::new(&key, modifiers, repeat).map(Message::KeyPressed),
                 _ => None,
             }
         });
@@ -3549,7 +3562,9 @@ impl State {
     fn menu_bar(&self) -> Element<'_, Message> {
         // The native menu bar replaces it.
         #[cfg(all(target_os = "macos", backend))]
-        { iced::widget::Space::new().into() }
+        {
+            iced::widget::Space::new().into()
+        }
         #[cfg(not(all(target_os = "macos", backend)))]
         {
             use crate::widgets::menu_bar;
@@ -3604,7 +3619,7 @@ impl State {
                     }),
                 ),
                 self.cue_view,
-                cue_list::MIN_WIDTH,
+                cue_list::min_width(&self.ui.column_widths),
             )
             .map(Message::CueList),
         )
@@ -3793,7 +3808,7 @@ impl State {
                 // cursor moves on meanwhile.
                 let started_on = self.mobile_seek.map(|(id, _)| id).or(cursor);
                 self.mobile_seek = started_on.map(|id| (id, position));
-                 Task::none()
+                Task::none()
             }
             mobile::Message::SeekReleased => {
                 match released_seek(self.mobile_seek.take(), cursor, &self.playback.active_cues) {
@@ -3910,7 +3925,6 @@ impl State {
             }
             None => content,
         };
-
 
         self.toasts.overlay(content, Message::Toast)
     }

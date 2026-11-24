@@ -180,7 +180,10 @@ impl Panel {
 /// The address a browser opens to control this server with a password.
 pub fn connect_url(hostname: &str, port: u16, password: &str) -> String {
     let address = format!("{hostname}:{port}");
-    format!("http://{address}/?address={address}#{}", fragment_encoded(password))
+    format!(
+        "http://{address}/?address={address}#{}",
+        fragment_encoded(password)
+    )
 }
 
 /// Percent-encodes every byte except unreserved characters, so that
