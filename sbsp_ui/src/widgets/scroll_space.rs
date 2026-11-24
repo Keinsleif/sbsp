@@ -19,7 +19,8 @@
 //! one at the press, so that the distance the pointer travels from the
 //! press does not depend on the content scrolling meanwhile (it can: a
 //! drag that narrows the content can bring the offset back to zero). The
-//! content is caught up when the pointer is released.
+//! content is caught up when that pointer is released or lost; another
+//! pointer going away does not end the hold.
 
 use iced::advanced::widget::{Operation, Tree, tree};
 use iced::advanced::{Clipboard, Layout, Shell, Widget, layout, mouse, overlay, renderer};
@@ -29,10 +30,17 @@ use iced::{Element, Event, Length, Point, Rectangle, Size, Vector, touch};
 struct State {
     /// The scroll offset the content was last caught up with.
     translation: Vector,
-    /// The offset in force since a pointer was pressed, until it is released.
-    held: Option<Vector>,
+    /// The pointer that was pressed first and the offset in force since,
+    /// until that pointer is released.
+    held: Option<(Holder, Vector)>,
     /// Where the mouse was last seen, in the window.
     last_mouse: Option<Point>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Holder {
+    Mouse,
+    Finger(touch::Finger),
 }
 
 pub struct ScrollSpace<'a, Message, Theme, Renderer> {
@@ -156,13 +164,15 @@ where
             Event::Mouse(mouse::Event::CursorMoved { position }) => {
                 state.last_mouse = Some(*position);
             }
-            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-            | Event::Touch(touch::Event::FingerPressed { .. }) => {
-                state.held.get_or_insert(translation);
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                state.held.get_or_insert((Holder::Mouse, translation));
+            }
+            Event::Touch(touch::Event::FingerPressed { id, .. }) => {
+                state.held.get_or_insert((Holder::Finger(*id), translation));
             }
             _ => {}
         }
-        let given = state.held.unwrap_or(translation);
+        let given = state.held.map_or(translation, |(_, held)| held);
 
         let shifted_event = shifted(event, given);
         self.content.as_widget_mut().update(
@@ -176,11 +186,18 @@ where
             viewport,
         );
 
-        if matches!(
-            event,
-            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
-                | Event::Touch(touch::Event::FingerLifted { .. } | touch::Event::FingerLost { .. })
-        ) {
+        let ended = match event {
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                Some(Holder::Mouse)
+            }
+            Event::Touch(
+                touch::Event::FingerLifted { id, .. } | touch::Event::FingerLost { id, .. },
+            ) => Some(Holder::Finger(*id)),
+            _ => None,
+        };
+        if let Some(ended) = ended
+            && state.held.is_some_and(|(holder, _)| holder == ended)
+        {
             state.held = None;
         }
 
