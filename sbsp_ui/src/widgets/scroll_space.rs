@@ -219,7 +219,7 @@ where
                 | touch::Event::FingerMoved { position, .. }
                 | touch::Event::FingerLifted { position, .. }
                 | touch::Event::FingerLost { position, .. },
-            ) if cursor.position().is_none() => mouse::Cursor::Available(*position),
+            ) if cursor.position().is_none() && viewport.contains(*position) => mouse::Cursor::Available(*position),
             _ => cursor,
         };
         self.content.as_widget_mut().update(
