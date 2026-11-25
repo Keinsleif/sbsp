@@ -78,7 +78,7 @@ After installation, you can check for and install new versions by selecting **Ch
     2. Run the following command:
 
     ```zsh
-    shasum -a 256 <file_path>
+    openssl dgst -sha256 -r <file_path>
     ```
 
     You can specify the `<file_path>` by dragging and dropping the file into the Terminal window.
