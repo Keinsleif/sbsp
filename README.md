@@ -55,7 +55,7 @@ SBS Player は、QLab、MusicBee、Multiplayといったソフトウェアにイ
     mise run build_remote
     ```
 
-    `target/release/` に `sbsp_host` と `sbsp_remote` が出力されます。
+    On macOS, `sbsp_host` and `sbsp_remote` are output to `target/universal`. On other platforms, they are output to `target/release/`.
 
 2. インストーラーとアップデート用のパッケージを作成（任意）
 
