@@ -6,8 +6,8 @@ const enConfig = {
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Installation', link: '/installation' },
+      { text: 'Home', link: '/en/' },
+      { text: 'Installation', link: '/en/installation' },
       { text: 'Usage', link: '/usage/ui/main' },
     ],
 
