@@ -26,7 +26,7 @@ use super::*;
 /// The target is "test", which has no storage folder, so quitting in a
 /// test never writes the developer's real UI state file.
 fn new_state() -> State {
-    State::new("test", crate::persist::Saved::default()).0
+    State::new("test", &crate::persist::Saved::default()).0
 }
 
 #[test]
@@ -1523,7 +1523,7 @@ fn the_window_and_ui_choices_are_what_the_next_run_starts_from() {
         is_bottom_tab_open: Some(false),
         ..Saved::default()
     };
-    let (mut state, _) = State::new("test", saved);
+    let (mut state, _) = State::new("test", &saved);
     assert_eq!(state.ui.mode, Mode::Run);
     assert!(!state.ui.is_bottom_tab_open);
     assert!(state.ui.is_right_sidebar_open);

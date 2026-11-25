@@ -114,7 +114,7 @@ pub fn run(target: &'static str) -> iced::Result {
         });
 
     let app = iced::application(
-        move || State::new(target, saved.clone()),
+        move || State::new(target, &saved),
         State::update,
         State::view,
     )
@@ -472,7 +472,7 @@ fn backend_result(result: anyhow::Result<()>) -> Message {
 }
 
 impl State {
-    fn new(target: &'static str, saved: Saved) -> (Self, Task<Message>) {
+    fn new(target: &'static str, saved: &Saved) -> (Self, Task<Message>) {
         log::info!("starting sbsp_ui ({target})");
 
         #[cfg(feature = "host")]
