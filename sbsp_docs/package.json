@@ -1,14 +1,17 @@
 {
   "name": "sbsp_frontend",
+  "version": "1.3.0",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "version": "1.3.0",
-  "devDependencies": {
-    "vitepress": "2.0.0-alpha.17"
-  },
   "scripts": {
     "docs:dev": "vitepress dev src",
     "docs:build": "vitepress build src",
-    "docs:preview": "vitepress preview src"
+    "docs:preview": "vitepress preview src",
+    "format": "oxfmt"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "oxfmt": "^0.78",
+    "vitepress": "2.0.0-alpha.17"
   }
 }

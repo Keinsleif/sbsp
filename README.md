@@ -1,7 +1,22 @@
 # SBS Player
 
-イベント等での使用を想定した音源再生ソフトです。  
-Mac用の舞台オペレーティングソフトウェアである [QLab](https://qlab.app/) にインスパイアされています。  
+> Stage Back Sound Player
+
+SBS Player は、QLab、MusicBee、Multiplayといったソフトウェアにインスパイアされたイベント向け音源再生ソフトウェアです。
+
+## 機能
+
+- 音源の登録、再生
+- 主要な音源ファイルへの対応（caf, mp4, mka, webm, ogg, wav, aac, alac, flac, mp3, opus）
+- フェードイン・フェードアウトの設定
+- 個別のリピート、音量、再生範囲等の設定
+- 複数音源のリピート
+- ファイルへの保存/読み込み
+- 音源も含めたフォルダへのエクスポート
+- 時計の表示
+- スリープ防止
+
+など
 
 ## ドキュメント
 
@@ -40,11 +55,9 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
     mise run build_remote
     ```
 
-    `target/release/` に `sbsp_host` と `sbsp_remote` が出力されます。
+    On macOS, `sbsp_host` and `sbsp_remote` are output to `target/universal`. On other platforms, they are output to `target/release/`.
 
 2. インストーラーとアップデート用のパッケージを作成（任意）
-
-    [.NET 8 SDK](https://dotnet.microsoft.com/) が必要です（`mise install` で入ります）。
 
     ```bash
     mise run pack_host
@@ -56,17 +69,32 @@ Mac用の舞台オペレーティングソフトウェアである [QLab](https:
 > [!NOTE]
 > Web 版だけを開発するときは `mise run dev_web` でブラウザ向けの開発サーバーが起動します。
 
-## License
+## プライバシーポリシー
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+SBS Player（以下「本ソフトウェア」）は、ユーザーのプライバシーを尊重し、個人情報や利用データを**一切収集・送信・保存しません**。
 
-### Freedom to use, study, share and improve
+- **個人情報の収集・送信なし**  
+    氏名、メールアドレス、位置情報、端末識別子、利用状況、などのいかなる個人情報も外部サーバーへ送信・収集しません。
 
-This software respects your freedom. You can:
+- **完全ローカル処理**  
+    入力または生成されたすべてのデータはユーザーの端末内、LAN内でのみ処理・保存され、開発者がアクセスすることはありません。
 
-- Use it for any purpose
-- Study how it works and adapt it to your needs
-- Share copies with others
-- Improve the software and share your improvements with others
+- **第三者ツールの不使用**  
+    アクセス解析（Google Analytics等）や広告配信などの外部SDK・トラッキングツールは一切使用していません。
 
-All derivative works must also be licensed under GPL v3.0.
+プライバシーに関するお問い合わせは、本リポジトリの [Issues](https://github.com/Keinsleif/sbsp/issues) または開発者までご連絡ください。
+
+## ライセンス
+
+本プロジェクトはGNU General Public License v3.0の下でライセンスされています。詳細は[LICENSE](LICENSE)ファイルを参照してください。  
+
+### 使用、研究、共有、改良の自由
+
+このソフトウェアは、あなたの自由を尊重します。あなたは以下のことができます。
+
+- どのような目的であれ、ソフトウェアを使用すること
+- 仕組みを研究し、自身のニーズに合わせて改変すること
+- 他の人々とコピーを共有すること
+- ソフトウェアを改良し、その改良を他の人々と共有すること
+
+派生するすべての著作物も、GPL v3.0ライセンスの下で提供されなければなりません。
