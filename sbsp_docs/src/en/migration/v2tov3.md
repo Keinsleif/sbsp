@@ -12,7 +12,10 @@ While it is possible to install v3 without performing this step, we recommend un
 
 ### 2. Installing SBS Player v3
 
-- Download the latest version of the installer from [Installation Instructions](../installation).
+- Download the latest version of the installer from [Installation](../installation).
+
+- Run the downloaded installer.
+    (Verifying file hash before running installer is recommended. Instructions are described on [Installation](../installation#how-to-verify-hash-values))
 
 - If you did not perform an uninstallation, a confirmation dialog will appear; click "Repair."
 
