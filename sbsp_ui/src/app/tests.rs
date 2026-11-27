@@ -476,7 +476,7 @@ fn a_seek_is_released_only_on_the_cue_it_started_on() {
     // The cursor is still on the cue the drag began on.
     assert!(matches!(
         released_seek(Some((a, 3.0)), Some(a), &both),
-        Some(Control::SeekTo(id, position)) if id == a && position == 3.0
+        Some(ControllerCommand::SeekTo(id, position)) if id == a && position == 3.0
     ));
     // The cursor moved to B, which is active too: nothing is sent.
     assert!(released_seek(Some((a, 3.0)), Some(b), &both).is_none());

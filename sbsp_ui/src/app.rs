@@ -72,7 +72,6 @@ use crate::features::dialog::update::Stage;
 use crate::host::backend::HostPort;
 #[cfg(backend)]
 use crate::port::FullState;
-use crate::port::{Control, ModelEdit};
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
 #[cfg(client)]
@@ -691,15 +690,12 @@ impl State {
                 if old.volume != new.volume
                     && self.playback.active_cues.contains_key(&edited.id) =>
             {
-                Some(Control::SetVolume(
-                    edited.id,
-                    f64::from(f32::from(new.volume)),
-                ))
+                Some(ControllerCommand::set_volume(edited.id, new.volume))
             }
             _ => None,
         };
         let live = self.send(volume.into_iter().collect());
-        Task::batch([self.send_edit(ModelEdit::UpdateCue(edited)), live])
+        Task::batch([self.send_edit(ModelCommand::UpdateCue(edited)), live])
     }
 
     fn update_inner(&mut self, message: Message) -> Task<Message> {
@@ -841,7 +837,7 @@ impl State {
                 if self.ui.mode == Mode::View {
                     Task::none()
                 } else {
-                    self.send(vec![Control::SeekTo(id, seconds)])
+                    self.send(vec![ControllerCommand::SeekTo(id, seconds)])
                 }
             }
             #[cfg(client)]
@@ -1432,34 +1428,36 @@ impl State {
                 .map(|cue| (id, cue.status))
         });
 
-        let controls: Vec<Control> = match action {
+        let controls: Vec<ControllerCommand> = match action {
             A::Execute => self
                 .ui
                 .playback_cursor
-                .map(Control::Execute)
+                .map(ControllerCommand::Execute)
                 .into_iter()
                 .collect(),
-            A::Load => selected_rows().map(Control::Load).collect(),
-            A::Stop => selected_rows().map(Control::Stop).collect(),
-            A::FadeOut => selected_rows().map(Control::SoftStop).collect(),
-            A::HardStop => selected_rows().map(Control::HardStop).collect(),
-            A::ToggleRepeat => selected_rows().map(Control::ToggleRepeat).collect(),
+            A::Load => selected_rows().map(ControllerCommand::Load).collect(),
+            A::Stop => selected_rows().map(ControllerCommand::Stop).collect(),
+            A::FadeOut => selected_rows().map(ControllerCommand::SoftStop).collect(),
+            A::HardStop => selected_rows().map(ControllerCommand::HardStop).collect(),
+            A::ToggleRepeat => selected_rows()
+                .map(ControllerCommand::toggle_repeat)
+                .collect(),
             A::PauseAndResume => match selected_active {
-                Some((id, S::PreWaiting | S::Playing)) => vec![Control::Pause(id)],
-                Some((id, S::PreWaitPaused | S::Paused)) => vec![Control::Resume(id)],
+                Some((id, S::PreWaiting | S::Playing)) => vec![ControllerCommand::Pause(id)],
+                Some((id, S::PreWaitPaused | S::Paused)) => vec![ControllerCommand::Resume(id)],
                 _ => Vec::new(),
             },
-            A::PauseAll => vec![Control::PauseAll],
-            A::ResumeAll => vec![Control::ResumeAll],
-            A::StopAll => vec![Control::StopAll],
-            A::FadeAllOut => vec![Control::SoftStopAll],
-            A::HardStopAll => vec![Control::HardStopAll],
+            A::PauseAll => vec![ControllerCommand::PauseAll],
+            A::ResumeAll => vec![ControllerCommand::ResumeAll],
+            A::StopAll => vec![ControllerCommand::StopAll],
+            A::FadeAllOut => vec![ControllerCommand::SoftStopAll],
+            A::HardStopAll => vec![ControllerCommand::HardStopAll],
             A::SeekForward => selected_active
-                .map(|(id, _)| Control::SeekBy(id, self.preferences.general.seek_amount))
+                .map(|(id, _)| ControllerCommand::SeekBy(id, self.preferences.general.seek_amount))
                 .into_iter()
                 .collect(),
             A::SeekBackward => selected_active
-                .map(|(id, _)| Control::SeekBy(id, -self.preferences.general.seek_amount))
+                .map(|(id, _)| ControllerCommand::SeekBy(id, -self.preferences.general.seek_amount))
                 .into_iter()
                 .collect(),
             // Handled above.
@@ -2296,10 +2294,10 @@ impl State {
             tasks.push(self.save_preferences(dialog.audio));
         }
         if dialog.show != self.model.settings {
-            tasks.push(self.send_edit(ModelEdit::UpdateShowSettings(dialog.show)));
+            tasks.push(self.send_edit(ModelCommand::UpdateSettings(Box::new(dialog.show))));
         }
         if dialog.show_name != self.model.name {
-            tasks.push(self.send_edit(ModelEdit::RenameShow(dialog.show_name)));
+            tasks.push(self.send_edit(ModelCommand::UpdateModelName(dialog.show_name)));
         }
         Task::batch(tasks)
     }
@@ -2375,8 +2373,8 @@ impl State {
         if ids.is_empty() {
             return Task::none();
         }
-        self.send_edit(ModelEdit::RenumberCues {
-            ids,
+        self.send_edit(ModelCommand::RenumberCues {
+            cues: ids,
             start_from: request.start,
             increment: request.increment,
             prefix: request.prefix,
@@ -2407,7 +2405,9 @@ impl State {
                 None => Task::none(),
             },
             editor::Update::PickAudio(id) => self.pick_audio_target(id),
-            editor::Update::Seek(id, seconds) => self.send(vec![Control::SeekTo(id, seconds)]),
+            editor::Update::Seek(id, seconds) => {
+                self.send(vec![ControllerCommand::SeekTo(id, seconds)])
+            }
             editor::Update::MatchVolume(kind) => {
                 let Some(before) = cue else {
                     return Task::none();
@@ -2468,7 +2468,7 @@ impl State {
             return Task::none();
         };
         match crate::domain::cue_edit::set_audio_target(cue, file) {
-            Some(edited) => self.send_edit(ModelEdit::UpdateCue(edited)),
+            Some(edited) => self.send_edit(ModelCommand::UpdateCue(edited)),
             None => Task::none(),
         }
     }
@@ -2513,7 +2513,7 @@ impl State {
     }
 
     #[cfg(backend)]
-    fn send(&self, controls: Vec<Control>) -> Task<Message> {
+    fn send(&self, controls: Vec<ControllerCommand>) -> Task<Message> {
         let Some(backend) = &self.backend else {
             return Task::none();
         };
@@ -2534,7 +2534,7 @@ impl State {
     }
 
     #[cfg(backend)]
-    fn send_edit(&self, edit: ModelEdit) -> Task<Message> {
+    fn send_edit(&self, edit: ModelCommand) -> Task<Message> {
         let Some(backend) = &self.backend else {
             return Task::none();
         };
@@ -2571,17 +2571,17 @@ impl State {
         };
 
         if kind == CueKind::Group {
-            let members = self.ui.selected_rows.clone();
-            if !members.is_empty() {
+            let children = self.ui.selected_rows.clone();
+            if !children.is_empty() {
                 self.ui.expanded_rows.insert(id);
             }
-            return self.send_edit(ModelEdit::AddGroup {
-                group: new.cue,
+            return self.send_edit(ModelCommand::AddGroupWithChildren {
+                cue: new.cue,
                 position: new.position,
-                members,
+                children: children.into_iter().collect(),
             });
         }
-        self.send_edit(ModelEdit::AddCues {
+        self.send_edit(ModelCommand::AddCues {
             cues: vec![new.cue],
             position: new.position,
         })
@@ -2637,7 +2637,7 @@ impl State {
         ) else {
             return Task::none();
         };
-        self.send_edit(ModelEdit::AddCues { cues, position })
+        self.send_edit(ModelCommand::AddCues { cues, position })
     }
 
     /// The batch of dropped files: audio files become cues after the
@@ -2762,14 +2762,14 @@ impl State {
         if self.ui.mode != Mode::Edit {
             return Task::none();
         }
-        let ids: Vec<Uuid> = ids
+        let ids: HashSet<Uuid> = ids
             .into_iter()
             .filter(|id| self.model.cue_list.cues.contains_key(id))
             .collect();
         if ids.is_empty() {
             return Task::none();
         }
-        self.send_edit(ModelEdit::RemoveCues(ids))
+        self.send_edit(ModelCommand::RemoveCues { cue_ids: ids })
     }
 
     /// The cue list's rows in display order, for the clipboard.
@@ -2825,7 +2825,7 @@ impl State {
         if self.ui.mode != Mode::Edit {
             return Task::none();
         }
-        let ids: Vec<Uuid> = self
+        let ids: HashSet<Uuid> = self
             .ui
             .selected_rows
             .iter()
@@ -2835,7 +2835,7 @@ impl State {
         if ids.is_empty() {
             return Task::none();
         }
-        self.send_edit(ModelEdit::RemoveCues(ids))
+        self.send_edit(ModelCommand::RemoveCues { cue_ids: ids })
     }
 
     /// Paste: copies of the clipboard's cues after the selected one (at the
@@ -2849,7 +2849,7 @@ impl State {
             .ui
             .selected
             .filter(|id| self.model.cue_list.cues.contains_key(id));
-        self.send_edit(ModelEdit::AddCues {
+        self.send_edit(ModelCommand::AddCues {
             cues: clipboard::for_paste(&self.clipboard, Uuid::new_v4),
             position: new_cue::position_after(target),
         })
@@ -2870,7 +2870,7 @@ impl State {
         if cues.is_empty() {
             return Task::none();
         }
-        self.send_edit(ModelEdit::AddCues {
+        self.send_edit(ModelCommand::AddCues {
             cues: clipboard::for_paste(&cues, Uuid::new_v4),
             position,
         })
@@ -2889,15 +2889,15 @@ impl State {
         else {
             return Task::none();
         };
-        let ids: Vec<Uuid> = drag
+        let cue_ids: HashSet<Uuid> = drag
             .ids
             .into_iter()
             .filter(|id| self.model.cue_list.cues.contains_key(id))
             .collect();
-        if ids.is_empty() {
+        if cue_ids.is_empty() {
             return Task::none();
         }
-        self.send_edit(ModelEdit::MoveCues { ids, position })
+        self.send_edit(ModelCommand::MoveCues { cue_ids, position })
     }
 
     /// A tick of a drag: scrolls the list if the pointer is at its edge.
@@ -3630,10 +3630,13 @@ impl State {
             )
             .map(Message::CueList),
             mobile::Tab::Controls => mobile::controls(self.mobile_controls()).map(Message::Mobile),
-            mobile::Tab::Active => {
-                side_bar::active_cues(&self.model, &self.ui, &self.playback, &self.preferences.name_format)
-                    .map(Message::SideBar)
-            }
+            mobile::Tab::Active => side_bar::active_cues(
+                &self.model,
+                &self.ui,
+                &self.playback,
+                &self.preferences.name_format,
+            )
+            .map(Message::SideBar),
         };
         mobile::frame(self.clock, tab, can_control, body, |tab| {
             Message::Mobile(mobile::Message::Tab(tab))
@@ -3711,12 +3714,12 @@ impl State {
                     } else {
                         self.preferences.general.seek_amount
                     };
-                    self.send(vec![Control::SeekBy(id, amount)])
+                    self.send(vec![ControllerCommand::SeekBy(id, amount)])
                 }
                 _ => Task::none(),
             },
             mobile::Message::ToggleRepeat => match cursor {
-                Some(id) if running => self.send(vec![Control::ToggleRepeat(id)]),
+                Some(id) if running => self.send(vec![ControllerCommand::toggle_repeat(id)]),
                 _ => Task::none(),
             },
             mobile::Message::Seek(position) => {
@@ -3958,7 +3961,7 @@ fn released_seek(
     seek: Option<(Uuid, f64)>,
     cursor: Option<Uuid>,
     active: &std::collections::HashMap<Uuid, sbsp_backend::controller::state::ActiveCue>,
-) -> Option<Control> {
+) -> Option<ControllerCommand> {
     let (id, position) = seek?;
     (cursor == Some(id) && active.contains_key(&id)).then_some(Control::SeekTo(id, position))
 }

@@ -16,11 +16,11 @@ use iced::theme::palette::mix;
 use iced::widget::{button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Length, Theme};
 
+use sbsp_backend::controller::ControllerCommand;
 use sbsp_backend::controller::state::PlaybackStatus;
 use sbsp_backend::model::cue::Cue;
 
 use crate::domain::new_cue::CueKind;
-use crate::port::Control;
 use crate::widgets::blink::{Lit, Strength};
 use crate::widgets::icon::{Icon, glyph};
 
@@ -63,7 +63,7 @@ pub fn controls_for(
     message: Message,
     cursor: Option<sbsp_backend::model::cue::Uuid>,
     status: Option<PlaybackStatus>,
-) -> Vec<Control> {
+) -> Vec<ControllerCommand> {
     let Some(id) = cursor else {
         return Vec::new();
     };
@@ -72,16 +72,16 @@ pub fn controls_for(
     match message {
         // Not playback: the app adds a cue.
         Message::AddCue(_) => Vec::new(),
-        Message::Stop => vec![Control::Stop(id)],
+        Message::Stop => vec![ControllerCommand::Stop(id)],
         Message::Play => match status {
-            Some(S::Paused | S::PreWaitPaused) => vec![Control::Resume(id)],
-            Some(S::Loaded) | None => vec![Control::Execute(id)],
+            Some(S::Paused | S::PreWaitPaused) => vec![ControllerCommand::Resume(id)],
+            Some(S::Loaded) | None => vec![ControllerCommand::Execute(id)],
             _ => Vec::new(),
         },
         Message::ReadyPause => match status {
-            Some(S::PreWaiting | S::Playing) => vec![Control::Pause(id)],
-            Some(S::PreWaitPaused | S::Paused) => vec![Control::Resume(id)],
-            None => vec![Control::Load(id)],
+            Some(S::PreWaiting | S::Playing) => vec![ControllerCommand::Pause(id)],
+            Some(S::PreWaitPaused | S::Paused) => vec![ControllerCommand::Resume(id)],
+            None => vec![ControllerCommand::Load(id)],
             Some(S::Loaded | S::Stopping) => Vec::new(),
         },
     }
@@ -347,11 +347,11 @@ mod tests {
 
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Loaded)),
-            vec![Control::Execute(id)]
+            vec![ControllerCommand::Execute(id)]
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), None),
-            vec![Control::Execute(id)]
+            vec![ControllerCommand::Execute(id)]
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Playing)),
@@ -359,11 +359,11 @@ mod tests {
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::Paused)),
-            vec![Control::Resume(id)]
+            vec![ControllerCommand::Resume(id)]
         );
         assert_eq!(
             controls_for(Message::Play, Some(id), Some(S::PreWaitPaused)),
-            vec![Control::Resume(id)]
+            vec![ControllerCommand::Resume(id)]
         );
     }
 
@@ -373,10 +373,13 @@ mod tests {
         use PlaybackStatus as S;
         let press = |status| controls_for(Message::ReadyPause, Some(id), status);
 
-        assert_eq!(press(None), vec![Control::Load(id)]);
-        assert_eq!(press(Some(S::Playing)), vec![Control::Pause(id)]);
-        assert_eq!(press(Some(S::PreWaiting)), vec![Control::Pause(id)]);
-        assert_eq!(press(Some(S::Paused)), vec![Control::Resume(id)]);
+        assert_eq!(press(None), vec![ControllerCommand::Load(id)]);
+        assert_eq!(press(Some(S::Playing)), vec![ControllerCommand::Pause(id)]);
+        assert_eq!(
+            press(Some(S::PreWaiting)),
+            vec![ControllerCommand::Pause(id)]
+        );
+        assert_eq!(press(Some(S::Paused)), vec![ControllerCommand::Resume(id)]);
         assert!(press(Some(S::Loaded)).is_empty());
         assert!(press(Some(S::Stopping)).is_empty());
     }
@@ -392,7 +395,7 @@ mod tests {
         let id = Uuid::new_v4();
         assert_eq!(
             controls_for(Message::Stop, Some(id), Some(PlaybackStatus::Playing)),
-            vec![Control::Stop(id)]
+            vec![ControllerCommand::Stop(id)]
         );
     }
 

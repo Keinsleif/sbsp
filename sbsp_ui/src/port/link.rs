@@ -7,10 +7,10 @@
 //! UI sends playback commands and model edits and listens to events through
 //! this, whichever side it runs on.
 
-use sbsp_backend::BackendHandle;
+use sbsp_backend::{BackendHandle, controller::ControllerCommand, manager::ModelCommand};
 use tokio::sync::broadcast;
 
-use super::{Control, FullState, ModelEdit, PortEvent};
+use super::{FullState, PortEvent};
 
 #[derive(Clone)]
 pub struct Link {
@@ -57,44 +57,12 @@ impl Link {
     /// be handed straight to `Task::perform` without borrowing `self`.
     pub fn send(
         &self,
-        controls: Vec<Control>,
+        controls: Vec<ControllerCommand>,
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        use sbsp_backend::action::{AudioAction, CueAction};
-
-        let controller = self.handle.controller_handle.clone();
+        let handle = self.handle.controller_handle.clone();
         async move {
             for control in controls {
-                match control {
-                    Control::Execute(id) => controller.execute(id).await?,
-                    Control::Load(id) => controller.load(id).await?,
-                    Control::Pause(id) => controller.pause(id).await?,
-                    Control::Resume(id) => controller.resume(id).await?,
-                    Control::Stop(id) => controller.stop(id).await?,
-                    Control::SoftStop(id) => controller.soft_stop(id).await?,
-                    Control::HardStop(id) => controller.hard_stop(id).await?,
-                    Control::SeekBy(id, amount) => controller.seek_by(id, amount).await?,
-                    Control::SeekTo(id, position) => controller.seek_to(id, position).await?,
-                    Control::ToggleRepeat(id) => {
-                        controller
-                            .perform_action(id, CueAction::Audio(AudioAction::ToggleRepeat))
-                            .await?
-                    }
-                    Control::SetVolume(id, volume) => {
-                        controller
-                            .perform_action(
-                                id,
-                                CueAction::Audio(AudioAction::SetVolume(
-                                    sbsp_backend::model::cue::audio::Decibels::from(volume as f32),
-                                )),
-                            )
-                            .await?
-                    }
-                    Control::PauseAll => controller.pause_all().await?,
-                    Control::ResumeAll => controller.resume_all().await?,
-                    Control::StopAll => controller.stop_all().await?,
-                    Control::SoftStopAll => controller.soft_stop_all().await?,
-                    Control::HardStopAll => controller.hard_stop_all().await?,
-                }
+                handle.send_command(control).await?;
             }
             Ok(())
         }
@@ -105,56 +73,12 @@ impl Link {
     /// whether the backend took the command.
     pub fn edit(
         &self,
-        edit: ModelEdit,
+        edit: ModelCommand,
     ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
         let handle = self.handle.clone();
         async move {
             let model = &handle.model_handle;
-            match edit {
-                ModelEdit::AddCues { mut cues, position } => match cues.len() {
-                    0 => Ok(()),
-                    1 => model.add_cue(cues.remove(0), position).await,
-                    _ => model.add_cues(cues, position).await,
-                },
-                ModelEdit::AddGroup {
-                    group,
-                    position,
-                    members,
-                } => {
-                    let group_id = group.id;
-                    model.add_cue(group, position).await?;
-                    if members.is_empty() {
-                        return Ok(());
-                    }
-                    model
-                        .move_cues(
-                            members.into_iter().collect(),
-                            sbsp_backend::manager::InsertPosition::Inside {
-                                target: Some(group_id),
-                                index: Some(0),
-                            },
-                        )
-                        .await
-                }
-                ModelEdit::RemoveCues(ids) => model.remove_cues(ids.into_iter().collect()).await,
-                ModelEdit::MoveCues { ids, position } => {
-                    model.move_cues(ids.into_iter().collect(), position).await
-                }
-                ModelEdit::RenumberCues {
-                    ids,
-                    start_from,
-                    increment,
-                    prefix,
-                    suffix,
-                } => {
-                    model
-                        .renumber_cues(ids, start_from, increment, prefix, suffix)
-                        .await
-                }
-                ModelEdit::UpdateCue(cue) => model.update_cue(cue).await,
-                ModelEdit::UpdateShowSettings(settings) => model.update_settings(settings).await,
-                ModelEdit::RenameShow(name) => model.update_model_name(name).await,
-            }
+            model.send_command(edit).await
         }
     }
 
