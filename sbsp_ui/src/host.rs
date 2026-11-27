@@ -2,7 +2,6 @@
 // Copyright (c) 2025 Keinsleif (https://github.com/Keinsleif)
 
 pub mod backend;
-pub mod paths;
 pub mod web_assets;
 
 pub fn run() -> iced::Result {

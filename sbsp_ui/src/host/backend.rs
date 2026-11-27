@@ -18,7 +18,6 @@
 
 use std::sync::Arc;
 
-use crate::settings::{GlobalHostSettings, manager::SettingsManager};
 use sbsp_backend::api::{ApiServerOptions, server::start_apiserver_with};
 use sbsp_backend::controller::state::ShowState;
 use sbsp_backend::{BackendSettings, start_backend};
@@ -29,11 +28,6 @@ use crate::port::{FullState, Link};
 #[derive(Clone)]
 pub struct HostPort {
     link: Link,
-    // The backend's view of the settings (audio hardware and the like).
-    // Keeping the sender alive also keeps the channel open: a dropped one
-    // would look like a shutdown to the backend's loops.
-    settings_tx: Arc<watch::Sender<BackendSettings>>,
-    settings: Arc<SettingsManager<GlobalHostSettings>>,
     state_rx: watch::Receiver<ShowState>,
     server: Arc<tokio::sync::Mutex<Server>>,
 }
@@ -77,51 +71,19 @@ impl HostPort {
     /// defaults, logging why), starts the backend with them, and fetches
     /// the full show state -- everything the app needs before it can show
     /// its first real frame, in one `Task::perform`-able call.
-    pub async fn start() -> anyhow::Result<(Self, FullState, GlobalHostSettings)> {
-        let settings = Arc::new(SettingsManager::<GlobalHostSettings>::new(
-            super::paths::config_path(),
-        ));
-
-        let host_settings = match settings.load().await {
-            Ok(loaded) => loaded,
-            Err(e) => {
-                // Expected on first run (no file yet) as well as on a
-                // genuine read error; either way, defaults are a safe
-                // fallback and not worth distinguishing the two here.
-                log::info!("using default settings ({e})");
-                GlobalHostSettings::default()
-            }
-        };
-
-        let (settings_tx, settings_rx) = watch::channel(BackendSettings::from(&host_settings));
-
+    pub async fn start(
+        settings_rx: watch::Receiver<BackendSettings>,
+    ) -> anyhow::Result<(Self, FullState)> {
         let (handle, state_rx, event_tx) = start_backend(settings_rx, true)?;
         let full_state = handle.get_full_state().await?;
 
         let port = Self {
             link: Link::new(handle, event_tx, 0),
-            settings_tx: Arc::new(settings_tx),
-            settings,
             state_rx,
             server: Arc::new(tokio::sync::Mutex::new(Server::default())),
         };
 
-        Ok((port, full_state, host_settings))
-    }
-
-    /// Makes `new` the settings in force: keeps them, writes them to the
-    /// settings file and hands the backend its part.
-    pub fn save_settings(
-        &self,
-        new: GlobalHostSettings,
-    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        let settings = self.settings.clone();
-        let tx = self.settings_tx.clone();
-        async move {
-            settings.set(new.clone()).await;
-            tx.send_replace(BackendSettings::from(&new));
-            settings.save().await
-        }
+        Ok((port, full_state))
     }
 
     /// The server's options and whether it runs.
@@ -170,34 +132,5 @@ impl HostPort {
                 let _ = shutdown.send(());
             }
         }
-    }
-
-    /// Reads settings from `path`, makes them the settings in force and
-    /// keeps them. The settings file is replaced.
-    pub fn import_settings(
-        &self,
-        path: std::path::PathBuf,
-    ) -> impl std::future::Future<Output = anyhow::Result<GlobalHostSettings>> + Send + 'static
-    {
-        let settings = self.settings.clone();
-        let tx = self.settings_tx.clone();
-        async move {
-            let imported = settings.import_from_file(&path).await?;
-            tx.send_replace(BackendSettings::from(&imported));
-            Ok(imported)
-        }
-    }
-
-    /// Writes the settings in force to `path`.
-    pub fn export_settings(
-        &self,
-        path: std::path::PathBuf,
-    ) -> impl std::future::Future<Output = anyhow::Result<()>> + Send + 'static {
-        let settings = self.settings.clone();
-        async move { settings.export_to_file(&path).await }
-    }
-
-    pub fn settings(&self) -> Arc<SettingsManager<GlobalHostSettings>> {
-        self.settings.clone()
     }
 }

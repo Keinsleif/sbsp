@@ -1148,7 +1148,7 @@ fn loaded_settings_reach_the_ui() {
     loaded.hotkey.file.open = Some("$mod+Shift+O".to_owned());
     loaded.name_format.audio = "custom".to_owned();
 
-    state.apply_preferences(&loaded);
+    state.apply_preferences(loaded.clone());
 
     assert_eq!(
         state.preferences.general.lock_cursor_to_selection,
@@ -1157,7 +1157,10 @@ fn loaded_settings_reach_the_ui() {
     assert_eq!(state.preferences.general.seek_amount, 7.5);
     assert_eq!(state.preferences.appearance.dark_mode, ThemeMode::Light);
     assert_eq!(state.preferences.appearance.lang, Some(Language::Ja));
-    assert_eq!(state.preferences.appearance.hide_controls, loaded.appearance.hide_controls);
+    assert_eq!(
+        state.preferences.appearance.hide_controls,
+        loaded.appearance.hide_controls
+    );
     assert_eq!(state.preferences.name_format.audio, "custom");
     assert_eq!(
         state
@@ -1174,7 +1177,7 @@ fn loaded_settings_reach_the_ui() {
     assert_eq!(fl!("menu-file-quit"), "終了");
 
     // Back to what the other tests expect.
-    state.apply_preferences(&Preferences::default());
+    state.apply_preferences(Preferences::default());
     crate::i18n::select(Some(Language::En));
 }
 
@@ -1625,7 +1628,7 @@ mod remote {
     #[test]
     #[serial]
     fn without_a_connection_the_connect_screen_is_all_there_is() {
-        let state = State::new("remote", crate::persist::Saved::default()).0;
+        let state = State::new("remote", &crate::persist::Saved::default()).0;
         assert!(state.backend.is_none());
         assert!(state.needs_connection());
         assert!(state.ui.available_modes().is_empty());

@@ -17,6 +17,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashSet;
+
 use crate::features::cue_list::CueListEnv;
 #[cfg(any(feature = "host", feature = "remote"))]
 use crate::platform::files;
@@ -26,9 +28,17 @@ use crate::platform::power::{self, KeepAwake};
 use crate::platform::time::{Duration, Instant};
 #[cfg(installer)]
 use crate::platform::update;
+#[cfg(feature = "host")]
+use crate::settings::manager::{SettingsManager, config_path};
+#[cfg(all(client, not(feature = "host")))]
+use crate::settings::manager::{SettingsManager, config_path};
 
 use iced::widget::{column, container, row};
 use iced::{Element, Length, Subscription, Task, event, keyboard, mouse};
+#[cfg(feature = "host")]
+use sbsp_backend::BackendSettings;
+use sbsp_backend::controller::ControllerCommand;
+use sbsp_backend::manager::ModelCommand;
 use sbsp_backend::model::cue::audio::Decibels;
 
 #[cfg(backend)]
@@ -66,13 +76,13 @@ use crate::port::{Control, ModelEdit};
 #[cfg(backend)]
 use crate::port::{Port, PortEvent};
 #[cfg(client)]
-use crate::remote::backend::{RemotePort, RemoteSettings};
+use crate::remote::backend::RemotePort;
 
+use crate::settings::AudioHardwareSettings;
 #[cfg(feature = "host")]
 use crate::settings::GlobalHostSettings;
 #[cfg(client)]
 use crate::settings::GlobalRemoteSettings;
-use crate::settings::{AudioHardwareSettings};
 use sbsp_backend::helper::SupportedHardware;
 use sbsp_backend::model::cue::{Cue, CueParam, Uuid};
 
@@ -155,12 +165,22 @@ pub fn run(target: &'static str) -> iced::Result {
 }
 
 pub struct State {
+    /// Which app this is ("host", "remote" or "web"); picks where the
+    /// remembered UI state is kept.
+    target: &'static str,
+    /// What the app talks to: the host's own backend, or the one a remote
+    /// is connected to.
+    #[cfg(backend)]
+    backend: Option<Port>,
+    /// The settings as loaded (and as last saved).
+    #[cfg(feature = "host")]
+    host_settings: SettingsManager<GlobalHostSettings, BackendSettings>,
+    /// The remote's own settings and where they are kept (loaded at start).
+    #[cfg(client)]
+    remote_settings: SettingsManager<GlobalRemoteSettings>,
     /// The settings as last applied, which the settings dialog starts from.
     preferences: Preferences,
     hotkeys: hotkeys::Bindings,
-    /// The settings as loaded (and as last saved).
-    #[cfg(feature = "host")]
-    host_settings: GlobalHostSettings,
     cue_view: cue_list::Viewport,
     /// A question about replacing or closing the show, waiting for an
     /// answer.
@@ -207,9 +227,6 @@ pub struct State {
     /// The request that keeps the machine awake, held while
     /// `ui.keep_awake` and the window focus ask for it.
     power: KeepAwake,
-    /// Which app this is ("host", "remote" or "web"); picks where the
-    /// remembered UI state is kept.
-    target: &'static str,
     /// Where the window is and how big, as the OS last reported it.
     window_size: Option<iced::Size>,
     window_position: Option<iced::Point>,
@@ -233,15 +250,6 @@ pub struct State {
     #[cfg(backend)]
     assets_stale: bool,
     toasts: toast::Toasts,
-    /// What the app talks to: the host's own backend, or the one a remote
-    /// is connected to.
-    #[cfg(backend)]
-    backend: Option<Port>,
-    /// The remote's own settings and where they are kept (loaded at start).
-    #[cfg(client)]
-    remote_settings: GlobalRemoteSettings,
-    #[cfg(client)]
-    remote_store: Option<RemoteSettings>,
     /// The host's audio files to choose from (the remote has none of its own).
     #[cfg(client)]
     file_picker: Option<file_list::Dialog>,
@@ -352,10 +360,15 @@ pub enum Message {
     /// Result of a fire-and-forget backend call that succeeded.
     Nothing,
     #[cfg(feature = "host")]
-    BackendStarted(HostPort, Box<FullState>, Box<GlobalHostSettings>),
+    BackendStarted(HostPort, Box<FullState>),
+    #[cfg(feature = "host")]
+    HostSettingsLoaded(Box<GlobalHostSettings>),
+    /// The settings read from a file the user chose (`None`: cancelled).
+    #[cfg(feature = "host")]
+    HostSettingsImported(Result<Option<Box<GlobalHostSettings>>, String>),
     /// The connect screen.
     #[cfg(client)]
-    RemoteSettingsLoaded(RemoteSettings, Box<GlobalRemoteSettings>),
+    RemoteSettingsLoaded(Box<GlobalRemoteSettings>),
     #[cfg(client)]
     RemoteSettingsImported(Result<Option<Box<GlobalRemoteSettings>>, String>),
     /// Show the host's files to choose from.
@@ -385,9 +398,6 @@ pub enum Message {
     PortEvent(PortEvent),
     #[cfg(backend)]
     BackendError(String),
-    /// The settings read from a file the user chose (`None`: cancelled).
-    #[cfg(feature = "host")]
-    SettingsImported(Result<Option<Box<GlobalHostSettings>>, String>),
 }
 
 /// What to tell the user about a failed backend operation.
@@ -465,15 +475,33 @@ impl State {
         log::info!("starting sbsp_ui ({target})");
 
         #[cfg(feature = "host")]
-        let boot_task = Task::perform(HostPort::start(), |result| match result {
-            Ok((backend, state, settings)) => {
-                Message::BackendStarted(backend, Box::new(state), Box::new(settings))
+        let mut host_settings: SettingsManager<GlobalHostSettings, BackendSettings> =
+            SettingsManager::new(config_path());
+        #[cfg(feature = "host")]
+        let boot_task = Task::perform(host_settings.load_task(), |result| match result {
+            Ok(settings) => Message::HostSettingsLoaded(Box::new(settings)),
+            Err(e) => {
+                log::warn!("Failed to load settings and fallback to default. e={}", e);
+                Message::Nothing
             }
-            Err(e) => Message::BackendError(e.to_string()),
-        });
+        })
+        .chain(Task::perform(
+            HostPort::start(host_settings.subscribe()),
+            |result| match result {
+                Ok((backend, state)) => Message::BackendStarted(backend, Box::new(state)),
+                Err(e) => Message::BackendError(e.to_string()),
+            },
+        ));
         #[cfg(all(client, not(feature = "host")))]
-        let boot_task = Task::perform(RemoteSettings::load(), |(store, settings)| {
-            Message::RemoteSettingsLoaded(store, Box::new(settings))
+        let remote_settings: SettingsManager<GlobalRemoteSettings> =
+            SettingsManager::new(config_path());
+        #[cfg(all(client, not(feature = "host")))]
+        let boot_task = Task::perform(remote_settings.load_task(), |result| match result {
+            Ok(settings) => Message::RemoteSettingsLoaded(Box::new(settings)),
+            Err(e) => {
+                log::warn!("Failed to load settings and fallback to default. e={}", e);
+                Message::Nothing
+            }
         });
         #[cfg(not(any(feature = "host", client)))]
         let boot_task = Task::none();
@@ -481,17 +509,10 @@ impl State {
         #[cfg(target_arch = "wasm32")]
         let boot_task = Task::batch([
             boot_task,
-            Task::future(crate::web::fetch_fonts()).then(|result| {
-                match result {
-                    Ok((ui, mono)) => {
-                        Task::batch([
-                            iced::font::load(ui),
-                            iced::font::load(mono),
-                        ])
-                        .map(|result| Message::FontsLoaded(result.map_err(|e| format!("{e:?}"))))
-                    }
-                    Err(error) => Task::done(Message::FontsLoaded(Err(error))),
-                }
+            Task::future(crate::web::fetch_fonts()).then(|result| match result {
+                Ok((ui, mono)) => Task::batch([iced::font::load(ui), iced::font::load(mono)])
+                    .map(|result| Message::FontsLoaded(result.map_err(|e| format!("{e:?}")))),
+                Err(error) => Task::done(Message::FontsLoaded(Err(error))),
             }),
         ]);
 
@@ -522,7 +543,7 @@ impl State {
                 platform::is_mac(),
             ),
             #[cfg(feature = "host")]
-            host_settings: GlobalHostSettings::default(),
+            host_settings,
             confirm: None,
             pending_remove: None,
             preferences: Preferences::default(),
@@ -580,9 +601,7 @@ impl State {
             #[cfg(backend)]
             backend: None,
             #[cfg(client)]
-            remote_settings: GlobalRemoteSettings::default(),
-            #[cfg(client)]
-            remote_store: None,
+            remote_settings,
             #[cfg(client)]
             file_picker: None,
             #[cfg(client)]
@@ -826,10 +845,9 @@ impl State {
                 }
             }
             #[cfg(client)]
-            Message::RemoteSettingsLoaded(store, settings) => {
-                self.apply_preferences(&Preferences::from(&*settings));
-                self.remote_settings = *settings;
-                self.remote_store = Some(store);
+            Message::RemoteSettingsLoaded(settings) => {
+                self.apply_preferences(Preferences::from(&*settings));
+                self.remote_settings.apply(*settings);
                 match self.autoconnect.take() {
                     Some(request) => self.connect_to(request),
                     None => Task::none(),
@@ -871,23 +889,12 @@ impl State {
     /// Takes in loaded (or edited) settings: everything the UI reads from
     /// them without asking the settings again.
     #[cfg_attr(not(any(feature = "host", test)), allow(dead_code))]
-    fn apply_preferences(&mut self, preferences: &Preferences) {
-        self.preferences = preferences.clone();
-        self.hotkeys = hotkeys::Bindings::from_settings(&preferences.hotkey, platform::is_mac());
+    fn apply_preferences(&mut self, preferences: Preferences) {
+        self.preferences = preferences;
+        self.hotkeys =
+            hotkeys::Bindings::from_settings(&self.preferences.hotkey, platform::is_mac());
 
-        crate::i18n::select(preferences.appearance.lang);
-    }
-
-    /// The remote's View menu choices go into its own settings file.
-    #[cfg(client)]
-    fn save_remote_appearance(&mut self) -> Task<Message> {
-        let appearance = &mut self.remote_settings.appearance;
-        appearance.dark_mode = preferences::dark_mode(self.theme_mode);
-        appearance.language = Some(self.lang.setting().to_owned());
-        match &self.remote_store {
-            Some(store) => Task::perform(store.save(self.remote_settings.clone()), backend_result),
-            None => Task::none(),
-        }
+        crate::i18n::select(self.preferences.appearance.lang);
     }
 
     fn apply(&mut self, message: Message) {
@@ -1019,9 +1026,12 @@ impl State {
                 self.blink = crate::widgets::blink::level(now.duration_since(origin));
             }
             #[cfg(feature = "host")]
-            Message::BackendStarted(backend, state, settings) => {
-                self.apply_preferences(&Preferences::from(&*settings));
-                self.host_settings = *settings;
+            Message::HostSettingsLoaded(settings) => {
+                self.apply_preferences(Preferences::from(&*settings));
+                self.host_settings.apply(*settings);
+            }
+            #[cfg(feature = "host")]
+            Message::BackendStarted(backend, state) => {
                 log::info!(
                     "backend started, {} active cue(s) at connect",
                     state.show_state.active_cues.len()
@@ -1046,10 +1056,10 @@ impl State {
             #[cfg(backend)]
             Message::PortEvent(event) => self.handle_port_event(event),
             #[cfg(feature = "host")]
-            Message::SettingsImported(result) => match result {
+            Message::HostSettingsImported(result) => match result {
                 Ok(Some(settings)) => {
-                    self.apply_preferences(&Preferences::from(&*settings));
-                    self.host_settings = *settings;
+                    self.apply_preferences(Preferences::from(&*settings));
+                    self.host_settings.apply(*settings);
                 }
                 Ok(None) => {}
                 Err(message) => {
@@ -1066,8 +1076,8 @@ impl State {
             #[cfg(client)]
             Message::RemoteSettingsImported(result) => match result {
                 Ok(Some(settings)) => {
-                    self.apply_preferences(&Preferences::from(&*settings));
-                    self.remote_settings = *settings;
+                    self.apply_preferences(Preferences::from(&*settings));
+                    self.remote_settings.apply(*settings);
                 }
                 Ok(None) => {}
                 Err(message) => {
@@ -2039,22 +2049,17 @@ impl State {
     /// Edit > Import global settings: replaces the settings with a file's.
     #[cfg(feature = "host")]
     fn import_settings(&self) -> Task<Message> {
-        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
-            return Task::none();
-        };
         files::dialog().then(move |dialog| {
-            let backend = backend.clone();
             Task::perform(
                 async move {
                     let Some(path) = files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
-                    backend
-                        .import_settings(path)
+                    SettingsManager::<GlobalHostSettings, BackendSettings>::import_task(path)
                         .await
                         .map(|s| Some(Box::new(s)))
                 },
-                |result| Message::SettingsImported(result.map_err(|e| e.to_string())),
+                |result| Message::HostSettingsImported(result.map_err(|e| e.to_string())),
             )
         })
     }
@@ -2062,17 +2067,23 @@ impl State {
     /// Edit > Export global settings: writes the settings to a file.
     #[cfg(feature = "host")]
     fn export_settings(&self) -> Task<Message> {
-        let Some(backend) = self.backend.as_ref().and_then(Port::host).cloned() else {
-            return Task::none();
+        let mut snapshot = {
+            let mut settings = self.host_settings.clone();
+            // Reset machine specific audio device settings before export.
+            settings.audio = Default::default();
+            Some(settings)
         };
         files::dialog().then(move |dialog| {
-            let backend = backend.clone();
+            let Some(snapshot) = snapshot.take() else {
+                return Task::none();
+            };
             Task::perform(
                 async move {
                     let Some(path) = files::settings_destination(dialog).await else {
                         return Ok(());
                     };
-                    backend.export_settings(path).await
+                    SettingsManager::<GlobalHostSettings, BackendSettings>::export(path, snapshot)
+                        .await
                 },
                 backend_result,
             )
@@ -2081,17 +2092,15 @@ impl State {
 
     #[cfg(all(feature = "remote", not(feature = "host")))]
     fn import_settings(&self) -> Task<Message> {
-        let Some(store) = self.remote_store.clone() else {
-            return Task::none();
-        };
         files::dialog().then(move |dialog| {
-            let store = store.clone();
             Task::perform(
                 async move {
                     let Some(path) = files::pick_settings(dialog).await else {
                         return Ok(None);
                     };
-                    store.import(path).await.map(|s| Some(Box::new(s)))
+                    SettingsManager::<GlobalRemoteSettings>::import_task(path)
+                        .await
+                        .map(|s| Some(Box::new(s)))
                 },
                 |result| Message::RemoteSettingsImported(result.map_err(|e| e.to_string())),
             )
@@ -2100,17 +2109,18 @@ impl State {
 
     #[cfg(all(feature = "remote", not(feature = "host")))]
     fn export_settings(&self) -> Task<Message> {
-        let Some(store) = self.remote_store.clone() else {
-            return Task::none();
-        };
+        let mut snapshot = Some(self.remote_settings.clone());
         files::dialog().then(move |dialog| {
-            let store = store.clone();
+            let Some(snapshot) = snapshot.take() else {
+                return Task::none();
+            };
+
             Task::perform(
                 async move {
                     let Some(path) = files::settings_destination(dialog).await else {
                         return Ok(());
                     };
-                    store.export(path).await
+                    SettingsManager::<GlobalRemoteSettings>::export(path, snapshot).await
                 },
                 backend_result,
             )
@@ -2280,7 +2290,7 @@ impl State {
         let mut tasks = Vec::new();
         let preferences_changed = dialog.preferences != self.preferences;
         if preferences_changed {
-            self.apply_preferences(&dialog.preferences);
+            self.apply_preferences(dialog.preferences);
         }
         if preferences_changed || audio_changed {
             tasks.push(self.save_preferences(dialog.audio));
@@ -2307,13 +2317,7 @@ impl State {
         if let Some(audio) = audio {
             settings.audio = audio;
         }
-        match self.backend.as_ref().and_then(Port::host) {
-            Some(backend) => Task::perform(
-                backend.save_settings(self.host_settings.clone()),
-                backend_result,
-            ),
-            None => Task::none(),
-        }
+        Task::perform(self.host_settings.save_task(), backend_result)
     }
 
     #[cfg(all(client, not(feature = "host")))]
@@ -2321,14 +2325,11 @@ impl State {
         let p = self.preferences.clone();
         let settings = &mut self.remote_settings;
         settings.general = p.general;
-        settings.appearance = p.appearance;
+        settings.appearance = (&p.appearance).into();
         settings.hotkey = p.hotkey;
         settings.template = p.template;
         settings.name_format = p.name_format;
-        match &self.remote_store {
-            Some(store) => Task::perform(store.save(self.remote_settings.clone()), backend_result),
-            None => Task::none(),
-        }
+        Task::perform(self.remote_settings.save_task(), backend_result)
     }
 
     #[cfg(not(any(feature = "host", client)))]
