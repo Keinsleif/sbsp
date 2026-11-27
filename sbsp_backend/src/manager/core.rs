@@ -106,14 +106,7 @@ impl ShowModelManager {
                 });
             }
             ModelCommand::AddCue { mut cue, position } => {
-                if self.is_cue_exists(&cue.id).await {
-                    self.send_event(BackendEvent::OperationFailed {
-                        error: BackendError::CueEdit {
-                            message: "Failed to add cue, id already exists.".into(),
-                        },
-                    });
-                    return;
-                }
+                cue.id = Uuid::new_v4();
                 if let CueParam::Audio(p) = &mut cue.params {
                     let model_path_option = self.project_status.read().await.to_model_path_option();
                     self.import_cue_asset(p, model_path_option.as_deref()).await;
@@ -137,14 +130,8 @@ impl ShowModelManager {
                 let mut valid_cue_ids = HashSet::new();
 
                 for mut cue in cues {
-                    if self.is_cue_exists(&cue.id).await {
-                        self.send_event(BackendEvent::OperationFailed {
-                            error: BackendError::CueEdit {
-                                message: "Failed to add cue, id already exists.".into(),
-                            },
-                        });
-                        continue;
-                    } else if !valid_cue_ids.insert(cue.id) {
+                    cue.id = Uuid::new_v4();
+                    if !valid_cue_ids.insert(cue.id) {
                         self.send_event(BackendEvent::OperationFailed {
                             error: BackendError::CueEdit {
                                 message: "Failed to add cue, duplicate id found.".into(),
@@ -175,6 +162,59 @@ impl ShowModelManager {
                     return;
                 }
 
+                self.modify_status.store(true, Ordering::Release);
+                self.send_event(BackendEvent::CueListUpdated {
+                    cue_list: self.model.read().await.cue_list.clone(),
+                });
+            }
+            ModelCommand::AddGroupWithChildren {
+                mut cue,
+                position,
+                children,
+            } => {
+                if !matches!(cue.params, CueParam::Group { .. }) {
+                    self.send_event(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: "Adding cue is not Group Cue".into(),
+                        },
+                    });
+                    return;
+                }
+                let group_id = Uuid::new_v4();
+                cue.id = group_id;
+                if let CueParam::Audio(p) = &mut cue.params {
+                    let model_path_option = self.project_status.read().await.to_model_path_option();
+                    self.import_cue_asset(p, model_path_option.as_deref()).await;
+                }
+
+                if let Err(e) = self.insert_cues_at_position(vec![cue], position).await {
+                    self.send_event(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: format!("Failed to add group cue, {}.", e),
+                        },
+                    });
+                    return;
+                }
+                if let Err(e) = self
+                    .move_cues_at_position(
+                        children,
+                        InsertPosition::Inside {
+                            target: Some(group_id),
+                            index: None,
+                        },
+                    )
+                    .await
+                {
+                    self.send_event(BackendEvent::OperationFailed {
+                        error: BackendError::CueEdit {
+                            message: format!(
+                                "Failed to move children to inside group cues, {}.",
+                                e
+                            ),
+                        },
+                    });
+                    return;
+                }
                 self.modify_status.store(true, Ordering::Release);
                 self.send_event(BackendEvent::CueListUpdated {
                     cue_list: self.model.read().await.cue_list.clone(),
@@ -510,9 +550,9 @@ impl ShowModelManager {
         }
     }
 
-    async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
-        self.read().await.cue_list.cues.contains_key(cue_id)
-    }
+    // async fn is_cue_exists(&self, cue_id: &Uuid) -> bool {
+    //     self.read().await.cue_list.cues.contains_key(cue_id)
+    // }
 
     async fn remove_cues_by_id(&self, cue_ids: HashSet<Uuid>) -> HashSet<Uuid> {
         let mut model = self.model.write().await;

@@ -51,6 +51,11 @@ pub enum ModelCommand {
         cues: Vec<Cue>,
         position: InsertPosition,
     },
+    AddGroupWithChildren {
+        cue: Cue,
+        position: InsertPosition,
+        children: HashSet<Uuid>,
+    },
     RemoveCue {
         cue_id: Uuid,
     },
