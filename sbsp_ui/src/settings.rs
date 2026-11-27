@@ -6,8 +6,8 @@ pub mod hotkey;
 pub mod manager;
 
 use serde::{Deserialize, Serialize};
-use unic_langid::LanguageIdentifier;
 use std::path::PathBuf;
+use unic_langid::LanguageIdentifier;
 
 use hotkey::HotkeySettings;
 use sbsp_backend::{

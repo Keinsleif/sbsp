@@ -36,12 +36,16 @@ pub static IS_MACOS: LazyLock<bool> = LazyLock::new(|| {
     };
     let navigator = window.navigator();
 
-    if let Ok(platform) = navigator.platform() && platform.to_lowercase().contains("mac") {
+    if let Ok(platform) = navigator.platform()
+        && platform.to_lowercase().contains("mac")
+    {
         return true;
     }
 
     if let Ok(user_agent) = navigator.user_agent()
-    && (user_agent.to_lowercase().contains("macintosh") || user_agent.to_lowercase().contains("mac os x")) {
+        && (user_agent.to_lowercase().contains("macintosh")
+            || user_agent.to_lowercase().contains("mac os x"))
+    {
         return true;
     }
     false

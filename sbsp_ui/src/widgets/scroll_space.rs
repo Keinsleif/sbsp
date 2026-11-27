@@ -221,7 +221,9 @@ where
                 | touch::Event::FingerMoved { position, .. }
                 | touch::Event::FingerLifted { position, .. }
                 | touch::Event::FingerLost { position, .. },
-            ) if cursor.position().is_none() && viewport.contains(*position) => mouse::Cursor::Available(*position),
+            ) if cursor.position().is_none() && viewport.contains(*position) => {
+                mouse::Cursor::Available(*position)
+            }
             _ => cursor,
         };
         self.content.as_widget_mut().update(
@@ -236,9 +238,7 @@ where
         );
 
         let ended = match event {
-            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
-                Some(Holder::Mouse)
-            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => Some(Holder::Mouse),
             Event::Touch(
                 touch::Event::FingerLifted { id, .. } | touch::Event::FingerLost { id, .. },
             ) => Some(Holder::Finger(*id)),

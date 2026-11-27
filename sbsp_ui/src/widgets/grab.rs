@@ -174,8 +174,8 @@ where
             }
             Event::Touch(touch::Event::FingerPressed { id, position })
                 if state.drag.is_none()
-                && viewport.contains(*position)
-                && layout.bounds().contains(*position) =>
+                    && viewport.contains(*position)
+                    && layout.bounds().contains(*position) =>
             {
                 state.drag = Some(Drag {
                     pointer: Pointer::Finger(*id),
@@ -202,10 +202,8 @@ where
             }
             // A release that happens outside the window after the focus is lost
             // is never delivered, so the drag ends with the focus.
-            Event::Window(window::Event::Unfocused) => {
-                if state.drag.take().is_some() {
-                    shell.publish(self.on_end.clone());
-                }
+            Event::Window(window::Event::Unfocused) if state.drag.take().is_some() => {
+                shell.publish(self.on_end.clone());
             }
             _ => {}
         }

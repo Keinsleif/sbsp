@@ -34,11 +34,7 @@ pub fn min_width<'a, Message: 'a>(
         } else {
             scrollable::Scrollbar::hidden()
         };
-        let content_width = if is_scrollable {
-            min
-        } else {
-            room.width
-        };
+        let content_width = if is_scrollable { min } else { room.width };
         let scrolling: Element<'_, Message> = scrollable(scroll_space(content(content_width)))
             .direction(scrollable::Direction::Horizontal(scroll_bar))
             .width(Length::Fill)

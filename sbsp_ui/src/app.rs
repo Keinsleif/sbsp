@@ -3963,5 +3963,6 @@ fn released_seek(
     active: &std::collections::HashMap<Uuid, sbsp_backend::controller::state::ActiveCue>,
 ) -> Option<ControllerCommand> {
     let (id, position) = seek?;
-    (cursor == Some(id) && active.contains_key(&id)).then_some(Control::SeekTo(id, position))
+    (cursor == Some(id) && active.contains_key(&id))
+        .then_some(ControllerCommand::SeekTo(id, position))
 }

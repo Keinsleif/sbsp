@@ -68,13 +68,6 @@ impl Language {
     /// Fallback from other unsupported languages. Not default language.
     /// Same as `i18n.toml`'s `fallback_language`
     pub const FALLBACK_LANGUAGE: Self = Language::En;
-    
-    pub fn toggle(self) -> Self {
-        match self {
-            Language::Ja => Language::En,
-            Language::En => Language::Ja,
-        }
-    }
 
     pub fn from_setting(setting: Option<&LanguageIdentifier>) -> Option<Self> {
         setting.map(|lang| {
@@ -122,11 +115,11 @@ mod tests {
             Language::from_setting(Some(&langid!("en"))),
             Some(Language::En)
         );
-        assert_eq!(Language::from_setting(Some(&langid!("ja-JP"))), Some(Language::Ja));
         assert_eq!(
-            Language::from_setting(Some(&langid!("fr"))),
-            None
+            Language::from_setting(Some(&langid!("ja-JP"))),
+            Some(Language::Ja)
         );
+        assert_eq!(Language::from_setting(Some(&langid!("fr"))), None);
     }
 
     #[test]

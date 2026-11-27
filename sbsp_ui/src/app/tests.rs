@@ -1135,8 +1135,8 @@ fn a_name_the_user_gave_is_what_the_list_shows() {
 #[test]
 #[serial]
 fn loaded_settings_reach_the_ui() {
-    use crate::theme::ThemeMode;
     use crate::i18n::Language;
+    use crate::theme::ThemeMode;
 
     let mut state = new_state();
     let mut loaded = Preferences::default();
