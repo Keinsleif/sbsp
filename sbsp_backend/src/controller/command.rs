@@ -4,9 +4,12 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::action::CueAction;
+use crate::{
+    action::{AudioAction, CueAction},
+    model::cue::audio::Decibels,
+};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[serde(
     tag = "command",
     content = "params",
@@ -29,4 +32,13 @@ pub enum ControllerCommand {
     SoftStopAll,
     HardStopAll,
     PerformAction(Uuid, CueAction),
+}
+
+impl ControllerCommand {
+    pub fn toggle_repeat(cue_id: Uuid) -> Self {
+        Self::PerformAction(cue_id, CueAction::Audio(AudioAction::ToggleRepeat))
+    }
+    pub fn set_volume(cue_id: Uuid, volume: Decibels) -> Self {
+        Self::PerformAction(cue_id, CueAction::Audio(AudioAction::SetVolume(volume)))
+    }
 }
