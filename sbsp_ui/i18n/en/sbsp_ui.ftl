@@ -1,4 +1,5 @@
 app-title = SBS Player
+app-title-remote = SBS Player Remote
 general-cancel = Cancel
 general-confirm = Confirm
 general-continue = Continue

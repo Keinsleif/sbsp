@@ -116,7 +116,16 @@ pub fn run(target: &'static str) -> iced::Result {
         State::update,
         State::view,
     )
-    .title(|state: &State| format!("{} - {}", fl!("app-title"), state.model.name))
+    .title(|state: &State| {
+        #[cfg(feature = "host")]
+        {
+            format!("{} - {}", fl!("app-title"), state.model.name)
+        }
+        #[cfg(not(feature = "host"))]
+        {
+            format!("{} - {}", fl!("app-title-remote"), state.model.name)
+        }
+    })
     .theme(|state: &State| crate::theme::resolve(state.preferences.appearance.dark_mode))
     .subscription(State::subscription)
     // Closing the window goes through `Message::CloseRequested`, which
