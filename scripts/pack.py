@@ -98,7 +98,7 @@ def main() -> None:
     icon = {
         "win32": "icon.ico",
         "darwin": "icon.icns",
-    }.get(sys.platform, "128x128.png")
+    }.get(sys.platform, "icon.png")
 
     stage = ROOT / "target" / "pack" / app
     out = ROOT / "target" / "dist" / app
@@ -118,7 +118,7 @@ def main() -> None:
     feed = os.environ.get("SBSP_FEED_URL")
     if feed:
         previous = subprocess.run(
-            [vpk, "download", "http", "--url", feed, "--channel", channel(app), "--outputDir", str(out)]
+            [vpk, "download", "http", "--url", feed, "--channel", channel(app), "--outputDir", str(out)], check=False
         )
         if previous.returncode != 0:
             print("no previous release; making a full package only")
@@ -132,12 +132,12 @@ def main() -> None:
         "--mainExe", exe,
         "--packTitle", title,
         "--packAuthors", "Keinsleif",
-        "--icon", str(ROOT / "sbsp_ui" / "assets" / "icons" / icon),
+        "--icon", str(ROOT / "sbsp_ui" / "assets" / "icons" / app / icon),
         "--outputDir", str(out),
         *signing_options(),
         *extra,
     ]
-    sys.exit(subprocess.run(command).returncode)
+    sys.exit(subprocess.run(command, check=False).returncode)
 
 
 if __name__ == "__main__":

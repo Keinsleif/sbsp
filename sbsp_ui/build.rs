@@ -9,11 +9,14 @@
 /// Puts the icon into the Windows executables.
 #[cfg(windows)]
 fn embed_icon() {
-    if std::env::var_os("CARGO_FEATURE_HOST").is_some()
-        || std::env::var_os("CARGO_FEATURE_REMOTE").is_some()
-    {
+    if std::env::var_os("CARGO_FEATURE_HOST").is_some() {
         let mut resource = winresource::WindowsResource::new();
-        resource.set_icon("assets/icons/icon.ico");
+        resource.set_icon("assets/icons/host/icon.ico");
+        resource.compile().expect("failed to embed the icon");
+    }
+    if std::env::var_os("CARGO_FEATURE_REMOTE").is_some() {
+        let mut resource = winresource::WindowsResource::new();
+        resource.set_icon("assets/icons/remote/icon.ico");
         resource.compile().expect("failed to embed the icon");
     }
 }
